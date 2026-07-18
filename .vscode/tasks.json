@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Kill SSH/Git",
+			"type": "shell",
+			"command": "taskkill /F /IM ssh.exe 2>nul & taskkill /F /IM git.exe 2>nul & echo done",
+			"group": "none"
+		},
+		{
+			"label": "clean-ssh",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"taskkill /F /IM ssh.exe 2>nul & taskkill /F /IM git.exe 2>nul & echo cleaned"
+			],
+			"group": "none"
+		}
+	]
+}
