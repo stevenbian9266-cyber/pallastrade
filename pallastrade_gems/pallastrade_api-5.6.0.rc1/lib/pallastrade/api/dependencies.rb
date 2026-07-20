@@ -1,10 +1,10 @@
-﻿require 'pallastrade/core/dependencies_helper'
+require 'pallastrade/core/dependencies_helper'
 
 module PallasTrade
   module Api
     class ApiDependencies
       INJECTION_POINTS_WITH_DEFAULTS = {
-        # Legacy API v2 dependencies - will be removed in Spree 6
+        # Legacy API v2 dependencies - will be removed in PallasTrade 6
         # cart services
         storefront_cart_create_service: -> { PallasTrade::Dependencies.cart_create_service },
         storefront_cart_add_item_service: -> { PallasTrade::Dependencies.cart_add_item_service },

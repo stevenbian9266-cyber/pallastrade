@@ -1,6 +1,6 @@
-﻿require 'pallastrade/core/previews/preview_data'
+require 'pallastrade/core/previews/preview_data'
 
-# Preview Spree reimbursement emails at /rails/mailers/spree/reimbursement
+# Preview Spree reimbursement emails at /rails/mailers/pallastrade/reimbursement
 class PallasTrade::ReimbursementPreview < ActionMailer::Preview
   include PallasTrade::PreviewData::LocaleParam
 

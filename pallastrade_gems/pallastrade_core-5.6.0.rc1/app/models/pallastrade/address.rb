@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   class Address < PallasTrade.base_class
     has_prefix_id :addr  # Spree-specific: address
 
@@ -106,12 +106,12 @@
     end
 
     def user_default_billing?
-      PallasTrade::Deprecation.warn('PallasTrade::Address#user_default_billing? is deprecated and will be removed in Spree 6.0. Use #is_default_billing? instead.')
+      PallasTrade::Deprecation.warn('PallasTrade::Address#user_default_billing? is deprecated and will be removed in PallasTrade 6.0. Use #is_default_billing? instead.')
       is_default_billing?
     end
 
     def user_default_shipping?
-      PallasTrade::Deprecation.warn('PallasTrade::Address#user_default_shipping? is deprecated and will be removed in Spree 6.0. Use #is_default_shipping? instead.')
+      PallasTrade::Deprecation.warn('PallasTrade::Address#user_default_shipping? is deprecated and will be removed in PallasTrade 6.0. Use #is_default_shipping? instead.')
       is_default_shipping?
     end
 

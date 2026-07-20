@@ -1,4 +1,4 @@
-﻿# frozen_string_literal: true
+# frozen_string_literal: true
 
 module PallasTrade
   module Admin
@@ -19,7 +19,7 @@ module PallasTrade
         import.broadcast_update_to(
           "import_#{import.id}_loader",
           target: 'loader',
-          partial: 'spree/admin/imports/loader',
+          partial: 'pallastrade/admin/imports/loader',
           locals: { import: import }
         )
       end
@@ -31,7 +31,7 @@ module PallasTrade
         import.broadcast_replace_to(
           "import_#{import.id}_footer",
           target: 'footer',
-          partial: 'spree/admin/imports/footer',
+          partial: 'pallastrade/admin/imports/footer',
           locals: { import: import }
         )
       end

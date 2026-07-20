@@ -1,4 +1,4 @@
-﻿module SpreeAdyen
+module SpreeAdyen
   module Gateways
     class AddAllowedOrigin
       ALREADY_EXISTS_ERROR_CODE = '31_004'.freeze
@@ -25,7 +25,7 @@
       attr_reader :record, :gateway
 
       def log(message, level = :info)
-        Rails.logger.send(level, "[SpreeAdyen][AddAllowedOrigin]: Origin #{allowed_origin} #{message}")
+        Rails.logger.send(level, "[PallasTradeAdyen][AddAllowedOrigin]: Origin #{allowed_origin} #{message}")
       end
 
       def allowed_origin

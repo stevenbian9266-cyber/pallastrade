@@ -1,4 +1,4 @@
-﻿# PRODUCTS
+# PRODUCTS
 # Products represent an entity for sale in a store.
 # Products can have variations, called variants
 # Products properties include description, permalink, availability,
@@ -408,19 +408,19 @@ module PallasTrade
 
     # @deprecated Use #primary_media instead.
     def default_image
-      PallasTrade::Deprecation.warn('PallasTrade::Product#default_image is deprecated and will be removed in Spree 6.0. Please use PallasTrade::Product#primary_media instead.')
+      PallasTrade::Deprecation.warn('PallasTrade::Product#default_image is deprecated and will be removed in PallasTrade 6.0. Please use PallasTrade::Product#primary_media instead.')
       primary_media
     end
 
     # @deprecated Use #primary_media instead.
     def featured_image
-      PallasTrade::Deprecation.warn('PallasTrade::Product#featured_image is deprecated and will be removed in Spree 6.0. Please use PallasTrade::Product#primary_media instead.')
+      PallasTrade::Deprecation.warn('PallasTrade::Product#featured_image is deprecated and will be removed in PallasTrade 6.0. Please use PallasTrade::Product#primary_media instead.')
       primary_media
     end
 
     # @deprecated Use #primary_media instead.
     def primary_image
-      PallasTrade::Deprecation.warn('PallasTrade::Product#primary_image is deprecated and will be removed in Spree 6.0. Please use PallasTrade::Product#primary_media instead.')
+      PallasTrade::Deprecation.warn('PallasTrade::Product#primary_image is deprecated and will be removed in PallasTrade 6.0. Please use PallasTrade::Product#primary_media instead.')
       primary_media
     end
 
@@ -865,7 +865,7 @@ module PallasTrade
 
     # Builds variants from a hash of option types & values
     def build_variants_from_option_values_hash
-      PallasTrade::Deprecation.warn('PallasTrade::Product#build_variants_from_option_values_hash is deprecated and will be removed in Spree 6.0.')
+      PallasTrade::Deprecation.warn('PallasTrade::Product#build_variants_from_option_values_hash is deprecated and will be removed in PallasTrade 6.0.')
       ensure_option_types_exist_for_values_hash
       values = option_values_hash.values
       values = values.inject(values.shift) { |memo, value| memo.product(value).map(&:flatten) }
@@ -980,7 +980,7 @@ module PallasTrade
     end
 
     def discontinue_on_must_be_later_than_make_active_at
-      PallasTrade::Deprecation.warn('PallasTrade::Product#discontinue_on_must_be_later_than_make_active_at is deprecated and will be removed in Spree 6.0.')
+      PallasTrade::Deprecation.warn('PallasTrade::Product#discontinue_on_must_be_later_than_make_active_at is deprecated and will be removed in PallasTrade 6.0.')
       if discontinue_on < make_active_at
         errors.add(:discontinue_on, :invalid_date_range)
       end

@@ -1,9 +1,9 @@
-﻿# Patches Carmen::Querying#normalise_name to avoid the deprecated
+# Patches Carmen::Querying#normalise_name to avoid the deprecated
 # ActiveSupport::Multibyte::Chars API (mb_chars), which will be removed in
 # Rails 8.2.
 #
 # In Ruby 2.4+, String#downcase is already Unicode-aware, making the mb_chars
-# call redundant. Since Spree requires Ruby >= 3.2, we can drop it safely.
+# call redundant. Since PallasTrade requires Ruby >= 3.2, we can drop it safely.
 #
 # This patch can be removed once the upstream gem is fixed.
 #

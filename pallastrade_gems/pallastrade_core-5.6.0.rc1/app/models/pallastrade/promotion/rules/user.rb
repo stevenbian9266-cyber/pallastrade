@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   class Promotion
     module Rules
       class User < PromotionRule
@@ -55,7 +55,7 @@
 
         def user_ids_string
           ActiveSupport::Deprecation.warn(
-            'PallasTrade::Promotion::Rules::User#user_ids_string is deprecated and will be removed in Spree 5.5. ' \
+            'PallasTrade::Promotion::Rules::User#user_ids_string is deprecated and will be removed in PallasTrade 5.5. ' \
             'Please use `user_ids` instead.'
           )
           user_ids.join(',')
@@ -63,7 +63,7 @@
 
         def user_ids_string=(s)
           ActiveSupport::Deprecation.warn(
-            'PallasTrade::Promotion::Rules::User#user_ids_string= is deprecated and will be removed in Spree 5.5. ' \
+            'PallasTrade::Promotion::Rules::User#user_ids_string= is deprecated and will be removed in PallasTrade 5.5. ' \
             'Please use `user_ids=` instead.'
           )
           self.user_ids = s

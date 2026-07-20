@@ -1,4 +1,4 @@
-﻿# frozen_string_literal: true
+# frozen_string_literal: true
 
 module PallasTrade
   module Admin
@@ -39,7 +39,7 @@ module PallasTrade
           import_row.broadcast_append_to(
             "import_#{import_row.import_id}_rows",
             target: 'rows',
-            partial: 'spree/admin/imports/row',
+            partial: 'pallastrade/admin/imports/row',
             locals: { row: import_row, import: import_row.import }
           )
         end
@@ -51,7 +51,7 @@ module PallasTrade
         import_row.broadcast_replace_to(
           "import_#{import_row.import_id}_footer",
           target: 'footer',
-          partial: 'spree/admin/imports/footer',
+          partial: 'pallastrade/admin/imports/footer',
           locals: { import: import_row.import }
         )
       end

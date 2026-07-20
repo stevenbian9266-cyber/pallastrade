@@ -1,5 +1,5 @@
-﻿# This file exists solely to test whether or not there are missing translations
-# within the code that Spree's test suite covers.
+# This file exists solely to test whether or not there are missing translations
+# within the code that PallasTrade's test suite covers.
 #
 # If there is a translation referenced which has no corresponding key within the
 # .yml file, then there will be a message output at the end of the suite showing

@@ -6,7 +6,7 @@ module PallasTrade
       include PallasTrade::Admin::SettingsConcern
       include PallasTrade::Admin::TableConcern
 
-      helper 'spree/admin/api_keys'
+      helper 'pallastrade/admin/api_keys'
 
       def create
         invoke_callbacks(:create, :before)

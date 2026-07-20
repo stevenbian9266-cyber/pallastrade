@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   class BaseMailer < ActionMailer::Base
     helper PallasTrade::ImagesHelper
 
@@ -75,7 +75,7 @@
     #   of the thread without restoring it. Will be removed in Spree 6.0.
     def set_email_locale
       PallasTrade::Deprecation.warn(
-        'PallasTrade::BaseMailer#set_email_locale is deprecated and will be removed in Spree 6.0. ' \
+        'PallasTrade::BaseMailer#set_email_locale is deprecated and will be removed in PallasTrade 6.0. ' \
         'Wrap the mailer action body in `with_store_locale(store, locale) { ... }` instead.'
       )
       locale = @order&.locale.presence || @order&.store&.default_locale || current_store&.default_locale

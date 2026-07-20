@@ -1,5 +1,5 @@
-﻿module PallasTrade
-  # Shared base for every Spree job.
+module PallasTrade
+  # Shared base for every PallasTrade job.
   #
   # Retries only transient infrastructure errors. Broad replay is unsafe here because
   # most jobs have non-idempotent post-work side effects (counters, state transitions,

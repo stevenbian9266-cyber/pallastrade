@@ -117,9 +117,9 @@ module PallasTrade
     )
   end
 
-  # @deprecated PallasTrade.searcher_class is deprecated and will be removed in Spree 5.5. Use PallasTrade.search_provider instead.
+  # @deprecated PallasTrade.searcher_class is deprecated and will be removed in PallasTrade 5.5. Use PallasTrade.search_provider instead.
   def self.searcher_class=(value)
-    PallasTrade::Deprecation.warn('PallasTrade.searcher_class is deprecated and will be removed in Spree 5.5. Use PallasTrade.search_provider instead.')
+    PallasTrade::Deprecation.warn('PallasTrade.searcher_class is deprecated and will be removed in PallasTrade 5.5. Use PallasTrade.search_provider instead.')
     @@searcher_class = value
   end
 

@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Metadata
     extend ActiveSupport::Concern
 
@@ -25,7 +25,7 @@
     def public_metadata=(value)
       unless value.blank? || value == {}
         PallasTrade::Deprecation.warn(
-          'public_metadata is deprecated and will be removed in Spree 6.0. ' \
+          'public_metadata is deprecated and will be removed in PallasTrade 6.0. ' \
           'Use metadata instead. For customer-visible structured data, use metafields with display_on: \'both\'.'
         )
       end

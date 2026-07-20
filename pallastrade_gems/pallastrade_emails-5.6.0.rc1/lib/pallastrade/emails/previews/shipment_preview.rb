@@ -1,6 +1,6 @@
-﻿require 'pallastrade/core/previews/preview_data'
+require 'pallastrade/core/previews/preview_data'
 
-# Preview Spree shipment emails at /rails/mailers/spree/shipment
+# Preview Spree shipment emails at /rails/mailers/pallastrade/shipment
 class PallasTrade::ShipmentPreview < ActionMailer::Preview
   include PallasTrade::PreviewData::LocaleParam
 

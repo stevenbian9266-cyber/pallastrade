@@ -1,9 +1,9 @@
-﻿module PallasTrade
+module PallasTrade
   module ImageMethods
     extend ActiveSupport::Concern
 
     def generate_url(size:, gravity: 'centre', quality: 80, background: [0, 0, 0])
-      PallasTrade::Deprecation.warn("ImageMethods#generate_url is deprecated and will be removed in Spree 6.0. Please use active storage variants with cdn_image_url")
+      PallasTrade::Deprecation.warn("ImageMethods#generate_url is deprecated and will be removed in PallasTrade 6.0. Please use active storage variants with cdn_image_url")
 
       return if size.blank?
 
@@ -20,7 +20,7 @@
     end
 
     def original_url
-      PallasTrade::Deprecation.warn("ImageMethods#original_url is deprecated and will be removed in Spree 6.0. Please use active storage variants with cdn_image_url")
+      PallasTrade::Deprecation.warn("ImageMethods#original_url is deprecated and will be removed in PallasTrade 6.0. Please use active storage variants with cdn_image_url")
 
       cdn_image_url(attachment)
     end

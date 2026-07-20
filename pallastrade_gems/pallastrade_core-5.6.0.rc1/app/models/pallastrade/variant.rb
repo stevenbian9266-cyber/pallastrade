@@ -337,7 +337,7 @@ module PallasTrade
 
     # @deprecated Use #primary_media instead.
     def default_image
-      PallasTrade::Deprecation.warn('PallasTrade::Variant#default_image is deprecated and will be removed in Spree 6.0. Please use PallasTrade::Variant#primary_media instead.')
+      PallasTrade::Deprecation.warn('PallasTrade::Variant#default_image is deprecated and will be removed in PallasTrade 6.0. Please use PallasTrade::Variant#primary_media instead.')
       primary_media
     end
 
@@ -354,7 +354,7 @@ module PallasTrade
     # @deprecated Use #primary_media instead.
     # @return [PallasTrade::Image, nil]
     def primary_image
-      PallasTrade::Deprecation.warn('PallasTrade::Variant#primary_image is deprecated and will be removed in Spree 6.0. Please use PallasTrade::Variant#primary_media instead.')
+      PallasTrade::Deprecation.warn('PallasTrade::Variant#primary_image is deprecated and will be removed in PallasTrade 6.0. Please use PallasTrade::Variant#primary_media instead.')
       primary_media
     end
 

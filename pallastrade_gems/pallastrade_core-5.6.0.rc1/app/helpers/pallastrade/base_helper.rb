@@ -77,13 +77,13 @@ module PallasTrade
     # we should always try to render image of the default variant
     # same as it's done on PDP
     def default_image_for_product(product)
-      PallasTrade::Deprecation.warn('BaseHelper#default_image_for_product is deprecated and will be removed in Spree 6.0. Please use product.primary_media instead')
+      PallasTrade::Deprecation.warn('BaseHelper#default_image_for_product is deprecated and will be removed in PallasTrade 6.0. Please use product.primary_media instead')
 
       product.primary_media
     end
 
     def default_image_for_product_or_variant(product_or_variant)
-      PallasTrade::Deprecation.warn('BaseHelper#default_image_for_product_or_variant is deprecated and will be removed in Spree 6.0. Please use product_or_variant.primary_media instead')
+      PallasTrade::Deprecation.warn('BaseHelper#default_image_for_product_or_variant is deprecated and will be removed in PallasTrade 6.0. Please use product_or_variant.primary_media instead')
 
       product_or_variant.primary_media
     end

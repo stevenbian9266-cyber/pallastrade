@@ -8,14 +8,14 @@ module SpreeAdyen
       def call
         # event not supported - skip
         if event_class.nil?
-          Rails.logger.info("[SpreeAdyen][#{event_code}]: Skipping not supported event")
+          Rails.logger.info("[PallasTradeAdyen][#{event_code}]: Skipping not supported event")
           return
         end
 
-        Rails.logger.info("[SpreeAdyen][#{event_id}]: Event received")
+        Rails.logger.info("[PallasTradeAdyen][#{event_id}]: Event received")
         return unless event.code.in?(SpreeAdyen.event_handlers.keys)
 
-        Rails.logger.info("[SpreeAdyen][#{event_id}]: Event queued")
+        Rails.logger.info("[PallasTradeAdyen][#{event_id}]: Event queued")
         SpreeAdyen.event_handlers[event.code]
           .set(wait: SpreeAdyen::Config.webhook_delay_in_seconds.seconds)
           .perform_later(event.payload)

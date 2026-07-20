@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   # @deprecated Use a single-store +belongs_to :store+ FK instead. This concern
   #   modelled the historic many-to-many store relationship (Promotion,
   #   PaymentMethod) and is removed in Spree 6.0 once those models finish
@@ -9,7 +9,7 @@
 
     included do
       PallasTrade::Deprecation.warn(
-        "PallasTrade::StoreScopedResource is deprecated and will be removed in Spree 6.0. " \
+        "PallasTrade::StoreScopedResource is deprecated and will be removed in PallasTrade 6.0. " \
         "Use a single-store `belongs_to :store` FK instead (see PallasTrade::Promotion / PallasTrade::PaymentMethod)."
       )
 

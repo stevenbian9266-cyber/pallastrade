@@ -1,11 +1,11 @@
-﻿require 'pallastrade/admin'
+require 'pallastrade/admin'
 
 module PallasTrade
   def self.admin_path
     PallasTrade::Admin::RuntimeConfig[:admin_path]
   end
 
-  # Used to configure admin_path for Spree
+  # Used to configure admin_path for PallasTrade
   #
   # Example:
   #

@@ -1,4 +1,4 @@
-﻿# frozen_string_literal: true
+# frozen_string_literal: true
 
 require 'stringex'
 
@@ -114,7 +114,7 @@ module PallasTrade
       where(store_id: store_ids).or(where(store_id: nil, taxonomy_id: taxonomy_ids))
     }
     scope :for_taxonomy, lambda { |taxonomy_name|
-      PallasTrade::Deprecation.warn('PallasTrade::Taxon.for_taxonomy is deprecated and will be removed in Spree 6. Please use for_store instead.')
+      PallasTrade::Deprecation.warn('PallasTrade::Taxon.for_taxonomy is deprecated and will be removed in PallasTrade 6. Please use for_store instead.')
 
       if PallasTrade.use_translations?
         joins(:taxonomy)
@@ -497,7 +497,7 @@ module PallasTrade
     end
 
     def set_store
-      PallasTrade::Deprecation.warn('PallasTrade::Taxon#set_store is deprecated and will be removed in Spree 6.0. ensure_store instead.')
+      PallasTrade::Deprecation.warn('PallasTrade::Taxon#set_store is deprecated and will be removed in PallasTrade 6.0. ensure_store instead.')
       ensure_store
     end
 

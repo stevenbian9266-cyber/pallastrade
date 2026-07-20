@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Admin
     class Resource
       def initialize(controller_path, controller_name, parent_model, object_name = nil)
@@ -21,7 +21,7 @@
       def model_name
         sub_namespace = sub_namespace_parts.join('/')
         sub_namespace = "#{sub_namespace}/" unless sub_namespace.empty?
-        @parent_model.gsub("spree/#{sub_namespace}", '')
+        @parent_model.gsub("pallastrade/#{sub_namespace}", '')
       end
 
       def object_name

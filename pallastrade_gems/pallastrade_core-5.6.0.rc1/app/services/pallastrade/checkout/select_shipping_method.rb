@@ -1,6 +1,6 @@
-﻿module PallasTrade
+module PallasTrade
   module Checkout
-    # @deprecated This service is deprecated and will be removed in Spree 6.0.
+    # @deprecated This service is deprecated and will be removed in PallasTrade 6.0.
     #   Order totals are now automatically updated via a callback on ShippingRate
     #   when selected_shipping_rate_id is set on a Shipment.
     class SelectShippingMethod
@@ -8,7 +8,7 @@
 
       def call(order:, params:)
         PallasTrade::Deprecation.warn(
-          "#{self.class.name} is deprecated and will be removed in Spree 6.0. " \
+          "#{self.class.name} is deprecated and will be removed in PallasTrade 6.0. " \
           "Order totals are now automatically updated via ShippingRate callback when " \
           "selected_shipping_rate_id is set on a Shipment.",
           caller_locations(2)

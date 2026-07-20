@@ -1,7 +1,7 @@
-﻿# frozen_string_literal: true
+# frozen_string_literal: true
 
 module PallasTrade
-  # Logs all Spree events to Rails logger.
+  # Logs all PallasTrade events to Rails logger.
   #
   # Enabled by default. To disable, set PallasTrade::Config.events_log_enabled = false
   #

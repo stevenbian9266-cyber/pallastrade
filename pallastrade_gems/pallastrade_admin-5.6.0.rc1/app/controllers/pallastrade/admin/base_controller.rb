@@ -8,8 +8,8 @@ module PallasTrade
       default_form_builder PallasTrade::Admin::FormBuilder
 
       helper 'spree/base'
-      helper 'spree/admin/rtl'
-      helper 'spree/admin/navigation'
+      helper 'pallastrade/admin/rtl'
+      helper 'pallastrade/admin/navigation'
       helper 'spree/locale'
       helper 'spree/currency'
       helper 'spree/localized_names'

@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Admin
     module BaseHelper
       def render_admin_partials(section, options = {})
@@ -129,7 +129,7 @@
         when :string
           form.text_field(field, preference_field_options(options))
         when :password
-          render 'spree/admin/preferences/password_field', form: form, field: field, options: options
+          render 'pallastrade/admin/preferences/password_field', form: form, field: field, options: options
         when :text
           form.text_area(field, preference_field_options(options))
         when :datetime

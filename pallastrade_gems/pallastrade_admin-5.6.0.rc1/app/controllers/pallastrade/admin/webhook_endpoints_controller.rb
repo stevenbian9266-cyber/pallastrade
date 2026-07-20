@@ -1,4 +1,4 @@
-﻿# frozen_string_literal: true
+# frozen_string_literal: true
 
 module PallasTrade
   module Admin
@@ -6,7 +6,7 @@ module PallasTrade
       include PallasTrade::Admin::SettingsConcern
       include PallasTrade::Admin::TableConcern
 
-      helper 'spree/admin/webhook_endpoints'
+      helper 'pallastrade/admin/webhook_endpoints'
 
       def test
         load_resource

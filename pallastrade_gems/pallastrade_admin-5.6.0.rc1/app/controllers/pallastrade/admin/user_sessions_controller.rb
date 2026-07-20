@@ -1,11 +1,11 @@
-﻿module PallasTrade
+module PallasTrade
   module Admin
     class UserSessionsController < defined?(Devise::SessionsController) ? Devise::SessionsController : PallasTrade::Admin::BaseController
       include PallasTrade::Admin::AuthRateLimiting
       include PallasTrade::Admin::LocaleConcern
 
       helper 'spree/locale'
-      helper 'spree/admin/rtl'
+      helper 'pallastrade/admin/rtl'
 
       layout 'spree/minimal'
 

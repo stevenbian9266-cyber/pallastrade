@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module ProductScopes
     extend ActiveSupport::Concern
 
@@ -8,7 +8,7 @@
       end
 
       def self.add_search_scope(name, &block)
-        PallasTrade::Deprecation.warn("add_search_scope is deprecated and will be removed in Spree 6.0. Use scope :#{name}, &block instead or use method instead")
+        PallasTrade::Deprecation.warn("add_search_scope is deprecated and will be removed in PallasTrade 6.0. Use scope :#{name}, &block instead or use method instead")
         singleton_class.send(:define_method, name.to_sym, &block)
         search_scopes << name.to_sym
       end
@@ -20,13 +20,13 @@
 
       # Deprecated — master variant being removed in 6.0. Use ascend_by_price / descend_by_price instead.
       def self.ascend_by_master_price
-        PallasTrade::Deprecation.warn('ascend_by_master_price is deprecated and will be removed in Spree 6.0. Use ascend_by_price instead.')
+        PallasTrade::Deprecation.warn('ascend_by_master_price is deprecated and will be removed in PallasTrade 6.0. Use ascend_by_price instead.')
         order(price_table_name => { amount: :asc })
       end
 
       # Deprecated — master variant being removed in 6.0. Use ascend_by_price / descend_by_price instead.
       def self.descend_by_master_price
-        PallasTrade::Deprecation.warn('descend_by_master_price is deprecated and will be removed in Spree 6.0. Use descend_by_price instead.')
+        PallasTrade::Deprecation.warn('descend_by_master_price is deprecated and will be removed in PallasTrade 6.0. Use descend_by_price instead.')
         order(price_table_name => { amount: :desc })
       end
 
@@ -70,13 +70,13 @@
 
       # Deprecated — master variant being removed in 6.0. Use price_lte / price_gte instead.
       def self.master_price_lte(price)
-        PallasTrade::Deprecation.warn('master_price_lte is deprecated and will be removed in Spree 6.0. Use price_lte instead.')
+        PallasTrade::Deprecation.warn('master_price_lte is deprecated and will be removed in PallasTrade 6.0. Use price_lte instead.')
         where(Price.table_name => { amount: ..price })
       end
 
       # Deprecated — master variant being removed in 6.0. Use price_lte / price_gte instead.
       def self.master_price_gte(price)
-        PallasTrade::Deprecation.warn('master_price_gte is deprecated and will be removed in Spree 6.0. Use price_gte instead.')
+        PallasTrade::Deprecation.warn('master_price_gte is deprecated and will be removed in PallasTrade 6.0. Use price_gte instead.')
         where(Price.table_name => { amount: price.. })
       end
 
@@ -176,7 +176,7 @@
 
       # Deprecated — remove in 6.0. Use in_taxon instead.
       def self.in_taxons(*taxons)
-        PallasTrade::Deprecation.warn('in_taxons is deprecated and will be removed in Spree 6.0. Use in_taxon instead.')
+        PallasTrade::Deprecation.warn('in_taxons is deprecated and will be removed in PallasTrade 6.0. Use in_taxon instead.')
         taxons = get_taxons(taxons)
         taxons.first ? prepare_taxon_conditions(taxons) : where(nil)
       end
@@ -193,7 +193,7 @@
 
       # Deprecated — remove in 6.0. Not used internally.
       def self.with_option(option)
-        PallasTrade::Deprecation.warn('with_option is deprecated and will be removed in Spree 6.0.')
+        PallasTrade::Deprecation.warn('with_option is deprecated and will be removed in PallasTrade 6.0.')
         if option.is_a?(OptionType)
           joins(:option_types).where(PALLASTRADE_option_types: { id: option.id })
         elsif option.is_a?(Integer)
@@ -252,32 +252,32 @@
 
       # Deprecated — remove in 6.0. Not used internally.
       def self.with(value)
-        PallasTrade::Deprecation.warn('Product.with is deprecated and will be removed in Spree 6.0.')
+        PallasTrade::Deprecation.warn('Product.with is deprecated and will be removed in PallasTrade 6.0.')
         includes(variants: :option_values).
           where("#{OptionValue.table_name}.name = ?", value)
       end
 
       # Deprecated — remove in 6.0. Use .search scope instead.
       def self.in_name(words)
-        PallasTrade::Deprecation.warn('in_name is deprecated and will be removed in Spree 6.0. Use .search instead.')
+        PallasTrade::Deprecation.warn('in_name is deprecated and will be removed in PallasTrade 6.0. Use .search instead.')
         like_any([:name], prepare_words(words))
       end
 
       # Deprecated — remove in 6.0. Use .search scope instead.
       def self.in_name_or_keywords(words)
-        PallasTrade::Deprecation.warn('in_name_or_keywords is deprecated and will be removed in Spree 6.0. Use .search instead.')
+        PallasTrade::Deprecation.warn('in_name_or_keywords is deprecated and will be removed in PallasTrade 6.0. Use .search instead.')
         like_any([:name, :meta_keywords], prepare_words(words))
       end
 
       # Deprecated — remove in 6.0. Use .search scope instead.
       def self.in_name_or_description(words)
-        PallasTrade::Deprecation.warn('in_name_or_description is deprecated and will be removed in Spree 6.0. Use .search instead.')
+        PallasTrade::Deprecation.warn('in_name_or_description is deprecated and will be removed in PallasTrade 6.0. Use .search instead.')
         like_any([:name, :description, :meta_description, :meta_keywords], prepare_words(words))
       end
 
       # Deprecated — remove in 6.0. Use where(id: ids) directly.
       def self.with_ids(*ids)
-        PallasTrade::Deprecation.warn('with_ids is deprecated and will be removed in Spree 6.0. Use where(id: ids) instead.')
+        PallasTrade::Deprecation.warn('with_ids is deprecated and will be removed in PallasTrade 6.0. Use where(id: ids) instead.')
         where(id: ids)
       end
 
@@ -359,7 +359,7 @@
 
       # Deprecated — remove in 6.0. Use active(currency).in_taxon(taxon) directly.
       def self.for_filters(currency, taxon: nil)
-        PallasTrade::Deprecation.warn('for_filters is deprecated and will be removed in Spree 6.0. Use active(currency).in_taxon(taxon) instead.')
+        PallasTrade::Deprecation.warn('for_filters is deprecated and will be removed in PallasTrade 6.0. Use active(currency).in_taxon(taxon) instead.')
         scope = active(currency)
         scope = scope.in_taxon(taxon) if taxon.present?
         scope
@@ -367,7 +367,7 @@
 
       # Deprecated — remove in 6.0. Not used internally.
       def self.for_user(user = nil)
-        PallasTrade::Deprecation.warn('for_user is deprecated and will be removed in Spree 6.0.')
+        PallasTrade::Deprecation.warn('for_user is deprecated and will be removed in PallasTrade 6.0.')
         if user.try(:has_PALLASTRADE_role?, 'admin')
           with_deleted
         else
@@ -377,7 +377,7 @@
 
       # Deprecated — remove in 6.0. Not used internally.
       def self.taxons_name_eq(name)
-        PallasTrade::Deprecation.warn('taxons_name_eq is deprecated and will be removed in Spree 6.0.')
+        PallasTrade::Deprecation.warn('taxons_name_eq is deprecated and will be removed in PallasTrade 6.0.')
         group('pallastrade_products.id').joins(:taxons).where(Taxon.arel_table[:name].eq(name))
       end
 
@@ -401,7 +401,7 @@
 
       # Deprecated — remove in 6.0. Use by_best_selling instead.
       def self.descend_by_popularity
-        PallasTrade::Deprecation.warn('descend_by_popularity is deprecated and will be removed in Spree 6.0. Use by_best_selling instead.')
+        PallasTrade::Deprecation.warn('descend_by_popularity is deprecated and will be removed in PallasTrade 6.0. Use by_best_selling instead.')
         joins(:master).
           order(%Q{
              COALESCE((

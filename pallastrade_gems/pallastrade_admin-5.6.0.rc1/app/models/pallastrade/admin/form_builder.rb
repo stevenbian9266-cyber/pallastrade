@@ -1,6 +1,6 @@
-﻿module PallasTrade
+module PallasTrade
   module Admin
-    # Custom form builder for Spree admin interface
+    # Custom form builder for PallasTrade admin interface
     #
     # This form builder provides helper methods for creating form fields with
     # consistent styling and behavior across the Spree admin interface. It includes

@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module UserRoles
     extend ActiveSupport::Concern
 
@@ -48,7 +48,7 @@
       end
 
       def self.PALLASTRADE_admin_created?
-        PallasTrade::Deprecation.warn('PallasTrade.admin_user_class.PALLASTRADE_admin_created? is deprecated and will be removed in Spree 5.5')
+        PallasTrade::Deprecation.warn('PallasTrade.admin_user_class.PALLASTRADE_admin_created? is deprecated and will be removed in PallasTrade 5.5')
         PALLASTRADE_admin.exists?
       end
 

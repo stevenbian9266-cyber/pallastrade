@@ -1,4 +1,4 @@
-﻿module SpreeAdyen
+module SpreeAdyen
   module Webhooks
     module EventProcessors
       class AuthorisationEventProcessor
@@ -7,7 +7,7 @@
         end
 
         def call
-          Rails.logger.info("[SpreeAdyen][#{event_id}]: Started processing")
+          Rails.logger.info("[PallasTradeAdyen][#{event_id}]: Started processing")
           order = PallasTrade::Order.find_by!(number: event.order_number)
 
           order.with_lock do
@@ -45,7 +45,7 @@
               end
             end
           end
-          Rails.logger.info("[SpreeAdyen][#{event_id}]: Finished processing")
+          Rails.logger.info("[PallasTradeAdyen][#{event_id}]: Finished processing")
         end
 
         private

@@ -1,21 +1,21 @@
-﻿module PallasTrade
+module PallasTrade
   module Admin
     module TurboHelper
       def turbo_close_dialog
         turbo_stream.replace 'main-dialog' do
-          render 'spree/admin/shared/dialog'
+          render 'pallastrade/admin/shared/dialog'
         end
       end
 
       def turbo_close_drawer
         turbo_stream.replace 'drawer-dialog' do
-          render 'spree/admin/shared/drawer'
+          render 'pallastrade/admin/shared/drawer'
         end
       end
 
       def turbo_render_alerts(frame_name = :alerts)
         turbo_stream.replace frame_name do
-          render 'spree/admin/shared/alerts', frame_name: frame_name
+          render 'pallastrade/admin/shared/alerts', frame_name: frame_name
         end
       end
 

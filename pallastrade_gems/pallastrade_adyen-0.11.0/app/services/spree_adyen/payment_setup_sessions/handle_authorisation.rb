@@ -14,7 +14,7 @@ module SpreeAdyen
       def call
         return setup_session if setup_session.completed?
 
-        Rails.logger.info("[SpreeAdyen][setup_session=#{setup_session.id}][#{event.psp_reference}]: Processing setup authorisation")
+        Rails.logger.info("[PallasTradeAdyen][setup_session=#{setup_session.id}][#{event.psp_reference}]: Processing setup authorisation")
 
         if event.success?
           handle_success

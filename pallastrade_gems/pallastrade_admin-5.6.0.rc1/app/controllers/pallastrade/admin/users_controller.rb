@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Admin
     class UsersController < ResourceController
       helper UsersHelper
@@ -37,7 +37,7 @@
             render turbo_stream: [
               turbo_stream.replace(
                 'users_search_results',
-                partial: 'spree/admin/users/search_results',
+                partial: 'pallastrade/admin/users/search_results',
                 locals: { users: @users }
               )
             ]

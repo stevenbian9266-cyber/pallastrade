@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   class Report < PallasTrade.base_class
     has_prefix_id :rep
 
@@ -59,11 +59,11 @@
     end
 
     def to_partial_path
-      'spree/admin/reports/report'
+      'pallastrade/admin/reports/report'
     end
 
     def no_report_data_partial_path
-      'spree/admin/reports/no_report_data'
+      'pallastrade/admin/reports/no_report_data'
     end
 
     def human_name

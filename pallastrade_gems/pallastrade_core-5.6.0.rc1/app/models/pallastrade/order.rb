@@ -499,7 +499,7 @@ module PallasTrade
     end
 
     def ensure_store_presence
-      PallasTrade::Deprecation.warn('PallasTrade::Order#ensure_store_presence is deprecated and will be removed in Spree 6.0. ensure_store instead.')
+      PallasTrade::Deprecation.warn('PallasTrade::Order#ensure_store_presence is deprecated and will be removed in PallasTrade 6.0. ensure_store instead.')
       ensure_store
     end
 
@@ -691,7 +691,7 @@ module PallasTrade
     end
 
     def available_payment_methods(store = nil)
-      PallasTrade::Deprecation.warn('`Order#available_payment_methods` is deprecated and will be removed in Spree 5.5. Use `collect_frontend_payment_methods` instead.')
+      PallasTrade::Deprecation.warn('`Order#available_payment_methods` is deprecated and will be removed in PallasTrade 5.5. Use `collect_frontend_payment_methods` instead.')
 
       @available_payment_methods ||= collect_payment_methods(store)
     end
@@ -1194,7 +1194,7 @@ module PallasTrade
     end
 
     def collect_payment_methods
-      PallasTrade::Deprecation.warn('`Order#collect_payment_methods` is deprecated and will be removed in Spree 5.5. Use `collect_frontend_payment_methods` instead.')
+      PallasTrade::Deprecation.warn('`Order#collect_payment_methods` is deprecated and will be removed in PallasTrade 5.5. Use `collect_frontend_payment_methods` instead.')
 
       store.payment_methods.available_on_front_end.select { |pm| pm.available_for_order?(self) }
     end

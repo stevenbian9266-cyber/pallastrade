@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Admin
     module TableHelper
       # Main helper to render a table
@@ -14,7 +14,7 @@
         table = PallasTrade.admin.tables.get(table_key)
         selected_columns = session_selected_columns(table_key)
 
-        render 'spree/admin/tables/table',
+        render 'pallastrade/admin/tables/table',
                collection: collection,
                table: table,
                table_key: table_key,

@@ -1,4 +1,4 @@
-﻿# Default column configurations for Spree Admin Tables
+# Default column configurations for PallasTrade Admin Tables
 #
 # This initializer registers the default tables and their columns.
 # Developers can extend these in their own initializers by:
@@ -22,7 +22,7 @@ Rails.application.config.after_initialize do
                                         filterable: true,
                                         default: true,
                                         position: 10,
-                                        partial: 'spree/admin/tables/columns/product_name'
+                                        partial: 'pallastrade/admin/tables/columns/product_name'
 
   # Product status with help bubble (custom partial)
   PallasTrade.admin.tables.products.add :status,
@@ -33,7 +33,7 @@ Rails.application.config.after_initialize do
                                         filterable: true,
                                         default: true,
                                         position: 20,
-                                        partial: 'spree/admin/tables/columns/product_status',
+                                        partial: 'pallastrade/admin/tables/columns/product_status',
                                         value_options: [
                                           { value: 'draft', label: 'admin.products.draft' },
                                           { value: 'active', label: 'admin.products.active' },
@@ -48,7 +48,7 @@ Rails.application.config.after_initialize do
                                         filterable: false,
                                         default: true,
                                         position: 25,
-                                        partial: 'spree/admin/tables/columns/product_inventory'
+                                        partial: 'pallastrade/admin/tables/columns/product_inventory'
 
   PallasTrade.admin.tables.products.add :sku,
                                         label: :sku,
@@ -169,7 +169,7 @@ Rails.application.config.after_initialize do
                                                     icon: 'category-plus',
                                                     action_path: ->(view_context) { view_context.PallasTrade.bulk_add_to_taxons_admin_products_path },
                                                     body: 'admin.bulk_ops.products.body.add_to_taxons',
-                                                    form_partial: 'spree/admin/bulk_operations/forms/taxon_picker',
+                                                    form_partial: 'pallastrade/admin/bulk_operations/forms/taxon_picker',
                                                     position: 40,
                                                     condition: -> { can?(:manage, PallasTrade::Classification) }
 
@@ -178,7 +178,7 @@ Rails.application.config.after_initialize do
                                                     icon: 'category-minus',
                                                     action_path: ->(view_context) { view_context.PallasTrade.bulk_remove_from_taxons_admin_products_path },
                                                     body: 'admin.bulk_ops.products.body.remove_from_taxons',
-                                                    form_partial: 'spree/admin/bulk_operations/forms/taxon_picker',
+                                                    form_partial: 'pallastrade/admin/bulk_operations/forms/taxon_picker',
                                                     position: 50,
                                                     condition: -> { can?(:manage, PallasTrade::Classification) }
 
@@ -187,7 +187,7 @@ Rails.application.config.after_initialize do
                                                     icon: 'tag-plus',
                                                     action_path: ->(view_context) { view_context.PallasTrade.bulk_add_tags_admin_products_path },
                                                     body: 'admin.bulk_ops.products.body.add_tags',
-                                                    form_partial: 'spree/admin/bulk_operations/forms/tag_picker',
+                                                    form_partial: 'pallastrade/admin/bulk_operations/forms/tag_picker',
                                                     form_partial_locals: { allow_create: true },
                                                     position: 60,
                                                     condition: -> { can?(:manage_tags, PallasTrade::Product) }
@@ -197,7 +197,7 @@ Rails.application.config.after_initialize do
                                                     icon: 'tag-minus',
                                                     action_path: ->(view_context) { view_context.PallasTrade.bulk_remove_tags_admin_products_path },
                                                     body: 'admin.bulk_ops.products.body.remove_tags',
-                                                    form_partial: 'spree/admin/bulk_operations/forms/tag_picker',
+                                                    form_partial: 'pallastrade/admin/bulk_operations/forms/tag_picker',
                                                     form_partial_locals: { allow_create: false },
                                                     position: 70,
                                                     condition: -> { can?(:manage_tags, PallasTrade::Product) }
@@ -228,7 +228,7 @@ Rails.application.config.after_initialize do
                                       filterable: false,
                                       default: true,
                                       position: 30,
-                                      partial: 'spree/admin/orders/customer_summary',
+                                      partial: 'pallastrade/admin/orders/customer_summary',
                                       partial_locals: ->(record) { { order: record } }
 
   PallasTrade.admin.tables.orders.add :stock_location,
@@ -238,7 +238,7 @@ Rails.application.config.after_initialize do
                                       filterable: false,
                                       default: true,
                                       position: 40,
-                                      partial: 'spree/admin/tables/columns/order_stock_locations'
+                                      partial: 'pallastrade/admin/tables/columns/order_stock_locations'
 
   PallasTrade.admin.tables.orders.add :payment_state,
                                       label: :payment_state,
@@ -248,7 +248,7 @@ Rails.application.config.after_initialize do
                                       filterable: true,
                                       default: true,
                                       position: 50,
-                                      partial: 'spree/admin/tables/columns/order_payment_state',
+                                      partial: 'pallastrade/admin/tables/columns/order_payment_state',
                                       operators: %i[eq not_eq in not_in],
                                       value_options: -> { PallasTrade::Order::PAYMENT_STATES.map { |s| { value: s, label: I18n.t("PallasTrade.payment_states.#{s}", default: s.humanize) } } }
 
@@ -260,7 +260,7 @@ Rails.application.config.after_initialize do
                                       filterable: true,
                                       default: true,
                                       position: 60,
-                                      partial: 'spree/admin/tables/columns/order_shipment_state',
+                                      partial: 'pallastrade/admin/tables/columns/order_shipment_state',
                                       operators: %i[eq not_eq in not_in],
                                       value_options: -> { PallasTrade::Order::SHIPMENT_STATES.map { |s| { value: s, label: I18n.t("PallasTrade.shipment_states.#{s}", default: s.humanize) } } }
 
@@ -402,7 +402,7 @@ Rails.application.config.after_initialize do
                                         filterable: false,
                                         default: true,
                                         position: 30,
-                                        partial: 'spree/admin/orders/customer_summary',
+                                        partial: 'pallastrade/admin/orders/customer_summary',
                                         partial_locals: ->(record) { { order: record } }
 
   PallasTrade.admin.tables.checkouts.add :state,
@@ -464,7 +464,7 @@ Rails.application.config.after_initialize do
                                      default: true,
                                      position: 10,
                                      ransack_attribute: 'first_name',
-                                     partial: 'spree/admin/shared/user',
+                                     partial: 'pallastrade/admin/shared/user',
                                      partial_locals: ->(record) { { user: record } }
 
   # Email marketing status
@@ -490,7 +490,7 @@ Rails.application.config.after_initialize do
                                      operators: %i[eq],
                                      search_url: ->(view_context) { view_context.PallasTrade.select_options_admin_countries_path(format: :json) },
                                      preload_options: true,
-                                     partial: 'spree/admin/tables/columns/user_location'
+                                     partial: 'pallastrade/admin/tables/columns/user_location'
 
   # Number of orders
   PallasTrade.admin.tables.users.add :orders_count,
@@ -568,7 +568,7 @@ Rails.application.config.after_initialize do
                                                  icon: 'tag-plus',
                                                  action_path: ->(view_context) { view_context.PallasTrade.bulk_add_tags_admin_users_path },
                                                  body: 'admin.bulk_ops.users.body.add_tags',
-                                                 form_partial: 'spree/admin/bulk_operations/forms/tag_picker',
+                                                 form_partial: 'pallastrade/admin/bulk_operations/forms/tag_picker',
                                                  form_partial_locals: { allow_create: true },
                                                  method: :post,
                                                  position: 10,
@@ -579,7 +579,7 @@ Rails.application.config.after_initialize do
                                                  icon: 'tag-minus',
                                                  action_path: ->(view_context) { view_context.PallasTrade.bulk_remove_tags_admin_users_path },
                                                  body: 'admin.bulk_ops.users.body.remove_tags',
-                                                 form_partial: 'spree/admin/bulk_operations/forms/tag_picker',
+                                                 form_partial: 'pallastrade/admin/bulk_operations/forms/tag_picker',
                                                  form_partial_locals: { allow_create: false },
                                                  method: :post,
                                                  position: 20,
@@ -603,7 +603,7 @@ Rails.application.config.after_initialize do
                                           filterable: true,
                                           default: true,
                                           position: 20,
-                                          partial: 'spree/admin/tables/columns/promotion_code'
+                                          partial: 'pallastrade/admin/tables/columns/promotion_code'
 
   PallasTrade.admin.tables.promotions.add :kind,
                                           label: :kind,
@@ -612,7 +612,7 @@ Rails.application.config.after_initialize do
                                           filterable: false,
                                           default: true,
                                           position: 25,
-                                          partial: 'spree/admin/tables/columns/promotion_kind'
+                                          partial: 'pallastrade/admin/tables/columns/promotion_kind'
 
   PallasTrade.admin.tables.promotions.add :usage_limit,
                                           label: :usage_limit,
@@ -621,7 +621,7 @@ Rails.application.config.after_initialize do
                                           filterable: false,
                                           default: true,
                                           position: 30,
-                                          partial: 'spree/admin/promotions/usage_limit',
+                                          partial: 'pallastrade/admin/promotions/usage_limit',
                                           partial_locals: ->(record) { { promotion: record } }
 
   PallasTrade.admin.tables.promotions.add :status,
@@ -631,7 +631,7 @@ Rails.application.config.after_initialize do
                                           filterable: false,
                                           default: true,
                                           position: 35,
-                                          partial: 'spree/admin/promotions/status',
+                                          partial: 'pallastrade/admin/promotions/status',
                                           partial_locals: ->(record) { { promotion: record } }
 
   PallasTrade.admin.tables.promotions.add :starts_at,
@@ -692,7 +692,7 @@ Rails.application.config.after_initialize do
                                                 filterable: false,
                                                 default: true,
                                                 position: 30,
-                                                partial: 'spree/admin/orders/customer_summary',
+                                                partial: 'pallastrade/admin/orders/customer_summary',
                                                 partial_locals: ->(record) { { order: record.order } }
 
   PallasTrade.admin.tables.customer_returns.add :order,
@@ -810,7 +810,7 @@ Rails.application.config.after_initialize do
                                                       filterable: false,
                                                       default: true,
                                                       position: 20,
-                                                      partial: 'spree/admin/tables/columns/newsletter_subscriber_customer'
+                                                      partial: 'pallastrade/admin/tables/columns/newsletter_subscriber_customer'
 
   PallasTrade.admin.tables.newsletter_subscribers.add :verified,
                                                       label: :verified,
@@ -971,7 +971,7 @@ Rails.application.config.after_initialize do
                                                default: true,
                                                position: 10,
                                                ransack_attribute: 'stock_item_variant_product_name',
-                                               partial: 'spree/admin/variants/variant',
+                                               partial: 'pallastrade/admin/variants/variant',
                                                partial_locals: ->(record) { { variant: record.variant } }
 
   PallasTrade.admin.tables.stock_movements.add :stock_location,
@@ -985,7 +985,7 @@ Rails.application.config.after_initialize do
                                                ransack_attribute: 'stock_item_stock_location_id',
                                                operators: %i[eq],
                                                search_url: ->(view_context) { view_context.PallasTrade.admin_stock_locations_select_options_path(format: :json) },
-                                               partial: 'spree/admin/tables/columns/stock_item_location',
+                                               partial: 'pallastrade/admin/tables/columns/stock_item_location',
                                                partial_locals: ->(record) { { record: record.stock_item } }
 
   PallasTrade.admin.tables.stock_movements.add :quantity,
@@ -1013,7 +1013,7 @@ Rails.application.config.after_initialize do
                                                    { value: 'PallasTrade::ReturnAuthorization', label: PallasTrade::ReturnAuthorization.model_name.human }
                                                  ]
                                                },
-                                               partial: 'spree/admin/tables/columns/stock_movement_originator'
+                                               partial: 'pallastrade/admin/tables/columns/stock_movement_originator'
 
   PallasTrade.admin.tables.stock_movements.add :created_at,
                                                label: :created_at,
@@ -1069,7 +1069,7 @@ Rails.application.config.after_initialize do
                                                      filterable: true,
                                                      default: true,
                                                      position: 50,
-                                                     partial: 'spree/admin/tables/columns/metafield_definition_display_on'
+                                                     partial: 'pallastrade/admin/tables/columns/metafield_definition_display_on'
 
   PallasTrade.admin.tables.metafield_definitions.add :used_in,
                                                      label: 'admin.metafield_definitions.used_in',
@@ -1150,7 +1150,7 @@ Rails.application.config.after_initialize do
                                           default: true,
                                           position: 50,
                                           ransack_attribute: 'state',
-                                          partial: 'spree/admin/tables/columns/gift_card_status'
+                                          partial: 'pallastrade/admin/tables/columns/gift_card_status'
 
   PallasTrade.admin.tables.gift_cards.add :expires_at,
                                           label: :expires_at,
@@ -1201,7 +1201,7 @@ Rails.application.config.after_initialize do
                                            default: true,
                                            position: 10,
                                            ransack_attribute: 'variant_product_name',
-                                           partial: 'spree/admin/variants/variant',
+                                           partial: 'pallastrade/admin/variants/variant',
                                            partial_locals: ->(record) { { variant: record.variant } }
 
   # Stock location
@@ -1216,7 +1216,7 @@ Rails.application.config.after_initialize do
                                            ransack_attribute: 'stock_location_id',
                                            operators: %i[eq],
                                            search_url: ->(view_context) { view_context.PallasTrade.admin_stock_locations_select_options_path(format: :json) },
-                                           partial: 'spree/admin/tables/columns/stock_item_location'
+                                           partial: 'pallastrade/admin/tables/columns/stock_item_location'
 
   # Backorderable (inline editable checkbox)
   PallasTrade.admin.tables.stock_items.add :backorderable,
@@ -1226,7 +1226,7 @@ Rails.application.config.after_initialize do
                                            filterable: false,
                                            default: true,
                                            position: 30,
-                                           partial: 'spree/admin/tables/columns/stock_item_backorderable'
+                                           partial: 'pallastrade/admin/tables/columns/stock_item_backorderable'
 
   # Count on hand (inline editable number field)
   PallasTrade.admin.tables.stock_items.add :count_on_hand,
@@ -1236,7 +1236,7 @@ Rails.application.config.after_initialize do
                                            filterable: true,
                                            default: true,
                                            position: 40,
-                                           partial: 'spree/admin/tables/columns/stock_item_count_on_hand'
+                                           partial: 'pallastrade/admin/tables/columns/stock_item_count_on_hand'
 
   # SKU (filter-only)
   PallasTrade.admin.tables.stock_items.add :sku,
@@ -1307,7 +1307,7 @@ Rails.application.config.after_initialize do
                                                  filterable: false,
                                                  default: true,
                                                  position: 25,
-                                                 partial: 'spree/admin/tables/columns/webhook_endpoint_health'
+                                                 partial: 'pallastrade/admin/tables/columns/webhook_endpoint_health'
 
   PallasTrade.admin.tables.webhook_endpoints.add :subscriptions_count,
                                                  label: 'admin.webhook_endpoints.events',
@@ -1325,7 +1325,7 @@ Rails.application.config.after_initialize do
                                                  filterable: false,
                                                  default: true,
                                                  position: 40,
-                                                 partial: 'spree/admin/tables/columns/webhook_deliveries_stats'
+                                                 partial: 'pallastrade/admin/tables/columns/webhook_deliveries_stats'
 
   PallasTrade.admin.tables.webhook_endpoints.add :created_at,
                                                  label: :created_at,
@@ -1364,7 +1364,7 @@ Rails.application.config.after_initialize do
                                                   filterable: false,
                                                   default: true,
                                                   position: 20,
-                                                  partial: 'spree/admin/tables/columns/webhook_delivery_status'
+                                                  partial: 'pallastrade/admin/tables/columns/webhook_delivery_status'
 
   PallasTrade.admin.tables.webhook_deliveries.add :delivered_at,
                                                   label: :delivered_at,
@@ -1399,7 +1399,7 @@ Rails.application.config.after_initialize do
                                                   filterable: false,
                                                   default: true,
                                                   position: 60,
-                                                  partial: 'spree/admin/tables/columns/webhook_delivery_actions'
+                                                  partial: 'pallastrade/admin/tables/columns/webhook_delivery_actions'
 
   PallasTrade.admin.tables.webhook_deliveries.add :created_at,
                                                   label: :created_at,
@@ -1437,7 +1437,7 @@ Rails.application.config.after_initialize do
                                         filterable: true,
                                         default: true,
                                         position: 20,
-                                        partial: 'spree/admin/tables/columns/api_key_type',
+                                        partial: 'pallastrade/admin/tables/columns/api_key_type',
                                         filter_type: :select,
                                         value_options: [
                                           { value: 'publishable', label: 'admin.api_keys.key_types.publishable' },
@@ -1451,7 +1451,7 @@ Rails.application.config.after_initialize do
                                         filterable: false,
                                         default: true,
                                         position: 30,
-                                        partial: 'spree/admin/tables/columns/api_key_status'
+                                        partial: 'pallastrade/admin/tables/columns/api_key_status'
 
   PallasTrade.admin.tables.api_keys.add :last_used_at,
                                         label: 'admin.api_keys.last_used_at',
@@ -1498,7 +1498,7 @@ Rails.application.config.after_initialize do
                                            filterable: true,
                                            default: true,
                                            position: 20,
-                                           partial: 'spree/admin/tables/columns/price_list_status',
+                                           partial: 'pallastrade/admin/tables/columns/price_list_status',
                                            value_options: [
                                              { value: 'draft', label: 'price_list_statuses.draft' },
                                              { value: 'active', label: 'price_list_statuses.active' },
@@ -1550,7 +1550,7 @@ Rails.application.config.after_initialize do
                                                    filterable: true,
                                                    default: true,
                                                    position: 10,
-                                                   partial: 'spree/admin/tables/columns/product_name'
+                                                   partial: 'pallastrade/admin/tables/columns/product_name'
 
   PallasTrade.admin.tables.price_list_products.add :status,
                                                    label: :status,
@@ -1560,7 +1560,7 @@ Rails.application.config.after_initialize do
                                                    filterable: true,
                                                    default: true,
                                                    position: 20,
-                                                   partial: 'spree/admin/tables/columns/product_status',
+                                                   partial: 'pallastrade/admin/tables/columns/product_status',
                                                    ransack_attribute: 'status',
                                                    value_options: -> { PallasTrade::Product::STATUSES.map { |s| { value: s, label: PallasTrade.t("admin.products.#{s}", default: s.humanize) } } }
 
@@ -1571,7 +1571,7 @@ Rails.application.config.after_initialize do
                                                    filterable: false,
                                                    default: true,
                                                    position: 30,
-                                                   partial: 'spree/admin/tables/columns/product_inventory'
+                                                   partial: 'pallastrade/admin/tables/columns/product_inventory'
 
   PallasTrade.admin.tables.price_list_products.add :created_at,
                                                    label: :created_at,
@@ -1659,7 +1659,7 @@ Rails.application.config.after_initialize do
                                                     default: true,
                                                     position: 10,
                                                     ransack_attribute: 'first_name',
-                                                    partial: 'spree/admin/shared/user',
+                                                    partial: 'pallastrade/admin/shared/user',
                                                     partial_locals: ->(record) { { user: record } }
 
   PallasTrade.admin.tables.customer_group_users.add :location,
@@ -1669,7 +1669,7 @@ Rails.application.config.after_initialize do
                                                     filterable: false,
                                                     default: false,
                                                     position: 20,
-                                                    partial: 'spree/admin/tables/columns/user_location'
+                                                    partial: 'pallastrade/admin/tables/columns/user_location'
 
   PallasTrade.admin.tables.customer_group_users.add :created_at,
                                                     label: :added_at,

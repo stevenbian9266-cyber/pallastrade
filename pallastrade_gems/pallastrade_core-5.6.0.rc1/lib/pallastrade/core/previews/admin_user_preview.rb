@@ -1,6 +1,6 @@
-﻿require_relative 'preview_data'
+require_relative 'preview_data'
 
-# Preview Spree admin user auth emails at /rails/mailers/spree/admin_user
+# Preview Spree admin user auth emails at /rails/mailers/pallastrade/admin_user
 class PallasTrade::AdminUserPreview < ActionMailer::Preview
   include PallasTrade::PreviewData::LocaleParam
 

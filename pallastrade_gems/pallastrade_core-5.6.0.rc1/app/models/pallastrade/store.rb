@@ -1,4 +1,4 @@
-﻿# frozen_string_literal: true
+# frozen_string_literal: true
 
 require 'uri'
 
@@ -179,7 +179,7 @@ module PallasTrade
       PallasTrade::Current.store
     end
 
-    # @deprecated The or_initialize behavior will be removed in Spree 5.5.
+    # @deprecated The or_initialize behavior will be removed in PallasTrade 5.5.
     def self.default
       # workaround for Mobility bug with first_or_initialize
       if where(default: true).any?
@@ -187,7 +187,7 @@ module PallasTrade
       else
         PallasTrade::Deprecation.warn(
           'PallasTrade::Store.default returning a new unpersisted store when no default store exists is deprecated ' \
-          'and will be removed in Spree 6.0. Please ensure a default store is created before calling Store.default.'
+          'and will be removed in PallasTrade 6.0. Please ensure a default store is created before calling Store.default.'
         )
         new(default: true)
       end
@@ -208,13 +208,13 @@ module PallasTrade
 
     # @deprecated Use Markets instead. Will be removed in Spree 5.5.
     def checkout_zone
-      PallasTrade::Deprecation.warn('Store#checkout_zone is deprecated and will be removed in Spree 5.5. Use Markets instead.')
+      PallasTrade::Deprecation.warn('Store#checkout_zone is deprecated and will be removed in PallasTrade 5.5. Use Markets instead.')
       super
     end
 
     # @deprecated Use Markets instead. Will be removed in Spree 5.5.
     def checkout_zone=(zone)
-      PallasTrade::Deprecation.warn('Store#checkout_zone= is deprecated and will be removed in Spree 5.5. Use Markets instead.')
+      PallasTrade::Deprecation.warn('Store#checkout_zone= is deprecated and will be removed in PallasTrade 5.5. Use Markets instead.')
       super
     end
 
@@ -320,7 +320,7 @@ module PallasTrade
     #   Will be removed in Spree 5.5.
     def supported_shipping_zones
       PallasTrade::Deprecation.warn(
-        'Store#supported_shipping_zones is deprecated and will be removed in Spree 5.5. ' \
+        'Store#supported_shipping_zones is deprecated and will be removed in PallasTrade 5.5. ' \
         'Use PallasTrade::Zone.all or Store#countries_with_shipping_coverage instead.'
       )
       zone = PallasTrade::Zone.find_by(id: read_attribute(:checkout_zone_id))
@@ -371,7 +371,7 @@ module PallasTrade
     end
 
     def admin_users
-      PallasTrade::Deprecation.warn('Store#admin_users is deprecated and will be removed in Spree 5.5. Please use Store#users instead.')
+      PallasTrade::Deprecation.warn('Store#admin_users is deprecated and will be removed in PallasTrade 5.5. Please use Store#users instead.')
 
       users
     end

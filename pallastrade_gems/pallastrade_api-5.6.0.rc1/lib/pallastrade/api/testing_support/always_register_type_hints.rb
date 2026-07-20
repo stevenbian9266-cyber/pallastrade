@@ -1,9 +1,9 @@
-﻿module PallasTrade
+module PallasTrade
   module Api
     module TestingSupport
       # Typelizer only records its `typelize` hints when enabled at the moment the
       # serializer class body runs (see `assign_type_information`'s `return unless
-      # Typelizer.enabled?`). Spree keeps Typelizer disabled at boot and only enables it
+      # Typelizer.enabled?`). PallasTrade keeps Typelizer disabled at boot and only enables it
       # while generating OpenAPI schemas on demand (see SchemaHelper#with_typelizer_enabled).
       # A serializer autoloaded by an earlier spec while disabled would otherwise lose its
       # hints, and Rswag schema validation would see `object` for the `id`/`created_at`/

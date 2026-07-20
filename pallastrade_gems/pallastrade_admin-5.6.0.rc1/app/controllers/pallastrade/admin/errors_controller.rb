@@ -1,10 +1,10 @@
-﻿module PallasTrade
+module PallasTrade
   module Admin
     class ErrorsController < PallasTrade::Admin::BaseController
       skip_before_action :authorize_admin
 
       def show
-        render "spree/admin/errors/#{status_code}", status: status_code
+        render "pallastrade/admin/errors/#{status_code}", status: status_code
       end
 
       private

@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   # Backwards-compatible shim for resources migrated from a many-to-many store
   # relationship to a single-store +belongs_to :store+ FK (PallasTrade::Product in 5.5,
   # PallasTrade::Promotion and PallasTrade::PaymentMethod in 5.6). Maps the historic
@@ -10,7 +10,7 @@
 
     included do
       # Legacy accessors for the many-to-many store relationship. These are deprecated
-      # and will be removed in Spree 6.0 once the models finish migrating to single-store ownership.
+      # and will be removed in PallasTrade 6.0 once the models finish migrating to single-store ownership.
       # @return [ActiveRecord::Relation<PallasTrade::Store>] the single store wrapped in a relation, or an empty relation if no store is set
       def stores
         PallasTrade::Deprecation.warn(

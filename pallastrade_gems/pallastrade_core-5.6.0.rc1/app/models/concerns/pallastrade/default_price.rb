@@ -1,8 +1,8 @@
-﻿module PallasTrade
+module PallasTrade
   module DefaultPrice
     extend ActiveSupport::Concern
 
-    DEPRECATION_MSG = 'PallasTrade::DefaultPrice is deprecated and will be removed in Spree 6.0. ' \
+    DEPRECATION_MSG = 'PallasTrade::DefaultPrice is deprecated and will be removed in PallasTrade 6.0. ' \
       'Use variant.set_price(currency, amount) and variant.price_in(currency) instead.'
 
     included do

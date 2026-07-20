@@ -1,4 +1,4 @@
-﻿# Configure Spree Preferences
+# Configure Spree Preferences
 #
 # Note: Initializing preferences available within the Admin will overwrite any changes that were made through the user interface when you restart.
 #       If you would like users to be able to update a setting with the Admin it should NOT be set here.
@@ -82,7 +82,7 @@ Rails.application.config.after_initialize do
   # PallasTrade.reports << PallasTrade::Reports::MassivelyOvercomplexReportForCfo
 
   # Admin partials
-  # PallasTrade.admin.partials.product_form << 'spree/admin/products/custom_section'
+  # PallasTrade.admin.partials.product_form << 'pallastrade/admin/products/custom_section'
 
   # Role-based permissions
   # Configure which permission sets are assigned to each role

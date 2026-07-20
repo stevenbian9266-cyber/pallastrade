@@ -1,5 +1,5 @@
-﻿# Default Admin Navigation Configuration
-# This file defines the default sidebar and settings navigation for Spree Admin
+# Default Admin Navigation Configuration
+# This file defines the default sidebar and settings navigation for PallasTrade Admin
 
 Rails.application.config.after_initialize do
   # ===============================================

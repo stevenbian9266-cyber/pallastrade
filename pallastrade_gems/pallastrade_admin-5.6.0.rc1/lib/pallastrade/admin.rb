@@ -1,4 +1,4 @@
-﻿require 'pallastrade'
+require 'pallastrade'
 
 require 'active_link_to'
 require 'breadcrumbs_on_rails'
@@ -21,7 +21,7 @@ require 'pallastrade/core/partials'
 require 'oembed'
 # tinymce-rails only registers its Propshaft integration when Propshaft is
 # already loaded at require time. Host apps commonly list `gem 'propshaft'`
-# after the Spree gems, so load it first — otherwise TinyMCE's lazily-loaded
+# after the PallasTrade gems, so load it first — otherwise TinyMCE's lazily-loaded
 # plugins/themes/icons (requested without a digest) 404 in development.
 begin
   require 'propshaft'

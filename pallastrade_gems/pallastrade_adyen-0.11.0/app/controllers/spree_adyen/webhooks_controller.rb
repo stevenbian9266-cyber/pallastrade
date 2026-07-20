@@ -1,4 +1,4 @@
-﻿module SpreeAdyen
+module SpreeAdyen
   class WebhooksController < ActionController::API
     include PallasTrade::Core::ControllerHelpers::Store
 
@@ -14,7 +14,7 @@
 
     def validate_hmac!
       if hmac_validator_class.nil?
-        Rails.logger.info("[SpreeAdyen][#{event_code}]: Skipping not supported event")
+        Rails.logger.info("[PallasTradeAdyen][#{event_code}]: Skipping not supported event")
         head :ok
         return
       end
@@ -27,7 +27,7 @@
 
       return if validator.call
 
-      Rails.logger.error("[SpreeAdyen]: Failed to validate hmac for #{event_code}")
+      Rails.logger.error("[PallasTradeAdyen]: Failed to validate hmac for #{event_code}")
       head :unauthorized
     end
 

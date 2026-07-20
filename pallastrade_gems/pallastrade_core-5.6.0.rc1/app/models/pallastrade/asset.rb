@@ -1,10 +1,10 @@
-﻿module PallasTrade
+module PallasTrade
   class Asset < PallasTrade.base_class
     has_prefix_id :media
 
     include Support::ActiveStorage
     include Rails.application.routes.url_helpers
-    include PallasTrade::ImageMethods # legacy, will be removed in Spree 6
+    include PallasTrade::ImageMethods # legacy, will be removed in PallasTrade 6
     include PallasTrade::Metafields
     include PallasTrade::Metadata
 
@@ -137,7 +137,7 @@
 
     # @deprecated
     def styles
-      PallasTrade::Deprecation.warn("Asset#styles is deprecated and will be removed in Spree 6.0. Please use active storage variants with cdn_image_url")
+      PallasTrade::Deprecation.warn("Asset#styles is deprecated and will be removed in PallasTrade 6.0. Please use active storage variants with cdn_image_url")
 
       self.class.styles.map do |_, size|
         width, height = size.chop.split('x').map(&:to_i)

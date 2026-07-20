@@ -1,4 +1,4 @@
-﻿require 'rails/generators'
+require 'rails/generators'
 
 module PallasTrade
   module Admin
@@ -16,8 +16,8 @@ module PallasTrade
                   PallasTrade.admin_user_class.model_name.singular_route_key,
                   class_name: PallasTrade.admin_user_class.to_s,
                   controllers: {
-                    sessions: 'spree/admin/user_sessions',
-                    passwords: 'spree/admin/user_passwords'
+                    sessions: 'pallastrade/admin/user_sessions',
+                    passwords: 'pallastrade/admin/user_passwords'
                   },
                   skip: :registrations,
                   path: :admin_user,

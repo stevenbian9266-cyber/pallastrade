@@ -1,9 +1,9 @@
-﻿module PallasTrade
+module PallasTrade
   module Admin
     module SortableTreeHelper
       def sortable_tree_bar(parent_resource, child_resource)
         partial_name = parent_resource.class.name.demodulize.underscore
-        render "spree/admin/shared/sortable_tree/#{partial_name}", parent_resource: parent_resource, child_resource: child_resource
+        render "pallastrade/admin/shared/sortable_tree/#{partial_name}", parent_resource: parent_resource, child_resource: child_resource
       end
 
       def build_sortable_tree(parent_resource, child_resource)

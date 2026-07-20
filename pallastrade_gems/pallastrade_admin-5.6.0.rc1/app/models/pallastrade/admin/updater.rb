@@ -1,4 +1,4 @@
-﻿require 'net/http'
+require 'net/http'
 require 'json'
 require 'uri'
 
@@ -22,7 +22,7 @@ module PallasTrade
       end
 
       def self.fetch_updates
-        @updates ||= Rails.cache.fetch("spree/admin/updater/fetch_updates/#{current_release}", expires_in: 1.day) do
+        @updates ||= Rails.cache.fetch("pallastrade/admin/updater/fetch_updates/#{current_release}", expires_in: 1.day) do
           uri = URI(PALLASTRADE_CLOUD_UPDATES_URL)
           params = { version: current_release, environment: Rails.env, url: PallasTrade::Store.current.url_or_custom_domain }
           uri.query = URI.encode_www_form(params)

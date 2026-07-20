@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Admin
     class VariantsController < ResourceController
       include StockLocationsHelper
@@ -48,7 +48,7 @@
               render turbo_stream: [
                 turbo_stream.replace(
                   "variants_search_results",
-                  partial: "spree/admin/variants/search_results",
+                  partial: "pallastrade/admin/variants/search_results",
                   locals: { variants: @variants }
                 )
               ]

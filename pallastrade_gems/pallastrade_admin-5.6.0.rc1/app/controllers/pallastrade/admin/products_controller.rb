@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Admin
     class ProductsController < ResourceController
       include PallasTrade::Admin::StockLocationsHelper
@@ -6,8 +6,8 @@
       include PallasTrade::Admin::AssetsHelper
       include PallasTrade::Admin::ProductsBreadcrumbConcern
 
-      helper 'spree/admin/products'
-      helper 'spree/admin/taxons'
+      helper 'pallastrade/admin/products'
+      helper 'pallastrade/admin/taxons'
 
       before_action :load_data, except: :index
       before_action :load_variants_data, only: %i[edit update]
@@ -42,7 +42,7 @@
             render turbo_stream: [
               turbo_stream.replace(
                 'products_search_results',
-                partial: 'spree/admin/products/search_results',
+                partial: 'pallastrade/admin/products/search_results',
                 locals: { products: @products }
               )
             ]
