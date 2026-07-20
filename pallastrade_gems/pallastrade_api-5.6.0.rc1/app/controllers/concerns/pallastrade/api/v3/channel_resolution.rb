@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Api
     module V3
       # Resolves the active PallasTrade::Channel for an API request and writes it
@@ -6,7 +6,7 @@
       # read channel context without threading it through method args.
       #
       # Resolution order:
-      # 1. +X-Spree-Channel+ header value matched against +channels.code+ —
+      # 1. +X-PallasTrade-Channel+ header value matched against +channels.code+ —
       #    or, if it looks like a prefixed ID (+ch_…+), against +channels.id+
       #    — scoped to the current store
       # 2. +current_store.default_channel+
@@ -16,7 +16,7 @@
       module ChannelResolution
         extend ActiveSupport::Concern
 
-        CHANNEL_HEADER = 'X-Spree-Channel'.freeze
+        CHANNEL_HEADER = 'X-PallasTrade-Channel'.freeze
 
         included do
           before_action :set_current_channel

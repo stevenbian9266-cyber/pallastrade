@@ -1,11 +1,11 @@
-﻿module PallasTrade
+module PallasTrade
   module Api
     module V3
       module Store
         class BaseController < PallasTrade::Api::V3::BaseController
           # Channel resolution is a Store API concern — admin endpoints return
           # data across all channels and filter via Ransack instead. Including
-          # this here keeps the +X-Spree-Channel+ header from accidentally
+          # this here keeps the +X-PallasTrade-Channel+ header from accidentally
           # narrowing admin queries.
           include PallasTrade::Api::V3::ChannelResolution
           # Mirrors Store::ResourceController. Both branches must carry the gate so

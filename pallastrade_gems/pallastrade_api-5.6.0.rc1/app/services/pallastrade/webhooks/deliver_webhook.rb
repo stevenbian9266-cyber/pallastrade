@@ -1,4 +1,4 @@
-﻿# frozen_string_literal: true
+# frozen_string_literal: true
 
 require 'ssrf_filter'
 require 'openssl'
@@ -52,8 +52,8 @@ module PallasTrade
         headers = {
           'Content-Type' => 'application/json',
           'User-Agent' => 'Spree-Webhooks/1.0',
-          'X-Spree-Webhook-Signature' => generate_signature,
-          'X-Spree-Webhook-Timestamp' => webhook_timestamp.to_s,
+          'X-PallasTrade-Webhook-Signature' => generate_signature,
+          'X-PallasTrade-Webhook-Timestamp' => webhook_timestamp.to_s,
           'X-Spree-Webhook-Event' => @delivery.event_name
         }
         body = @delivery.payload.to_json

@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Api
     module V3
       # Provides HTTP caching support for API v3 controllers
@@ -25,7 +25,7 @@
         # Set Vary headers to ensure proper CDN caching by currency/locale
         def set_vary_headers
           if guest_user?
-            response.headers['Vary'] = 'Accept, x-spree-currency, x-spree-locale'
+            response.headers['Vary'] = 'Accept, x-pallastrade-currency, x-pallastrade-locale'
           else
             response.headers['Cache-Control'] = 'private, no-store'
           end

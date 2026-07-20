@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Api
     module V3
       module CartResolvable
@@ -38,7 +38,7 @@
         # Return the cart token from the request headers.
         # @return [String, nil]
         def cart_token
-          request.headers['x-spree-token']
+          request.headers['x-pallastrade-token']
         end
       end
     end

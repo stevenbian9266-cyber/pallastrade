@@ -11,7 +11,7 @@
 
         JWT_AUDIENCE_STORE = 'store_api'.freeze
         JWT_AUDIENCE_ADMIN = 'admin_api'.freeze
-        JWT_ISSUER = 'spree'.freeze
+        JWT_ISSUER = 'pallastrade'.freeze
 
         included do
           attr_reader :current_user

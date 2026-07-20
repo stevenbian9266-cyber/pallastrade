@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Api
     module V3
       # Handles locale, currency, and market resolution for API v3 controllers.
@@ -7,9 +7,9 @@
       # +PallasTrade::Core::ControllerHelpers::Locale+ or +PallasTrade::Core::ControllerHelpers::Currency+.
       #
       # Resolution order:
-      # 1. Market is resolved from +x-spree-country+ header (sets +PallasTrade::Current.market+)
-      # 2. Locale is resolved: +x-spree-locale+ header > +params[:locale]+ > +PallasTrade::Current.locale+ (market -> store fallback)
-      # 3. Currency is resolved: +x-spree-currency+ header > +params[:currency]+ > +PallasTrade::Current.currency+ (market -> store fallback)
+      # 1. Market is resolved from +x-pallastrade-country+ header (sets +PallasTrade::Current.market+)
+      # 2. Locale is resolved: +x-pallastrade-locale+ header > +params[:locale]+ > +PallasTrade::Current.locale+ (market -> store fallback)
+      # 3. Currency is resolved: +x-pallastrade-currency+ header > +params[:currency]+ > +PallasTrade::Current.currency+ (market -> store fallback)
       # 4. Mobility fallback locale is configured for the current store
       module LocaleAndCurrency
         extend ActiveSupport::Concern
@@ -25,7 +25,7 @@
 
         # Returns the current locale for this request.
         #
-        # Priority: x-spree-locale header > params[:locale] > PallasTrade::Current.locale (market -> store fallback)
+        # Priority: x-pallastrade-locale header > params[:locale] > PallasTrade::Current.locale (market -> store fallback)
         #
         # @return [String] the locale code, e.g. +"en"+, +"fr"+
         def current_locale
@@ -37,7 +37,7 @@
 
         # Returns the current currency for this request.
         #
-        # Priority: x-spree-currency header > params[:currency] > PallasTrade::Current.currency (market -> store fallback)
+        # Priority: x-pallastrade-currency header > params[:currency] > PallasTrade::Current.currency (market -> store fallback)
         #
         # @return [String] the currency ISO code, e.g. +"USD"+, +"EUR"+
         def current_currency
@@ -138,18 +138,18 @@
           PallasTrade::Locales::SetFallbackLocaleForStore.new.call(store: current_store)
         end
 
-        # Reads the locale from the +x-spree-locale+ request header.
+        # Reads the locale from the +x-pallastrade-locale+ request header.
         #
         # @return [String, nil]
         def locale_from_header
-          request.headers['x-spree-locale'].presence
+          request.headers['x-pallastrade-locale'].presence
         end
 
-        # Reads the currency from the +x-spree-currency+ request header.
+        # Reads the currency from the +x-pallastrade-currency+ request header.
         #
         # @return [String, nil]
         def currency_from_header
-          request.headers['x-spree-currency'].presence
+          request.headers['x-pallastrade-currency'].presence
         end
 
         # Reads the locale from request params.
@@ -166,12 +166,12 @@
           params[:currency].presence
         end
 
-        # Resolves the market from the +x-spree-country+ header or +params[:country]+.
+        # Resolves the market from the +x-pallastrade-country+ header or +params[:country]+.
         #
         # When a matching market is found, it is set on +PallasTrade::Current.market+,
         # which influences the default locale and currency fallbacks.
         def set_market_from_country
-          country_iso = request.headers['x-spree-country'].presence || params[:country].presence
+          country_iso = request.headers['x-pallastrade-country'].presence || params[:country].presence
           return unless country_iso
 
           country = PallasTrade::Country.find_by(iso: country_iso.upcase)

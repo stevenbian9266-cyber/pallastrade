@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Api
     module V3
       module Store
@@ -35,7 +35,7 @@
           end
 
           def order_token
-            request.headers['x-spree-token']
+            request.headers['x-pallastrade-token']
           end
         end
       end

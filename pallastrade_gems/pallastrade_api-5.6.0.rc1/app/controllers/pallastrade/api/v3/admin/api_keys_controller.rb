@@ -18,7 +18,7 @@ module PallasTrade
           # CanCanCan (not scopes) and may grant any valid scope — so when a JWT
           # user authenticated the request, `current_ability` ignores the API key
           # (see AdminAuthentication#current_ability) and we skip the scope cap
-          # too, even if an `X-Spree-Api-Key` header was also sent.
+          # too, even if an `X-PallasTrade-Api-Key` header was also sent.
           def create
             if scope_limited_principal? && (excess = requested_scopes.reject { |s| current_api_key.has_scope?(s) }).any?
               return render_error(

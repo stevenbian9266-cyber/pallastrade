@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Api
     module V3
       module ApiKeyAuthentication
@@ -68,7 +68,7 @@
         #
         # @return [String, nil] the API key token
         def extract_api_key
-          request.headers['X-Spree-Api-Key'].presence
+          request.headers['X-PallasTrade-Api-Key'].presence
         end
       end
     end

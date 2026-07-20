@@ -1,4 +1,4 @@
-﻿# Helper module for generating JWT tokens in tests
+# Helper module for generating JWT tokens in tests
 module PallasTrade
   module Api
     module V3
@@ -27,7 +27,7 @@ end
 shared_context 'API v3 Store' do
   let(:store) { @default_store || create(:store, default: true) }
   let(:api_key) { create(:api_key, :publishable, store: store) }
-  let(:api_key_headers) { { 'x-spree-api-key' => api_key.token } }
+  let(:api_key_headers) { { 'x-pallastrade-api-key' => api_key.token } }
 
   let(:user) { create(:user_with_addresses) }
   let(:jwt_token) { PallasTrade::Api::V3::TestingSupport.generate_jwt(user) }
@@ -53,7 +53,7 @@ end
 shared_context 'API v3 Admin' do
   let(:store) { @default_store || create(:store, default: true) }
   let(:secret_api_key) { create(:api_key, :secret, store: store) }
-  let(:api_key_headers) { { 'x-spree-api-key' => secret_api_key.plaintext_token } }
+  let(:api_key_headers) { { 'x-pallastrade-api-key' => secret_api_key.plaintext_token } }
 
   let(:admin_user) { create(:admin_user) }
   let(:admin_jwt_token) { PallasTrade::Api::V3::TestingSupport.generate_jwt(admin_user, audience: PallasTrade::Api::V3::JwtAuthentication::JWT_AUDIENCE_ADMIN) }
