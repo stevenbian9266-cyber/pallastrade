@@ -1,0 +1,30 @@
+﻿<%= dropdown id: 'new-item-dropdown' do %>
+  <%= dropdown_toggle class: 'btn-light btn-sm px-1 rounded-lg' do %>
+    <%= icon 'plus', class: 'mr-0' %>
+  <% end %>
+  <%= dropdown_menu do %>
+    <%= link_to_with_icon 'shopping-bag-plus', PallasTrade.t(:new_order), PallasTrade.new_admin_order_path, class: "dropdown-item" if can?(:manage, PallasTrade::Order)  %>
+
+    <%= link_to PallasTrade.new_admin_product_path, class: 'dropdown-item' do %>
+      <%= icon 'cube-plus' %>
+      <%= PallasTrade.t(:new_product) %>
+    <% end if can?(:create, PallasTrade::Product) %>
+    <%= link_to PallasTrade.new_admin_user_path, class: 'dropdown-item' do %>
+      <%= icon 'user-plus' %>
+      <%= PallasTrade.t(:new_customer) %>
+    <% end if can?(:manage, PallasTrade.user_class) %>
+
+    <%= link_to PallasTrade.new_admin_promotion_path, class: 'dropdown-item' do %>
+      <%= icon 'discount' %>
+      <%= PallasTrade.t(:new_promotion) %>
+    <% end if can?(:create, PallasTrade::Promotion) %>
+
+    <%= invite_vendor_button(class: 'dropdown-item') if defined?(invite_vendor_button) %>
+
+    <% if can?(:create, PallasTrade::Store) && PallasTrade.root_domain.present? && PallasTrade.respond_to?(:new_admin_store_path) %>
+      <div class="dropdown-divider"></div>
+
+      <%= link_to_with_icon 'building-store', PallasTrade.t(:new_store), PallasTrade.new_admin_store_path, class: 'dropdown-item' %>
+    <% end %>
+  <% end %>
+<% end %>

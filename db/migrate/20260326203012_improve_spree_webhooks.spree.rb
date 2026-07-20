@@ -1,4 +1,4 @@
-# frozen_string_literal: true
+﻿# frozen_string_literal: true
 
 # This migration comes from spree (originally 20260326000001)
 class ImproveSpreeWebhooks < ActiveRecord::Migration[7.2]
@@ -10,7 +10,7 @@ class ImproveSpreeWebhooks < ActiveRecord::Migration[7.2]
 
     # Event ID for delivery deduplication
     add_column :spree_webhook_deliveries, :event_id, :string
-    add_index :spree_webhook_deliveries, [:webhook_endpoint_id, :event_id],
+    add_index :pallastrade_webhook_deliveries, [:webhook_endpoint_id, :event_id],
               unique: true,
               where: 'event_id IS NOT NULL',
               name: 'index_spree_webhook_deliveries_on_endpoint_and_event'

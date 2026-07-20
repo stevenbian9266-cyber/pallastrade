@@ -1,4 +1,4 @@
-# This migration comes from spree (originally 20260601000002)
+﻿# This migration comes from spree (originally 20260601000002)
 class AddStoreIdToSpreeProducts < ActiveRecord::Migration[7.2]
   # NOTE: After running this migration, existing products will have
   # +store_id IS NULL+ and be invisible to +Product.for_store+. Operators
@@ -12,6 +12,6 @@ class AddStoreIdToSpreeProducts < ActiveRecord::Migration[7.2]
     add_reference :spree_products, :store, null: true
     add_column :spree_products, :units_sold_count, :integer, default: 0, null: false
     add_column :spree_products, :revenue, :decimal, precision: 16, scale: 4, default: 0, null: false
-    add_index :spree_products, %i[store_id units_sold_count]
+    add_index :pallastrade_products, %i[store_id units_sold_count]
   end
 end

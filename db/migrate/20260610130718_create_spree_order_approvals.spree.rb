@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20260429000002)
+﻿# This migration comes from spree (originally 20260429000002)
 class CreateSpreeOrderApprovals < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_order_approvals do |t|
+    create_table :pallastrade_order_approvals do |t|
       t.references :order, null: false, index: false
       t.string :status, null: false
       t.string :level
@@ -16,8 +16,8 @@ class CreateSpreeOrderApprovals < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :spree_order_approvals, [:order_id, :status]
-    add_index :spree_order_approvals, [:approver_id, :approver_type],
+    add_index :pallastrade_order_approvals, [:order_id, :status]
+    add_index :pallastrade_order_approvals, [:approver_id, :approver_type],
               name: 'idx_order_approvals_approver'
   end
 end

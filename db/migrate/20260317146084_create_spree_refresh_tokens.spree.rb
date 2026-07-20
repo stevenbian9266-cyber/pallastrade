@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20260317000000)
+﻿# This migration comes from spree (originally 20260317000000)
 class CreateSpreeRefreshTokens < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_refresh_tokens do |t|
+    create_table :pallastrade_refresh_tokens do |t|
       t.string :token, null: false
       t.references :user, polymorphic: true, null: false
       t.datetime :expires_at, null: false
@@ -10,8 +10,8 @@ class CreateSpreeRefreshTokens < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :spree_refresh_tokens, :token, unique: true
-    add_index :spree_refresh_tokens, :expires_at
-    add_index :spree_refresh_tokens, [:user_type, :user_id], name: 'idx_refresh_tokens_user'
+    add_index :pallastrade_refresh_tokens, :token, unique: true
+    add_index :pallastrade_refresh_tokens, :expires_at
+    add_index :pallastrade_refresh_tokens, [:user_type, :user_id], name: 'idx_refresh_tokens_user'
   end
 end

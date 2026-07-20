@@ -1,0 +1,36 @@
+﻿<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">
+      <%= PallasTrade.t(:details) %>
+    </h5>
+  </div>
+  <div class="card-body">
+    <%= f.pallastrade_text_field :name, required: true, autofocus: true, help: PallasTrade.t('admin.promotions.name_help') %>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">
+      <%= PallasTrade.t(:kind) %>
+    </h5>
+  </div>
+  <div class="card-body">
+    <%= render 'spree/admin/promotions/form/kind', f: f %>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">
+      <%= PallasTrade.t(:settings) %>
+    </h5>
+  </div>
+  <div class="card-body">
+    <%= render 'spree/admin/promotions/form/settings', f: f %>
+  </div>
+</div>
+
+<p class="alert alert-info text-center">
+  <%= PallasTrade.t('admin.promotions.next_step_info') %>
+</p>

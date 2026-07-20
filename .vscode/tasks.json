@@ -16,6 +16,27 @@
 				"taskkill /F /IM ssh.exe 2>nul & taskkill /F /IM git.exe 2>nul & echo cleaned"
 			],
 			"group": "none"
+		},
+		{
+			"label": "build-dev-image",
+			"type": "shell",
+			"command": "powershell -ExecutionPolicy Bypass -Command \"Set-Location 'd:\\pallastrade\\spree'; docker compose -f docker-compose.dev.yml build 2>&1\"",
+			"args": [],
+			"problemMatcher": []
+		},
+		{
+			"label": "dev-build",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.dev.yml build",
+			"args": [],
+			"problemMatcher": []
+		},
+		{
+			"label": "build-dev",
+			"type": "shell",
+			"command": "docker compose -f d:\\pallastrade\\spree\\docker-compose.dev.yml build 2>&1",
+			"args": [],
+			"problemMatcher": []
 		}
 	]
 }

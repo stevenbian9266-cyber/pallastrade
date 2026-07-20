@@ -1,4 +1,4 @@
-# This migration comes from spree (originally 20260529000002)
+﻿# This migration comes from spree (originally 20260529000002)
 class AddUniqueIndexToSpreePromotionRules < ActiveRecord::Migration[7.2]
   def up
     # Remove duplicate rules (same type within the same promotion),
@@ -28,7 +28,7 @@ class AddUniqueIndexToSpreePromotionRules < ActiveRecord::Migration[7.2]
       SQL
     end
 
-    add_index :spree_promotion_rules, [:promotion_id, :type], unique: true,
+    add_index :pallastrade_promotion_rules, [:promotion_id, :type], unique: true,
               name: 'index_spree_promotion_rules_on_promotion_id_and_type'
   end
 

@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20260123000000)
+﻿# This migration comes from spree (originally 20260123000000)
 class CreateSpreeApiKeys < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_api_keys do |t|
+    create_table :pallastrade_api_keys do |t|
       t.string :name, null: false
       t.string :key_type, null: false
       t.string :token, null: false
@@ -13,8 +13,8 @@ class CreateSpreeApiKeys < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :spree_api_keys, :token, unique: true
-    add_index :spree_api_keys, :key_type
-    add_index :spree_api_keys, [:store_id, :key_type]
+    add_index :pallastrade_api_keys, :token, unique: true
+    add_index :pallastrade_api_keys, :key_type
+    add_index :pallastrade_api_keys, [:store_id, :key_type]
   end
 end

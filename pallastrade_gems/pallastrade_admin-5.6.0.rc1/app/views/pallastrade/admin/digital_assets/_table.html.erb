@@ -1,0 +1,39 @@
+﻿<table class="table">
+  <thead>
+    <tr>
+      <% if @product.has_variants? %>
+        <th scope="col"><%= PallasTrade.t(:variant) %></th>
+      <% end %>
+      <th scope="col"><%= sort_link @search, :name, PallasTrade.t(:name) %></th>
+      <th scope="col"><%= PallasTrade.t(:size) %></th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+    <%= render partial: "spree/admin/digital_assets/digital_asset",
+    collection: @product.digitals.includes(:variant, attachment_attachment: [:blob]), cached: pallastrade_base_cache_scope %>
+    <% if @product.digitals.empty? %>
+      <tr>
+        <td colspan="4">
+          <div
+            class="
+              text-gray-600 p-12 flex items-center w-full justify-center
+            "
+          >
+            <%= PallasTrade.t(:no_resource_found, resource: PallasTrade.t(:digital_assets)) %>
+            <% if can?(:create, PallasTrade::Digital.new(variant: @product.default_variant)) %>
+              <%= link_to_with_icon "plus",
+              PallasTrade.t(:add_one),
+              PallasTrade.new_admin_product_digital_asset_path(@product),
+              class: "btn btn-light ml-12",
+              data: {
+                turbo_frame: "dialog",
+                action: 'dialog#open',
+              } %>
+            <% end %>
+          </div>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

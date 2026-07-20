@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20250923141845)
+﻿# This migration comes from spree (originally 20250923141845)
 class CreateSpreeImports < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_imports do |t|
+    create_table :pallastrade_imports do |t|
       t.belongs_to :user, null: false
       t.belongs_to :owner, polymorphic: true, null: false
 
@@ -19,7 +19,7 @@ class CreateSpreeImports < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    create_table :spree_import_rows do |t|
+    create_table :pallastrade_import_rows do |t|
       t.belongs_to :import, null: false
       t.belongs_to :item, polymorphic: true
 
@@ -32,9 +32,9 @@ class CreateSpreeImports < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :spree_import_rows, [:import_id, :row_number], unique: true
+    add_index :pallastrade_import_rows, [:import_id, :row_number], unique: true
 
-    create_table :spree_import_mappings do |t|
+    create_table :pallastrade_import_mappings do |t|
       t.belongs_to :import, null: false
 
       t.string :schema_field, null: false
@@ -43,6 +43,6 @@ class CreateSpreeImports < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :spree_import_mappings, [:import_id, :schema_field], unique: true
+    add_index :pallastrade_import_mappings, [:import_id, :schema_field], unique: true
   end
 end

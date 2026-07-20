@@ -1,0 +1,92 @@
+﻿module PallasTrade
+  # Thread-safe, per-request attributes for the current store context.
+  #
+  # All attributes are automatically reset between requests by Rails.
+  # Fallback chains ensure sensible defaults when attributes are not explicitly set.
+  class Current < ::ActiveSupport::CurrentAttributes
+    attribute :store, :channel, :market, :currency, :locale, :content_locale, :zone, :default_tax_zone, :price_lists, :global_pricing_context
+
+    resets { @default_tax_zone_loaded = false }
+
+    # Returns the current store, falling back to the default store.
+    # @return [PallasTrade::Store]
+    def store
+      super || PallasTrade::Store.default
+    end
+
+    def channel
+      super || (self.channel = store&.default_channel)
+    end
+
+    # Returns the current market, falling back to the store's default market.
+    # @return [PallasTrade::Market, nil]
+    def market
+      super || store&.default_market
+    end
+
+    # Returns the current currency.
+    # Fallback: market currency -> store default currency.
+    # @return [String] currency ISO code, e.g. +"USD"+
+    def currency
+      super || market&.currency || store&.default_currency
+    end
+
+    # Returns the current locale.
+    # Fallback: market default locale -> store default locale -> I18n default.
+    # @return [String] locale code, e.g. +"en"+, +"de"+
+    def locale
+      super || market&.default_locale.presence || store&.default_locale.presence || I18n.default_locale.to_s
+    end
+
+    # Returns the locale that base (untranslated) record columns are authored
+    # in for the current request — the current store's default locale. It is
+    # assigned per request alongside +I18n.locale+ and must never be written
+    # to the process-global +I18n.default_locale+, which every thread in the
+    # server process shares. Outside a request it falls back to the
+    # application default locale.
+    # @return [String] locale code, e.g. +"en"+, +"de"+
+    def content_locale
+      super.presence || I18n.default_locale.name
+    end
+
+    # Returns the current tax zone.
+    # Fallback: market's tax zone (from default country) -> global default tax zone.
+    # @return [PallasTrade::Zone, nil]
+    def zone
+      super || market&.tax_zone || default_tax_zone
+    end
+
+    # Returns the default tax zone (memoized per request).
+    # @return [PallasTrade::Zone, nil]
+    def default_tax_zone
+      result = super
+      return result if result || @default_tax_zone_loaded
+
+      @default_tax_zone_loaded = true
+      self.default_tax_zone = PallasTrade::Zone.find_by(default_tax: true)
+    end
+
+    # Returns the current price lists for the global pricing context.
+    # @return [ActiveRecord::Relation<PallasTrade::PriceList>]
+    def price_lists
+      super || begin
+        context = global_pricing_context
+        self.price_lists = PallasTrade::PriceList.for_context(context)
+      end
+    end
+
+    # Returns the current global pricing context, built from store, currency, zone, and market.
+    # @return [PallasTrade::Pricing::Context]
+    def global_pricing_context
+      super || begin
+        self.global_pricing_context = PallasTrade::Pricing::Context.new(
+          currency: currency,
+          store: store,
+          zone: zone,
+          market: market,
+          channel: channel
+        )
+      end
+    end
+  end
+end

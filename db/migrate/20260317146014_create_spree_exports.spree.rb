@@ -1,9 +1,9 @@
-# This migration comes from spree (originally 20241030134309)
+﻿# This migration comes from spree (originally 20241030134309)
 class CreateSpreeExports < ActiveRecord::Migration[6.1]
   def change
     return if table_exists?(:spree_exports)
 
-    create_table :spree_exports do |t|
+    create_table :pallastrade_exports do |t|
       t.references :user
       t.references :store, null: false
 

@@ -1,0 +1,23 @@
+﻿<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">
+      <%= PallasTrade.t(:general_settings) %>
+    </h5>
+  </div>
+
+  <div class="card-body">
+    <%= f.pallastrade_text_field :name, required: true %>
+
+    <%= f.pallastrade_number_field :amount_percentage, label: PallasTrade.t(:rate), append: '%', min: 0, step: 0.1, required: true %>
+
+    <%= f.pallastrade_collection_select :zone_id, @available_zones, :id, :name, label: PallasTrade.t(:zone) %>
+    <%= f.pallastrade_collection_select :tax_category_id, @available_categories, :id, :name, label: PallasTrade.t(:tax_category) %>
+
+    <hr class="my-6" />
+
+    <%= f.pallastrade_check_box :included_in_price %>
+    <%= f.pallastrade_check_box :show_rate_in_label %>
+  </div>
+</div>
+
+<%= render 'spree/admin/shared/calculator_fields', f: f, calculators: @calculators %>

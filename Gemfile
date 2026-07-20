@@ -3,7 +3,7 @@
 source 'https://rubygems.org'
 ruby file: '.ruby-version'
 
-# Load .env for SPREE_PATH (dotenv-rails only loads at Rails boot, not during bundle)
+# Load PALLASTRADE_GEMS_PATH from .env (dotenv-rails only loads at Rails boot, not during bundle)
 env_file = File.expand_path('.env', __dir__)
 if File.exist?(env_file)
   File.readlines(env_file).each do |line|
@@ -16,38 +16,25 @@ if File.exist?(env_file)
 end
 
 # Rails must load before Propshaft (its railtie only registers once Rails is
-# present), and Propshaft before the Spree gems, so that tinymce-rails (loaded
-# by spree_admin) detects it and serves TinyMCE assets in development.
+# present), and Propshaft before the PallasTrade gems, so that tinymce-rails (loaded
+# by pallastrade_admin) detects it and serves TinyMCE assets in development.
 gem 'rails', '~> 8.1.2'
 gem 'propshaft'
 
-# Spree Commerce
-spree_path = ENV.fetch('SPREE_PATH', nil)
+# PallasTrade Commerce (local path gems)
+pallastrade_gems_path = ENV.fetch('PALLASTRADE_GEMS_PATH', 'pallastrade_gems')
 
-if spree_path
-  path "#{spree_path}/spree" do
-    gem 'spree'
-    gem 'spree_core'
-    gem 'spree_api'
-    gem 'spree_admin'
-    gem 'spree_dashboard'
-    gem 'spree_emails'
-  end
-else
-  spree_version = '>= 5.6.0.rc1'
-  gem 'spree', spree_version
-  gem 'spree_admin', spree_version
-  gem 'spree_emails', spree_version
-  # Serves the React Dashboard at /dashboard (see the Dockerfile's dashboard
-  # stage — SPREE_DASHBOARD_DIST_PATH points at the baked build).
-  gem 'spree_dashboard', spree_version
-end
+gem 'pallastrade',          path: "#{pallastrade_gems_path}/pallastrade-5.6.0.rc1"
+gem 'pallastrade_core',     path: "#{pallastrade_gems_path}/pallastrade_core-5.6.0.rc1"
+gem 'pallastrade_api',      path: "#{pallastrade_gems_path}/pallastrade_api-5.6.0.rc1"
+gem 'pallastrade_admin',    path: "#{pallastrade_gems_path}/pallastrade_admin-5.6.0.rc1"
+gem 'pallastrade_dashboard', path: "#{pallastrade_gems_path}/pallastrade_dashboard-5.6.0.rc1"
+gem 'pallastrade_emails',   path: "#{pallastrade_gems_path}/pallastrade_emails-5.6.0.rc1"
 
-# Extensions
-gem 'spree_i18n'
-gem 'spree_stripe'
-gem 'spree_adyen'
-gem 'spree_paypal_checkout'
+# Extensions (local path gems)
+gem 'pallastrade_stripe', path: "#{pallastrade_gems_path}/pallastrade_stripe-1.7.1"
+gem 'pallastrade_adyen', path: "#{pallastrade_gems_path}/pallastrade_adyen-0.11.0"
+gem 'pallastrade_paypal_checkout', path: "#{pallastrade_gems_path}/pallastrade_paypal_checkout-0.7.1"
 
 # Rails & Infrastructure
 gem 'aws-sdk-s3', require: false

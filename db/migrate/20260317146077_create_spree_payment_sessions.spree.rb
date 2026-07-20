@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20260213000000)
+﻿# This migration comes from spree (originally 20260213000000)
 class CreateSpreePaymentSessions < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_payment_sessions do |t|
+    create_table :pallastrade_payment_sessions do |t|
       t.string :type, null: false, index: true
       t.references :order, null: false, index: true
       t.references :payment_method, null: false, index: true
@@ -21,8 +21,8 @@ class CreateSpreePaymentSessions < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :spree_payment_sessions, [:order_id, :payment_method_id, :external_id],
+    add_index :pallastrade_payment_sessions, [:order_id, :payment_method_id, :external_id],
               unique: true, name: 'idx_payment_sessions_order_method_external'
-    add_index :spree_payment_sessions, :external_id
+    add_index :pallastrade_payment_sessions, :external_id
   end
 end

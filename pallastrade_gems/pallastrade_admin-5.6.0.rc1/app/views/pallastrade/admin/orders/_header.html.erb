@@ -1,0 +1,69 @@
+﻿<% content_for :page_title do %>
+  <% if controller_name == 'orders' %>
+    <% back_url = @order.present? && !@order.completed? ? PallasTrade.admin_checkouts_path : PallasTrade.admin_orders_path %>
+    <%= page_header_back_button back_url, @order %>
+  <% else %>
+    <%= page_header_back_button PallasTrade.edit_admin_order_path(@order) %>
+  <% end %>
+  <%= @order.number %>
+  <%= order_payment_state(@order) %>
+  <%= order_shipment_state(@order) %>
+  <% if @order.completed? %>
+    <span class="text-gray-600 text-sm font-normal">
+      <%= I18n.t('activerecord.attributes.spree/order.completed_at') %>
+      <%= pallastrade_time_ago(@order.completed_at) %>
+    </span>
+  <% end %>
+<% end %>
+
+<% content_for(:page_actions_dropdown) do %>
+  <% if @order.completed? && PallasTrade.respond_to?(:order_path) %>
+    <%= link_to_with_icon "eye",
+    PallasTrade.t(:preview),
+    PallasTrade.order_path(@order, host: current_store.url, token: @order.token),
+    class: "text-left dropdown-item",
+    target: "_blank" %>
+  <% end %>
+  <% if @order.completed? && can?(:resend, @order) %>
+    <%= link_to_with_icon "send",
+    PallasTrade.t(:resend),
+    PallasTrade.resend_admin_order_path(@order),
+    data: {
+      turbo_method: :post,
+      turbo_confirm: PallasTrade.t(:are_you_sure),
+    },
+    class: "btn text-left dropdown-item" %>
+  <% end %>
+
+  <% if @order.shipments.any?(&:shipped?) %>
+    <% can_create_ra = can?(:create, PallasTrade::ReturnAuthorization) %>
+    <% can_create_cr =
+      can?(:create, PallasTrade::CustomerReturn) && @order.return_authorizations.exists? %>
+
+    <% if can_create_ra || can_create_cr %>
+      <% if can_create_ra %>
+        <%= link_to_with_icon "plus", PallasTrade.t(:new_return_authorization),
+        PallasTrade.new_admin_order_return_authorization_path(@order),
+        class: "btn dropdown-item" %>
+      <% end %>
+
+      <% if can_create_cr  && controller_name != "customer_returns" %>
+        <%= link_to_with_icon "plus", PallasTrade.t(:new_customer_return),
+        PallasTrade.new_admin_order_customer_return_path(@order),
+        class: "btn dropdown-item" %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <%= render_admin_partials(:order_page_dropdown_partials, order: @order) %>
+
+  <% if can?(:cancel, @order) %>
+    <div class="dropdown-divider"></div>
+    <%= link_to PallasTrade.cancel_admin_order_path(@order),
+                class: 'dropdown-item text-danger hover:bg-red-100',
+                data: { turbo_method: :put, turbo_confirm: PallasTrade.t(:are_you_sure) } do %>
+      <%= icon "cancel" %>
+      <%= PallasTrade.t(:cancel_order) %>
+    <% end %>
+  <% end %>
+<% end %>

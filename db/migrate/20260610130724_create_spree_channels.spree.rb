@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20260508204040)
+﻿# This migration comes from spree (originally 20260508204040)
 class CreateSpreeChannels < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_channels do |t|
+    create_table :pallastrade_channels do |t|
       t.references :store, null: false
       t.string :name, null: false
       t.string :code, null: false
@@ -10,7 +10,7 @@ class CreateSpreeChannels < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :spree_channels, %i[store_id code], unique: true
+    add_index :pallastrade_channels, %i[store_id code], unique: true
 
     # Default-channel backfill for existing stores lives in
     # +rake spree:channels:create_defaults+ (data transformations don't belong

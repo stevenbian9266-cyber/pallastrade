@@ -1,0 +1,19 @@
+﻿<% if show_PALLASTRADE_updater_notice? %>
+  <div id="updater-notice" class="mb-3">
+    <%= image_tag 'favicon_256x256.png', alt: 'Spree', width: 32, height: 32 %>
+    <div class="flex flex-col">
+      <p class="mb-1">
+        <%= PallasTrade.t('admin.dashboard.updater.available_html', version: tag.strong("Spree #{pallastrade_updater.latest_release['name']}")) %>
+        <br /><%= PallasTrade.t('admin.dashboard.updater.current_version_html', version: tag.strong("Spree #{pallastrade_updater.current_release}")) %>
+      </p>
+
+      <% if pallastrade_updater.latest_release['url'] %>
+        <div>
+          <%= external_link_to PallasTrade.t('admin.dashboard.updater.view_release_notes'), pallastrade_updater.latest_release['url'], target: '_blank', class: 'btn btn-sm btn-secondary' %>
+        </div>
+      <% end %>
+    </div>
+
+    <%= link_to '', PallasTrade.admin_dismiss_updater_notice_path, data: { turbo_method: :patch }, class: 'btn-close ms-auto' %>
+  </div>
+<% end %>

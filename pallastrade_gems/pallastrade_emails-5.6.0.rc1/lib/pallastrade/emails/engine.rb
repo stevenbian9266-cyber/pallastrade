@@ -1,0 +1,32 @@
+require 'rails/engine'
+
+module PallasTrade
+  module Emails
+    class Engine < Rails::Engine
+      isolate_namespace PallasTrade
+      engine_name 'pallastrade_emails'
+
+      # Add app/subscribers to autoload paths
+      config.paths.add 'app/subscribers', eager_load: true
+
+      # Register bundled ActionMailer previews so they show up at /rails/mailers
+      # without the host app having to copy any files.
+      initializer 'pallastrade_emails.mailer_previews' do |app|
+        if app.config.action_mailer.show_previews
+          app.config.action_mailer.preview_paths << File.expand_path('previews', __dir__)
+        end
+      end
+
+      # Add email event subscribers
+      config.after_initialize do
+        PallasTrade.subscribers.concat [
+          PallasTrade::OrderEmailSubscriber,
+          PallasTrade::ShipmentEmailSubscriber,
+          PallasTrade::ReimbursementEmailSubscriber,
+          PallasTrade::NewsletterSubscriberEmailSubscriber,
+          PallasTrade::CustomerEmailSubscriber
+        ]
+      end
+    end
+  end
+end

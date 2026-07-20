@@ -1,4 +1,4 @@
-# This migration comes from spree (originally 20250313175830)
+﻿# This migration comes from spree (originally 20250313175830)
 class AddUniqueIndexOnPromotionActionLineItems < ActiveRecord::Migration[7.2]
   def change
     if ActiveRecord::Base.connection.adapter_name == 'Mysql2'
@@ -25,6 +25,6 @@ class AddUniqueIndexOnPromotionActionLineItems < ActiveRecord::Migration[7.2]
       SQL
     end
 
-    add_index :spree_promotion_action_line_items, [:promotion_action_id, :variant_id], unique: true
+    add_index :pallastrade_promotion_action_line_items, [:promotion_action_id, :variant_id], unique: true
   end
 end

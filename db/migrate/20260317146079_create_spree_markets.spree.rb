@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20260220000000)
+﻿# This migration comes from spree (originally 20260220000000)
 class CreateSpreeMarkets < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_markets do |t|
+    create_table :pallastrade_markets do |t|
       t.references :store, null: false, foreign_key: false, index: true
       t.string :name, null: false
       t.string :currency, null: false
@@ -14,17 +14,17 @@ class CreateSpreeMarkets < ActiveRecord::Migration[7.2]
       t.datetime :deleted_at
     end
 
-    add_index :spree_markets, [:store_id, :name], unique: true, where: 'deleted_at IS NULL'
-    add_index :spree_markets, [:store_id, :default], where: 'deleted_at IS NULL'
-    add_index :spree_markets, [:store_id, :position]
-    add_index :spree_markets, :deleted_at
+    add_index :pallastrade_markets, [:store_id, :name], unique: true, where: 'deleted_at IS NULL'
+    add_index :pallastrade_markets, [:store_id, :default], where: 'deleted_at IS NULL'
+    add_index :pallastrade_markets, [:store_id, :position]
+    add_index :pallastrade_markets, :deleted_at
 
-    create_table :spree_market_countries do |t|
+    create_table :pallastrade_market_countries do |t|
       t.references :market, null: false, foreign_key: false
       t.references :country, null: false, foreign_key: false
       t.timestamps
     end
 
-    add_index :spree_market_countries, [:market_id, :country_id], unique: true
+    add_index :pallastrade_market_countries, [:market_id, :country_id], unique: true
   end
 end

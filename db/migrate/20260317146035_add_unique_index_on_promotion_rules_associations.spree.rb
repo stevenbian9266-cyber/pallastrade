@@ -1,4 +1,4 @@
-# This migration comes from spree (originally 20250312202705)
+﻿# This migration comes from spree (originally 20250312202705)
 class AddUniqueIndexOnPromotionRulesAssociations < ActiveRecord::Migration[7.2]
   def change
     if ActiveRecord::Base.connection.adapter_name == 'Mysql2'
@@ -69,8 +69,8 @@ class AddUniqueIndexOnPromotionRulesAssociations < ActiveRecord::Migration[7.2]
       SQL
     end
 
-    add_index :spree_product_promotion_rules, [:product_id, :promotion_rule_id], unique: true
-    add_index :spree_promotion_rule_taxons, [:taxon_id, :promotion_rule_id], unique: true
-    add_index :spree_promotion_rule_users, [:user_id, :promotion_rule_id], unique: true
+    add_index :pallastrade_product_promotion_rules, [:product_id, :promotion_rule_id], unique: true
+    add_index :pallastrade_promotion_rule_taxons, [:taxon_id, :promotion_rule_id], unique: true
+    add_index :pallastrade_promotion_rule_users, [:user_id, :promotion_rule_id], unique: true
   end
 end

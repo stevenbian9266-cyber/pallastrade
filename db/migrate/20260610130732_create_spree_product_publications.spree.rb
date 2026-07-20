@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20260601000001)
+﻿# This migration comes from spree (originally 20260601000001)
 class CreateSpreeProductPublications < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_product_publications do |t|
+    create_table :pallastrade_product_publications do |t|
       t.references :product, null: false
       t.references :channel, null: false
       t.datetime :published_at
@@ -9,7 +9,7 @@ class CreateSpreeProductPublications < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :spree_product_publications, %i[product_id channel_id], unique: true,
+    add_index :pallastrade_product_publications, %i[product_id channel_id], unique: true,
               name: 'index_spree_product_publications_on_product_and_channel'
   end
 end

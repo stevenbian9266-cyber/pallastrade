@@ -1,0 +1,28 @@
+﻿# encoding: UTF-8
+lib = File.expand_path('../lib/', __FILE__)
+$LOAD_PATH.unshift lib unless $LOAD_PATH.include?(lib)
+
+require '<%= file_name %>/version'
+
+Gem::Specification.new do |s|
+  s.platform    = Gem::Platform::RUBY
+  s.name        = '<%= file_name %>'
+  s.version     = <%= class_name %>::VERSION
+  s.summary     = "PallasTrade Commerce <%= human_name %> Extension"
+  s.required_ruby_version = '>= 3.2'
+
+  s.author    = '<%= author_name %>'
+  s.email     = '<%= author_email %>'
+  s.homepage  = 'https://github.com/<%= file_name %>'
+  s.license   = 'MIT'
+
+  s.files        = Dir["{app,config,db,lib,vendor}/**/*", "LICENSE.md", "Rakefile", "README.md"].reject { |f| f.match(/^spec/) && !f.match(/^spec\/fixtures/) }
+  s.require_path = 'lib'
+  s.requirements << 'none'
+
+  pallastrade_version = '>= 5.4.0.beta'
+  s.add_dependency 'PallasTrade', pallastrade_version
+  s.add_dependency 'pallastrade_pallastrade_admin', pallastrade_version
+
+  s.add_development_dependency 'pallastrade_pallastrade_dev_tools'
+end

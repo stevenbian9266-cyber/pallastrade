@@ -1,0 +1,44 @@
+﻿<div class="card mb-6">
+  <div class="card-body">
+    <div class="form-group">
+      <%= f.pallastrade_text_field :name, required: true, autofocus: f.object.new_record? %>
+    </div>
+
+    <div class="grid grid-cols-12 gap-6">
+      <div class="form-group col-span-12 lg:col-span-4">
+        <%= f.pallastrade_text_field :namespace, required: true, placeholder: 'eg. custom' %>
+      </div>
+      <div class="form-group col-span-12 lg:col-span-8">
+        <%= f.pallastrade_text_field :key, required: true, placeholder: 'eg. id' %>
+      </div>
+    </div>
+
+    <% if f.object.new_record? || f.object.metafields.empty? %>
+      <div class="form-group">
+        <%= f.pallastrade_select :resource_type, metafield_definition_resource_types, { include_blank: true, autocomplete: true, label: PallasTrade.t(:resource) }, { required: true } %>
+      </div>
+
+      <div class="form-group">
+        <%= f.pallastrade_select :metafield_type, metafield_definition_types, { include_blank: true, autocomplete: true, label: PallasTrade.t(:type) }, { required: true } %>
+      </div>
+    <% else %>
+      <div class="alert alert-warning">
+        <%= PallasTrade.t('admin.metafield_definitions.edit_warning') %>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :resource_type, PallasTrade.t(:resource) %>
+        <p class="font-bold"><%= f.object.resource_type.demodulize.titleize %></p>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :metafield_type, PallasTrade.t(:type) %>
+        <p class="font-bold"><%= f.object.metafield_type.demodulize.titleize %></p>
+      </div>
+    <% end %>
+
+    <div class="form-group">
+      <%= f.pallastrade_select :display_on, display_on_options(PallasTrade::MetafieldDefinition), { include_blank: true, autocomplete: true }, { required: true } %>
+    </div>
+  </div>
+</div>

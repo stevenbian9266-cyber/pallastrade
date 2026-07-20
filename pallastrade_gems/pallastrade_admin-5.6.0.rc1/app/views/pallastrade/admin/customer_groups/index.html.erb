@@ -1,0 +1,9 @@
+﻿<% content_for :page_title do %>
+  <%= PallasTrade.t(:customer_groups) %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= link_to_with_icon 'plus', PallasTrade.t(:new_customer_group), PallasTrade.new_admin_customer_group_path, class: 'btn btn-primary' if can?(:create, PallasTrade::CustomerGroup) %>
+<% end %>
+
+<%= render_table @collection, :customer_groups %>

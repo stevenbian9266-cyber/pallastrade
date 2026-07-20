@@ -1,4 +1,4 @@
-# This migration comes from spree (originally 20260707000001)
+﻿# This migration comes from spree (originally 20260707000001)
 class AddFingerprintToSpreeCreditCards < ActiveRecord::Migration[7.2]
   INDEX_NAME = 'index_spree_credit_cards_unique_fingerprint'.freeze
 
@@ -26,7 +26,7 @@ class AddFingerprintToSpreeCreditCards < ActiveRecord::Migration[7.2]
         )
       SQL
     else
-      add_index :spree_credit_cards, [:user_id, :payment_method_id, :fingerprint, :month, :year],
+      add_index :pallastrade_credit_cards, [:user_id, :payment_method_id, :fingerprint, :month, :year],
                 unique: true,
                 where: 'fingerprint IS NOT NULL AND deleted_at IS NULL',
                 name: INDEX_NAME

@@ -1,4 +1,4 @@
-require "active_support/core_ext/integer/time"
+﻿require "active_support/core_ext/integer/time"
 
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
@@ -45,7 +45,7 @@ Rails.application.configure do
     routes.default_url_options = { host: public_host, protocol: no_ssl ? "http" : "https" }
   end
 
-  # Serve compiled assets (and, via Spree.cdn_host in config/initializers/spree.rb,
+  # Serve compiled assets (and, via PallasTrade.cdn_host in config/initializers/PallasTrade.rb,
   # Active Storage attachments) from a CDN. Host only, no protocol.
   config.asset_host = ENV["CDN_HOST"] if ENV["CDN_HOST"].present?
 

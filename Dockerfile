@@ -8,10 +8,10 @@ ARG NODE_VERSION=22
 # cookie configuration). Only dist/ reaches the final image; the Node
 # toolchain never does.
 #
-#   stock  (default) — the template published inside @spree/cli, with
+#   stock  (default) — the template published inside @pallastrade/cli, with
 #                      dependency pins matching that CLI release
 #   custom           — your own dashboard app, provided as a named build
-#                      context (`spree build --production` does this):
+#                      context (`pallastrade build --production` does this):
 #
 #     docker build backend/ \
 #       --build-arg DASHBOARD_SOURCE=custom \
@@ -75,17 +75,21 @@ RUN apt-get update -qq && \
   rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Install application gems
-COPY .ruby-version Gemfile Gemfile.lock ./
-RUN bundle install && \
+COPY .ruby-version Gemfile ./
+COPY pallastrade_gems/ ./pallastrade_gems/
+RUN unset BUNDLE_DEPLOYMENT && unset BUNDLE_WITHOUT && bundle install --jobs 4 && \
   rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
   bundle exec bootsnap precompile --gemfile
 
 # Copy application code
+ARG CACHEBUST=0
 COPY . .
 
-# Precompile bootsnap code for faster boot times and assets
-RUN bundle exec bootsnap precompile app/ lib/ && \
-  SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
+# Fix Windows CRLF in bin/* files (shebang lines need LF)
+RUN sed -i 's/\r$//' bin/*
+
+# Precompile bootsnap code for faster boot times
+RUN bundle exec bootsnap precompile app/ lib/
 
 # Development stage: inherits the build stage (which has build-essential,
 # libpq-dev, etc. and a full bundle minus dev/test). Adds the dev/test gems

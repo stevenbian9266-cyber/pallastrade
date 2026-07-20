@@ -1,10 +1,10 @@
-# This migration comes from spree (originally 20250605131334)
+﻿# This migration comes from spree (originally 20250605131334)
 # these fields were not present when someone used a custom user class
 # so we need to ensure this is setup properly
 class AddMissingFieldsToUsers < ActiveRecord::Migration[7.2]
   def change
-    users_table = Spree.user_class.table_name
-    admin_users_table = Spree.admin_user_class.table_name
+    users_table = PallasTrade.user_class.table_name
+    admin_users_table = PallasTrade.admin_user_class.table_name
 
     change_table users_table do |t|
       t.string :login unless column_exists?(users_table, :login)

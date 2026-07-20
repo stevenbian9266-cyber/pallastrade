@@ -1,10 +1,10 @@
-# This migration comes from spree (originally 20230210142732)
+﻿# This migration comes from spree (originally 20230210142732)
 class CreateStoreTranslations < ActiveRecord::Migration[6.1]
   def change
-    if ActiveRecord::Base.connection.table_exists?('spree_store_translations')
+    if ActiveRecord::Base.connection.table_exists?('spree_pallastrade_store_translations')
       add_new_translation_columns_to_globalize_table
     else
-      create_table :spree_store_translations do |t|
+      create_table :pallastrade_store_translations do |t|
         # Translated attribute(s)
         t.string :name
         t.text :meta_description
@@ -25,10 +25,10 @@ class CreateStoreTranslations < ActiveRecord::Migration[6.1]
         t.timestamps null: false
       end
 
-      add_index :spree_store_translations, :locale, name: :index_spree_store_translations_on_locale
+      add_index :pallastrade_store_translations, :locale, name: :index_spree_store_translations_on_locale
     end
 
-    add_index :spree_store_translations, [:spree_store_id, :locale], name: :index_spree_store_translations_on_spree_store_id_locale, unique: true
+    add_index :pallastrade_store_translations, [:spree_store_id, :locale], name: :index_spree_store_translations_on_spree_store_id_locale, unique: true
   end
 
   private

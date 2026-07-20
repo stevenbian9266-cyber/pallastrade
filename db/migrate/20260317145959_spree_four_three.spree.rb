@@ -1,8 +1,8 @@
-# This migration comes from spree (originally 20210914000000)
+﻿# This migration comes from spree (originally 20210914000000)
 class SpreeFourThree < ActiveRecord::Migration[5.2]
   def up
     # This migration is just a compressed version of all the previous
-    # migrations for spree_core. Do not run it if one of the core tables
+    # migrations for pallastrade_core. Do not run it if one of the core tables
     # already exists. Assume the best.
     return if data_source_exists?(:spree_addresses)
 
@@ -20,7 +20,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["sluggable_type"], name: "index_friendly_id_slugs_on_sluggable_type"
     end
 
-    create_table "spree_addresses", force: :cascade do |t|
+    create_table "spree_pallastrade_addresses", force: :cascade do |t|
       t.string "firstname"
       t.string "lastname"
       t.string "address1"
@@ -46,7 +46,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["user_id"], name: "index_spree_addresses_on_user_id"
     end
 
-    create_table "spree_adjustments", force: :cascade do |t|
+    create_table "spree_pallastrade_adjustments", force: :cascade do |t|
       t.string "source_type"
       t.bigint "source_id"
       t.string "adjustable_type"
@@ -66,7 +66,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["source_id", "source_type"], name: "index_spree_adjustments_on_source_id_and_source_type"
     end
 
-    create_table "spree_assets", force: :cascade do |t|
+    create_table "spree_pallastrade_assets", force: :cascade do |t|
       t.string "viewable_type"
       t.bigint "viewable_id"
       t.integer "attachment_width"
@@ -85,7 +85,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["viewable_type", "type"], name: "index_assets_on_viewable_type_and_type"
     end
 
-    create_table "spree_calculators", force: :cascade do |t|
+    create_table "spree_pallastrade_calculators", force: :cascade do |t|
       t.string "type"
       t.string "calculable_type"
       t.bigint "calculable_id"
@@ -98,7 +98,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["id", "type"], name: "index_spree_calculators_on_id_and_type"
     end
 
-    create_table "spree_countries", force: :cascade do |t|
+    create_table "spree_pallastrade_countries", force: :cascade do |t|
       t.string "iso_name"
       t.string "iso", null: false
       t.string "iso3", null: false
@@ -114,7 +114,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["iso3"], name: "index_spree_countries_on_iso3", unique: true
     end
 
-    create_table "spree_credit_cards", force: :cascade do |t|
+    create_table "spree_pallastrade_credit_cards", force: :cascade do |t|
       t.string "month"
       t.string "year"
       t.string "cc_type"
@@ -135,7 +135,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["user_id"], name: "index_spree_credit_cards_on_user_id"
     end
 
-    create_table "spree_customer_returns", force: :cascade do |t|
+    create_table "spree_pallastrade_customer_returns", force: :cascade do |t|
       t.string "number"
       t.bigint "stock_location_id"
       t.datetime "created_at", precision: 6, null: false
@@ -146,7 +146,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["store_id"], name: "index_spree_customer_returns_on_store_id"
     end
 
-    create_table "spree_gateways", force: :cascade do |t|
+    create_table "spree_pallastrade_gateways", force: :cascade do |t|
       t.string "type"
       t.string "name"
       t.text "description"
@@ -161,7 +161,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["test_mode"], name: "index_spree_gateways_on_test_mode"
     end
 
-    create_table "spree_inventory_units", force: :cascade do |t|
+    create_table "spree_pallastrade_inventory_units", force: :cascade do |t|
       t.string "state"
       t.bigint "variant_id"
       t.bigint "order_id"
@@ -179,7 +179,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["variant_id"], name: "index_inventory_units_on_variant_id"
     end
 
-    create_table "spree_line_items", force: :cascade do |t|
+    create_table "spree_pallastrade_line_items", force: :cascade do |t|
       t.bigint "variant_id"
       t.bigint "order_id"
       t.integer "quantity", null: false
@@ -201,7 +201,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["variant_id"], name: "index_spree_line_items_on_variant_id"
     end
 
-    create_table "spree_log_entries", force: :cascade do |t|
+    create_table "spree_pallastrade_log_entries", force: :cascade do |t|
       t.string "source_type"
       t.bigint "source_id"
       t.text "details"
@@ -210,17 +210,17 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["source_id", "source_type"], name: "index_spree_log_entries_on_source_id_and_source_type"
     end
 
-    create_table "spree_option_type_prototypes", force: :cascade do |t|
+    create_table "spree_pallastrade_option_type_prototypes", force: :cascade do |t|
       t.bigint "prototype_id"
       t.bigint "option_type_id"
       t.datetime "created_at"
       t.datetime "updated_at"
       t.index ["option_type_id"], name: "index_spree_option_type_prototypes_on_option_type_id"
-      t.index ["prototype_id", "option_type_id"], name: "spree_option_type_prototypes_prototype_id_option_type_id", unique: true
+      t.index ["prototype_id", "option_type_id"], name: "spree_pallastrade_option_type_prototypes_prototype_id_option_type_id", unique: true
       t.index ["prototype_id"], name: "index_spree_option_type_prototypes_on_prototype_id"
     end
 
-    create_table "spree_option_types", force: :cascade do |t|
+    create_table "spree_pallastrade_option_types", force: :cascade do |t|
       t.string "name", limit: 100
       t.string "presentation", limit: 100
       t.integer "position", default: 0, null: false
@@ -232,7 +232,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["position"], name: "index_spree_option_types_on_position"
     end
 
-    create_table "spree_option_value_variants", force: :cascade do |t|
+    create_table "spree_pallastrade_option_value_variants", force: :cascade do |t|
       t.bigint "variant_id"
       t.bigint "option_value_id"
       t.datetime "created_at"
@@ -242,7 +242,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["variant_id"], name: "index_spree_option_value_variants_on_variant_id"
     end
 
-    create_table "spree_option_values", force: :cascade do |t|
+    create_table "spree_pallastrade_option_values", force: :cascade do |t|
       t.integer "position"
       t.string "name"
       t.string "presentation"
@@ -254,7 +254,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["position"], name: "index_spree_option_values_on_position"
     end
 
-    create_table "spree_order_promotions", force: :cascade do |t|
+    create_table "spree_pallastrade_order_promotions", force: :cascade do |t|
       t.bigint "order_id"
       t.bigint "promotion_id"
       t.datetime "created_at"
@@ -264,7 +264,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["promotion_id"], name: "index_spree_order_promotions_on_promotion_id"
     end
 
-    create_table "spree_orders", force: :cascade do |t|
+    create_table "spree_pallastrade_orders", force: :cascade do |t|
       t.string "number", limit: 32
       t.decimal "item_total", precision: 10, scale: 2, default: "0.0", null: false
       t.decimal "total", precision: 10, scale: 2, default: "0.0", null: false
@@ -316,7 +316,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["user_id", "created_by_id"], name: "index_spree_orders_on_user_id_and_created_by_id"
     end
 
-    create_table "spree_payment_capture_events", force: :cascade do |t|
+    create_table "spree_pallastrade_payment_capture_events", force: :cascade do |t|
       t.decimal "amount", precision: 10, scale: 2, default: "0.0"
       t.bigint "payment_id"
       t.datetime "created_at", precision: 6, null: false
@@ -324,7 +324,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["payment_id"], name: "index_spree_payment_capture_events_on_payment_id"
     end
 
-    create_table "spree_payment_methods", force: :cascade do |t|
+    create_table "spree_pallastrade_payment_methods", force: :cascade do |t|
       t.string "type"
       t.string "name"
       t.text "description"
@@ -339,7 +339,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["id", "type"], name: "index_spree_payment_methods_on_id_and_type"
     end
 
-    create_table "spree_payment_methods_stores", id: false, force: :cascade do |t|
+    create_table "spree_pallastrade_payment_methods_stores", id: false, force: :cascade do |t|
       t.bigint "payment_method_id"
       t.bigint "store_id"
       t.index ["payment_method_id", "store_id"], name: "payment_mentod_id_store_id_unique_index", unique: true
@@ -347,7 +347,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["store_id"], name: "index_spree_payment_methods_stores_on_store_id"
     end
 
-    create_table "spree_payments", force: :cascade do |t|
+    create_table "spree_pallastrade_payments", force: :cascade do |t|
       t.decimal "amount", precision: 10, scale: 2, default: "0.0", null: false
       t.bigint "order_id"
       t.string "source_type"
@@ -367,7 +367,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["source_id", "source_type"], name: "index_spree_payments_on_source_id_and_source_type"
     end
 
-    create_table "spree_preferences", force: :cascade do |t|
+    create_table "spree_pallastrade_preferences", force: :cascade do |t|
       t.text "value"
       t.string "key"
       t.datetime "created_at", precision: 6, null: false
@@ -375,7 +375,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["key"], name: "index_spree_preferences_on_key", unique: true
     end
 
-    create_table "spree_prices", force: :cascade do |t|
+    create_table "spree_pallastrade_prices", force: :cascade do |t|
       t.bigint "variant_id", null: false
       t.decimal "amount", precision: 10, scale: 2
       t.string "currency"
@@ -388,7 +388,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["variant_id"], name: "index_spree_prices_on_variant_id"
     end
 
-    create_table "spree_product_option_types", force: :cascade do |t|
+    create_table "spree_pallastrade_product_option_types", force: :cascade do |t|
       t.integer "position"
       t.bigint "product_id"
       t.bigint "option_type_id"
@@ -399,7 +399,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["product_id"], name: "index_spree_product_option_types_on_product_id"
     end
 
-    create_table "spree_product_promotion_rules", force: :cascade do |t|
+    create_table "spree_pallastrade_product_promotion_rules", force: :cascade do |t|
       t.bigint "product_id"
       t.bigint "promotion_rule_id"
       t.datetime "created_at"
@@ -408,7 +408,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["promotion_rule_id", "product_id"], name: "index_products_promotion_rules_on_promotion_rule_and_product"
     end
 
-    create_table "spree_products", force: :cascade do |t|
+    create_table "spree_pallastrade_products", force: :cascade do |t|
       t.string "name", default: "", null: false
       t.text "description"
       t.datetime "available_on"
@@ -432,7 +432,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["tax_category_id"], name: "index_spree_products_on_tax_category_id"
     end
 
-    create_table "spree_products_stores", force: :cascade do |t|
+    create_table "spree_pallastrade_products_stores", force: :cascade do |t|
       t.bigint "product_id"
       t.bigint "store_id"
       t.datetime "created_at", null: false
@@ -442,7 +442,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["store_id"], name: "index_spree_products_stores_on_store_id"
     end
 
-    create_table "spree_products_taxons", force: :cascade do |t|
+    create_table "spree_pallastrade_products_taxons", force: :cascade do |t|
       t.bigint "product_id"
       t.bigint "taxon_id"
       t.integer "position"
@@ -454,7 +454,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["taxon_id"], name: "index_spree_products_taxons_on_taxon_id"
     end
 
-    create_table "spree_promotion_action_line_items", force: :cascade do |t|
+    create_table "spree_pallastrade_promotion_action_line_items", force: :cascade do |t|
       t.bigint "promotion_action_id"
       t.bigint "variant_id"
       t.integer "quantity", default: 1
@@ -464,7 +464,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["variant_id"], name: "index_spree_promotion_action_line_items_on_variant_id"
     end
 
-    create_table "spree_promotion_actions", force: :cascade do |t|
+    create_table "spree_pallastrade_promotion_actions", force: :cascade do |t|
       t.bigint "promotion_id"
       t.integer "position"
       t.string "type"
@@ -476,14 +476,14 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["promotion_id"], name: "index_spree_promotion_actions_on_promotion_id"
     end
 
-    create_table "spree_promotion_categories", force: :cascade do |t|
+    create_table "spree_pallastrade_promotion_categories", force: :cascade do |t|
       t.string "name"
       t.datetime "created_at", precision: 6, null: false
       t.datetime "updated_at", precision: 6, null: false
       t.string "code"
     end
 
-    create_table "spree_promotion_rule_taxons", force: :cascade do |t|
+    create_table "spree_pallastrade_promotion_rule_taxons", force: :cascade do |t|
       t.bigint "taxon_id"
       t.bigint "promotion_rule_id"
       t.datetime "created_at"
@@ -492,7 +492,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["taxon_id"], name: "index_spree_promotion_rule_taxons_on_taxon_id"
     end
 
-    create_table "spree_promotion_rule_users", force: :cascade do |t|
+    create_table "spree_pallastrade_promotion_rule_users", force: :cascade do |t|
       t.bigint "user_id"
       t.bigint "promotion_rule_id"
       t.datetime "created_at"
@@ -501,7 +501,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["user_id", "promotion_rule_id"], name: "index_promotion_rules_users_on_user_id_and_promotion_rule_id"
     end
 
-    create_table "spree_promotion_rules", force: :cascade do |t|
+    create_table "spree_pallastrade_promotion_rules", force: :cascade do |t|
       t.bigint "promotion_id"
       t.bigint "user_id"
       t.bigint "product_group_id"
@@ -515,7 +515,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["user_id"], name: "index_promotion_rules_on_user_id"
     end
 
-    create_table "spree_promotions", force: :cascade do |t|
+    create_table "spree_pallastrade_promotions", force: :cascade do |t|
       t.string "description"
       t.datetime "expires_at"
       t.datetime "starts_at"
@@ -538,7 +538,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["starts_at"], name: "index_spree_promotions_on_starts_at"
     end
 
-    create_table "spree_promotions_stores", force: :cascade do |t|
+    create_table "spree_pallastrade_promotions_stores", force: :cascade do |t|
       t.bigint "promotion_id"
       t.bigint "store_id"
       t.datetime "created_at", null: false
@@ -548,7 +548,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["store_id"], name: "index_spree_promotions_stores_on_store_id"
     end
 
-    create_table "spree_prototype_taxons", force: :cascade do |t|
+    create_table "spree_pallastrade_prototype_taxons", force: :cascade do |t|
       t.bigint "taxon_id"
       t.bigint "prototype_id"
       t.datetime "created_at"
@@ -558,13 +558,13 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["taxon_id"], name: "index_spree_prototype_taxons_on_taxon_id"
     end
 
-    create_table "spree_prototypes", force: :cascade do |t|
+    create_table "spree_pallastrade_prototypes", force: :cascade do |t|
       t.string "name"
       t.datetime "created_at", precision: 6, null: false
       t.datetime "updated_at", precision: 6, null: false
     end
 
-    create_table "spree_refund_reasons", force: :cascade do |t|
+    create_table "spree_pallastrade_refund_reasons", force: :cascade do |t|
       t.string "name"
       t.boolean "active", default: true
       t.boolean "mutable", default: true
@@ -573,7 +573,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["name"], name: "index_spree_refund_reasons_on_name", unique: true
     end
 
-    create_table "spree_refunds", force: :cascade do |t|
+    create_table "spree_pallastrade_refunds", force: :cascade do |t|
       t.bigint "payment_id"
       t.decimal "amount", precision: 10, scale: 2, default: "0.0", null: false
       t.string "transaction_id"
@@ -586,7 +586,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["reimbursement_id"], name: "index_spree_refunds_on_reimbursement_id"
     end
 
-    create_table "spree_reimbursement_credits", force: :cascade do |t|
+    create_table "spree_pallastrade_reimbursement_credits", force: :cascade do |t|
       t.decimal "amount", precision: 10, scale: 2, default: "0.0", null: false
       t.bigint "reimbursement_id"
       t.bigint "creditable_id"
@@ -597,7 +597,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["reimbursement_id"], name: "index_spree_reimbursement_credits_on_reimbursement_id"
     end
 
-    create_table "spree_reimbursement_types", force: :cascade do |t|
+    create_table "spree_pallastrade_reimbursement_types", force: :cascade do |t|
       t.string "name"
       t.boolean "active", default: true
       t.boolean "mutable", default: true
@@ -608,7 +608,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["type"], name: "index_spree_reimbursement_types_on_type"
     end
 
-    create_table "spree_reimbursements", force: :cascade do |t|
+    create_table "spree_pallastrade_reimbursements", force: :cascade do |t|
       t.string "number"
       t.string "reimbursement_status"
       t.bigint "customer_return_id"
@@ -621,7 +621,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["order_id"], name: "index_spree_reimbursements_on_order_id"
     end
 
-    create_table "spree_return_authorization_reasons", force: :cascade do |t|
+    create_table "spree_pallastrade_return_authorization_reasons", force: :cascade do |t|
       t.string "name"
       t.boolean "active", default: true
       t.boolean "mutable", default: true
@@ -630,7 +630,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["name"], name: "index_spree_return_authorization_reasons_on_name", unique: true
     end
 
-    create_table "spree_return_authorizations", force: :cascade do |t|
+    create_table "spree_pallastrade_return_authorizations", force: :cascade do |t|
       t.string "number"
       t.string "state"
       t.bigint "order_id"
@@ -645,7 +645,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["stock_location_id"], name: "index_spree_return_authorizations_on_stock_location_id"
     end
 
-    create_table "spree_return_items", force: :cascade do |t|
+    create_table "spree_pallastrade_return_items", force: :cascade do |t|
       t.bigint "return_authorization_id"
       t.bigint "inventory_unit_id"
       t.bigint "exchange_variant_id"
@@ -671,7 +671,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["return_authorization_id"], name: "index_spree_return_items_on_return_authorization_id"
     end
 
-    create_table "spree_role_users", force: :cascade do |t|
+    create_table "spree_pallastrade_role_users", force: :cascade do |t|
       t.bigint "role_id"
       t.bigint "user_id"
       t.datetime "created_at"
@@ -680,14 +680,14 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["user_id"], name: "index_spree_role_users_on_user_id"
     end
 
-    create_table "spree_roles", force: :cascade do |t|
+    create_table "spree_pallastrade_roles", force: :cascade do |t|
       t.string "name"
       t.datetime "created_at"
       t.datetime "updated_at"
       t.index ["name"], name: "index_spree_roles_on_name", unique: true
     end
 
-    create_table "spree_shipments", force: :cascade do |t|
+    create_table "spree_pallastrade_shipments", force: :cascade do |t|
       t.string "tracking"
       t.string "number"
       t.decimal "cost", precision: 10, scale: 2, default: "0.0"
@@ -711,14 +711,14 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["stock_location_id"], name: "index_spree_shipments_on_stock_location_id"
     end
 
-    create_table "spree_shipping_categories", force: :cascade do |t|
+    create_table "spree_pallastrade_shipping_categories", force: :cascade do |t|
       t.string "name"
       t.datetime "created_at", precision: 6, null: false
       t.datetime "updated_at", precision: 6, null: false
       t.index ["name"], name: "index_spree_shipping_categories_on_name"
     end
 
-    create_table "spree_shipping_method_categories", force: :cascade do |t|
+    create_table "spree_pallastrade_shipping_method_categories", force: :cascade do |t|
       t.bigint "shipping_method_id", null: false
       t.bigint "shipping_category_id", null: false
       t.datetime "created_at", precision: 6, null: false
@@ -728,7 +728,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["shipping_method_id"], name: "index_spree_shipping_method_categories_on_shipping_method_id"
     end
 
-    create_table "spree_shipping_method_zones", force: :cascade do |t|
+    create_table "spree_pallastrade_shipping_method_zones", force: :cascade do |t|
       t.bigint "shipping_method_id"
       t.bigint "zone_id"
       t.datetime "created_at"
@@ -737,7 +737,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["zone_id"], name: "index_spree_shipping_method_zones_on_zone_id"
     end
 
-    create_table "spree_shipping_methods", force: :cascade do |t|
+    create_table "spree_pallastrade_shipping_methods", force: :cascade do |t|
       t.string "name"
       t.string "display_on"
       t.datetime "deleted_at"
@@ -751,7 +751,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["tax_category_id"], name: "index_spree_shipping_methods_on_tax_category_id"
     end
 
-    create_table "spree_shipping_rates", force: :cascade do |t|
+    create_table "spree_pallastrade_shipping_rates", force: :cascade do |t|
       t.bigint "shipment_id"
       t.bigint "shipping_method_id"
       t.boolean "selected", default: false
@@ -760,13 +760,13 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.datetime "updated_at", precision: 6, null: false
       t.bigint "tax_rate_id"
       t.index ["selected"], name: "index_spree_shipping_rates_on_selected"
-      t.index ["shipment_id", "shipping_method_id"], name: "spree_shipping_rates_join_index", unique: true
+      t.index ["shipment_id", "shipping_method_id"], name: "spree_pallastrade_shipping_rates_join_index", unique: true
       t.index ["shipment_id"], name: "index_spree_shipping_rates_on_shipment_id"
       t.index ["shipping_method_id"], name: "index_spree_shipping_rates_on_shipping_method_id"
       t.index ["tax_rate_id"], name: "index_spree_shipping_rates_on_tax_rate_id"
     end
 
-    create_table "spree_state_changes", force: :cascade do |t|
+    create_table "spree_pallastrade_state_changes", force: :cascade do |t|
       t.string "name"
       t.string "previous_state"
       t.bigint "stateful_id"
@@ -778,7 +778,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["stateful_id", "stateful_type"], name: "index_spree_state_changes_on_stateful_id_and_stateful_type"
     end
 
-    create_table "spree_states", force: :cascade do |t|
+    create_table "spree_pallastrade_states", force: :cascade do |t|
       t.string "name"
       t.string "abbr"
       t.bigint "country_id"
@@ -787,7 +787,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["country_id"], name: "index_spree_states_on_country_id"
     end
 
-    create_table "spree_stock_items", force: :cascade do |t|
+    create_table "spree_pallastrade_stock_items", force: :cascade do |t|
       t.bigint "stock_location_id"
       t.bigint "variant_id"
       t.integer "count_on_hand", default: 0, null: false
@@ -802,7 +802,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["variant_id"], name: "index_spree_stock_items_on_variant_id"
     end
 
-    create_table "spree_stock_locations", force: :cascade do |t|
+    create_table "spree_pallastrade_stock_locations", force: :cascade do |t|
       t.string "name"
       t.datetime "created_at", precision: 6, null: false
       t.datetime "updated_at", precision: 6, null: false
@@ -826,7 +826,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["state_id"], name: "index_spree_stock_locations_on_state_id"
     end
 
-    create_table "spree_stock_movements", force: :cascade do |t|
+    create_table "spree_pallastrade_stock_movements", force: :cascade do |t|
       t.bigint "stock_item_id"
       t.integer "quantity", default: 0
       t.string "action"
@@ -838,7 +838,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["stock_item_id"], name: "index_spree_stock_movements_on_stock_item_id"
     end
 
-    create_table "spree_stock_transfers", force: :cascade do |t|
+    create_table "spree_pallastrade_stock_transfers", force: :cascade do |t|
       t.string "type"
       t.string "reference"
       t.bigint "source_location_id"
@@ -851,13 +851,13 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["source_location_id"], name: "index_spree_stock_transfers_on_source_location_id"
     end
 
-    create_table "spree_store_credit_categories", force: :cascade do |t|
+    create_table "spree_pallastrade_store_credit_categories", force: :cascade do |t|
       t.string "name"
       t.datetime "created_at", precision: 6, null: false
       t.datetime "updated_at", precision: 6, null: false
     end
 
-    create_table "spree_store_credit_events", force: :cascade do |t|
+    create_table "spree_pallastrade_store_credit_events", force: :cascade do |t|
       t.bigint "store_credit_id", null: false
       t.string "action", null: false
       t.decimal "amount", precision: 8, scale: 2
@@ -868,11 +868,11 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.datetime "deleted_at"
       t.datetime "created_at", precision: 6, null: false
       t.datetime "updated_at", precision: 6, null: false
-      t.index ["originator_id", "originator_type"], name: "spree_store_credit_events_originator"
+      t.index ["originator_id", "originator_type"], name: "spree_pallastrade_store_credit_events_originator"
       t.index ["store_credit_id"], name: "index_spree_store_credit_events_on_store_credit_id"
     end
 
-    create_table "spree_store_credit_types", force: :cascade do |t|
+    create_table "spree_pallastrade_store_credit_types", force: :cascade do |t|
       t.string "name"
       t.integer "priority"
       t.datetime "created_at", precision: 6, null: false
@@ -880,7 +880,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["priority"], name: "index_spree_store_credit_types_on_priority"
     end
 
-    create_table "spree_store_credits", force: :cascade do |t|
+    create_table "spree_pallastrade_store_credits", force: :cascade do |t|
       t.bigint "user_id"
       t.bigint "category_id"
       t.bigint "created_by_id"
@@ -897,13 +897,13 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.datetime "updated_at", precision: 6, null: false
       t.bigint "store_id"
       t.index ["deleted_at"], name: "index_spree_store_credits_on_deleted_at"
-      t.index ["originator_id", "originator_type"], name: "spree_store_credits_originator"
+      t.index ["originator_id", "originator_type"], name: "spree_pallastrade_store_credits_originator"
       t.index ["store_id"], name: "index_spree_store_credits_on_store_id"
       t.index ["type_id"], name: "index_spree_store_credits_on_type_id"
       t.index ["user_id"], name: "index_spree_store_credits_on_user_id"
     end
 
-    create_table "spree_stores", force: :cascade do |t|
+    create_table "spree_pallastrade_stores", force: :cascade do |t|
       t.string "name"
       t.string "url"
       t.text "meta_description"
@@ -934,7 +934,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["url"], name: "index_spree_stores_on_url"
     end
 
-    create_table "spree_tax_categories", force: :cascade do |t|
+    create_table "spree_pallastrade_tax_categories", force: :cascade do |t|
       t.string "name"
       t.string "description"
       t.boolean "is_default", default: false
@@ -946,7 +946,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["is_default"], name: "index_spree_tax_categories_on_is_default"
     end
 
-    create_table "spree_tax_rates", force: :cascade do |t|
+    create_table "spree_pallastrade_tax_rates", force: :cascade do |t|
       t.decimal "amount", precision: 8, scale: 5
       t.bigint "zone_id"
       t.bigint "tax_category_id"
@@ -963,7 +963,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["zone_id"], name: "index_spree_tax_rates_on_zone_id"
     end
 
-    create_table "spree_taxonomies", force: :cascade do |t|
+    create_table "spree_pallastrade_taxonomies", force: :cascade do |t|
       t.string "name", null: false
       t.datetime "created_at", precision: 6, null: false
       t.datetime "updated_at", precision: 6, null: false
@@ -974,7 +974,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["store_id"], name: "index_spree_taxonomies_on_store_id"
     end
 
-    create_table "spree_taxons", force: :cascade do |t|
+    create_table "spree_pallastrade_taxons", force: :cascade do |t|
       t.bigint "parent_id"
       t.integer "position", default: 0
       t.string "name", null: false
@@ -1001,7 +1001,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["taxonomy_id"], name: "index_taxons_on_taxonomy_id"
     end
 
-    create_table "spree_trackers", force: :cascade do |t|
+    create_table "spree_pallastrade_trackers", force: :cascade do |t|
       t.string "analytics_id"
       t.boolean "active", default: true
       t.datetime "created_at", precision: 6, null: false
@@ -1010,7 +1010,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["active"], name: "index_spree_trackers_on_active"
     end
 
-    create_table "spree_users", force: :cascade do |t|
+    create_table "spree_pallastrade_users", force: :cascade do |t|
       t.string "encrypted_password", limit: 128
       t.string "password_salt", limit: 128
       t.string "email"
@@ -1037,7 +1037,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.datetime "updated_at", precision: 6, null: false
     end
 
-    create_table "spree_variants", force: :cascade do |t|
+    create_table "spree_pallastrade_variants", force: :cascade do |t|
       t.string "sku", default: "", null: false
       t.decimal "weight", precision: 8, scale: 2, default: "0.0"
       t.decimal "height", precision: 8, scale: 2
@@ -1064,7 +1064,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["track_inventory"], name: "index_spree_variants_on_track_inventory"
     end
 
-    create_table "spree_zone_members", force: :cascade do |t|
+    create_table "spree_pallastrade_zone_members", force: :cascade do |t|
       t.string "zoneable_type"
       t.bigint "zoneable_id"
       t.bigint "zone_id"
@@ -1074,7 +1074,7 @@ class SpreeFourThree < ActiveRecord::Migration[5.2]
       t.index ["zoneable_id", "zoneable_type"], name: "index_spree_zone_members_on_zoneable_id_and_zoneable_type"
     end
 
-    create_table "spree_zones", force: :cascade do |t|
+    create_table "spree_pallastrade_zones", force: :cascade do |t|
       t.string "name"
       t.string "description"
       t.boolean "default_tax", default: false

@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20250728095629)
+﻿# This migration comes from spree (originally 20250728095629)
 class CreateSpreeMetafields < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_metafield_definitions do |t|
+    create_table :pallastrade_metafield_definitions do |t|
       t.string :namespace, null: false
       t.string :key, null: false
       t.string :name, null: false
@@ -14,7 +14,7 @@ class CreateSpreeMetafields < ActiveRecord::Migration[7.2]
       t.index [:resource_type, :namespace, :key], unique: true
     end
 
-    create_table :spree_metafields do |t|
+    create_table :pallastrade_metafields do |t|
       t.string :type, null: false, index: true
       t.references :resource, polymorphic: true, null: false, index: true
       t.references :metafield_definition, null: false, index: true

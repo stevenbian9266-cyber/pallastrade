@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20210921070813)
+﻿# This migration comes from spree (originally 20210921070813)
 class CreateSpreeWishlists < ActiveRecord::Migration[5.2]
   def change
-    create_table :spree_wishlists, if_not_exists: true do |t|
+    create_table :pallastrade_wishlists, if_not_exists: true do |t|
       t.belongs_to :user
       t.belongs_to :store
 
@@ -13,7 +13,7 @@ class CreateSpreeWishlists < ActiveRecord::Migration[5.2]
       t.timestamps
     end
 
-    add_index :spree_wishlists, :token, unique: true
-    add_index :spree_wishlists, [:user_id, :is_default] unless index_exists?(:spree_wishlists, [:user_id, :is_default])
+    add_index :pallastrade_wishlists, :token, unique: true
+    add_index :pallastrade_wishlists, [:user_id, :is_default] unless index_exists?(:spree_wishlists, [:user_id, :is_default])
   end
 end

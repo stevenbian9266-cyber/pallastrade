@@ -1,8 +1,8 @@
-# This migration comes from spree (originally 20260402000001)
+﻿# This migration comes from spree (originally 20260402000001)
 class AddKindToSpreeOptionTypes < ActiveRecord::Migration[7.2]
   def change
     add_column :spree_option_types, :kind, :string, null: false, default: 'dropdown'
-    add_index :spree_option_types, :kind
+    add_index :pallastrade_option_types, :kind
 
     # Backfill: option types named 'color'/'colour' get kind 'color_swatch'
     reversible do |dir|

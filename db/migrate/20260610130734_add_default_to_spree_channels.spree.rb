@@ -1,4 +1,4 @@
-# This migration comes from spree (originally 20260602000001)
+﻿# This migration comes from spree (originally 20260602000001)
 class AddDefaultToSpreeChannels < ActiveRecord::Migration[7.2]
   def change
     add_column :spree_channels, :default, :boolean, null: false, default: false
@@ -7,7 +7,7 @@ class AddDefaultToSpreeChannels < ActiveRecord::Migration[7.2]
     # Postgres and SQLite; MySQL ignores the +where:+ option, so we fall
     # back to a model-level uniqueness validation there.
     unless ActiveRecord::Base.connection.adapter_name.match?(/mysql/i)
-      add_index :spree_channels, :store_id, unique: true,
+      add_index :pallastrade_channels, :store_id, unique: true,
                 where: '"default" = TRUE',
                 name: 'index_spree_channels_default_per_store'
     end

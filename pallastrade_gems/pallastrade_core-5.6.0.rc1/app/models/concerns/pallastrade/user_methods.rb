@@ -1,0 +1,312 @@
+﻿module PallasTrade
+  module UserMethods
+    extend ActiveSupport::Concern
+
+    include PallasTrade::PrefixedId
+    include PallasTrade::Metafields
+    include PallasTrade::Metadata
+    include PallasTrade::UserPaymentSource
+    include PallasTrade::UserReporting
+    include PallasTrade::UserRoles
+    include PallasTrade::RansackableAttributes
+    include PallasTrade::Searchable
+    include PallasTrade::Publishable
+
+    # Opt-in escape hatch for admin-side customer creation. When the host
+    # `PallasTrade::User` includes Devise's `:validatable`, password presence is
+    # enforced on every create; admin-created customers don't pick a
+    # password upfront — they claim the account later via password reset.
+    # The admin Customers controller flips `skip_password_validation = true`
+    # when no password was supplied; the storefront registration path never
+    # sets it, so customer self-signup still requires a password.
+    #
+    # Prepended (not just defined) so it sits above Devise's own
+    # `password_required?` and can fall through with `super` when the flag
+    # isn't set. On `LegacyUser` (gem default, no Devise) `super` raises
+    # NoMethodError if invoked — but the early return covers the only
+    # branch that ever reaches this method on that path, and `LegacyUser`
+    # doesn't call `password_required?` at all, so the override is a no-op
+    # there.
+    module SkipPasswordValidation
+      def password_required?
+        return false if skip_password_validation && encrypted_password.blank? && password.blank?
+        super
+      end
+    end
+
+    included do
+      has_prefix_id :cus  # Stripe: cus_
+
+      attr_accessor :skip_password_validation
+
+      prepend SkipPasswordValidation
+
+      # Enable lifecycle events for user models
+      publishes_lifecycle_events
+
+      # Password reset token (Rails 7.1+ signed token, no DB column needed)
+      # Token auto-invalidates when password changes (salt changes)
+      # Expiration is configurable via PallasTrade::Config.customer_password_reset_expires_in (in minutes)
+      generates_token_for :password_reset, expires_in: PallasTrade::Config.customer_password_reset_expires_in.minutes do
+        # `try` rather than `&.`: models without a password_salt method or
+        # column at all (modern Devise) must fall through to encrypted_password
+        # — a bare call would raise NameError before the fallback.
+        try(:password_salt)&.last(10) || encrypted_password&.last(10)
+      end
+
+      # we need to have this callback before any dependent: :destroy associations
+      # https://github.com/rails/rails/issues/3458
+      before_validation :clone_billing_address, if: :use_billing?
+      before_destroy :check_completed_orders
+
+      attr_accessor :use_billing
+
+      has_person_name
+      normalizes :email, :first_name, :last_name, with: ->(value) { value&.to_s&.squish&.presence }
+      acts_as_taggable_on :tags
+
+      def tags=(tags)
+        self.tag_list = tags
+      end
+
+      #
+      # Associations
+      #
+      has_many :promotion_rule_users, class_name: 'PallasTrade::PromotionRuleUser', foreign_key: :user_id, dependent: :destroy
+      has_many :promotion_rules, through: :promotion_rule_users, class_name: 'PallasTrade::PromotionRule'
+      has_many :orders, foreign_key: :user_id, class_name: 'PallasTrade::Order'
+      has_many :carts, -> { incomplete }, foreign_key: :user_id, class_name: 'PallasTrade::Order'
+      has_many :completed_orders, -> { complete }, foreign_key: :user_id, class_name: 'PallasTrade::Order'
+      has_many :store_credits, class_name: 'PallasTrade::StoreCredit', foreign_key: :user_id, dependent: :destroy
+      has_many :wishlists, class_name: 'PallasTrade::Wishlist', foreign_key: :user_id, dependent: :destroy
+      has_many :wished_items, through: :wishlists, source: :wished_items
+      has_many :gateway_customers, class_name: 'PallasTrade::GatewayCustomer', foreign_key: :user_id
+      has_many :gift_cards, class_name: 'PallasTrade::GiftCard', foreign_key: :user_id, dependent: :destroy
+      has_many :customer_group_users, class_name: 'PallasTrade::CustomerGroupUser', foreign_key: :user_id, as: :user, dependent: :destroy
+      has_many :customer_groups, through: :customer_group_users, class_name: 'PallasTrade::CustomerGroup'
+      has_many :identities, class_name: 'PallasTrade::UserIdentity', as: :user, dependent: :destroy
+      belongs_to :ship_address, class_name: 'PallasTrade::Address', optional: true
+      belongs_to :bill_address, class_name: 'PallasTrade::Address', optional: true
+
+      # Replaces the customer's group membership. Accepts both prefixed IDs and
+      # raw integer IDs. Only groups belonging to the current store are
+      # assigned — ids from another store are dropped, preventing cross-store
+      # membership. Mirrors +PallasTrade::Product#category_ids=+.
+      def customer_group_ids=(ids)
+        decoded_ids = Array(ids).filter_map do |id|
+          id.to_s.include?('_') ? PallasTrade::CustomerGroup.decode_prefixed_id(id) : id
+        end
+        super(PallasTrade::CustomerGroup.for_store(PallasTrade::Current.store).where(id: decoded_ids).ids)
+      end
+
+      #
+      # Attachments
+      #
+      has_one_attached :avatar, service: PallasTrade.public_storage_service_name
+      has_rich_text :internal_note
+
+      #
+      # Attributes
+      #
+      attr_accessor :confirm_email, :terms_of_service
+
+      def self.find_by_password_reset_token(token)
+        find_by_token_for(:password_reset, token)
+      end
+
+      def self.find_by_password_reset_token!(token)
+        find_by_token_for!(:password_reset, token)
+      end
+
+      def self.search(query)
+        return none if query.blank?
+
+        # `search_condition` handles sanitization itself — it escapes LIKE
+        # wildcards for plain columns and compares encrypted columns by
+        # equality. Pass the raw query so it can branch correctly.
+        conditions = []
+        conditions << search_condition(self, :email, query)
+        conditions << search_condition(self, :first_name, query)
+        conditions << search_condition(self, :last_name, query)
+
+        full_name = NameOfPerson::PersonName.full(query.to_s.strip)
+
+        if full_name.first.present? && full_name.last.present?
+          conditions << search_condition(self, :first_name, full_name.first)
+          conditions << search_condition(self, :last_name, full_name.last)
+        end
+
+        where(conditions.reduce(:or))
+      end
+
+      # Backward compatibility alias — remove in Spree 6.0
+      def self.multi_search(query) = search(query)
+
+      self.whitelisted_ransackable_associations = %w[bill_address ship_address addresses tags PALLASTRADE_roles orders customer_groups]
+      self.whitelisted_ransackable_attributes = %w[id email first_name last_name phone accepts_email_marketing
+                                                    created_at updated_at last_sign_in_at]
+      self.whitelisted_ransackable_scopes = %w[search multi_search with_min_total_spent]
+
+      scope :with_min_total_spent, ->(amount) {
+        joins(:orders).where(PALLASTRADE_orders: { state: 'complete' }).
+          group("#{table_name}.id").
+          having('SUM(PALLASTRADE_orders.total) >= ?', amount.to_d)
+      }
+
+      # Precomputes orders_count, total_spent, and last_order_completed_at via a
+      # single aggregate join so list endpoints avoid 4 queries per user. The
+      # values land on the user as virtual attributes.
+      scope :with_order_aggregates, -> {
+        order_table = PallasTrade::Order.table_name
+        select(
+          "#{table_name}.*, " \
+          "COALESCE(orders_agg.orders_count, 0) AS orders_count, " \
+          "COALESCE(orders_agg.total_spent, 0) AS total_spent, " \
+          "orders_agg.last_order_completed_at AS last_order_completed_at"
+        ).joins(
+          "LEFT JOIN (" \
+            "SELECT user_id, COUNT(*) AS orders_count, SUM(total) AS total_spent, MAX(completed_at) AS last_order_completed_at " \
+            "FROM #{order_table} " \
+            "WHERE state = 'complete' AND user_id IS NOT NULL " \
+            "GROUP BY user_id" \
+          ") orders_agg ON orders_agg.user_id = #{table_name}.id"
+        )
+      }
+
+      def self.with_email(query)
+        where("#{table_name}.email LIKE ?", "%#{query}%")
+      end
+
+      def self.with_address(query, address = :ship_address)
+        left_outer_joins(address).
+          where("#{PallasTrade::Address.table_name}.firstname like ?", "%#{query}%").
+          or(left_outer_joins(address).where("#{PallasTrade::Address.table_name}.lastname like ?", "%#{query}%"))
+      end
+
+      def self.with_email_or_address(email, address)
+        left_outer_joins(:addresses).
+          where("#{PallasTrade::Address.table_name}.firstname LIKE ? or #{PallasTrade::Address.table_name}.lastname LIKE ? or #{table_name}.email LIKE ?",
+                "%#{address}%", "%#{address}%", "%#{email}%")
+      end
+
+      # We override this method because we cannot use for_store on users because it will return admin users
+      def self.for_store(store)
+        self
+      end
+    end
+
+    # Returns the last incomplete spree order for the current store
+    # @param [PallasTrade::Store] store
+    # @param [Hash] options
+    # @option options [Array<Symbol>] :includes
+    # @return [PallasTrade::Order]
+    def last_incomplete_PALLASTRADE_order(store, options = {})
+      orders.where(store: store).incomplete.not_canceled.
+        includes(options[:includes]).
+        order('created_at DESC').
+        first
+    end
+
+    # Returns the total available store credit for the current store per currency
+    # @param [PallasTrade::Store] store
+    # @param [String] currency
+    # @return [Float]
+    def total_available_store_credit(currency = nil, store = nil)
+      store ||= Store.default
+      currency ||= store.default_currency
+
+      # When the association is already loaded (e.g. preloaded via the admin
+      # API's scope_includes), filter in memory to avoid an N+1 — but mirror
+      # the query branch exactly: non-gift-card credits, scoped to the store
+      # and currency. A gift card is identified by its originator_type.
+      if store_credits.loaded?
+        store_credits.
+          select { |sc| sc.originator_type != 'PallasTrade::GiftCard' && sc.store_id.to_s == store.id.to_s && sc.currency == currency }.
+          sum(&:amount_remaining)
+      else
+        store_credits.without_gift_card.for_store(store).where(currency: currency).to_a.sum(&:amount_remaining)
+      end
+    end
+
+    # Returns the available store credits for the current store per currency
+    # @param [PallasTrade::Store] store
+    # @return [Array<PallasTrade::Money>]
+    def available_store_credits(store)
+      store ||= Store.default
+
+      store_credits.for_store(store).pluck(:currency).uniq.each_with_object([]) do |currency, arr|
+        arr << PallasTrade::Money.new(total_available_store_credit(currency, store), currency: currency)
+      end
+    end
+
+    # Returns the default wishlist for the current store
+    # if no default wishlist exists, it creates one
+    # @param [PallasTrade::Store] current_store
+    # @return [PallasTrade::Wishlist]
+    def default_wishlist_for_store(current_store)
+      wishlists.find_by(is_default: true, store_id: current_store.id) || ActiveRecord::Base.connected_to(role: :writing) do
+        wishlists.create!(store: current_store, is_default: true, name: PallasTrade.t(:default_wishlist_name))
+      end
+    end
+
+    # Returns true if the user can be deleted
+    # Customers can be deleted if they have no completed orders
+    # @return [Boolean]
+    def can_be_deleted?
+      orders.complete.none?
+    end
+
+    # Returns the CSV row representation of the user
+    # @param [PallasTrade::Store] store
+    # @return [Array<String>]
+    def to_csv(_store = nil)
+      PallasTrade::CSV::CustomerPresenter.new(self).call
+    end
+
+    # Returns the full name of the user
+    # @return [String]
+    def full_name
+      name&.full
+    end
+
+    def event_serializer_class
+      'PallasTrade::Api::V3::CustomerSerializer'.safe_constantize
+    end
+
+    def event_prefix
+      if self.class == PallasTrade.admin_user_class && PallasTrade.admin_user_class != PallasTrade.user_class
+        'admin'
+      else
+        'user'
+      end
+    end
+
+    private
+
+    def check_completed_orders
+      raise PallasTrade::Core::DestroyWithOrdersError if !PALLASTRADE_admin? && orders.complete.present?
+    end
+
+    def clone_billing_address
+      if bill_address && ship_address.nil?
+        self.ship_address = bill_address.clone
+      else
+        ship_address.attributes = bill_address.attributes.except('id', 'updated_at', 'created_at')
+      end
+      true
+    end
+
+    def use_billing?
+      use_billing.in?([true, 'true', '1'])
+    end
+
+    # Scrambles the email and names of the user
+    def scramble_email_and_names
+      self.email = "#{SecureRandom.uuid}@example.net"
+      self.first_name = 'Deleted'
+      self.last_name = 'User'
+      self.login = email
+      save
+    end
+  end
+end

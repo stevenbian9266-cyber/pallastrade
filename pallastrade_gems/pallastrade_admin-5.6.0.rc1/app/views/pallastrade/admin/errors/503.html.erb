@@ -1,0 +1,14 @@
+﻿<%= content_for :title do %>
+  <%= PallasTrade.t(:service_unavailable) %>
+<% end %>
+
+<div class="page-container py-12">
+  <div class="not-found-page text-center pt-12">
+    <h1 class="display-4 text-zinc-950">503</h1>
+    <p class="display-5"><%= PallasTrade.t(:service_unavailable) %></p>
+    <p class="display-6"><%= PallasTrade.t(:service_unavailable_message) %></p>
+    <%= link_to PallasTrade.t("admin.back_to_dashboard"),
+    PallasTrade.admin_dashboard_path,
+    class: "btn btn-primary" %>
+  </div>
+</div>

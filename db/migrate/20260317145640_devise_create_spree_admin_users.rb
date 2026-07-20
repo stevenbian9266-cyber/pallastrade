@@ -1,8 +1,8 @@
-# frozen_string_literal: true
+﻿# frozen_string_literal: true
 
 class DeviseCreateSpreeAdminUsers < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_admin_users do |t|
+    create_table :pallastrade_admin_users do |t|
       ## Database authenticatable
       t.string :email,              null: false, default: ""
       t.string :encrypted_password, null: false, default: ""
@@ -36,9 +36,9 @@ class DeviseCreateSpreeAdminUsers < ActiveRecord::Migration[7.2]
       t.timestamps null: false
     end
 
-    add_index :spree_admin_users, :email,                unique: true
-    add_index :spree_admin_users, :reset_password_token, unique: true
-    add_index :spree_admin_users, :confirmation_token,   unique: true
-    add_index :spree_admin_users, :unlock_token,         unique: true
+    add_index :pallastrade_admin_users, :email,                unique: true
+    add_index :pallastrade_admin_users, :reset_password_token, unique: true
+    add_index :pallastrade_admin_users, :confirmation_token,   unique: true
+    add_index :pallastrade_admin_users, :unlock_token,         unique: true
   end
 end

@@ -1,7 +1,7 @@
-# This migration comes from spree_stripe (originally 20250310152812)
+﻿# This migration comes from spree_stripe (originally 20250310152812)
 class SetupSpreeStripeModels < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_stripe_payment_intents do |t|
+    create_table :pallastrade_stripe_payment_intents do |t|
       t.decimal :amount, precision: 10, scale: 2, default: '0.0', null: false
       t.bigint :order_id, null: false
       t.bigint :payment_method_id, null: false
@@ -18,7 +18,7 @@ class SetupSpreeStripeModels < ActiveRecord::Migration[7.2]
       t.index ['payment_method_id'], name: 'index_spree_stripe_payment_intents_on_payment_method_id'
     end
 
-    create_table :spree_stripe_webhook_keys do |t|
+    create_table :pallastrade_stripe_webhook_keys do |t|
       t.string :stripe_id, null: false
       t.string :signing_secret, null: false
 
@@ -28,7 +28,7 @@ class SetupSpreeStripeModels < ActiveRecord::Migration[7.2]
       t.index ['stripe_id'], name: 'index_spree_stripe_webhook_keys_on_stripe_id', unique: true
     end
 
-    create_table :spree_stripe_payment_methods_webhook_keys do |t|
+    create_table :pallastrade_stripe_payment_methods_webhook_keys do |t|
       t.bigint :payment_method_id, null: false
       t.bigint :webhook_key_id, null: false
 

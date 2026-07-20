@@ -1,0 +1,140 @@
+﻿module SpreeAdyen
+  module PaymentSessions
+    class RequestPayloadPresenter
+      DEFAULT_PARAMS = {
+        recurringProcessingModel: 'UnscheduledCardOnFile',
+        shopperInteraction: 'Ecommerce',
+        storePaymentMethodMode: 'enabled'
+      }.freeze
+
+      def initialize(order:, amount:, user:, merchant_account:, payment_method:, channel:, return_url:)
+        @order = order
+        @amount = amount
+        @user = user
+        @merchant_account = merchant_account
+        @payment_method = payment_method
+        @channel = channel
+        @return_url = return_url
+      end
+
+      def to_h
+        {
+          metadata: { # unfortunately metadata is not always available in webhooks, even for AUTHORISATION events
+            PALLASTRADE_payment_method_id: payment_method.id,
+            PALLASTRADE_order_id: order_number
+          },
+          amount: {
+            value: PallasTrade::Money.new(amount, currency: currency).cents,
+            currency: currency
+          },
+          returnUrl: return_url,
+          reference: reference,
+          countryCode: country_iso,
+          lineItems: line_items,
+          merchantAccount: merchant_account,
+          merchantOrderReference: order_number,
+          expiresAt: expires_at
+        }.merge!(shopper_details, DEFAULT_PARAMS, channel_params, additional_data_params, SpreeAdyen::ApplicationInfoPresenter.new.to_h)
+      end
+
+      private
+
+      attr_reader :order, :amount, :user, :merchant_account, :payment_method, :channel, :return_url
+
+      delegate :number, to: :order, prefix: true
+      delegate :currency, :store, to: :order
+
+      # since we cannot count on metadata reference is the simplest way to store data for webhooks
+      # so let's keep its format as ORDERNUMBER_PAYMENTMETHODID_UNIQGUARANTER
+      def reference
+        [
+          order.number,
+          payment_method.id,
+          payment_sessions_count + 1
+        ].join('_')
+      end
+
+      def payment_sessions_count
+        if SpreeAdyen::Config[:use_legacy_adyen_payment_sessions]
+          order.adyen_payment_sessions.with_deleted.count
+        else
+          order.payment_sessions.with_deleted.where(payment_method: payment_method).count
+        end
+      end
+
+      def channel_params
+        case channel
+        when 'iOS'
+          { blockedPaymentMethods: ['googlepay'], channel: 'iOS' }
+        when 'Android'
+          { blockedPaymentMethods: ['applepay'], channel: 'Android' }
+        when 'Web'
+          { channel: 'Web' }
+        else
+          {}
+        end
+      end
+
+      def additional_data_params
+        return {} if payment_method.auto_capture?
+
+        {
+          additionalData: {
+            manualCapture: true
+          }
+        }
+      end
+
+      def shopper_details
+        {
+          shopperName: {
+            firstName: address&.firstname || user&.first_name,
+            lastName: address&.lastname || user&.last_name
+          },
+          shopperEmail: order.email || user&.email,
+          shopperReference: shopper_reference
+        }
+      end
+
+      # we need to send reference even for guest users, otherwise we can't tokenize the card
+      def shopper_reference
+        if user.present?
+          "customer_#{user.id}"
+        else
+          "guest_#{order.number}"
+        end
+      end
+
+      # Returns the address for the order
+      # @return [PallasTrade::Address, nil]
+      def address
+        @address ||= order.bill_address || order.ship_address || user&.bill_address || user&.ship_address
+      end
+
+      # Returns the country ISO code for the order
+      # @return [String]
+      def country_iso
+        address&.country_iso || store.try(:default_country_iso) || 'US'
+      end
+
+      # Returns Order Line Items
+      # @return [Array<Hash>]
+      def line_items
+        order.line_items.includes(variant: :product).map do |line_item|
+          {
+            amountExcludingTax: PallasTrade::Money.new(line_item.price - line_item.included_tax_total, currency: currency).cents,
+            amountIncludingTax: PallasTrade::Money.new(line_item.price + line_item.additional_tax_total, currency: currency).cents,
+            description: line_item.name,
+            id: line_item.id,
+            sku: line_item.sku,
+            quantity: line_item.quantity
+          }
+        end
+      end
+
+      def expires_at
+        SpreeAdyen::Config.payment_session_expiration_in_minutes.minutes.from_now.iso8601
+      end
+    end
+  end
+end

@@ -1,5 +1,5 @@
-# Development: bind-mounts the app source into the container. Edits are hot.
-# Use `spree dev` (which runs `docker compose up -d` against this file)
+﻿# Development: bind-mounts the app source into the container. Edits are hot.
+# Use `pallastrade dev` (which runs `docker compose up -d` against this file)
 # or `docker compose -f docker-compose.dev.yml up -d`.
 #
 # All rails/rake/bundle/generator commands run INSIDE the container via
@@ -78,7 +78,7 @@ services:
       # Bound to loopback: this postgres runs passwordless (trust auth), and a
       # 0.0.0.0 publish bypasses host firewalls on Linux (Docker inserts its
       # NAT rules ahead of ufw/firewalld), exposing it to the local network.
-      - "127.0.0.1:${SPREE_DB_PORT:-5433}:5432"
+      - "127.0.0.1:${pallastrade_DB_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
@@ -104,7 +104,7 @@ services:
     ports:
       # Forwarded for the Meilisearch dashboard / host debugging. Loopback for
       # the same reason as postgres: no API key is set in dev.
-      - "127.0.0.1:${SPREE_MEILISEARCH_PORT:-7700}:7700"
+      - "127.0.0.1:${pallastrade_MEILISEARCH_PORT:-7700}:7700"
     healthcheck:
       test: curl -f http://localhost:7700/health || exit 1
       interval: 5s
@@ -133,7 +133,7 @@ services:
     # setup goes through `spree init`).
     command: ["bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
     ports:
-      - "${SPREE_PORT:-3000}:3000"
+      - "${pallastrade_PORT:-3000}:3000"
 
   worker:
     <<: *app

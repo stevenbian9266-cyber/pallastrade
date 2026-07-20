@@ -1,7 +1,7 @@
-# This migration comes from spree_paypal_checkout (originally 20250528095719)
+﻿# This migration comes from spree_paypal_checkout (originally 20250528095719)
 class CreateSpreePaypalCheckoutOrders < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_paypal_checkout_orders do |t|
+    create_table :pallastrade_paypal_checkout_orders do |t|
       t.references :order, null: false
       t.references :payment_method, null: false
       t.string :paypal_id, null: false
@@ -16,6 +16,6 @@ class CreateSpreePaypalCheckoutOrders < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :spree_paypal_checkout_orders, [:order_id, :paypal_id], unique: true
+    add_index :pallastrade_paypal_checkout_orders, [:order_id, :paypal_id], unique: true
   end
 end

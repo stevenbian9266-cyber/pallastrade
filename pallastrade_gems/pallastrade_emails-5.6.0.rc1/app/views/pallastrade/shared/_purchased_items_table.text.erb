@@ -1,0 +1,29 @@
+﻿<% line_items.each do |item| %>
+  <%= item.variant.sku %> <%= item.variant.product.name %> <%= item.variant.options_text -%> (<%=item.quantity%>) <%= PallasTrade.t('at_symbol') %> <%= item.single_money %> = <%= item.display_amount %>
+<% end %>
+============================================================
+<%= PallasTrade.t('order_mailer.subtotal') %> <%= order.display_item_total %>
+<% if order.line_item_adjustments.exists? %>
+  <% if order.all_adjustments.promotion.eligible.exists? %>
+    <% order.all_adjustments.promotion.eligible.group_by(&:label).each do |label, adjustments| %>
+      <%= PallasTrade.t(:promotion) %>: <%= label %> <%= PallasTrade::Money.new(adjustments.sum(&:amount), currency: order.currency) %>
+    <% end %>
+  <% end %>
+<% end %>
+
+<% order.shipments.group_by { |s| s.selected_shipping_rate.try(:name) }.each do |name, shipments| %>
+  <%= PallasTrade.t(:shipping) %>: <%= name %> <%= PallasTrade::Money.new(shipments.sum(&:discounted_cost), currency: order.currency) %>
+<% end %>
+
+<% if order.additional_tax_total != 0 %>
+  <%= PallasTrade.t(:tax) %>: <%= order.display_additional_tax_total.to_html %>
+<% end %>
+
+<% if order.gift_card_total.positive? %>
+  <%= PallasTrade.t(:gift_card) %>: -<%= order.display_gift_card_total.to_html %>
+<% end %>
+
+<% order.adjustments.eligible.each do |adjustment| %>
+  <% next if (adjustment.source_type == 'PallasTrade::TaxRate') and (adjustment.amount == 0) %>
+  <%= adjustment.label %> <%= adjustment.display_amount %>
+<% end %>

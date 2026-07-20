@@ -1,0 +1,7 @@
+﻿<%= turbo_render_alerts %>
+<%= turbo_close_dialog %>
+
+<!-- Uploader operates on PallasTrade::Asset, but the edit page uses PallasTrade::Image for the dom_id -->
+<%= turbo_stream.replace pallastrade_dom_id(PallasTrade::Image.new(id: @asset.id)) do %>
+  <%= render 'spree/admin/shared/media_asset', asset: @asset %>
+<% end %>

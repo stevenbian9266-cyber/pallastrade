@@ -1,9 +1,9 @@
-# This migration comes from spree (originally 20250119165904)
+﻿# This migration comes from spree (originally 20250119165904)
 class CreateSpreeCustomDomains < ActiveRecord::Migration[6.1]
   def change
     return if table_exists?(:spree_custom_domains)
 
-    create_table :spree_custom_domains do |t|
+    create_table :pallastrade_custom_domains do |t|
       t.references :store, null: false, index: true
       t.string :url, null: false, index: { unique: true }
       t.boolean :status, default: false

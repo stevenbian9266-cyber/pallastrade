@@ -1,0 +1,26 @@
+﻿<%= content_for(:page_title) do %>
+<%= PallasTrade.t(:checkout) %> <%= PallasTrade.t(:settings) %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t(:settings) %></h5>
+  </div>
+
+  <div class="card-body">
+    <p class="text-muted mb-4">
+      <%= PallasTrade.t('admin.checkout_settings.countries_managed_by_markets_html',
+            link: link_to(PallasTrade.t('admin.markets.list'), PallasTrade.admin_markets_path)).html_safe %>
+    </p>
+
+    <hr class="my-6">
+
+    <%= f.pallastrade_select :preferred_storefront_access,
+        options_for_select(channel_storefront_access_options, f.object.preferred_storefront_access),
+        { label: PallasTrade.t('admin.checkout_settings.storefront_access.label'),
+          help_bubble: PallasTrade.t('admin.checkout_settings.storefront_access.description') } %>
+    <%= f.pallastrade_check_box :preferred_guest_checkout, label: PallasTrade.t('admin.checkout_settings.guest_checkout.label'), help: PallasTrade.t('admin.checkout_settings.guest_checkout.description') %>
+    <%= f.pallastrade_check_box :preferred_company_field_enabled, label: PallasTrade.t('admin.store_form.company_field.label'), help: PallasTrade.t('admin.store_form.company_field.description') %>
+    <%= f.pallastrade_check_box :preferred_special_instructions_enabled, label: PallasTrade.t('admin.checkout_settings.special_instructions.label'), help: PallasTrade.t('admin.checkout_settings.special_instructions.description') %>
+  </div>
+</div>

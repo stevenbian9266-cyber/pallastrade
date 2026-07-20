@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20260323000000)
+﻿# This migration comes from spree (originally 20260323000000)
 class CreateSpreePriceHistories < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_price_histories do |t|
+    create_table :pallastrade_price_histories do |t|
       t.references :price, null: false, index: false
       t.references :variant, null: false, index: false
       t.decimal :amount, precision: 10, scale: 2, null: false
@@ -11,11 +11,11 @@ class CreateSpreePriceHistories < ActiveRecord::Migration[7.2]
       t.datetime :created_at, null: false
     end
 
-    add_index :spree_price_histories, [:variant_id, :currency, :recorded_at],
+    add_index :pallastrade_price_histories, [:variant_id, :currency, :recorded_at],
               name: 'idx_price_histories_variant_currency_recorded'
-    add_index :spree_price_histories, [:price_id, :recorded_at],
+    add_index :pallastrade_price_histories, [:price_id, :recorded_at],
               name: 'idx_price_histories_price_recorded'
-    add_index :spree_price_histories, :recorded_at,
+    add_index :pallastrade_price_histories, :recorded_at,
               name: 'idx_price_histories_recorded_at'
   end
 end

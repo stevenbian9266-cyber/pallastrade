@@ -1,0 +1,28 @@
+﻿<%= content_for(:page_title) do %>
+  <%= PallasTrade.t('admin.edit_profile') %>
+<% end %>
+
+<%= content_for :page_actions do %>
+  <%= turbo_save_button_tag PallasTrade.t('actions.update'), form: 'edit_user', data: { admin_target: 'save' } %>
+<% end %>
+
+<div class="grid grid-cols-12 gap-6">
+  <div class="col-span-12 lg:col-span-6 lg:col-start-4">
+    <%= form_for @user, url: PallasTrade.admin_profile_path, method: :put, as: :user do |f| %>
+      <div class="card mb-6">
+        <div class="card-header">
+          <h5 class="card-title"><%= PallasTrade.t('admin.personal_details') %></h5>
+        </div>
+        <div class="card-body">
+          <%= f.pallastrade_email_field :email, required: true %>
+          <%= f.pallastrade_text_field :first_name, required: true %>
+          <%= f.pallastrade_text_field :last_name, required: true %>
+          <%= f.pallastrade_select :selected_locale,
+              options_from_collection_for_select(admin_locales_options, :last, :first, @user.selected_locale || I18n.locale),
+              { label: PallasTrade.t(:language), help_bubble: PallasTrade.t(:admin_language_help), autocomplete: true } %>
+          <%= f.pallastrade_file_field :avatar, crop: true %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

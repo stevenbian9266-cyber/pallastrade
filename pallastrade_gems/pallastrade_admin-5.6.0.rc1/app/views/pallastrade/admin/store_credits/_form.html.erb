@@ -1,0 +1,3 @@
+﻿<%= f.pallastrade_money_field :amount, label: PallasTrade.t(:amount), currency: f.object.currency, required: true, disabled: !f.object.editable? %>
+<%= f.pallastrade_select :currency, options_for_select(supported_currency_options, f.object.currency), { label: PallasTrade.t(:currency), autocomplete: true }, { data: { enable_button_target: 'input', store_form_target: 'currency' } } %>
+<%= f.pallastrade_text_area :memo %>

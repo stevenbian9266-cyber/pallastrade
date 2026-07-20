@@ -40,7 +40,7 @@ else
   step "Preparing the database" bin/rails db:prepare
 fi
 
-step "Indexing products for search" bin/rails spree:search:reindex
+step "Indexing products for search" bin/rails pallastrade:search:reindex
 
 step "Cleaning up" bin/rails log:clear tmp:clear
 

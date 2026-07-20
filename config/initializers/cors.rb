@@ -1,4 +1,4 @@
-normalize_origin = lambda do |value|
+﻿normalize_origin = lambda do |value|
   uri = URI.parse(value)
   return nil unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
   return nil if uri.host.blank?
@@ -17,11 +17,11 @@ allowed_origin_check = lambda do |source, _env|
     next false if normalized_source.nil?
 
     Rails.cache.fetch("cors/allowed_origin_host:#{normalized_source}", expires_in: 5.minutes) do
-      Spree::AllowedOrigin.pluck(:origin).any? { |o| normalize_origin.call(o) == normalized_source }
+      PallasTrade::AllowedOrigin.pluck(:origin).any? { |o| normalize_origin.call(o) == normalized_source }
     end
   else
     Rails.cache.fetch("cors/allowed_origin:#{source}", expires_in: 5.minutes) do
-      Spree::AllowedOrigin.exists?(origin: source)
+      PallasTrade::AllowedOrigin.exists?(origin: source)
     end
   end
 rescue StandardError => e

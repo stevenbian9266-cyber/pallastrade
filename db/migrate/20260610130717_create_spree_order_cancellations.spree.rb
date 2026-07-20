@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20260429000001)
+﻿# This migration comes from spree (originally 20260429000001)
 class CreateSpreeOrderCancellations < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_order_cancellations do |t|
+    create_table :pallastrade_order_cancellations do |t|
       t.references :order, null: false, index: false
       t.string :reason, null: false
       t.text :note
@@ -18,9 +18,9 @@ class CreateSpreeOrderCancellations < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :spree_order_cancellations, :order_id
-    add_index :spree_order_cancellations, [:canceled_by_id, :canceled_by_type],
+    add_index :pallastrade_order_cancellations, :order_id
+    add_index :pallastrade_order_cancellations, [:canceled_by_id, :canceled_by_type],
               name: 'idx_order_cancellations_canceled_by'
-    add_index :spree_order_cancellations, :created_at
+    add_index :pallastrade_order_cancellations, :created_at
   end
 end

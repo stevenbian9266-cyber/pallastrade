@@ -1,0 +1,21 @@
+﻿module PallasTrade
+  module Api
+    module V3
+      module Store
+        # Mirrors Store::BaseController's concerns. Both classes anchor parallel
+        # inheritance branches (V3::BaseController vs V3::ResourceController);
+        # any concern added here MUST also be added to Store::BaseController.
+        class ResourceController < PallasTrade::Api::V3::ResourceController
+          include PallasTrade::Api::V3::ChannelResolution
+          include PallasTrade::Api::V3::StorefrontGating
+
+          protected
+
+          def authenticate_request!
+            authenticate_api_key!
+          end
+        end
+      end
+    end
+  end
+end

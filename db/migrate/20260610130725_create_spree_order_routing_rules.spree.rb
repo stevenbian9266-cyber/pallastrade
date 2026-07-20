@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20260508204041)
+﻿# This migration comes from spree (originally 20260508204041)
 class CreateSpreeOrderRoutingRules < ActiveRecord::Migration[7.2]
   def change
-    create_table :spree_order_routing_rules do |t|
+    create_table :pallastrade_order_routing_rules do |t|
       t.references :store, null: false
       t.references :channel, null: false
       t.string :type, null: false
@@ -11,9 +11,9 @@ class CreateSpreeOrderRoutingRules < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :spree_order_routing_rules, [:channel_id, :position]
-    add_index :spree_order_routing_rules, [:channel_id, :active, :position],
+    add_index :pallastrade_order_routing_rules, [:channel_id, :position]
+    add_index :pallastrade_order_routing_rules, [:channel_id, :active, :position],
               name: 'idx_order_routing_rules_lookup'
-    add_index :spree_order_routing_rules, :type
+    add_index :pallastrade_order_routing_rules, :type
   end
 end

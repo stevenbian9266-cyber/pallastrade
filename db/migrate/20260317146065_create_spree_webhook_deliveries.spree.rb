@@ -1,9 +1,9 @@
-# frozen_string_literal: true
+﻿# frozen_string_literal: true
 
 # This migration comes from spree (originally 20251214000002)
 class CreateSpreeWebhookDeliveries < ActiveRecord::Migration[7.0]
   def change
-    create_table :spree_webhook_deliveries do |t|
+    create_table :pallastrade_webhook_deliveries do |t|
       t.belongs_to :webhook_endpoint, null: false, foreign_key: false, index: true
       t.string :event_name, null: false, index: true
       if t.respond_to?(:jsonb)

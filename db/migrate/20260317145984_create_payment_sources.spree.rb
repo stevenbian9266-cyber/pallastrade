@@ -1,7 +1,7 @@
-# This migration comes from spree (originally 20220113052823)
+﻿# This migration comes from spree (originally 20220113052823)
 class CreatePaymentSources < ActiveRecord::Migration[5.2]
   def change
-    create_table :spree_payment_sources do |t|
+    create_table :pallastrade_payment_sources do |t|
       t.string :gateway_payment_profile_id
       t.string :type, index: true
 
