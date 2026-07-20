@@ -6,7 +6,7 @@ module PallasTradeAdyen
       {
         applicationInfo: {
           externalPlatform: {
-            name: 'Spree Commerce',
+            name: 'PallasTrade Commerce',
             version: PallasTrade.version,
             integrator: 'Vendo Sp. z o.o.'
           },

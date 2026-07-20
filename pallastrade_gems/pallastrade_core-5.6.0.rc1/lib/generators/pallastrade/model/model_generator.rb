@@ -1,4 +1,4 @@
-﻿require "rails/generators/active_record/model/model_generator"
+require "rails/generators/active_record/model/model_generator"
 
 module PallasTrade
   class ModelGenerator < ActiveRecord::Generators::ModelGenerator
@@ -45,7 +45,7 @@ module PallasTrade
       end
 
       def class_path
-        ['spree']
+        ['pallastrade']
       end
 
       def table_name

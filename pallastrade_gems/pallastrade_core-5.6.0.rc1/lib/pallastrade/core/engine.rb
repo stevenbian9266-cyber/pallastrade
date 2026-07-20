@@ -442,7 +442,7 @@ module PallasTrade
       end
 
       config.to_prepare do
-        # Ensure spree locale paths are present before decorators
+        # Ensure pallastrade locale paths are present before decorators
         I18n.load_path.unshift(*(Dir.glob(
           File.join(
             File.dirname(__FILE__), '../../../config/locales', '*.{rb,yml}'

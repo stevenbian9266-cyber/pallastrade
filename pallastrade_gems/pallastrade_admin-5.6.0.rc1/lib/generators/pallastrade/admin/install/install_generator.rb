@@ -1,10 +1,10 @@
-﻿require 'rails/generators'
+require 'rails/generators'
 
 module PallasTrade
   module Admin
     module Generators
       class InstallGenerator < Rails::Generators::Base
-        desc 'Installs Spree Admin Dashboard'
+        desc 'Installs PallasTrade Admin Dashboard'
 
         def self.source_paths
           [

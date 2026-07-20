@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   # spree:controller_decorator — generate a decorator file for an existing
   # Spree controller. Mirrors the model_decorator generator but handles
   # arbitrary namespace depth (PallasTrade::ProductsController,
@@ -53,7 +53,7 @@
 
     # Path under app/controllers/, including the `spree/` root.
     def file_path
-      ['spree', *name_parts.map(&:underscore)].join('/')
+      ['pallastrade', *name_parts.map(&:underscore)].join('/')
     end
 
     # Fully-qualified `PallasTrade::Foo::Bar.prepend PallasTrade::Foo::BarDecorator`.
