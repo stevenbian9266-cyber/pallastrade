@@ -1,13 +1,13 @@
-﻿module SpreeAdyen
-  class AddAllowedOriginJob < SpreeAdyen::BaseJob
+module PallasTradeAdyen
+  class AddAllowedOriginJob < PallasTradeAdyen::BaseJob
     def perform(record_id, gateway_id, klass_type = 'store')
       @klass_type = klass_type.to_s
       return unless klass
 
       record = klass.find(record_id)
-      gateway = SpreeAdyen::Gateway.find(gateway_id)
+      gateway = PallasTradeAdyen::Gateway.find(gateway_id)
 
-      SpreeAdyen::Gateways::AddAllowedOrigin.new(record, gateway).call
+      PallasTradeAdyen::Gateways::AddAllowedOrigin.new(record, gateway).call
     end
 
     private

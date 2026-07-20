@@ -1,4 +1,4 @@
-module SpreePaypalCheckout
+module PallasTradePaypalCheckout
   module BaseHelper
     def current_paypal_checkout_gateway
       @current_paypal_checkout_gateway ||= current_store.paypal_checkout_gateway

@@ -1,4 +1,4 @@
-module SpreeStripe
+module PallasTradeStripe
   VERSION = '1.7.1'.freeze
 
   def gem_version

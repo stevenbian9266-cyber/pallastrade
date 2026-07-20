@@ -1,4 +1,4 @@
-module SpreeStripe
+module PallasTradeStripe
   class Engine < Rails::Engine
     require 'pallastrade/core'
     isolate_namespace PallasTrade
@@ -19,7 +19,7 @@ module SpreeStripe
     end
 
     initializer 'pallastrade_stripe.environment', before: :load_config_initializers do |_app|
-      SpreeStripe::Config = SpreeStripe::Configuration.new
+      PallasTradeStripe::Config = PallasTradeStripe::Configuration.new
     end
 
     initializer 'pallastrade_stripe.assets' do |app|
@@ -51,7 +51,7 @@ module SpreeStripe
 
     config.after_initialize do
       PallasTrade.subscribers.concat [
-        SpreeStripe::OrderCompletedSubscriber
+        PallasTradeStripe::OrderCompletedSubscriber
       ]
     end
 

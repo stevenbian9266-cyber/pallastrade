@@ -1,4 +1,4 @@
-module SpreePaypalCheckout
+module PallasTradePaypalCheckout
   class Engine < Rails::Engine
     require 'pallastrade/core'
     isolate_namespace PallasTrade
@@ -16,7 +16,7 @@ module SpreePaypalCheckout
     end
 
     initializer 'pallastrade_paypal_checkout.environment', before: :load_config_initializers do |_app|
-      SpreePaypalCheckout::Config = SpreePaypalCheckout::Configuration.new
+      PallasTradePaypalCheckout::Config = PallasTradePaypalCheckout::Configuration.new
     end
 
     initializer 'pallastrade_paypal_checkout.assets' do |app|

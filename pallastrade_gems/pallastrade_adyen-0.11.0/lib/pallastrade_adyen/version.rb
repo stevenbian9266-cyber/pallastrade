@@ -1,4 +1,4 @@
-module SpreeAdyen
+module PallasTradeAdyen
   VERSION = '0.11.0'.freeze
 
   def gem_version

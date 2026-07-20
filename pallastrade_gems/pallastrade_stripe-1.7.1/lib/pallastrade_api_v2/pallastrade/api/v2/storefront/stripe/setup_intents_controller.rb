@@ -7,7 +7,7 @@ module PallasTrade
             before_action :require_pallastrade_current_user
 
             def create
-              setup_intent = SpreeStripe::CreateSetupIntent.call(gateway: stripe_gateway, user: try_pallastrade_current_user)
+              setup_intent = PallasTradeStripe::CreateSetupIntent.call(gateway: stripe_gateway, user: try_pallastrade_current_user)
 
               render_serialized_payload(200) { setup_intent.value }
             end

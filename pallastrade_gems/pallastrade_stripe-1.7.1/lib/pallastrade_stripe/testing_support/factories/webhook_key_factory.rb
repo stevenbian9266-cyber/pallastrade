@@ -1,4 +1,4 @@
-﻿# == Schema Information
+# == Schema Information
 #
 # Table name: PALLASTRADE_stripe_webhook_keys
 #
@@ -10,7 +10,7 @@
 #  stripe_id      :string           not null
 #
 FactoryBot.define do
-  factory :stripe_webhook_key, class: SpreeStripe::WebhookKey do
+  factory :stripe_webhook_key, class: PallasTradeStripe::WebhookKey do
     stripe_id { generate(:random_string) }
     signing_secret { generate(:random_string) }
 

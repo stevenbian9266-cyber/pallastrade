@@ -1,8 +1,8 @@
-﻿module PallasTrade
+module PallasTrade
   class PaymentSessions::Stripe < PaymentSession
     delegate :api_options, to: :payment_method
 
-    # Duck-type interface matching SpreeStripe::PaymentIntent
+    # Duck-type interface matching PallasTradeStripe::PaymentIntent
     # This allows reuse of CompleteOrder and CreatePayment services
     def stripe_id
       external_id
@@ -43,7 +43,7 @@
       return unless persisted?
       return payment if payment.present?
 
-      SpreeStripe::CreatePayment.new(
+      PallasTradeStripe::CreatePayment.new(
         order: order,
         payment_intent: self,
         gateway: payment_method,

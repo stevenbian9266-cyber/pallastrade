@@ -1,9 +1,9 @@
-module SpreeAdyen
+module PallasTradeAdyen
   module Webhooks
-    class ProcessCancellationEventJob < SpreeAdyen::BaseJob
+    class ProcessCancellationEventJob < PallasTradeAdyen::BaseJob
       def perform(payload)
-        event = SpreeAdyen::Webhooks::Event.new(event_data: payload)
-        SpreeAdyen::Webhooks::EventProcessors::CancellationEventProcessor.new(event).call
+        event = PallasTradeAdyen::Webhooks::Event.new(event_data: payload)
+        PallasTradeAdyen::Webhooks::EventProcessors::CancellationEventProcessor.new(event).call
       end
     end
   end

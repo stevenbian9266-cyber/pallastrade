@@ -1,9 +1,9 @@
-module SpreeAdyen
+module PallasTradeAdyen
   module Webhooks
-    class ProcessCaptureEventJob < SpreeAdyen::BaseJob
+    class ProcessCaptureEventJob < PallasTradeAdyen::BaseJob
       def perform(payload)
-        event = SpreeAdyen::Webhooks::Event.new(event_data: payload)
-        SpreeAdyen::Webhooks::EventProcessors::CaptureEventProcessor.new(event).call
+        event = PallasTradeAdyen::Webhooks::Event.new(event_data: payload)
+        PallasTradeAdyen::Webhooks::EventProcessors::CaptureEventProcessor.new(event).call
       end
     end
   end

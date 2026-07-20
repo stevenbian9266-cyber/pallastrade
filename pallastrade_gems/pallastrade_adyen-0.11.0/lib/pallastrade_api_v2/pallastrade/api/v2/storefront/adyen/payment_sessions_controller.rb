@@ -12,7 +12,7 @@ module PallasTrade
             def create
               PALLASTRADE_authorize! :update, PALLASTRADE_current_order, order_token
 
-              payment_session_result = SpreeAdyen::PaymentSessions::FindOrCreate.new(
+              payment_session_result = PallasTradeAdyen::PaymentSessions::FindOrCreate.new(
                 order: PALLASTRADE_current_order,
                 amount: permitted_attributes[:amount],
                 user: pallastrade_current_user,
@@ -33,7 +33,7 @@ module PallasTrade
             def complete
               PALLASTRADE_authorize! :update, PALLASTRADE_current_order, order_token
 
-              SpreeAdyen::PaymentSessions::ProcessWithResult.new(payment_session: @payment_session, session_result: params[:session_result]).call
+              PallasTradeAdyen::PaymentSessions::ProcessWithResult.new(payment_session: @payment_session, session_result: params[:session_result]).call
 
               if @payment_session.completed?
                 render_serialized_payload { serialize_resource(@payment_session) }
@@ -58,7 +58,7 @@ module PallasTrade
             end
 
             def resource_serializer
-              SpreeAdyen::Api::V2::Storefront::PaymentSessionSerializer
+              PallasTradeAdyen::Api::V2::Storefront::PaymentSessionSerializer
             end
 
             def load_payment_session

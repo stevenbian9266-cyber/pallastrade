@@ -1,4 +1,4 @@
-﻿class SetupSpreeAdyenModels < ActiveRecord::Migration[7.2]
+class SetupPallasTradeAdyenModels < ActiveRecord::Migration[7.2]
   def change
     create_table :pallastrade_adyen_payment_sessions do |t|
       t.decimal :amount, precision: 10, scale: 2, default: '0.0', null: false, index: true

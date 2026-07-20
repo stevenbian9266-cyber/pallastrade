@@ -1,5 +1,5 @@
-﻿module SpreeAdyen
+module PallasTradeAdyen
   class BaseJob < PallasTrade::BaseJob
-    queue_as SpreeAdyen.queue
+    queue_as PallasTradeAdyen.queue
   end
 end

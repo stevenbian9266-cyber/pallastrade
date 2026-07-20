@@ -1,4 +1,4 @@
-﻿module SpreeStripe
+module PallasTradeStripe
   module CheckoutHelperDecorator
     def checkout_payment_sources(payment_method = nil)
       payment_sources = super(payment_method)
@@ -13,5 +13,5 @@
 end
 
 if defined?(PallasTrade::CheckoutHelper)
-  PallasTrade::CheckoutHelper.prepend(SpreeStripe::CheckoutHelperDecorator)
+  PallasTrade::CheckoutHelper.prepend(PallasTradeStripe::CheckoutHelperDecorator)
 end

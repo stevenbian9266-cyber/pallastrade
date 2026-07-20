@@ -1,4 +1,4 @@
-﻿module SpreeAdyen
+module PallasTradeAdyen
   module Api
     module V2
       module Storefront

@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Api
     module V2
       module Storefront
@@ -17,7 +17,7 @@
                 payment_method: stripe_gateway
               ).first&.gateway_payment_profile_id
 
-              @payment_intent = SpreeStripe::CreatePaymentIntent.new.call(
+              @payment_intent = PallasTradeStripe::CreatePaymentIntent.new.call(
                 PALLASTRADE_current_order,
                 stripe_gateway,
                 stripe_payment_method_id: stripe_payment_method_id,
@@ -48,7 +48,7 @@
             end
 
             def confirm
-              @payment_intent = SpreeStripe::PaymentIntent.find(params[:id])
+              @payment_intent = PallasTradeStripe::PaymentIntent.find(params[:id])
 
               stripe_payment_intent = @payment_intent.stripe_payment_intent
               order = @payment_intent.order
@@ -62,7 +62,7 @@
               elsif @payment_intent.accepted?
                 PALLASTRADE_authorize! :update, PALLASTRADE_current_order, order_token
 
-                SpreeStripe::CompleteOrder.new(payment_intent: @payment_intent).call
+                PallasTradeStripe::CompleteOrder.new(payment_intent: @payment_intent).call
 
                 render_serialized_payload { serialize_resource(@payment_intent) }
               else

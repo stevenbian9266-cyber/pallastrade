@@ -1,4 +1,4 @@
-﻿module SpreeStripe
+module PallasTradeStripe
   module V2
     module Storefront
       module PaymentMethodSerializerDecorator
@@ -13,5 +13,5 @@
 end
 
 if defined?(PallasTrade::V2::Storefront::PaymentMethodSerializer)
-  PallasTrade::V2::Storefront::PaymentMethodSerializer.prepend(SpreeStripe::V2::Storefront::PaymentMethodSerializerDecorator)
+  PallasTrade::V2::Storefront::PaymentMethodSerializer.prepend(PallasTradeStripe::V2::Storefront::PaymentMethodSerializerDecorator)
 end

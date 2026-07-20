@@ -1,7 +1,7 @@
 FactoryBot.define do
-  factory :stripe_gateway, parent: :payment_method, class: SpreeStripe::Gateway do
+  factory :stripe_gateway, parent: :payment_method, class: PallasTradeStripe::Gateway do
     name { 'Stripe' }
-    type { 'SpreeStripe::Gateway' }
+    type { 'PallasTradeStripe::Gateway' }
 
     preferences do
       {
@@ -13,7 +13,7 @@ FactoryBot.define do
     trait :with_apple_domain_association_file do
       transient do
         apple_domain_association_file_path do
-          File.join(SpreeStripe::Engine.root, 'spec', 'fixtures', 'files', 'apple-domain-association-file.txt')
+          File.join(PallasTradeStripe::Engine.root, 'spec', 'fixtures', 'files', 'apple-domain-association-file.txt')
         end
       end
 
