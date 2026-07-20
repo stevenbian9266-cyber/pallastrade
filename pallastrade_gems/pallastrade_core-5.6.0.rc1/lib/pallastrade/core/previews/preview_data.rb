@@ -1,10 +1,10 @@
-﻿# Shared helpers for ActionMailer previews. Everything here is in-memory (never
+# Shared helpers for ActionMailer previews. Everything here is in-memory (never
 # saved) so opening a mailer preview stays read-only.
 module PallasTrade
   module PreviewData
     # Include in ActionMailer::Preview subclasses to read the preview toolbar's
     # locale dropdown (`?locale=`). The toolbar sends uppercase codes ("DE"),
-    # Spree locales are lowercase.
+    # PallasTrade locales are lowercase.
     module LocaleParam
       private
 

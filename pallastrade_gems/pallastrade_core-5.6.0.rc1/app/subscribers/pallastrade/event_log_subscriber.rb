@@ -12,7 +12,7 @@ module PallasTrade
   #   [Spree Event] order.completed | payload: {"id"=>1} | 0.5ms
   #
   class EventLogSubscriber
-    NAMESPACE = 'spree'
+    NAMESPACE = 'pallastrade'
 
     class << self
       def attach_to_notifications

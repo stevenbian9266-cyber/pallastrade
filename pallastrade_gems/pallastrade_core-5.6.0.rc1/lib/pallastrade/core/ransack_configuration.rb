@@ -1,7 +1,7 @@
-﻿module PallasTrade
+module PallasTrade
   # Centralized configuration for Ransack searchable attributes, associations, and scopes.
   #
-  # This class allows developers to extend Spree models with custom ransackable
+  # This class allows developers to extend PallasTrade models with custom ransackable
   # configurations without using decorators.
   #
   # @example Adding custom searchable fields

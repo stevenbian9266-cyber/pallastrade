@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Admin
     module TailwindHelper
       class << self
@@ -7,7 +7,7 @@
         end
 
         def output_path
-          Rails.root.join("app/assets/builds/spree/admin/application.css")
+          Rails.root.join("app/assets/builds/pallastrade/admin/application.css")
         end
 
         def resolved_input_path

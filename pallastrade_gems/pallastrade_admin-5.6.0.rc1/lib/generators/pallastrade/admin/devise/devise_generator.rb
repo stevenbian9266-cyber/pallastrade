@@ -4,7 +4,7 @@ module PallasTrade
   module Admin
     module Generators
       class DeviseGenerator < Rails::Generators::Base
-        desc 'Installs Spree Admin Devise controllers'
+        desc 'Installs PallasTrade Admin Devise controllers'
 
         def install
           # add devise routes
