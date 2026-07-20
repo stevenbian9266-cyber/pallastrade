@@ -1,4 +1,4 @@
-﻿module SpreeAdyen
+module PallasTradeAdyen
   class Configuration < PallasTrade::Preferences::Configuration
     # Some example preferences are shown below, for more information visit:
     # https://docs.spreecommerce.org/developer/contributing/creating-an-extension

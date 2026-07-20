@@ -1,0 +1,69 @@
+module PallasTradeAdyen
+  module Webhooks
+    module EventProcessors
+      class AuthorisationEventProcessor
+        def initialize(event)
+          @event = event
+        end
+
+        def call
+          Rails.logger.info("[PallasTradeAdyen][#{event_id}]: Started processing")
+          order = PallasTrade::Order.find_by!(number: event.order_number)
+
+          order.with_lock do
+            payment_method = PallasTradeAdyen::Gateway.find(event.payment_method_id)
+            # session_id is available only for session based payments so payment_session can be nil
+            payment_session = order.adyen_payment_sessions.find_by(adyen_id: event.session_id)
+            source = PallasTradeAdyen::Webhooks::Actions::CreateSource.new(event: event, payment_method: payment_method, user: order.user).call
+            # create or find payment
+            # atm payment should be already created for web channel (but there is no payment for mobile channels)
+            # for web channel payment response code is updated from session_id to psp_reference
+            # psp_reference is required for refund flow but is not available before this event
+            payment_session&.lock!
+
+            payment = find_or_initialize_payment(payment_method)
+            payment.assign_attributes(
+              response_code: event.psp_reference,
+              amount: event.amount.to_d,
+              order: order,
+              source: source
+            )
+            payment.save!
+
+            payment.started_processing! if payment.checkout?
+
+            if event.success?
+              payment_session&.complete
+              payment.confirm!
+              PallasTrade::Dependencies.checkout_complete_service.constantize.call(order: order) unless order.completed?
+            else
+              payment.failure!
+              payment_session&.refuse
+              if order.completed?
+                Rails.error.unexpected('Payment failed for previously completed order', context: { order_id: order.id, event: event.payload },
+                                                                                        source: 'pallastrade_adyen')
+              end
+            end
+          end
+          Rails.logger.info("[PallasTradeAdyen][#{event_id}]: Finished processing")
+        end
+
+        private
+
+        attr_reader :event
+
+        delegate :id, to: :event, prefix: true
+
+        def find_or_initialize_payment(payment_method)
+          if event.session_id.present?
+            PallasTrade::Payment.where(response_code: event.session_id, payment_method: payment_method).or(
+              PallasTrade::Payment.where(response_code: event.psp_reference, payment_method: payment_method)
+            ).first_or_initialize
+          else
+            PallasTrade::Payment.where(response_code: event.psp_reference, payment_method: payment_method).first_or_initialize
+          end
+        end
+      end
+    end
+  end
+end

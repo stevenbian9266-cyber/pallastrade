@@ -1,4 +1,4 @@
-﻿module SpreeStripe
+module PallasTradeStripe
   class CreateTaxTransactionJob < BaseJob
     def perform(store_id, payment_intent_id, tax_calculation_id)
       store = PallasTrade::Store.find(store_id)

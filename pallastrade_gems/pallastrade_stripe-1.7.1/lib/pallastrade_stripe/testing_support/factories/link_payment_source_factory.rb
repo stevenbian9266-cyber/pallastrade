@@ -1,6 +1,6 @@
 FactoryBot.define do
-  factory :link_payment_source, class: SpreeStripe::PaymentSources::Link do
+  factory :link_payment_source, class: PallasTradeStripe::PaymentSources::Link do
     payment_method { create(:stripe_gateway) }
-    type { 'SpreeStripe::PaymentSources::Link' }
+    type { 'PallasTradeStripe::PaymentSources::Link' }
   end
 end

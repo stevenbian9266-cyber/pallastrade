@@ -1,10 +1,10 @@
-﻿require 'pallastrade_core'
+require 'pallastrade_core'
 require 'pallastrade_adyen/engine'
 require 'pallastrade_adyen/version'
 require 'pallastrade_adyen/configuration'
 require 'adyen-ruby-api-library'
 
-module SpreeAdyen
+module PallasTradeAdyen
   def self.queue
     'default'
   end

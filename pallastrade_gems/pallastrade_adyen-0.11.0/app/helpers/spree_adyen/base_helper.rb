@@ -1,4 +1,4 @@
-module SpreeAdyen
+module PallasTradeAdyen
   module BaseHelper
     def current_adyen_gateway
       @current_adyen_gateway ||= current_store.adyen_gateway
@@ -7,7 +7,7 @@ module SpreeAdyen
     def current_adyen_payment_session
       return if current_adyen_gateway.nil?
 
-      @current_adyen_payment_session ||= SpreeAdyen::PaymentSessions::FindOrCreate.new(
+      @current_adyen_payment_session ||= PallasTradeAdyen::PaymentSessions::FindOrCreate.new(
         order: @order,
         amount: @order.total_minus_store_credits,
         user: @order.user,

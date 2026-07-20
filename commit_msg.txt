@@ -1,0 +1,10 @@
+P2: Rename payment gateway modules Spree* -> PallasTrade*
+
+- SpreeStripe -> PallasTradeStripe (25+ files, dirs renamed)
+- SpreeAdyen -> PallasTradeAdyen (80+ files, dirs renamed)
+- SpreePaypalCheckout -> PallasTradePaypalCheckout (10+ files, dirs renamed)
+- All app/models/spree_* -> app/models/pallastrade_*
+- All app/services/spree_* -> app/services/pallastrade_*
+- All app/presenters/spree_* -> app/presenters/pallastrade_*
+- All app/controllers/spree_* -> app/controllers/pallastrade_*
+- Updated module references, factories, and generators

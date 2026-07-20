@@ -1,4 +1,4 @@
-module SpreePaypalCheckout
+module PallasTradePaypalCheckout
   VERSION = '0.7.1'.freeze
 
   def gem_version

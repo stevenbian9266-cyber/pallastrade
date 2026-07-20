@@ -1,4 +1,4 @@
-﻿module SpreeStripe
+module PallasTradeStripe
   class Configuration < PallasTrade::Preferences::Configuration
     preference :supported_webhook_events, :array, default: %w[
       payment_intent.amount_capturable_updated

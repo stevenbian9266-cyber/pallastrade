@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Api
     module V2
       module Storefront
@@ -9,7 +9,7 @@
 
           # POST /api/v2/storefront/paypal_orders
           def create
-            order_presenter = SpreePaypalCheckout::OrderPresenter.new(PALLASTRADE_current_order)
+            order_presenter = PallasTradePaypalCheckout::OrderPresenter.new(PALLASTRADE_current_order)
 
             paypal_response = paypal_client.orders.create_order(order_presenter.to_json)
 

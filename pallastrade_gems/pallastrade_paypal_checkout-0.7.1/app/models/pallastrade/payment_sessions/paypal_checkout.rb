@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   class PaymentSessions::PaypalCheckout < PaymentSession
     def paypal_order_id
       external_id
@@ -59,7 +59,7 @@
       paypal_data = paypal_payment_source&.dig('paypal')
       return nil unless paypal_data
 
-      source = SpreePaypalCheckout::PaymentSources::Paypal.find_or_initialize_by(
+      source = PallasTradePaypalCheckout::PaymentSources::Paypal.find_or_initialize_by(
         payment_method: payment_method,
         gateway_payment_profile_id: paypal_data['account_id']
       )

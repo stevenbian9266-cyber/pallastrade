@@ -1,4 +1,4 @@
-﻿# == Schema Information
+# == Schema Information
 #
 # Table name: PALLASTRADE_stripe_payment_intents
 #
@@ -15,7 +15,7 @@
 #  stripe_payment_method_id :string
 #
 FactoryBot.define do
-  factory :payment_intent, class: SpreeStripe::PaymentIntent do
+  factory :payment_intent, class: PallasTradeStripe::PaymentIntent do
     stripe_id { 'pi_123' }
     client_secret { 'cs_123' }
     order { create(:order_with_line_items) }

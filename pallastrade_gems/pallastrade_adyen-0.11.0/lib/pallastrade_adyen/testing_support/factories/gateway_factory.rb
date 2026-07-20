@@ -1,7 +1,7 @@
 FactoryBot.define do
-  factory :adyen_gateway, parent: :payment_method, class: SpreeAdyen::Gateway do
+  factory :adyen_gateway, parent: :payment_method, class: PallasTradeAdyen::Gateway do
     name { 'Adyen' }
-    type { 'SpreeAdyen::Gateway' }
+    type { 'PallasTradeAdyen::Gateway' }
 
     skip_auto_configuration { true }
     skip_api_key_validation { true }
@@ -19,7 +19,7 @@ FactoryBot.define do
     trait :with_apple_domain_association_file do
       transient do
         apple_domain_association_file_path do
-          File.join(SpreeAdyen::Engine.root, 'spec', 'fixtures', 'files', 'apple-domain-association-file.txt')
+          File.join(PallasTradeAdyen::Engine.root, 'spec', 'fixtures', 'files', 'apple-domain-association-file.txt')
         end
       end
 

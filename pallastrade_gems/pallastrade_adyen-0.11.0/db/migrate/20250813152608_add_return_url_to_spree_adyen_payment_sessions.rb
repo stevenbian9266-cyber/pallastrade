@@ -1,8 +1,8 @@
-﻿class AddReturnUrlToSpreeAdyenPaymentSessions < ActiveRecord::Migration[7.2]
+class AddReturnUrlToPallasTradeAdyenPaymentSessions < ActiveRecord::Migration[7.2]
   def change
     add_column :PALLASTRADE_adyen_payment_sessions, :return_url, :string
 
-    SpreeAdyen::PaymentSession.reset_column_information
+    PallasTradeAdyen::PaymentSession.reset_column_information
     PallasTrade::Store.find_each do |store|
       redirect_to = PallasTrade::Core::Engine.routes.url_helpers.redirect_adyen_payment_session_url(host: store.url_or_custom_domain)
       store.payment_methods.adyen.find_each do |gateway|

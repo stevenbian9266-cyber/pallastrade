@@ -1,5 +1,5 @@
-﻿module SpreeStripe
+module PallasTradeStripe
   class BaseJob < PallasTrade::BaseJob
-    queue_as SpreeStripe.queue
+    queue_as PallasTradeStripe.queue
   end
 end

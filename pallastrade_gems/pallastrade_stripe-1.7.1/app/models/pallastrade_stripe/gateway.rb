@@ -1,0 +1,385 @@
+module PallasTradeStripe
+  class Gateway < ::PallasTrade::Gateway
+    include PallasTradeStripe::Gateway::PaymentIntents
+    include PallasTradeStripe::Gateway::PaymentSessions
+    include PallasTradeStripe::Gateway::PaymentSetupSessions
+    include PallasTradeStripe::Gateway::Tax if defined?(PallasTradeStripe::Gateway::Tax)
+
+    preference :publishable_key, :password
+    preference :secret_key, :password
+
+    WEBHOOK_EVENT_ACTIONS = {
+      'payment_intent.succeeded' => :captured,
+      'payment_intent.amount_capturable_updated' => :authorized,
+      'payment_intent.payment_failed' => :failed
+    }.freeze
+
+    has_one_attached :apple_developer_merchantid_domain_association, service: PallasTrade.private_storage_service_name
+
+    validates :preferred_secret_key, :preferred_publishable_key, presence: true
+    validate :validate_secret_key, unless: -> { Rails.env.test? }, if: -> { preferred_secret_key.present? }
+
+    after_commit :create_webhook_endpoint_async, on: %i[create update]
+    after_commit :register_domain, on: :create
+
+    def webhook_url
+      store = stores.first
+      return nil unless store
+
+      if PallasTradeStripe::Config[:use_legacy_webhook_handlers]
+        StripeEvent::Engine.routes.url_helpers.root_url(host: store.url, protocol: 'https')
+      else
+        "#{store.formatted_url}/api/v3/webhooks/payments/#{prefixed_id}"
+      end
+    end
+
+    def parse_webhook_event(raw_body, headers)
+      event = verify_webhook_signature(raw_body, headers)
+
+      action = WEBHOOK_EVENT_ACTIONS[event.type]
+      return nil unless action
+
+      payment_session = PallasTrade::PaymentSessions::Stripe.find_by(
+        payment_method: self,
+        external_id: event.data.object[:id]
+      )
+      return nil unless payment_session
+
+      { action: action, payment_session: payment_session, metadata: { stripe_event: event } }
+    end
+
+    def provider_class
+      self.class
+    end
+
+    # @param amount_in_cents [Integer] the amount in cents to capture
+    # @param payment_source [PallasTrade::CreditCard | PallasTrade::PaymentSource]
+    # @param gateway_options [Hash] this is an instance of PallasTrade::Payment::GatewayOptions.to_hash
+    def authorize(amount_in_cents, payment_source, gateway_options = {})
+      handle_authorize_or_purchase(amount_in_cents, payment_source, gateway_options)
+    end
+
+    # @param amount_in_cents [Integer] the amount in cents to capture
+    # @param payment_source [PallasTrade::CreditCard | PallasTrade::PaymentSource]
+    # @param gateway_options [Hash] this is an instance of PallasTrade::Payment::GatewayOptions.to_hash
+    def purchase(amount_in_cents, payment_source, gateway_options = {})
+      handle_authorize_or_purchase(amount_in_cents, payment_source, gateway_options)
+    end
+
+    # the behavior for authorize and purchase is the same, so we can use the same method to handle both
+    def handle_authorize_or_purchase(amount_in_cents, payment_source, gateway_options)
+      order_number, payment_number = gateway_options[:order_id].split('-')
+
+      return failure('Order number is invalid') if order_number.blank?
+      return failure('Payment number is invalid') if payment_number.blank?
+
+      order = PallasTrade::Order.where(store_id: stores.ids).find_by(number: order_number)
+      payment = order.payments.find_by(number: payment_number)
+
+      protect_from_error do
+        # eg. payment created via admin
+        payment = ensure_payment_intent_exists_for_payment(payment, amount_in_cents, payment_source)
+        stripe_payment_intent = retrieve_payment_intent(payment.response_code)
+
+        response = if payment_intent_accepted?(stripe_payment_intent)
+                     # payment intent is already confirmed via Stripe JS SDK
+                     stripe_payment_intent
+                   else
+                     confirm_payment_intent(stripe_payment_intent.id)
+                   end
+
+        success(response.id, response)
+      end
+    end
+
+    def credit(amount_in_cents, _source, payment_intent_id, _gateway_options = {})
+      protect_from_error do
+        payload = {
+          amount: amount_in_cents,
+          payment_intent: payment_intent_id
+        }
+
+        response = send_request { |opts| Stripe::Refund.create(payload, opts) }
+
+        success(response.id, response)
+      end
+    end
+
+    def capture(amount_in_cents, payment_intent_id, _gateway_options = {})
+      protect_from_error do
+        stripe_payment_intent = retrieve_payment_intent(payment_intent_id)
+
+        response = if payment_intent_requires_capture?(stripe_payment_intent)
+                     capture_payment_intent(payment_intent_id, amount_in_cents)
+                   elsif stripe_payment_intent.status == 'succeeded'
+                     stripe_payment_intent
+                   else
+                     raise PallasTrade::Core::GatewayError, "Payment intent status is #{stripe_payment_intent.status}"
+                   end
+
+        success(response.id, response)
+      end
+    end
+
+    def void(response_code, _source, _gateway_options)
+      return failure('Response code is blank') if response_code.blank?
+
+      protect_from_error do
+        response = cancel_payment_intent(response_code)
+        success(response.id, response)
+      end
+    end
+
+    def cancel(payment_intent_id, payment = nil)
+      protect_from_error do
+        if payment&.completed?
+          amount = payment.credit_allowed
+          return success(payment_intent_id, {}) if amount.zero?
+          # Don't create a refund if the payment is for a shipment, we will create a refund for the whole shipping cost instead
+          return success(payment_intent_id, {}) if payment.respond_to?(:for_shipment?) && payment.for_shipment?
+
+          refund = payment.refunds.create!(
+            amount: amount,
+            reason: PallasTrade::RefundReason.order_canceled_reason,
+            refunder_id: payment.order.canceler_id
+          )
+
+          # PallasTrade::Refund#response has the response from the `credit` action
+          # For the authorization ID we need to use the payment.response_code (the payment intent ID)
+          # Otherwise we'll overwrite the payment authorization with the refund ID
+          success(payment.response_code, refund.response.params)
+        else
+          response = cancel_payment_intent(payment_intent_id)
+          success(response.id, response)
+        end
+      end
+    end
+
+    def fetch_or_create_customer(order: nil, user: nil)
+      user ||= order&.user
+      return nil unless user
+
+      gateway_customers.find_by(user: user) || create_customer(order: order, user: user)
+    end
+
+    # Creates a Stripe customer based on the order or user
+    #
+    # @param order [PallasTrade::Order] the order to use for creating the Stripe customer
+    # @param user [PallasTrade::User] the user to use for creating the Stripe customer
+    # @return [Stripe::Customer] the created Stripe customer
+    def create_customer(order: nil, user: nil)
+      payload = build_customer_payload(order: order, user: user)
+      response = send_request { |opts| Stripe::Customer.create(payload, opts) }
+
+      customer = gateway_customers.build(user: user, profile_id: response.id)
+      customer.save! if user.present?
+      customer
+    end
+
+    # Updates a Stripe customer based on the order or user
+    #
+    # @param order [PallasTrade::Order] the order to use for updating the Stripe customer
+    # @param user [PallasTrade::User] the user to use for updating the Stripe customer
+    # @return [Stripe::Customer] the updated Stripe customer
+    def update_customer(order: nil, user: nil)
+      user ||= order&.user
+      return if user.blank?
+
+      customer = gateway_customers.find_by(user: user)
+      return if customer.blank?
+
+      payload = build_customer_payload(order: order, user: user)
+      send_request { |opts| Stripe::Customer.update(customer.profile_id, payload, opts) }
+    end
+
+    def retrieve_charge(charge_id)
+      send_request { |opts| Stripe::Charge.retrieve(charge_id, opts) }
+    end
+
+    def create_ephemeral_key(customer_id)
+      protect_from_error do
+        response = send_request { |opts| Stripe::EphemeralKey.create({ customer: customer_id }, opts.merge(stripe_version: Stripe.api_version)) }
+
+        success(response.secret, response)
+      end
+    end
+
+    def create_setup_intent(customer_id)
+      protect_from_error do
+        response = send_request { |opts| Stripe::SetupIntent.create({ customer: customer_id, automatic_payment_methods: { enabled: true } }, opts) }
+
+        success(response.client_secret, response)
+      end
+    end
+
+    def create_tax_calculation(order)
+      protect_from_error do
+        send_request do |opts|
+          Stripe::Tax::Calculation.create(
+            PallasTradeStripe::TaxPresenter.new(order: order).call, opts
+          )
+        end
+      end
+    end
+
+    def create_tax_transaction(payment_intent_id, tax_calculation_id)
+      protect_from_error do
+        payload = {
+          calculation: tax_calculation_id,
+          reference: payment_intent_id,
+          expand: ['line_items']
+        }
+
+        send_request { |opts| Stripe::Tax::Transaction.create_from_calculation(payload, opts) }
+      end
+    end
+
+    def attach_customer_to_credit_card(user)
+      payment_method_id = user&.default_credit_card&.gateway_payment_profile_id
+      return if payment_method_id.blank? || user&.default_credit_card&.gateway_customer_profile_id.present?
+
+      customer = fetch_or_create_customer(user: user)
+      return if customer.blank?
+
+      send_request { |opts| Stripe::PaymentMethod.attach(payment_method_id, { customer: customer.profile_id }, opts) }
+
+      user.default_credit_card.update(gateway_customer_profile_id: customer.profile_id, gateway_customer_id: customer.id)
+    rescue Stripe::StripeError => e
+      Rails.error.report(e, context: { payment_method_id: id, user_id: user.id }, source: 'pallastrade_stripe')
+      nil
+    end
+
+    def apple_domain_association_file_content
+      @apple_domain_association_file_content ||= apple_developer_merchantid_domain_association&.download
+    end
+
+    def payment_profiles_supported?
+      true
+    end
+
+    def default_name
+      'Stripe'
+    end
+
+    def method_type
+      'pallastrade_stripe'
+    end
+
+    def payment_icon_name
+      'stripe'
+    end
+
+    def description_partial_name
+      'pallastrade_stripe'
+    end
+
+    def custom_form_fields_partial_name
+      'pallastrade_stripe'
+    end
+
+    def configuration_guide_partial_name
+      'pallastrade_stripe'
+    end
+
+    def gateway_dashboard_payment_url(payment)
+      return if payment.transaction_id.blank?
+
+      "https://dashboard.stripe.com/payments/#{payment.transaction_id}"
+    end
+
+    def create_webhook_endpoint
+      PallasTradeStripe::CreateGatewayWebhooks.new.call(payment_method: self)
+    end
+
+    def create_profile(payment)
+      customer = fetch_or_create_customer(order: payment.order)
+
+      payment.source.update(gateway_customer_profile_id: customer.profile_id) if payment.source.present? && customer.present?
+    end
+
+    def api_options
+      { api_key: preferred_secret_key }
+    end
+
+    def send_request
+      yield(api_options)
+    end
+
+    private
+
+    def validate_secret_key
+      Stripe::Refund.list({ limit: 0 }, api_options)
+    rescue Stripe::AuthenticationError
+      errors.add(:base, 'Secret key is invalid')
+    rescue Stripe::PermissionError => e
+      errors.add(:base, 'You have provided your publishable key instead of your secret key') if e.error&.code == 'secret_key_required'
+    rescue Stripe::StripeError
+      errors.add(:base, 'Something went wrong with Stripe. Try again later.')
+    end
+
+    def success(authorization, full_response)
+      PallasTrade::PaymentResponse.new(true, nil, full_response.as_json, authorization: authorization)
+    end
+
+    def failure(error = nil)
+      PallasTrade::PaymentResponse.new(false, error)
+    end
+
+    def protect_from_error
+      yield
+    rescue Stripe::StripeError => e
+      raise PallasTrade::Core::GatewayError, e.message
+    end
+
+    def create_webhook_endpoint_async
+      return if webhook_keys.any?
+
+      PallasTradeStripe::CreateWebhookEndpointJob.perform_later(id)
+    end
+
+    def register_domain
+      stores.each do |store|
+        RegisterDomainJob.perform_later(store.id, 'store')
+
+        next unless defined?(PallasTrade::CustomDomain)
+
+        store.custom_domains.each do |custom_domain|
+          RegisterDomainJob.perform_later(custom_domain.id, 'custom_domain')
+        end
+      end
+    end
+
+    def build_customer_payload(order: nil, user: nil)
+      user ||= order&.user
+      address = order&.bill_address || user&.bill_address
+      name = order&.name || user&.name
+      email = order&.email || user&.email
+
+      PallasTradeStripe::CustomerPresenter.new(name: name, email: email, address: address).call
+    end
+
+    def verify_webhook_signature(raw_body, headers)
+      signature = headers['HTTP_STRIPE_SIGNATURE']
+      signing_secrets = webhook_signing_secrets
+
+      signing_secrets.each do |secret|
+        return Stripe::Webhook.construct_event(raw_body, signature, secret)
+      rescue Stripe::SignatureVerificationError
+        next
+      end
+
+      raise PallasTrade::PaymentMethod::WebhookSignatureError, 'Invalid webhook signature'
+    end
+
+    def webhook_signing_secrets
+      secrets = PallasTradeStripe::WebhookKey
+        .joins(:payment_methods_webhook_keys)
+        .where(payment_methods_webhook_keys: { payment_method_id: id })
+        .pluck(:signing_secret)
+        .compact
+
+      secrets << ENV['STRIPE_SIGNING_SECRET'] if ENV['STRIPE_SIGNING_SECRET'].present?
+      secrets
+    end
+  end
+end

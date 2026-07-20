@@ -1,4 +1,4 @@
-﻿module SpreeStripe
+module PallasTradeStripe
   class RegisterDomainJob < BaseJob
     def perform(model_id, klass_type = 'store')
       @klass_type = klass_type

@@ -1,0 +1,13 @@
+module PallasTradeStripe
+  module PaymentSources
+    class Link < ::PallasTrade::PaymentSource
+      def actions
+        %w[credit]
+      end
+
+      def self.display_name
+        'Link'
+      end
+    end
+  end
+end

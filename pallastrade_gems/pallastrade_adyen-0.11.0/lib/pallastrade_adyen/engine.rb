@@ -1,4 +1,4 @@
-module SpreeAdyen
+module PallasTradeAdyen
   class Engine < Rails::Engine
     require 'pallastrade/core'
     isolate_namespace PallasTrade
@@ -23,26 +23,26 @@ module SpreeAdyen
       app.config.PALLASTRADE_adyen.event_handlers = {}
       app.config.PALLASTRADE_adyen.events = {}
       app.config.PALLASTRADE_adyen.hmac_validators = {}
-      SpreeAdyen::Config = SpreeAdyen::Configuration.new
+      PallasTradeAdyen::Config = PallasTradeAdyen::Configuration.new
     end
 
     config.after_initialize do
       Rails.application.config.PALLASTRADE_adyen.event_handlers.merge!(
-        'AUTHORISATION' => SpreeAdyen::Webhooks::ProcessAuthorisationEventJob,
-        'CAPTURE' => SpreeAdyen::Webhooks::ProcessCaptureEventJob,
-        'CANCELLATION' => SpreeAdyen::Webhooks::ProcessCancellationEventJob
+        'AUTHORISATION' => PallasTradeAdyen::Webhooks::ProcessAuthorisationEventJob,
+        'CAPTURE' => PallasTradeAdyen::Webhooks::ProcessCaptureEventJob,
+        'CANCELLATION' => PallasTradeAdyen::Webhooks::ProcessCancellationEventJob
       )
 
       Rails.application.config.PALLASTRADE_adyen.events.merge!(
-        'AUTHORISATION' => SpreeAdyen::Webhooks::Event,
-        'CAPTURE' => SpreeAdyen::Webhooks::Event,
-        'CANCELLATION' => SpreeAdyen::Webhooks::Event
+        'AUTHORISATION' => PallasTradeAdyen::Webhooks::Event,
+        'CAPTURE' => PallasTradeAdyen::Webhooks::Event,
+        'CANCELLATION' => PallasTradeAdyen::Webhooks::Event
       )
 
       Rails.application.config.PALLASTRADE_adyen.hmac_validators.merge!(
-        'AUTHORISATION' => SpreeAdyen::Webhooks::StandardHmacValidator,
-        'CAPTURE' => SpreeAdyen::Webhooks::StandardHmacValidator,
-        'CANCELLATION' => SpreeAdyen::Webhooks::StandardHmacValidator
+        'AUTHORISATION' => PallasTradeAdyen::Webhooks::StandardHmacValidator,
+        'CAPTURE' => PallasTradeAdyen::Webhooks::StandardHmacValidator,
+        'CANCELLATION' => PallasTradeAdyen::Webhooks::StandardHmacValidator
       )
     end
 

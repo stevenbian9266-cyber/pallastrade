@@ -2,7 +2,7 @@
 # such as promotions, shipping methods, etc.
 Rails.application.config.after_initialize do
   # Rails.application.config.PallasTrade.shipping_methods << PallasTrade::ShippingMethods::SuperExpensiveNotVeryFastShipping
-  Rails.application.config.pallastrade.payment_methods << SpreeAdyen::Gateway
+  Rails.application.config.pallastrade.payment_methods << PallasTradeAdyen::Gateway
 
   # Rails.application.config.PallasTrade.calculators.tax_rates << PallasTrade::TaxRates::FinanceTeamForcedMeToCodeThis
 

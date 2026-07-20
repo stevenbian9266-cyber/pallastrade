@@ -1,4 +1,4 @@
-﻿module SpreeStripe
+module PallasTradeStripe
   class AttachCustomerToCreditCardJob < BaseJob
     def perform(order_id)
       return if PallasTrade.user_class.blank?

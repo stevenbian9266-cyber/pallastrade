@@ -1,6 +1,6 @@
-﻿pin 'application-spree-adyen', to: 'pallastrade_adyen/application.js', preload: false
+pin 'application-spree-adyen', to: 'pallastrade_adyen/application.js', preload: false
 
-pin_all_from SpreeAdyen::Engine.root.join('app/javascript/PALLASTRADE_adyen/controllers'),
+pin_all_from PallasTradeAdyen::Engine.root.join('app/javascript/PALLASTRADE_adyen/controllers'),
              under: 'pallastrade_adyen/controllers',
              to:    'pallastrade_adyen/controllers',
              preload: 'application-spree-adyen'
