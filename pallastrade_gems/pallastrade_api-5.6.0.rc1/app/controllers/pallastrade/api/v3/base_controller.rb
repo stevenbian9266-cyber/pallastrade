@@ -34,7 +34,7 @@ module PallasTrade
 
         rate_limit to: PallasTrade::Api::Config[:rate_limit_per_key], within: PallasTrade::Api::Config[:rate_limit_window].seconds,
                    store: Rails.cache,
-                   by: -> { request.headers['X-PallasTrade-Api-Key'] || request.remote_ip },
+                   by: -> { request.headers['X-PallasTrade-Api-Key'] || request.headers['X-Spree-Api-Key'] || request.remote_ip },
                    with: RATE_LIMIT_RESPONSE
 
         # Optional JWT authentication by default

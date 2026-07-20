@@ -38,7 +38,7 @@ module PallasTrade
         # Return the cart token from the request headers.
         # @return [String, nil]
         def cart_token
-          request.headers['x-pallastrade-token']
+          request.headers['x-pallastrade-token'] || request.headers['x-spree-token']
         end
       end
     end

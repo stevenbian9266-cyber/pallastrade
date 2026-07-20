@@ -68,6 +68,7 @@ module PallasTrade
 
         def idempotency_cache_key(key)
           owner_id = request.headers['X-PallasTrade-Api-Key'].presence ||
+                     request.headers['X-Spree-Api-Key'].presence ||
                      pallastrade_current_user&.id ||
                      request.remote_ip
           "pallastrade:idempotency:#{Digest::SHA256.hexdigest(owner_id.to_s)}:#{Digest::SHA256.hexdigest(key)}"

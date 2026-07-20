@@ -17,6 +17,7 @@ module PallasTrade
         extend ActiveSupport::Concern
 
         CHANNEL_HEADER = 'X-PallasTrade-Channel'.freeze
+        LEGACY_CHANNEL_HEADER = 'X-Spree-Channel'.freeze
 
         included do
           before_action :set_current_channel
@@ -42,7 +43,7 @@ module PallasTrade
         end
 
         def channel_from_header
-          value = request.headers[CHANNEL_HEADER].presence
+          value = request.headers[CHANNEL_HEADER].presence || request.headers[LEGACY_CHANNEL_HEADER].presence
           return nil if value.blank?
           return nil unless current_store
 

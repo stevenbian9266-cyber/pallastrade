@@ -15,7 +15,7 @@ module PallasTrade
 
         def set_rate_limit_headers
           limit = PallasTrade::Api::Config[:rate_limit_per_key]
-          by = request.headers['X-PallasTrade-Api-Key'] || request.remote_ip
+          by = request.headers['X-PallasTrade-Api-Key'] || request.headers['X-Spree-Api-Key'] || request.remote_ip
           cache_key = ['rate-limit', controller_path, by].compact.join(':')
           count = Rails.cache.read(cache_key)
 

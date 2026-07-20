@@ -35,7 +35,7 @@ module PallasTrade
           end
 
           def order_token
-            request.headers['x-pallastrade-token']
+            request.headers['x-pallastrade-token'] || request.headers['x-spree-token']
           end
         end
       end

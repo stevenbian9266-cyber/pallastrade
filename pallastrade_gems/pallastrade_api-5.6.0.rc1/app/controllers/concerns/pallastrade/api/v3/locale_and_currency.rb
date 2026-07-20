@@ -142,14 +142,14 @@ module PallasTrade
         #
         # @return [String, nil]
         def locale_from_header
-          request.headers['x-pallastrade-locale'].presence
+          request.headers['x-pallastrade-locale'].presence || request.headers['x-spree-locale'].presence
         end
 
         # Reads the currency from the +x-pallastrade-currency+ request header.
         #
         # @return [String, nil]
         def currency_from_header
-          request.headers['x-pallastrade-currency'].presence
+          request.headers['x-pallastrade-currency'].presence || request.headers['x-spree-currency'].presence
         end
 
         # Reads the locale from request params.
