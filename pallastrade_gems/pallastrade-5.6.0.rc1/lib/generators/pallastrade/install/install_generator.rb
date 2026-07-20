@@ -149,7 +149,7 @@ module PallasTrade
     def complete
       unless options[:quiet]
         puts '*' * 50
-        puts "Spree has been installed successfully. You're all ready to go!"
+        puts "PallasTrade has been installed successfully. You're all ready to go!"
         puts ' '
         puts 'Enjoy!'
       end

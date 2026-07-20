@@ -890,7 +890,7 @@ Rails.application.config.after_initialize do
                                         position: 40
 
   PallasTrade.admin.tables.policies.add :owner,
-                                        label: 'activerecord.attributes.spree/policy.owner',
+                                        label: 'activerecord.attributes.pallastrade/policy.owner',
                                         type: :string,
                                         sortable: false,
                                         filterable: false,

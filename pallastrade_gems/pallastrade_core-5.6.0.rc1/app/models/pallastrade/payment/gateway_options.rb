@@ -35,7 +35,7 @@
       end
 
       def idempotency_key
-        "spree-#{payment.number}"
+        "pallastrade-#{payment.number}"
       end
 
       def shipping

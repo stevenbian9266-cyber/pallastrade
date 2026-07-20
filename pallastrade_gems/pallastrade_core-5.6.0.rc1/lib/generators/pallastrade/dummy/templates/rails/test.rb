@@ -27,7 +27,7 @@ Dummy::Application.configure do
   # The :test delivery method accumulates sent emails in the
   # ActionMailer::Base.deliveries array.
   config.action_mailer.delivery_method = :test
-  ActionMailer::Base.default from: "spree@example.com"
+  ActionMailer::Base.default from: "pallastrade@example.com"
   # Store uploaded files on the local file system in a temporary directory
   config.active_storage.service = :test
 

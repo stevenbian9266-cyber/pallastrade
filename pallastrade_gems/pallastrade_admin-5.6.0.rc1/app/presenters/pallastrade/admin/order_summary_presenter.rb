@@ -50,7 +50,7 @@
 
         if order.completed_at.present?
           rows << {
-            label: I18n.t('activerecord.attributes.spree/order.completed_at'),
+            label: I18n.t('activerecord.attributes.pallastrade/order.completed_at'),
             value: order.completed_at,
             type: :datetime
           }

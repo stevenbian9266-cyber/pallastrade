@@ -70,7 +70,7 @@ module PallasTrade
           owner_id = request.headers['X-Spree-Api-Key'].presence ||
                      pallastrade_current_user&.id ||
                      request.remote_ip
-          "spree:idempotency:#{Digest::SHA256.hexdigest(owner_id.to_s)}:#{Digest::SHA256.hexdigest(key)}"
+          "pallastrade:idempotency:#{Digest::SHA256.hexdigest(owner_id.to_s)}:#{Digest::SHA256.hexdigest(key)}"
         end
 
         def request_fingerprint

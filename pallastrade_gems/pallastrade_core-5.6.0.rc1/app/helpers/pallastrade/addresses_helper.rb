@@ -13,7 +13,7 @@ module PallasTrade
         if handler
           yield
         else
-          method_name = I18n.t("activerecord.attributes.spree/address.#{method}")
+          method_name = I18n.t("activerecord.attributes.pallastrade/address.#{method}")
           form.label(method, method_name, class: 'block text-xs text-neutral-600 mb-1') +
           form.text_field(method,
                           class: ['text-input w-full'].compact,

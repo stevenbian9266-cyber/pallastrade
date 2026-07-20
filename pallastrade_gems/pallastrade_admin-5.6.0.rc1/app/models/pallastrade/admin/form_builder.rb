@@ -356,7 +356,7 @@ module PallasTrade
                             elsif I18n.exists?("PallasTrade.#{method}")
                               I18n.t("PallasTrade.#{method}")
                             else
-                              I18n.t("activerecord.attributes.spree/#{@object_name.to_s.underscore}.#{method}")
+                              I18n.t("activerecord.attributes.pallastrade/#{@object_name.to_s.underscore}.#{method}")
                             end
 
         required_label = options[:required] ? ' ' + @template.required_span_tag : ''
