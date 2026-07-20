@@ -1,6 +1,6 @@
-﻿module PallasTrade
+module PallasTrade
   class ModelDecoratorGenerator < Rails::Generators::NamedBase
-    desc 'Creates a model decorator for a Spree model'
+    desc 'Creates a model decorator for a PallasTrade model'
 
     argument :name, type: :string, required: true, banner: 'PallasTrade::ModelName'
 

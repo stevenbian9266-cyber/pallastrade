@@ -1,11 +1,11 @@
-﻿# frozen_string_literal: true
+# frozen_string_literal: true
 
 require_relative 'events/registry'
 require_relative 'events/adapters/base'
 require_relative 'events/adapters/active_support_notifications'
 
 module PallasTrade
-  # Main entry point for the Spree event system.
+  # Main entry point for the PallasTrade event system.
   #
   # This module provides a clean API for publishing events and subscribing
   # to them. It abstracts the underlying implementation (ActiveSupport::Notifications)

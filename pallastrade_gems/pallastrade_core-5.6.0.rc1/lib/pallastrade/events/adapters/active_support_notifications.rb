@@ -1,4 +1,4 @@
-﻿# frozen_string_literal: true
+# frozen_string_literal: true
 
 module PallasTrade
   module Events
@@ -6,7 +6,7 @@ module PallasTrade
       # Adapter for ActiveSupport::Notifications backend.
       #
       # This adapter wraps Rails' built-in notification system to provide
-      # the Spree event infrastructure. It can be swapped out for other
+      # the PallasTrade event infrastructure. It can be swapped out for other
       # implementations (e.g., Redis pub/sub, Kafka) without changing
       # the subscriber API.
       #
@@ -15,7 +15,7 @@ module PallasTrade
       #   adapter.publish('order.completed', { id: 1 })
       #
       class ActiveSupportNotifications < Base
-        NAMESPACE = 'spree'
+        NAMESPACE = 'pallastrade'
 
         def initialize(registry)
           super

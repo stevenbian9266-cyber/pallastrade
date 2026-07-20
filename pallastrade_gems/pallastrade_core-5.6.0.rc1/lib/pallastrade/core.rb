@@ -452,7 +452,7 @@ module PallasTrade
   end
 
   # Ransack configuration accessor for managing custom ransackable attributes,
-  # associations, and scopes across Spree models.
+  # associations, and scopes across PallasTrade models.
   #
   # @example Adding custom searchable fields
   #   PallasTrade.ransack.add_attribute(PallasTrade::Product, :vendor_id)

@@ -1,6 +1,6 @@
 require_relative 'preview_data'
 
-# Preview Spree export emails at /rails/mailers/pallastrade/export
+# Preview PallasTrade export emails at /rails/mailers/pallastrade/export
 class PallasTrade::ExportPreview < ActionMailer::Preview
   include PallasTrade::PreviewData::LocaleParam
 

@@ -1,10 +1,10 @@
-﻿require 'rails/generators'
+require 'rails/generators'
 
 module PallasTrade
   module Admin
     module Generators
       class ScaffoldGenerator < Rails::Generators::Base
-        desc 'Generates Spree admin dashboard scaffold for resource'
+        desc 'Generates PallasTrade admin dashboard scaffold for resource'
 
         def self.source_paths
           [
@@ -20,18 +20,18 @@ module PallasTrade
           @plural_name = resource_name.demodulize.underscore.pluralize # eg. properties
           @singular_name = resource_name.demodulize.underscore # eg. property
 
-          empty_directory "app/views/spree/admin/#{@plural_name}"
+          empty_directory "app/views/pallastrade/admin/#{@plural_name}"
 
           # controller
           template 'controller.rb', "app/controllers/spree/admin/#{@plural_name}_controller.rb"
 
           # views
-          template 'views/index.html.erb', "app/views/spree/admin/#{@plural_name}/index.html.erb"
-          template 'views/new.html.erb', "app/views/spree/admin/#{@plural_name}/new.html.erb"
-          template 'views/edit.html.erb', "app/views/spree/admin/#{@plural_name}/edit.html.erb"
+          template 'views/index.html.erb', "app/views/pallastrade/admin/#{@plural_name}/index.html.erb"
+          template 'views/new.html.erb', "app/views/pallastrade/admin/#{@plural_name}/new.html.erb"
+          template 'views/edit.html.erb', "app/views/pallastrade/admin/#{@plural_name}/edit.html.erb"
 
           # partials
-          template 'views/_form.html.erb', "app/views/spree/admin/#{@plural_name}/_form.html.erb"
+          template 'views/_form.html.erb', "app/views/pallastrade/admin/#{@plural_name}/_form.html.erb"
 
           # initializers
           template 'table_initializer.rb', "config/initializers/PALLASTRADE_admin_#{@plural_name}_table.rb"

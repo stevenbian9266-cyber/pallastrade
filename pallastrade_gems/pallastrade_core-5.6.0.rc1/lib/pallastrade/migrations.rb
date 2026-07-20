@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   class Migrations
     attr_reader :config, :engine_name
 
@@ -69,7 +69,7 @@
     end
 
     def match_engine?(engine)
-      if engine_name == 'spree'
+      if engine_name == 'pallastrade'
         # Avoid stores upgrading from 1.3 getting wrong warnings
         ['PallasTrade.rb', 'pallastrade_promo.rb'].include? engine
       else

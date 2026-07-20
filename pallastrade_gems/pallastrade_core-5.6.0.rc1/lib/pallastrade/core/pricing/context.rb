@@ -1,4 +1,4 @@
-﻿module PallasTrade
+module PallasTrade
   module Pricing
     class Context
       attr_reader :variant, :currency, :store, :zone, :market, :channel, :user, :quantity, :date, :order
@@ -52,7 +52,7 @@
       # @return [String]
       def cache_key
         [
-          'spree',
+          'pallastrade',
           'pricing',
           variant.id,
           currency,

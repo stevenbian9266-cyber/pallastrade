@@ -1,7 +1,7 @@
 module PallasTrade
   module BaseHelper
     def PALLASTRADE_dom_id(record)
-      dom_id(record, 'spree')
+      dom_id(record, 'pallastrade')
     end
 
     def available_countries
