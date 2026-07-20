@@ -75,7 +75,7 @@ module PallasTrade
         PallasTrade::Config = app.config.pallastrade.preferences
         PallasTrade::RuntimeConfig = app.config.pallastrade.preferences # for compatibility
         PallasTrade::Dependencies = app.config.pallastrade.dependencies
-        PallasTrade::Deprecation = ActiveSupport::Deprecation.new('6.0', 'Spree')
+        PallasTrade::Deprecation = ActiveSupport::Deprecation.new('6.0', 'PallasTrade')
       end
 
       # I18n's config lives in fiber/thread-local storage that survives across
@@ -83,7 +83,7 @@ module PallasTrade
       # own locale would render in whatever locale the previous request on the
       # same thread set. The i18n gem ships a middleware that resets it after
       # every request; Rails does not install it by default. Mobility's request
-      # state needs no counterpart here — Mobility.locale and Spree's
+      # state needs no counterpart here — Mobility.locale and PallasTrade's
       # Mobility.store_based_fallbacks live in RequestStore, which is cleared
       # per request by request_store's own middleware.
       initializer 'PallasTrade.locale_state_reset' do |app|
