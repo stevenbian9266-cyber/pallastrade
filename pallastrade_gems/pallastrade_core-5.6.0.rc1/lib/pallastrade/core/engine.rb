@@ -68,13 +68,13 @@ module PallasTrade
       end
 
       initializer 'PallasTrade.environment', before: :load_config_initializers do |app|
-        app.config.spree = Environment.new(PallasTradeCalculators.new, PallasTradeValidators.new, PallasTrade::Core::Configuration.new, PallasTrade::Core::Dependencies.new)
+        app.config.pallastrade = Environment.new(PallasTradeCalculators.new, PallasTradeValidators.new, PallasTrade::Core::Configuration.new, PallasTrade::Core::Dependencies.new)
 
         app.config.active_record.yaml_column_permitted_classes ||= []
         app.config.active_record.yaml_column_permitted_classes.concat([Symbol, BigDecimal, ActiveSupport::HashWithIndifferentAccess, ActiveSupport::TimeWithZone, ActiveSupport::TimeZone, Time])
-        PallasTrade::Config = app.config.spree.preferences
-        PallasTrade::RuntimeConfig = app.config.spree.preferences # for compatibility
-        PallasTrade::Dependencies = app.config.spree.dependencies
+        PallasTrade::Config = app.config.pallastrade.preferences
+        PallasTrade::RuntimeConfig = app.config.pallastrade.preferences # for compatibility
+        PallasTrade::Dependencies = app.config.pallastrade.dependencies
         PallasTrade::Deprecation = ActiveSupport::Deprecation.new('6.0', 'Spree')
       end
 
@@ -92,7 +92,7 @@ module PallasTrade
 
       initializer 'PallasTrade.register.subscribers', before: :load_config_initializers do |app|
         # Initialize subscribers array early so engines can add subscribers via initializers
-        app.config.spree.subscribers = []
+        app.config.pallastrade.subscribers = []
       end
 
       initializer 'PallasTrade.register.calculators', before: :after_initialize do |app|
@@ -102,7 +102,7 @@ module PallasTrade
       end
 
       initializer 'PallasTrade.register.line_item_comparison_hooks', before: :load_config_initializers do |app|
-        app.config.spree.line_item_comparison_hooks = Set.new
+        app.config.pallastrade.line_item_comparison_hooks = Set.new
       end
 
       initializer 'PallasTrade.register.payment_methods', after: 'acts_as_list.insert_into_active_record' do |app|
@@ -115,22 +115,22 @@ module PallasTrade
       # their own strategies / rule kinds from initializer files. Core's defaults
       # are concatenated in after_initialize below.
       initializer 'PallasTrade.register.order_routing', before: :load_config_initializers do |app|
-        app.config.spree.order_routing = OrderRoutingEnvironment.new
-        app.config.spree.order_routing.strategies = []
-        app.config.spree.order_routing.rules = []
+        app.config.pallastrade.order_routing = OrderRoutingEnvironment.new
+        app.config.pallastrade.order_routing.strategies = []
+        app.config.pallastrade.order_routing.rules = []
       end
 
       initializer 'PallasTrade.register.metafields' do |app|
-        app.config.spree.metafields = MetafieldsEnvironment.new
-        app.config.spree.metafields.types = []
-        app.config.spree.metafields.enabled_resources = []
+        app.config.pallastrade.metafields = MetafieldsEnvironment.new
+        app.config.pallastrade.metafields.types = []
+        app.config.pallastrade.metafields.enabled_resources = []
       end
 
       # We need to define promotions rules here so extensions and existing apps
       # can add their custom classes on their initializer files
       initializer 'PallasTrade.promo.environment' do |app|
-        app.config.spree.promotions = PromoEnvironment.new
-        app.config.spree.promotions.rules = []
+        app.config.pallastrade.promotions = PromoEnvironment.new
+        app.config.pallastrade.promotions.rules = []
       end
 
       initializer 'PallasTrade.promo.register.promotion.calculators' do |app|
@@ -138,8 +138,8 @@ module PallasTrade
 
       # Pricing configuration for price lists and price rules
       initializer 'PallasTrade.pricing.environment', after: 'PallasTrade.environment' do |app|
-        app.config.spree.pricing = PricingEnvironment.new
-        app.config.spree.pricing.rules = []
+        app.config.pallastrade.pricing = PricingEnvironment.new
+        app.config.pallastrade.pricing.rules = []
       end
 
       # Promotion rules need to be evaluated on after initialize otherwise
@@ -147,7 +147,7 @@ module PallasTrade
       # to malformed model associations (PallasTrade.user_class is only defined on
       # the app initializer)
       config.after_initialize do
-        Rails.application.config.spree.calculators.shipping_methods = [
+        Rails.application.config.pallastrade.calculators.shipping_methods = [
           PallasTrade::Calculator::Shipping::FlatPercentItemTotal,
           PallasTrade::Calculator::Shipping::FlatRate,
           PallasTrade::Calculator::Shipping::FlexiRate,
@@ -156,24 +156,24 @@ module PallasTrade
           PallasTrade::Calculator::Shipping::DigitalDelivery,
         ]
 
-        Rails.application.config.spree.calculators.tax_rates = [
+        Rails.application.config.pallastrade.calculators.tax_rates = [
           PallasTrade::Calculator::DefaultTax
         ]
 
-        Rails.application.config.spree.stock_splitters = [
+        Rails.application.config.pallastrade.stock_splitters = [
           PallasTrade::Stock::Splitter::ShippingCategory,
           PallasTrade::Stock::Splitter::Backordered,
           PallasTrade::Stock::Splitter::Digital
         ]
 
-        Rails.application.config.spree.payment_methods = [
+        Rails.application.config.pallastrade.payment_methods = [
           PallasTrade::Gateway::Bogus,
           PallasTrade::Gateway::CustomPaymentSourceMethod,
           PallasTrade::PaymentMethod::Check,
           PallasTrade::PaymentMethod::StoreCredit
         ]
 
-        Rails.application.config.spree.adjusters = [
+        Rails.application.config.pallastrade.adjusters = [
           PallasTrade::Adjustable::Adjuster::Promotion,
           PallasTrade::Adjustable::Adjuster::Tax
         ]
@@ -181,7 +181,7 @@ module PallasTrade
         # Selectable order routing strategies. The internal Reducer collaborator
         # is intentionally NOT listed — it is not a Strategy::Base. Plugins add
         # their own (or remove Legacy) via this array.
-        Rails.application.config.spree.order_routing.strategies.concat [
+        Rails.application.config.pallastrade.order_routing.strategies.concat [
           PallasTrade::OrderRouting::Strategy::Rules,
           PallasTrade::OrderRouting::Strategy::Legacy
         ]
@@ -189,13 +189,13 @@ module PallasTrade
         # Available order routing rule kinds. STI dispatches at runtime via the
         # +type+ column; this array is the curated allowlist that drives admin
         # pickers and the rule +type+ validation. Plugins append their own.
-        Rails.application.config.spree.order_routing.rules.concat [
+        Rails.application.config.pallastrade.order_routing.rules.concat [
           PallasTrade::OrderRouting::Rules::PreferredLocation,
           PallasTrade::OrderRouting::Rules::MinimizeSplits,
           PallasTrade::OrderRouting::Rules::DefaultLocation
         ]
 
-        Rails.application.config.spree.calculators.promotion_actions_create_adjustments = [
+        Rails.application.config.pallastrade.calculators.promotion_actions_create_adjustments = [
           PallasTrade::Calculator::FlatPercentItemTotal,
           PallasTrade::Calculator::FlatRate,
           PallasTrade::Calculator::FlexiRate,
@@ -203,13 +203,13 @@ module PallasTrade
           PallasTrade::Calculator::TieredFlatRate
         ]
 
-        Rails.application.config.spree.calculators.promotion_actions_create_item_adjustments = [
+        Rails.application.config.pallastrade.calculators.promotion_actions_create_item_adjustments = [
           PallasTrade::Calculator::PercentOnLineItem,
           PallasTrade::Calculator::FlatRate,
           PallasTrade::Calculator::FlexiRate
         ]
 
-        Rails.application.config.spree.promotions.rules.concat [
+        Rails.application.config.pallastrade.promotions.rules.concat [
           PallasTrade::Promotion::Rules::Currency,
           PallasTrade::Promotion::Rules::Country,
           PallasTrade::Promotion::Rules::Channel,
@@ -232,7 +232,7 @@ module PallasTrade
         # in admin UI for a model on its way out. The class itself
         # stays so legacy data continues to load; it just doesn't show
         # up in the "Add rule" picker.
-        Rails.application.config.spree.pricing.rules.concat [
+        Rails.application.config.pallastrade.pricing.rules.concat [
           PallasTrade::PriceRules::UserRule,
           PallasTrade::PriceRules::CustomerGroupRule,
           PallasTrade::PriceRules::VolumeRule,
@@ -240,18 +240,18 @@ module PallasTrade
           PallasTrade::PriceRules::ChannelRule
         ]
 
-        Rails.application.config.spree.promotions.actions = [
+        Rails.application.config.pallastrade.promotions.actions = [
           Promotion::Actions::CreateAdjustment,
           Promotion::Actions::CreateItemAdjustments,
           Promotion::Actions::CreateLineItems,
           Promotion::Actions::FreeShipping
         ]
 
-        Rails.application.config.spree.data_feed_types = [
+        Rails.application.config.pallastrade.data_feed_types = [
           PallasTrade::DataFeed::Google
         ]
 
-        Rails.application.config.spree.export_types = [
+        Rails.application.config.pallastrade.export_types = [
           PallasTrade::Exports::Products,
           PallasTrade::Exports::ProductTranslations,
           PallasTrade::Exports::Orders,
@@ -261,24 +261,24 @@ module PallasTrade
           PallasTrade::Exports::CouponCodes
         ]
 
-        Rails.application.config.spree.import_types = [
+        Rails.application.config.pallastrade.import_types = [
           PallasTrade::Imports::Products,
           PallasTrade::Imports::ProductTranslations,
           PallasTrade::Imports::Customers,
         ]
 
-        Rails.application.config.spree.taxon_rules = [
+        Rails.application.config.pallastrade.taxon_rules = [
           PallasTrade::TaxonRules::Tag,
           PallasTrade::TaxonRules::AvailableOn,
           PallasTrade::TaxonRules::Sale,
         ]
 
-        Rails.application.config.spree.reports = [
+        Rails.application.config.pallastrade.reports = [
           PallasTrade::Reports::ProductsPerformance,
           PallasTrade::Reports::SalesTotal
         ]
 
-        Rails.application.config.spree.translatable_resources = [
+        Rails.application.config.pallastrade.translatable_resources = [
           PallasTrade::OptionType,
           PallasTrade::OptionValue,
           PallasTrade::Product,
@@ -293,14 +293,14 @@ module PallasTrade
         # `taggable_type`, and the SPA `<TagCombobox>` targets them by name.
         # Extend in an app initializer (after :load_config_initializers) to
         # surface custom taggables — e.g.
-        #   Rails.application.config.spree.taggable_types << 'MyApp::Vendor'.
-        Rails.application.config.spree.taggable_types = [
+        #   Rails.application.config.pallastrade.taggable_types << 'MyApp::Vendor'.
+        Rails.application.config.pallastrade.taggable_types = [
           'PallasTrade::Product',
           'PallasTrade::Order',
           PallasTrade.user_class.to_s
         ]
 
-        Rails.application.config.spree.metafields.types = [
+        Rails.application.config.pallastrade.metafields.types = [
           PallasTrade::Metafields::ShortText,
           PallasTrade::Metafields::LongText,
           PallasTrade::Metafields::RichText,
@@ -309,7 +309,7 @@ module PallasTrade
           PallasTrade::Metafields::Json
         ]
 
-        Rails.application.config.spree.metafields.enabled_resources = [
+        Rails.application.config.pallastrade.metafields.enabled_resources = [
           PallasTrade::Address,
           PallasTrade::Asset,
           PallasTrade::CreditCard,
@@ -340,7 +340,7 @@ module PallasTrade
           PallasTrade.user_class
         ]
 
-        Rails.application.config.spree.analytics_events = {
+        Rails.application.config.pallastrade.analytics_events = {
           product_viewed: 'Product Viewed',
           product_list_viewed: 'Product List Viewed',
           product_searched: 'Product Searched',
@@ -365,11 +365,11 @@ module PallasTrade
           checkout_step_completed: 'Checkout Step Completed',
           order_completed: 'Order Completed',
         }
-        Rails.application.config.spree.analytics_event_handlers = []
+        Rails.application.config.pallastrade.analytics_event_handlers = []
 
-        Rails.application.config.spree.integrations = []
+        Rails.application.config.pallastrade.integrations = []
 
-        Rails.application.config.spree.validators.addresses = [
+        Rails.application.config.pallastrade.validators.addresses = [
           PallasTrade::Addresses::PhoneValidator
         ]
 
@@ -386,10 +386,10 @@ module PallasTrade
         ]
 
         # Pre-load authentication strategy classes to avoid reflection at request time
-        Rails.application.config.spree.store_authentication_strategies = PallasTrade::Authentication::StrategyRegistry.new(
+        Rails.application.config.pallastrade.store_authentication_strategies = PallasTrade::Authentication::StrategyRegistry.new(
           email: PallasTrade::Authentication::Strategies::EmailPasswordStrategy
         )
-        Rails.application.config.spree.admin_authentication_strategies = PallasTrade::Authentication::StrategyRegistry.new(
+        Rails.application.config.pallastrade.admin_authentication_strategies = PallasTrade::Authentication::StrategyRegistry.new(
           email: PallasTrade::Authentication::Strategies::EmailPasswordStrategy
         )
       end

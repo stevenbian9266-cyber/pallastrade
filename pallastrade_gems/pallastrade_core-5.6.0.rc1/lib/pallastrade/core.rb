@@ -211,103 +211,103 @@ module PallasTrade
   end
 
   # Environment accessors for easier configuration access
-  # Instead of Rails.application.config.spree.payment_methods
+  # Instead of Rails.application.config.pallastrade.payment_methods
   # you can use PallasTrade.payment_methods
 
   def self.calculators
-    Rails.application.config.spree.calculators
+    Rails.application.config.pallastrade.calculators
   end
 
   def self.calculators=(value)
-    Rails.application.config.spree.calculators = value
+    Rails.application.config.pallastrade.calculators = value
   end
 
   def self.validators
-    Rails.application.config.spree.validators
+    Rails.application.config.pallastrade.validators
   end
 
   def self.validators=(value)
-    Rails.application.config.spree.validators = value
+    Rails.application.config.pallastrade.validators = value
   end
 
   def self.payment_methods
-    Rails.application.config.spree.payment_methods
+    Rails.application.config.pallastrade.payment_methods
   end
 
   def self.payment_methods=(value)
-    Rails.application.config.spree.payment_methods = value
+    Rails.application.config.pallastrade.payment_methods = value
   end
 
   def self.adjusters
-    Rails.application.config.spree.adjusters
+    Rails.application.config.pallastrade.adjusters
   end
 
   def self.adjusters=(value)
-    Rails.application.config.spree.adjusters = value
+    Rails.application.config.pallastrade.adjusters = value
   end
 
   def self.stock_splitters
-    Rails.application.config.spree.stock_splitters
+    Rails.application.config.pallastrade.stock_splitters
   end
 
   def self.stock_splitters=(value)
-    Rails.application.config.spree.stock_splitters = value
+    Rails.application.config.pallastrade.stock_splitters = value
   end
 
   def self.order_routing
-    Rails.application.config.spree.order_routing
+    Rails.application.config.pallastrade.order_routing
   end
 
   def self.order_routing=(value)
-    Rails.application.config.spree.order_routing = value
+    Rails.application.config.pallastrade.order_routing = value
   end
 
   def self.promotions
-    Rails.application.config.spree.promotions
+    Rails.application.config.pallastrade.promotions
   end
 
   def self.promotions=(value)
-    Rails.application.config.spree.promotions = value
+    Rails.application.config.pallastrade.promotions = value
   end
 
   def self.line_item_comparison_hooks
-    Rails.application.config.spree.line_item_comparison_hooks
+    Rails.application.config.pallastrade.line_item_comparison_hooks
   end
 
   def self.line_item_comparison_hooks=(value)
-    Rails.application.config.spree.line_item_comparison_hooks = value
+    Rails.application.config.pallastrade.line_item_comparison_hooks = value
   end
 
   def self.data_feed_types
-    Rails.application.config.spree.data_feed_types
+    Rails.application.config.pallastrade.data_feed_types
   end
 
   def self.data_feed_types=(value)
-    Rails.application.config.spree.data_feed_types = value
+    Rails.application.config.pallastrade.data_feed_types = value
   end
 
   def self.export_types
-    Rails.application.config.spree.export_types
+    Rails.application.config.pallastrade.export_types
   end
 
   def self.export_types=(value)
-    Rails.application.config.spree.export_types = value
+    Rails.application.config.pallastrade.export_types = value
   end
 
   def self.import_types
-    Rails.application.config.spree.import_types
+    Rails.application.config.pallastrade.import_types
   end
 
   def self.import_types=(value)
-    Rails.application.config.spree.import_types = value
+    Rails.application.config.pallastrade.import_types = value
   end
 
   def self.taxon_rules
-    Rails.application.config.spree.taxon_rules
+    Rails.application.config.pallastrade.taxon_rules
   end
 
   def self.taxon_rules=(value)
-    Rails.application.config.spree.taxon_rules = value
+    Rails.application.config.pallastrade.taxon_rules = value
   end
 
   # Class-name strings (`'PallasTrade::Product'`, `'PallasTrade::Order'`,
@@ -318,19 +318,19 @@ module PallasTrade
   #
   #   PallasTrade.taggable_types << 'MyApp::Vendor'
   def self.taggable_types
-    Rails.application.config.spree.taggable_types
+    Rails.application.config.pallastrade.taggable_types
   end
 
   def self.taggable_types=(value)
-    Rails.application.config.spree.taggable_types = value
+    Rails.application.config.pallastrade.taggable_types = value
   end
 
   def self.reports
-    Rails.application.config.spree.reports
+    Rails.application.config.pallastrade.reports
   end
 
   def self.reports=(value)
-    Rails.application.config.spree.reports = value
+    Rails.application.config.pallastrade.reports = value
   end
 
   # Registry of the Getting Started onboarding tasks shown on the admin
@@ -342,23 +342,23 @@ module PallasTrade
   end
 
   def self.translatable_resources
-    Rails.application.config.spree.translatable_resources
+    Rails.application.config.pallastrade.translatable_resources
   end
 
   def self.translatable_resources=(value)
-    Rails.application.config.spree.translatable_resources = value
+    Rails.application.config.pallastrade.translatable_resources = value
   end
 
   def self.metafields
-    Rails.application.config.spree.metafields
+    Rails.application.config.pallastrade.metafields
   end
 
   def self.integrations
-    Rails.application.config.spree.integrations
+    Rails.application.config.pallastrade.integrations
   end
 
   def self.integrations=(value)
-    Rails.application.config.spree.integrations = value
+    Rails.application.config.pallastrade.integrations = value
   end
 
   # Event subscribers that handle lifecycle and custom events
@@ -367,19 +367,19 @@ module PallasTrade
   # @example Removing a built-in subscriber
   #   PallasTrade.subscribers.delete(PallasTrade::ExportSubscriber)
   def self.subscribers
-    Rails.application.config.spree.subscribers
+    Rails.application.config.pallastrade.subscribers
   end
 
   def self.subscribers=(value)
-    Rails.application.config.spree.subscribers = value
+    Rails.application.config.pallastrade.subscribers = value
   end
 
   def self.pricing
-    Rails.application.config.spree.pricing
+    Rails.application.config.pallastrade.pricing
   end
 
   def self.pricing=(value)
-    Rails.application.config.spree.pricing = value
+    Rails.application.config.pallastrade.pricing = value
   end
 
   # Registry of authentication strategy classes for the Store API.
@@ -389,13 +389,13 @@ module PallasTrade
   # @example Removing a strategy
   #   PallasTrade.store_authentication_strategies.remove(:email)
   def self.store_authentication_strategies
-    Rails.application.config.spree.store_authentication_strategies
+    Rails.application.config.pallastrade.store_authentication_strategies
   end
 
   # @param value [PallasTrade::Authentication::StrategyRegistry] the registry to use for Store API authentication dispatch
   # @return [PallasTrade::Authentication::StrategyRegistry] the assigned registry
   def self.store_authentication_strategies=(value)
-    Rails.application.config.spree.store_authentication_strategies = value
+    Rails.application.config.pallastrade.store_authentication_strategies = value
   end
 
   # Registry of authentication strategy classes for the Admin API.
@@ -403,13 +403,13 @@ module PallasTrade
   # @example Registering an SSO strategy for admin users
   #   PallasTrade.admin_authentication_strategies.add(:okta, MyApp::Auth::OktaStrategy)
   def self.admin_authentication_strategies
-    Rails.application.config.spree.admin_authentication_strategies
+    Rails.application.config.pallastrade.admin_authentication_strategies
   end
 
   # @param value [PallasTrade::Authentication::StrategyRegistry] the registry to use for Admin API authentication dispatch
   # @return [PallasTrade::Authentication::StrategyRegistry] the assigned registry
   def self.admin_authentication_strategies=(value)
-    Rails.application.config.spree.admin_authentication_strategies = value
+    Rails.application.config.pallastrade.admin_authentication_strategies = value
   end
 
   def self.analytics
@@ -419,19 +419,19 @@ module PallasTrade
   # Group analytics configuration options together, but still make it backwards compatible.
   class AnalyticsConfig
     def events
-      Rails.application.config.spree.analytics_events
+      Rails.application.config.pallastrade.analytics_events
     end
 
     def events=(value)
-      Rails.application.config.spree.analytics_events = value
+      Rails.application.config.pallastrade.analytics_events = value
     end
 
     def handlers
-      Rails.application.config.spree.analytics_event_handlers
+      Rails.application.config.pallastrade.analytics_event_handlers
     end
 
     def handlers=(value)
-      Rails.application.config.spree.analytics_event_handlers = value
+      Rails.application.config.pallastrade.analytics_event_handlers = value
     end
   end
 

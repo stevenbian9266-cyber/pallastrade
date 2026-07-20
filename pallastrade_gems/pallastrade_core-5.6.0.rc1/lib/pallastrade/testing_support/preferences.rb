@@ -9,12 +9,12 @@ module PallasTrade
       # end
       #
       def reset_PALLASTRADE_preferences(&config_block)
-        config = Rails.application.config.spree.preferences.reset
+        config = Rails.application.config.pallastrade.preferences.reset
         configure_PALLASTRADE_preferences &config_block if block_given?
       end
 
       def configure_PALLASTRADE_preferences
-        config = Rails.application.config.spree.preferences
+        config = Rails.application.config.pallastrade.preferences
         yield(config) if block_given?
       end
 
