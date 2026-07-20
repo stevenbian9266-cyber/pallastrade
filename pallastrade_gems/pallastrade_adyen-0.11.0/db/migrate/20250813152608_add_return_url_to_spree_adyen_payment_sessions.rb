@@ -1,6 +1,6 @@
 class AddReturnUrlToPallasTradeAdyenPaymentSessions < ActiveRecord::Migration[7.2]
   def change
-    add_column :PALLASTRADE_adyen_payment_sessions, :return_url, :string
+    add_column :pallastrade_adyen_payment_sessions, :return_url, :string
 
     PallasTradeAdyen::PaymentSession.reset_column_information
     PallasTrade::Store.find_each do |store|

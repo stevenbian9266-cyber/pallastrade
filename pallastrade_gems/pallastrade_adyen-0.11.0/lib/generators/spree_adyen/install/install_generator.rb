@@ -4,7 +4,7 @@ module PallasTradeAdyen
       class_option :migrate, type: :boolean, default: true
 
       def add_migrations
-        run 'bundle exec rake railties:install:migrations FROM=PALLASTRADE_adyen'
+        run 'bundle exec rake railties:install:migrations FROM=pallastrade_adyen'
       end
 
       def run_migrations

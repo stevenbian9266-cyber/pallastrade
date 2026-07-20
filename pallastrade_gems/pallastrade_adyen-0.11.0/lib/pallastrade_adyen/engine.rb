@@ -6,7 +6,7 @@ module PallasTradeAdyen
 
     Environment = Struct.new(:event_handlers, :events, :hmac_validators)
 
-    config.eager_load_paths += %W(#{config.root}/app/services)
+    config.eager_load_paths += %W(#{config.root}/app/services #{config.root}/app/jobs)
 
     # Only load API v2 controllers and serializers when PALLASTRADE_legacy_api_v2 gem is available
     if defined?(SpreeLegacyApiV2::Engine)
@@ -19,27 +19,27 @@ module PallasTradeAdyen
     end
 
     initializer 'pallastrade_adyen.environment', before: :load_config_initializers do |app|
-      app.config.PALLASTRADE_adyen = Environment.new
-      app.config.PALLASTRADE_adyen.event_handlers = {}
-      app.config.PALLASTRADE_adyen.events = {}
-      app.config.PALLASTRADE_adyen.hmac_validators = {}
+      app.config.pallastrade_adyen = Environment.new
+      app.config.pallastrade_adyen.event_handlers = {}
+      app.config.pallastrade_adyen.events = {}
+      app.config.pallastrade_adyen.hmac_validators = {}
       PallasTradeAdyen::Config = PallasTradeAdyen::Configuration.new
     end
 
     config.after_initialize do
-      Rails.application.config.PALLASTRADE_adyen.event_handlers.merge!(
+      Rails.application.config.pallastrade_adyen.event_handlers.merge!(
         'AUTHORISATION' => PallasTradeAdyen::Webhooks::ProcessAuthorisationEventJob,
         'CAPTURE' => PallasTradeAdyen::Webhooks::ProcessCaptureEventJob,
         'CANCELLATION' => PallasTradeAdyen::Webhooks::ProcessCancellationEventJob
       )
 
-      Rails.application.config.PALLASTRADE_adyen.events.merge!(
+      Rails.application.config.pallastrade_adyen.events.merge!(
         'AUTHORISATION' => PallasTradeAdyen::Webhooks::Event,
         'CAPTURE' => PallasTradeAdyen::Webhooks::Event,
         'CANCELLATION' => PallasTradeAdyen::Webhooks::Event
       )
 
-      Rails.application.config.PALLASTRADE_adyen.hmac_validators.merge!(
+      Rails.application.config.pallastrade_adyen.hmac_validators.merge!(
         'AUTHORISATION' => PallasTradeAdyen::Webhooks::StandardHmacValidator,
         'CAPTURE' => PallasTradeAdyen::Webhooks::StandardHmacValidator,
         'CANCELLATION' => PallasTradeAdyen::Webhooks::StandardHmacValidator
@@ -51,7 +51,7 @@ module PallasTradeAdyen
         app.config.assets.paths << root.join('app/javascript')
         app.config.assets.paths << root.join('vendor/javascript')
         app.config.assets.paths << root.join('vendor/stylesheets')
-        app.config.assets.precompile += %w[PALLASTRADE_adyen_manifest]
+        app.config.assets.precompile += %w[pallastrade_adyen_manifest]
       end
     end
 
