@@ -1,0 +1,18 @@
+name: Brand Audit
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  brand-audit:
+    name: PallasTrade brand boundary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject unapproved upstream brand residues
+        shell: pwsh
+        run: ./scripts/ci/brand-audit.ps1 -Root .

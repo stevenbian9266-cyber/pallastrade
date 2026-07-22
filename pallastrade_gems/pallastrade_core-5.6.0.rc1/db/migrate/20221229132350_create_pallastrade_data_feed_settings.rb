@@ -1,0 +1,14 @@
+class CreatePallasTradeDataFeedSettings < ActiveRecord::Migration[6.0]
+  def change
+    create_table :pallastrade_data_feed_settings do |t|
+      t.references :pallastrade_store
+
+      t.string :name
+      t.string :provider
+      t.string :uuid, unique: true
+      t.boolean :enabled, default: true
+
+      t.timestamps
+    end
+  end
+end

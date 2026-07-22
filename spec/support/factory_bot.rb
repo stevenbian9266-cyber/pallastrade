@@ -8,6 +8,13 @@ RSpec.configure do |config|
 end
 
 # enable factories decorators
-Dir[Rails.root.join('spec/factories/spree/**/*.rb')].sort.each do |factory|
+Dir[Rails.root.join('spec/factories/pallastrade/**/*.rb')].sort.each do |factory|
   require factory if factory =~ /decorator/
+end
+
+# Load payment gem testing factories (Stripe, Adyen, PayPal)
+begin
+  require 'pallastrade_stripe/factories'
+rescue LoadError
+  # Stripe gem not available in this test context
 end

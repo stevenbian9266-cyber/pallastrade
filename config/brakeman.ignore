@@ -1,0 +1,162 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "88419e0a9641c91da76b4b9030cf728cfea25fc84f9715a660f85ae805284d0d",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "pallastrade_gems/pallastrade_admin-5.6.0.rc1/lib/pallastrade/admin/testing_support/capybara_utils.rb",
+      "line": 6,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "first(\".ti-#{type}\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "PallasTrade::Admin::TestingSupport::CapybaraUtils",
+        "method": "click_icon"
+      },
+      "user_input": "type",
+      "confidence": "Medium",
+      "cwe_id": [
+        89
+      ],
+      "note": "False positive: Capybara CSS selector, not SQL"
+    },
+    {
+      "warning_type": "Cross-Site Scripting",
+      "warning_code": 114,
+      "fingerprint": "8275f584e7cced41c26890e574cdbf6804bddff54374058834a562294c99d6f6",
+      "check_name": "JSONEntityEscape",
+      "message": "HTML entities in JSON are not escaped by default",
+      "file": "pallastrade_gems/pallastrade_api-5.6.0.rc1/config/environments/production.rb",
+      "line": 5,
+      "link": "https://brakemanscanner.org/docs/warning_types/cross-site_scripting/",
+      "code": "ActiveSupport::JSON::Encoding.escape_html_entities_in_json = false",
+      "render_path": null,
+      "location": null,
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        79
+      ],
+      "note": "API-only JSON responses — no HTML context for XSS"
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "05bad36b6a70ef61186c5f7152922a518714d5ac67766cebae0c35d0503e8d1a",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "pallastrade_gems/pallastrade_core-5.6.0.rc1/lib/pallastrade/testing_support/capybara_ext.rb",
+      "line": 16,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "first(\".icon-#{type}\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "CapybaraExt",
+        "method": "click_icon"
+      },
+      "user_input": "type",
+      "confidence": "Medium",
+      "cwe_id": [
+        89
+      ],
+      "note": "False positive: Capybara CSS selector, not SQL"
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "0e3bd8868fcc07adb95a529b67bc5729a239a89bda61e44fb8a117930ac22281",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "pallastrade_gems/pallastrade_core-5.6.0.rc1/app/finders/pallastrade/products/find.rb",
+      "line": 349,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "scope.joins(:variants_including_master => :prices).select(\"#{PallasTrade::Product.table_name}.* , min(#{PallasTrade::Price.table_name}.amount)\").where(PallasTrade::Price.table_name => ({ :currency => currency })).where.not(PallasTrade::Price.table_name => ({ :amount => nil })).order(\"min(#{PallasTrade::Price.table_name}.amount) #{sort_order}\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "PallasTrade::Products::Find",
+        "method": "order_by_price"
+      },
+      "user_input": "sort_order",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Safe: sort_order hardcoded as :desc or :asc at call site, never from user input"
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "1365b154e2a8020d32c58a32394892212c8c575676ab0e6c51a379b1485ca38c",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "pallastrade_gems/pallastrade_core-5.6.0.rc1/app/sorters/pallastrade/products/sort.rb",
+      "line": 44,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "scope.joins(:master).select(\"#{(\"\" or \"#{PallasTrade::Product.table_name}.*, \")}#{PallasTrade::Variant.table_name}.sku\").order(\"#{PallasTrade::Variant.table_name}.sku #{sort_by?(\"sku\")[1]}\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "PallasTrade::Products::Sort",
+        "method": "by_sku"
+      },
+      "user_input": "sort_by?(\"sku\")[1]",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Safe: sort direction from BaseSorter#order_direction which only returns :desc or :asc"
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "3f8922e178006ab8f050ffd2636a2aa96241b5d754b4e019e9a1285feae4e57c",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "pallastrade_gems/pallastrade_core-5.6.0.rc1/app/sorters/pallastrade/classifications/sort.rb",
+      "line": 59,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "scope.joins(:product => ({ :variants_including_master => :prices })).select(\"#{PallasTrade::Classification.table_name}.*, min(#{PallasTrade::Price.table_name}.amount)\").distinct.where(:pallastrade_prices => ({ :currency => currency })).order(\"min(#{PallasTrade::Price.table_name}.amount) #{sort_by?(\"price\")[1]}\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "PallasTrade::Classifications::Sort",
+        "method": "by_price"
+      },
+      "user_input": "sort_by?(\"price\")[1]",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Safe: sort direction from BaseSorter#order_direction which only returns :desc or :asc"
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "9d14b5b042473e45257286b5342318871ebe0c907ddbb3808151b5efb3281b36",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "pallastrade_gems/pallastrade_core-5.6.0.rc1/app/sorters/pallastrade/products/sort.rb",
+      "line": 30,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "scope.joins(:variants_including_master => :prices).select(\"#{PallasTrade::Product.table_name}.*, #{PallasTrade::Price.table_name}.amount\").distinct.where(:\"#{PallasTrade::Price.table_name}.currency\" => currency).order(\"#{PallasTrade::Price.table_name}.amount #{sort_by?(\"price\")[1]}\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "PallasTrade::Products::Sort",
+        "method": "by_price"
+      },
+      "user_input": "sort_by?(\"price\")[1]",
+      "confidence": "Weak",
+      "cwe_id": [
+        89
+      ],
+      "note": "Safe: sort direction from BaseSorter#order_direction which only returns :desc or :asc"
+    }
+  ],
+  "brakeman_version": "8.0.5"
+}

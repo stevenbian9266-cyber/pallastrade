@@ -1,0 +1,50 @@
+# frozen_string_literal: true
+
+lib = File.expand_path('lib', __dir__)
+$LOAD_PATH.unshift lib unless $LOAD_PATH.include?(lib)
+
+require 'pallastrade_dev_tools/version'
+
+Gem::Specification.new do |s|
+  s.platform    = Gem::Platform::RUBY
+  s.name        = 'pallastrade_dev_tools'
+  s.version     = PallasTradeDevTools::VERSION
+  s.summary     = 'PallasTrade Dev Tools'
+  s.description = 'PallasTrade Developer Tools to help you develop and test your PallasTrade applications and extensions.'
+  s.required_ruby_version = '>= 3.2.0'
+
+  s.author    = 'Vendo Connect Inc., Vendo Sp. z o.o.'
+  s.email     = 'we@sparksolutions.co'
+  s.homepage  = 'https://github.com/pallastrade/pallastrade_dev_tools'
+  s.license   = 'MIT'
+
+  s.files = `git ls-files`.split("\n").reject { |f| f.match(/^spec/) && !f.match(%r{^spec/fixtures}) }
+  s.require_path = 'lib'
+  s.requirements << 'none'
+
+  s.add_dependency 'awesome_print'
+  s.add_dependency 'brakeman'
+  s.add_dependency 'capybara'
+  s.add_dependency 'capybara-screenshot'
+  s.add_dependency 'database_cleaner'
+  s.add_dependency 'dotenv'
+  s.add_dependency 'factory_bot'
+  s.add_dependency 'factory_bot_rails'
+  s.add_dependency 'ffaker'
+  s.add_dependency 'gem-release'
+  s.add_dependency 'github_changelog_generator'
+  s.add_dependency 'i18n-tasks'
+  s.add_dependency 'parallel_tests'
+  s.add_dependency 'pry'
+  s.add_dependency 'puma'
+  s.add_dependency 'rails-controller-testing'
+  s.add_dependency 'rspec-activemodel-mocks'
+  s.add_dependency 'rspec_junit_formatter'
+  s.add_dependency 'rspec-rails'
+  s.add_dependency 'rspec-retry'
+  s.add_dependency 'ruby-lsp', '>= 0.23.0'
+  s.add_dependency 'selenium-webdriver', '>= 4.14'
+  s.add_dependency 'simplecov'
+  s.add_dependency 'pallastrade', '>= 5.4.0.alpha'
+  s.add_dependency 'timecop'
+end

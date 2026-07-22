@@ -1,0 +1,238 @@
+{
+    "version":  1,
+    "rules":  [
+                  {
+                      "path":  "legal/**",
+                      "patterns":  [
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "provenance",
+                      "reason":  "Original upstream names are legally required in source provenance and attribution records."
+                  },
+                  {
+                      "path":  "**/LICENSE*",
+                      "patterns":  [
+                                       "Spree",
+                                       "SPREE",
+                                       "spree"
+                                   ],
+                      "category":  "license",
+                      "reason":  "Third-party copyright and license notices must remain verbatim."
+                  },
+                  {
+                      "path":  "**/NOTICE*",
+                      "patterns":  [
+                                       "Spree",
+                                       "SPREE",
+                                       "spree"
+                                   ],
+                      "category":  "license",
+                      "reason":  "Third-party notice and attribution text must remain verbatim."
+                  },
+                  {
+                      "path":  "backups/**",
+                      "patterns":  [
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "archive",
+                      "reason":  "Historical recovery artifacts are immutable and are not distributed as active source."
+                  },
+                  {
+                      "path":  "**/pallastrade_legacy_api_v2-1.0.0/app/controllers/concerns/pallastrade/api/v2/storefront/order_concern.rb",
+                      "patterns":  [
+                                       "X-Spree",
+                                       "Spree"
+                                   ],
+                      "category":  "compatibility",
+                      "reason":  "Legacy API v2 accepts the deprecated order-token header as a read-only fallback."
+                  },
+                  {
+                      "path":  "scripts/ci/audit*.ps1",
+                      "patterns":  [
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "audit-tool",
+                      "reason":  "Legacy audit tools must contain the forbidden tokens they search for."
+                  },
+                  {
+                      "path":  "scripts/ci/rename-gems-safe.ps1",
+                      "patterns":  [
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "migration-tool",
+                      "reason":  "One-time safe migration tool documents source-to-target brand mappings."
+                  },
+                  {
+                      "path":  "scripts/count_spree.ps1",
+                      "patterns":  [
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "audit-tool",
+                      "reason":  "Brand counting tool must contain the forbidden tokens it searches for."
+                  },
+                  {
+                      "path":  "M5-端到端支付流程测试报告.md",
+                      "patterns":  [
+                                       "PALLASTRADE_[a-z]",
+                                       "Pallastrade",
+                                       "pallastrade_pallastrade_",
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "governance-record",
+                      "reason":  "Historical plan or verification report records upstream names and invalid patterns as audit evidence."
+                  },
+                  {
+                      "path":  "PallasTrade实施节奏与路线图.md",
+                      "patterns":  [
+                                       "PALLASTRADE_[a-z]",
+                                       "Pallastrade",
+                                       "pallastrade_pallastrade_",
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "governance-record",
+                      "reason":  "Historical plan or verification report records upstream names and invalid patterns as audit evidence."
+                  },
+                  {
+                      "path":  "PallasTrade未完成项实施步骤与GO标准.md",
+                      "patterns":  [
+                                       "PALLASTRADE_[a-z]",
+                                       "Pallastrade",
+                                       "pallastrade_pallastrade_",
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "governance-record",
+                      "reason":  "Historical plan or verification report records upstream names and invalid patterns as audit evidence."
+                  },
+                  {
+                      "path":  "PallasTrade自有化逐项执行清单.md",
+                      "patterns":  [
+                                       "PALLASTRADE_[a-z]",
+                                       "Pallastrade",
+                                       "pallastrade_pallastrade_",
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "governance-record",
+                      "reason":  "Historical plan or verification report records upstream names and invalid patterns as audit evidence."
+                  },
+                  {
+                      "path":  "PVT-003-Stripe-Sandbox支付测试报告.md",
+                      "patterns":  [
+                                       "PALLASTRADE_[a-z]",
+                                       "Pallastrade",
+                                       "pallastrade_pallastrade_",
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "governance-record",
+                      "reason":  "Historical plan or verification report records upstream names and invalid patterns as audit evidence."
+                  },
+                  {
+                      "path":  "PVT-004-Namespace重命名POC报告.md",
+                      "patterns":  [
+                                       "PALLASTRADE_[a-z]",
+                                       "Pallastrade",
+                                       "pallastrade_pallastrade_",
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "governance-record",
+                      "reason":  "Historical plan or verification report records upstream names and invalid patterns as audit evidence."
+                  },
+                  {
+                      "path":  "PVT-汇总报告与1.0计划校准.md",
+                      "patterns":  [
+                                       "PALLASTRADE_[a-z]",
+                                       "Pallastrade",
+                                       "pallastrade_pallastrade_",
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "governance-record",
+                      "reason":  "Historical plan or verification report records upstream names and invalid patterns as audit evidence."
+                  },
+                  {
+                      "path":  "spree项目自有品牌化方案.md",
+                      "patterns":  [
+                                       "PALLASTRADE_[a-z]",
+                                       "Pallastrade",
+                                       "pallastrade_pallastrade_",
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "governance-record",
+                      "reason":  "Historical plan or verification report records upstream names and invalid patterns as audit evidence."
+                  },
+                  {
+                      "path":  "当前阶段和节奏.md",
+                      "patterns":  [
+                                       "PALLASTRADE_[a-z]",
+                                       "Pallastrade",
+                                       "pallastrade_pallastrade_",
+                                       "Spree",
+                                       "SPREE",
+                                       "spree",
+                                       "@spree/",
+                                       "X-Spree"
+                                   ],
+                      "category":  "governance-record",
+                      "reason":  "Historical plan or verification report records upstream names and invalid patterns as audit evidence."
+                  },
+                  {
+                      "path":  "**/pallastrade_legacy_api_v2-1.0.0/spec/requests/pallastrade/api/v2/storefront/order_status_spec.rb",
+                      "patterns":  [
+                                       "X-Spree",
+                                       "Spree"
+                                   ],
+                      "category":  "compatibility-test",
+                      "reason":  "Regression example verifies the deprecated header fallback for legacy API clients."
+                  }
+              ]
+}

@@ -1,0 +1,18 @@
+module PallasTrade
+  module Api
+    module V2
+      module Platform
+        class StockItemSerializer < BaseSerializer
+          include ResourceSerializerConcern
+
+          attribute :is_available do |stock_item|
+            stock_item.available?
+          end
+
+          belongs_to :stock_location, serializer: PallasTrade.api.platform_stock_location_serializer
+          belongs_to :variant, serializer: PallasTrade.api.platform_variant_serializer
+        end
+      end
+    end
+  end
+end

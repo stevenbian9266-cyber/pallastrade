@@ -1,0 +1,6 @@
+puts "Stores: #{PallasTrade::Store.count}"
+puts "Products: #{PallasTrade::Product.count}"
+puts "Taxons: #{PallasTrade::Taxon.count}"
+puts "Taxonomies: #{PallasTrade::Taxonomy.count}"
+puts "Root Categories: #{PallasTrade::Taxon.where(depth: 0).count}"
+puts "DONE"

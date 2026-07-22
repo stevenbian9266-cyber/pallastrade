@@ -1,0 +1,5 @@
+puts "Orders: #{PallasTrade::Order.count}"
+puts "Payments: #{PallasTrade::Payment.count}"
+puts "Stripe PMs: #{PallasTrade::PaymentMethod.where(type: 'PallasTradeStripe::Gateway').count}"
+puts "Completed orders: #{PallasTrade::Order.where(state: 'complete').count}"
+puts "--- Storefront accessible: #{PallasTrade::Store.find_by(code: 'pallastrade')&.name}"

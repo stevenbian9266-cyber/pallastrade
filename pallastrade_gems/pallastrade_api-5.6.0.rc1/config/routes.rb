@@ -68,8 +68,8 @@
 
         # Current customer profile and nested resources (/customers/me/...)
         namespace :customer, path: 'customers/me' do
-          get '/', action: :show, controller: '/spree/api/v3/store/customers'
-          patch '/', action: :update, controller: '/spree/api/v3/store/customers'
+          get '/', action: :show, controller: '/pallastrade/api/v3/store/customers'
+          patch '/', action: :update, controller: '/pallastrade/api/v3/store/customers'
 
           resources :orders, only: [:index, :show]
           resources :addresses, only: [:index, :show, :create, :update, :destroy]
