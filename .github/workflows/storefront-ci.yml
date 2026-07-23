@@ -27,11 +27,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.1.1
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: storefront/package-lock.json
+      - name: Install SDK build dependencies
+        working-directory: platform
+        run: pnpm install --frozen-lockfile
+      - name: Build Storefront SDK dependencies
+        working-directory: platform
+        run: |
+          pnpm --filter @pallastrade/sdk-core build
+          pnpm --filter @pallastrade/sdk build
       - run: npm ci
       - run: npm run check
       - run: npx tsc --noEmit

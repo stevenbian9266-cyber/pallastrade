@@ -112,7 +112,9 @@ describe('scaffold (no-start)', () => {
   })
 
   it('clones the canonical repository once and reads fixed component directories', async () => {
-    const { cloneCanonicalRepository, removeCanonicalRepository } = await import('../src/repository')
+    const { cloneCanonicalRepository, removeCanonicalRepository } = await import(
+      '../src/repository'
+    )
     const { downloadBackend } = await import('../src/backend')
     const { downloadStorefront } = await import('../src/storefront')
     vi.mocked(cloneCanonicalRepository).mockClear()

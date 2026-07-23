@@ -9,6 +9,10 @@ if ([string]::IsNullOrWhiteSpace($Root)) {
     $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 }
 
+$composeEnvFile = Join-Path $Root '.env'
+$composeEnvExample = Join-Path $Root '.env.example'
+$temporaryComposeEnv = $false
+
 function Assert-Equal {
     param(
         [AllowNull()][object]$Actual,
@@ -35,6 +39,15 @@ foreach ($name in $managedEnvironment) {
 }
 
 try {
+    if (-not (Test-Path -LiteralPath $composeEnvFile)) {
+        if (-not (Test-Path -LiteralPath $composeEnvExample)) {
+            throw "Compose environment template is missing: $composeEnvExample"
+        }
+
+        Copy-Item -LiteralPath $composeEnvExample -Destination $composeEnvFile
+        $temporaryComposeEnv = $true
+    }
+
     [Environment]::SetEnvironmentVariable('PALLASTRADE_PORT', '43123', 'Process')
     [Environment]::SetEnvironmentVariable('PALLASTRADE_MEILISEARCH_PORT', '47700', 'Process')
     [Environment]::SetEnvironmentVariable('PORT', '49999', 'Process')
@@ -87,6 +100,10 @@ try {
     Write-Host 'Compose environment contract passed: web=43123:3000, meilisearch=47700:7700, container PORT=3000.'
 }
 finally {
+    if ($temporaryComposeEnv) {
+        Remove-Item -LiteralPath $composeEnvFile -Force -ErrorAction SilentlyContinue
+    }
+
     foreach ($name in $managedEnvironment) {
         [Environment]::SetEnvironmentVariable($name, $originalEnvironment[$name], 'Process')
     }
