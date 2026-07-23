@@ -72,8 +72,8 @@ export async function handleOrderCompleted(event: WebhookEvent<Order>) {
         slug: item.slug,
         quantity: item.quantity,
         options_text: item.options_text,
-        display_price: item.display_price,
-        display_total: item.display_total,
+        display_price: item.display_price ?? "",
+        display_total: item.display_total ?? "",
         thumbnail_url: item.thumbnail_url,
       })),
       displayItemTotal: order.display_item_total ?? "",
@@ -112,7 +112,7 @@ export async function handleOrderCanceled(event: WebhookEvent<Order>) {
         slug: item.slug,
         quantity: item.quantity,
         options_text: item.options_text,
-        display_total: item.display_total,
+        display_total: item.display_total ?? "",
         thumbnail_url: item.thumbnail_url,
       })),
       displayTotal: order.display_total ?? "",
@@ -162,7 +162,7 @@ export async function handleOrderShipped(event: WebhookEvent<Order>) {
         tracking_url: fulfillment.tracking_url,
         delivery_method_name:
           fulfillment.delivery_method?.name || "Standard Shipping",
-        display_cost: fulfillment.display_cost,
+        display_cost: fulfillment.display_cost ?? "",
         items: shippedItems,
       };
     });

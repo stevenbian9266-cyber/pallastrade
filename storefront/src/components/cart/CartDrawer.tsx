@@ -207,7 +207,8 @@ export function CartDrawer() {
                         />
 
                         <div className="text-sm font-medium">
-                          {item.compare_at_amount &&
+                          {item.price &&
+                          item.compare_at_amount &&
                           parseFloat(item.compare_at_amount) >
                             parseFloat(item.price) ? (
                             <>
