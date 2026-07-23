@@ -1,0 +1,12 @@
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t(:shipping) %></h5>
+  </div>
+  <div class="card-body">
+    <% unless @product.has_variants? %>
+      <%= render 'pallastrade/admin/variants/form/dimensions', f: f %>
+    <% end %>
+
+    <%= f.pallastrade_select :shipping_category_id, @shipping_categories.pluck(:name, :id), { include_blank: PallasTrade.t('match_choices.none'), label: PallasTrade.t(:shipping_category) } %>
+  </div>
+</div>

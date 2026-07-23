@@ -1,0 +1,12 @@
+<%= f.pallastrade_select :currency, options_for_select(supported_currency_options, current_store.default_currency), { label: PallasTrade.t(:currency), autocomplete: true } %>
+
+<hr class="my-4" />
+
+<div class="form-group">
+  <%= f.label :user_id, PallasTrade.t(:select_user) %>
+  <%= tom_select_tag 'order[user_id]', { include_blank: PallasTrade.t(:select_user), options: users_for_select_options } %>
+</div>
+
+<p class="text-center text-gray-600 my-0"><%= PallasTrade.t(:or) %></p>
+
+<%= f.pallastrade_email_field :email, autofocus: f.object.new_record?, label: PallasTrade.t('admin.orders.provide_email') %>

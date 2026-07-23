@@ -1,0 +1,15 @@
+# for local setup you need to use Stripe-CLI and change the key manually
+StripeEvent.signing_secret = ENV['STRIPE_SIGNING_SECRET'] if ENV['STRIPE_SIGNING_SECRET'].present?
+
+Stripe.log_level = ENV.fetch('STRIPE_LOG_LEVEL', 'debug')
+Stripe.api_version = '2023-10-16'
+Stripe.set_app_info('PallasTrade Stripe', version: PallasTrade.version, url: 'https://pallastrade.cn')
+
+Rails.application.config.after_initialize do
+  StripeEvent.configure do |events|
+    events.subscribe 'payment_intent.succeeded', PallasTradeStripe::WebhookHandlers::PaymentIntentSucceeded.new
+    events.subscribe 'payment_intent.amount_capturable_updated', PallasTradeStripe::WebhookHandlers::PaymentIntentAmountCapturableUpdated.new
+    events.subscribe 'payment_intent.payment_failed', PallasTradeStripe::WebhookHandlers::PaymentIntentPaymentFailed.new
+    events.subscribe 'setup_intent.succeeded', PallasTradeStripe::WebhookHandlers::SetupIntentSucceeded.new
+  end
+end

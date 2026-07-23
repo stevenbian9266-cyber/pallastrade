@@ -1,0 +1,61 @@
+# Minimal PallasTrade backend for E2E tests.
+#
+# Service is named `web` (Postgres + Redis + PallasTrade) so the @pallastrade/cli tool
+# can find it via `docker compose exec web …`. Meilisearch and Sidekiq are
+# intentionally omitted: PallasTrade falls back to SQL search without Meili, and
+# the worker is not required for the checkout golden path (transactional
+# emails go through the storefront, not the Rails worker).
+#
+# Usage (driven by ../scripts/e2e/bootstrap-pallastrade.sh):
+#   docker compose up -d --wait
+#   npx @pallastrade/cli seed && npx @pallastrade/cli sample-data
+#   npx @pallastrade/cli api-key create --name E2E --type publishable
+#
+# PallasTrade exposes the storefront API on http://localhost:4000/api/v3/store.
+# Postgres and Redis are reachable only on the compose network — use
+# `docker compose exec postgres psql -U postgres` etc. for debugging.
+#
+name: storefront-e2e
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    healthcheck:
+      test: pg_isready -U postgres
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: redis-cli ping
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres@postgres:5432/pallastrade_e2e
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY_BASE: e2e_secret_key_base_not_for_production_use_only_e2e_e2e_e2e_e2e
+      RAILS_FORCE_SSL: "false"
+      RAILS_ASSUME_SSL: "false"
+    ports:
+      - "4000:3000"
+    healthcheck:
+      test: curl -f http://localhost:3000/up || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s

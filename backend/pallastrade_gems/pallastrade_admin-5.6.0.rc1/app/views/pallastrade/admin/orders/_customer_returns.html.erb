@@ -1,0 +1,26 @@
+<% if @customer_returns.exists? && can?(:read, PallasTrade::CustomerReturn) %>
+  <div class="card mb-6">
+    <div class="card-header justify-between">
+      <h5 class="card-title">
+        <%= PallasTrade.t(:customer_returns) %></h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table">
+          <thead class="border-b">
+            <tr>
+              <th scope="col"><%= PallasTrade.t(:date) %></th>
+              <th scope="col"><%= PallasTrade.t(:status) %></th>
+              <th scope="col"><%= PallasTrade.t(:pre_tax_total) %></th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <%= render partial: "pallastrade/admin/orders/customer_returns/customer_return",
+            collection: @customer_returns %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<% end %>

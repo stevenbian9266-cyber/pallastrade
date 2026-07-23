@@ -1,0 +1,81 @@
+name: Release Manifest
+
+on:
+  push:
+    tags:
+      - 'pallastrade-v*'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    uses: ./.github/workflows/monorepo-contract.yml
+
+  backend:
+    uses: ./.github/workflows/backend-ci.yml
+
+  platform:
+    uses: ./.github/workflows/platform-ci.yml
+
+  storefront:
+    uses: ./.github/workflows/storefront-ci.yml
+
+  ai:
+    uses: ./.github/workflows/ai-ci.yml
+
+  manifest:
+    needs: [contract, backend, platform, storefront, ai]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Create CI evidence
+        run: node scripts/release/ci-evidence.mjs --output "$RUNNER_TEMP/release-evidence.json"
+      - name: Create and verify manifest
+        id: manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest="$RUNNER_TEMP/${GITHUB_REF_NAME}.manifest.json"
+          node scripts/release/manifest.mjs create \
+            --tag "$GITHUB_REF_NAME" \
+            --commit "$GITHUB_SHA" \
+            --evidence "$RUNNER_TEMP/release-evidence.json" \
+            --output "$manifest"
+          node scripts/release/manifest.mjs verify --manifest "$manifest"
+          echo "path=$manifest" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$manifest")" >> "$GITHUB_OUTPUT"
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.ref_name }}-release-manifest
+          path: ${{ steps.manifest.outputs.path }}
+          if-no-files-found: error
+      - name: Attach immutable manifest to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSET_PATH: ${{ steps.manifest.outputs.path }}
+          ASSET_NAME: ${{ steps.manifest.outputs.name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name' 2>/dev/null | grep -Fxq "$ASSET_NAME"; then
+            echo "Release asset already exists and will not be overwritten: $ASSET_NAME" >&2
+            exit 1
+          fi
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" --generate-notes
+          fi
+          gh release upload "$GITHUB_REF_NAME" "$ASSET_PATH"

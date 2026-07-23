@@ -1,0 +1,13 @@
+<% content_for :page_title do %>
+  <%= PallasTrade.t(:orders) %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= render_admin_partials(:orders_actions_partials) %>
+  <%= link_to_export_modal %>
+  <%= link_to_with_icon 'plus', PallasTrade.t(:new_order), PallasTrade.new_admin_order_path, class: "btn btn-primary" if can?(:create, PallasTrade::Order) %>
+<% end %>
+
+<%= render_admin_partials(:orders_header_partials) %>
+
+<%= render_table @collection, :orders, export_type: PallasTrade::Exports::Orders %>

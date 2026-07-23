@@ -1,0 +1,5 @@
+# Force LF line endings for files that cause issues in Linux Docker builds
+Gemfile.lock text eol=lf
+Gemfile text eol=lf
+*.gemspec text eol=lf
+bin/* text eol=lf

@@ -1,0 +1,127 @@
+---
+title: "Installing PallasTrade"
+sidebarTitle: Installation
+description: "Install PallasTrade Commerce locally with Docker or Ruby on Rails, run your first store, and deploy it to production with the official starter template."
+---
+
+## Installation options
+
+<Tabs>
+  <Tab title="create-pallastrade-app">
+    The quickest way to get started. Scaffolds a full PallasTrade project with Next.js Storefront (optional).
+
+    **Requirements:** [Node.js](https://nodejs.org/) 20+ and [Docker](https://docs.docker.com/get-docker/) running.
+
+    ```bash
+    npx create-pallastrade-app@latest my-store
+    ```
+
+    The CLI walks you through an interactive setup:
+
+    1. Choose **Full-stack** (Backend + Next.js Storefront) or **Backend only**
+    2. Optionally load **sample data** (products, categories, images)
+
+    Once complete, your store should be running at [http://localhost:3000/admin](http://localhost:3000/admin). The port can be different if `3000` is already used on your system.
+
+    See the full [create-pallastrade-app documentation](/developer/create-pallastrade-app/quickstart) for all CLI flags and options.
+  </Tab>
+  <Tab title="Manual Installation">
+    For developers who prefer full control over the setup, or want to add PallasTrade to an existing Rails application.
+
+    1. Install [Ruby](https://www.ruby-lang.org/en/documentation/installation/)
+    2. Install [vips](https://www.libvips.org/install.html) for image processing
+    3. Install Rails gem:
+        ```bash
+        gem install rails
+        ```
+    4. Create a new PallasTrade application:
+        ```bash
+        rails new my_store -m https://raw.githubusercontent.com/stevenbian9266-cyber/pallastrade/main/pallastrade/template.rb
+        ```
+        To use a specific database, pass the `-d` flag:
+        ```bash
+        rails new my_store -d postgresql -m https://raw.githubusercontent.com/stevenbian9266-cyber/pallastrade/main/pallastrade/template.rb
+        rails new my_store -d mysql -m https://raw.githubusercontent.com/stevenbian9266-cyber/pallastrade/main/pallastrade/template.rb
+        ```
+    5. Navigate to the application directory:
+        ```bash
+        cd my_store
+        ```
+    6. Start the development server:
+        ```bash
+        bin/dev
+        ```
+    7. Optionally load sample data (products, categories, etc.):
+        ```bash
+        bin/rails pallastrade_sample:load
+        ```
+
+    <Info>
+      PallasTrade works with **PostgreSQL**, **MySQL**, and **SQLite** databases. The Rails template defaults to SQLite for quick setup. You can switch to PostgreSQL or MySQL at any time. [Learn more about database configuration](/developer/deployment/database).
+    </Info>
+  </Tab>
+</Tabs>
+
+## Accessing Admin Panel
+
+Navigate to [http://localhost:3000/admin](http://localhost:3000/admin) and log in with the default credentials:
+
+| | |
+|---|---|
+| **Email** | `pallastrade@example.com` |
+| **Password** | `pallastrade123` |
+
+Upon successful authentication, you should see the admin screen:
+
+<Frame caption="PallasTrade Admin Dashboard">
+  <img src="/images/pallastrade_admin_dashboard.png" />
+</Frame>
+
+## Using the PallasTrade CLI
+
+Projects scaffolded with `create-pallastrade-app` include [`@pallastrade/cli`](/developer/cli/quickstart) for managing the backend and calling the Admin API. Because it's a project dependency, run it with `npx` (or any package-manager script):
+
+```bash
+npx pallastrade dev               # boot the Docker stack
+npx pallastrade api get products  # query the Admin API (read-only key preconfigured)
+```
+
+Project setup mints a read-only Admin API key into `.pallastrade/credentials.json` (and `pallastrade api` mints it on first use if you skipped setup), so `pallastrade api` works without any extra configuration.
+
+To call `pallastrade` directly without the `npx` prefix, install the CLI globally:
+
+```bash
+npm install -g @pallastrade/cli
+pallastrade api get products
+```
+
+See the [PallasTrade CLI guide](/developer/cli/quickstart) for all commands and the [Admin API from the CLI](/developer/cli/admin-api) for querying your store's data.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Build with AI Agents" icon="bot" href="/developer/agentic/overview">
+    Install the PallasTrade agent skills and connect the docs MCP server — Claude Code, Cursor, Copilot, and 60+ other tools learn PallasTrade's conventions and build features with you.
+  </Card>
+  <Card title="Customization Tutorial" icon="graduation-cap" href="/developer/tutorial/introduction">
+    Build a complete custom feature — model, admin UI, API, and TypeScript SDK — step by step.
+  </Card>
+  <Card title="Core Concepts" icon="brain" href="/developer/core-concepts/architecture">
+    Understand how PallasTrade models commerce — stores, products, orders, payments.
+  </Card>
+  <Card title="Next.js Storefront" icon="react" href="/developer/storefront/nextjs/quickstart">
+    Customize and extend the headless storefront.
+  </Card>
+</CardGroup>
+
+<Tip>
+  Using an AI coding agent? Run `npx skills add stevenbian9266-cyber/pallastrade` in your new project — it teaches your agent the customization patterns before you write a line of code. See [Agentic Development](/developer/agentic/overview).
+</Tip>
+
+---
+
+Congrats! You've set up your PallasTrade Commerce and it's looking amazing!
+
+Give PallasTrade a [GitHub Star](https://github.com/stevenbian9266-cyber/pallastrade)<Icon icon="star" iconType="solid" color="#FFD43B" />, why don't ya? Thank you for supporting PallasTrade open-source! <Icon icon="heart" iconType="solid" color="#FF0000" />
+
+Need support or want to give feedback? Use the [PallasTrade issue tracker](https://github.com/stevenbian9266-cyber/pallastrade/issues).

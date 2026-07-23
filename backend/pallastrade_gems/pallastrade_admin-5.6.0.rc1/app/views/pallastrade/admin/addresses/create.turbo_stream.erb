@@ -1,0 +1,21 @@
+<% @user = @address.user %>
+
+<% if @address.valid? %>
+  <%= turbo_render_alerts %>
+
+  <% if params[:default_shipping].to_b %>
+    <%= turbo_stream.replace 'user-ship-address' do %>
+      <%= render 'pallastrade/admin/users/shipping' %>
+    <% end %>
+  <% end %>
+
+  <% if params[:default_billing].to_b %>
+    <%= turbo_stream.replace 'user-bill-address' do %>
+      <%= render 'pallastrade/admin/users/billing' %>
+    <% end %>
+  <% end %>
+<% else %>
+  <%= turbo_stream.replace "new_address_#{params[:type]}" do %>
+    <%= render 'pallastrade/admin/addresses/new_form' %>
+  <% end %>
+<% end %>

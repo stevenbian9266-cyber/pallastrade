@@ -1,0 +1,8 @@
+<div data-controller="slug-form" class="card mb-6">
+  <div class="card-body">
+    <%= f.pallastrade_text_field :presentation, data: { slug_form_target: :name, action: 'input->slug-form#updateUrlFromName' }, required: true, autofocus: f.object.new_record? %>
+    <%= f.pallastrade_text_field :name, label: PallasTrade.t(:internal_name), data: { slug_form_target: :url }, required: true %>
+    <%= f.pallastrade_select :kind, options_for_select(PallasTrade::Property.kinds.map{ |k| [k.first.humanize, k.first.to_sym] }, @object.kind) %>
+    <%= f.pallastrade_select :display_on, display_on_options, { label: PallasTrade.t(:display_on) } %>
+  </div>
+</div>

@@ -1,0 +1,6 @@
+pre-commit:
+  commands:
+    biome:
+      glob: "*.{js,ts,jsx,tsx,json,css}"
+      exclude: "package-lock.json"
+      run: npx biome check --write {staged_files} && git add {staged_files}

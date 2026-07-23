@@ -1,0 +1,92 @@
+{
+  "name": "@pallastrade/dashboard-core",
+  "version": "0.10.1",
+  "description": "PallasTrade Dashboard framework — registries (table, nav, slot, settings-nav), providers (auth, permission, store), admin SDK client, generic infra hooks, and the defineDashboardPlugin extension API. Developer Preview.",
+  "author": "Steven Bian <stevenbian9266@gmail.com>",
+  "homepage": "https://pallastrade.cn",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stevenbian9266-cyber/pallastrade.git",
+    "directory": "platform/packages/dashboard-core"
+  },
+  "keywords": [
+    "pallastrade",
+    "commerce",
+    "ecommerce",
+    "admin",
+    "dashboard",
+    "react",
+    "plugin"
+  ],
+  "type": "module",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./plugin": "./src/plugin.ts",
+    "./vite": {
+      "types": "./src/vite/index.ts",
+      "default": "./dist/vite/index.js"
+    },
+    "./vite/discover": {
+      "types": "./src/vite/discover.ts",
+      "default": "./dist/vite/discover.js"
+    },
+    "./providers/*": "./src/providers/*.tsx",
+    "./hooks/*": "./src/hooks/*.ts",
+    "./hooks/use-command-palette": "./src/hooks/use-command-palette.tsx",
+    "./lib/*": "./src/lib/*.ts",
+    "./locales/en.json": "./src/locales/en.json"
+  },
+  "files": [
+    "src",
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "lint": "biome check src",
+    "lint:fix": "biome check --fix src",
+    "format": "biome format --write src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsup",
+    "prepublishOnly": "tsup"
+  },
+  "peerDependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@pallastrade/admin-sdk": "workspace:^",
+    "@pallastrade/dashboard-ui": "workspace:^",
+    "@tanstack/react-hotkeys": "^0.10.0",
+    "@tanstack/react-query": "^5.100.9",
+    "@tanstack/react-router": "^1.169.2",
+    "i18next": "^26.2.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-hook-form": "^7.75.0",
+    "react-i18next": "^17.0.8",
+    "sonner": "^2.0.7"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@tailwindcss/vite": "^4.2.4",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
+    "lucide-react": "^1.14.0",
+    "spark-md5": "^3.0.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@pallastrade/admin-sdk": "workspace:^",
+    "@pallastrade/dashboard-ui": "workspace:^",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/spark-md5": "^3.0.5",
+    "tsup": "^8.5.1",
+    "typescript": "~6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.5"
+  }
+}

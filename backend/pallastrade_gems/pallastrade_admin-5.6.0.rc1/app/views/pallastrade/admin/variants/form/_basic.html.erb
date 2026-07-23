@@ -1,0 +1,18 @@
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">
+      <%= PallasTrade.t(:settings) %>
+    </h5>
+  </div>
+  <div class="card-body">
+    <%= f.pallastrade_text_field :sku %>
+
+    <%= f.pallastrade_text_field :barcode %>
+
+    <%= f.pallastrade_collection_select :tax_category_id, @tax_categories, :id, :name, { include_blank: PallasTrade.t('match_choices.none'), label: PallasTrade.t(:tax_category), autocomplete: true } %>
+
+    <%= f.pallastrade_date_field :discontinue_on %>
+
+    <%= render 'pallastrade/admin/variants/form/dimensions', f: f %>
+  </div>
+</div>

@@ -1,0 +1,55 @@
+<% if try_pallastrade_current_user.present? %>
+  <div class="user-dropdown" id="user-menu">
+    <%= dropdown do %>
+      <%= dropdown_toggle class: 'user-dropdown-button dropdown-toggle' do %>
+        <%= render_avatar(try_pallastrade_current_user, width: 32, height: 32) %>
+        <span class="user-name hidden lg:block">
+          <% if try_pallastrade_current_user.name.present? %>
+            <%= try_pallastrade_current_user.name&.full %>
+          <% else %>
+            <%= try_pallastrade_current_user.email %>
+          <% end %>
+        </span>
+      <% end %>
+      <%= dropdown_menu class: 'ml-2', style: 'min-width: 250px;' do %>
+        <div class="flex items-center p-2 bg-gray-25 rounded-xl">
+          <%= render_avatar(try_pallastrade_current_user, width: 34, height: 34) %>
+          <span class="flex flex-col ml-2">
+            <% if try_pallastrade_current_user.name.present? %>
+              <%= try_pallastrade_current_user.name&.full %>
+              <small class="text-gray-600"><%= try_pallastrade_current_user.email %></small>
+            <% else %>
+              <%= try_pallastrade_current_user.email %>
+            <% end %>
+          </span>
+        </div>
+
+      <%= render_admin_partials(:user_dropdown_partials) %>
+
+      <% if can?(:update, try_pallastrade_current_user) %>
+        <h6 class="dropdown-header mt-2">
+          <%= PallasTrade.t(:account) %>
+        </h6>
+        <%= link_to_with_icon 'user-scan', PallasTrade.t('admin.edit_profile'), PallasTrade.edit_admin_profile_path, class: 'dropdown-item' %>
+      <% end %>
+
+      <% if can?(:manage, current_store) %>
+        <h6 class="dropdown-header mt-2">
+          <%= PallasTrade.t(:support) %>
+        </h6>
+        <%= link_to_with_icon 'book', PallasTrade.t('admin.documentation'), 'https://pallastrade.cn/docs', class: 'dropdown-item', target: '_blank' %>
+      <% end %>
+
+      <div class="dropdown-divider"></div>
+
+        <%# Turbo is disabled so the browser follows the sign-out redirect
+            natively — apps may redirect to a different host (e.g. multi-tenant
+            setups), which Turbo's fetch cannot follow cross-origin. %>
+        <%= button_to pallastrade_admin_logout_path, class: 'dropdown-item text-danger hover:bg-red-100 mb-0', method: :delete, form: { data: { turbo: false } } do %>
+          <%= icon('logout', class: "icon icon-logout") %>
+          <%= PallasTrade.t(:logout) %>
+        <% end if defined?(pallastrade_admin_logout_path) %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

@@ -1,0 +1,23 @@
+---
+:concurrency: 10
+:queues:
+  - [default, 5]
+  - [pallastrade_imports, 5]
+  - [pallastrade_payment_webhooks, 5]
+  - [mailers, 5]
+  - [pallastrade_events, 3]
+  - [pallastrade_exports, 3]
+  - [pallastrade_images, 3]
+  - [pallastrade_products, 3]
+  - [pallastrade_reports, 3]
+  - [pallastrade_variants, 3]
+  - [pallastrade_taxons, 3]
+  - [pallastrade_stock_location_stock_items, 3]
+  - [pallastrade_coupon_codes, 3]
+  - [pallastrade_addresses, 3]
+  - [pallastrade_gift_cards, 3]
+  - [pallastrade_webhooks, 3]
+  - [pallastrade_api_keys, 3]
+  - [pallastrade_search, 3]
+  - [active_storage_analysis, 1]
+  - [active_storage_purge, 1]

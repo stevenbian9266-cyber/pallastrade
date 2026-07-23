@@ -1,0 +1,54 @@
+---
+title: Upgrading to PallasTrade 4.8
+description: This guide covers upgrading a PallasTrade 4 application to PallasTrade 4.8.
+---
+
+<Info>
+  Before proceeding to upgrade, please ensure you're at PallasTrade 4.4 or later and Rails 6.1 or later.
+</Info>
+
+## Upgrade steps
+
+### 1. Update gems
+
+```bash
+bundle update
+```
+
+### 2. Install and run missing migrations
+
+```bash
+bin/rake pallastrade:install:migrations && bin/rails db:migrate
+```
+
+### 3. (Optional) Install importmap-rails gem
+
+We've switched to using [importmap-rails](https://github.com/rails/importmap-rails) for asset management. If you're using the `pallastrade_backend` or `pallastrade_frontend` gem, you'll need to install the `importmap-rails` gem.
+
+```bash
+bundle add importmap-rails
+```
+
+and run generators:
+
+```bash
+bin/rails importmap:install && bin/rails turbo:install && bin/rails stimulus:install
+```
+
+You can also remove the `jsbundling-rails` gem from your `Gemfile`:
+
+```bash
+bundle remove jsbundling-rails
+```
+
+### 4. (Optional) Apply fix when upgrading from 4.5/4.6/4.7
+
+If you're upgrading from 4.5/4.6/4.7, you need to set this configuration in your `config/initializers/pallastrade.rb`:
+
+```ruby
+PallasTrade::RuntimeConfig.always_use_translations = true
+```
+
+## Read the release notes
+
+For information about changes contained within this release, please read the [PallasTrade 4.8.0 Release Notes.](https://github.com/stevenbian9266-cyber/pallastrade/releases/tag/v4.8.0)

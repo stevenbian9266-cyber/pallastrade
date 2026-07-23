@@ -1,0 +1,12 @@
+<%= PallasTrade.t('order_mailer.confirm_email.dear_customer', name: name_for(@order)) %>
+
+<%= PallasTrade.t('order_mailer.confirm_email.instructions') %>
+
+============================================================
+<%= PallasTrade.t('order_mailer.confirm_email.order_summary', number: @order.number) %>
+============================================================
+<%= render 'pallastrade/shared/purchased_items_table', line_items: @order.line_items, order: @order %>
+============================================================
+<%= PallasTrade.t('order_mailer.total') %> <%= @order.display_total %>
+<%= PallasTrade.t('order_mailer.confirm_email.thanks') %>
+<%= PallasTrade.t('order_mailer.store_team', store_name: current_store.name) %>

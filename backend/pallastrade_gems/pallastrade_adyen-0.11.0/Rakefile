@@ -1,0 +1,26 @@
+require 'bundler'
+Bundler::GemHelper.install_tasks
+
+require 'rspec/core/rake_task'
+require 'pallastrade/testing_support/extension_rake'
+
+RSpec::Core::RakeTask.new
+
+task :default do
+  if Dir['spec/dummy'].empty?
+    Rake::Task[:test_app].invoke
+    Dir.chdir('../../')
+  end
+  Rake::Task[:spec].invoke
+end
+
+desc 'Generates a dummy app for testing'
+task :test_app do
+  ENV['LIB_NAME'] = 'pallastrade_adyen'
+  Rake::Task['extension:test_app'].execute(
+    install_admin: true
+  )
+  system({ 'BUNDLE_GEMFILE' => File.expand_path('Gemfile', __dir__) }, 'rails g pallastrade_posts:install')
+  system({ 'BUNDLE_GEMFILE' => File.expand_path('Gemfile', __dir__) }, 'rails g pallastrade_legacy_product_properties:install')
+  system({ 'BUNDLE_GEMFILE' => File.expand_path('Gemfile', __dir__) }, 'rails g pallastrade_legacy_api_v2:install')
+end

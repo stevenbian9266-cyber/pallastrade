@@ -1,0 +1,12 @@
+<% if can?(:manage, current_store) && !enterprise_edition? %>
+  <% unless session[:pallastrade_enterprise_edition_notice_dismissed] %>
+    <section class="hidden lg:block">
+      <div id="enterprise-edition-notice">
+        <%= link_to '', PallasTrade.admin_dismiss_enterprise_edition_notice_path, data: { turbo_method: :patch }, class: 'btn-close' %>
+        <p><%= PallasTrade.t('admin.enterprise_edition_notice.body') %></p>
+
+        <%= external_link_to PallasTrade.t('admin.enterprise_edition_notice.upgrade'), '#', target: '_blank', class: 'btn btn-secondary btn-sm shadow-xs' %>
+      </div>
+    </section>
+  <% end %>
+<% end %>

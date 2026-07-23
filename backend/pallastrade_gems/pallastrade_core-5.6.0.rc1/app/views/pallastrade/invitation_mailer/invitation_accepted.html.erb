@@ -1,0 +1,4 @@
+<%= render layout: 'pallastrade/shared/mailer_hero' do %>
+  <h1><%= PallasTrade.t('invitation_mailer.greeting', user_name: @invitation.inviter.first_name) %></h1>
+  <p><%= PallasTrade.t('invitation_mailer.invitation_accepted.body', invitee_name: @invitation.invitee&.name, resource_name: @invitation.resource.name) %></p>
+<% end %>

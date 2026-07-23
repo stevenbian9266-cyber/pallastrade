@@ -1,0 +1,83 @@
+<% report_link = PallasTrade.new_admin_report_path(type: 'products_performance', date_from: params[:date_from], date_to: params[:date_to], vendor_id: @vendor.try(:id)) %>
+
+<div class="card mt-4 mb-6">
+  <div class="card-header flex justify-between items-center">
+    <h5 class="card-title">
+      <%= PallasTrade.t('admin.dashboard.top_products') %>
+    </h5>
+    <% if can?(:manage, PallasTrade::Report) %>
+      <%= link_to PallasTrade.t('admin.dashboard.view_report'), report_link, class: 'btn btn-light btn-sm', data: { turbo_frame: '_top' } %>
+    <% end %>
+  </div>
+  <div class="card-body m-0 p-0">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr class="border-b">
+            <th scope="col" class="rounded-none">
+              <%= PallasTrade.t(:product) %>
+            </th>
+            <% if defined?(PallasTrade::Vendor) && !@vendor %>
+              <th scope="col">
+                <%= PallasTrade.t(:vendor) %>
+              </th>
+            <% end %>
+            <th scope="col">
+              <%= PallasTrade.t(:price) %>
+            </th>
+            <th class="text-center">
+              <%= PallasTrade.t(:quantity) %>
+            </th>
+            <th class="text-right rounded-none">
+              <%= PallasTrade.t(:total_sales) %>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+        <% if @top_products.any? %>
+          <% @top_products.each do |list_item| %>
+            <% product = list_item[:product] %>
+            <tr>
+              <% cache_unless @vendor, pallastrade_base_cache_scope.call(product) do %>
+                <td>
+                  <%= link_to PallasTrade.edit_admin_product_path(product), class: 'flex items-center font-bold', data: { 'turbo-frame': '_top' } do %>
+                    <div class="mr-4">
+                      <%= render 'pallastrade/admin/shared/product_image', object: product %>
+                    </div>
+                    <%= product.name %>
+                  <% end %>
+                </td>
+                <% if defined?(vendor_logo_link) && !@vendor %>
+                  <td>
+                    <%= vendor_logo_link(product.vendor) if product.vendor.present? %>
+                  </td>
+                <% end %>
+                <td>
+                  <%= display_admin_price(product) %>
+                </td>
+              <% end %>
+              <td class="text-center">
+                <%= list_item[:quantity] %>
+              </td>
+              <td class="text-right">
+                <%= list_item[:amount] %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="5" class="text-center text-gray-600 py-12">
+              <%= PallasTrade.t(:no_resource_found, resource: PallasTrade::Product.name.demodulize.underscore.humanize) %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  <% if @top_products.any? && can?(:manage, PallasTrade::Report) %>
+    <p class="text-center mt-0 border-t py-2 mb-0">
+      <%= link_to PallasTrade.t('admin.dashboard.view_report'), report_link, class: 'm-2 w-1/2 btn btn-light mt-2', data: { turbo_frame: '_top' } %>
+    </p>
+  <% end %>
+  </div>
+</div>

@@ -1,0 +1,25 @@
+require 'spec_helper'
+
+RSpec.describe PallasTradeStripe::CustomDomainDecorator do
+  let(:store) { PallasTrade::Store.default }
+
+  describe '#register_stripe_domain' do
+    subject(:create_custom_domain) { create(:custom_domain, store: store) }
+
+    context 'with a Stripe gateway' do
+      before { create(:stripe_gateway, store: store) }
+
+      it 'registers the Apple Pay domain' do
+        expect { create_custom_domain }.to have_enqueued_job(PallasTradeStripe::RegisterDomainJob)
+      end
+    end
+
+    context 'without a Stripe gateway' do
+      before { create(:stripe_gateway, store: create(:store)) }
+
+      it 'does not register the Apple Pay domain' do
+        expect { create_custom_domain }.not_to have_enqueued_job(PallasTradeStripe::RegisterDomainJob)
+      end
+    end
+  end
+end

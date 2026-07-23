@@ -1,0 +1,1 @@
+<%%= render 'pallastrade/admin/shared/edit_resource' %>

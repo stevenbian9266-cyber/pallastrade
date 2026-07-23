@@ -1,0 +1,47 @@
+name: Monorepo Contract
+
+on:
+  workflow_call:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'platform/**'
+      - 'storefront/**'
+      - 'ai/**'
+      - 'release/**'
+      - 'scripts/ci/monorepo-contract-check.mjs'
+      - 'scripts/ci/ownership-audit.mjs'
+      - 'scripts/release/**'
+      - '.github/workflows/**'
+      - '.gitignore'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'platform/**'
+      - 'storefront/**'
+      - 'ai/**'
+      - 'release/**'
+      - 'scripts/ci/monorepo-contract-check.mjs'
+      - 'scripts/ci/ownership-audit.mjs'
+      - 'scripts/release/**'
+      - '.github/workflows/**'
+      - '.gitignore'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/ci/monorepo-contract-check.mjs
+      - run: node scripts/ci/ownership-audit.mjs

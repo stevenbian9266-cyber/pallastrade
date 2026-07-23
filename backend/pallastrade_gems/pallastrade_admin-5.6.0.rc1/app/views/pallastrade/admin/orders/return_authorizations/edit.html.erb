@@ -1,0 +1,44 @@
+<% content_for :page_title do %>
+  <%= page_header_back_button PallasTrade.edit_admin_order_path(@order) %>
+
+  <div class="flex gap-6 items-center">
+    <%= @return_authorization.number %>
+
+    <span class="badge badge-<%= @return_authorization.state %>">
+      <%= PallasTrade.t("return_authorization_states.#{@return_authorization.state}") %>
+    </span>
+  </div>
+<% end %>
+
+<%= render partial: "pallastrade/admin/shared/error_messages",
+locals: {
+  target: @return_authorization,
+} %>
+
+<%= form_for [:admin, @order, @return_authorization] do |f| %>
+  <%= render partial: "form", locals: { f: f } %>
+
+  <div class="form-actions">
+    <%= turbo_save_button_tag PallasTrade.t("actions.update") %>
+    <div class="ms-auto flex gap-6">
+      <% if f.object.can_cancel? && can?(:cancel, f.object) %>
+        <%= link_to PallasTrade.t("actions.cancel"),
+        PallasTrade.cancel_admin_return_authorization_path(f.object),
+        class: "btn btn-danger",
+        data: {
+          turbo_method: :patch,
+          turbo_confirm: PallasTrade.t(:are_you_sure),
+        } %>
+      <% end %>
+      <% if f.object.can_be_deleted? && can?(:delete, f.object) %>
+        <%= link_to PallasTrade.t("actions.destroy"),
+        PallasTrade.admin_return_authorization_path(f.object),
+        data: {
+          turbo_method: :delete,
+          turbo_confirm: PallasTrade.t(:are_you_sure_delete),
+        },
+        class: "btn btn-danger" %>
+      <% end %>
+    </div>
+  </div>
+<% end %>

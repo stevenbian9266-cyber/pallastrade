@@ -1,0 +1,50 @@
+module PallasTrade
+  module AuthenticationHelpers
+    def self.included(receiver)
+      receiver.helper_method(
+        :pallastrade_current_user,
+        :pallastrade_login_path,
+        :pallastrade_signup_path,
+        :pallastrade_logout_path,
+        :pallastrade_forgot_password_path,
+        :pallastrade_edit_password_path,
+        :pallastrade_admin_login_path,
+        :pallastrade_admin_logout_path
+      )
+    end
+
+    def pallastrade_current_user
+      current_user
+    end
+
+    def pallastrade_login_path(opts = {})
+      main_app.login_path(opts)
+    end
+
+    def pallastrade_signup_path(opts = {})
+      main_app.signup_path(opts = {})
+    end
+
+    def pallastrade_logout_path(opts = {})
+      main_app.logout_path(opts = {})
+    end
+
+    def pallastrade_forgot_password_path(opts = {})
+      main_app.forgot_password_path(opts)
+    end
+
+    def pallastrade_edit_password_path(opts = {})
+      main_app.pallastrade_edit_password_path(opts)
+    end
+
+    def pallastrade_admin_login_path(opts = {})
+      pallastrade_login_path(opts)
+    end
+
+    def pallastrade_admin_logout_path(opts = {})
+      pallastrade_logout_path(opts)
+    end
+  end
+end
+
+ApplicationController.include PallasTrade::AuthenticationHelpers if defined?(ApplicationController)

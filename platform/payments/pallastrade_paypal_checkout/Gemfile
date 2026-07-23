@@ -1,0 +1,35 @@
+source 'https://rubygems.org'
+
+git_source(:github) do |repo_name|
+  repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include?('/')
+  "https://github.com/#{repo_name}.git"
+end
+
+gem 'rails-controller-testing'
+
+pallastrade_opts = if ENV['PALLASTRADE_GEMS_PATH']
+                { 'path': ENV['PALLASTRADE_GEMS_PATH'] }
+             else
+                { 'github': 'stevenbian9266-cyber/pallastrade', 'branch': 'main', 'glob': 'pallastrade/**/*.gemspec' }
+             end
+gem 'pallastrade', pallastrade_opts
+gem 'pallastrade_admin', pallastrade_opts
+
+pallastrade_storefront_opts = { 'github': 'stevenbian9266-cyber/pallastrade', 'branch': 'main' }
+gem 'pallastrade_page_builder', pallastrade_storefront_opts
+gem 'pallastrade_storefront', pallastrade_storefront_opts
+
+gem 'pallastrade_legacy_api_v2'
+gem 'pallastrade_dev_tools', '>= 0.6.0.rc1'
+
+if ENV['DB'] == 'mysql'
+  gem 'mysql2'
+elsif ENV['DB'] == 'postgres'
+  gem 'pg'
+else
+  gem 'sqlite3'
+end
+
+gem 'propshaft'
+
+gemspec

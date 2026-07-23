@@ -1,0 +1,31 @@
+{
+  "name": "@pallastrade/docs",
+  "version": "0.1.0",
+  "description": "PallasTrade Commerce developer documentation for AI agents and local reference",
+  "type": "module",
+  "author": "Steven Bian <stevenbian9266@gmail.com>",
+  "homepage": "https://pallastrade.cn/docs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stevenbian9266-cyber/pallastrade.git",
+    "directory": "platform/packages/docs"
+  },
+  "bugs": {
+    "url": "https://github.com/stevenbian9266-cyber/pallastrade/issues"
+  },
+  "files": [
+    "dist/**/*.md",
+    "dist/**/*.yaml"
+  ],
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,28 @@
+plugins:
+  - rubocop-rails
+
+AllCops:
+  DisplayCopNames: true
+  TargetRubyVersion: 3.3
+  Include:
+    - '**/Gemfile'
+    - '**/Rakefile'
+    - '**/Appraisals'
+    - app/**/*.rb
+  Exclude:
+    - 'spec/dummy/**/*'
+    - 'lib/generators/**/*'
+
+Layout/LineLength:
+  Max: 150
+
+# DISABLED
+
+Rails/RakeEnvironment:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: false

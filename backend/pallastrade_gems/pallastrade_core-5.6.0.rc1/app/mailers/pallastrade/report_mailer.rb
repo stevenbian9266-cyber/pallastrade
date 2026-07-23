@@ -1,0 +1,20 @@
+module PallasTrade
+  class ReportMailer < BaseMailer
+    def report_done(report)
+      @report = report
+
+      with_store_locale(@report.store) do
+        mail(
+          to: @report.user.email,
+          subject: PallasTrade.t('report_mailer.report_done.subject', report_name: @report.human_name).to_s
+        )
+      end
+    end
+
+    private
+
+    def current_store
+      @current_store ||= @report.store
+    end
+  end
+end

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pallastrade.cn/schemas/release-manifest-v1.json",
+  "title": "PallasTrade release manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "repository", "tag", "commit", "commitTimestamp", "components", "packages", "tests"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "repository": { "const": "https://github.com/stevenbian9266-cyber/pallastrade" },
+    "tag": { "type": "string", "pattern": "^pallastrade-v[0-9]+\\.[0-9]+\\.[0-9]+(?:-rc\\.[0-9]+)?$" },
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" },
+    "commitTimestamp": { "type": "string", "format": "date-time" },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["backend", "platform", "storefront", "ai"],
+      "properties": {
+        "backend": { "$ref": "#/$defs/component" },
+        "platform": { "$ref": "#/$defs/component" },
+        "storefront": { "$ref": "#/$defs/component" },
+        "ai": { "$ref": "#/$defs/component" }
+      }
+    },
+    "packages": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gem", "npm"],
+      "properties": {
+        "gem": { "type": "array", "items": { "$ref": "#/$defs/package" } },
+        "npm": { "type": "array", "items": { "$ref": "#/$defs/package" } }
+      }
+    },
+    "tests": { "type": "array", "minItems": 4, "items": { "$ref": "#/$defs/test" } }
+  },
+  "$defs": {
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tree", "sha256", "files"],
+      "properties": {
+        "tree": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "files": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component", "name", "version", "path"],
+      "properties": {
+        "component": { "enum": ["backend", "platform", "storefront", "ai"] },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "test": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component", "command", "status", "url"],
+      "properties": {
+        "component": { "enum": ["backend", "platform", "storefront", "ai"] },
+        "command": { "type": "string", "minLength": 1 },
+        "status": { "const": "passed" },
+        "url": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

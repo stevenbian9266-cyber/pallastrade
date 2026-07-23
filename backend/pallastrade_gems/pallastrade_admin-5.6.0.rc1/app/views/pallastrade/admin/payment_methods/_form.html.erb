@@ -1,0 +1,32 @@
+<% if @object.respond_to?(:configuration_guide_partial_name) %>
+  <%= render "pallastrade/admin/payment_methods/configuration_guides/#{@object.configuration_guide_partial_name}", f: f %>
+<% end %>
+
+<% if !preference_fields(@object, f).empty? || @object.respond_to?(:custom_form_fields_partial_name) %>
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t(:payment_provider_settings) %></h5>
+    </div>
+    <div class="card-body">
+      <%= preference_fields(@object, f) unless preference_fields(@object, f).empty? %>
+
+      <% if @object.respond_to?(:custom_form_fields_partial_name) %>
+        <%= render "pallastrade/admin/payment_methods/custom_form_fields/#{@object.custom_form_fields_partial_name}", f: f %>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t(:display_settings) %></h5>
+  </div>
+  <div class="card-body">
+    <%= f.pallastrade_text_field :name, help: PallasTrade.t('admin.payment_methods.name_help') %>
+
+    <%= f.pallastrade_select :display_on, display_on_options, { label: PallasTrade.t(:display) } %>
+    <%= f.pallastrade_select :auto_capture, [["#{PallasTrade.t(:use_app_default)} (#{PallasTrade::Config[:auto_capture]})", ''], [PallasTrade.t(:say_yes).to_s, true], [PallasTrade.t(:say_no).to_s, false]], { label: PallasTrade.t(:auto_capture) } %>
+
+    <%= f.pallastrade_check_box :active %>
+  </div>
+</div>

@@ -1,0 +1,44 @@
+---
+title: 3.4 to 3.5
+section: upgrades
+order: 5
+description: 'This guide covers upgrading a 3.4 PallasTrade store, to a 3.5 store.'
+---
+
+### Update gems
+
+```bash
+bundle update
+```
+
+### Install missing migrations
+
+```bash
+rake railties:install:migrations
+```
+
+### Run migrations
+
+```bash
+rails db:migrate
+```
+
+### Install PallasTrade Analytics Trackers extension
+
+If you were previously using Analytics Trackers feature you need to install it as an extension as it was [extracted from the core](https://github.com/stevenbian9266-cyber/pallastrade/pull/8408).
+
+1. Add [PallasTrade Analytics Trackers](https://github.com/stevenbian9266-cyber/pallastrade) to your `Gemfile`:
+
+```bash
+bundle add pallastrade_analytics_trackers
+```
+
+2. Copy and run migrations:
+
+```bash
+bin/rails g pallastrade_analytics_trackers:install
+```
+
+## Read the release notes
+
+For information about changes contained within this release, please read the [3.5.0 Release Notes](https://github.com/stevenbian9266-cyber/pallastrade/releases/tag/v3.5.0).

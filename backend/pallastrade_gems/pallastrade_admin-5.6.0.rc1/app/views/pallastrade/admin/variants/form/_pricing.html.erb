@@ -1,0 +1,49 @@
+<div class="card mb-6" data-product-form-target="pricesForm">
+  <div class="card-header flex items-center justify-between border-b-0">
+    <h5 class="card-title">
+      <%= PallasTrade.t(:pricing) %>
+    </h5>
+
+    <% if can?(:manage, PallasTrade::Store) %>
+      <%= link_to_with_icon 'world', PallasTrade.t('admin.manage_markets'), PallasTrade.admin_markets_path, class: 'btn btn-sm btn-light' %>
+    <% end %>
+  </div>
+  <div class="card-body p-0">
+    <table class="table border-t">
+      <thead>
+        <tr>
+          <th scope="col"><%= PallasTrade.t(:currency) %></th>
+          <th scope="col">
+            <%= PallasTrade.t(:amount) %>
+          </th>
+          <th scope="col">
+            <%= PallasTrade.t(:compare_at_amount) %>
+            <%= help_bubble(PallasTrade.t('admin.variants_form.compare_at_price_description')) %>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <% base_prices = f.object.prices.select { |p| p.price_list_id.nil? } %>
+        <%= f.fields_for :prices, base_prices do |price_form| %>
+          <%= price_form.hidden_field :id if price_form.object.persisted? %>
+          <%= price_form.hidden_field :currency %>
+          <tr>
+            <td><%= price_form.object.currency %></td>
+            <td>
+              <%= price_form.pallastrade_money_field :amount,
+                                               disabled: !can?(:manage, price_form.object),
+                                               currency: price_form.object.currency,
+                                               label: false %>
+            </td>
+            <td>
+              <%= price_form.pallastrade_money_field :compare_at_amount,
+                                               disabled: !can?(:manage, price_form.object),
+                                               currency: price_form.object.currency,
+                                               label: false %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

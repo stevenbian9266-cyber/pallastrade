@@ -1,0 +1,25 @@
+source 'https://rubygems.org'
+
+gem 'rails-controller-testing'
+
+pallastrade_opts = if ENV['PALLASTRADE_PATH']
+                { 'path': ENV['PALLASTRADE_PATH'] }
+             else
+                { 'github': 'stevenbian9266-cyber/pallastrade', 'branch': 'main', 'glob': 'pallastrade/**/*.gemspec' }
+             end
+gem 'pallastrade', pallastrade_opts
+gem 'pallastrade_admin', pallastrade_opts
+
+gem 'pallastrade_dev_tools', '>= 0.6.0.rc1'
+
+if ENV['DB'] == 'mysql'
+  gem 'mysql2'
+elsif ENV['DB'] == 'postgres'
+  gem 'pg'
+else
+  gem 'sqlite3'
+end
+
+gem 'propshaft'
+
+gemspec

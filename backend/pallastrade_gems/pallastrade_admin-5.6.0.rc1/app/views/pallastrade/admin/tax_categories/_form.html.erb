@@ -1,0 +1,12 @@
+<div class="card mb-6">
+  <div class="card-body">
+
+    <%= f.pallastrade_text_field :name, autofocus: f.object.new_record?, required: true %>
+
+    <%= f.pallastrade_text_field :tax_code %>
+
+    <%= f.pallastrade_text_area :description %>
+
+    <%= f.pallastrade_check_box :is_default, label: PallasTrade.t(:default) %>
+  </div>
+</div>

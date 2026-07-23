@@ -1,0 +1,34 @@
+---
+title: PallasTrade Multi Tenant Configuration
+sidebarTitle: Configuration
+description: Configure PallasTrade multi-tenant SaaS deployments — set the app subdomain, reserved subdomains, tenant signup flow, and other initializer options.
+---
+
+Multi-tenant applications include additional configuration options. All configuration should be placed in `config/initializers/pallastrade_multi_tenant.rb` file.
+
+### App subdomain
+
+Application subdomains is used to access the application, eg. `app.example.com`. By default for existing tenants it will redirect them to their tenant subdomain, eg. `store1.example.com`. If you want, you can also use this as a tenant signup/store setup page, this is available under `app.example.com/tenants/new`.
+
+You can customize the app subdomain by:
+
+```ruby
+PallasTradeMultiTenant::Config[:app_subdomain] = 'admin'
+```
+
+This will change `app.example.com` to `admin.example.com`.
+
+### Emails
+
+Usually email providers, such as SendGrid, require emails to be send from a valid / verified email address, which will be your root domain.
+
+```ruby
+PallasTradeMultiTenant::Config[:mail_from_name] = ENV.fetch('MAIL_FROM_NAME', 'Your SaaS Name')
+PallasTradeMultiTenant::Config[:mail_from_address] = ENV.fetch('MAIL_FROM_ADDRESS', "support@#{PallasTrade.root_domain}")
+```
+
+<Info>
+`mail_from_name` is only used in admin emails, such as admin staff invitations, exports, etc. For consumer facing emails, this will be your tenant store name, eg. `My Flower Store` (or whatever they set in the store settings).
+
+Also, customer facing emails will use the tenant email address in `Reply-To` header.
+</Info>

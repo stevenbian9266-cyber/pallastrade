@@ -1,0 +1,283 @@
+---
+title: Upgrading to PallasTrade 5.4
+description: Upgrade a PallasTrade 5.3 application to PallasTrade 5.4 — remove pallastrade_sample, update gems, run migrations, switch to AdminUserMethods, and backfill image thumbnail IDs.
+---
+
+<Info>
+  Before proceeding to upgrade, please ensure you're at [PallasTrade 5.3](/developer/upgrades/5.2-to-5.3)
+</Info>
+
+## Upgrade steps
+
+### Remove `pallastrade_sample` gem from your Gemfile
+
+Samples are now included in the `pallastrade` gem. If you've added previously `pallastrade_sample` to your Gemfile, remove it by running:
+
+  ```bash
+  bundle remove pallastrade_sample
+  ```
+
+### Update gems
+
+  ```bash
+  bundle update
+  ```
+
+### Fetch and run missing migrations
+
+  ```bash
+  bin/rake pallastrade:install:migrations && bin/rails db:migrate
+  ```
+
+### Fix your Admin user class
+
+Your admin user model needs to include the `PallasTrade::AdminUserMethods` concern instead of `PallasTrade::UserMethods`.
+Previously `UserMethods` bundled `AdminUserMethods` but that caused all kinds of issues.
+
+So if you have a model like this:
+
+```ruby
+class PallasTrade::AdminUser < PallasTrade::Base
+  include PallasTrade::UserMethods
+  
+  # ... other model code ...
+end
+```
+
+You need to change it to this:
+
+```ruby
+class PallasTrade::AdminUser < PallasTrade::Base
+  include PallasTrade::AdminUserMethods
+  
+  # ... other model code ...
+end
+```
+
+By default that file is located at `app/models/pallastrade/admin_user.rb`.
+
+### Backfill Image Thumbnail IDs
+
+PallasTrade 5.4 adds a `primary_media` association to both `Product` and `Variant` models. This greatly speeds up rendering Product lists everywhere (API, Admin Dashboard and `pallastrade_storefront`), as previously we've had to load all media/images for each product and determine which one is the one to render a thumbnail.
+
+To generate the new association you will need to run a rake task (both in development and production environments):
+
+  ```bash
+  bin/rails pallastrade:media:backfill_primary_media
+  ```
+
+As above, this process can take a while depending on the size of your product catalog.
+
+For new products this will be set automatically and you won't need to run this rake task more than once.
+
+### Prefixed IDs
+
+PallasTrade 5.4 by default uses prefixed IDs for resources (eg. `prod_6VsgxZbenF`) instead of just IDs from the database. These IDs are now used in Admin Dashboard, API v3, Events system and Webhooks.
+
+#### Event Subscribers
+
+If you previously added Subscribers for Events, eg. `order.completed` with code such as:
+
+```ruby
+module MyApp
+  class OrderAuditSubscriber < PallasTrade::Subscriber
+    subscribes_to 'order.completed'
+
+    on 'order.completed', :log_order_completed
+
+    private
+
+    def find_order(event)
+      PallasTrade::Order.find(event.payload[:id])
+    end
+  end
+end
+```
+
+You will need to update your code to use the new prefixed IDs, from:
+
+```ruby
+PallasTrade::Order.find(event.payload[:id])
+```
+
+to:
+
+```ruby
+PallasTrade::Order.find_by_prefix_id!(event.payload[:id])
+```
+
+You can also use `find_by_prefix_id` without the bang (`!`) to gracefully handle cases where the record might not exist.
+
+#### Adding Prefixed IDs support to your custom models
+
+All models inheriting from `PallasTrade::Base` (or `PallasTrade.base_class`) can support Prefixed IDs by adding the following code to your model:
+
+```ruby
+class MyModel < PallasTrade::Base
+  has_prefix_id :mm
+  
+  # ...
+end
+```
+
+Prefix length isn't limited by default, but we recommend to keep it short.
+
+### Migrate Checkout Zones to Markets
+
+PallasTrade 5.4 introduces [Markets](/developer/core-concepts/markets) as the primary way to manage which countries are available for checkout, along with their currencies and locales. The legacy `checkout_zone` field on the Store model is now deprecated and will be removed in PallasTrade 6.0.
+
+New stores automatically get a default market created from their `default_country` — no manual setup needed. For existing stores that used `checkout_zone`, run the migration rake task:
+
+  ```bash
+  bin/rake pallastrade:markets:migrate_checkout_zones
+  ```
+
+This will:
+1. Read the `checkout_zone` countries from each store
+2. Create a default Market with those countries, currency, and locale
+3. Clear the `checkout_zone_id` column
+
+<Warning>
+  You will need to run this rake task locally and on your production environment. After running, verify your markets are set up correctly in the Admin Dashboard under **Settings → Markets**.
+</Warning>
+
+#### Deprecated Store methods
+
+The following Store methods now emit deprecation warnings and will be removed in PallasTrade 5.5:
+
+| Deprecated method | Replacement |
+|---|---|
+| `store.checkout_zone` | Use [Markets](/developer/core-concepts/markets) to manage countries |
+| `store.checkout_zone=` | Use [Markets](/developer/core-concepts/markets) to manage countries |
+
+The `store.default_country` reader now returns the first country (by name) from the store's default market. The `store.default_country_iso=` setter still works and is used to set the country when creating a store — a default market is automatically created from it.
+
+#### Code that references `checkout_zone` for tax
+
+If your application used `store.checkout_zone` as a tax zone fallback, update it to use `PallasTrade::Zone.default_tax` instead:
+
+```ruby
+# Before
+zone = current_store.checkout_zone
+
+# After
+zone = PallasTrade::Zone.default_tax
+```
+
+### ActiveMerchant removed from PallasTrade Core
+
+PallasTrade 5.4 no longer depends on the `activemerchant` gem. All internal usages have been replaced with lightweight PallasTrade-native classes:
+
+| ActiveMerchant class | PallasTrade replacement |
+|---|---|
+| `ActiveMerchant::Billing::Response` | `PallasTrade::PaymentResponse` |
+| `ActiveMerchant::ConnectionError` | `PallasTrade::PaymentConnectionError` |
+
+`PallasTrade::PaymentResponse` is a drop-in replacement with the same constructor signature:
+
+```ruby
+PallasTrade::PaymentResponse.new(success, message, params = {}, options = {})
+```
+
+It supports the same methods: `success?`, `message`, `params`, `authorization`, `avs_result`, `cvv_result`, `test?`, and YAML serialization (for log entries).
+
+#### Updating custom payment methods
+
+If you have a custom payment method (gateway) that returns `ActiveMerchant::Billing::Response`, update it to return `PallasTrade::PaymentResponse` instead:
+
+```ruby
+# Before
+def authorize(money, source, options = {})
+  # ...
+  ActiveMerchant::Billing::Response.new(true, 'Success', {},
+    authorization: transaction_id, test: test?)
+end
+
+# After
+def authorize(money, source, options = {})
+  # ...
+  PallasTrade::PaymentResponse.new(true, 'Success', {},
+    authorization: transaction_id, test: test?)
+end
+```
+
+If your gateway rescues `ActiveMerchant::ConnectionError`, update it to rescue `PallasTrade::PaymentConnectionError`:
+
+```ruby
+# Before
+rescue ActiveMerchant::ConnectionError => e
+
+# After
+rescue PallasTrade::PaymentConnectionError => e
+```
+
+#### Using `pallastrade_gateway` or other ActiveMerchant-based extensions
+
+If you use the [`pallastrade_gateway`](https://github.com/stevenbian9266-cyber/pallastrade) gem or another extension that depends on ActiveMerchant, add `activemerchant` directly to your application's `Gemfile`:
+
+```ruby
+gem 'activemerchant'
+```
+
+These extensions will continue to work — PallasTrade's `LogEntry#parsed_details` still deserializes `ActiveMerchant::Billing::Response` objects when the gem is present.
+
+#### Address hash method renamed
+
+`PallasTrade::Address#active_merchant_hash` has been renamed to `#gateway_hash`. A backwards-compatible alias is provided, so existing code continues to work without changes.
+
+### (Optional) Install Legacy API v2 extension
+
+PallasTrade 5.4 ships with API v3, which marks deprecation of API v2. API v2 is still available but you need to install it separately. If you currently use API v2, you can do this by running the following command:
+
+  ```bash
+  bundle add pallastrade_legacy_api_v2
+  ```
+  
+If you have tests for API v2 endpoints in your application, you will need to include some files in your `rails_helper.rb`:
+
+  ```ruby
+  require 'jsonapi/rspec'
+  require 'pallastrade_legacy_api_v2/testing_support/v2/base'
+  require 'pallastrade_legacy_api_v2/testing_support/factories'
+  require 'pallastrade_legacy_api_v2/testing_support/v2/current_order'
+  require 'pallastrade_legacy_api_v2/testing_support/v2/platform_contexts'
+  require 'pallastrade_legacy_api_v2/testing_support/v2/serializers_params'
+  
+  RSpec.configure do |config|
+    config.include JSONAPI::RSpec, type: :request # required for API v2 request specs
+  end
+  ```
+
+Also, add `jsonapi-rspec` gem to your `Gemfile`:
+
+  ```ruby
+  gem 'jsonapi-rspec', group: :test
+  ```
+  
+And run `bundle install`
+
+### (Optional) Install Legacy Product Properties extension
+
+Product Properties have been extracted from PallasTrade core to a separate gem `pallastrade_legacy_product_properties`. Product Properties were already deprecated in favor of [Metafields](/developer/core-concepts/metafields) and disabled by default since PallasTrade 5.1.
+
+If you have `product_properties_enabled: true` in your PallasTrade configuration or rely on Product Properties in any way, install the extension:
+
+  ```bash
+  bundle add pallastrade_legacy_product_properties
+  ```
+
+No data migration is needed — the gem uses the same database tables. All existing product properties, property definitions, and associations will continue to work as before.
+
+<Warning>
+  If you skip this step and had Product Properties enabled, any code referencing `product.product_properties`, `product.property()`, `product.set_property()`, or the admin Properties page will stop working.
+</Warning>
+
+### (Optional) Install PallasTrade Posts extension
+
+Posts and Post Categories management were extracted from PallasTrade core into a separate gem `pallastrade_posts`.
+
+If you use these features before run this command to restore them:
+
+```bash
+bundle add pallastrade_posts
+```

@@ -1,0 +1,68 @@
+import * as p from '@clack/prompts'
+import { Command } from 'commander'
+import getPort, { portNumbers } from 'get-port'
+import pc from 'picocolors'
+import { DEFAULT_PALLASTRADE_PORT } from './constants.js'
+import { runPrompts } from './prompts.js'
+import { scaffold } from './scaffold.js'
+import type { PackageManager } from './types.js'
+import { detectPackageManager } from './utils.js'
+
+const program = new Command()
+  .name('create-pallastrade-app')
+  .description('Create a new PallasTrade Commerce project')
+  .argument('[directory]', 'project directory')
+  .option('--no-storefront', 'skip Next.js storefront setup')
+  .option(
+    '--react-dashboard',
+    'include the React Dashboard (Developer Preview — work in progress; also available later via `pallastrade add dashboard`)',
+  )
+  .option('--no-sample-data', 'skip loading sample data')
+  .option('--no-start', 'do not start Docker services')
+  .option('--port <number>', 'port for the PallasTrade backend', String(DEFAULT_PALLASTRADE_PORT))
+  .option('--use-npm', 'use npm as package manager')
+  .option('--use-yarn', 'use yarn as package manager')
+  .option('--use-pnpm', 'use pnpm as package manager')
+  .action(async (directory: string | undefined, flags: Record<string, unknown>) => {
+    p.intro(pc.bold('Create PallasTrade App'))
+
+    let packageManager: PackageManager = await detectPackageManager()
+    if (flags.useNpm) packageManager = 'npm'
+    if (flags.useYarn) packageManager = 'yarn'
+    if (flags.usePnpm) packageManager = 'pnpm'
+    if (packageManager === 'npm' && !flags.useNpm) {
+      p.log.info(
+        `Using npm (pnpm not found — run ${pc.cyan('corepack enable')} to get pnpm, which PallasTrade recommends).`,
+      )
+    }
+
+    try {
+      const options = await runPrompts({
+        directory,
+        noStorefront: flags.storefront === false ? true : undefined,
+        reactDashboard: flags.reactDashboard === true,
+        noSampleData: flags.sampleData === false ? true : undefined,
+        noStart: flags.start === false ? true : undefined,
+        packageManager,
+      })
+
+      const preferred = Number(flags.port)
+      const port = await getPort({ port: portNumbers(preferred, preferred + 100) })
+      if (port !== preferred) {
+        p.log.warn(`Port ${preferred} is in use, using port ${pc.bold(String(port))} instead.`)
+      }
+
+      await scaffold({ ...options, port })
+
+      p.outro('Happy selling!')
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('cancelled')) {
+        p.cancel('Setup cancelled.')
+        process.exit(0)
+      }
+      p.cancel(err instanceof Error ? err.message : 'An unexpected error occurred.')
+      process.exit(1)
+    }
+  })
+
+program.parse()

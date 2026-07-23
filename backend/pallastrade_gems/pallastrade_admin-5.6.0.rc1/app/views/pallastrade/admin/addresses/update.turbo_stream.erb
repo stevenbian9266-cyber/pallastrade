@@ -1,0 +1,26 @@
+<% @user = @address.user %>
+
+<% if @address.valid? %>
+  <%= turbo_render_alerts %>
+
+  <%= turbo_stream.replace 'user-ship-address' do %>
+    <%= render 'pallastrade/admin/users/shipping' %>
+  <% end %>
+
+  <%= turbo_stream.replace 'user-bill-address' do %>
+    <%= render 'pallastrade/admin/users/billing' %>
+  <% end %>
+<% else %>
+  <%# Update service may return a new address without ID when original isn't editable %>
+  <%= turbo_stream.replace "edit_address_#{params[:type]}" do %>
+    <% if @address.persisted? %>
+      <%= render 'pallastrade/admin/addresses/edit_form' %>
+    <% else %>
+      <%= render 'pallastrade/admin/addresses/new_form',
+            frame_id: "edit_address_#{params[:type]}",
+            user_id: @user&.id,
+            default_shipping: params[:type] == 'shipping',
+            default_billing: params[:type] == 'billing' %>
+    <% end %>
+  <% end %>
+<% end %>

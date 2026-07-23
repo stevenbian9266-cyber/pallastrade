@@ -1,0 +1,454 @@
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
+
+# PallasTrade Storefront
+
+A production-ready, headless ecommerce storefront for [PallasTrade Commerce](https://pallastrade.cn), built with Next.js 16, React 19, and the [PallasTrade REST API](https://pallastrade.cn/docs/api-reference). Self-hosted and maintained by Steven Bian.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/stevenbian9266-cyber/pallastrade&root-directory=storefront)
+
+[Quickstart Docs](https://pallastrade.cn/docs/developer/storefront/nextjs/quickstart) | [TypeScript SDK](https://www.npmjs.com/package/@pallastrade/sdk)
+
+## Why This Storefront
+
+**TypeScript SDK.** [@pallastrade/sdk](https://www.npmjs.com/package/@pallastrade/sdk) is an official typed client for every Store API endpoint (OpenAPI 3.0 documented). Autocomplete and type safety in your editor, no codegen step to maintain.
+
+**Multi-region out of the box.** Country, currency, and language switching via URL segments (`/us/en/`, `/de/de/`, `/uk/en/`), powered by PallasTrade [Markets](https://pallastrade.cn/docs/developer/core-concepts/markets). Distinct selling regions bundling geography, currency, and locale in a single store.
+
+**One-page checkout.** Guest and authenticated users, multi-shipment, coupon codes, gift cards, and store credit. Stripe, PayPal, and Adyen via Payment Sessions. Card data never touches your server. [Swap providers](https://pallastrade.cn/docs/developer/core-concepts/payments) easily.
+
+**Transactional emails.** Order confirmation, shipping notification, password reset. Built with react-email, sent via Resend, triggered by PallasTrade webhooks.
+
+
+## Features
+
+| Feature | Details |
+|---------|---------|
+| **Product Catalog** | Browse, search, filter products by categories, and use faceted navigation. Search and facet filtering powered by [Meilisearch](https://pallastrade.cn/docs/integrations/search/meilisearch) |
+| **Product Details** | View product information with variant selection and media |
+| **Shopping Cart** | Add, update, and remove items with server-side state |
+| **One-page Checkout** | Guest visitors and signed-in users supported, multi-shipments supported natively, Coupon Codes, Gift Cards, Store Credit |
+| **Stripe payments** | native Stripe payment support with Stripe SDKs, PCI-Compliant, 3DS-Secure, use Credit Cards, Apple Pay, Google Pay, Klarna, Affirm, SEPA payments, and all other payment methods provided by [PallasTrade Stripe integration](https://github.com/stevenbian9266-cyber/pallastrade) |
+| **Customer Account** | Full account management: Profile management, Order history with detailed order view, Address book (create, edit, delete), Gift Cards and Store Credit, Saved payment methods |
+| **Multi-Region Support** | Country, currency, and language switching via URL segments, powered by [PallasTrade Markets](https://pallastrade.cn/docs/developer/core-concepts/markets) |
+| **Responsive Design** | Mobile-first Tailwind CSS styling |
+| **Google Tag Manager** and **Google Analytics 4 Ecommerce events** | tracking supported natively |
+| **Store Policies** | Policy pages fetched from PallasTrade API, with consent checkboxes on registration and guest checkout |
+| **SEO-ready** | meta tags, JSON-LD, OpenGraph — all built in |
+| **Error Tracking** | Sentry integration for both server-side and client-side error monitoring with source maps |
+
+## Technology
+
+| Technology | Role |
+|------------|------|
+| **Next.js 16** | App Router, Server Actions, Turbopack |
+| **React 19** | Latest React with improved Server Components |
+| **Tailwind CSS 4** | Utility-first styling |
+| **TypeScript** | Full type safety |
+| **Sentry** | Error tracking and performance monitoring with source maps |
+| [@pallastrade/sdk](https://pallastrade.cn/docs/developer/sdk/quickstart) | Official PallasTrade Commerce SDK |
+
+## Architecture
+
+This starter follows a **server-first pattern**:
+
+1. **Server-First Architecture** - All API calls happen server-side using Next.js Server Actions
+2. **httpOnly Cookies** - Auth tokens and cart tokens are stored securely
+3. **No Client-Side API Calls** - The PallasTrade API key is never exposed to the browser
+4. **Cache Revalidation** - Uses Next.js cache tags for efficient updates
+
+```
+Browser → Server Action → @pallastrade/sdk → PallasTrade API
+         (with httpOnly cookies via src/lib/pallastrade helpers)
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+ (required for Next.js 16)
+- A running PallasTrade Commerce 5.4+
+
+### Installation
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Copy the environment file and configure:
+
+```bash
+cp .env.local.example .env.local
+```
+
+3. Update `.env.local` with your PallasTrade API credentials:
+
+```env
+PALLASTRADE_API_URL=http://localhost:3000
+PALLASTRADE_PUBLISHABLE_KEY=your_publishable_api_key_here
+```
+
+> Note: These are server-side only variables (no `NEXT_PUBLIC_` prefix needed).
+
+#### Optional variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_SITE_URL` | Public site URL for sitemap and robots.txt generation (e.g. `https://mystore.com`) | _(required for sitemap)_ |
+| `NEXT_PUBLIC_DEFAULT_COUNTRY` | Default country ISO code, used for initial redirects and as build-time fallback for sitemap generation | `us` |
+| `NEXT_PUBLIC_DEFAULT_LOCALE` | Default locale code, used for initial redirects and as build-time fallback for sitemap generation | `en` |
+| `GTM_ID` | Google Tag Manager container ID (e.g. `GTM-XXXXXXX`) | _(disabled)_ |
+| `SENTRY_DSN` | Sentry DSN for error tracking (e.g. `https://key@o0.ingest.sentry.io/0`) | _(disabled)_ |
+| `SENTRY_ORG` | Sentry organization slug (for source map uploads) | _(none)_ |
+| `SENTRY_PROJECT` | Sentry project slug (for source map uploads) | _(none)_ |
+| `SENTRY_AUTH_TOKEN` | Sentry auth token (for source map uploads in CI) | _(none)_ |
+| `PALLASTRADE_WEBHOOK_SECRET` | Webhook endpoint secret key (for transactional emails) | _(disabled)_ |
+| `RESEND_API_KEY` | [Resend](https://resend.com) API key for sending emails in production | _(dev: writes to disk)_ |
+| `EMAIL_FROM` | "From" address for transactional emails (e.g. `Store <orders@mystore.com>`) | `orders@example.com` |
+| `SENTRY_SEND_DEFAULT_PII` | Send PII (IP addresses, cookies, user data) to Sentry server-side | `false` |
+| `NEXT_PUBLIC_SENTRY_SEND_DEFAULT_PII` | Send PII to Sentry client-side | `false` |
+
+> **Privacy note:** PII collection is disabled by default. Only set `SENTRY_SEND_DEFAULT_PII` / `NEXT_PUBLIC_SENTRY_SEND_DEFAULT_PII` to `true` if you have appropriate user consent or a privacy policy covering this data.
+
+### Development
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3001](http://localhost:3001) in your browser.
+
+### HTTPS Development (Apple Pay / Google Pay)
+
+Apple Pay and Google Pay require HTTPS **and a publicly-reachable URL** — Stripe verifies the payment method domain from the internet, so `localhost` and locally-trusted certificates (e.g. `mkcert` + `lvh.me`) won't pass domain verification. The simplest way to expose your local storefront with a valid public HTTPS URL is [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/):
+
+1. Install `cloudflared`:
+
+```bash
+brew install cloudflared
+```
+
+2. Start the dev server normally (HTTP on port 3001):
+
+```bash
+npm run dev
+```
+
+3. In a second terminal, expose it through a quick tunnel:
+
+```bash
+cloudflared tunnel --url http://localhost:3001
+```
+
+The output will contain a URL like `https://<random-words>.trycloudflare.com`.
+
+4. Register that URL in your [Stripe Payment method domains](https://dashboard.stripe.com/settings/payment_methods/domains).
+
+5. Open the tunnel URL in your browser and test the Express Checkout buttons in the cart.
+
+> **`allowedDevOrigins`:** `next.config.ts` already allows `*.trycloudflare.com`, so quick tunnels work out of the box. Every time you restart `cloudflared tunnel --url ...` you get a new random subdomain — if you need a stable URL (to avoid re-registering in Stripe on each run), set up a [named tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/#using-named-tunnels) on your own domain.
+
+> **PallasTrade backend must also be publicly reachable.** The storefront's server-side fetches go to `PALLASTRADE_API_URL`, but image URLs and a few other backend-served paths (e.g. the Apple Pay domain-verification file under `/.well-known/apple-developer-merchantid-domain-association`) are fetched by the browser directly and must resolve from the public internet. Point `PALLASTRADE_API_URL` at a hosted PallasTrade (e.g. `*.pallastrade.sh`, `*.pallastrade.cn`, your own staging) or expose your local PallasTrade with another `cloudflared tunnel --url http://localhost:3000`. When tunneling a local Rails app, allow the tunnel host, e.g. `RAILS_DEVELOPMENT_HOSTS=.trycloudflare.com` in the backend's `.env`.
+
+### Production Build
+
+```bash
+npm run build
+npm start
+```
+
+### Testing
+
+Unit and integration tests run through Vitest:
+
+```bash
+npm test            # one-shot
+npm run test:watch  # watch mode
+```
+
+End-to-end tests run through Playwright against a real PallasTrade backend booted from the current `backend` source. The compose file at `e2e-backend/docker-compose.yml` supplies Postgres and Redis; no separate application scaffold is required. Seeding and API-key creation go through the official [`@pallastrade/cli`](https://pallastrade.cn/docs/developer/cli/quickstart) (`pallastrade seed`, `pallastrade sample-data`, `pallastrade api-key create`), installed as a dev dependency.
+
+```bash
+# 1. Export a Stripe test-mode key pair from your own Stripe sandbox.
+#    Both keys must belong to the same account — Stripe no longer
+#    publishes a working sample secret key, and a mismatched pair makes
+#    the checkout payment step fail.
+export STRIPE_PUBLISHABLE_KEY=pk_test_…
+export STRIPE_SECRET_KEY=sk_test_…
+
+# 2. Boot PallasTrade + Postgres + Redis, seed sample data, register a Stripe
+#    payment gateway, mint a publishable key, and write .env.e2e.
+npm run e2e:up
+
+# 3. Run the suite. Playwright boots `next dev` against .env.e2e.
+npm run test:e2e
+
+# Optional: interactive UI mode.
+npm run test:e2e:ui
+
+# Tear everything down.
+npm run e2e:down
+```
+
+The checkout test pays with card `4242 4242 4242 4242` through Stripe's [test mode](https://docs.stripe.com/keys). PaymentIntents land in whichever Stripe test account owns the keys you exported. In CI, set `STRIPE_SECRET_KEY` as a repository secret and `STRIPE_PUBLISHABLE_KEY` as a repository variable (Settings → Secrets and variables → Actions). The E2E job skips itself on fork PRs, where GitHub never exposes repository secrets.
+
+## Project Structure
+
+```
+src/
+├── app/
+│   └── [country]/[locale]/     # Localized routes
+│       ├── account/            # Customer account pages
+│       │   ├── addresses/      # Address management
+│       │   ├── credit-cards/   # Saved payment methods
+│       │   ├── orders/         # Order history
+│       │   │   └── [id]/       # Order details
+│       │   ├── register/       # Registration
+│       │   └── profile/        # Profile settings
+│       ├── cart/               # Shopping cart
+│       ├── policies/           # Store policy pages
+│       ├── products/           # Product listing
+│       │   └── [slug]/         # Product details
+│       ├── t/[...permalink]/   # Taxon/category pages
+│       └── taxonomies/         # Category overview
+├── components/
+│   ├── layout/                 # Header, Footer, CountrySwitcher
+│   ├── products/               # ProductCard, ProductGrid, Filters
+│   └── search/                 # SearchBar
+├── contexts/
+│   ├── AuthContext.tsx         # Client-side auth state
+│   └── CartContext.tsx         # Client-side cart state sync
+└── lib/
+    ├── pallastrade/                  # PallasTrade integration helpers (auth, cookies, middleware, webhooks)
+    └── data/                   # Server Actions
+        ├── addresses.ts        # Address CRUD operations
+        ├── cart.ts             # Cart operations
+        ├── cookies.ts          # Auth token management
+        ├── countries.ts        # Countries/regions list
+        ├── credit-cards.ts     # Payment methods
+        ├── customer.ts         # Auth & profile
+        ├── orders.ts           # Order history
+        ├── policies.ts         # Store policies
+        ├── products.ts         # Product queries
+        ├── store.ts            # Store configuration
+        └── taxonomies.ts       # Categories/taxons
+```
+
+## Server Actions
+
+All data fetching is done through server actions in `src/lib/data/`. These call `@pallastrade/sdk` directly, using helpers in `src/lib/pallastrade/` for auth cookies and locale resolution:
+
+```typescript
+// Products — uses getLocaleOptions() for locale-aware reads
+import { getProducts, getProduct, getProductFilters } from '@/lib/data/products'
+
+const products = await getProducts({ limit: 12 })
+const product = await getProduct('product-slug', { expand: ['variants', 'media'] })
+const filters = await getProductFilters()
+
+// Cart — uses getCartOptions()/requireCartId() for cart operations
+import { getCart, addToCart, updateCartItem, removeCartItem } from '@/lib/data/cart'
+
+const cart = await getCart()
+await addToCart('var_xxx', 1)
+await updateCartItem('li_xxx', 2)
+await removeCartItem('li_xxx')
+
+// Authentication — uses withAuthRefresh() for authenticated endpoints
+import { login, register, logout, getCustomer } from '@/lib/data/customer'
+
+const result = await login('user@example.com', 'password')
+await register({
+  email: 'user@example.com',
+  password: 'password',
+  password_confirmation: 'password',
+  first_name: 'John',
+  last_name: 'Doe',
+})
+const customer = await getCustomer()
+await logout()
+
+// Addresses — uses withAuthRefresh() for customer data
+import { getAddresses, createAddress, updateAddress, deleteAddress } from '@/lib/data/addresses'
+
+const addresses = await getAddresses()
+await createAddress({ first_name: 'John', ... })
+```
+
+## Authentication Flow
+
+1. User submits login form
+2. Server action calls `@pallastrade/sdk` to authenticate
+3. JWT token is stored in an httpOnly cookie via `src/lib/pallastrade` cookie helpers
+4. Subsequent requests use `withAuthRefresh()` which reads the token automatically
+5. Token is never accessible to client-side JavaScript
+
+```typescript
+// src/lib/data/customer.ts
+import { getClient, withAuthRefresh, setAccessToken, setRefreshToken } from '@/lib/pallastrade'
+
+export async function login(email: string, password: string) {
+  const result = await getClient().auth.login({ email, password })
+  await setAccessToken(result.token)
+  await setRefreshToken(result.refresh_token)
+  return { success: true, user: result.user }
+}
+
+export async function getCustomer() {
+  return withAuthRefresh(async (options) => {
+    return getClient().customer.get(options)
+  })
+}
+```
+
+## Multi-Region Support
+
+The storefront supports multiple countries and currencies via URL segments:
+
+```
+/us/en/products          # US Market, English language
+/de/de/products          # European Market, German language
+/uk/en/products          # UK Market, English
+```
+
+Use the `CountrySwitcher` component to change [Markets](https://pallastrade.cn/docs/developer/core-concepts/markets).
+
+## Customization
+
+### Styling
+
+The storefront uses Tailwind CSS. Customize the design by modifying:
+
+- `tailwind.config.ts` - Theme configuration
+- `src/app/globals.css` - Global styles
+
+### Components
+
+All components are in `src/components/` and can be customized or replaced as needed.
+
+### Data Layer
+
+To customize API behavior, modify the server actions in `src/lib/data/`. These call `@pallastrade/sdk` directly, using helpers in `src/lib/pallastrade/` for auth cookies and locale resolution.
+
+## Transactional Emails
+
+Customer-facing emails (order confirmation, shipping notification, password reset) are rendered in the storefront using [react-email](https://react.email) and sent via [Resend](https://resend.com). The PallasTrade backend delivers events to the storefront via webhooks.
+
+### Setup
+
+1. **Create a webhook endpoint** in PallasTrade Admin → Settings → Developers → Webhooks:
+   - Subscribe to: `order.completed`, `order.canceled`, `order.shipped`, `customer.password_reset_requested`
+   - Copy the secret key
+
+2. **Add environment variables** to `.env.local`:
+
+```env
+PALLASTRADE_WEBHOOK_SECRET=your_webhook_endpoint_secret_key
+RESEND_API_KEY=re_your_resend_api_key  # production only
+EMAIL_FROM=Your Store <orders@your-domain.com>  # production only
+```
+
+3. **For local development**, use [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/) to expose your storefront:
+
+```bash
+brew install cloudflared
+cloudflared tunnel --url http://localhost:3001
+```
+
+Use the tunnel URL as the webhook endpoint URL in PallasTrade Admin.
+
+No `RESEND_API_KEY` needed in dev — emails are rendered to HTML files in `.next/emails/` with a `file://` link logged to the console.
+
+### Email Templates
+
+Templates are in `src/lib/emails/` as React components:
+
+| Template | Event | Description |
+|----------|-------|-------------|
+| `order-confirmation.tsx` | `order.completed` | Order placed with items, totals, addresses |
+| `order-canceled.tsx` | `order.canceled` | Cancellation notice |
+| `shipment-shipped.tsx` | `order.shipped` | Shipping notification with tracking link |
+| `password-reset.tsx` | `customer.password_reset_requested` | Password reset link |
+
+### Previewing Templates
+
+Run the storefront in development (`npm run dev`) and visit [http://localhost:3001/dev/emails](http://localhost:3001/dev/emails). Each template is rendered with sample data using `@react-email/render`; the route is gated to non-production environments.
+
+### How It Works
+
+```
+PallasTrade Backend → Webhook POST → /api/webhooks/pallastrade → render email → send via Resend
+(signed HMAC)                  (signature verified)  (react-email)  (or write to disk in dev)
+```
+
+The webhook route handler (`src/app/api/webhooks/pallastrade/route.ts`) uses `createWebhookHandler` from `src/lib/pallastrade/webhooks` — signature verification and event routing are handled automatically.
+
+## Deployment
+
+### Vercel
+
+The easiest way to deploy is using [Vercel](https://vercel.com/new):
+
+1. Push your code to GitHub
+2. Import the repository in Vercel
+3. Add environment variables:
+   - `PALLASTRADE_API_URL` and `PALLASTRADE_PUBLISHABLE_KEY` (required)
+   - `PALLASTRADE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM` (for transactional emails)
+   - `GTM_ID` (optional — Google Tag Manager)
+   - `SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` (optional — for error tracking with readable stack traces)
+4. Deploy
+
+### Docker
+
+A multi-stage `Dockerfile` is included at the repo root. It uses Next.js standalone output to produce a small (~240 MB) image based on `node:22-alpine`, runs as a non-root user, and exposes port `3001`.
+
+> **Note:** `PALLASTRADE_API_URL` and `PALLASTRADE_PUBLISHABLE_KEY` are required at **build time** because the storefront prerenders pages against the PallasTrade API. Point them at a PallasTrade instance reachable from wherever you run `docker build` (hosted PallasTrade, tunnel, or `host.docker.internal` for a local backend on Docker Desktop).
+
+**Build:**
+
+```bash
+docker build \
+  --build-arg PALLASTRADE_API_URL=https://your-pallastrade.example.com \
+  --build-arg PALLASTRADE_PUBLISHABLE_KEY=your_publishable_key \
+  -t pallastrade-storefront .
+```
+
+**Run:**
+
+```bash
+docker run -p 3001:3001 --env-file .env.local pallastrade-storefront
+```
+
+**Optional — Sentry source map upload at build time:**
+
+`SENTRY_AUTH_TOKEN` is mounted via a BuildKit secret so it never lands in image layers or the build cache. Other Sentry vars are passed as regular build args.
+
+```bash
+SENTRY_AUTH_TOKEN=... docker build \
+  --build-arg PALLASTRADE_API_URL=... \
+  --build-arg PALLASTRADE_PUBLISHABLE_KEY=... \
+  --build-arg SENTRY_DSN=... \
+  --build-arg SENTRY_ORG=... \
+  --build-arg SENTRY_PROJECT=... \
+  --secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \
+  -t pallastrade-storefront .
+```
+
+**Building against a local PallasTrade backend** (Docker Desktop on macOS/Windows):
+
+```bash
+docker build \
+  --add-host=host.docker.internal:host-gateway \
+  --build-arg PALLASTRADE_API_URL=http://host.docker.internal:3000 \
+  --build-arg PALLASTRADE_PUBLISHABLE_KEY=your_publishable_key \
+  -t pallastrade-storefront .
+
+docker run -p 3001:3001 \
+  --add-host=host.docker.internal:host-gateway \
+  --env-file .env.local \
+  pallastrade-storefront
+```
+
+The same env vars listed under [Vercel](#vercel) apply to runtime configuration.

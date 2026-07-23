@@ -1,0 +1,42 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Kill SSH/Git",
+			"type": "shell",
+			"command": "taskkill /F /IM ssh.exe 2>nul & taskkill /F /IM git.exe 2>nul & echo done",
+			"group": "none"
+		},
+		{
+			"label": "clean-ssh",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"taskkill /F /IM ssh.exe 2>nul & taskkill /F /IM git.exe 2>nul & echo cleaned"
+			],
+			"group": "none"
+		},
+		{
+			"label": "build-dev-image",
+			"type": "shell",
+			"command": "powershell -ExecutionPolicy Bypass -Command \"Set-Location 'd:\\pallastrade\\pallastrade'; docker compose -f docker-compose.dev.yml build 2>&1\"",
+			"args": [],
+			"problemMatcher": []
+		},
+		{
+			"label": "dev-build",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.dev.yml build",
+			"args": [],
+			"problemMatcher": []
+		},
+		{
+			"label": "build-dev",
+			"type": "shell",
+			"command": "docker compose -f d:\\pallastrade\\pallastrade\\docker-compose.dev.yml build 2>&1",
+			"args": [],
+			"problemMatcher": []
+		}
+	]
+}

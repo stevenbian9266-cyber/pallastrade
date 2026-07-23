@@ -1,0 +1,22 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  database: pallastrade_development
+  username: <%= ENV.fetch("DATABASE_USERNAME") { 'postgres' } %>
+  host: <%= ENV.fetch("DATABASE_HOST") { "localhost" } %>
+  port: <%= ENV.fetch("DATABASE_PORT") { 5432 }.to_i %>
+
+test:
+  <<: *default
+  database: pallastrade_test
+  username: <%= ENV.fetch("DATABASE_USERNAME") { 'postgres' } %>
+  host: <%= ENV.fetch("DATABASE_HOST") { "localhost" } %>
+  port: <%= ENV.fetch("DATABASE_PORT") { 5432 }.to_i %>
+
+production:
+  <<: *default
+  url: <%= ENV['DATABASE_URL'] %>

@@ -1,0 +1,325 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://checkout-test.adyen.com/v71/sessions/CS4FBB6F827EC53AC7?sessionResult=resultData
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - adyen-ruby-api-library/10.3.0
+      X-Api-Key:
+      - secret
+      Adyen-Library-Name:
+      - adyen-ruby-api-library
+      Adyen-Library-Version:
+      - 10.3.0
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Mon, 07 Jul 2025 14:09:31 GMT
+      Content-Type:
+      - application/json;charset=UTF-8
+      Connection:
+      - keep-alive
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Content-Type-Options:
+      - nosniff
+      Cache-Control:
+      - no-cache, no-store, private, must-revalidate, max-age=0
+      Pragma:
+      - no-cache
+      Expires:
+      - '0'
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+    body:
+      encoding: ASCII-8BIT
+      string: '{"additionalData":{"isCardCommercial":"unknown","recurringProcessingModel":"CardOnFile","paymentMethod":"mc","tokenization.shopperReference":"foobar","tokenization.storedPaymentMethodId":"LH9XQ2ZBCFVJPPT5"},"id":"CS4FBB6F827EC53AC7","payments":[{"amount":{"currency":"EUR","value":1000},"paymentMethod":{"brand":"mc","type":"scheme"},"pspReference":"ADYEN_PSP_REFERENCE","resultCode":"Authorised"}],"reference":"d84f20d9-4a06-4173-96ca-02486188e192","status":"canceled"}'
+  recorded_at: Mon, 07 Jul 2025 14:09:31 GMT
+- request:
+    method: get
+    uri: https://checkout-test.adyen.com/v71/sessions/CS4FBB6F827EC53AC7?sessionResult=resultData
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - adyen-ruby-api-library/10.3.0
+      X-Api-Key:
+      - AQEvhmfxL4vJbRZAw0m/n3Q5qf3Ve5tfCJZpV2hbw2qom5QOy2ASdLY6k8wk8YhleJEQwV1bDb7kfNy1WIxIIkxgBw==-x+sFVLC6/L2OzohrCEyDDGu53zAixXw0E5nBEH9FKAk=-i1i}4knV7hxY.9>_3SK
+      Adyen-Library-Name:
+      - adyen-ruby-api-library
+      Adyen-Library-Version:
+      - 10.3.0
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Tue, 08 Jul 2025 07:35:37 GMT
+      Content-Type:
+      - application/json;charset=UTF-8
+      Connection:
+      - keep-alive
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Content-Type-Options:
+      - nosniff
+      Cache-Control:
+      - no-cache, no-store, private, must-revalidate, max-age=0
+      Pragma:
+      - no-cache
+      Expires:
+      - '0'
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 95bde7e87d5e21e1-WAW
+    body:
+      encoding: ASCII-8BIT
+      string: '{"additionalData":{"isCardCommercial":"unknown","recurringProcessingModel":"CardOnFile","paymentMethod":"mc","tokenization.shopperReference":"foobar","tokenization.storedPaymentMethodId":"LH9XQ2ZBCFVJPPT5"},"id":"CS4FBB6F827EC53AC7","payments":[{"amount":{"currency":"EUR","value":1000},"paymentMethod":{"brand":"mc","type":"scheme"},"pspReference":"ADYEN_PSP_REFERENCE","resultCode":"Authorised"}],"reference":"d84f20d9-4a06-4173-96ca-02486188e192","status":"completed"}'
+  recorded_at: Tue, 08 Jul 2025 07:35:37 GMT
+- request:
+    method: get
+    uri: https://checkout-test.adyen.com/v71/sessions/CS4FBB6F827EC53AC7?sessionResult=resultData
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - adyen-ruby-api-library/10.3.0
+      X-Api-Key:
+      - AQEvhmfxL4vJbRZAw0m/n3Q5qf3Ve5tfCJZpV2hbw2qom5QOy2ASdLY6k8wk8YhleJEQwV1bDb7kfNy1WIxIIkxgBw==-x+sFVLC6/L2OzohrCEyDDGu53zAixXw0E5nBEH9FKAk=-i1i}4knV7hxY.9>_3SK
+      Adyen-Library-Name:
+      - adyen-ruby-api-library
+      Adyen-Library-Version:
+      - 10.3.0
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Tue, 08 Jul 2025 07:35:40 GMT
+      Content-Type:
+      - application/json;charset=UTF-8
+      Connection:
+      - keep-alive
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Content-Type-Options:
+      - nosniff
+      Cache-Control:
+      - no-cache, no-store, private, must-revalidate, max-age=0
+      Pragma:
+      - no-cache
+      Expires:
+      - '0'
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 95bde7ff09c4eec2-WAW
+    body:
+      encoding: ASCII-8BIT
+      string: '{"additionalData":{"isCardCommercial":"unknown","recurringProcessingModel":"CardOnFile","paymentMethod":"mc","tokenization.shopperReference":"foobar","tokenization.storedPaymentMethodId":"LH9XQ2ZBCFVJPPT5"},"id":"CS4FBB6F827EC53AC7","payments":[{"amount":{"currency":"EUR","value":1000},"paymentMethod":{"brand":"mc","type":"scheme"},"pspReference":"ADYEN_PSP_REFERENCE","resultCode":"Authorised"}],"reference":"d84f20d9-4a06-4173-96ca-02486188e192","status":"completed"}'
+  recorded_at: Tue, 08 Jul 2025 07:35:40 GMT
+- request:
+    method: get
+    uri: https://checkout-test.adyen.com/v71/sessions/CS4FBB6F827EC53AC7?sessionResult=resultData
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - adyen-ruby-api-library/10.3.0
+      X-Api-Key:
+      - AQEvhmfxL4vJbRZAw0m/n3Q5qf3Ve5tfCJZpV2hbw2qom5QOy2ASdLY6k8wk8YhleJEQwV1bDb7kfNy1WIxIIkxgBw==-x+sFVLC6/L2OzohrCEyDDGu53zAixXw0E5nBEH9FKAk=-i1i}4knV7hxY.9>_3SK
+      Adyen-Library-Name:
+      - adyen-ruby-api-library
+      Adyen-Library-Version:
+      - 10.3.0
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Tue, 08 Jul 2025 07:35:51 GMT
+      Content-Type:
+      - application/json;charset=UTF-8
+      Connection:
+      - keep-alive
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Content-Type-Options:
+      - nosniff
+      Cache-Control:
+      - no-cache, no-store, private, must-revalidate, max-age=0
+      Pragma:
+      - no-cache
+      Expires:
+      - '0'
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 95bde841a82f34cd-WAW
+    body:
+      encoding: ASCII-8BIT
+      string: '{"additionalData":{"isCardCommercial":"unknown","recurringProcessingModel":"CardOnFile","paymentMethod":"mc","tokenization.shopperReference":"foobar","tokenization.storedPaymentMethodId":"LH9XQ2ZBCFVJPPT5"},"id":"CS4FBB6F827EC53AC7","payments":[{"amount":{"currency":"EUR","value":1000},"paymentMethod":{"brand":"mc","type":"scheme"},"pspReference":"ADYEN_PSP_REFERENCE","resultCode":"Authorised"}],"reference":"d84f20d9-4a06-4173-96ca-02486188e192","status":"completed"}'
+  recorded_at: Tue, 08 Jul 2025 07:35:51 GMT
+- request:
+    method: get
+    uri: https://checkout-test.adyen.com/v71/sessions/CS4FBB6F827EC53AC7?sessionResult=resultData
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - adyen-ruby-api-library/10.3.0
+      X-Api-Key:
+      - AQEvhmfxL4vJbRZAw0m/n3Q5qf3Ve5tfCJZpV2hbw2qom5QOy2ASdLY6k8wk8YhleJEQwV1bDb7kfNy1WIxIIkxgBw==-x+sFVLC6/L2OzohrCEyDDGu53zAixXw0E5nBEH9FKAk=-i1i}4knV7hxY.9>_3SK
+      Adyen-Library-Name:
+      - adyen-ruby-api-library
+      Adyen-Library-Version:
+      - 10.3.0
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Tue, 08 Jul 2025 07:35:53 GMT
+      Content-Type:
+      - application/json;charset=UTF-8
+      Connection:
+      - keep-alive
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Content-Type-Options:
+      - nosniff
+      Cache-Control:
+      - no-cache, no-store, private, must-revalidate, max-age=0
+      Pragma:
+      - no-cache
+      Expires:
+      - '0'
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 95bde84e3b05bf2d-WAW
+    body:
+      encoding: ASCII-8BIT
+      string: '{"additionalData":{"isCardCommercial":"unknown","recurringProcessingModel":"CardOnFile","paymentMethod":"mc","tokenization.shopperReference":"foobar","tokenization.storedPaymentMethodId":"LH9XQ2ZBCFVJPPT5"},"id":"CS4FBB6F827EC53AC7","payments":[{"amount":{"currency":"EUR","value":1000},"paymentMethod":{"brand":"mc","type":"scheme"},"pspReference":"ADYEN_PSP_REFERENCE","resultCode":"Authorised"}],"reference":"d84f20d9-4a06-4173-96ca-02486188e192","status":"completed"}'
+  recorded_at: Tue, 08 Jul 2025 07:35:53 GMT
+- request:
+    method: get
+    uri: https://checkout-test.adyen.com/v71/sessions/CS4FBB6F827EC53AC7?sessionResult=resultData
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - adyen-ruby-api-library/10.3.0
+      X-Api-Key:
+      - AQEvhmfxL4vJbRZAw0m/n3Q5qf3Ve5tfCJZpV2hbw2qom5QOy2ASdLY6k8wk8YhleJEQwV1bDb7kfNy1WIxIIkxgBw==-x+sFVLC6/L2OzohrCEyDDGu53zAixXw0E5nBEH9FKAk=-i1i}4knV7hxY.9>_3SK
+      Adyen-Library-Name:
+      - adyen-ruby-api-library
+      Adyen-Library-Version:
+      - 10.3.0
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Tue, 08 Jul 2025 07:36:05 GMT
+      Content-Type:
+      - application/json;charset=UTF-8
+      Connection:
+      - keep-alive
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Content-Type-Options:
+      - nosniff
+      Cache-Control:
+      - no-cache, no-store, private, must-revalidate, max-age=0
+      Pragma:
+      - no-cache
+      Expires:
+      - '0'
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 95bde89a7d5d6cdc-WAW
+    body:
+      encoding: ASCII-8BIT
+      string: '{"additionalData":{"isCardCommercial":"unknown","recurringProcessingModel":"CardOnFile","paymentMethod":"mc","tokenization.shopperReference":"foobar","tokenization.storedPaymentMethodId":"LH9XQ2ZBCFVJPPT5"},"id":"CS4FBB6F827EC53AC7","payments":[{"amount":{"currency":"EUR","value":1000},"paymentMethod":{"brand":"mc","type":"scheme"},"pspReference":"ADYEN_PSP_REFERENCE","resultCode":"Authorised"}],"reference":"d84f20d9-4a06-4173-96ca-02486188e192","status":"completed"}'
+  recorded_at: Tue, 08 Jul 2025 07:36:05 GMT
+recorded_with: VCR 6.3.1

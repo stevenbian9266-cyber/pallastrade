@@ -1,0 +1,3 @@
+web: bin/rails server
+admin_css: bin/rails pallastrade:admin:tailwindcss:watch
+worker: RAILS_MAX_THREADS=${SIDEKIQ_DB_POOL:-27} bundle exec sidekiq

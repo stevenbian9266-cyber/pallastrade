@@ -1,0 +1,26 @@
+---
+title: Upgrading to PallasTrade 4.10
+description: This guide covers upgrading a PallasTrade 4.9 application to PallasTrade 4.10.
+---
+
+<Info>
+  Before proceeding to upgrade, please ensure you're at [PallasTrade 4.9](/developer/upgrades/4.8-to-4.9)
+</Info>
+
+## Upgrade steps
+
+### 1. Update gems
+
+```bash
+bundle update
+```
+
+### 2. Install and run missing migrations
+
+```bash
+bin/rake pallastrade:install:migrations && bin/rails db:migrate
+```
+
+## Read the release notes
+
+For information about changes contained within this release, please read the [PallasTrade 4.10.0 Release Notes.](https://github.com/orgs/pallastrade/discussions/12154)

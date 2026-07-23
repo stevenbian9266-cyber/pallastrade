@@ -1,0 +1,10 @@
+<% content_for :page_title do %>
+  <%= page_header_back_button PallasTrade.admin_promotions_path, @promotion %>
+  <%= @promotion.name %>
+  <%= render 'pallastrade/admin/promotions/status', promotion: @promotion %>
+<% end %>
+
+<% content_for :page_tabs do %>
+  <%= nav_item(PallasTrade.t(:settings), PallasTrade.admin_promotion_path(@promotion), active: controller_name == 'promotions') %>
+  <%= nav_item(PallasTrade.t(:coupon_codes), PallasTrade.admin_promotion_coupon_codes_path(@promotion)) %>
+<% end if @promotion.multi_codes? %>

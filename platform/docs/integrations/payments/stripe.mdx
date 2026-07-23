@@ -1,0 +1,117 @@
+---
+title: "Connect Stripe payments to PallasTrade Commerce"
+sidebarTitle: Stripe
+description: "Set up PallasTrade's native Stripe integration to accept cards and alternative payment methods, automate payouts, and power marketplace split payments on Enterprise."
+---
+
+Stripe is a widely used payment processor that enables secure and seamless transactions for online businesses. It supports multiple payment methods, automates payouts, and ensures a smooth checkout experience for customers.
+
+<Tip>
+  In [PallasTrade Enterprise Edition](https://pallastrade.cn/pricing/), Stripe can also be used to power marketplace payments, enabling automated vendor payouts, split payments, and secure transaction handling.
+</Tip>
+
+## Installation
+
+Before you can enable Stripe, it must be installed. To do so, you need to run the following command:
+
+<CodeGroup>
+
+```bash PallasTrade CLI (Docker)
+pallastrade bundle add pallastrade_stripe && pallastrade generate pallastrade_stripe:install
+```
+
+```bash Without PallasTrade CLI
+bundle add pallastrade_stripe && bin/rails g pallastrade_stripe:install
+```
+
+</CodeGroup>
+
+After that, you need to make sure to restart the server.
+
+## Connect Stripe
+
+Sign in to your PallasTrade admin dashboard and navigate to **Settings → Payments**.
+
+![](/images/integrations/stripe/1.get_started.png)
+
+Find Stripe under Available Payment Methods and click **Add**.
+
+This will redirect you to the Stripe setup form.
+
+![](/images/integrations/stripe/2.setup_form.png)
+
+Simply copy and paste the **Publishable Key** and **Secret Key** from your Stripe dashboard into their respective fields and click **Create** to enable Stripe as a payment method on your store.
+
+<Note>
+  The **Publishable Key** and **Secret Key** can be found in the Get Started section of the Home screen in your Stripe dashboard. Alternatively, they can be found out in **Developers → API Keys**.
+</Note>
+
+![](/images/integrations/stripe/3.stripe_enabled.png)
+
+### Additional Settings
+
+![](/images/integrations/stripe/4.additional_settings.png)
+
+You can optionally configure the following settings for your Stripe payment method:
+
+- **Name**: Customize the display name shown for this payment method on the storefront.
+- **Display**: Choose where Stripe should be available:
+  - Storefront only
+  - Admin panel only
+  - Both (recommended)
+- **Auto Capture**: Decide whether payments should be automatically captured at the time of authorization (recommended), or manually captured later.
+- **Active Status**: Enable or disable the payment method. Inactive methods are hidden from checkout but not removed.
+
+### Enable Apple Pay
+
+To enable Apple Pay (including Apple Pay quick checkout) as a payment method, follow these steps:
+
+1. Find ‘payment method domains’ in your Stripe dashboard
+2. Click ‘Add new domain’ and enter your store’s domain
+3. Click ‘Download file’ and attach it using the ‘Choose file’ button in PallasTrade
+4. Click ‘Update’ at the bottom of the page
+5. Click ‘Verify’ to verify the file was uploaded correctly
+
+### Test Mode
+
+If you'd like to test your checkout flow without processing real payments, Stripe's test mode is a safe and effective way to simulate transactions. To enable it, simply switch your Stripe dashboard to **Test mode** and paste the corresponding **test API keys** into the payment method settings in PallasTrade.
+
+## Features
+
+PallasTrade’s native Stripe integration supports a wide range of features and payment methods to help you offer a fast, secure, and flexible checkout experience:
+
+- Support for quick checkout using Apple Pay, Google Pay, Stripe Link
+- Support for 3D Secure and other security standards
+- Support for off-session payments
+- Support for Storefront API integration (see the API docs here).
+- Accept payments in over 130 currencies
+- Accept Credit Cards, Apple Pay, Google Pay, and more
+- Accept SEPA Direct Debit payments
+- Accept iDEAL payments
+- Accept SOFORT payments
+- Accept Bancontact payments
+- Accept Alipay payments
+- Accept WeChat Pay payments
+- Accept Afterpay, Klarna, Affirm, and more
+
+### Storefront Display
+
+PallasTrade’s Stripe integration enhances the customer experience with dynamic, context-aware payment options across the storefront:
+
+- Installment (BNPL) payments indicator on PDP (Product Detail Page)
+- Quick payment options on the cart (Apple Pay, Google Pay, Link)
+- Quick payments bypassing checkout 1st step (Apple Pay, Google Pay, Link)
+- Various payment options on the payment step (cards, BNPL, Apple Pay, Google Pay, Link)
+
+## Stripe Connect for Marketplaces
+
+PallasTrade Commerce [Enterprise Edition](https://pallastrade.cn/pallastrade-commerce-version-comparison-community-edition-vs-enterprise-edition/) comes with a fully automated Stripe Connect integration for [multi-vendor marketplace use cases](https://pallastrade.cn/marketplace-ecommerce/):
+
+- Automated split payments between marketplace and vendors
+- Support for multiple payment methods including cards and digital wallets
+- Configurable marketplace fees and commission structures
+- Automated payouts to vendors
+- Comprehensive transaction reporting
+- Built-in fraud prevention tools
+
+Use the [PallasTrade issue tracker](https://github.com/stevenbian9266-cyber/pallastrade/issues) for implementation questions and feature requests.

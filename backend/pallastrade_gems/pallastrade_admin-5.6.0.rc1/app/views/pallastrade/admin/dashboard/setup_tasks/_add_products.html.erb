@@ -1,0 +1,22 @@
+<% if done %>
+  <p>
+    <%= PallasTrade.t('admin.store_setup_tasks.add_products_task.done_title') %>
+  </p>
+  <p>
+    <%= PallasTrade.t('admin.store_setup_tasks.add_products_task.done_subtitle') %>
+  </p>
+<% else %>
+  <p>
+    <%= PallasTrade.t('admin.store_setup_tasks.add_products_task.copy') %>
+  </p>
+  <p>
+    <%= PallasTrade.t('admin.store_setup_tasks.add_products_task.import_hint') %>
+  </p>
+<% end %>
+
+<div class="flex gap-3">
+  <%= link_to_with_icon 'plus', PallasTrade.t(:add_product), PallasTrade.new_admin_product_path, class: 'btn btn-primary', data: { turbo_frame: '_top' } if can?(:create, PallasTrade::Product) %>
+  <%= link_to_with_icon 'table-import', PallasTrade.t(:import), PallasTrade.new_admin_import_path(type: 'PallasTrade::Imports::Products'), class: 'btn btn-light', data: { action: 'drawer#open',turbo_frame: :drawer } if can?(:create, PallasTrade::Import) %>
+  
+  <%= invite_vendor_button(class: 'btn btn-light') if defined?(invite_vendor_button) %>
+</div>

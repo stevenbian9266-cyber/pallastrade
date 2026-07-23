@@ -1,0 +1,11 @@
+module PallasTradeStripe
+  module PaymentSources
+    class Przelewy24 < ::PallasTrade::PaymentSource
+      store_accessor :public_metadata, :bank
+
+      def actions
+        %w[credit]
+      end
+    end
+  end
+end

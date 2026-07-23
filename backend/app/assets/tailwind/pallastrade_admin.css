@@ -1,0 +1,49 @@
+/*
+ * PallasTrade Admin Tailwind CSS
+ *
+ * This file is the entry point for PallasTrade Admin's Tailwind CSS.
+ * It imports the base styles from the PallasTrade Admin gem and allows
+ * you to add custom admin styles.
+ *
+ * The $PALLASTRADE_ADMIN_PATH variable is automatically resolved at build time.
+ */
+
+/* Import PallasTrade Admin base styles from the gem */
+@import "$PALLASTRADE_ADMIN_PATH/app/assets/tailwind/pallastrade/admin/index.css";
+
+/* Auto-generated sources for all PallasTrade engines (page_builder, etc.) */
+/* $PALLASTRADE_ENGINE_SOURCES */
+
+/* Scan host app's custom admin code for Tailwind classes */
+@source "../../views/pallastrade/admin/**/*.erb";
+@source "../../helpers/pallastrade/admin/**/*.rb";
+@source "../../javascript/pallastrade/admin/**/*.js";
+
+/*
+ * CUSTOMIZATION OPTIONS
+ * =====================
+ *
+ * 1. Override Tailwind theme values (colors, spacing, etc.)
+ *    Add after the @import above:
+ *
+ *    @theme {
+ *      --color-primary-500: #your-color;
+ *      --color-gray-100: #your-gray;
+ *    }
+ *
+ * 2. Add custom components using Tailwind's @layer directive:
+ *
+ *    @layer components {
+ *      .my-custom-button {
+ *        @apply bg-primary-500 text-white px-4 py-2 rounded;
+ *      }
+ *    }
+ *
+ * 3. Override admin CSS variables
+ *    See admin/app/assets/tailwind/pallastrade/admin/base/_theme.css for available variables
+ *
+ *    :root {
+ *      --sidebar-width: 280px;
+ *      --header-height: 70px;
+ *    }
+ */

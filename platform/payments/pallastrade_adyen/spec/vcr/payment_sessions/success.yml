@@ -1,0 +1,57 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: https://checkout-test.adyen.com/v71/sessions
+    body:
+      encoding: UTF-8
+      string: '{"metadata":{"pallastrade_payment_method_id":1,"pallastrade_order_id":"R172706893"},"amount":{"value":10000,"currency":"USD"},"returnUrl":"http://www.example.com/adyen/payment_sessions/redirect","reference":"R172706893_1_1","countryCode":"US","lineItems":[{"amountExcludingTax":1000,"amountIncludingTax":1000,"description":"Product
+        29668","id":1,"sku":"SKU-2","quantity":1}],"merchantAccount":"PallasTradeCommerceECOM","merchantOrderReference":"R172706893","expiresAt":"2025-08-25T14:42:52Z","shopperName":{"firstName":"John","lastName":"Doe"},"shopperEmail":"john.doe@example.com","shopperReference":"customer_1","recurringProcessingModel":"UnscheduledCardOnFile","shopperInteraction":"Ecommerce","storePaymentMethodMode":"enabled","channel":"Web","applicationInfo":{"externalPlatform":{"name":"PallasTrade
+        Commerce","version":"42.0.0","integrator":"PallasTrade Adyen"}}}'
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - adyen-ruby-api-library/10.4.0
+      X-Api-Key:
+      - "<ADYEN_API_KEY>"
+      Adyen-Library-Name:
+      - adyen-ruby-api-library
+      Adyen-Library-Version:
+      - 10.4.0
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 201
+      message: Created
+    headers:
+      Date:
+      - Mon, 25 Aug 2025 13:42:52 GMT
+      Content-Type:
+      - application/json;charset=UTF-8
+      Connection:
+      - keep-alive
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Content-Type-Options:
+      - nosniff
+      Cache-Control:
+      - no-cache, no-store, private, must-revalidate, max-age=0
+      Pragma:
+      - no-cache
+      Expires:
+      - '0'
+      Pspreference:
+      - ADYEN_PSP_REFERENCE
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      Server:
+      - cloudflare
+    body:
+      encoding: UTF-8
+      string: '{"amount":{"currency":"USD","value":10000},"applicationInfo":{"externalPlatform":{"name":"PallasTrade
+        Commerce","version":"42.0.0","integrator":"PallasTrade Adyen"}},"channel":"Web","countryCode":"US","expiresAt":"2025-08-25T16:42:52+02:00","id":"CS2BD6B9B093D32284D8EB223","lineItems":[{"amountExcludingTax":1000,"amountIncludingTax":1000,"description":"Product
+        29668","id":"1","quantity":1,"sku":"SKU-2","taxAmount":0,"taxPercentage":0}],"merchantAccount":"PallasTradeCommerceECOM","merchantOrderReference":"R172706893","metadata":{"pallastrade_payment_method_id":"1","pallastrade_order_id":"R172706893"},"recurringProcessingModel":"UnscheduledCardOnFile","reference":"R172706893_1_1","returnUrl":"http:\/\/www.example.com\/adyen\/payment_sessions\/redirect","shopperEmail":"john.doe@example.com","shopperInteraction":"Ecommerce","shopperLocale":"en-US","shopperName":{"firstName":"John","lastName":"Doe"},"shopperReference":"customer_1","storePaymentMethodMode":"enabled","mode":"embedded","sessionData":"Ab02b4c0!BQABAgADIrCHW7NdN5FQw+6ycqHz\/cdBnrwmlVRtAtHtHmqZZc7eqW7\/0mTvZ5wPVrak8wgADfYQe0XdtdlaOVAWpCDHqczZ5qtZDkRahwuxypNmgjo+yBYJnfLYddHzKkoi\/VOhUusRK5iqYjF20ECstK\/rjqIEh0hZV7Jr88f0SiEePCkyiMsMvo09BmElGFJqV3KUBWoQJGOUAWtSs1mzhSw4eSHgc36QW\/2YKAMkxdG6ChHJkmIxO3AkVf6tGWF5VZ+IBZ6179EgTLDqb85HMRwjrq9Lfa34lUOCY7fi763FxClIKticJIoD+63tvGTxVGNnmN0yCeJbnUMhHaU6n2JZ+anYLfy69agjEne6Qjm7QBo5dOHBe19AbHsK\/nbiUKUHYxbRszP45bhpTZOnqYNND+QGpKYWSg85BXRUIXIad5\/+aXXSGv\/jDwuFTBDKaYtmZtQ1I+s3oPnKC\/kUL0JGLSh37+JoMETEIe4F1ae1\/Hk42iCCUKkQ9RdOSpMMLnQlUHOmPFKGD\/bl7QFtX083Rs+EfsoZPS51n\/Ye0kkSqR7V3aXvjbwDKQq4hqfIfc2dXoTAuUWLtDx0Oog\/CEm2fDO0JiKwyZ4upMYUKzrQBB\/ehXszYgXjrIzdCLnT0NqAIJGytDnVN6SoQcZvDIegMZbWih2\/JX69Yu9kO5+eAQzhe8qOX1CkSlDbfcsASnsia2V5IjoiQUYwQUFBMTAzQ0E1MzdFQUVEODdDMjRERDUzOTA5QjgwQTc4QTkyM0UzODIzRDY4REFDQzk0QjlGRjgzMDVEQyJ9UZXbfnR1aQomSsjhCQLoJjZvSLZRs\/s6bfl6z55S\/F7x+CA\/3ZaeDHun4VsSZ3gmRlVR4lb\/cNra7mWYddvtCRK9ZgS8zxWBIUzMCiyDpDlhHenFtj42CCtUQUgkiL+FZ6PODMxgcRhqduMDlk7yGVL77KQZIedvRO7u+DQljb0AXXhS9IikNHL7yiypeOq1Wt6zb39IPRNyXJiL9C7XCEoTOtfA01r1bpxJ90UakWVvZMppkodZ\/t79tuHoM3eHWDOODOpvYoo\/HiT8rR0xPPF3hfeUiJPTdUZPY32Ln1QuBEDe+VM+2rLtzSz5DgTVrQcSN\/Luef2taJ2HLzHjPx2e6nF9UczpymEg0Xhbf+HrbEDQ\/EyKSq86KIp4w84WabhbiggfY9PGpXn8HpQPt5Aly+ry+BGitdiatrBQfM7MJprPMLIfwN5CvPqwySZSAklpWShbsLZXZGtArHc4vwkNdUVctgdgqk32Kw2rvzBUO2UhZFLSOquYeaWwW5Dee1FIfAaYev1H+eKhtUWMCrLW7TNNOUi46WE4MCE4jeM3Ej8V35VUvLgiFn0c\/LTQYH\/gWZzjFIzU99E84gSUqKhJ59yGEkalYoxF7UdoJXdWWB6iSgk1RRHytxoswjBE6pDtdX8YB4AhZbyETkWR3iMk+0LWUbp5f6152B\/7C9mGw\/9co\/ukjj1PreqGa\/Scw19Uf69mdcHuSebg8qSl9ZtmOHaHJeuTU27BWL7tKUF46iEKKXcykjQGIEf7d3dHAU3N72gCkjaBJnflvLpxH9wvjb8twZlyPx1KsoFM\/FIG\/vkRo2zPoBTkzZZVNP19lyMsvXQBqK1V1q3zxLKNkQ5B48hsfIirE5PB6OSUCsX5hqT2cWW5Dv8MdOxFp7+mj9ATLYRjr6Pm3BBa784re2wznFu5AStFpDrLwDt1JGTdPDHbiU4f2YsTikluM5FLVAYl09S6L9pyGPwzCNizbnjSgod7DEtPUrjc0C3Z6Sp+UYoRDvcjp2bSTFJ3cepaXzry3159CkHNNtXAGdEuBRyvQdz\/xZxTIo7TAiL+UN577DyBAl2mYcDg421cImTmXh8ylu6867AF3t5vPE9vA30Cg50\/mkfeQmXSnP\/PDDf\/j05SAJgJN8s5Dw400ORfBbU7aNR\/vei7BcByxsL66DPrZXWc0jpMg7v+xcxZG1ZYLQMzncJqZtn2Is9uPuMhunRDeL516zSKsSLyKkqQfCFSZ7XE5DhvTTLlpgVaGPfY2EmA2A7EkG\/JF065Yd1HNmUmGk3HpIsiSV5Yaoz58NBo2gK01BU="}'
+  recorded_at: Mon, 25 Aug 2025 13:42:52 GMT
+recorded_with: VCR 6.3.1

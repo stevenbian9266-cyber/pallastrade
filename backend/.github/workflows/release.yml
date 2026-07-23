@@ -1,0 +1,179 @@
+name: Release Docker Image
+
+on:
+  push:
+    tags: ['pallastrade-[0-9]*']
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release-gate:
+    name: Release gate
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgres://postgres@localhost:5432/pallastrade_test
+      REDIS_URL: redis://localhost:6379/0
+      RAILS_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Compose environment contract
+        shell: pwsh
+        run: ./scripts/ci/compose-config-check.ps1
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Require Stripe test credentials
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+        run: |
+          case "$STRIPE_SECRET_KEY" in sk_test_*) ;; *) echo "STRIPE_SECRET_KEY must be a Stripe test key" >&2; exit 1;; esac
+          case "$STRIPE_PUBLISHABLE_KEY" in pk_test_*) ;; *) echo "STRIPE_PUBLISHABLE_KEY must be a Stripe test key" >&2; exit 1;; esac
+
+      - name: Prepare database
+        run: bin/rails db:prepare
+
+      - name: Precompile assets
+        run: bin/rake assets:precompile
+
+      - name: Run application tests
+        run: bundle exec rspec
+
+      - name: Run Stripe Sandbox security gate
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+        run: |
+          result="$RUNNER_TEMP/stripe-rspec.json"
+          bundle exec rspec pallastrade_gems/pallastrade_stripe-1.7.1/spec/models/gateway_spec.rb --format progress --format json --out "$result"
+          ruby -rjson -e 'summary = JSON.parse(File.read(ARGV.fetch(0))).fetch("summary"); pending = summary.fetch("pending_count"); abort("Stripe gate has #{pending} pending examples") unless pending.zero?' "$result"
+
+      - name: Brakeman security scan
+        run: bundle exec brakeman --no-pager -q
+
+      - name: Bundle audit
+        run: bundle exec bundle-audit check --update
+
+  release-docker:
+    name: "Build (${{ matrix.platform }})"
+    needs: release-gate
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository_owner }}/pallastrade
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
+          outputs: type=image,"name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}",push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.runner }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  release-docker-manifest:
+    name: Publish manifest
+    needs: release-docker
+    runs-on: ubuntu-latest
+
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository_owner }}/pallastrade
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=match,pattern=pallastrade-(.*),group=1
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-rc.') }}
+
+      - name: Create and push manifest
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< '${{ steps.meta.outputs.json }}') \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)

@@ -1,0 +1,56 @@
+require 'spec_helper'
+
+RSpec.describe PallasTradeStripe::WebhookHandlers::PaymentIntentAmountCapturableUpdated do
+  describe '#call' do
+    subject { described_class.new.call(event) }
+
+    let(:store) { PallasTrade::Store.default }
+    let(:order) { create(:order_with_line_items, store: store) }
+    let(:stripe_gateway) { create(:stripe_gateway, store: store) }
+    let(:payment_intent_id) { 'pi_3Kf5vdDFyWwdfZQ10kAY6fo0' }
+
+    let(:event) do
+      Stripe::Event.construct_from(
+        {
+          id: 'evt_2Zj5zzFU3a9abcZ1aYYYaaZ1',
+          object: 'event',
+          api_version: '2020-08-27',
+          created: 1_633_887_337,
+          data: {
+            object: {
+              id: payment_intent_id,
+              object: 'payment_intent',
+              amount: 3149,
+              amount_capturable: 3149,
+              currency: 'usd',
+              status: 'requires_capture',
+              capture_method: 'manual',
+              statement_descriptor_suffix: order.number,
+              transfer_group: order.number,
+              metadata: { pallastrade_order_id: order.id }
+            }
+          }
+        }
+      )
+    end
+
+    context 'with a matching payment session' do
+      let!(:payment_session) do
+        create(:stripe_payment_session,
+               order: order,
+               payment_method: stripe_gateway,
+               external_id: payment_intent_id)
+      end
+
+      it 'enqueues the CompleteOrderFromSessionJob with the session id' do
+        expect { subject }.to have_enqueued_job(PallasTradeStripe::CompleteOrderFromSessionJob).with(payment_session.id)
+      end
+    end
+
+    context 'without a matching payment session' do
+      it 'does not enqueue CompleteOrderFromSessionJob' do
+        expect { subject }.not_to have_enqueued_job(PallasTradeStripe::CompleteOrderFromSessionJob)
+      end
+    end
+  end
+end

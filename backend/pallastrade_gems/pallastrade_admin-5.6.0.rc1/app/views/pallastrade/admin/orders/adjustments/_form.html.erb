@@ -1,0 +1,6 @@
+<%= f.pallastrade_text_field :label, autofocus: true %>
+<%= f.pallastrade_money_field :amount,
+                        required: true,
+                        currency: @order.currency,
+                        prepend: @order.currency,
+                        help: PallasTrade.t(:adjustment_amount_help) %>

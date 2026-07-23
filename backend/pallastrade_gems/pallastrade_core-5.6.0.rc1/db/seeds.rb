@@ -1,0 +1,1 @@
+PallasTrade::Seeds::All.call

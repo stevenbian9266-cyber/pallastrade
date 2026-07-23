@@ -1,0 +1,10 @@
+<%= turbo_render_alerts %>
+<%= turbo_close_dialog %>
+
+<%= turbo_stream.replace 'order_adjustments' do %>
+  <%= render 'pallastrade/admin/orders/adjustments' %>
+<% end %>
+
+<%= turbo_stream.replace 'order_tab_summary' do %>
+  <%= render 'pallastrade/admin/orders/summary' %>
+<% end %>

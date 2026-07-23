@@ -1,0 +1,24 @@
+<%= PallasTrade.t('reimbursement_mailer.reimbursement_email.dear_customer', name: name_for(@reimbursement.order)) %>
+
+<%= PallasTrade.t('reimbursement_mailer.reimbursement_email.instructions') %>
+
+============================================================
+<%= PallasTrade.t('reimbursement_mailer.reimbursement_email.refund_summary') %>
+============================================================
+<%= PallasTrade.t('reimbursement_mailer.reimbursement_email.total_refunded', total: @reimbursement.display_total) %>
+
+<% if @reimbursement.return_items.exchange_requested.present? %>
+============================================================
+<%= PallasTrade.t('reimbursement_mailer.reimbursement_email.exchange_summary') %>
+============================================================
+<% @reimbursement.return_items.exchange_requested.each do |return_item| %>
+<%= return_item.variant.sku %> <%= return_item.variant.product.name %> <%= "(#{return_item.variant.options_text})" if return_item.variant.options_text.present? -%> -> <%= return_item.exchange_variant.sku %> <%= return_item.exchange_variant.product.name if return_item.exchange_variant.options_text.present? %> <%= "(#{return_item.exchange_variant.options_text})" -%>
+<% end %>
+
+
+<% if @reimbursement.return_items.awaiting_return.present? && PallasTrade::Config[:expedited_exchanges] %>
+<%= PallasTrade.t('reimbursement_mailer.reimbursement_email.days_to_send', days: PallasTrade::Config[:expedited_exchanges_days_window]) %>
+<% end %>
+<% end %>
+<%= PallasTrade.t('reimbursement_mailer.reimbursement_email.thanks') %>
+<%= PallasTrade.t('reimbursement_mailer.reimbursement_email.store_team', store_name: current_store.name) %>

@@ -1,0 +1,575 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.stripe.com/v1/payment_intents/pi_3Sc2EfFmGsiQWfE60SFX1KGY?expand%5B%5D=payment_method
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Stripe/v1 RubyBindings/10.1.0 PallasTrade Stripe/5.1.1 (https://pallastrade.example)
+      Authorization:
+      - Bearer <STRIPE_SECRET_KEY>
+      Content-Type:
+      - application/x-www-form-urlencoded
+      Stripe-Version:
+      - '2023-10-16'
+      X-Stripe-Client-User-Agent:
+      - "<FILTERED>"
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - nginx
+      Date:
+      - Mon, 08 Dec 2025 11:10:58 GMT
+      Content-Type:
+      - application/json
+      Content-Length:
+      - '3155'
+      Connection:
+      - keep-alive
+      Access-Control-Allow-Credentials:
+      - 'true'
+      Access-Control-Allow-Methods:
+      - GET, HEAD, PUT, PATCH, POST, DELETE
+      Access-Control-Allow-Origin:
+      - "*"
+      Access-Control-Expose-Headers:
+      - Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required,
+        X-Stripe-Privileged-Session-Required
+      Access-Control-Max-Age:
+      - '300'
+      Cache-Control:
+      - no-cache, no-store
+      Content-Security-Policy:
+      - base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none';
+        img-src 'self'; script-src 'self' 'report-sample'; style-src 'self'; worker-src
+        'none'; upgrade-insecure-requests; report-uri https://q.stripe.com/csp-violation?q=VeHoo4QlzKZCSGGn-y_eD7hot-NOvj_B4WPcJCm-VEvmR92y4a76dnhJZBeYRH5bpGeCu3-qdF3E89hv
+      Request-Id:
+      - req_daTtgzUkGLbZiM
+      Stripe-Version:
+      - '2023-10-16'
+      Vary:
+      - Origin
+      X-Stripe-Priority-Routing-Enabled:
+      - 'true'
+      X-Stripe-Routing-Context-Priority-Tier:
+      - api-testmode
+      X-Wc:
+      - ABGHIJ
+      Strict-Transport-Security:
+      - max-age=63072000; includeSubDomains; preload
+    body:
+      encoding: UTF-8
+      string: |-
+        {
+          "id": "pi_3Sc2EfFmGsiQWfE60SFX1KGY",
+          "object": "payment_intent",
+          "amount": 5000,
+          "amount_capturable": 0,
+          "amount_details": {
+            "tip": {}
+          },
+          "amount_received": 0,
+          "application": null,
+          "application_fee_amount": null,
+          "automatic_payment_methods": {
+            "allow_redirects": "always",
+            "enabled": true
+          },
+          "canceled_at": null,
+          "cancellation_reason": null,
+          "capture_method": "automatic",
+          "client_secret": "pi_3Sc2EfFmGsiQWfE60SFX1KGY_secret_s3EK862F7TKbhTrdjxdXGZqY3",
+          "confirmation_method": "automatic",
+          "created": 1765191849,
+          "currency": "eur",
+          "customer": "cus_T5CK5Lf4jU4kCw",
+          "customer_account": null,
+          "description": null,
+          "excluded_payment_method_types": null,
+          "invoice": null,
+          "last_payment_error": null,
+          "latest_charge": "py_3Sc2EfFmGsiQWfE60jmix5uV",
+          "livemode": false,
+          "metadata": {
+            "pallastrade_order_id": "145"
+          },
+          "next_action": null,
+          "on_behalf_of": null,
+          "payment_method": {
+            "id": "pm_1Sc2KoFmGsiQWfE6mpUgzZ3k",
+            "object": "payment_method",
+            "allow_redisplay": "unspecified",
+            "billing_details": {
+              "address": {
+                "city": "Test",
+                "country": "US",
+                "line1": "Test",
+                "line2": null,
+                "postal_code": "75134",
+                "state": "TX"
+              },
+              "email": "lukas.adamczyk+test-1@pallastrade.example",
+              "name": "John Doe",
+              "phone": null,
+              "tax_id": null
+            },
+            "created": 1765192230,
+            "customer": "cus_T5CK5Lf4jU4kCw",
+            "customer_account": null,
+            "livemode": false,
+            "metadata": {},
+            "sepa_debit": {
+              "bank_code": "37040044",
+              "branch_code": "",
+              "country": "DE",
+              "fingerprint": "tKgfRgYfCPE0Gxgr",
+              "generated_from": {
+                "charge": null,
+                "setup_attempt": null
+              },
+              "last4": "3003"
+            },
+            "type": "sepa_debit"
+          },
+          "payment_method_configuration_details": {
+            "id": "pmc_1RMn31FmGsiQWfE6vaR9S4rU",
+            "parent": null
+          },
+          "payment_method_options": {
+            "card": {
+              "installments": null,
+              "mandate_options": null,
+              "network": null,
+              "request_three_d_secure": "automatic",
+              "setup_future_usage": "off_session"
+            },
+            "customer_balance": {
+              "bank_transfer": {
+                "eu_bank_transfer": {
+                  "country": "IE"
+                },
+                "type": "eu_bank_transfer"
+              },
+              "funding_type": "bank_transfer"
+            },
+            "link": {
+              "persistent_token": null
+            },
+            "sepa_debit": {
+              "setup_future_usage": "off_session"
+            }
+          },
+          "payment_method_types": [
+            "card",
+            "sepa_debit",
+            "link",
+            "customer_balance"
+          ],
+          "processing": null,
+          "receipt_email": null,
+          "review": null,
+          "setup_future_usage": null,
+          "shipping": {
+            "address": {
+              "city": "Lancaster",
+              "country": "US",
+              "line1": "3301 North Dallas Avenue",
+              "line2": null,
+              "postal_code": "75134",
+              "state": "TX"
+            },
+            "carrier": null,
+            "name": "John Doe",
+            "phone": null,
+            "tracking_number": null
+          },
+          "source": null,
+          "statement_descriptor": null,
+          "statement_descriptor_suffix": "R702558957",
+          "status": "processing",
+          "transfer_data": null,
+          "transfer_group": "R702558957"
+        }
+  recorded_at: Mon, 08 Dec 2025 11:10:58 GMT
+- request:
+    method: get
+    uri: https://api.stripe.com/v1/charges/py_3Sc2EfFmGsiQWfE60jmix5uV
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Stripe/v1 RubyBindings/10.1.0 PallasTrade Stripe/5.1.1 (https://pallastrade.example)
+      Authorization:
+      - Bearer <STRIPE_SECRET_KEY>
+      Content-Type:
+      - application/x-www-form-urlencoded
+      X-Stripe-Client-Telemetry:
+      - '{"last_request_metrics":{"request_id":"req_daTtgzUkGLbZiM","request_duration_ms":379}}'
+      Stripe-Version:
+      - '2023-10-16'
+      X-Stripe-Client-User-Agent:
+      - "<FILTERED>"
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - nginx
+      Date:
+      - Mon, 08 Dec 2025 11:10:58 GMT
+      Content-Type:
+      - application/json
+      Content-Length:
+      - '2364'
+      Connection:
+      - keep-alive
+      Access-Control-Allow-Credentials:
+      - 'true'
+      Access-Control-Allow-Methods:
+      - GET, HEAD, PUT, PATCH, POST, DELETE
+      Access-Control-Allow-Origin:
+      - "*"
+      Access-Control-Expose-Headers:
+      - Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required,
+        X-Stripe-Privileged-Session-Required
+      Access-Control-Max-Age:
+      - '300'
+      Cache-Control:
+      - no-cache, no-store
+      Content-Security-Policy:
+      - base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none';
+        img-src 'self'; script-src 'self' 'report-sample'; style-src 'self'; worker-src
+        'none'; upgrade-insecure-requests; report-uri https://q.stripe.com/csp-violation?q=9l8vDMlpB2TKvGfBhZVmo9j6oQRFvoiQRFLbZzYQZ12Kc_K6cxn59wrj6046DRilAeqR-iTZkyXFxZZf
+      Request-Id:
+      - req_jove4wHXVLT3vq
+      Stripe-Version:
+      - '2023-10-16'
+      Vary:
+      - Origin
+      X-Stripe-Priority-Routing-Enabled:
+      - 'true'
+      X-Stripe-Routing-Context-Priority-Tier:
+      - api-testmode
+      X-Wc:
+      - ABGHIJ
+      Strict-Transport-Security:
+      - max-age=63072000; includeSubDomains; preload
+    body:
+      encoding: UTF-8
+      string: |-
+        {
+          "id": "py_3Sc2EfFmGsiQWfE60jmix5uV",
+          "object": "charge",
+          "amount": 5000,
+          "amount_captured": 5000,
+          "amount_refunded": 0,
+          "application": null,
+          "application_fee": null,
+          "application_fee_amount": null,
+          "balance_transaction": null,
+          "billing_details": {
+            "address": {
+              "city": "Test",
+              "country": "US",
+              "line1": "Test",
+              "line2": null,
+              "postal_code": "75134",
+              "state": "TX"
+            },
+            "email": "lukas.adamczyk+test-1@pallastrade.example",
+            "name": "John Doe",
+            "phone": null,
+            "tax_id": null
+          },
+          "calculated_statement_descriptor": null,
+          "captured": true,
+          "created": 1765192231,
+          "currency": "eur",
+          "customer": "cus_T5CK5Lf4jU4kCw",
+          "description": null,
+          "destination": null,
+          "dispute": null,
+          "disputed": false,
+          "failure_balance_transaction": null,
+          "failure_code": null,
+          "failure_message": null,
+          "fraud_details": {},
+          "invoice": null,
+          "livemode": false,
+          "metadata": {
+            "pallastrade_order_id": "145"
+          },
+          "on_behalf_of": null,
+          "order": null,
+          "outcome": {
+            "advice_code": null,
+            "network_advice_code": null,
+            "network_decline_code": null,
+            "network_status": "approved_by_network",
+            "reason": null,
+            "risk_level": "normal",
+            "risk_score": 63,
+            "seller_message": "Payment complete.",
+            "type": "authorized"
+          },
+          "paid": false,
+          "payment_intent": "pi_3Sc2EfFmGsiQWfE60SFX1KGY",
+          "payment_method": "pm_1Sc2KoFmGsiQWfE6mpUgzZ3k",
+          "payment_method_details": {
+            "sepa_debit": {
+              "bank_code": "37040044",
+              "branch_code": "",
+              "country": "DE",
+              "fingerprint": "tKgfRgYfCPE0Gxgr",
+              "last4": "3003",
+              "mandate": "mandate_1Sc2KpFmGsiQWfE6GAZAHatT"
+            },
+            "type": "sepa_debit"
+          },
+          "radar_options": {},
+          "receipt_email": null,
+          "receipt_number": null,
+          "receipt_url": null,
+          "refunded": false,
+          "review": null,
+          "shipping": {
+            "address": {
+              "city": "Lancaster",
+              "country": "US",
+              "line1": "3301 North Dallas Avenue",
+              "line2": null,
+              "postal_code": "75134",
+              "state": "TX"
+            },
+            "carrier": null,
+            "name": "John Doe",
+            "phone": null,
+            "tracking_number": null
+          },
+          "source": null,
+          "source_transfer": null,
+          "statement_descriptor": null,
+          "statement_descriptor_suffix": "R702558957",
+          "status": "pending",
+          "transfer_data": null,
+          "transfer_group": "R702558957"
+        }
+  recorded_at: Mon, 08 Dec 2025 11:10:58 GMT
+- request:
+    method: get
+    uri: https://api.stripe.com/v1/payment_intents/pi_3Sc2EfFmGsiQWfE60SFX1KGY?expand%5B%5D=payment_method
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Stripe/v1 RubyBindings/10.1.0 PallasTrade Stripe/5.1.1 (https://pallastrade.example)
+      Authorization:
+      - Bearer <STRIPE_SECRET_KEY>
+      Content-Type:
+      - application/x-www-form-urlencoded
+      Stripe-Version:
+      - '2023-10-16'
+      X-Stripe-Client-User-Agent:
+      - "<FILTERED>"
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - nginx
+      Date:
+      - Mon, 08 Dec 2025 11:10:58 GMT
+      Content-Type:
+      - application/json
+      Content-Length:
+      - '3155'
+      Connection:
+      - keep-alive
+      Access-Control-Allow-Credentials:
+      - 'true'
+      Access-Control-Allow-Methods:
+      - GET, HEAD, PUT, PATCH, POST, DELETE
+      Access-Control-Allow-Origin:
+      - "*"
+      Access-Control-Expose-Headers:
+      - Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required,
+        X-Stripe-Privileged-Session-Required
+      Access-Control-Max-Age:
+      - '300'
+      Cache-Control:
+      - no-cache, no-store
+      Content-Security-Policy:
+      - base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none';
+        img-src 'self'; script-src 'self' 'report-sample'; style-src 'self'; worker-src
+        'none'; upgrade-insecure-requests; report-uri https://q.stripe.com/csp-violation?q=VeHoo4QlzKZCSGGn-y_eD7hot-NOvj_B4WPcJCm-VEvmR92y4a76dnhJZBeYRH5bpGeCu3-qdF3E89hv
+      Request-Id:
+      - req_tfbjWxHjyG4wy1
+      Stripe-Version:
+      - '2023-10-16'
+      Vary:
+      - Origin
+      X-Stripe-Priority-Routing-Enabled:
+      - 'true'
+      X-Stripe-Routing-Context-Priority-Tier:
+      - api-testmode
+      X-Wc:
+      - ABGHIJ
+      Strict-Transport-Security:
+      - max-age=63072000; includeSubDomains; preload
+    body:
+      encoding: UTF-8
+      string: |-
+        {
+          "id": "pi_3Sc2EfFmGsiQWfE60SFX1KGY",
+          "object": "payment_intent",
+          "amount": 5000,
+          "amount_capturable": 0,
+          "amount_details": {
+            "tip": {}
+          },
+          "amount_received": 0,
+          "application": null,
+          "application_fee_amount": null,
+          "automatic_payment_methods": {
+            "allow_redirects": "always",
+            "enabled": true
+          },
+          "canceled_at": null,
+          "cancellation_reason": null,
+          "capture_method": "automatic",
+          "client_secret": "pi_3Sc2EfFmGsiQWfE60SFX1KGY_secret_s3EK862F7TKbhTrdjxdXGZqY3",
+          "confirmation_method": "automatic",
+          "created": 1765191849,
+          "currency": "eur",
+          "customer": "cus_T5CK5Lf4jU4kCw",
+          "customer_account": null,
+          "description": null,
+          "excluded_payment_method_types": null,
+          "invoice": null,
+          "last_payment_error": null,
+          "latest_charge": "py_3Sc2EfFmGsiQWfE60jmix5uV",
+          "livemode": false,
+          "metadata": {
+            "pallastrade_order_id": "145"
+          },
+          "next_action": null,
+          "on_behalf_of": null,
+          "payment_method": {
+            "id": "pm_1Sc2KoFmGsiQWfE6mpUgzZ3k",
+            "object": "payment_method",
+            "allow_redisplay": "unspecified",
+            "billing_details": {
+              "address": {
+                "city": "Test",
+                "country": "US",
+                "line1": "Test",
+                "line2": null,
+                "postal_code": "75134",
+                "state": "TX"
+              },
+              "email": "lukas.adamczyk+test-1@pallastrade.example",
+              "name": "John Doe",
+              "phone": null,
+              "tax_id": null
+            },
+            "created": 1765192230,
+            "customer": "cus_T5CK5Lf4jU4kCw",
+            "customer_account": null,
+            "livemode": false,
+            "metadata": {},
+            "sepa_debit": {
+              "bank_code": "37040044",
+              "branch_code": "",
+              "country": "DE",
+              "fingerprint": "tKgfRgYfCPE0Gxgr",
+              "generated_from": {
+                "charge": null,
+                "setup_attempt": null
+              },
+              "last4": "3003"
+            },
+            "type": "sepa_debit"
+          },
+          "payment_method_configuration_details": {
+            "id": "pmc_1RMn31FmGsiQWfE6vaR9S4rU",
+            "parent": null
+          },
+          "payment_method_options": {
+            "card": {
+              "installments": null,
+              "mandate_options": null,
+              "network": null,
+              "request_three_d_secure": "automatic",
+              "setup_future_usage": "off_session"
+            },
+            "customer_balance": {
+              "bank_transfer": {
+                "eu_bank_transfer": {
+                  "country": "IE"
+                },
+                "type": "eu_bank_transfer"
+              },
+              "funding_type": "bank_transfer"
+            },
+            "link": {
+              "persistent_token": null
+            },
+            "sepa_debit": {
+              "setup_future_usage": "off_session"
+            }
+          },
+          "payment_method_types": [
+            "card",
+            "sepa_debit",
+            "link",
+            "customer_balance"
+          ],
+          "processing": null,
+          "receipt_email": null,
+          "review": null,
+          "setup_future_usage": null,
+          "shipping": {
+            "address": {
+              "city": "Lancaster",
+              "country": "US",
+              "line1": "3301 North Dallas Avenue",
+              "line2": null,
+              "postal_code": "75134",
+              "state": "TX"
+            },
+            "carrier": null,
+            "name": "John Doe",
+            "phone": null,
+            "tracking_number": null
+          },
+          "source": null,
+          "statement_descriptor": null,
+          "statement_descriptor_suffix": "R702558957",
+          "status": "processing",
+          "transfer_data": null,
+          "transfer_group": "R702558957"
+        }
+  recorded_at: Mon, 08 Dec 2025 11:10:58 GMT
+recorded_with: VCR 6.3.1

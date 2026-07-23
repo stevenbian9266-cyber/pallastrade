@@ -1,0 +1,5 @@
+require 'pallastrade_core'
+require 'pallastrade_api'
+require 'pallastrade_dev_tools/engine'
+require 'pallastrade_dev_tools/version'
+require 'pallastrade_dev_tools/generators/install/install_generator'

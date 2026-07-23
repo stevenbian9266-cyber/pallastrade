@@ -1,0 +1,6 @@
+module PallasTrade
+  class DummyModel < PallasTrade::Base
+    acts_as_list
+    validates :name, presence: true
+  end
+end

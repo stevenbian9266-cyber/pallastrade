@@ -1,0 +1,10 @@
+  <% if done %>
+  <p>
+    <%= PallasTrade.t('admin.store_setup_tasks.payment_methods.done', link: PallasTrade.admin_payment_methods_path).html_safe %>
+  </p>
+<% else %>
+  <p><%= PallasTrade.t('admin.store_setup_tasks.payment_methods.copy') %></p>
+  <div>
+    <%= link_to PallasTrade.t('admin.store_setup_tasks.payment_methods.setup'), PallasTrade.admin_payment_methods_path, class: 'btn btn-primary', data: { turbo_frame: '_top' } %>
+  </div>
+<% end %>

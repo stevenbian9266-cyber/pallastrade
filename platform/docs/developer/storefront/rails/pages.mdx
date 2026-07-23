@@ -1,0 +1,163 @@
+---
+title: "Storefront Pages"
+sidebarTitle: "Pages"
+description: "Learn how to create and use pages in your PallasTrade Rails storefront"
+---
+
+## Built-in Pages
+
+PallasTrade Storefront comes with a full set of built-in pages that you can customize via page builder.
+
+| Page | Description | Class | URL |
+|------|-------------|-------|------------|
+| Home | The main landing page of your store | [PallasTrade::Pages::Homepage](https://github.com/stevenbian9266-cyber/pallastrade/blob/main/core/app/models/pallastrade/pages/homepage.rb) | `/` |
+| Product Details | Individual product display page | [PallasTrade::Pages::ProductDetails](https://github.com/stevenbian9266-cyber/pallastrade/blob/main/core/app/models/pallastrade/pages/product_details.rb) | `/products/:id` |
+| Taxon | Shows products filtered by taxon | [PallasTrade::Pages::Taxon](https://github.com/stevenbian9266-cyber/pallastrade/blob/main/core/app/models/pallastrade/pages/taxon.rb) | `/t/:permalink` |
+| Search Results | Displays search results for products | [PallasTrade::Pages::SearchResults](https://github.com/stevenbian9266-cyber/pallastrade/blob/main/core/app/models/pallastrade/pages/search_results.rb) | `/search` |
+| Shop All | Shows all products | [PallasTrade::Pages::ShopAll](https://github.com/stevenbian9266-cyber/pallastrade/blob/main/core/app/models/pallastrade/pages/shop_all.rb) | `/products` |
+| Blog | Shows your store's blog posts and articles | [PallasTrade::Pages::PostList](https://github.com/stevenbian9266-cyber/pallastrade/blob/main/core/app/models/pallastrade/pages/post_list.rb) | `/posts` |
+| Post | Individual blog post | [PallasTrade::Pages::Post](https://github.com/stevenbian9266-cyber/pallastrade/blob/main/core/app/models/pallastrade/pages/post.rb) | `/posts/:permalink` |
+| Password | Password page, when password protected storefront is enabled | [PallasTrade::Pages::Password](https://github.com/stevenbian9266-cyber/pallastrade/blob/main/core/app/models/pallastrade/pages/password.rb) | `/` |
+
+All of these page can be fully customized via page builder. You can add/remove sections, etc.
+
+We're planning to add page builder support for the following pages in the next PallasTrade releases:
+
+- Cart
+- Checkout
+- Account
+
+## Sections
+
+Each page is made of [sections](/developer/storefront/rails/sections). Sections are the building blocks of a page. They are used to create the page content.
+
+You can fetch page sections using:
+
+```ruby
+current_page.sections
+```
+
+## Custom Landing Pages in the Admin
+
+You can easily create your own landing pages by going to the `Admin -> Storefront -> Pages` and clicking on the `New Page` button. More on this in the [Create a Landing Page](/user/storefront/create-page) guide. Each custom landing page can be customized via page builder. 
+
+![Landing Pages](/images/pallastrade_admin_custom_landing_pages.png)
+
+Under the hood they use [PallasTrade::Pages::Custom](https://github.com/stevenbian9266-cyber/pallastrade/blob/main/core/app/models/pallastrade/pages/custom.rb) class.
+
+## Building a new Page from scratch
+
+If you need to build a page that is not one of the built-in pages, you can create your own page class. This will allow you to create a dedicated page for your business needs and at the same time allow your non-technical team to manage the page content without bugging you :)
+
+Let's assume you need to create a page that displays pickup locations. You already created a new model `PallasTrade::PickupLocation` and added some data to the database. Now you want to create a page that displays these pickup locations.
+
+First, let's add a route for the new page.
+
+```ruby
+# config/routes.rb
+PallasTrade::Core::Engine.add_routes do
+  scope '(:locale)', locale: /#{PallasTrade.available_locales.join('|')}/, defaults: { locale: nil } do # this line will enable translations for the new page
+    resources :pickup_locations, only: [:index]
+  end
+end
+```
+
+Now, create the new page class file:
+
+```bash
+mkdir -p app/models/pallastrade/pages && touch app/models/pallastrade/pages/pickup_locations.rb
+```
+
+Now, let's add the new page class:
+
+```ruby
+module PallasTrade
+  module Pages
+    class PickupLocations < PallasTrade::Page
+      # use https://tabler.io/icons to find the icon name
+      def icon_name
+        'map-marker-alt'
+      end
+
+      # This method is used to determine if the page is customizable via page builder
+      def customizable?
+        true
+      end
+
+      # this is the URL used to preview the page in the page builder UI
+      def page_builder_url
+        return unless page_builder_url_exists?(:pickup_locations_path)
+
+        PallasTrade::Core::Engine.routes.url_helpers.pickup_locations_path
+      end
+
+      # this is the default sections that will be shown on the page
+      # in the later guide for sections you will learn how to add custom sections
+      def default_sections
+        [
+          PallasTrade::PageSections::PageTitle.new
+        ]
+      end
+    end
+  end
+end
+```
+
+You will need to register the new page in the `config/initializers/pallastrade.rb` file:
+
+<Tabs>
+  <Tab title="PallasTrade 5.2+">
+    ```ruby config/initializers/pallastrade.rb
+    Rails.application.config.after_initialize do
+      PallasTrade.page_builder.pages << PallasTrade::Pages::PickupLocations
+    end
+    ```
+  </Tab>
+  <Tab title="PallasTrade 5.1 and below">
+    ```ruby config/initializers/pallastrade.rb
+    Rails.application.config.after_initialize do
+      Rails.application.config.pallastrade.pages << PallasTrade::Pages::PickupLocations
+    end
+    ```
+  </Tab>
+</Tabs>
+
+Now, the controller:
+
+```bash
+mkdir -p app/controllers/pallastrade && touch app/controllers/pallastrade/pickup_locations_controller.rb
+```
+
+```ruby
+# app/controllers/pallastrade/pickup_locations_controller.rb
+module PallasTrade
+  class PickupLocationsController < StoreController
+    def index
+      @current_page = current_theme.pages.find_by(type: 'PallasTrade::Pages::PickupLocations') # this is very important, without this the page will not be found
+      @pickup_locations = current_store.pickup_locations
+    end
+  end
+end
+```
+
+Lastly we need to add a view file for the page:
+
+```bash
+mkdir -p app/views/pallastrade/pickup_locations && touch app/views/pallastrade/pickup_locations/index.html.erb
+```
+
+And add the following code to the view file:
+
+```erb
+<%= render_page(current_page, pickup_locations: @pickup_locations) %>
+```
+
+`render_page` is a helper method defined in the [PallasTrade::PageHelper](https://github.com/stevenbian9266-cyber/pallastrade/blob/main/storefront/app/helpers/pallastrade/page_helper.rb) module that renders the page. It fetches all page sections and renders them one by one in the order they are set in the page builder by store staff.
+
+Passing `pickup_locations` variable to the `render_page` method allows you to use it in the page sections templates, eg.
+
+```erb
+<%= pickup_locations.each do |pickup_location| %>
+  <%= pickup_location.name %>
+<% end %>
+```

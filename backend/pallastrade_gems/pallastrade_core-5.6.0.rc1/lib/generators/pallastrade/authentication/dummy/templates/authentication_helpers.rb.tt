@@ -1,0 +1,52 @@
+# Dummy authentication helpers for testing purposes.
+# These provide stub implementations that don't require actual routes.
+module PallasTrade
+  module AuthenticationHelpers
+    def self.included(receiver)
+      receiver.helper_method(
+        :pallastrade_current_user,
+        :pallastrade_login_path,
+        :pallastrade_signup_path,
+        :pallastrade_logout_path,
+        :pallastrade_forgot_password_path,
+        :pallastrade_edit_password_path,
+        :pallastrade_admin_login_path,
+        :pallastrade_admin_logout_path
+      )
+    end
+
+    def pallastrade_current_user
+      @pallastrade_current_user
+    end
+
+    def pallastrade_login_path(_opts = {})
+      '/login'
+    end
+
+    def pallastrade_signup_path(_opts = {})
+      '/signup'
+    end
+
+    def pallastrade_logout_path(_opts = {})
+      '/logout'
+    end
+
+    def pallastrade_forgot_password_path(_opts = {})
+      '/forgot_password'
+    end
+
+    def pallastrade_edit_password_path(_opts = {})
+      '/edit_password'
+    end
+
+    def pallastrade_admin_login_path(_opts = {})
+      '/admin/login'
+    end
+
+    def pallastrade_admin_logout_path(_opts = {})
+      '/admin/logout'
+    end
+  end
+end
+
+ApplicationController.include PallasTrade::AuthenticationHelpers if defined?(ApplicationController)

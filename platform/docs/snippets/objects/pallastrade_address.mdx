@@ -1,0 +1,59 @@
+import PallasTradeState from '/snippets/objects/pallastrade_state.mdx';
+import PallasTradeCountry from '/snippets/objects/pallastrade_country.mdx';
+
+<Expandable title="properties">
+  <ResponseField name="id" type="integer">
+    Address ID
+    Example: 456
+  </ResponseField>
+
+  <ResponseField name="address1" type="string">
+    Address line 1
+    Example: `123 Main St`
+  </ResponseField>
+
+  <ResponseField name="address2" type="string">
+    Address line 2
+    Example: `Apt 1`
+  </ResponseField>
+
+  <ResponseField name="city" type="string">
+    City
+    Example: `Anytown`
+  </ResponseField>
+
+  <ResponseField name="zipcode" type="string">
+    Zipcode
+    Example: `12345`
+  </ResponseField>
+
+  <ResponseField name="state" type="PallasTrade::State">
+    State object, if the country requires a state.
+    <PallasTradeState />
+  </ResponseField>
+
+  <ResponseField name="state_name" type="string">
+    State name, used when the country doesn't require a state object
+    Example: `Some Province`
+  </ResponseField>
+
+  <ResponseField name="state_text" type="string">
+    Returns either state.name (if state is present) or state_name
+    Example: `California` or `Some Province`
+  </ResponseField>
+
+  <ResponseField name="country_name" type="string">
+    Country name
+    Example: `United States`
+  </ResponseField>
+
+  <ResponseField name="country_iso" type="string">
+    Country ISO code
+    Example: `US`
+  </ResponseField>
+
+  <ResponseField name="country" type="PallasTrade::Country">
+    Country object
+    <PallasTradeCountry />
+  </ResponseField>
+</Expandable>

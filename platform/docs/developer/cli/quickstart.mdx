@@ -1,0 +1,347 @@
+---
+title: PallasTrade CLI
+sidebarTitle: Overview
+description: Install and use the @pallastrade/cli to scaffold, run, build, and migrate PallasTrade projects — and call the Admin API directly from the command line.
+---
+
+The PallasTrade CLI (`@pallastrade/cli`) does two things from your terminal:
+
+1. **Manages your PallasTrade project** — boot the Docker stack, run generators and migrations, tail logs, open a console, upgrade versions.
+2. **Calls the Admin API** — generic `get`/`post`/`patch`/`delete` commands to read, write, and explore your store's data, with zero-config credentials in local dev. See [Admin API from the CLI](/developer/cli/admin-api).
+
+```bash
+pallastrade dev                                                  # boot the project
+pallastrade api get /orders -q status_eq=complete --limit 10     # query the Admin API
+pallastrade api post /products -d '{"name":"Classic Tee","prices":[{"currency":"USD","amount":"29.99"}]}'  # create a resource
+pallastrade api endpoints --search refund                        # discover endpoints, offline
+```
+
+The `pallastrade api` commands work against any PallasTrade 5.5+ instance and are built for both humans and AI agents — see the dedicated [Admin API from the CLI](/developer/cli/admin-api) guide. The rest of this page covers project management.
+
+## Installation
+
+The CLI is included automatically when you scaffold a project with `create-pallastrade-app`. You can also install it globally:
+
+```bash
+npm install -g @pallastrade/cli
+```
+
+Then run commands from your project directory:
+
+```bash
+pallastrade dev
+```
+
+Or use `npx` without installing:
+
+```bash
+npx @pallastrade/cli dev
+```
+
+## Commands
+
+### `pallastrade init`
+
+First-run setup. Starts Docker services, seeds the database, generates an API key, and optionally loads sample data.
+
+```bash
+pallastrade init
+pallastrade init --no-sample-data   # Skip sample data
+pallastrade init --no-open           # Skip opening browser
+```
+
+### `pallastrade dev`
+
+Run the app in the foreground — streams web + worker logs; `Ctrl+C` stops them. The databases keep running for a fast next boot (`pallastrade stop` shuts everything down).
+
+```bash
+pallastrade dev
+```
+
+### `pallastrade stop`
+
+Stop all services.
+
+```bash
+pallastrade stop
+```
+
+### `pallastrade restart`
+
+Restart `web` and `worker` in place — same image, same volumes, fresh Rails process. Good for `config/initializers/*.rb` changes or anything Zeitwerk doesn't auto-reload.
+
+```bash
+pallastrade restart
+```
+
+Not appropriate for Gemfile changes (use `pallastrade bundle install`, then Ctrl+C and re-run `pallastrade dev`), Dockerfile / `.ruby-version` changes (use `pallastrade build`), or compose file changes (Ctrl+C and re-run `pallastrade dev`).
+
+### `pallastrade update`
+
+Pull the latest PallasTrade Docker image and recreate containers. Migrations run automatically on startup.
+
+```bash
+pallastrade update
+```
+
+### `pallastrade build`
+
+Rebuild the dev image after Dockerfile or `.ruby-version` changes. Only relevant after `pallastrade eject`.
+
+```bash
+pallastrade build
+pallastrade build --reset-bundle   # Also drop the bundle_cache volume so gems re-seed
+pallastrade build --yes            # Skip confirmation prompts (for CI)
+```
+
+`pallastrade bundle add` does NOT require a rebuild — gems land in the `bundle_cache` volume which survives image rebuilds.
+
+`--reset-bundle` only drops `bundle_cache`. Postgres, Redis, Meilisearch, and storage volumes are preserved.
+
+### `pallastrade upgrade`
+
+Walk a PallasTrade version upgrade end-to-end inside the dev stack. Runs `bundle update`, applies pending migrations, then walks the version-specific data backfills from the upgrade manifest.
+
+```bash
+pallastrade upgrade                  # Detect target, run the full sequence interactively
+pallastrade upgrade --plan           # Print the plan without executing (DRY_RUN=1)
+pallastrade upgrade --to 5.5         # Cap the walk at a specific target version
+pallastrade upgrade --step <id>      # Re-run a single step idempotently (skips bundle + migrate)
+pallastrade upgrade --yes            # Skip the per-step prompts
+```
+
+Production upgrades only need the third stage — `bundle install` and `db:migrate` happen in your deploy pipeline. The CLI runs all three for local development. See [Upgrades](/developer/upgrades) for the manual production path.
+
+### `pallastrade eject`
+
+Switch from the prebuilt Docker image to building from your local `backend/` directory. This lets you customize the Rails app — add gems, override models, add migrations, etc.
+
+```bash
+pallastrade eject
+```
+
+After ejecting, the Docker image is built from `backend/Dockerfile`. Edit files in `backend/` and run `pallastrade dev` to rebuild and restart with your changes.
+
+See [Customizing the Backend](/developer/create-pallastrade-app/quickstart#customizing-the-backend) for details on what you can customize.
+
+### `pallastrade logs`
+
+Stream service logs.
+
+```bash
+pallastrade logs         # Web service (default)
+pallastrade logs worker  # Worker service
+```
+
+### `pallastrade console`
+
+Open a Rails console.
+
+```bash
+pallastrade console
+```
+
+### `pallastrade shell`
+
+Open an interactive bash shell inside the web container — the system-shell sibling of `pallastrade console` (Rails) and `pallastrade db:console` (psql). If the web container is down, it starts a one-off container against the same volumes instead. For one-off non-interactive commands, use `pallastrade exec`.
+
+```bash
+pallastrade shell
+pallastrade bash    # alias
+```
+
+### `pallastrade open`
+
+Open the admin dashboard in the browser.
+
+```bash
+pallastrade open
+```
+
+### `pallastrade seed`
+
+Seed the database.
+
+```bash
+pallastrade seed
+```
+
+### `pallastrade sample-data`
+
+Load sample products, categories, and images.
+
+```bash
+pallastrade sample-data
+```
+
+### `pallastrade user create`
+
+Create an admin user. Prompts for email and password interactively, or pass them as flags:
+
+```bash
+pallastrade user create
+pallastrade user create --email admin@example.com --password secret123
+```
+
+### `pallastrade api-key`
+
+Manage Store and Admin API keys. Secret keys carry [scopes](/api-reference/admin-api/authentication) and require at least one.
+
+```bash
+pallastrade api-key list                                     # List all keys
+pallastrade api-key create                                   # Interactive
+pallastrade api-key create --name "Storefront" --type publishable             # Store API key
+pallastrade api-key create --name "Admin" --type secret --scopes read_all     # Admin API key
+pallastrade api-key revoke <id>                              # Revoke a key
+```
+
+### `pallastrade api`
+
+Call the Admin API with generic `get`/`post`/`patch`/`delete` commands — zero-config inside a project (a read-only key is minted on first use), env vars or profiles for remote stores. See [Admin API from the CLI](/developer/cli/admin-api) for the full guide.
+
+```bash
+pallastrade api get /products -q status_eq=active --limit 10
+pallastrade api post /products -d '{"name":"Classic Tee","prices":[{"currency":"USD","amount":"29.99"}]}'
+pallastrade api endpoints --resource orders    # endpoints + required scopes, offline
+pallastrade api schema "POST /orders"          # request/response schema, offline
+pallastrade api status
+```
+
+### `pallastrade auth`
+
+Save Admin API credentials for remote stores as named profiles.
+
+```bash
+pallastrade auth login --profile prod --base-url https://store.example.com
+pallastrade api get /orders --profile prod
+pallastrade auth status
+pallastrade auth logout --profile prod
+```
+
+## Dev workflow commands
+
+These mirror the Rails commands you'd run if you were running the app directly on your host — but each is routed through `docker compose exec` against the running stack.
+
+### `pallastrade generate`
+
+Run a generator inside the container. Bare generator names are auto-prefixed with `pallastrade:` — `model` runs `pallastrade:model`, `api_resource` runs `pallastrade:api_resource` — so you get the PallasTrade conventions (`PallasTrade::` namespace, `pallastrade_`-prefixed table, prefixed IDs, `null: false`, no FK constraints) by default. Rails built-ins (`migration`, `scaffold`, `mailer`, `job`, …) and any name containing `:` are forwarded as-is.
+
+```bash
+pallastrade generate model Brand name:string slug:string:uniq          # runs pallastrade:model
+pallastrade generate api_resource Brand name:string slug:string:uniq   # runs pallastrade:api_resource — model + v3 Store/Admin API
+pallastrade generate subscriber OmsOrderSync order.completed           # runs pallastrade:subscriber — event subscriber + registration
+pallastrade generate migration AddPositionToPallasTradeBrands position:integer  # Rails built-in, forwarded as-is
+```
+
+`pallastrade:api_resource` scaffolds the full v3 surface: model, migration, Store + Admin controllers and serializers, factory, controller specs, and routes.
+
+### `pallastrade migrate`
+
+Install pending PallasTrade migrations from gems, then run `db:migrate` — the canonical post-update sequence.
+
+```bash
+pallastrade migrate
+pallastrade migrate:status            # show the migration log (`db:migrate:status`)
+pallastrade migrate:rollback STEP=2   # roll back (`db:rollback`)
+```
+
+### `pallastrade db:reset`
+
+Drop, recreate, migrate, and seed the database. **Destructive** — wipes everything. Asks for confirmation.
+
+```bash
+pallastrade db:reset
+pallastrade db:reset --yes   # Skip confirmation (for CI)
+```
+
+### `pallastrade db:console`
+
+Open a `psql` session against the dev Postgres database (runs inside the `postgres` container).
+
+```bash
+pallastrade db:console
+```
+
+### `pallastrade routes`
+
+Show Rails routes. All flags pass through to `bin/rails routes`.
+
+```bash
+pallastrade routes
+pallastrade routes -g products                                 # Filter by pattern
+pallastrade routes -c PallasTrade::Api::V3::Store::ProductsController   # Filter by controller
+pallastrade routes --expanded
+```
+
+### `pallastrade rspec`
+
+Run the RSpec test suite inside the web container with `RAILS_ENV=test`, so tests hit the `pallastrade_test` database — never your development data. Everything after `rspec` passes through, so file paths, line numbers, and flags work as usual.
+
+```bash
+pallastrade rspec                                      # full suite
+pallastrade rspec spec/models/pallastrade/brand_spec.rb      # one file
+pallastrade rspec spec/models/pallastrade/brand_spec.rb:15   # one example
+pallastrade rspec --format documentation
+```
+
+Before the first run, create the test database with `pallastrade rails db:test:prepare`. See the [Testing tutorial](/developer/tutorial/testing) for writing specs.
+
+## Running things inside the container
+
+These are passthrough commands — anything after the subcommand reaches the inner Rails/Bundle/Rake invocation as-is. Useful for ad-hoc commands that don't have a dedicated wrapper.
+
+### `pallastrade exec`
+
+Run an arbitrary command inside the `web` container.
+
+```bash
+pallastrade exec ls -la
+pallastrade exec env
+pallastrade exec ruby -v
+```
+
+### `pallastrade rails`
+
+Run a `bin/rails` command.
+
+```bash
+pallastrade rails c                                  # Console (alias of `pallastrade console`)
+pallastrade rails routes -g products                 # Alias of `pallastrade routes -g products`
+pallastrade rails runner "puts PallasTrade::Product.count"
+pallastrade rails new_subcommand arg1 arg2
+```
+
+### `pallastrade bundle`
+
+Run a `bundle` command. Gems land in the `bundle_cache` volume (no image rebuild needed).
+
+```bash
+pallastrade bundle install
+pallastrade bundle add stripe
+pallastrade bundle update pallastrade_core
+pallastrade bundle outdated
+```
+
+### `pallastrade rake`
+
+Run a Rake task.
+
+```bash
+pallastrade rake -T                          # List tasks
+pallastrade rake pallastrade:upgrade               # Run the version-specific data backfills
+pallastrade rake pallastrade:upgrade DRY_RUN=1     # Same, plan only
+```
+
+### `pallastrade task`
+
+Shortcut for `bin/rails <task>` (PallasTrade-style rake tasks registered as Rails tasks).
+
+```bash
+pallastrade task load_sample_data
+pallastrade task pallastrade:price_history:seed
+pallastrade task pallastrade:price_history:prune
+```
+
+## Pair with AI agents
+
+The CLI's predictable command surface is what AI coding agents drive when working on PallasTrade projects. The [PallasTrade agent skills](/developer/agentic/agent-skills) teach agents these commands and conventions, and the Claude Code plugin adds `/pallastrade:doctor` (stack diagnosis) and `/pallastrade:audit-upgrade` (upgrade-readiness audit) on top. See [Agentic Development](/developer/agentic/overview).

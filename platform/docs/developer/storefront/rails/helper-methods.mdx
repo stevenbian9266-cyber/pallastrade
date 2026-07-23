@@ -1,0 +1,335 @@
+---
+title: Storefront Helper Methods
+sidebarTitle: Helper Methods
+---
+
+import PallasTradeTheme from '/snippets/objects/pallastrade_theme.mdx'
+import PallasTradeOrder from '/snippets/objects/pallastrade_order.mdx'
+import PallasTradeStore from '/snippets/objects/pallastrade_store.mdx'
+import PallasTradeUser from '/snippets/objects/pallastrade_user.mdx'
+
+Here you can find a list of helper methods provided by PallasTrade that are available in the Storefront. These methods can be used in every template.
+
+## Context Helpers
+
+### `current_store`
+
+<ResponseField name="current_store" type="PallasTrade::Store" description="The current store object.">
+  <PallasTradeStore />
+</ResponseField>
+
+Returns the current store [PallasTrade::Store](https://github.com/stevenbian9266-cyber/pallastrade/blob/main/core/app/models/pallastrade/store.rb) instance.
+
+### `current_theme`
+
+<ResponseField name="current_theme" type="PallasTrade::Theme" description="The current theme object.">
+  <PallasTradeTheme />
+</ResponseField>
+
+Returns the current theme [PallasTrade::Theme](https://github.com/stevenbian9266-cyber/pallastrade/blob/main/core/app/models/pallastrade/theme.rb) instance.
+
+### `current_page`
+
+Returns the current [PallasTrade::Page](https://github.com/stevenbian9266-cyber/pallastrade/blob/main/core/app/models/pallastrade/page.rb) instance for the current route.
+
+```erb
+<%= current_page.name %>
+```
+
+### `current_order`
+
+<ResponseField name="current_order" type="PallasTrade::Order" description="The current order object.">
+  <PallasTradeOrder />
+</ResponseField>
+
+Returns the current order object. If no order is found, it will return `nil`.
+
+<Tip>
+  Order is automatically created when a user adds a product to the cart.
+</Tip>
+
+### `try_pallastrade_current_user`
+
+<ResponseField name="try_pallastrade_current_user" type="PallasTrade.user_class" description="The current user object.">
+  <PallasTradeUser />
+</ResponseField>
+
+Returns the current user object (class depends on the `PallasTrade.user_class` configuration). If the user is not signed in, it will return `nil`.
+
+<Tip>
+  If you want to check if the user is signed in, you can use the following:
+
+  ```erb
+  <%= try_pallastrade_current_user.present? %>
+  ```
+</Tip>
+
+### `current_currency`
+
+Returns the currently selected currency. By default in the Storefront this will be `store.default_currency`. This can be changed in the `Settings -> Store Defaults` page.
+
+```erb
+<%= current_currency %>
+```
+
+will return
+
+```
+USD
+```
+
+### `current_locale`
+
+Returns the currently selected locale. By default in the Storefront this will be `store.default_locale`. This can be changed in the `Settings -> Store Defaults` page. If there are multiple locales available, it will return the locale that is currently selected by the user.
+
+```erb
+<%= current_locale %>
+```
+
+<Info>
+  Locale also affects the storefront URLs. For example, if the default locale is `en` and the user selects `fr`, the URL will be `/fr/products/123`.
+</Info>
+
+### `current_taxon`
+
+Returns the current taxon when viewing a category/collection page.
+
+```erb
+<%= current_taxon&.name %>
+```
+
+### `current_wishlist`
+
+Returns the current user's default wishlist for the current store.
+
+```erb
+<% if current_wishlist.present? %>
+  <%= current_wishlist.wished_items.count %> items
+<% end %>
+```
+
+## Page Rendering Helpers
+
+### `render_page`
+
+Renders a page with all its sections. This is the main method for rendering page content.
+
+```erb
+<%= render_page(current_page, pickup_locations: @pickup_locations) %>
+```
+
+**Parameters:**
+- `page` - The page to render (defaults to `current_page`)
+- `variables` - Hash of variables to pass to section templates
+
+### `render_section`
+
+Renders a single section.
+
+```erb
+<%= render_section(section, product: @product) %>
+```
+
+### `render_header_sections`
+
+Renders all header sections (announcement bar, header).
+
+```erb
+<%= render_header_sections %>
+```
+
+### `render_footer_sections`
+
+Renders all footer sections (newsletter, footer).
+
+```erb
+<%= render_footer_sections %>
+```
+
+## Section & Block Helpers
+
+### `section_styles`
+
+Returns inline CSS styles for a section based on its preferences (padding, colors, borders).
+
+```erb
+<div style="<%= section_styles(section) %>">
+  <!-- Section content -->
+</div>
+```
+
+### `block_attributes`
+
+Returns data attributes for a block (used for Page Builder editing).
+
+```erb
+<h2 <%= block_attributes(block) %>>
+  <%= block.text %>
+</h2>
+```
+
+### `page_builder_enabled?`
+
+Returns `true` when the page is being viewed in Page Builder preview mode.
+
+```erb
+<% cache_unless page_builder_enabled?, cache_key do %>
+  <!-- Cached content -->
+<% end %>
+```
+
+### `page_builder_link_to`
+
+Renders a link from a `PallasTrade::PageLink` object.
+
+```erb
+<%= page_builder_link_to section.link, class: 'btn-primary' %>
+
+<%# With custom content %>
+<%= page_builder_link_to section.link do %>
+  <span class="icon">→</span> Click here
+<% end %>
+```
+
+## Currency & Price Helpers
+
+### `supported_currencies`
+
+Returns the list of supported currencies for the current store as an array of strings.
+
+```erb
+<%= supported_currencies %>
+```
+
+will return
+
+```ruby
+["USD", "EUR"]
+```
+
+### `display_price`
+
+Displays a formatted price with currency symbol.
+
+```erb
+<%= display_price(product.price_in(current_currency)) %>
+```
+
+## Date & Time Helpers
+
+### `local_time`
+
+Displays a time in the user's timezone in a human readable format (based on the browser's timezone).
+
+```erb
+<%= local_time(order.sent_to_erp_at) %>
+```
+
+Provided by [local_time gem](https://github.com/basecamp/local_time).
+
+## URL Helpers
+
+### `pallastrade_storefront_resource_url`
+
+Generates a URL for a PallasTrade resource (product, taxon, post, page).
+
+```erb
+<%= link_to product.name, pallastrade_storefront_resource_url(product) %>
+<%= link_to taxon.name, pallastrade_storefront_resource_url(taxon) %>
+```
+
+### `pallastrade.nested_taxons_path`
+
+Generates a URL for a taxon using its full permalink.
+
+```erb
+<%= link_to taxon.name, pallastrade.nested_taxons_path(taxon) %>
+<%# => /t/categories/clothing/shirts %>
+```
+
+## Image Helpers
+
+### `pallastrade_image_tag`
+
+Renders an optimized image tag with automatic WebP conversion and retina support.
+
+```erb
+<%= pallastrade_image_tag product.images.first,
+    width: 400,
+    height: 400,
+    alt: product.name,
+    loading: :lazy %>
+```
+
+### `pallastrade_image_url`
+
+Generates a URL for an image with specified dimensions.
+
+```erb
+<%= pallastrade_image_url(product.images.first, width: 800, height: 600) %>
+```
+
+<Info>
+  See [Media](/developer/core-concepts/media) for more details on image helpers.
+</Info>
+
+## Product Helpers
+
+### `taxon_products`
+
+Returns products for a given taxon, useful in section templates.
+
+```erb
+<% taxon_products(section.taxon).limit(4).each do |product| %>
+  <%= render 'pallastrade/products/card', product: product %>
+<% end %>
+```
+
+### `storefront_products`
+
+Returns products based on current filters and sorting.
+
+```erb
+<% storefront_products.each do |product| %>
+  <%= render 'pallastrade/products/card', product: product %>
+<% end %>
+```
+
+## Cache Helpers
+
+### `pallastrade_storefront_base_cache_key`
+
+Returns the base cache key for storefront caching.
+
+```erb
+<% cache [pallastrade_storefront_base_cache_key, product] do %>
+  <%= render 'product_card', product: product %>
+<% end %>
+```
+
+### `pallastrade_storefront_base_cache_scope`
+
+Returns a cache scope proc for section caching.
+
+```erb
+<% cache_unless page_builder_enabled?, pallastrade_storefront_base_cache_scope.call(section) do %>
+  <!-- Section content -->
+<% end %>
+```
+
+## Preview Helpers
+
+These helpers are used for Page Builder preview functionality:
+
+| Helper | Description |
+|--------|-------------|
+| `current_theme_preview` | Returns the theme preview if in preview mode |
+| `current_page_preview` | Returns the page preview if in preview mode |
+| `current_theme_or_preview` | Returns theme preview or active theme |
+| `current_page_or_preview` | Returns page preview or active page |
+
+## Related Documentation
+
+- [Sections](/developer/storefront/rails/sections) - Section rendering and customization
+- [Blocks](/developer/storefront/rails/blocks) - Block rendering
+- [Media](/developer/core-concepts/media) - Image helper methods

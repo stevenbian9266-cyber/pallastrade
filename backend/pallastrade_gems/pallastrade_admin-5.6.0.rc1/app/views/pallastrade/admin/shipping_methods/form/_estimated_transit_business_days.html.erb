@@ -1,0 +1,16 @@
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">
+      <%= PallasTrade.t(:estimated_transit_business_days) %>
+    </h5>
+  </div>
+  <div class="card-body">
+    <div class="alert alert-info">
+      <%= PallasTrade.t('admin.shipping_methods.estimated_transit_business_days_help') %>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <%= f.pallastrade_number_field :estimated_transit_business_days_min, size: 2, placeholder: PallasTrade.t(:min), min: 1, label: PallasTrade.t(:min) %>
+      <%= f.pallastrade_number_field :estimated_transit_business_days_max, size: 2, placeholder: PallasTrade.t(:max), min: 1, label: PallasTrade.t(:max) %>
+    </div>
+  </div>
+</div>

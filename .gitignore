@@ -1,0 +1,13 @@
+# PallasTrade root ignore rules
+# Generated caches and temporary artifacts
+/.pnpm-store/
+/.tmp/
+/tmp/
+/backups/
+/node_modules/
+
+# OS and IDE metadata
+/.vscode/
+/.agents/
+.DS_Store
+Thumbs.db

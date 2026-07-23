@@ -1,0 +1,40 @@
+base_locale: en
+data:
+  yaml:
+    write:
+      # do not wrap lines at 80 characters
+      line_width: -1
+
+# Find translate calls
+search:
+  paths:
+    - '../api/app'
+    - '../api/lib'
+
+#### For API v1 only, START ####
+  exclude:
+    - '../api/app/controllers/pallastrade/api/v1/*'
+    - '../api/app/views/*'
+
+ignore_unused:
+  - 'PallasTrade.api.gateway_error'
+  - 'PallasTrade.api.invalid_api_key'
+  - 'PallasTrade.api.invalid_resource'
+  - 'PallasTrade.api.invalid_taxonomy_id'
+  - 'PallasTrade.api.must_specify_api_key'
+  - 'PallasTrade.api.negative_quantity'
+  - 'PallasTrade.api.order.could_not_transition'
+  - 'PallasTrade.api.order.insufficient_quantity'
+  - 'PallasTrade.api.order.invalid_shipping_method'
+  - 'PallasTrade.api.payment.credit_over_limit'
+  - 'PallasTrade.api.payment.update_forbidden'
+  - 'PallasTrade.api.shipment.cannot_ready'
+  - 'PallasTrade.api.shipment_transfer_errors_occurred'
+  - 'PallasTrade.api.shipment_transfer_success'
+  - 'PallasTrade.api.stock_location_required'
+  - 'PallasTrade.api.unauthorized'
+  - 'PallasTrade.api.wrong_shipment_target'
+#### For API v1 only, END ####
+
+# The PatternMapper for PallasTrade.t
+<% I18n::Tasks.add_scanner 'I18n::Tasks::Scanners::PatternMapper', patterns: [['\bPallasTrade\.t[( ]\s*%{key}', 'PallasTrade.%{key}']] %>

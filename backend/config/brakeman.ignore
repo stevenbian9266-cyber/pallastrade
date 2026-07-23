@@ -1,0 +1,47 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "File Access",
+      "warning_code": 16,
+      "fingerprint": "7bde1189928e9bfc7bfe83c6a77a8eec06f2da7965a492bebd15403c3dbd1ece",
+      "check_name": "SendFile",
+      "message": "Parameter value used in file name",
+      "file": "pallastrade_gems/pallastrade_dashboard-5.6.0.rc1/app/controllers/pallastrade/dashboard/app_controller.rb",
+      "line": 30,
+      "link": "https://brakemanscanner.org/docs/warning_types/file_access/",
+      "code": "send_file(resolve_file(dist_root, params[:path].to_s), :disposition => \"inline\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "PallasTrade::Dashboard::AppController",
+        "method": "show"
+      },
+      "user_input": "params[:path].to_s",
+      "confidence": "Weak",
+      "cwe_id": [
+        22
+      ],
+      "note": "False positive after explicit hardening: resolve_file rejects null bytes, absolute paths, and dot segments, then realpath-resolves both root and candidate and requires the candidate to remain under the trusted dashboard dist root. This also blocks symlink escapes."
+    },
+    {
+      "warning_type": "Cross-Site Scripting",
+      "warning_code": 114,
+      "fingerprint": "8275f584e7cced41c26890e574cdbf6804bddff54374058834a562294c99d6f6",
+      "check_name": "JSONEntityEscape",
+      "message": "HTML entities in JSON are not escaped by default",
+      "file": "config/environments/production.rb",
+      "line": 4,
+      "link": "https://brakemanscanner.org/docs/warning_types/cross_site_scripting/",
+      "code": "ActiveSupport::JSON::Encoding.escape_html_entities_in_json = false",
+      "render_path": null,
+      "location": null,
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        79
+      ],
+      "note": "Accepted API-only configuration: responses are emitted with application/json and are never interpolated into HTML or script contexts. HTML views do not embed raw serialized API JSON."
+    }
+  ],
+  "brakeman_version": "8.0.5"
+}

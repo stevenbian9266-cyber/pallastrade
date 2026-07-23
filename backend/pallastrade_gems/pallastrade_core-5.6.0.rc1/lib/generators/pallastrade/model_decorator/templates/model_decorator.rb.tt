@@ -1,0 +1,12 @@
+module PallasTrade
+  module <%= decorator_name %>
+    def self.prepended(base)
+      # base.belongs_to :brand
+    end
+
+    # add custom methods here
+  end
+end
+
+PallasTrade::<%= model_name %>.prepend PallasTrade::<%= decorator_name %>
+

@@ -1,0 +1,69 @@
+---
+title: PallasTrade Multi Vendor Installation
+sidebarTitle: Installation
+description: Install and configure PallasTrade Multi-Vendor to launch a marketplace with multiple vendors, including prerequisites, gem setup, license keys, and vendor onboarding.
+---
+
+<Warning>
+  This installation instructions assume you have purchased the [PallasTrade Enterprise Edition license](https://pallastrade.cn/pricing).
+</Warning>
+
+## Prerequisites
+
+* You need to be on PallasTrade 5.1+, we recommend using [pallastrade_starter](https://github.com/stevenbian9266-cyber/pallastrade) as a base for your application
+* You need to have 2 environment variables set:
+  * `KEYGEN_ACCOUNT_ID`
+  * `KEYGEN_LICENSE_KEY`
+* We support both PostgreSQL and MySQL databases
+* Redis/Valkey for background jobs
+
+<Info>
+  Environment variables will be provided to you after purchasing the [PallasTrade Enterprise Edition license](https://pallastrade.cn/pricing).
+</Info>
+
+<Warning>
+  You will need to add these environment variables to your CI/CD pipeline and production environments.
+</Warning>
+
+## Installing gems
+
+1. Add the following code to your `Gemfile`:
+
+    ```ruby
+    source "https://license:#{ENV['KEYGEN_LICENSE_KEY']}@rubygems.pkg.keygen.sh/#{ENV['KEYGEN_ACCOUNT_ID']}" do
+      gem 'pallastrade_enterprise'
+      gem 'pallastrade_multi_vendor'
+    end
+    ```
+
+2. Install gems:
+
+    <CodeGroup>
+
+    ```bash PallasTrade CLI (Docker)
+    pallastrade bundle install
+    ```
+
+    ```bash Without PallasTrade CLI
+    bundle install
+    ```
+
+    </CodeGroup>
+
+3. Run generators:
+
+    <CodeGroup>
+
+    ```bash PallasTrade CLI (Docker)
+    pallastrade generate pallastrade_enterprise:install && pallastrade generate pallastrade_multi_vendor:install
+    ```
+
+    ```bash Without PallasTrade CLI
+    bin/rails g pallastrade_enterprise:install && bin/rails g pallastrade_multi_vendor:install
+    ```
+
+    </CodeGroup>
+
+    <Info>
+      This will copy and run migrations for `pallastrade_enterprise` and `pallastrade_multi_vendor` gems.
+    </Info>

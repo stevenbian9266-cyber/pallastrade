@@ -1,0 +1,38 @@
+name: Storefront CI
+
+on:
+  workflow_call:
+  push:
+    branches: [main]
+    paths:
+      - 'storefront/**'
+      - '.github/workflows/storefront-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'storefront/**'
+      - '.github/workflows/storefront-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: storefront
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: storefront/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npx tsc --noEmit
+      - run: npm run test

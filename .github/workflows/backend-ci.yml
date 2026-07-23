@@ -1,0 +1,71 @@
+name: Backend CI
+
+on:
+  workflow_call:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: postgres://postgres@localhost:5432/pallastrade_test
+      REDIS_URL: redis://localhost:6379/0
+      RAILS_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate Compose environment contract
+        shell: pwsh
+        run: ./scripts/ci/compose-config-check.ps1
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: backend
+          bundler-cache: true
+      - name: Prepare database
+        run: bin/rails db:prepare
+      - name: Precompile assets
+        run: bin/rake assets:precompile
+      - name: Run tests
+        run: bundle exec rspec
+      - name: Brakeman security scan
+        run: bundle exec brakeman --no-pager -q
+      - name: Bundle audit
+        run: bundle exec bundle-audit check --update

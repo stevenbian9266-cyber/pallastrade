@@ -1,0 +1,3 @@
+bump:
+  file: "lib/pallastrade_stripe/version.rb"
+

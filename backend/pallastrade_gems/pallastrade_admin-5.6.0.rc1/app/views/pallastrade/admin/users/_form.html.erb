@@ -1,0 +1,25 @@
+<div class="card mb-6">
+  <div class="card-body">
+    <%= f.pallastrade_email_field :email, required: true, autofocus: f.object.new_record? %>
+    <%= f.pallastrade_text_field :first_name, required: true %>
+    <%= f.pallastrade_text_field :last_name, required: true %>
+    <%= f.pallastrade_text_field :phone %>
+    <div class="form-group">
+      <%= f.label :tag_list, PallasTrade.t(:tags) %>
+      <%= tom_select_tag 'user[tag_list]', multiple: true, class: 'w-full', options: user_tags_json_array, active_option: @user.tag_list, value_field: :name, create: true %>
+    </div>
+    <% if current_store.customer_groups.any? %>
+      <%= f.pallastrade_select :customer_group_ids,
+              options_from_collection_for_select(current_store.customer_groups, 'id', 'name', @user.customer_group_ids),
+              { prompt: false, label: PallasTrade.t(:customer_groups), autocomplete: true },
+              { multiple: true } %>
+    <% end %>
+    <% if @user.class == PallasTrade.admin_user_class && can?(:manage, PallasTrade::Role) %>
+      <%= f.pallastrade_select :pallastrade_role_ids,
+              options_from_collection_for_select(PallasTrade::Role.all, 'id', 'name', @user.pallastrade_roles.pluck(:id)),
+              { prompt: false, label: PallasTrade.t(:roles), autocomplete: true },
+              { multiple: true } %>
+    <% end %>
+    <%= f.pallastrade_check_box :accepts_email_marketing %>
+  </div>
+</div>

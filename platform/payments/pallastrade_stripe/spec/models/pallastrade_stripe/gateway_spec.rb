@@ -1,0 +1,1397 @@
+require 'spec_helper'
+
+RSpec.describe PallasTradeStripe::Gateway do
+  let(:store) { PallasTrade::Store.default }
+  let(:gateway) { create(:stripe_gateway, store: store) }
+  let(:amount) { 100 }
+
+  describe '#payment_intent_accepted?' do
+    subject { gateway.payment_intent_accepted?(stripe_payment_intent) }
+
+    let(:stripe_payment_intent) {
+      Stripe::StripeObject.construct_from(
+        id: 'pi_123',
+        status: payment_intent_status,
+        capture_method: capture_method,
+        payment_method: {
+          type: payment_method_type
+        }
+      )
+    }
+    let(:capture_method) { 'automatic' }
+
+    context 'for a card payment method' do
+      let(:payment_method_type) { 'card' }
+
+      context 'when the payment intent is succeeded' do
+        let(:payment_intent_status) { 'succeeded' }
+
+        it { is_expected.to be(true) }
+      end
+
+      context 'when the payment intent is processing' do
+        let(:payment_intent_status) { 'processing' }
+
+        it { is_expected.to be(false) }
+      end
+
+      context 'when the payment intent status is requires_action' do
+        let(:payment_intent_status) { 'requires_action' }
+
+        it { is_expected.to be(false) }
+      end
+
+      context 'when the payment intent is failed' do
+        let(:payment_intent_status) { 'failed' }
+
+        it { is_expected.to be(false) }
+      end
+
+      context 'when the payment intent status is requires_capture' do
+        let(:payment_intent_status) { 'requires_capture' }
+
+        context 'when capture_method is manual' do
+          let(:capture_method) { 'manual' }
+
+          it { is_expected.to be(true) }
+        end
+
+        context 'when capture_method is automatic' do
+          let(:capture_method) { 'automatic' }
+
+          it { is_expected.to be(false) }
+        end
+      end
+    end
+
+    context 'for a sepa debit payment method' do
+      let(:payment_method_type) { 'sepa_debit' }
+
+      context 'when the payment intent is succeeded' do
+        let(:payment_intent_status) { 'succeeded' }
+
+        it { is_expected.to be(true) }
+      end
+
+      context 'when the payment intent is processing' do
+        let(:payment_intent_status) { 'processing' }
+
+        it { is_expected.to be(true) }
+      end
+
+      context 'when the payment intent status is requires_action' do
+        let(:payment_intent_status) { 'requires_action' }
+
+        it { is_expected.to be(false) }
+      end
+
+      context 'when the payment intent is failed' do
+        let(:payment_intent_status) { 'failed' }
+
+        it { is_expected.to be(false) }
+      end
+    end
+
+    context 'for a bank transfer payment method' do
+      let(:payment_method_type) { 'customer_balance' }
+
+      context 'when the payment intent is succeeded' do
+        let(:payment_intent_status) { 'succeeded' }
+
+        it { is_expected.to be(true) }
+      end
+
+      context 'when the payment intent is processing' do
+        let(:payment_intent_status) { 'processing' }
+
+        it { is_expected.to be(false) }
+      end
+
+      context 'when the payment intent status is requires_action' do
+        let(:payment_intent_status) { 'requires_action' }
+
+        it { is_expected.to be(true) }
+      end
+
+      context 'when the payment intent is failed' do
+        let(:payment_intent_status) { 'failed' }
+
+        it { is_expected.to be(false) }
+      end
+    end
+
+    context 'for a us bank account payment method' do
+      let(:payment_method_type) { 'us_bank_account' }
+
+      context 'when the payment intent is succeeded' do
+        let(:payment_intent_status) { 'succeeded' }
+
+        it { is_expected.to be(true) }
+      end
+
+      context 'when the payment intent is processing' do
+        let(:payment_intent_status) { 'processing' }
+
+        it { is_expected.to be(true) }
+      end
+
+      context 'when the payment intent status is requires_action' do
+        let(:payment_intent_status) { 'requires_action' }
+
+        it { is_expected.to be(true) }
+      end
+
+      context 'when the payment intent is failed' do
+        let(:payment_intent_status) { 'failed' }
+
+        it { is_expected.to be(false) }
+      end
+    end
+  end
+
+  describe '#payment_intent_delayed_notification?' do
+    subject { gateway.payment_intent_delayed_notification?(stripe_payment_intent) }
+
+    let(:stripe_payment_intent) {
+      Stripe::StripeObject.construct_from(
+        id: 'pi_123',
+        status: 'succeeded',
+        payment_method: stripe_payment_method
+      )
+    }
+
+    let(:stripe_payment_method) do
+      { type: payment_method_type }
+    end
+
+    context 'for a card payment method' do
+      let(:payment_method_type) { 'card' }
+
+      it { is_expected.to be(false) }
+    end
+
+    context 'for a sepa debit payment method' do
+      let(:payment_method_type) { 'sepa_debit' }
+
+      it { is_expected.to be(true) }
+    end
+
+    context 'when the payment method is not expanded' do
+      let(:stripe_payment_method) { 'pm_1234567890' }
+
+      it { is_expected.to be(false) }
+    end
+
+    context 'when the payment method type is not provided' do
+      let(:stripe_payment_method) { nil }
+
+      it { is_expected.to be(false) }
+    end
+  end
+
+  describe '#payment_intent_charge_not_required?' do
+    subject { gateway.payment_intent_charge_not_required?(stripe_payment_intent) }
+
+    let(:stripe_payment_intent) do
+      Stripe::StripeObject.construct_from(
+        id: 'pi_123',
+        status: 'succeeded',
+        payment_method: stripe_payment_method
+      )
+    end
+
+    let(:stripe_payment_method) do
+      { type: payment_method_type }
+    end
+
+    context 'for a card payment method' do
+      let(:payment_method_type) { 'card' }
+
+      it { is_expected.to be(false) }
+    end
+
+    context 'for a customer_balance payment method' do
+      let(:payment_method_type) { 'customer_balance' }
+
+      it { is_expected.to be(true) }
+    end
+  end
+
+  describe '#payment_intent_bank_payment_method?' do
+    subject { gateway.payment_intent_bank_payment_method?(stripe_payment_intent) }
+
+    let(:stripe_payment_intent) do
+      Stripe::StripeObject.construct_from(
+        id: 'pi_123',
+        status: 'succeeded',
+        payment_method: stripe_payment_method
+      )
+    end
+
+    let(:stripe_payment_method) do
+      { type: payment_method_type }
+    end
+
+    context 'for a card payment method' do
+      let(:payment_method_type) { 'card' }
+
+      it { is_expected.to be(false) }
+    end
+
+    context 'for a customer_balance payment method' do
+      let(:payment_method_type) { 'customer_balance' }
+
+      it { is_expected.to be(true) }
+    end
+
+    context 'for a us_bank_account payment method' do
+      let(:payment_method_type) { 'us_bank_account' }
+
+      it { is_expected.to be(true) }
+    end
+
+    context 'when the payment method is not expanded' do
+      let(:stripe_payment_method) { 'pm_1234567890' }
+
+      it { is_expected.to be(false) }
+    end
+
+    context 'when the payment method type is not provided' do
+      let(:stripe_payment_method) { nil }
+
+      it { is_expected.to be(false) }
+    end
+  end
+
+  describe '#webhook_url' do
+    subject { gateway.webhook_url }
+
+    it 'returns the core webhook url by default' do
+      expect(subject).to eq("#{store.formatted_url}/api/v3/webhooks/payments/#{gateway.prefixed_id}")
+    end
+
+    context 'with legacy webhook handlers enabled' do
+      before do
+        allow(PallasTradeStripe::Config).to receive(:[]).and_call_original
+        allow(PallasTradeStripe::Config).to receive(:[]).with(:use_legacy_webhook_handlers).and_return(true)
+      end
+
+      it 'returns the StripeEvent webhook url' do
+        expect(subject).to eq("https://#{store.url}/stripe/")
+      end
+    end
+  end
+
+  describe '#after_commit :register_domain' do
+    subject(:create_gateway) { gateway }
+
+    it 'schedules a job to register the Apple Pay store domain' do
+      expect { create_gateway }.to have_enqueued_job(PallasTradeStripe::RegisterDomainJob).once.with(store.id, 'store')
+    end
+
+    context 'with custom domains' do
+      let!(:custom_domains) { create_list(:custom_domain, 3, store: store) }
+
+      it 'schedules jobs to register the Apple Pay store and custom domains' do
+        expect do
+          create_gateway
+        end.to have_enqueued_job(PallasTradeStripe::RegisterDomainJob).exactly(4).times
+      end
+    end
+
+    context 'on update' do
+      before { create_gateway }
+
+      it 'does nothing' do
+        expect { gateway.update!(name: 'test') }.not_to have_enqueued_job(PallasTradeStripe::RegisterDomainJob)
+      end
+    end
+  end
+
+  describe '#create_payment_intent' do
+    subject { gateway.create_payment_intent(amount, order) }
+
+    let(:order) { create(:order_with_line_items) }
+
+    let(:payment_intent_id) { 'pi_3QXmfC2ESifGlJez0qSmz8Vf' }
+    let(:customer_id) { 'cus_RQdxueQXRuXVxx' }
+
+    it 'creates payment intent with a new customer' do
+      VCR.use_cassette('create_payment_intent') do
+        expect { subject }.to change(PallasTrade::GatewayCustomer, :count).by(1)
+
+        expect(subject.success?).to be(true)
+        expect(subject.authorization).to eq(payment_intent_id)
+
+        expect(gateway.gateway_customers.last.user).to eq(order.user)
+        expect(gateway.gateway_customers.last.profile_id).to eq(customer_id)
+      end
+    end
+
+    context 'with a customer' do
+      let!(:customer) { create(:gateway_customer, user: order.user, payment_method: gateway) }
+
+      it 'creates payment intent with an existing customer' do
+        VCR.use_cassette('create_payment_intent') do
+          expect { subject }.to_not change(PallasTrade::GatewayCustomer, :count)
+
+          expect(subject.success?).to be(true)
+          expect(subject.authorization).to eq(payment_intent_id)
+        end
+      end
+    end
+
+    context 'when off_session is true' do
+      subject { gateway.create_payment_intent(amount, order, off_session: true, payment_method_id: payment_method_id) }
+
+      let!(:gateway_customer) { create(:gateway_customer, user: order.user, profile_id: customer_id, payment_method: gateway) }
+
+      let(:customer_id) { 'cus_RQdclxFVLH4oau' }
+      let(:payment_method_id) { 'pm_1QXmPJ2ESifGlJezC2py6ZqS' }
+      let(:payment_intent_id) { 'pi_3QY1WI2ESifGlJez0JGP7vpi' }
+
+      it 'creates payment intent' do
+        VCR.use_cassette('create_payment_intent_off_session') do
+          expect(subject.success?).to be(true)
+          expect(subject.authorization).to eq(payment_intent_id)
+          expect(subject.params['status']).to eq('succeeded')
+          expect(subject.params['payment_method']).to eq(payment_method_id)
+        end
+      end
+    end
+
+    context 'when shipping address is invalid' do
+      let(:order) do
+        build(
+          :order_with_line_items,
+          ship_address: build(:address, address1: nil),
+          store: PallasTrade::Store.default
+        )
+      end
+
+      let(:payment_intent_id) { 'pi_3QY1a32ESifGlJez0k9YRZnS' }
+
+      it 'creates the payment intent without shipping address' do
+        VCR.use_cassette('create_payment_intent_invalid_address') do
+          expect(subject.success?).to be(true)
+          expect(subject.authorization).to eq(payment_intent_id)
+          expect(subject.params['shipping']).to be_nil
+        end
+      end
+    end
+
+    context 'when auto_capture is false on the gateway' do
+      before { gateway.update!(auto_capture: false) }
+
+      it 'forwards capture_method: manual to the PaymentIntentPresenter' do
+        expect(PallasTradeStripe::PaymentIntentPresenter).to receive(:new).with(
+          hash_including(capture_method: 'manual')
+        ).and_call_original
+
+        VCR.use_cassette('create_payment_intent_manual_capture') do
+          expect(subject.success?).to be(true)
+          expect(subject.params['capture_method']).to eq('manual')
+          expect(subject.params['status']).to eq('requires_payment_method')
+        end
+      end
+    end
+
+    context 'when auto_capture is true on the gateway' do
+      before { gateway.update!(auto_capture: true) }
+
+      it 'does not forward capture_method to the PaymentIntentPresenter' do
+        expect(PallasTradeStripe::PaymentIntentPresenter).to receive(:new).with(
+          hash_including(capture_method: nil)
+        ).and_call_original
+
+        VCR.use_cassette('create_payment_intent') do
+          expect(subject.success?).to be(true)
+        end
+      end
+    end
+  end
+
+  describe '#update_payment_intent' do
+    subject { gateway.update_payment_intent(payment_intent_id, amount, order, payment_method_id) }
+
+    let!(:customer) { create(:gateway_customer, user: order.user, payment_method: gateway, profile_id: customer_id) }
+    let(:order) { create(:completed_order_with_totals, store: store) }
+
+    let(:amount) { 4000 }
+    let(:payment_method_id) { nil }
+
+    let(:customer_id) { 'cus_RQdclxFVLH4oau' }
+    let(:payment_intent_id) { 'pi_3QY2qD2ESifGlJez0VuzXjwK' }
+
+    context 'when the amount is different' do
+      let(:amount) { 6000 }
+
+      it 'updates the payment intent with a new amount' do
+        VCR.use_cassette('update_payment_intent_new_amount') do
+          expect(subject.success?).to be(true)
+          expect(subject.authorization).to eq(payment_intent_id)
+          expect(subject.params['amount']).to eq(6000)
+        end
+      end
+
+      context 'when shipping address is invalid' do
+        let(:amount) { 7000 }
+
+        let(:order) do
+          build(
+            :order_with_line_items,
+            ship_address: build(:address, address1: nil),
+            store: PallasTrade::Store.default
+          )
+        end
+
+        it 'updates the payment intent without shipping address' do
+          VCR.use_cassette('update_payment_intent_invalid_address') do
+            expect(subject.success?).to be(true)
+            expect(subject.authorization).to eq(payment_intent_id)
+            expect(subject.params['amount']).to eq(7000)
+          end
+        end
+      end
+    end
+
+    context 'when the shipping address is different' do
+      let(:address) do
+        create(
+          :address,
+          firstname: 'Jane',
+          lastname: 'Zoe',
+          address1: '100 California Street',
+          address2: nil,
+          city: 'San Francisco',
+          zipcode: '94111',
+          state: california_state,
+          country: usa_country
+        )
+      end
+
+      let(:usa_country) { PallasTrade::Country.find_by(iso: 'US') || create(:usa_country) }
+      let(:california_state) { create(:state, name: 'California', abbr: 'CA', country: usa_country) }
+
+      before do
+        order.update!(shipping_address: address)
+      end
+
+      it 'it updates the payment intent with a new address' do
+        VCR.use_cassette('update_payment_intent_new_address') do
+          expect(subject.success?).to be(true)
+          expect(subject.authorization).to eq(payment_intent_id)
+
+          expect(subject.params['shipping']['name']).to eq('Jane Zoe')
+          expect(subject.params['shipping']['address']).to eq(
+            'city' => 'San Francisco',
+            'country' => 'US',
+            'line1' => '100 California Street',
+            'line2' => nil,
+            'postal_code' => '94111',
+            'state' => 'CA'
+          )
+        end
+      end
+    end
+
+    context 'when giving a payment method' do
+      let(:payment_method_id) { 'pm_1QXmPJ2ESifGlJezC2py6ZqS' }
+
+      it 'it updates the payment intent with a payment method' do
+        VCR.use_cassette('update_payment_intent_payment_method') do
+          expect(subject.success?).to be(true)
+          expect(subject.authorization).to eq(payment_intent_id)
+          expect(subject.params['payment_method']).to eq(payment_method_id)
+        end
+      end
+    end
+
+    context 'when the currency is different' do
+      before do
+        allow(store).to receive(:supported_currencies).and_return(['USD','PLN'])
+        allow(order).to receive(:currency).and_return('PLN')
+      end
+
+      it 'it updates the payment intent with a new currency' do
+        VCR.use_cassette('update_payment_intent_new_currency') do
+          expect(subject.success?).to be(true)
+          expect(subject.authorization).to eq(payment_intent_id)
+          expect(subject.params['currency']).to eq('pln')
+        end
+      end
+    end
+  end
+
+  describe '#cancel' do
+    subject { gateway.cancel(payment_intent_id, payment) }
+
+    let!(:refund_reason) { PallasTrade::RefundReason.first || create(:default_refund_reason) }
+
+    context 'when payment is completed' do
+      let!(:order) { create(:order, total: 10) }
+      let!(:customer) { create(:gateway_customer, user: order.user, payment_method: gateway) }
+
+      let!(:payment) { create(:payment, state: 'completed', order: order, payment_method: gateway, amount: 10.0, response_code: payment_intent_id) }
+      let!(:refund) { create(:refund, payment: payment, amount: 2.0) }
+
+      let(:payment_intent_id) { 'pi_3QXmL12ESifGlJez0v0B8tUn' }
+      let(:refund_id) { 're_3QXmL12ESifGlJez0GcOBHng' }
+
+      it 'creates a refund with credit_allowed_amount' do
+        VCR.use_cassette('create_refund') do
+          expect { subject }.to change(PallasTrade::Refund, :count).by(1)
+
+          expect(payment.refunds.last.amount).to eq(8.0)
+
+          expect(subject.success?).to be(true)
+          expect(subject.authorization).to eq(payment_intent_id)
+
+          expect(subject.params['id']).to eq(refund_id)
+          expect(subject.params['status']).to eq('succeeded')
+          expect(subject.params['payment_intent']).to eq(payment_intent_id)
+          expect(subject.params['object']).to eq('refund')
+          expect(subject.params['amount']).to eq(800)
+        end
+      end
+
+      context 'if amount to refund is zero' do
+        let!(:refund) { create(:refund, payment: payment, amount: payment.amount) }
+
+        it 'does not create refund' do
+          expect { subject }.not_to change(PallasTrade::Refund, :count)
+
+          expect(subject.success?).to be true
+          expect(subject.authorization).to eq(payment_intent_id)
+        end
+      end
+    end
+
+    context 'when payment is not completed' do
+      let!(:payment) { create(:payment, response_code: payment_intent_id) }
+
+      let(:payment_intent_id) { 'pi_3QY1o72ESifGlJez06ZbKHjy' }
+
+      it 'cancels the payment intent' do
+        VCR.use_cassette('cancel_payment_intent') do
+          expect { subject }.not_to change(PallasTrade::Refund, :count)
+
+          expect(subject.success?).to be(true)
+          expect(subject.authorization).to eq(payment_intent_id)
+          expect(subject.params['status']).to eq('canceled')
+        end
+      end
+    end
+  end
+
+  describe '#credit' do
+    subject { gateway.credit(amount_in_cents, nil, payment_intent_id, {}) }
+
+    let(:amount_in_cents) { 800 }
+    let(:payment_intent_id) { 'pi_3QXmL12ESifGlJez0v0B8tUn' }
+
+    let(:refund_id) { 're_3QXmL12ESifGlJez0GcOBHng' }
+
+    it 'refunds some of the payment amount' do
+      VCR.use_cassette('create_refund') do
+        expect(subject.success?).to be(true)
+        expect(subject.authorization).to eq(refund_id)
+
+        expect(subject.params['id']).to eq(refund_id)
+        expect(subject.params['status']).to eq('succeeded')
+        expect(subject.params['payment_intent']).to eq(payment_intent_id)
+        expect(subject.params['object']).to eq('refund')
+        expect(subject.params['amount']).to eq(800)
+      end
+    end
+  end
+
+  describe '#purchase' do
+    subject { gateway.purchase(amount_in_cents, credit_card, { order_id: order_id }) }
+
+    let(:amount_in_cents) { 1000 }
+    let(:order_id) { "#{order.number}-#{payment.number}" }
+
+    let!(:order) { create(:completed_order_with_totals, number: 'R111098765') }
+
+    let!(:customer) { create(:gateway_customer, user: order.user, profile_id: customer_id, payment_method: gateway) }
+    let!(:credit_card) { create(:credit_card, gateway_payment_profile_id: payment_method_id, payment_method: gateway) }
+
+    let!(:payment) { create(:payment, number: 'ABC1DEF2', amount: 110, payment_method: gateway, order: order, source: credit_card, response_code: nil) }
+
+    let(:customer_id) { 'cus_RQdclxFVLH4oau' }
+    let(:payment_method_id) { 'pm_1QXmPJ2ESifGlJezC2py6ZqS' }
+    let(:payment_intent_id) { 'pi_3QY1y22ESifGlJez12haN8ah' }
+
+    it 'successfully creates a payment intent' do
+      VCR.use_cassette('create_payment_intent_with_payment_method') do
+        expect(subject.success?).to be true
+
+        expect(subject.authorization).to eq(payment_intent_id)
+        expect(subject.params['status']).to eq('succeeded')
+        expect(subject.params['amount']).to eq(amount_in_cents)
+        expect(subject.params['customer']).to eq(customer_id)
+        expect(subject.params['transfer_group']).to eq(order.number)
+
+        expect(subject.params['payment_method']).to include(
+          'object' => 'payment_method',
+          'id' => payment_method_id,
+          'type' => 'card'
+        )
+
+        expect(payment.reload.response_code).to eq(payment_intent_id)
+        expect(payment.state).to eq('checkout')
+      end
+    end
+
+    context 'when order or payment is missing' do
+      let(:order_id) { 'missing' }
+
+      it 'returns failure' do
+        expect(subject.success?).to be(false)
+        expect(payment.reload.state).to eq 'checkout'
+      end
+    end
+  end
+
+  describe '#authorize (manual capture)' do
+    subject { gateway.authorize(amount_in_cents, credit_card, { order_id: order_id }) }
+
+    let(:amount_in_cents) { 1000 }
+    let(:order_id) { "#{order.number}-#{payment.number}" }
+    let!(:order) { create(:completed_order_with_totals, number: 'R111098766') }
+    let!(:customer) { create(:gateway_customer, user: order.user, profile_id: customer_id, payment_method: gateway) }
+    let!(:credit_card) { create(:credit_card, gateway_payment_profile_id: payment_method_id, payment_method: gateway) }
+    let!(:payment) { create(:payment, number: 'ABC1DEF3', amount: 10, payment_method: gateway, order: order, source: credit_card, response_code: nil) }
+
+    let(:customer_id) { 'cus_RQdclxFVLH4oau' }
+    let(:payment_method_id) { 'pm_1QXmPJ2ESifGlJezC2py6ZqS' }
+
+    before { gateway.update!(auto_capture: false) }
+
+    it 'creates a manual-capture payment intent and does not capture funds' do
+      VCR.use_cassette('create_payment_intent_with_payment_method_manual_capture') do
+        expect(subject.success?).to be(true)
+        expect(subject.params['capture_method']).to eq('manual')
+        expect(subject.params['status']).to eq('requires_capture')
+      end
+    end
+  end
+
+  describe '#capture' do
+    subject { gateway.capture(amount_in_cents, payment_intent_id) }
+
+    let(:amount_in_cents) { 1000 }
+
+    # We bootstrap a manual-capture PI on Stripe so it sits in `requires_capture`
+    # before the test calls `gateway.capture(...)`. The cassette records both the
+    # bootstrap and the capture, which is faithful to what a real auth-then-capture
+    # flow looks like.
+    context 'when the payment intent is in requires_capture state' do
+      let(:payment_intent_id) do
+        bootstrap = Stripe::PaymentIntent.create(
+          {
+            amount: amount_in_cents,
+            currency: 'usd',
+            payment_method: 'pm_card_visa',
+            confirm: true,
+            capture_method: 'manual',
+            automatic_payment_methods: { enabled: true, allow_redirects: 'never' }
+          },
+          { api_key: gateway.preferred_secret_key }
+        )
+        bootstrap.id
+      end
+
+      it 'captures the payment intent through Stripe' do
+        VCR.use_cassette('capture_payment_intent_requires_capture') do
+          expect(subject.success?).to be(true)
+          expect(subject.authorization).to eq(payment_intent_id)
+          expect(subject.params['status']).to eq('succeeded')
+          expect(subject.params['amount_received']).to eq(amount_in_cents)
+        end
+      end
+    end
+
+    context 'when the payment intent is already succeeded (idempotent capture)' do
+      let(:payment_intent_id) do
+        bootstrap = Stripe::PaymentIntent.create(
+          {
+            amount: amount_in_cents,
+            currency: 'usd',
+            payment_method: 'pm_card_visa',
+            confirm: true,
+            automatic_payment_methods: { enabled: true, allow_redirects: 'never' }
+          },
+          { api_key: gateway.preferred_secret_key }
+        )
+        bootstrap.id
+      end
+
+      it 'returns the existing payment intent without re-capturing' do
+        VCR.use_cassette('capture_payment_intent_already_succeeded') do
+          expect(subject.success?).to be(true)
+          expect(subject.params['status']).to eq('succeeded')
+        end
+      end
+    end
+
+    context 'when the payment intent is in an unsupported state' do
+      let(:payment_intent_id) do
+        bootstrap = Stripe::PaymentIntent.create(
+          {
+            amount: amount_in_cents,
+            currency: 'usd',
+            automatic_payment_methods: { enabled: true, allow_redirects: 'never' }
+          },
+          { api_key: gateway.preferred_secret_key }
+        )
+        bootstrap.id
+      end
+
+      it 'raises a GatewayError' do
+        VCR.use_cassette('capture_payment_intent_unsupported_state') do
+          expect { subject }.to raise_error(PallasTrade::Core::GatewayError, /Payment intent status is/)
+        end
+      end
+    end
+  end
+
+  describe '#parse_webhook_event' do
+    subject(:result) { gateway.parse_webhook_event(raw_body, headers) }
+
+    let(:store) { PallasTrade::Store.default }
+    let(:order) { create(:order_with_line_items, store: store) }
+    let(:raw_body) { '{"id": "evt_test"}' }
+    let(:headers) { { 'HTTP_STRIPE_SIGNATURE' => 'sig_test' } }
+
+    let!(:payment_session) do
+      create(:stripe_payment_session, order: order, payment_method: gateway, external_id: 'pi_webhook_999')
+    end
+
+    let(:stripe_event) do
+      Stripe::StripeObject.construct_from(
+        type: event_type,
+        data: { object: { id: 'pi_webhook_999' } }
+      )
+    end
+
+    before do
+      allow(gateway).to receive(:verify_webhook_signature).and_return(stripe_event)
+    end
+
+    context 'when event is payment_intent.amount_capturable_updated' do
+      let(:event_type) { 'payment_intent.amount_capturable_updated' }
+
+      it 'returns :authorized action and the matching payment session' do
+        expect(result[:action]).to eq(:authorized)
+        expect(result[:payment_session]).to eq(payment_session)
+      end
+    end
+  end
+
+  describe '#payment_intent_manual_capture?' do
+    subject { gateway.payment_intent_manual_capture?(stripe_pi) }
+
+    let(:stripe_pi) { Stripe::StripeObject.construct_from(id: 'pi_x', capture_method: capture_method) }
+
+    context 'when capture_method is manual' do
+      let(:capture_method) { 'manual' }
+      it { is_expected.to be(true) }
+    end
+
+    context 'when capture_method is automatic' do
+      let(:capture_method) { 'automatic' }
+      it { is_expected.to be(false) }
+    end
+
+    context 'when capture_method is missing' do
+      let(:stripe_pi) { Stripe::StripeObject.construct_from(id: 'pi_x') }
+      it { is_expected.to be(false) }
+    end
+  end
+
+  describe '#payment_intent_requires_capture?' do
+    subject { gateway.payment_intent_requires_capture?(stripe_pi) }
+
+    let(:stripe_pi) { Stripe::StripeObject.construct_from(id: 'pi_x', status: status) }
+
+    context 'when status is requires_capture' do
+      let(:status) { 'requires_capture' }
+      it { is_expected.to be(true) }
+    end
+
+    context 'when status is succeeded' do
+      let(:status) { 'succeeded' }
+      it { is_expected.to be(false) }
+    end
+  end
+
+  describe '#create_customer' do
+    subject { gateway.create_customer(order: order, user: user) }
+
+    let(:order) { create(:order_with_line_items, user: user, bill_address: bill_address, email: 'test@example.com') }
+    let(:user) { create(:user, email: 'test@example.com', first_name: 'Jane', last_name: 'Moe', bill_address: user_bill_address) }
+
+    let(:bill_address) do
+      create(
+        :address,
+        city: 'San Francisco',
+        address1: '100 California Street',
+        address2: 'Apt 1',
+        postal_code: '94111',
+        state: california_state,
+        country: usa_country,
+        firstname: 'John',
+        lastname: 'Doe',
+        phone: '1234567890'
+      )
+    end
+
+    let(:user_bill_address) do
+      create(
+        :address,
+        city: 'New York',
+        address1: '100 Main Street',
+        address2: 'Apt 2',
+        postal_code: '10001',
+        state: new_york_state,
+        country: usa_country
+      )
+    end
+
+    let(:usa_country) { PallasTrade::Country.find_by(iso: 'US') || create(:usa_country) }
+    let(:california_state) { create(:state, name: 'California', abbr: 'CA', country: usa_country) }
+    let(:new_york_state) { create(:state, name: 'New York', abbr: 'NY', country: usa_country) }
+
+    let(:gateway_customer) { PallasTrade::GatewayCustomer.stripe.last }
+    let(:stripe_customer) { Stripe::Customer.retrieve(gateway_customer.profile_id, { api_key: gateway.preferred_secret_key }) }
+
+    it 'creates a new Stripe customer and gateway customer record' do
+      VCR.use_cassette('create_customer') do
+        expect { subject }.to change(PallasTrade::GatewayCustomer, :count).by(1)
+
+        expect(subject).to eq(gateway_customer)
+        expect(subject.user).to eq(user)
+        expect(subject.profile_id).to eq(gateway_customer.profile_id)
+        expect(subject.payment_method).to eq(gateway)
+        expect(subject.persisted?).to be(true)
+
+        expect(stripe_customer.email).to eq(order.email)
+        expect(stripe_customer.name).to eq(order.name)
+
+        expect(stripe_customer.address.city).to eq(bill_address.city)
+        expect(stripe_customer.address.line1).to eq(bill_address.address1)
+        expect(stripe_customer.address.line2).to eq(bill_address.address2)
+        expect(stripe_customer.address.postal_code).to eq(bill_address.zipcode)
+        expect(stripe_customer.address.state).to eq(california_state.name)
+        expect(stripe_customer.address.country).to eq(usa_country.name)
+      end
+    end
+
+    context 'when user is nil' do
+      let(:user) { nil }
+
+      it 'creates a customer but does not save the gateway customer record' do
+        VCR.use_cassette('create_customer') do
+          expect { subject }.not_to change(PallasTrade::GatewayCustomer, :count)
+
+          expect(subject).to be_new_record
+          expect(subject.user).to be_nil
+          expect(subject.profile_id).to be_present
+          expect(subject.payment_method).to eq(gateway)
+        end
+      end
+    end
+
+    context 'when only user is provided' do
+      subject { gateway.create_customer(user: user) }
+
+      it 'creates a customer using only user information' do
+        VCR.use_cassette('create_customer_based_on_user') do
+          expect { subject }.to change(PallasTrade::GatewayCustomer, :count).by(1)
+
+          expect(subject).to eq(gateway_customer)
+          expect(subject.user).to eq(user)
+          expect(subject.profile_id).to eq(gateway_customer.profile_id)
+          expect(subject.payment_method).to eq(gateway)
+          expect(subject.persisted?).to be(true)
+
+          expect(stripe_customer.email).to eq(user.email)
+          expect(stripe_customer.name).to eq(user.name)
+
+          expect(stripe_customer.address.city).to eq(user_bill_address.city)
+          expect(stripe_customer.address.line1).to eq(user_bill_address.address1)
+          expect(stripe_customer.address.line2).to eq(user_bill_address.address2)
+          expect(stripe_customer.address.postal_code).to eq(user_bill_address.zipcode)
+          expect(stripe_customer.address.state).to eq(new_york_state.name)
+          expect(stripe_customer.address.country).to eq(usa_country.name)
+        end
+      end
+    end
+  end
+
+  describe '#update_customer' do
+    subject { gateway.update_customer(order: order, user: user) }
+
+    let(:order) { create(:order_with_line_items, user: user, bill_address: bill_address) }
+    let(:user) { create(:user, email: 'test-updated@example.com', first_name: 'Jane', last_name: 'Moe', bill_address: user_bill_address) }
+
+    let(:bill_address) do
+      create(
+        :address,
+        city: 'San Francisco',
+        address1: '200 California Street',
+        address2: 'Apt 11',
+        postal_code: '94112',
+        state: california_state,
+        country: usa_country,
+        firstname: 'John',
+        lastname: 'Doe'
+      )
+    end
+
+    let(:user_bill_address) do
+      create(
+        :address,
+        city: 'New York',
+        address1: '200 Main Street',
+        address2: 'Apt 22',
+        postal_code: '10002',
+        state: new_york_state,
+        country: usa_country
+      )
+    end
+
+    let(:usa_country) { PallasTrade::Country.find_by(iso: 'US') || create(:usa_country) }
+    let(:california_state) { create(:state, name: 'California', abbr: 'CA', country: usa_country) }
+    let(:new_york_state) { create(:state, name: 'New York', abbr: 'NY', country: usa_country) }
+
+    let!(:gateway_customer) { create(:gateway_customer, user: user, profile_id: customer_id, payment_method: gateway) }
+    let(:customer_id) { 'cus_SeIsxI1TG3dGJv' }
+
+    let(:stripe_customer) { Stripe::Customer.retrieve(customer_id, { api_key: gateway.preferred_secret_key }) }
+
+    it 'updates the existing Stripe customer' do
+      VCR.use_cassette('update_customer') do
+        expect { subject }.not_to change(PallasTrade::GatewayCustomer, :count)
+
+        expect(subject).to eq(stripe_customer)
+
+        expect(stripe_customer.email).to eq(order.email)
+        expect(stripe_customer.name).to eq(order.name)
+
+        expect(stripe_customer.address.city).to eq(bill_address.city)
+        expect(stripe_customer.address.line1).to eq(bill_address.address1)
+        expect(stripe_customer.address.line2).to eq(bill_address.address2)
+        expect(stripe_customer.address.postal_code).to eq(bill_address.zipcode)
+        expect(stripe_customer.address.state).to eq(california_state.name)
+        expect(stripe_customer.address.country).to eq(usa_country.name)
+      end
+    end
+
+    context 'when user is nil' do
+      let(:user) { nil }
+      let(:gateway_customer) { nil }
+
+      it 'does nothing' do
+        expect(subject).to be_nil
+      end
+    end
+
+    context 'when gateway customer does not exist' do
+      let(:gateway_customer) { nil }
+
+      it 'does nothing' do
+        expect(subject).to be_nil
+      end
+    end
+
+    context 'when only user is provided' do
+      subject { gateway.update_customer(user: user) }
+
+      it 'updates the customer using only user information' do
+        VCR.use_cassette('update_customer_based_on_user') do
+          expect { subject }.not_to change(PallasTrade::GatewayCustomer, :count)
+
+          expect(subject).to eq(stripe_customer)
+
+          expect(stripe_customer.email).to eq(user.email)
+          expect(stripe_customer.name).to eq(user.name)
+
+          expect(stripe_customer.address.city).to eq(user_bill_address.city)
+          expect(stripe_customer.address.line1).to eq(user_bill_address.address1)
+          expect(stripe_customer.address.line2).to eq(user_bill_address.address2)
+          expect(stripe_customer.address.postal_code).to eq(user_bill_address.zipcode)
+          expect(stripe_customer.address.state).to eq(new_york_state.name)
+          expect(stripe_customer.address.country).to eq(usa_country.name)
+        end
+      end
+    end
+  end
+
+  describe 'being a provider' do
+    let(:provider_methods) do
+      [:authorize, :purchase, :capture, :void, :credit]
+    end
+
+    it 'implements provider methods and does not cause infinite loop' do
+      provider_methods.each do |method|
+        expect(gateway).to respond_to method
+        expect { gateway.send(method) }.not_to raise_error SystemStackError
+      end
+    end
+  end
+
+  describe '#create_tax_calculation' do
+    subject { gateway.create_tax_calculation(order) }
+
+    let(:order) { create(:order_with_line_items, line_items_count: 3, shipment_cost: 10, ship_address: ship_address) }
+
+    let(:ship_address) do
+      create(
+        :address,
+        city: 'Lancaster',
+        address1: '3201 North Dallas Avenue',
+        postal_code: '75134',
+        state: texas_state,
+        country: usa_country
+      )
+    end
+
+    let(:usa_country) { PallasTrade::Country.find_by(iso: 'US') || create(:usa_country) }
+    let(:texas_state) { create(:state, name: 'Texas', abbr: 'TX', country: usa_country) }
+
+    before do
+      order.line_items[0].update_column(:price, 10)
+      order.line_items[1].update_column(:price, 20)
+      order.line_items[2].update_column(:price, 30)
+    end
+
+    it 'creates a tax calculation' do
+      VCR.use_cassette('create_tax_calculation_us_tx') do
+        subject
+
+        expect(subject.object).to eq('tax.calculation')
+        expect(subject.currency).to eq('usd')
+
+        customer_address = subject.customer_details.address
+        expect(customer_address.city).to eq('Lancaster')
+        expect(customer_address.country).to eq('US')
+        expect(customer_address.line1).to eq('3201 North Dallas Avenue')
+        expect(customer_address.postal_code).to eq('75134')
+        expect(customer_address.state).to eq('TX')
+
+        tax_breakdown = subject.tax_breakdown.first
+        expect(tax_breakdown.taxable_amount).to eq(7000) # line items total is 6000, shipping is 1000
+        expect(tax_breakdown.amount).to eq(560)
+        expect(tax_breakdown.tax_rate_details.tax_type).to eq('sales_tax')
+        expect(tax_breakdown.tax_rate_details.percentage_decimal).to eq('8.0')
+        expect(tax_breakdown.tax_rate_details.state).to eq('TX')
+        expect(tax_breakdown.tax_rate_details.country).to eq('US')
+
+        tax_line_item_1 = subject.line_items.data[0]
+        expect(tax_line_item_1.amount).to eq(1000)
+        expect(tax_line_item_1.amount_tax).to eq(80)
+        expect(tax_line_item_1.tax_code).to eq('txcd_10000000')
+
+        tax_line_item_2 = subject.line_items.data[1]
+        expect(tax_line_item_2.amount).to eq(2000)
+        expect(tax_line_item_2.amount_tax).to eq(160)
+        expect(tax_line_item_2.tax_code).to eq('txcd_10000000')
+
+        tax_line_item_3 = subject.line_items.data[2]
+        expect(tax_line_item_3.amount).to eq(3000)
+        expect(tax_line_item_3.amount_tax).to eq(240)
+        expect(tax_line_item_3.tax_code).to eq('txcd_10000000')
+
+        shipping_cost = subject.shipping_cost
+        expect(shipping_cost.amount).to eq(1000)
+        expect(shipping_cost.amount_tax).to eq(80)
+        expect(shipping_cost.tax_code).to eq('txcd_92010001')
+      end
+    end
+  end
+
+  describe '#create_tax_transaction' do
+    subject { gateway.create_tax_transaction(payment_intent_id, tax_calculation_id) }
+
+    let(:payment_intent_id) { 'pi_1234567890' }
+    let(:tax_calculation_id) { 'taxcalc_1S52FRFmGsiQWfE6hVIABQtT' }
+
+    it 'creates a tax transaction' do
+      VCR.use_cassette('create_tax_transaction_us_tx') do
+        subject
+
+        expect(subject.object).to eq('tax.transaction')
+
+        customer_address = subject.customer_details.address
+        expect(customer_address.city).to eq('Lancaster')
+        expect(customer_address.country).to eq('US')
+        expect(customer_address.line1).to eq('3201 North Dallas Avenue')
+        expect(customer_address.postal_code).to eq('75134')
+        expect(customer_address.state).to eq('TX')
+
+        line_items = subject.line_items.data
+        expect(line_items.map(&:amount)).to eq([1000, 2000, 3000])
+        expect(line_items.map(&:amount_tax)).to eq([80, 160, 240])
+        expect(line_items.map(&:tax_code)).to eq(['txcd_10000000', 'txcd_10000000', 'txcd_10000000'])
+
+        shipping_cost = subject.shipping_cost
+        expect(shipping_cost.amount).to eq(1000)
+        expect(shipping_cost.amount_tax).to eq(80)
+        expect(shipping_cost.tax_code).to eq('txcd_92010001')
+      end
+    end
+  end
+
+  describe '#attach_customer_to_credit_card' do
+    subject(:attach_customer) { gateway.attach_customer_to_credit_card(user) }
+
+    context 'when no payment method is provided' do
+      context 'and user is nil' do
+        let(:user) { nil }
+
+        it 'does not create a new gateway customer' do
+          expect { attach_customer }.not_to change(PallasTrade::GatewayCustomer, :count)
+        end
+
+        it 'returns nil' do
+          expect(attach_customer).to be_nil
+        end
+      end
+
+      context 'and user has no default credit card' do
+        let(:user) { create(:user) }
+
+        it 'does not create a new gateway customer' do
+          expect { attach_customer }.not_to change(PallasTrade::GatewayCustomer, :count)
+        end
+
+        it 'returns nil' do
+          expect(attach_customer).to be_nil
+        end
+      end
+
+      context 'and credit card has no payment method id' do
+        let(:user) { create(:user) }
+        let!(:credit_card) { create(:credit_card, user: user, default: true) }
+
+        it 'does not create a new gateway customer' do
+          expect { attach_customer }.not_to change(PallasTrade::GatewayCustomer, :count)
+        end
+
+        it 'returns nil' do
+          expect(attach_customer).to be_nil
+        end
+      end
+    end
+
+    context 'when credit card has a payment method id' do
+      let(:user) { create(:user) }
+
+      context 'and credit card has no gateway customer profile id' do
+        let!(:credit_card) { create(:credit_card, user: user, default: true, gateway_payment_profile_id: 'pm_1SGLXEIhR0gIegIeYbkKLGkF') }
+
+        it 'attaches the customer to the credit card' do
+          VCR.use_cassette('attach_customer_to_credit_card') do
+            expect { attach_customer }.to change(PallasTrade::GatewayCustomer, :count).by(1)
+            expect(user.reload.default_credit_card.gateway_customer_profile_id).to eq('cus_TFeSJ7nmvElKTT')
+            expect(user.reload.default_credit_card.gateway_customer_id).to eq(PallasTrade::GatewayCustomer.last.id)
+          end
+        end
+
+        context 'and Stripe API returns an error' do
+          let!(:credit_card) { create(:credit_card, user: user, default: true, gateway_payment_profile_id: 'pm_1SGLXEIhR0gIegIeYbkKLGkF', payment_method: gateway) }
+
+          it 'does not update default credit card' do
+            allow(Rails.error).to receive(:report)
+
+            VCR.use_cassette('attach_customer_to_credit_card_error') do
+              expect(attach_customer).to eq(nil)
+              expect(user.reload.default_credit_card.gateway_customer_profile_id).to eq(nil)
+              expect(user.reload.default_credit_card.gateway_customer_id).to eq(nil)
+              expect(Rails.error).to have_received(:report).with(instance_of(Stripe::InvalidRequestError), context: { payment_method_id: gateway.id, user_id: user.id }, source: 'pallastrade_stripe')
+            end
+          end
+        end
+      end
+
+      context 'and credit card has a gateway customer profile id' do
+        let!(:credit_card) { create(:credit_card, user: user, default: true, gateway_payment_profile_id: 'pm_1SGLXEIhR0gIegIeYbkKLGkF', gateway_customer_profile_id: 'cus_TFeSJ7nmvElKTT') }
+
+        it 'does not create a new gateway customer' do
+          expect { attach_customer }.not_to change(PallasTrade::GatewayCustomer, :count)
+        end
+
+        it 'returns nil' do
+          expect(attach_customer).to be_nil
+        end
+      end
+    end
+  end
+
+  describe '#void' do
+    subject(:void) { gateway.void(payment_intent_id, nil, nil) }
+
+    let(:payment_intent_id) { 'pi_3QY1o72ESifGlJez06ZbKHjy' }
+
+    it 'voids the payment intent' do
+      VCR.use_cassette('cancel_payment_intent') do
+        expect(void.success?).to be(true)
+        expect(void.authorization).to eq(payment_intent_id)
+      end
+    end
+
+    context 'when no response code is provided' do
+      let(:payment_intent_id) { nil }
+
+      it 'returns a failure' do
+        expect(void.success?).to be(false)
+        expect(void.message).to eq('Response code is blank')
+      end
+    end
+  end
+
+  describe '#setup_session_supported?' do
+    it 'returns true' do
+      expect(gateway.setup_session_supported?).to be(true)
+    end
+  end
+
+  describe '#payment_setup_session_class' do
+    it 'returns the Stripe STI subclass' do
+      expect(gateway.payment_setup_session_class).to eq(PallasTrade::PaymentSetupSessions::Stripe)
+    end
+  end
+
+  describe '#create_payment_setup_session' do
+    subject { gateway.create_payment_setup_session(customer: user) }
+
+    let(:user) { create(:user) }
+
+    context 'when user has no saved Stripe customer' do
+      it 'creates the gateway customer and a Stripe payment setup session' do
+        VCR.use_cassette('create_payment_setup_session') do
+          expect { subject }.to change(gateway.gateway_customers, :count).by(1)
+                            .and change(PallasTrade::PaymentSetupSession, :count).by(1)
+
+          expect(subject).to be_a(PallasTrade::PaymentSetupSessions::Stripe)
+          expect(subject).to be_persisted
+          expect(subject.customer).to eq(user)
+          expect(subject.payment_method).to eq(gateway)
+          expect(subject.status).to eq('pending')
+          expect(subject.external_id).to start_with('seti_')
+          expect(subject.external_client_secret).to include('_secret_')
+          expect(subject.external_data['customer_id']).to start_with('cus_')
+          expect(subject.external_data['ephemeral_key_secret']).to start_with('ek_test_')
+        end
+      end
+    end
+
+    context 'when user has a saved Stripe customer' do
+      let(:saved_customer_id) { 'cus_USE66TMAPae0UB' }
+      let!(:gateway_customer) { create(:gateway_customer, user: user, profile_id: saved_customer_id, payment_method: gateway) }
+
+      it 'reuses the saved customer for the setup session' do
+        VCR.use_cassette('create_payment_setup_session_existing_customer') do
+          expect { subject }.to_not change(gateway.gateway_customers, :count)
+          expect(subject).to be_persisted
+          expect(subject.external_data['customer_id']).to eq(saved_customer_id)
+        end
+      end
+    end
+
+    context 'when external_data is provided' do
+      subject { gateway.create_payment_setup_session(customer: user, external_data: { 'foo' => 'bar' }) }
+
+      it 'merges the provided data into external_data' do
+        VCR.use_cassette('create_payment_setup_session') do
+          expect(subject.external_data).to include('foo' => 'bar')
+          expect(subject.external_data).to include('customer_id', 'ephemeral_key_secret')
+        end
+      end
+    end
+  end
+
+  describe '#complete_payment_setup_session' do
+    subject { gateway.complete_payment_setup_session(setup_session: setup_session) }
+
+    let(:user) { create(:user) }
+    let!(:gateway_customer) { create(:gateway_customer, user: user, payment_method: gateway, profile_id: 'cus_test') }
+    let(:setup_session) do
+      PallasTrade::PaymentSetupSessions::Stripe.create!(
+        customer: user,
+        payment_method: gateway,
+        status: 'pending',
+        external_id: 'seti_test_xyz',
+        external_client_secret: 'seti_test_xyz_secret',
+        external_data: { 'customer_id' => 'cus_test' }
+      )
+    end
+
+    let(:stripe_payment_method) do
+      Stripe::StripeObject.construct_from(
+        id: 'pm_card_visa',
+        type: 'card',
+        billing_details: { name: 'Jane Doe' },
+        card: {
+          brand: 'visa',
+          last4: '4242',
+          exp_month: 12,
+          exp_year: 2030,
+          fingerprint: 'FZqjhq46SWprIY8i',
+          checks: nil,
+          wallet: nil
+        }
+      )
+    end
+
+    context 'when the SetupIntent succeeded' do
+      let(:stripe_setup_intent) do
+        Stripe::StripeObject.construct_from(
+          id: 'seti_test_xyz',
+          status: 'succeeded',
+          payment_method: stripe_payment_method
+        )
+      end
+
+      before do
+        allow(gateway).to receive(:retrieve_setup_intent).with('seti_test_xyz').and_return(stripe_setup_intent)
+      end
+
+      it 'creates a payment source and completes the session' do
+        expect { subject }.to change(PallasTrade::CreditCard, :count).by(1)
+
+        setup_session.reload
+        expect(setup_session.status).to eq('completed')
+        expect(setup_session.payment_source).to be_a(PallasTrade::CreditCard)
+        expect(setup_session.payment_source.gateway_payment_profile_id).to eq('pm_card_visa')
+        expect(setup_session.payment_source.user).to eq(user)
+      end
+    end
+
+    context 'when the SetupIntent has not succeeded' do
+      let(:stripe_setup_intent) do
+        Stripe::StripeObject.construct_from(
+          id: 'seti_test_xyz',
+          status: 'requires_payment_method',
+          payment_method: nil
+        )
+      end
+
+      before do
+        allow(gateway).to receive(:retrieve_setup_intent).with('seti_test_xyz').and_return(stripe_setup_intent)
+      end
+
+      it 'fails the session without creating a source' do
+        expect(PallasTradeStripe::CreateSource).not_to receive(:new)
+        expect { subject }.not_to change(PallasTrade::CreditCard, :count)
+
+        setup_session.reload
+        expect(setup_session.status).to eq('failed')
+        expect(setup_session.payment_source).to be_nil
+      end
+    end
+  end
+end

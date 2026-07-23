@@ -1,0 +1,55 @@
+---
+title: "API version policy"
+sidebarTitle: "Version policy"
+description: "PallasTrade's public API lifecycle, compatibility boundaries, and v2 retirement policy."
+---
+
+# PallasTrade API version policy
+
+PallasTrade maintains one public API protocol version: **API v3**.
+
+| Surface | Canonical path | OpenAPI source |
+|---|---|---|
+| Store API | `/api/v3/store/*` | `api-reference/store.yaml` |
+| Admin API | `/api/v3/admin/*` | `api-reference/admin.yaml` |
+
+The product release version and API protocol version are independent. A PallasTrade
+product release may add backward-compatible v3 resources and fields without changing
+the `/api/v3` prefix. A future protocol version requires a separate compatibility
+plan, migration guide, and published retirement date.
+
+## Compatibility contract
+
+- Existing v3 paths and required response fields are not removed in a minor product
+  release.
+- Additive response fields may be introduced at any time. Clients must ignore fields
+  they do not understand.
+- Authentication and authorization remain surface-specific: Store API uses a
+  publishable key plus optional customer or cart credentials; Admin API uses an
+  admin JWT or a scoped secret key.
+- New public endpoints, SDK features, examples, and OpenAPI changes target v3 only.
+- Only PallasTrade-prefixed headers are part of the public contract. Compatibility
+  aliases are unsupported and must not be used by integrations.
+
+
+## API v2 retirement
+
+API v2 left the PallasTrade public API contract on **2026-07-23**. Its Storefront and
+Platform OpenAPI specifications, authentication reference, and endpoint tutorials
+are no longer published or maintained.
+
+The [v2 to v3 migration guide](/api-reference/store-api/migrating-from-storefront-api-v2)
+is retained as historical migration material. It may describe v2 requests only to
+show their v3 replacements; it is not a supported v2 reference.
+
+The legacy v2 source retained for existing self-hosted migrations is feature-frozen
+and scheduled for removal from the release source tree on **2026-10-31**. Until that
+date, security fixes may be backported at the maintainers' discretion, but no new v2
+features or documentation will be accepted.
+
+## Canonical project locations
+
+- Website and documentation: [pallastrade.cn](https://pallastrade.cn)
+- Source and issue tracking:
+  [stevenbian9266-cyber/pallastrade](https://github.com/stevenbian9266-cyber/pallastrade)
+

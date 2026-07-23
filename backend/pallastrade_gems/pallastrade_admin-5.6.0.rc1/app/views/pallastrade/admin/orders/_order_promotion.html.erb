@@ -1,0 +1,32 @@
+<% promotion = order_promotion.promotion %>
+<tr>
+  <td>
+    <%= link_to promotion.name, PallasTrade.admin_promotion_path(promotion), class: "font-bold" %>
+  </td>
+  <td>
+    <% if promotion.coupon_code? %>
+      <span class="badge badge-light"><%= PallasTrade.t(:coupon_code) %></span>
+    <% else %>
+      <span class="badge badge-info"><%= PallasTrade.t(:automatic_promotion) %></span>
+    <% end %>
+  </td>
+  <td>
+    <%= PallasTrade::Money.new(order_promotion.amount, currency: @order.currency).to_html %>
+  </td>
+  <td class="text-right">
+    <% if can?(:destroy, order_promotion) %>
+      <%= dropdown do %>
+        <%= dropdown_toggle class: 'btn-light btn-sm px-1' do %>
+          <%= icon('dots-vertical', class: 'mr-0') %>
+        <% end %>
+        <%= dropdown_menu do %>
+          <%= link_to_with_icon 'trash',
+                    PallasTrade.t('actions.destroy'),
+                    PallasTrade.admin_order_order_promotion_path(@order, order_promotion),
+                    data: { turbo_method: :delete, turbo_confirm: PallasTrade.t(:are_you_sure) },
+                    class: "dropdown-item text-red-600 hover:bg-red-100" %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </td>
+</tr>

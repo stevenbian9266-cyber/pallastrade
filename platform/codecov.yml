@@ -1,0 +1,82 @@
+codecov:
+  require_ci_to_pass: false
+
+coverage:
+  precision: 2
+  round: down
+  range: "50...90"
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+
+comment:
+  layout: "header, diff, flags, components"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+flags:
+  core:
+    paths:
+      - pallastrade/core/
+    carryforward: true
+  api:
+    paths:
+      - pallastrade/api/
+    carryforward: true
+  admin:
+    paths:
+      - pallastrade/admin/
+    carryforward: true
+  emails:
+    paths:
+      - pallastrade/emails/
+    carryforward: true
+  dashboard:
+    paths:
+      - pallastrade/dashboard/
+    carryforward: true
+
+component_management:
+  individual_components:
+    - component_id: core
+      name: Core
+      paths:
+        - pallastrade/core/app/**
+        - pallastrade/core/lib/**
+    - component_id: api
+      name: API
+      paths:
+        - pallastrade/api/app/**
+        - pallastrade/api/lib/**
+    - component_id: admin
+      name: Admin
+      paths:
+        - pallastrade/admin/app/**
+        - pallastrade/admin/lib/**
+    - component_id: emails
+      name: Emails
+      paths:
+        - pallastrade/emails/app/**
+        - pallastrade/emails/lib/**
+    - component_id: dashboard
+      name: Dashboard
+      paths:
+        - pallastrade/dashboard/app/**
+        - pallastrade/dashboard/lib/**
+
+ignore:
+  - "docs/**"
+  - "packages/**"
+  - "**/spec/**"
+  - "**/test/**"
+  - "**/testing_support/**"
+  - "**/generators/**"
+  - "**/dummy/**"

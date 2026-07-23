@@ -1,0 +1,34 @@
+<% if quick_checkout_enabled?(@order) && current_stripe_gateway.present? %>
+  <div id="quick-checkout" class="<%= defined?(container_class) ? container_class : nil %>">
+    <%= tag.div class: 'w-full', data: {
+        controller: 'checkout-stripe-button',
+        checkout_stripe_button_target: 'container',
+        checkout_stripe_button_api_key_value: current_stripe_gateway.try(:preferred_publishable_key),
+        checkout_stripe_button_pallastrade_api_key_value: current_store_publishable_api_key,
+        checkout_stripe_button_payment_method_id_value: current_stripe_gateway.prefixed_id,
+        checkout_stripe_button_cart_id_value: stripe_cart_prefixed_id(@order),
+        checkout_stripe_button_cart_token_value: @order.token,
+        checkout_stripe_button_confirm_payment_url_value: pallastrade.stripe_confirm_payment_url(@order.prefixed_id),
+        checkout_stripe_button_currency_value: @order.currency.downcase,
+        checkout_stripe_button_amount_value: PallasTrade::Money.new(@order.total_minus_store_credits, currency: @order.currency).cents,
+        checkout_stripe_button_border_radius_value: theme_setting(:button_border_radius),
+        checkout_stripe_button_height_value: defined?(height) ? height : nil,
+        checkout_stripe_button_theme_value: defined?(theme) ? theme : nil,
+        checkout_stripe_button_max_rows_value: defined?(max_rows) ? max_rows : nil,
+        checkout_stripe_button_max_columns_value: defined?(max_columns) ? max_columns : nil,
+        checkout_stripe_button_button_width_value: defined?(button_width) ? button_width : nil,
+        checkout_stripe_button_shipping_required_value: @order.quick_checkout_require_address?,
+        checkout_stripe_button_phone_required_value: PallasTrade::Config[:address_requires_phone]
+      } do %>
+      <div id="payment-request-button"></div>
+
+      <div class="relative group-[.no-separator]:hidden flex pt-5 items-center ">
+        <div class="flex-grow border-t border-default"></div>
+        <span class="flex-shrink mx-4 text-gray-500 text-sm">
+          <%= PallasTrade.t('storefront.checkout.or_continue_below') %>
+        </span>
+        <div class="flex-grow border-t border-default"></div>
+      </div>
+    <% end %>
+  </div>
+<% end %>

@@ -1,0 +1,30 @@
+<% show_form ||= params[:show_form] %>
+<%= turbo_frame_tag dom_id(@order, :customer_information), class: "card mb-6 blur-busy" do  %>
+  <div class="card-header flex justify-between">
+    <h5 class="card-title">
+      <%= PallasTrade.t(:customer) %>
+    </h5>
+    <%= link_to PallasTrade.t('actions.discard'), PallasTrade.edit_admin_order_path(@order), class: "btn btn-light btn-sm" %>
+  </div>
+  <div class="card-body">
+    <% if show_form %>
+      <%= form_with model: @user, scope: :user, url: PallasTrade.admin_order_user_path(@order) do |f| %>
+        <%= render 'pallastrade/admin/shared/error_messages', target: @user %>
+        <%= render 'pallastrade/admin/users/form', f: f %>
+        <div class="flex justify-between">
+          <%= link_to PallasTrade.t('actions.discard'), PallasTrade.edit_admin_order_path(@order), class: "btn btn-light btn-sm" %>
+          <%= turbo_save_button_tag PallasTrade.t('actions.save'), data: { turbo_frame: dom_id(@order, :edit) }, type: :submit, class: 'btn btn-primary text-center btn-sm' %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="flex gap-2 flex-col">
+        <%= form_with url: PallasTrade.admin_order_user_path(@order), data: {  controller: 'auto-submit' }, method: :patch do  %>
+          <%= label_tag :user_id, PallasTrade.t(:select_user), class: "sr-only" %>
+          <%= tom_select_tag :user_id, { include_blank: PallasTrade.t(:select_user), options: users_for_select_options, select_data: {action: 'auto-submit#submit'}, disable_with: "<span class='inline-block w-4 h-4 border-2 border-current border-r-transparent rounded-full animate-spin' role='status'></span>" } %>
+        <% end %>
+        <span class="flex w-full justify-center items-center"><%= PallasTrade.t(:or) %></span>
+        <%= link_to PallasTrade.t(:create_new), PallasTrade.new_admin_order_user_path(@order, show_form: true), class: "btn btn-secondary w-full" %>
+      </div>
+    <% end %>
+  </div>
+<% end %>

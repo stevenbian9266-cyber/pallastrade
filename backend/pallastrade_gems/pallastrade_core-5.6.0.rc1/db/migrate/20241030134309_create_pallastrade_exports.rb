@@ -1,0 +1,23 @@
+class CreatePallasTradeExports < ActiveRecord::Migration[6.1]
+  def change
+    return if table_exists?(:pallastrade_exports)
+
+    create_table :pallastrade_exports do |t|
+      t.references :user
+      t.references :store, null: false
+
+      t.string :number, limit: 32, null: false, index: { unique: true }
+      t.string :type, null: false
+
+      if t.respond_to? :jsonb
+        t.jsonb :search_params
+      else
+        t.json :search_params
+      end
+
+      t.integer :format, index: true, null: false
+
+      t.timestamps
+    end
+  end
+end

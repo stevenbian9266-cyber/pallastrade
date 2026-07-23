@@ -1,0 +1,16 @@
+{
+  "name": "pallastrade",
+  "description": "Official PallasTrade Commerce plugin marketplace \u2014 skills, the pallastrade-expert subagent, slash commands, and safety hooks for building on PallasTrade.",
+  "owner": {
+    "name": "Steven Bian",
+    "email": "stevenbian9266@gmail.com",
+    "url": "https://pallastrade.cn"
+  },
+  "plugins": [
+    {
+      "name": "pallastrade",
+      "source": "./",
+      "description": "Claude Code support for PallasTrade Commerce projects \u2014 25 skills, the pallastrade-expert subagent, two slash commands (/pallastrade:doctor, /pallastrade:audit-upgrade), and two safety hooks (block destructive db commands, warn on hardcoded secrets)."
+    }
+  ]
+}

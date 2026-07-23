@@ -1,0 +1,7 @@
+<%= render layout: 'pallastrade/shared/mailer_hero' do %>
+  <h1><%= PallasTrade.t('report_mailer.greeting', user_name: @report.user&.first_name) %></h1>
+  <p><%= PallasTrade.t('report_mailer.report_done.message') %></p>
+  <% if PallasTrade.respond_to?(:admin_report_url) %>
+    <%= render 'pallastrade/shared/mailer_button', url: PallasTrade.admin_report_url(@report, host: @current_store.formatted_url), label: @report.attachment.filename %>
+  <% end %>
+<% end %>
