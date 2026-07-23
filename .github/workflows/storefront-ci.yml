@@ -32,7 +32,7 @@ jobs:
           version: 11.1.1
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: storefront/package-lock.json
       - name: Install SDK build dependencies
