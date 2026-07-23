@@ -70,6 +70,8 @@ export function rootClaudeMdContent(
     '',
     '## PallasTrade Documentation',
     '',
+    'Canonical repository: https://github.com/stevenbian9266-cyber/pallastrade',
+    '',
     'Full developer docs are installed locally:',
     '',
     '```',

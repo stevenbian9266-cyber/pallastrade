@@ -5,7 +5,8 @@ require "spec_helper"
 RSpec.describe PallasTrade::PaymentMethod::Check, type: :model do
   let(:store) { @default_store }
   let(:check_method) { create(:check_payment_method, store: store) }
-  let(:order) { create(:completed_order_with_totals, store: store) }
+  let(:product) { create(:product_in_stock, store: store) }
+  let(:order) { create(:completed_order_with_totals, store: store, variants: [product.default_variant]) }
 
   def build_payment
     create(

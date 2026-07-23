@@ -9,6 +9,10 @@ This is a hybrid Node/Ruby monorepo with two halves:
 
 Both halves work together: the engine ships `/api/v3/admin/...` endpoints, the dashboard plugin calls them via the SDK's `request` method.
 
+## Author
+
+{{author_name}} <{{author_email}}>
+
 ## Development setup
 
 ```bash

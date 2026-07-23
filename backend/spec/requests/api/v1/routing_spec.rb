@@ -83,7 +83,8 @@ RSpec.describe "API v1 routing", type: :request do
   end
 
   describe "admin payment mutations (unauthenticated)" do
-    let(:order) { create(:completed_order_with_totals, store: @default_store) }
+    let(:product) { create(:product_in_stock, store: @default_store) }
+    let(:order) { create(:completed_order_with_totals, store: @default_store, variants: [product.default_variant]) }
     let(:payment_method) { create(:check_payment_method, store: @default_store) }
     let(:payment) do
       create(
@@ -104,9 +105,9 @@ RSpec.describe "API v1 routing", type: :request do
     end
 
     it "rejects Refund before creating a refund record" do
-      expect {
+      expect do
         post "/api/v1/admin/orders/#{order.prefixed_id}/refunds", params: { payment_id: payment.prefixed_id, amount: 1 }
-      }.not_to change(PallasTrade::Refund, :count)
+      end.not_to change(PallasTrade::Refund, :count)
 
       expect(response).to have_http_status(:unauthorized)
       expect(response.content_type).to include("application/json")
