@@ -17,13 +17,13 @@
 - [x] 单仓库目录、`main` 分支、统一 Tag 与 release manifest 工具已实施。
 - [x] MONO-01：已创建单仓库模型首个正式根提交 `e9d248d`，四个组件已绑定到同一根 Commit。
 - [x] MONO-02：已推送 `main`，GitHub canonical 仓库默认分支为 `main`。
+- [x] TEST-01：Platform 已通过全量 V3 文档检查、lint、typecheck、test 和 build；证据为 GitHub Actions [30028114163](https://github.com/stevenbian9266-cyber/pallastrade/actions/runs/30028114163)（提交 `c03e097`）。
+- [x] TEST-02：Backend Compose 环境契约已改为自动创建并清理临时测试环境文件；RSpec、Brakeman 和依赖审计已通过；证据为 GitHub Actions [30028114192](https://github.com/stevenbian9266-cyber/pallastrade/actions/runs/30028114192)（提交 `c03e097`）。
+- [x] TEST-03：Storefront 锁文件和本地 SDK 构建链已同步，npm ci、lint、typecheck、test 和 build 已通过；证据为 GitHub Actions [30027432404](https://github.com/stevenbian9266-cyber/pallastrade/actions/runs/30027432404)（提交 `05f5c2a`）。
 
 ## 仍未完成
 
 - [ ] RELEASE-01：在全部发布门禁通过后创建首个不可移动的正式 PallasTrade Tag。
 - [ ] RELEASE-02：为正式 Tag 生成包含根 Commit、目录校验值、包版本和测试证据的 release manifest。
-- [ ] TEST-01：修复 Platform `create-pallastrade-app` 的 Biome 格式检查问题，再执行全量 lint、typecheck、test 和 build。
-- [ ] TEST-02：调整 Backend Compose CI 环境契约，使检查阶段使用安全的测试环境文件而不依赖未提交的 `backend/.env`。
-- [ ] TEST-03：同步 Storefront 的 `package.json` 与 `package-lock.json`，补齐 `@pallastrade/sdk-core@0.1.0` 锁定记录后重跑 `npm ci`。
 
-以上未完成项均不影响本轮 PallasTrade 项目身份零残留审查结论；正式 Tag、release manifest 和全量测试将在对应发布步骤中执行。
+以上未完成项均不影响本轮 PallasTrade 项目身份零残留审查结论；三项组件 CI 已全部通过，正式 Tag 和 release manifest 将在对应发布步骤中执行。
