@@ -1,6 +1,6 @@
 # PallasTrade 自有化未完成事项明细
 
-更新时间：2026-07-23
+更新时间：2026-07-24
 维护人：Steven Bian
 
 ## 本轮已完成
@@ -15,13 +15,13 @@
 - [x] 文件名、正文、临时文件、嵌套 Git 元数据及派生措辞物理扫描均为零残留。
 - [x] API 文档仅维护 V3，并通过 V3 文档策略检查。
 - [x] 单仓库目录、`main` 分支、统一 Tag 与 release manifest 工具已实施。
+- [x] MONO-01：已创建单仓库模型首个正式根提交 `e9d248d`，四个组件已绑定到同一根 Commit。
+- [x] MONO-02：已推送 `main`，GitHub canonical 仓库默认分支为 `main`。
 
 ## 仍未完成
 
-- [ ] MONO-01：创建单仓库模型的首个正式根提交；当前四个组件尚未写入新的根提交历史。
-- [ ] MONO-02：推送 `main` 并在 GitHub 将默认分支正式设置为 `main`。
 - [ ] RELEASE-01：在全部发布门禁通过后创建首个不可移动的正式 PallasTrade Tag。
 - [ ] RELEASE-02：为正式 Tag 生成包含根 Commit、目录校验值、包版本和测试证据的 release manifest。
 - [ ] TEST-01：修复本机不完整的 pnpm 依赖目录后，完成 Platform 脚手架的全量 typecheck、test、lint 和 build。
 
-以上未完成项均不影响本轮 PallasTrade 项目身份零残留审查结论；涉及提交、推送、GitHub 设置和正式发布的操作需在对应发布步骤中执行。
+以上未完成项均不影响本轮 PallasTrade 项目身份零残留审查结论；正式 Tag、release manifest 和全量测试将在对应发布步骤中执行。
