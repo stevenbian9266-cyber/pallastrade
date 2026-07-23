@@ -22,6 +22,8 @@
 
 - [ ] RELEASE-01：在全部发布门禁通过后创建首个不可移动的正式 PallasTrade Tag。
 - [ ] RELEASE-02：为正式 Tag 生成包含根 Commit、目录校验值、包版本和测试证据的 release manifest。
-- [ ] TEST-01：修复本机不完整的 pnpm 依赖目录后，完成 Platform 脚手架的全量 typecheck、test、lint 和 build。
+- [ ] TEST-01：修复 Platform `create-pallastrade-app` 的 Biome 格式检查问题，再执行全量 lint、typecheck、test 和 build。
+- [ ] TEST-02：调整 Backend Compose CI 环境契约，使检查阶段使用安全的测试环境文件而不依赖未提交的 `backend/.env`。
+- [ ] TEST-03：同步 Storefront 的 `package.json` 与 `package-lock.json`，补齐 `@pallastrade/sdk-core@0.1.0` 锁定记录后重跑 `npm ci`。
 
 以上未完成项均不影响本轮 PallasTrade 项目身份零残留审查结论；正式 Tag、release manifest 和全量测试将在对应发布步骤中执行。
