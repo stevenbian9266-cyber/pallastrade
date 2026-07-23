@@ -19,8 +19,7 @@ import { useStorefrontPublishableKey } from '../../hooks/use-api-keys'
 import { useConnectStorefront } from '../../hooks/use-store-settings'
 
 const STOREFRONT_REPOSITORY_URL = 'https://github.com/stevenbian9266-cyber/pallastrade'
-const STOREFRONT_DOCS_URL =
-  'https://pallastrade.cn/docs/developer/storefront/nextjs/quickstart'
+const STOREFRONT_DOCS_URL = 'https://pallastrade.cn/docs/developer/storefront/nextjs/quickstart'
 
 function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
   return (
