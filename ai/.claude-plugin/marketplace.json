@@ -10,7 +10,7 @@
     {
       "name": "pallastrade",
       "source": "./",
-      "description": "Claude Code support for PallasTrade Commerce projects \u2014 25 skills, the pallastrade-expert subagent, two slash commands (/pallastrade:doctor, /pallastrade:audit-upgrade), and two safety hooks (block destructive db commands, warn on hardcoded secrets)."
+      "description": "Claude Code support for PallasTrade Commerce projects \u2014 24 skills, the pallastrade-expert subagent, two slash commands (/pallastrade:doctor, /pallastrade:audit-upgrade), and two safety hooks (block destructive db commands, warn on hardcoded secrets)."
     }
   ]
 }
