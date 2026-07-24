@@ -5683,6 +5683,8 @@ snapshots:
   '@pallastrade/sdk-core@file:../platform/packages/sdk-core': {}
 
   '@pallastrade/sdk@file:../platform/packages/sdk(typescript@5.9.3)(zod@3.25.76)':
+    dependencies:
+      '@pallastrade/sdk-core': file:../platform/packages/sdk-core
     optionalDependencies:
       typescript: 5.9.3
       zod: 3.25.76

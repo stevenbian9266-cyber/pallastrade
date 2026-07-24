@@ -3,6 +3,9 @@
   "version": "1.1.0",
   "description": "Official TypeScript SDK for PallasTrade Commerce Store API",
   "type": "module",
+  "dependencies": {
+    "@pallastrade/sdk-core": "file:../sdk-core"
+  },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
