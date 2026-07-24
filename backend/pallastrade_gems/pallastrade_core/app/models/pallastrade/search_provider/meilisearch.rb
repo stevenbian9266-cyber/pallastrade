@@ -22,7 +22,16 @@ module PallasTrade
         limit = limit.to_i.clamp(1, 100)
 
         ms_result, _ = execute_search(query: query, filters: filters, sort: sort, page: page, limit: limit)
-        return empty_result(scope, page, limit) unless ms_result
+        if database_fallback_required?(ms_result)
+          return database_fallback.search_and_filter(
+            scope: scope,
+            query: query,
+            filters: filters,
+            sort: sort,
+            page: page,
+            limit: limit
+          )
+        end
 
         # Hits have composite prefixed_id (prod_abc_en_USD), extract product_id (prod_abc)
         product_prefixed_ids = ms_result['hits'].map { |h| h['product_id'] }.uniq
@@ -48,13 +57,8 @@ module PallasTrade
       def filters(scope:, query: nil, filters: {})
         ms_result, facet_distribution = execute_search(query: query, filters: filters, sort: nil, page: 1, limit: 0, return_facets: true)
 
-        unless ms_result
-          return FiltersResult.new(
-            filters: [],
-            sort_options: available_sort_options.map { |id| { id: id } },
-            default_sort: 'manual',
-            total_count: 0
-          )
+        if database_fallback_required?(ms_result)
+          return database_fallback.filters(scope: scope, query: query, filters: filters)
         end
 
         FiltersResult.new(
@@ -134,6 +138,27 @@ module PallasTrade
       end
 
       private
+
+      # Keep the catalog available while Meilisearch is starting, temporarily
+      # unavailable, or has not yet received its first indexing batch. A
+      # legitimate zero-hit query against a populated index stays in
+      # Meilisearch.
+      def database_fallback_required?(ms_result)
+        return true unless ms_result
+        return false unless ms_result['estimatedTotalHits'].to_i.zero?
+
+        empty = client.index(index_name).stats['numberOfDocuments'].to_i.zero?
+        Rails.logger.warn { %([Meilisearch] #{index_name} is empty; falling back to database search.) } if empty
+        empty
+      rescue ::Meilisearch::ApiError => e
+        Rails.logger.warn { %([Meilisearch] Unable to read #{index_name} stats (#{e.message}); falling back to database search.) }
+        Rails.error.report(e, handled: true, context: { index: index_name })
+        true
+      end
+
+      def database_fallback
+        @database_fallback ||= PallasTrade::SearchProvider::Database.new(store)
+      end
 
       # Execute a Meilisearch query. Returns [ms_result, facet_distribution].
       # facet_distribution is empty when return_facets is false. Returns nil on API error.

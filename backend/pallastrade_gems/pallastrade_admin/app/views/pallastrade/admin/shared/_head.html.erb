@@ -25,7 +25,7 @@
 <% end %>
 
 <%= stylesheet_link_tag 'pallastrade/admin/application', media: :all, data: { turbo_track: "reload" } %>
-<%= tinymce_assets %>
+<%= tinymce_assets(preload_links_header: false) %>
 
 <%= action_cable_meta_tag %>
 <%= tag.meta name: "direct-upload-url", content: main_app.rails_direct_uploads_path %>

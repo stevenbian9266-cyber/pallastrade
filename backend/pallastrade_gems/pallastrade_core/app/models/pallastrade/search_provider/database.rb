@@ -8,6 +8,7 @@ module PallasTrade
       }.freeze
 
       def search_and_filter(scope:, query: nil, filters: {}, sort: nil, page: 1, limit: 25)
+        filters = filters.to_unsafe_h if filters.respond_to?(:to_unsafe_h)
         filters = filters.is_a?(Hash) ? filters.dup : {}
         option_value_ids = filters.delete('with_option_value_ids') || filters.delete(:with_option_value_ids)
 
@@ -31,6 +32,7 @@ module PallasTrade
       end
 
       def filters(scope:, query: nil, filters: {})
+        filters = filters.to_unsafe_h if filters.respond_to?(:to_unsafe_h)
         filters = filters.is_a?(Hash) ? filters.dup : {}
         category = filters.delete('_category') || filters.delete(:_category)
         option_value_ids = Array(filters.delete('with_option_value_ids') || filters.delete(:with_option_value_ids))

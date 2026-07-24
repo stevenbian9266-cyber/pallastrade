@@ -4,6 +4,7 @@ module PallasTrade
 
     class GeocodeAddressJob < BaseJob
       queue_as PallasTrade.queues.addresses
+      discard_on ActiveRecord::RecordNotFound
 
       def perform(address_id)
         address = PallasTrade::Address.find(address_id)

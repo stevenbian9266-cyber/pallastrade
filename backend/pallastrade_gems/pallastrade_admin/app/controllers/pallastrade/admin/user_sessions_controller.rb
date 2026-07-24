@@ -24,7 +24,14 @@ module PallasTrade
         set_flash_message!(:notice, :signed_in)
         sign_in(resource_name, resource)
         yield resource if block_given?
-        redirect_to after_sign_in_path_for(resource), allow_other_host: true
+
+        destination = after_sign_in_path_for(resource)
+        # A direct visit to the login form can be stored by Warden as the
+        # return location. Redirecting an authenticated user back there makes
+        # Devise's `require_no_authentication` loop forever on the same URL.
+        destination = PallasTrade.admin_path if URI.parse(destination.to_s).path == new_session_path(resource_name)
+
+        redirect_to destination, allow_other_host: true
       end
 
       protected

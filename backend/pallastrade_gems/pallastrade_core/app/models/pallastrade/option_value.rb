@@ -25,7 +25,7 @@ module PallasTrade
     # Associations
     #
     belongs_to :option_type, class_name: 'PallasTrade::OptionType', touch: true, inverse_of: :option_values
-    has_many :option_value_variants, class_name: 'PallasTrade::OptionValueVariant'
+    has_many :option_value_variants, dependent: :destroy, class_name: 'PallasTrade::OptionValueVariant'
     has_many :variants, through: :option_value_variants, class_name: 'PallasTrade::Variant'
     has_many :products, through: :variants, class_name: 'PallasTrade::Product'
 

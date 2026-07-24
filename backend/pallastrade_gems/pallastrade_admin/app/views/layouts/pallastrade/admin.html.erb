@@ -23,6 +23,8 @@
       <%= render "pallastrade/admin/shared/footer" %>
       <%= render 'pallastrade/admin/shared/drawer' %>
       <%= render "pallastrade/admin/shared/dialog" %>
+      <%# Hidden dialog target for export-dialog controller — replaced by turbo stream on export %>
+      <dialog id="export-dialog" data-export-dialog-target="dialog" hidden></dialog>
     </main>
     <%= render "pallastrade/admin/shared/alerts" %>
     <%= render "pallastrade/admin/shared/turbo_confirm_dialog" %>

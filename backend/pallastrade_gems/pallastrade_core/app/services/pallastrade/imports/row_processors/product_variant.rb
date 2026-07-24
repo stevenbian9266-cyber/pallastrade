@@ -32,7 +32,7 @@ module PallasTrade
           variant.width = attributes['width'] if attributes['width'].present?
           variant.depth = attributes['depth'] if attributes['depth'].present?
           variant.track_inventory = attributes['track_inventory'] if attributes['track_inventory'].present?
-          variant.option_value_variants = prepare_option_value_variants if options.any?
+          assign_option_value_variants(variant) if options.any?
 
           if attributes['tax_category'].present?
             tax_category = prepare_tax_category
@@ -151,6 +151,22 @@ module PallasTrade
           end
         end
 
+        # Assigning a has_many collection on a new owner tries to persist the
+        # join records before the variant has an id. Build through the owner so
+        # Rails saves the joins after the variant and never leaves NULL
+        # variant_id rows behind. Persisted variants can use replacement safely.
+        def assign_option_value_variants(variant)
+          joins = prepare_option_value_variants
+
+          if variant.new_record?
+            joins.each do |join|
+              variant.option_value_variants.build(option_value: join.option_value)
+            end
+          else
+            variant.option_value_variants = joins
+          end
+        end
+
         def options
           @options ||= begin
             options = []
@@ -177,11 +193,12 @@ module PallasTrade
         def find_or_create_option_type!(presentation)
           cached_lookup(:option_type, presentation) do
             begin
-              PallasTrade::OptionType.search_by_name(presentation).first || PallasTrade::OptionType.create!(presentation: presentation)
+              canonical_name = presentation.to_s.parameterize
+              PallasTrade::OptionType.find_by(name: canonical_name) || PallasTrade::OptionType.create!(presentation: presentation)
             rescue ActiveRecord::RecordNotUnique, ActiveRecord::RecordInvalid => e
               raise unless uniqueness_conflict?(e, :name)
 
-              PallasTrade::OptionType.search_by_name(presentation).first!
+              PallasTrade::OptionType.find_by!(name: canonical_name)
             end
           end
         end
@@ -189,11 +206,12 @@ module PallasTrade
         def find_or_create_option_value!(option_type, presentation)
           cached_lookup(:option_value, option_type.id, presentation) do
             begin
-              option_type.option_values.search_by_name(presentation).first || option_type.option_values.create!(presentation: presentation)
+              canonical_name = presentation.to_s.parameterize
+              option_type.option_values.find_by(name: canonical_name) || option_type.option_values.create!(presentation: presentation)
             rescue ActiveRecord::RecordNotUnique, ActiveRecord::RecordInvalid => e
               raise unless uniqueness_conflict?(e, :name)
 
-              option_type.option_values.search_by_name(presentation).first!
+              option_type.option_values.find_by!(name: canonical_name)
             end
           end
         end

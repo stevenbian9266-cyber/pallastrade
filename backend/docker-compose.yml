@@ -1,6 +1,7 @@
 # PallasTrade — local build (no external registry dependency)
 # Build: docker compose build
 # Start: docker compose up -d
+name: pallastrade
 x-app: &app
   build:
     context: .

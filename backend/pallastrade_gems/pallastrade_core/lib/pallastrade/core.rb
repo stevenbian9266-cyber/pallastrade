@@ -469,6 +469,33 @@ module PallasTrade
   end
 
   class << self
+    # Lazy-extend PallasTrade with URL routing helpers on first call.
+    # Deferred until Rails is fully booted so Rails.application.routes exists.
+    def ensure_url_helpers_loaded!
+      return if @_url_helpers_loaded
+
+      # Engine URL helpers own a separate RouteSet, so they do not inherit the
+      # application's canonical host automatically.
+      PallasTrade::Core::Engine.routes.default_url_options.merge!(default_url_options)
+      extend Rails.application.routes.url_helpers
+      extend ActionDispatch::Routing::PolymorphicRoutes
+      @_url_helpers_loaded = true
+    end
+
+    # Override default_url_options so _url helpers (e.g. new_polymorphic_url)
+    # can generate complete URLs. Prefer the application's canonical URL
+    # configuration and retain a development-safe fallback.
+    def default_url_options
+      application_options = Rails.application.routes.default_url_options.symbolize_keys
+      return application_options if application_options[:host].present?
+
+      no_ssl = ENV['RAILS_ASSUME_SSL'] == 'false' && ENV['RAILS_FORCE_SSL'] == 'false'
+      application_options.merge(
+        host: ENV['RAILS_HOST'].presence || ENV['PALLASTRADE_HOST'].presence || 'localhost:3000',
+        protocol: no_ssl ? 'http' : 'https'
+      )
+    end
+
     # Dynamic methods for core dependencies
     #
     # @example Getting a dependency (returns resolved class)
@@ -478,6 +505,19 @@ module PallasTrade
     #   PallasTrade.cart_add_item_service = MyApp::CartAddItem
     def method_missing(method_name, *args, &block)
       base_name = method_name.to_s.chomp('=').to_sym
+
+      # Delegate route helpers (_path / _url) to the Core engine's URL helpers.
+      # Engine routes define namespaced helpers (e.g. admin_dashboard_path);
+      # the application's url_helpers are checked as fallback.
+      if method_name.to_s.match?(/_(path|url)$/)
+        ensure_url_helpers_loaded!
+
+        engine_helpers = PallasTrade::Core::Engine.routes.url_helpers
+        return engine_helpers.public_send(method_name, *args, &block) if engine_helpers.respond_to?(method_name)
+
+        app_helpers = Rails.application.routes.url_helpers
+        return app_helpers.public_send(method_name, *args, &block) if app_helpers.respond_to?(method_name)
+      end
 
       return super unless core_dependency?(base_name)
 
@@ -491,6 +531,10 @@ module PallasTrade
 
     def respond_to_missing?(method_name, include_private = false)
       base_name = method_name.to_s.chomp('=').to_sym
+      if method_name.to_s.match?(/_(path|url)$/)
+        return true if PallasTrade::Core::Engine.routes.url_helpers.respond_to?(method_name)
+        return true if Rails.application.routes.url_helpers.respond_to?(method_name)
+      end
       core_dependency?(base_name) || super
     end
 

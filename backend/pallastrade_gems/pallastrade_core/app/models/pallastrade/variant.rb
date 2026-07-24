@@ -47,8 +47,8 @@ module PallasTrade
       has_many :stock_reservations
     end
 
-    has_many :option_value_variants, class_name: 'PallasTrade::OptionValueVariant'
-    has_many :option_values, through: :option_value_variants, dependent: :destroy, class_name: 'PallasTrade::OptionValue'
+    has_many :option_value_variants, dependent: :destroy, class_name: 'PallasTrade::OptionValueVariant'
+    has_many :option_values, through: :option_value_variants, class_name: 'PallasTrade::OptionValue'
 
     has_many :images, -> { order(:position) }, as: :viewable, dependent: :destroy, class_name: 'PallasTrade::Asset'
 

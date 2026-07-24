@@ -81,6 +81,12 @@ RUN sed -i 's/\r$//' bin/*
 # Precompile bootsnap code for faster boot times
 RUN bundle exec bootsnap precompile app/ lib/
 
+# Build Admin Tailwind CSS (required before assets:precompile)
+RUN SECRET_KEY_BASE=dummy bin/rails pallastrade:admin:tailwindcss:build
+
+# Precompile assets for production (Propshaft)
+RUN SECRET_KEY_BASE=dummy bin/rails assets:precompile
+
 # Development stage: inherits the build stage (which has build-essential,
 # libpq-dev, etc. and a full bundle minus dev/test). Adds the dev/test gems
 # on top so native-extension gems compile against the build tooling that's

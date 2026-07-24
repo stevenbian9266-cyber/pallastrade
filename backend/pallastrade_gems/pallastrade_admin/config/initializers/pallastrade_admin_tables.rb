@@ -111,7 +111,7 @@ Rails.application.config.after_initialize do
                                         position: 80,
                                         ransack_attribute: 'taxons_id',
                                         operators: %i[in],
-                                        search_url: ->(view_context) { view_context.PallasTrade.admin_taxons_select_options_path(format: :json) },
+                                        search_url: ->(view_context) { view_context.pallastrade.admin_taxons_select_options_path(format: :json) },
                                         method: ->(product) { product.taxons.pluck(:pretty_name).to_sentence if product.classification_count.positive? }
 
   # Tags - displayed as comma-separated list, filtered via autocomplete
@@ -125,7 +125,7 @@ Rails.application.config.after_initialize do
                                         position: 85,
                                         ransack_attribute: 'tags_name',
                                         operators: %i[in],
-                                        search_url: ->(view_context) { view_context.PallasTrade.admin_tags_select_options_path(format: :json, taggable_type: 'PallasTrade::Product') },
+                                        search_url: ->(view_context) { view_context.pallastrade.admin_tags_select_options_path(format: :json, taggable_type: 'PallasTrade::Product') },
                                         method: ->(product) { product.tag_list.to_sentence }
 
   PallasTrade.admin.tables.products.add :channels,
@@ -145,7 +145,7 @@ Rails.application.config.after_initialize do
   PallasTrade.admin.tables.products.add_bulk_action :set_active,
                                                     label: 'admin.bulk_ops.products.title.set_active',
                                                     icon: 'circle-check',
-                                                    action_path: ->(view_context) { view_context.PallasTrade.bulk_status_update_admin_products_path(status: 'active') },
+                                                    action_path: ->(view_context) { view_context.pallastrade.bulk_status_update_admin_products_path(status: 'active') },
                                                     body: 'admin.bulk_ops.products.body.set_active',
                                                     position: 10,
                                                     condition: -> { can?(:bulk_activate, PallasTrade::Product) }
@@ -153,21 +153,21 @@ Rails.application.config.after_initialize do
   PallasTrade.admin.tables.products.add_bulk_action :set_draft,
                                                     label: 'admin.bulk_ops.products.title.set_draft',
                                                     icon: 'circle-dotted',
-                                                    action_path: ->(view_context) { view_context.PallasTrade.bulk_status_update_admin_products_path(status: 'draft') },
+                                                    action_path: ->(view_context) { view_context.pallastrade.bulk_status_update_admin_products_path(status: 'draft') },
                                                     body: 'admin.bulk_ops.products.body.set_draft',
                                                     position: 20
 
   PallasTrade.admin.tables.products.add_bulk_action :set_archived,
                                                     label: 'admin.bulk_ops.products.title.set_archived',
                                                     icon: 'archive',
-                                                    action_path: ->(view_context) { view_context.PallasTrade.bulk_status_update_admin_products_path(status: 'archived') },
+                                                    action_path: ->(view_context) { view_context.pallastrade.bulk_status_update_admin_products_path(status: 'archived') },
                                                     body: 'admin.bulk_ops.products.body.set_archived',
                                                     position: 30
 
   PallasTrade.admin.tables.products.add_bulk_action :add_to_taxons,
                                                     label: 'admin.bulk_ops.products.title.add_to_taxons',
                                                     icon: 'category-plus',
-                                                    action_path: ->(view_context) { view_context.PallasTrade.bulk_add_to_taxons_admin_products_path },
+                                                    action_path: ->(view_context) { view_context.pallastrade.bulk_add_to_taxons_admin_products_path },
                                                     body: 'admin.bulk_ops.products.body.add_to_taxons',
                                                     form_partial: 'pallastrade/admin/bulk_operations/forms/taxon_picker',
                                                     position: 40,
@@ -176,7 +176,7 @@ Rails.application.config.after_initialize do
   PallasTrade.admin.tables.products.add_bulk_action :remove_from_taxons,
                                                     label: 'admin.bulk_ops.products.title.remove_from_taxons',
                                                     icon: 'category-minus',
-                                                    action_path: ->(view_context) { view_context.PallasTrade.bulk_remove_from_taxons_admin_products_path },
+                                                    action_path: ->(view_context) { view_context.pallastrade.bulk_remove_from_taxons_admin_products_path },
                                                     body: 'admin.bulk_ops.products.body.remove_from_taxons',
                                                     form_partial: 'pallastrade/admin/bulk_operations/forms/taxon_picker',
                                                     position: 50,
@@ -185,7 +185,7 @@ Rails.application.config.after_initialize do
   PallasTrade.admin.tables.products.add_bulk_action :add_tags,
                                                     label: 'admin.bulk_ops.products.title.add_tags',
                                                     icon: 'tag-plus',
-                                                    action_path: ->(view_context) { view_context.PallasTrade.bulk_add_tags_admin_products_path },
+                                                    action_path: ->(view_context) { view_context.pallastrade.bulk_add_tags_admin_products_path },
                                                     body: 'admin.bulk_ops.products.body.add_tags',
                                                     form_partial: 'pallastrade/admin/bulk_operations/forms/tag_picker',
                                                     form_partial_locals: { allow_create: true },
@@ -195,7 +195,7 @@ Rails.application.config.after_initialize do
   PallasTrade.admin.tables.products.add_bulk_action :remove_tags,
                                                     label: 'admin.bulk_ops.products.title.remove_tags',
                                                     icon: 'tag-minus',
-                                                    action_path: ->(view_context) { view_context.PallasTrade.bulk_remove_tags_admin_products_path },
+                                                    action_path: ->(view_context) { view_context.pallastrade.bulk_remove_tags_admin_products_path },
                                                     body: 'admin.bulk_ops.products.body.remove_tags',
                                                     form_partial: 'pallastrade/admin/bulk_operations/forms/tag_picker',
                                                     form_partial_locals: { allow_create: false },
@@ -361,7 +361,7 @@ Rails.application.config.after_initialize do
                                       position: 150,
                                       ransack_attribute: 'promotions_id',
                                       operators: %i[in],
-                                      search_url: ->(view_context) { view_context.PallasTrade.select_options_admin_promotions_path(format: :json) }
+                                      search_url: ->(view_context) { view_context.pallastrade.select_options_admin_promotions_path(format: :json) }
 
   PallasTrade.admin.tables.orders.add :channel,
                                       label: :channel,
@@ -488,7 +488,7 @@ Rails.application.config.after_initialize do
                                      position: 30,
                                      ransack_attribute: 'addresses_country_name',
                                      operators: %i[eq],
-                                     search_url: ->(view_context) { view_context.PallasTrade.select_options_admin_countries_path(format: :json) },
+                                     search_url: ->(view_context) { view_context.pallastrade.select_options_admin_countries_path(format: :json) },
                                      preload_options: true,
                                      partial: 'pallastrade/admin/tables/columns/user_location'
 
@@ -560,13 +560,13 @@ Rails.application.config.after_initialize do
                                      position: 90,
                                      ransack_attribute: 'tags_name',
                                      operators: %i[in],
-                                     search_url: ->(view_context) { view_context.PallasTrade.admin_tags_select_options_path(format: :json, taggable_type: 'PallasTrade::User') }
+                                     search_url: ->(view_context) { view_context.pallastrade.admin_tags_select_options_path(format: :json, taggable_type: 'PallasTrade::User') }
 
   # Users bulk actions
   PallasTrade.admin.tables.users.add_bulk_action :add_tags,
                                                  label: 'admin.bulk_ops.users.title.add_tags',
                                                  icon: 'tag-plus',
-                                                 action_path: ->(view_context) { view_context.PallasTrade.bulk_add_tags_admin_users_path },
+                                                 action_path: ->(view_context) { view_context.pallastrade.bulk_add_tags_admin_users_path },
                                                  body: 'admin.bulk_ops.users.body.add_tags',
                                                  form_partial: 'pallastrade/admin/bulk_operations/forms/tag_picker',
                                                  form_partial_locals: { allow_create: true },
@@ -577,7 +577,7 @@ Rails.application.config.after_initialize do
   PallasTrade.admin.tables.users.add_bulk_action :remove_tags,
                                                  label: 'admin.bulk_ops.users.title.remove_tags',
                                                  icon: 'tag-minus',
-                                                 action_path: ->(view_context) { view_context.PallasTrade.bulk_remove_tags_admin_users_path },
+                                                 action_path: ->(view_context) { view_context.pallastrade.bulk_remove_tags_admin_users_path },
                                                  body: 'admin.bulk_ops.users.body.remove_tags',
                                                  form_partial: 'pallastrade/admin/bulk_operations/forms/tag_picker',
                                                  form_partial_locals: { allow_create: false },
@@ -984,7 +984,7 @@ Rails.application.config.after_initialize do
                                                position: 20,
                                                ransack_attribute: 'stock_item_stock_location_id',
                                                operators: %i[eq],
-                                               search_url: ->(view_context) { view_context.PallasTrade.admin_stock_locations_select_options_path(format: :json) },
+                                               search_url: ->(view_context) { view_context.pallastrade.admin_stock_locations_select_options_path(format: :json) },
                                                partial: 'pallastrade/admin/tables/columns/stock_item_location',
                                                partial_locals: ->(record) { { record: record.stock_item } }
 
@@ -1170,7 +1170,7 @@ Rails.application.config.after_initialize do
                                           position: 70,
                                           ransack_attribute: 'user_id',
                                           operators: %i[eq],
-                                          search_url: ->(view_context) { view_context.PallasTrade.admin_users_select_options_path(format: :json) },
+                                          search_url: ->(view_context) { view_context.pallastrade.admin_users_select_options_path(format: :json) },
                                           method: ->(gc) { gc.user&.email }
 
   PallasTrade.admin.tables.gift_cards.add :created_at,
@@ -1215,7 +1215,7 @@ Rails.application.config.after_initialize do
                                            position: 20,
                                            ransack_attribute: 'stock_location_id',
                                            operators: %i[eq],
-                                           search_url: ->(view_context) { view_context.PallasTrade.admin_stock_locations_select_options_path(format: :json) },
+                                           search_url: ->(view_context) { view_context.pallastrade.admin_stock_locations_select_options_path(format: :json) },
                                            partial: 'pallastrade/admin/tables/columns/stock_item_location'
 
   # Backorderable (inline editable checkbox)
@@ -1592,7 +1592,7 @@ Rails.application.config.after_initialize do
   PallasTrade.admin.tables.price_list_products.add_bulk_action :remove_from_price_list,
                                                                label: 'admin.bulk_ops.price_list_products.title.remove',
                                                                icon: 'trash',
-                                                               action_path: ->(view_context) { view_context.PallasTrade.bulk_destroy_admin_price_list_products_path(view_context.instance_variable_get(:@price_list)) },
+                                                               action_path: ->(view_context) { view_context.pallastrade.bulk_destroy_admin_price_list_products_path(view_context.instance_variable_get(:@price_list)) },
                                                                body: 'admin.bulk_ops.price_list_products.body.remove',
                                                                button_text: :remove,
                                                                button_class: 'btn-danger',
@@ -1682,7 +1682,7 @@ Rails.application.config.after_initialize do
   PallasTrade.admin.tables.customer_group_users.add_bulk_action :remove_from_customer_group,
                                                                 label: 'admin.bulk_ops.customer_group_users.title.remove',
                                                                 icon: 'trash',
-                                                                action_path: ->(view_context) { view_context.PallasTrade.bulk_destroy_admin_customer_group_customer_group_users_path(view_context.instance_variable_get(:@customer_group)) },
+                                                                action_path: ->(view_context) { view_context.pallastrade.bulk_destroy_admin_customer_group_customer_group_users_path(view_context.instance_variable_get(:@customer_group)) },
                                                                 body: 'admin.bulk_ops.customer_group_users.body.remove',
                                                                 button_text: :remove,
                                                                 button_class: 'btn-danger',
