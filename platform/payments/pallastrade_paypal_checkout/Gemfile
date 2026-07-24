@@ -19,7 +19,6 @@ pallastrade_storefront_opts = { 'github': 'stevenbian9266-cyber/pallastrade', 'b
 gem 'pallastrade_page_builder', pallastrade_storefront_opts
 gem 'pallastrade_storefront', pallastrade_storefront_opts
 
-gem 'pallastrade_legacy_api_v2'
 gem 'pallastrade_dev_tools', '>= 0.6.0.rc1'
 
 if ENV['DB'] == 'mysql'

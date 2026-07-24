@@ -13,7 +13,9 @@ module PallasTradeAdyen
           order.with_lock do
             payment_method = PallasTradeAdyen::Gateway.find(event.payment_method_id)
             # session_id is available only for session based payments so payment_session can be nil
-            payment_session = order.adyen_payment_sessions.find_by(adyen_id: event.session_id)
+            payment_session = order.payment_sessions
+                                   .where(payment_method: payment_method)
+                                   .find_by(external_id: event.session_id)
             source = PallasTradeAdyen::Webhooks::Actions::CreateSource.new(event: event, payment_method: payment_method, user: order.user).call
             # create or find payment
             # atm payment should be already created for web channel (but there is no payment for mobile channels)

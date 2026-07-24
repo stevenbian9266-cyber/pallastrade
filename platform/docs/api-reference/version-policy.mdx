@@ -42,10 +42,10 @@ The [v2 to v3 migration guide](/api-reference/store-api/migrating-from-storefron
 is retained as historical migration material. It may describe v2 requests only to
 show their v3 replacements; it is not a supported v2 reference.
 
-The legacy v2 source retained for existing self-hosted migrations is feature-frozen
-and scheduled for removal from the release source tree on **2026-10-31**. Until that
-date, security fixes may be backported at the maintainers' discretion, but no new v2
-features or documentation will be accepted.
+The legacy v2 source, compatibility routes, and obsolete dependency injection
+points were removed from the release source tree on **2026-07-24**. Requests to
+first-party routes for retired API versions return the standard JSON route-not-found
+response; integrations must use the v3 paths above.
 
 ## Canonical project locations
 

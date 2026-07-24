@@ -11,6 +11,7 @@ on:
       - 'ai/**'
       - 'release/**'
       - 'scripts/ci/monorepo-contract-check.mjs'
+      - 'scripts/ci/api-version-contract-check.mjs'
       - 'scripts/ci/ownership-audit.mjs'
       - 'scripts/release/**'
       - '.github/workflows/**'
@@ -24,6 +25,7 @@ on:
       - 'ai/**'
       - 'release/**'
       - 'scripts/ci/monorepo-contract-check.mjs'
+      - 'scripts/ci/api-version-contract-check.mjs'
       - 'scripts/ci/ownership-audit.mjs'
       - 'scripts/release/**'
       - '.github/workflows/**'
@@ -44,4 +46,5 @@ jobs:
         with:
           node-version: 22
       - run: node scripts/ci/monorepo-contract-check.mjs
+      - run: node scripts/ci/api-version-contract-check.mjs
       - run: node scripts/ci/ownership-audit.mjs

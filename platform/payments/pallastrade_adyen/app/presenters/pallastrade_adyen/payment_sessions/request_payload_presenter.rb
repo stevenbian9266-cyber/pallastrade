@@ -55,11 +55,7 @@ module PallasTradeAdyen
       end
 
       def payment_sessions_count
-        if PallasTradeAdyen::Config[:use_legacy_adyen_payment_sessions]
-          order.adyen_payment_sessions.with_deleted.count
-        else
-          order.payment_sessions.with_deleted.where(payment_method: payment_method).count
-        end
+        order.payment_sessions.with_deleted.where(payment_method: payment_method).count
       end
 
       def channel_params

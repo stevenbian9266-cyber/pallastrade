@@ -8,6 +8,7 @@ const skippedDirectories = new Set([
   'node_modules',
   '.pnpm-store',
   '.turbo',
+  '.next',
   'coverage',
   'dist',
 ])

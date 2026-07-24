@@ -2,8 +2,7 @@ module PallasTrade
   class PaymentSessions::Stripe < PaymentSession
     delegate :api_options, to: :payment_method
 
-    # Duck-type interface matching PallasTradeStripe::PaymentIntent
-    # This allows reuse of CompleteOrder and CreatePayment services
+    # Duck-type interface consumed by the CompleteOrder and CreatePayment services
     def stripe_id
       external_id
     end

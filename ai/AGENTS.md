@@ -130,7 +130,6 @@ When the task domain matches one of these, read the corresponding `skills/<name>
 | Extending an existing PallasTrade model/controller via decorators (`prepend`) | `pallastrade-decorators` |
 | Swapping a core PallasTrade service via `PallasTrade.dependencies` (cart, checkout, serializers, ability) | `pallastrade-dependencies` |
 | REST API v3 protocol — auth, envelopes, prefixed IDs, scopes | `pallastrade-api-v3` |
-| Maintaining or migrating legacy v2 (JSON:API) integrations | `pallastrade-legacy-api-v2` |
 | `@pallastrade/sdk` + `@pallastrade/admin-sdk` usage, extension patterns | `pallastrade-typescript-sdk` |
 | Calling/inspecting the Admin API from the terminal, debugging requests (`pallastrade api`) | `pallastrade-cli` |
 | Auditing an upgrade across minor/major versions | `/pallastrade:audit-upgrade` command |

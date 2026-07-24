@@ -7,12 +7,6 @@ module PallasTradeStripe
     # Add app/subscribers to autoload paths
     config.paths.add 'app/subscribers', eager_load: true
 
-    # Only load API controllers and serializers when pallastrade_legacy_api_v2 gem is available
-    if defined?(PallasTradeLegacyApiV2::Engine)
-      config.autoload_paths << root.join('lib', 'pallastrade_api_v2')
-      config.eager_load_paths << root.join('lib', 'pallastrade_api_v2')
-    end
-
     # use rspec for tests
     config.generators do |g|
       g.test_framework :rspec
@@ -40,7 +34,6 @@ module PallasTradeStripe
 
     def self.activate
       glob_paths = [File.join(File.dirname(__FILE__), '../../app/**/*_decorator*.rb')]
-      glob_paths << File.join(File.dirname(__FILE__), '../../lib/pallastrade_api_v2/**/*_decorator*.rb') if defined?(PallasTradeLegacyApiV2::Engine)
 
       glob_paths.each do |glob_path|
         Dir.glob(glob_path) do |c|

@@ -107,8 +107,6 @@ PallasTrade.api.product_serializer = 'MyApp::ProductSerializer'
 PallasTrade.api.admin_product_serializer = 'MyApp::Admin::ProductSerializer'
 ```
 
-> **Warning:** `PallasTrade.api` still defines legacy `storefront_*` and `platform_*` injection points (e.g. `PallasTrade.api.storefront_cart_add_item_service`), and they still appear in `pallastrade rake pallastrade:dependencies:list` output under `[API]`. These belonged to the removed API v2 controllers and have no consumers — setting them is a silent no-op and they will be removed in PallasTrade 6. Always use the global `PallasTrade.<name>` service accessors instead.
-
 ## Per-controller overrides
 
 If you only want to swap a serializer for one specific controller (rather than globally or per-surface), use a controller decorator overriding `serializer_class`:
@@ -181,7 +179,7 @@ Lists *only* the dependencies that differ from the default, with the source loca
 cart_recalculate_service         PallasTrade::Cart::Recalculate -> MyApp::Cart::Recalculate (config/initializers/pallastrade.rb:15)
 
 [API OVERRIDES]
-storefront_cart_add_item_service PallasTrade::Cart::AddItem     -> MyApp::CartAddItem        (config/initializers/pallastrade.rb:20)
+admin_product_serializer       PallasTrade::Api::V3::Admin::ProductSerializer -> MyApp::Admin::ProductSerializer (config/initializers/pallastrade.rb:20)
 ```
 
 Use this when you walk into an inherited project — it answers "what has this app customized?" in one command.
@@ -199,8 +197,6 @@ Loads every registered dependency and confirms it points to a real class. Catche
 1 invalid dependencies:
   [Core] cart_add_item_service: uninitialized constant MyApp::Cart::AddIem
 ```
-
-**Caveat (5.5):** the task walks *every* injection point, including the legacy v2 slots (`storefront_*`, `platform_*`) whose defaults still name deleted `PallasTrade::V2::Storefront::*` / `PallasTrade::Api::V2::Platform::*` classes — so a clean install already reports dozens of pre-existing `[API]` failures. Grep the output for your own class names (or scope your check to Core) rather than expecting a green run.
 
 Wire this into CI on any project that overrides dependencies. Typos here are silent at boot and only surface when the affected code path runs in production.
 
@@ -254,14 +250,13 @@ The injection points are grouped by domain. The list is too long to enumerate in
 | Sorters / Paginators | (per-resource sort + pagination) |
 | Ability | `ability_class` — the CanCanCan ability class |
 
-### API (303 injection points in 5.5)
+### API (138 injection points)
 
 | Category | Examples |
 |---|---|
 | v3 Store serializers | `cart_serializer`, `product_serializer`, `order_serializer`, etc. (unprefixed, one per resource) |
 | v3 Admin serializers | `admin_product_serializer`, `admin_order_serializer`, etc. |
 | v3 event serializers | Serializers for models that don't yet have Store API endpoints |
-| Legacy v2 slots (`storefront_*`, `platform_*`) | v2 Storefront/Platform serializer and service keys kept for back-compat, slated for removal in PallasTrade 6 — v3 endpoints never read them (v3 controllers call the core service dependencies like `PallasTrade.cart_add_item_service` directly), and the default `PallasTrade::V2::Storefront::*` serializer classes no longer exist in the tree |
 | Sorters / Paginators / Finders | API-specific sort, pagination, and lookup classes |
 | Coupon code handler | Per-API-surface coupon handler |
 
@@ -347,15 +342,13 @@ PallasTrade.cart_add_item_service = MyApp::Cart::AddItem  # ← this is all you 
 
 The v3 controllers call `PallasTrade.cart_add_item_service` (the core injection point) directly and resolve it lazily at request time, so an override in `config/initializers/pallastrade.rb` takes effect for API requests too.
 
-The `PallasTrade.api.storefront_*` service points are leftovers from the removed API v2 (marked "Legacy API v2 dependencies — will be removed in PallasTrade 6" in the `pallastrade_api` gem's `lib/pallastrade/api/dependencies.rb`). Nothing consumes them anymore — assigning `PallasTrade.api.storefront_cart_add_item_service` is a no-op. Don't rely on their "cascade" either: their proc defaults are snapshotted once, when `PallasTrade::Api::Dependencies` is instantiated in an engine initializer that runs *before* your app's initializers — so core overrides set in `config/initializers/pallastrade.rb` never propagate into them. They'll still appear in `pallastrade:dependencies:list` output showing the stale boot-time value; ignore them.
-
 ### Initializer load order
 
 Dependency overrides go in `config/initializers/pallastrade.rb`. Multiple extensions setting the same dependency follow alphabetical gem load order — the **last** assignment wins. If two gems both try to override `cart_add_item_service`, only the alphabetically-later one's override survives. Use `pallastrade:dependencies:overrides` to confirm what actually ended up registered.
 
 ## Where to read further
 
-- **Docs:** `node_modules/@pallastrade/docs/dist/developer/customization/dependencies.md` — note this published page still describes the **legacy v2** injection points (`storefront_*`, `PallasTrade::V2::Storefront::*` defaults); treat the source constants below as authoritative for 5.5.
+- **Docs:** `node_modules/@pallastrade/docs/dist/developer/customization/dependencies.md`
 - **Core injection point list:** `PallasTrade::Core::Dependencies::INJECTION_POINTS_WITH_DEFAULTS` in the installed `pallastrade_core` gem, `lib/pallastrade/core/dependencies.rb`
 - **API injection point list:** `PallasTrade::Api::ApiDependencies::INJECTION_POINTS_WITH_DEFAULTS` in the installed `pallastrade_api` gem, `lib/pallastrade/api/dependencies.rb` (`PallasTrade::Api::Dependencies` is an instance of this class)
 - **`PallasTrade::ServiceModule::Base`** — the base class behind the `run :step_name` orchestration

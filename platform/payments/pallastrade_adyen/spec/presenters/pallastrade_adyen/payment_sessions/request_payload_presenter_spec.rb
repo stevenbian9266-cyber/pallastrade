@@ -155,21 +155,6 @@ RSpec.describe PallasTradeAdyen::PaymentSessions::RequestPayloadPresenter do
         end
       end
 
-      context 'when payment session already exists (legacy)' do
-        let(:expected_reference) { "R123456789_#{payment_method.id}_2" }
-
-        before do
-          PallasTradeAdyen::Config[:use_legacy_adyen_payment_sessions] = true
-          create(:adyen_payment_session, deleted_at: 1.day.ago, amount: order.total_minus_store_credits, order: order, adyen_id: 'CS4FBB6F827EC53AC7')
-        end
-
-        after { PallasTradeAdyen::Config[:use_legacy_adyen_payment_sessions] = false }
-
-        it 'returns a valid payload' do
-          expect(payload).to eq(expected_payload)
-        end
-      end
-
       context 'without address' do
         let(:address) { nil }
 

@@ -18,7 +18,6 @@ gem 'pallastrade_admin', pallastrade_opts
 gem 'pallastrade_multi_store'
 gem 'pallastrade_posts'
 gem 'pallastrade_legacy_product_properties'
-gem 'pallastrade_legacy_api_v2'
 
 if ENV['DB'] == 'mysql'
   gem 'mysql2'

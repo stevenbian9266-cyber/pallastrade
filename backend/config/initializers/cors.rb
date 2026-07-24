@@ -30,14 +30,7 @@ rescue StandardError => e
 end
 
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
-  # Admin API — v1 and v3 (authenticated with admin token)
-  allow do
-    origins allowed_origin_check
-    resource '/api/v1/admin/*', headers: :any,
-                                methods: [:get, :post, :patch, :put, :delete, :options, :head],
-                                credentials: true
-  end
-
+  # Admin API v3 (authenticated with admin token)
   allow do
     origins allowed_origin_check
     resource '/api/v3/admin/*', headers: :any,
@@ -45,13 +38,7 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
                                 credentials: true
   end
 
-  # Store API — v1 and v3 (public, authenticated with publishable key)
-  allow do
-    origins '*'
-    resource '/api/v1/store/*', headers: :any,
-                                methods: [:get, :post, :patch, :put, :delete, :options, :head]
-  end
-
+  # Store API v3 (public, authenticated with publishable key)
   allow do
     origins '*'
     resource '/api/v3/store/*', headers: :any,

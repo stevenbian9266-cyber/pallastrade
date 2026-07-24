@@ -22,21 +22,10 @@ rake db:migrate
 
 ## Additional information
 
-### Make sure to v1 namespace custom rabl templates & overrides.
+### Migrate custom API templates
 
-If your rabl templates reference others with extend you'll need to add the v1 namespace.
-
-For example:
-
-```ruby
-extends 'pallastrade/api/zones/show'
-```
-
-Becomes:
-
-```ruby
-extends 'pallastrade/api/v1/zones/show'
-```
+Custom templates and overrides from this historical release line are not loaded
+by the current API. Reimplement them against the API v3 serializers and routes.
 
 ### Remove `PallasTrade::Config.check_for_pallastrade_alerts`
 

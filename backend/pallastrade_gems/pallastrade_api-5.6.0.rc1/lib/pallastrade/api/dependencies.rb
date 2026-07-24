@@ -4,94 +4,7 @@ module PallasTrade
   module Api
     class ApiDependencies
       INJECTION_POINTS_WITH_DEFAULTS = {
-        # Legacy API v2 dependencies - will be removed in PallasTrade 6
-        # cart services
-        storefront_cart_create_service: -> { PallasTrade::Dependencies.cart_create_service },
-        storefront_cart_add_item_service: -> { PallasTrade::Dependencies.cart_add_item_service },
-        storefront_cart_compare_line_items_service: -> { PallasTrade::Dependencies.cart_compare_line_items_service },
-        storefront_cart_update_service: -> { PallasTrade::Dependencies.cart_update_service },
-        storefront_cart_remove_line_item_service: -> { PallasTrade::Dependencies.cart_remove_line_item_service },
-        storefront_cart_remove_item_service: -> { PallasTrade::Dependencies.cart_remove_item_service },
-        storefront_cart_set_item_quantity_service: -> { PallasTrade::Dependencies.cart_set_item_quantity_service },
-        storefront_cart_recalculate_service: -> { PallasTrade::Dependencies.cart_recalculate_service },
-        storefront_cart_estimate_shipping_rates_service: -> { PallasTrade::Dependencies.cart_estimate_shipping_rates_service },
-        storefront_cart_empty_service: -> { PallasTrade::Dependencies.cart_empty_service },
-        storefront_cart_destroy_service: -> { PallasTrade::Dependencies.cart_destroy_service },
-        storefront_cart_associate_service: -> { PallasTrade::Dependencies.cart_associate_service },
-        storefront_cart_change_currency_service: -> { PallasTrade::Dependencies.cart_change_currency_service },
-
-        # coupon code handler
-        storefront_coupon_handler: -> { PallasTrade::Dependencies.coupon_handler },
-
-        # checkout services
-        storefront_checkout_next_service: -> { PallasTrade::Dependencies.checkout_next_service },
-        storefront_checkout_advance_service: -> { PallasTrade::Dependencies.checkout_advance_service },
-        storefront_checkout_update_service: -> { PallasTrade::Dependencies.checkout_update_service },
-        storefront_checkout_complete_service: -> { PallasTrade::Dependencies.checkout_complete_service },
-        storefront_checkout_add_store_credit_service: -> { PallasTrade::Dependencies.checkout_add_store_credit_service },
-        storefront_checkout_remove_store_credit_service: -> { PallasTrade::Dependencies.checkout_remove_store_credit_service },
-        storefront_checkout_get_shipping_rates_service: -> { PallasTrade::Dependencies.checkout_get_shipping_rates_service },
-        storefront_checkout_select_shipping_method_service: -> { PallasTrade::Dependencies.checkout_select_shipping_method_service },
-
-        # gift cards
-        storefront_gift_card_apply_service: -> { PallasTrade::Dependencies.gift_card_apply_service },
-        storefront_gift_card_remove_service: -> { PallasTrade::Dependencies.gift_card_remove_service },
-
-        # account services
-        storefront_account_create_service: -> { PallasTrade::Dependencies.account_create_service },
-        storefront_account_update_service: -> { PallasTrade::Dependencies.account_update_service },
-
-        # address services
-        storefront_address_create_service: -> { PallasTrade::Dependencies.address_create_service },
-        storefront_address_update_service: -> { PallasTrade::Dependencies.address_update_service },
-
-        # credit card services
-        storefront_credit_cards_destroy_service: -> { PallasTrade::Dependencies.credit_cards_destroy_service },
-
-        # payment services
-        storefront_payment_create_service: -> { PallasTrade::Dependencies.payment_create_service },
-
-        # serializers
-        storefront_address_serializer: 'PallasTrade::V2::Storefront::AddressSerializer',
-        storefront_cart_serializer: 'PallasTrade::V2::Storefront::CartSerializer',
-        storefront_cms_page_serializer: nil, # LEGACY
-        storefront_credit_card_serializer: 'PallasTrade::V2::Storefront::CreditCardSerializer',
-        storefront_country_serializer: 'PallasTrade::V2::Storefront::CountrySerializer',
-        storefront_menu_serializer: nil, # LEGACY
-        storefront_user_serializer: 'PallasTrade::V2::Storefront::UserSerializer',
-        storefront_shipment_serializer: 'PallasTrade::V2::Storefront::ShipmentSerializer',
-        storefront_taxon_serializer: 'PallasTrade::V2::Storefront::TaxonSerializer',
-        storefront_payment_method_serializer: 'PallasTrade::V2::Storefront::PaymentMethodSerializer',
-        storefront_payment_serializer: 'PallasTrade::V2::Storefront::PaymentSerializer',
-        storefront_product_serializer: 'PallasTrade::V2::Storefront::ProductSerializer',
-        storefront_estimated_shipment_serializer: 'PallasTrade::V2::Storefront::EstimatedShippingRateSerializer',
-        storefront_store_serializer: 'PallasTrade::V2::Storefront::StoreSerializer',
-        storefront_policy_serializer: 'PallasTrade::V2::Storefront::PolicySerializer',
-        storefront_post_category_serializer: 'PallasTrade::V2::Storefront::PostCategorySerializer',
-        storefront_post_serializer: 'PallasTrade::V2::Storefront::PostSerializer',
-        storefront_order_serializer: 'PallasTrade::V2::Storefront::OrderSerializer',
-        storefront_variant_serializer: 'PallasTrade::V2::Storefront::VariantSerializer',
-        storefront_image_serializer: 'PallasTrade::V2::Storefront::ImageSerializer',
-        storefront_line_item_serializer: 'PallasTrade::V2::Storefront::LineItemSerializer',
-        storefront_option_type_serializer: 'PallasTrade::V2::Storefront::OptionTypeSerializer',
-        storefront_option_value_serializer: 'PallasTrade::V2::Storefront::OptionValueSerializer',
-        storefront_product_property_serializer: 'PallasTrade::V2::Storefront::ProductPropertySerializer',
-        storefront_order_promotion_serializer: 'PallasTrade::V2::Storefront::OrderPromotionSerializer',
-        storefront_shipping_method_serializer: 'PallasTrade::V2::Storefront::ShippingMethodSerializer',
-        storefront_shipping_rate_serializer: 'PallasTrade::V2::Storefront::ShippingRateSerializer',
-        storefront_stock_location_serializer: 'PallasTrade::V2::Storefront::StockLocationSerializer',
-        storefront_store_credit_category_serializer: 'PallasTrade::V2::Storefront::StoreCreditCategorySerializer',
-        storefront_store_credit_event_serializer: 'PallasTrade::V2::Storefront::StoreCreditEventSerializer',
-        storefront_store_credit_type_serializer: 'PallasTrade::V2::Storefront::StoreCreditTypeSerializer',
-        storefront_digital_link_serializer: 'PallasTrade::V2::Storefront::DigitalLinkSerializer',
-        storefront_gift_card_serializer: 'PallasTrade::V2::Storefront::GiftCardSerializer',
-        storefront_taxonomy_serializer: 'PallasTrade::V2::Storefront::TaxonomySerializer',
-        storefront_taxon_image_serializer: 'PallasTrade::V2::Storefront::TaxonImageSerializer',
-        storefront_wishlist_serializer: 'PallasTrade::V2::Storefront::WishlistSerializer',
-        storefront_wished_item_serializer: 'PallasTrade::V2::Storefront::WishedItemSerializer',
-        storefront_metafield_serializer: 'PallasTrade::V2::Storefront::MetafieldSerializer',
-
-        # v3 serializers (API v3)
+        # V3 serializers (API v3)
         credit_card_serializer: 'PallasTrade::Api::V3::CreditCardSerializer',
         price_serializer: 'PallasTrade::Api::V3::PriceSerializer',
         price_history_serializer: 'PallasTrade::Api::V3::PriceHistorySerializer',
@@ -146,7 +59,7 @@ module PallasTrade
         product_filter_category_option_serializer: 'PallasTrade::Api::V3::ProductFilterCategoryOptionSerializer',
         product_filter_sort_option_serializer: 'PallasTrade::Api::V3::ProductFilterSortOptionSerializer',
 
-        # v3 event serializers (for models without Store API endpoints yet)
+        # V3 event serializers (for models without Store API endpoints yet)
         asset_serializer: 'PallasTrade::Api::V3::AssetSerializer',
         customer_return_serializer: 'PallasTrade::Api::V3::CustomerReturnSerializer',
         digital_serializer: 'PallasTrade::Api::V3::DigitalSerializer',
@@ -167,7 +80,7 @@ module PallasTrade
         stock_reservation_serializer: 'PallasTrade::Api::V3::StockReservationSerializer',
         stock_transfer_serializer: 'PallasTrade::Api::V3::StockTransferSerializer',
 
-        # v3 admin serializers (API v3 Admin)
+        # V3 admin serializers (API v3 Admin)
         admin_country_serializer: 'PallasTrade::Api::V3::Admin::CountrySerializer',
         admin_state_serializer: 'PallasTrade::Api::V3::Admin::StateSerializer',
         admin_discount_serializer: 'PallasTrade::Api::V3::Admin::DiscountSerializer',
@@ -234,133 +147,6 @@ module PallasTrade
         admin_price_list_serializer: 'PallasTrade::Api::V3::Admin::PriceListSerializer',
         admin_price_rule_serializer: 'PallasTrade::Api::V3::Admin::PriceRuleSerializer',
         admin_resource_translations_serializer: 'PallasTrade::Api::V3::Admin::ResourceTranslationsSerializer',
-
-        # platform serializers
-        platform_metafield_serializer: 'PallasTrade::Api::V2::Platform::MetafieldSerializer',
-
-        # sorters
-        storefront_collection_sorter: -> { PallasTrade::Dependencies.collection_sorter },
-        storefront_order_sorter: -> { PallasTrade::Dependencies.collection_sorter },
-        storefront_posts_sorter: nil,
-        storefront_products_sorter: -> { PallasTrade::Dependencies.products_sorter },
-        platform_products_sorter: -> { PallasTrade::Dependencies.products_sorter },
-        # paginators
-        storefront_collection_paginator: 'PallasTrade::Api::Paginate',
-
-        # finders
-        storefront_address_finder: -> { PallasTrade::Dependencies.address_finder },
-        storefront_country_finder: -> { PallasTrade::Dependencies.country_finder },
-        storefront_cms_page_finder: -> { PallasTrade::Dependencies.cms_page_finder },
-        storefront_menu_finder: -> { PallasTrade::Dependencies.menu_finder },
-        storefront_current_order_finder: -> { PallasTrade::Dependencies.current_order_finder },
-        storefront_completed_order_finder: -> { PallasTrade::Dependencies.completed_order_finder },
-        storefront_credit_card_finder: -> { PallasTrade::Dependencies.credit_card_finder },
-        storefront_find_by_variant_finder: -> { PallasTrade::Dependencies.line_item_by_variant_finder },
-        storefront_posts_finder: nil,
-        storefront_products_finder: -> { PallasTrade::Dependencies.products_finder },
-        storefront_taxon_finder: -> { PallasTrade::Dependencies.taxon_finder },
-        storefront_variant_finder: -> { PallasTrade::Dependencies.variant_finder },
-
-        # serializers
-        platform_address_serializer: 'PallasTrade::Api::V2::Platform::AddressSerializer',
-        platform_adjustment_serializer: 'PallasTrade::Api::V2::Platform::AdjustmentSerializer',
-        platform_admin_user_serializer: 'PallasTrade::Api::V2::Platform::AdminUserSerializer',
-        platform_asset_serializer: 'PallasTrade::Api::V2::Platform::AssetSerializer',
-        platform_calculator_serializer: 'PallasTrade::Api::V2::Platform::CalculatorSerializer',
-        platform_classification_serializer: 'PallasTrade::Api::V2::Platform::ClassificationSerializer',
-        platform_country_serializer: 'PallasTrade::Api::V2::Platform::CountrySerializer',
-        platform_credit_card_serializer: 'PallasTrade::Api::V2::Platform::CreditCardSerializer',
-        platform_customer_return_serializer: 'PallasTrade::Api::V2::Platform::CustomerReturnSerializer',
-        platform_digital_link_serializer: 'PallasTrade::Api::V2::Platform::DigitalLinkSerializer',
-        platform_digital_serializer: 'PallasTrade::Api::V2::Platform::DigitalSerializer',
-        platform_gift_card_serializer: 'PallasTrade::Api::V2::Platform::GiftCardSerializer',
-        platform_image_serializer: 'PallasTrade::Api::V2::Platform::ImageSerializer',
-        platform_inventory_unit_serializer: 'PallasTrade::Api::V2::Platform::InventoryUnitSerializer',
-        platform_line_item_serializer: 'PallasTrade::Api::V2::Platform::LineItemSerializer',
-        platform_log_entry_serializer: 'PallasTrade::Api::V2::Platform::LogEntrySerializer',
-        platform_option_type_serializer: 'PallasTrade::Api::V2::Platform::OptionTypeSerializer',
-        platform_option_value_serializer: 'PallasTrade::Api::V2::Platform::OptionValueSerializer',
-        platform_order_promotion_serializer: 'PallasTrade::Api::V2::Platform::OrderPromotionSerializer',
-        platform_order_serializer: 'PallasTrade::Api::V2::Platform::OrderSerializer',
-        platform_payment_capture_event_serializer: 'PallasTrade::Api::V2::Platform::PaymentCaptureEventSerializer',
-        platform_payment_method_serializer: 'PallasTrade::Api::V2::Platform::PaymentMethodSerializer',
-        platform_payment_serializer: 'PallasTrade::Api::V2::Platform::PaymentSerializer',
-        platform_payment_source_serializer: 'PallasTrade::Api::V2::Platform::PaymentSourceSerializer',
-        platform_price_serializer: 'PallasTrade::Api::V2::Platform::PriceSerializer',
-        platform_product_property_serializer: 'PallasTrade::Api::V2::Platform::ProductPropertySerializer',
-        platform_product_serializer: 'PallasTrade::Api::V2::Platform::ProductSerializer',
-        platform_promotion_action_line_item_serializer: 'PallasTrade::Api::V2::Platform::PromotionActionLineItemSerializer',
-        platform_promotion_action_serializer: 'PallasTrade::Api::V2::Platform::PromotionActionSerializer',
-        platform_promotion_category_serializer: 'PallasTrade::Api::V2::Platform::PromotionCategorySerializer',
-        platform_promotion_rule_serializer: 'PallasTrade::Api::V2::Platform::PromotionRuleSerializer',
-        platform_property_serializer: 'PallasTrade::Api::V2::Platform::PropertySerializer',
-        platform_promotion_serializer: 'PallasTrade::Api::V2::Platform::PromotionSerializer',
-        platform_prototype_serializer: 'PallasTrade::Api::V2::Platform::PrototypeSerializer',
-        platform_refund_reason_serializer: 'PallasTrade::Api::V2::Platform::RefundReasonSerializer',
-        platform_refund_serializer: 'PallasTrade::Api::V2::Platform::RefundSerializer',
-        platform_reimbursement_credit_serializer: 'PallasTrade::Api::V2::Platform::ReimbursementCreditSerializer',
-        platform_reimbursement_serializer: 'PallasTrade::Api::V2::Platform::ReimbursementSerializer',
-        platform_reimbursement_type_serializer: 'PallasTrade::Api::V2::Platform::ReimbursementTypeSerializer',
-        platform_return_authorization_reason_serializer: 'PallasTrade::Api::V2::Platform::ReturnAuthorizationReasonSerializer',
-        platform_return_authorization_serializer: 'PallasTrade::Api::V2::Platform::ReturnAuthorizationSerializer',
-        platform_return_item_serializer: 'PallasTrade::Api::V2::Platform::ReturnItemSerializer',
-        platform_role_serializer: 'PallasTrade::Api::V2::Platform::RoleSerializer',
-        platform_shipment_serializer: 'PallasTrade::Api::V2::Platform::ShipmentSerializer',
-        platform_shipping_category_serializer: 'PallasTrade::Api::V2::Platform::ShippingCategorySerializer',
-        platform_shipping_method_serializer: 'PallasTrade::Api::V2::Platform::ShippingMethodSerializer',
-        platform_shipping_rate_serializer: 'PallasTrade::Api::V2::Platform::ShippingRateSerializer',
-        platform_state_change_serializer: 'PallasTrade::Api::V2::Platform::StateChangeSerializer',
-        platform_state_serializer: 'PallasTrade::Api::V2::Platform::StateSerializer',
-        platform_stock_item_serializer: 'PallasTrade::Api::V2::Platform::StockItemSerializer',
-        platform_stock_location_serializer: 'PallasTrade::Api::V2::Platform::StockLocationSerializer',
-        platform_stock_movement_serializer: 'PallasTrade::Api::V2::Platform::StockMovementSerializer',
-        platform_stock_transfer_serializer: 'PallasTrade::Api::V2::Platform::StockTransferSerializer',
-        platform_store_credit_category_serializer: 'PallasTrade::Api::V2::Platform::StoreCreditCategorySerializer',
-        platform_store_credit_event_serializer: 'PallasTrade::Api::V2::Platform::StoreCreditEventSerializer',
-        platform_store_credit_serializer: 'PallasTrade::Api::V2::Platform::StoreCreditSerializer',
-        platform_store_credit_type_serializer: 'PallasTrade::Api::V2::Platform::StoreCreditTypeSerializer',
-        platform_store_serializer: 'PallasTrade::Api::V2::Platform::StoreSerializer',
-        platform_tax_category_serializer: 'PallasTrade::Api::V2::Platform::TaxCategorySerializer',
-        platform_tax_rate_serializer: 'PallasTrade::Api::V2::Platform::TaxRateSerializer',
-        platform_taxon_image_serializer: 'PallasTrade::Api::V2::Platform::TaxonImageSerializer',
-        platform_taxon_serializer: 'PallasTrade::Api::V2::Platform::TaxonSerializer',
-        platform_taxonomy_serializer: 'PallasTrade::Api::V2::Platform::TaxonomySerializer',
-        platform_user_serializer: 'PallasTrade::Api::V2::Platform::UserSerializer',
-        platform_variant_serializer: 'PallasTrade::Api::V2::Platform::VariantSerializer',
-        platform_webhooks_event_serializer: 'PallasTrade::Api::V2::Platform::Webhooks::EventSerializer',
-        platform_webhooks_subscriber_serializer: 'PallasTrade::Api::V2::Platform::Webhooks::SubscriberSerializer',
-        platform_wished_item_serializer: 'PallasTrade::Api::V2::Platform::WishedItemSerializer',
-        platform_wishlist_serializer: 'PallasTrade::Api::V2::Platform::WishlistSerializer',
-        platform_zone_member_serializer: 'PallasTrade::Api::V2::Platform::ZoneMemberSerializer',
-        platform_zone_serializer: 'PallasTrade::Api::V2::Platform::ZoneSerializer',
-
-        # coupon code handler
-        platform_coupon_handler: -> { PallasTrade::Dependencies.coupon_handler },
-
-        # order services
-        platform_order_recalculate_service: -> { PallasTrade::Dependencies.cart_recalculate_service },
-        platform_order_update_service: -> { PallasTrade::Dependencies.checkout_update_service },
-        platform_order_empty_service: -> { PallasTrade::Dependencies.cart_empty_service },
-        platform_order_destroy_service: -> { PallasTrade::Dependencies.cart_destroy_service },
-        platform_order_next_service: -> { PallasTrade::Dependencies.checkout_next_service },
-        platform_order_advance_service: -> { PallasTrade::Dependencies.checkout_advance_service },
-        platform_order_complete_service: -> { PallasTrade::Dependencies.checkout_complete_service },
-        platform_order_use_store_credit_service: -> { PallasTrade::Dependencies.checkout_add_store_credit_service },
-        platform_order_remove_store_credit_service: -> { PallasTrade::Dependencies.checkout_remove_store_credit_service },
-        platform_order_approve_service: -> { PallasTrade::Dependencies.order_approve_service },
-        platform_order_cancel_service: -> { PallasTrade::Dependencies.order_cancel_service },
-
-        # line item services
-        platform_line_item_create_service: -> { PallasTrade::Dependencies.line_item_create_service },
-        platform_line_item_update_service: -> { PallasTrade::Dependencies.line_item_update_service },
-        platform_line_item_destroy_service: -> { PallasTrade::Dependencies.line_item_destroy_service },
-
-        # shipment services
-        platform_shipment_create_service: -> { PallasTrade::Dependencies.shipment_create_service },
-        platform_shipment_update_service: -> { PallasTrade::Dependencies.shipment_update_service },
-        platform_shipment_change_state_service: -> { PallasTrade::Dependencies.shipment_change_state_service },
-        platform_shipment_add_item_service: -> { PallasTrade::Dependencies.shipment_add_item_service },
-        platform_shipment_remove_item_service: -> { PallasTrade::Dependencies.shipment_remove_item_service },
       }
 
       include PallasTrade::DependenciesHelper

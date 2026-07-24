@@ -38,11 +38,6 @@ module PallasTradeAdyen
     #
     # Associations
     #
-    has_many :payment_sessions, class_name: 'PallasTradeAdyen::PaymentSession',
-                                foreign_key: 'payment_method_id',
-                                dependent: :delete_all,
-                                inverse_of: :payment_method
-
     # @param amount_in_cents [Integer] the amount in cents to capture
     # @param payment_source [PallasTrade::CreditCard | PallasTrade::PaymentSource]
     # @param gateway_options [Hash] this is an instance of PallasTrade::Payment::GatewayOptions.to_hash
@@ -279,7 +274,7 @@ module PallasTradeAdyen
     end
 
     # Creates an Adyen session via the Adyen Sessions API.
-    # Used internally by the v3 PaymentSessions module and by the legacy PallasTradeAdyen::PaymentSession model.
+    # Used internally by the API V3 payment-session gateway contract.
     #
     # @param amount [BigDecimal] the amount
     # @param order [PallasTrade::Order] the order to create a session for

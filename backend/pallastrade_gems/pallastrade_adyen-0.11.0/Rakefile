@@ -22,5 +22,4 @@ task :test_app do
   )
   system({ 'BUNDLE_GEMFILE' => File.expand_path('Gemfile', __dir__) }, 'rails g pallastrade_posts:install')
   system({ 'BUNDLE_GEMFILE' => File.expand_path('Gemfile', __dir__) }, 'rails g pallastrade_legacy_product_properties:install')
-  system({ 'BUNDLE_GEMFILE' => File.expand_path('Gemfile', __dir__) }, 'rails g pallastrade_legacy_api_v2:install')
 end

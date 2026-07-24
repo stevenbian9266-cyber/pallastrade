@@ -18,9 +18,8 @@ They share conventions (envelope shape, prefixed IDs, pagination) but have **dif
 
 API v3 is the only maintained PallasTrade public API protocol. New endpoints, SDK
 features, examples, and OpenAPI changes must use `/api/v3/store/*` or
-`/api/v3/admin/*`. API v2 left the public contract on 2026-07-23; the legacy skill
-exists only to help migrate an existing self-hosted integration and must never be
-used as the source for a new implementation.
+`/api/v3/admin/*`. First-party V1 and V2 routes and implementation sources are not
+part of the release.
 
 Canonical documentation is published at `https://pallastrade.cn/docs`. Canonical
 source and issue tracking live at

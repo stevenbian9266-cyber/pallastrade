@@ -40,7 +40,6 @@ npx skills update
 | `pallastrade-decorators` | Extending existing PallasTrade models/controllers via decorators (`Module#prepend`). |
 | `pallastrade-dependencies` | Swapping core PallasTrade services via `PallasTrade.dependencies` — cart, checkout, ability, serializers. Includes the introspection rake tasks. |
 | `pallastrade-api-v3` | PallasTrade REST API v3 conventions — Store vs Admin surfaces, auth (pk_/sk_/JWT), scopes, prefixed IDs, envelope, Ransack filters. |
-| `pallastrade-legacy-api-v2` | Historical migration aid for moving retired API v2 integrations to API v3; not a current API reference. |
 | `pallastrade-typescript-sdk` | `@pallastrade/sdk` + `@pallastrade/admin-sdk` — auth modes, types, Zod, webhooks, retry config, MSW, extension patterns. |
 | `pallastrade-cli` | `pallastrade api` — call/inspect the Admin API from the terminal (gh api-style verbs, offline endpoint/schema discovery, credential layers). Especially for debugging. |
 | `pallastrade-data-model` | Domain model questions — Orders, LineItems, Variants, Stores, Channels, Markets. |

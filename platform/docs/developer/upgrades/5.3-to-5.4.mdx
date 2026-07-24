@@ -225,36 +225,12 @@ These extensions will continue to work — PallasTrade's `LogEntry#parsed_detail
 
 `PallasTrade::Address#active_merchant_hash` has been renamed to `#gateway_hash`. A backwards-compatible alias is provided, so existing code continues to work without changes.
 
-### (Optional) Install Legacy API v2 extension
+### Retired API v2 integrations
 
-PallasTrade 5.4 ships with API v3, which marks deprecation of API v2. API v2 is still available but you need to install it separately. If you currently use API v2, you can do this by running the following command:
-
-  ```bash
-  bundle add pallastrade_legacy_api_v2
-  ```
-  
-If you have tests for API v2 endpoints in your application, you will need to include some files in your `rails_helper.rb`:
-
-  ```ruby
-  require 'jsonapi/rspec'
-  require 'pallastrade_legacy_api_v2/testing_support/v2/base'
-  require 'pallastrade_legacy_api_v2/testing_support/factories'
-  require 'pallastrade_legacy_api_v2/testing_support/v2/current_order'
-  require 'pallastrade_legacy_api_v2/testing_support/v2/platform_contexts'
-  require 'pallastrade_legacy_api_v2/testing_support/v2/serializers_params'
-  
-  RSpec.configure do |config|
-    config.include JSONAPI::RSpec, type: :request # required for API v2 request specs
-  end
-  ```
-
-Also, add `jsonapi-rspec` gem to your `Gemfile`:
-
-  ```ruby
-  gem 'jsonapi-rspec', group: :test
-  ```
-  
-And run `bundle install`
+API v2 is no longer distributed with PallasTrade. Applications that still call it
+must migrate to the Store or Admin API v3 before upgrading. Use the
+[v2 to v3 migration guide](/api-reference/store-api/migrating-from-storefront-api-v2)
+to map authentication, paths, envelopes, filters, and prefixed IDs.
 
 ### (Optional) Install Legacy Product Properties extension
 

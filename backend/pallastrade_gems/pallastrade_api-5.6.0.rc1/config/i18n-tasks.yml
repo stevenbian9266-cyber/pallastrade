@@ -11,9 +11,7 @@ search:
     - '../api/app'
     - '../api/lib'
 
-#### For API v1 only, START ####
   exclude:
-    - '../api/app/controllers/pallastrade/api/v1/*'
     - '../api/app/views/*'
 
 ignore_unused:
@@ -34,7 +32,5 @@ ignore_unused:
   - 'PallasTrade.api.stock_location_required'
   - 'PallasTrade.api.unauthorized'
   - 'PallasTrade.api.wrong_shipment_target'
-#### For API v1 only, END ####
-
 # The PatternMapper for PallasTrade.t
 <% I18n::Tasks.add_scanner 'I18n::Tasks::Scanners::PatternMapper', patterns: [['\bPallasTrade\.t[( ]\s*%{key}', 'PallasTrade.%{key}']] %>

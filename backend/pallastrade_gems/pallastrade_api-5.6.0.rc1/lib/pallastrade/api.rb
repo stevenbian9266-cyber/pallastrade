@@ -12,10 +12,10 @@ module PallasTrade
   # API dependencies accessor for cleaner access to API dependencies
   #
   # @example Getting a dependency (returns resolved class)
-  #   PallasTrade.api.storefront_coupon_handler.call(order: order, coupon_code: code)
+  #   PallasTrade.api.product_serializer
   #
   # @example Setting a dependency
-  #   PallasTrade.api.storefront_coupon_handler = MyApp::CouponHandler
+  #   PallasTrade.api.product_serializer = MyApp::ProductSerializer
   #
   # @return [PallasTrade::ApiDependenciesAccessor] the API dependencies accessor
   def self.api
@@ -41,7 +41,7 @@ module PallasTrade
       api_dependency?(base_name) || super
     end
 
-    # Direct access to raw dependencies object for backwards compatibility
+    # Direct access to the raw API dependencies object
     def dependencies
       PallasTrade::Api::Dependencies
     end
@@ -51,7 +51,7 @@ module PallasTrade
     def api_dependency?(name)
       return false unless defined?(PallasTrade::Api::Dependencies)
 
-      # Check both V3 and dynamically added V2 dependencies
+      # Check registered API V3 dependencies
       PallasTrade::Api::Dependencies.class::INJECTION_POINTS.include?(name)
     end
   end

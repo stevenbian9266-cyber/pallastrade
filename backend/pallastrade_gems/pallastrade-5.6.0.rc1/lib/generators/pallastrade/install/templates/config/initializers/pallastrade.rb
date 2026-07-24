@@ -54,7 +54,7 @@ PallasTrade.dependencies do |dependencies|
   # dependencies.cart_add_item_service = 'MyNewAwesomeService'
 end
 
-# PallasTrade::Api::Dependencies.storefront_cart_serializer = 'MyRailsApp::CartSerializer'
+# PallasTrade.api.product_serializer = 'MyRailsApp::ProductSerializer'
 
 # uncomment lines below to add your own custom business logic
 # such as promotions, shipping methods, etc

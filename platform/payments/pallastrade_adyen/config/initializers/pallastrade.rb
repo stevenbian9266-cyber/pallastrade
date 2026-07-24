@@ -27,8 +27,4 @@ Rails.application.config.after_initialize do
   # Rails.application.config.pallastrade.page_sections << PallasTrade::PageSections::ContactFormToGetInTouch
   # Rails.application.config.pallastrade.page_blocks << PallasTrade::PageBlocks::BigRedButtonToCallSales
 
-  # Storefront partials
-  if Rails.application.config.respond_to?(:pallastrade_storefront)
-    Rails.application.config.pallastrade_storefront.head_partials << 'pallastrade_adyen/head'
-  end
 end

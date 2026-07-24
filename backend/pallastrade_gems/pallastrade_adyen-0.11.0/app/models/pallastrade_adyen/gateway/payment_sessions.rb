@@ -140,11 +140,7 @@ module PallasTradeAdyen
       end
 
       def default_return_url(order)
-        if PallasTradeAdyen::Config[:use_legacy_adyen_payment_sessions]
-          PallasTrade::Core::Engine.routes.url_helpers.redirect_adyen_payment_session_url(host: order.store.url_or_custom_domain)
-        else
-          "#{order.store.storefront_url}/adyen/payment_sessions/redirect"
-        end
+        order.store.storefront_url
       end
     end
   end
