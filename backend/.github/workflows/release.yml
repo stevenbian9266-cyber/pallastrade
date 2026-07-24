@@ -75,7 +75,7 @@ jobs:
           STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
         run: |
           result="$RUNNER_TEMP/stripe-rspec.json"
-          bundle exec rspec pallastrade_gems/pallastrade_stripe-1.7.1/spec/models/gateway_spec.rb --format progress --format json --out "$result"
+          bundle exec rspec pallastrade_gems/pallastrade_stripe/spec/models/gateway_spec.rb --format progress --format json --out "$result"
           ruby -rjson -e 'summary = JSON.parse(File.read(ARGV.fetch(0))).fetch("summary"); pending = summary.fetch("pending_count"); abort("Stripe gate has #{pending} pending examples") unless pending.zero?' "$result"
 
       - name: Brakeman security scan

@@ -16,6 +16,7 @@
 - [x] API 文档仅维护 V3，并通过 V3 文档策略检查。
 - [x] API-V3-01：第一方运行时接口已统一为 V3；删除 V1 路由与兼容测试、V2 旧接口组件及支付扩展，Adyen、Stripe、PayPal 接入统一使用 V3 支付会话；V1/V2 请求返回标准 JSON 404，并由 CI 契约审计阻止旧版本回流。验证证据：V3 文档策略、API 版本契约、单仓契约与归属审计通过，Backend RSpec 20/20、Storefront 测试 111/111、Platform 10 个包 lint 全部通过。
 - [x] 单仓库目录、`main` 分支、统一 Tag 与 release manifest 工具已实施。
+- [x] DIR-01：Backend 的 13 个本地 Gem 源码目录已统一为无版本后缀的固定目录；Gemfile、锁文件、CI、审计、发布脚本、文档和 gemspec 元数据路径已同步；单仓契约禁止版本后缀目录回流；组件版本继续由 gemspec、锁文件、Tag 和 release manifest 管理。
 - [x] MONO-01：已创建单仓库模型首个正式根提交 `e9d248d`，四个组件已绑定到同一根 Commit。
 - [x] MONO-02：已推送 `main`，GitHub canonical 仓库默认分支为 `main`。
 - [x] TEST-01：Platform 已通过全量 V3 文档检查、lint、typecheck、test 和 build；证据为 GitHub Actions [30028114163](https://github.com/stevenbian9266-cyber/pallastrade/actions/runs/30028114163)（提交 `c03e097`）。

@@ -6,7 +6,7 @@
       "fingerprint": "7bde1189928e9bfc7bfe83c6a77a8eec06f2da7965a492bebd15403c3dbd1ece",
       "check_name": "SendFile",
       "message": "Parameter value used in file name",
-      "file": "pallastrade_gems/pallastrade_dashboard-5.6.0.rc1/app/controllers/pallastrade/dashboard/app_controller.rb",
+      "file": "pallastrade_gems/pallastrade_dashboard/app/controllers/pallastrade/dashboard/app_controller.rb",
       "line": 30,
       "link": "https://brakemanscanner.org/docs/warning_types/file_access/",
       "code": "send_file(resolve_file(dist_root, params[:path].to_s), :disposition => \"inline\")",

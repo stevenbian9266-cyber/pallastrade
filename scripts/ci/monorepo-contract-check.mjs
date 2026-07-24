@@ -28,6 +28,14 @@ for (const component of components) {
   }
 }
 
+const gemRoot = path.join(root, 'backend', 'pallastrade_gems')
+const versionedDirectoryPattern = /-\d+(?:\.\d+)+(?:\.(?:alpha|beta|rc)\d+)?$/i
+for (const entry of fs.readdirSync(gemRoot, { withFileTypes: true })) {
+  if (entry.isDirectory() && versionedDirectoryPattern.test(entry.name)) {
+    errors.push(`Versioned gem directory is forbidden: backend/pallastrade_gems/${entry.name}`)
+  }
+}
+
 const branch = git('branch', '--show-current')
 if (branch && branch !== 'main') {
   errors.push(`Current branch is ${branch}; expected main`)

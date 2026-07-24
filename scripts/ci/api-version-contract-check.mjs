@@ -6,10 +6,10 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const failures = []
 
 const removedPaths = [
-  'backend/pallastrade_gems/pallastrade_legacy_api_v2-1.0.0',
-  'backend/pallastrade_gems/pallastrade_adyen-0.11.0/lib/pallastrade_api_v2',
-  'backend/pallastrade_gems/pallastrade_stripe-1.7.1/lib/pallastrade_api_v2',
-  'backend/pallastrade_gems/pallastrade_paypal_checkout-0.7.1/lib/pallastrade_api_v2',
+  'backend/pallastrade_gems/pallastrade_legacy_api_v2',
+  'backend/pallastrade_gems/pallastrade_adyen/lib/pallastrade_api_v2',
+  'backend/pallastrade_gems/pallastrade_stripe/lib/pallastrade_api_v2',
+  'backend/pallastrade_gems/pallastrade_paypal_checkout/lib/pallastrade_api_v2',
   'platform/payments/pallastrade_adyen/lib/pallastrade_api_v2',
   'platform/payments/pallastrade_paypal_checkout/lib/pallastrade_api_v2',
   'ai/skills/pallastrade-legacy-api-v2',
@@ -59,7 +59,7 @@ for (const runtimeRoot of runtimeRoots) {
 
 const apiRoutesPath = join(
   root,
-  'backend/pallastrade_gems/pallastrade_api-5.6.0.rc1/config/routes.rb',
+  'backend/pallastrade_gems/pallastrade_api/config/routes.rb',
 )
 const apiRoutes = readFileSync(apiRoutesPath, 'utf8')
 if (!/namespace\s+:v3\b/.test(apiRoutes)) {

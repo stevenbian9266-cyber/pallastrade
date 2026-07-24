@@ -95,7 +95,7 @@ instead of creating a second API-specific service setting. Controller-specific
 behavior can call a custom service directly from a decorator.
 
 The available API serializer injection points are defined in
-`backend/pallastrade_gems/pallastrade_api-5.6.0.rc1/lib/pallastrade/api/dependencies.rb`.
+`backend/pallastrade_gems/pallastrade_api/lib/pallastrade/api/dependencies.rb`.
 
 ## API level customization
 
@@ -217,5 +217,5 @@ Default values can be easily checked by:
 
 1. Using the rake task: `bin/rake pallastrade:dependencies:list`
 2. Looking at the source code:
-   * Application dependencies: `backend/pallastrade_gems/pallastrade_core-5.6.0.rc1/lib/pallastrade/core/dependencies.rb`
-   * API v3 dependencies: `backend/pallastrade_gems/pallastrade_api-5.6.0.rc1/lib/pallastrade/api/dependencies.rb`
+   * Application dependencies: `backend/pallastrade_gems/pallastrade_core/lib/pallastrade/core/dependencies.rb`
+   * API v3 dependencies: `backend/pallastrade_gems/pallastrade_api/lib/pallastrade/api/dependencies.rb`
