@@ -1,0 +1,13 @@
+en:
+  admin:
+    ai:
+      store_switch: "Store AI Switch"
+      overview_warning: "AI is globally disabled. Enable via PALLASTRADE_AI_ENABLED."
+  ai_tools: "AI Tools"
+  providers: "Providers"
+  models: "Models"
+  capabilities: "Capabilities"
+  runs: "Runs"
+  manage: "Manage"
+  view: "View"
+  ai: "AI"

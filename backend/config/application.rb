@@ -28,6 +28,16 @@ module PallasTrade
         Rails.configuration.cache_classes ? require(c) : load(c)
       end
     end
+    # Active Record Encryption — must be configured before model autoloading,
+    # because models with `encrypts :credentials` validate the config at class
+    # load time. In production, these values come from the deployment platform's
+    # Secret Manager. For local dev, they are in .env / docker-compose.yml.
+    if ENV['ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY'].present?
+      config.active_record.encryption.primary_key = ENV['ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY']
+      config.active_record.encryption.deterministic_key = ENV['ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY']
+      config.active_record.encryption.key_derivation_salt = ENV['ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT']
+    end
+
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.1
 

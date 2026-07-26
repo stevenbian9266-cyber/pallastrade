@@ -83,3 +83,17 @@ export type {
   TranslationBatchEntry,
   TranslationsUpsertParams,
 } from './translations'
+
+// AI Types — hand-written for the AI Tools Platform
+export type {
+  AiArtifact,
+  AiCapability,
+  AiCapabilitySetting,
+  AiModel,
+  AiProvider,
+  AiRun,
+  AiSetting,
+  AiUsageByCapability,
+  AiUsageByProvider,
+  AiUsageSummary,
+} from './ai'

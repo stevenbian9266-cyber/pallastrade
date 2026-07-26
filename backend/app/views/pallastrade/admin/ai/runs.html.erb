@@ -1,0 +1,50 @@
+<% content_for :page_title do %>
+  <%= PallasTrade.t(:runs) %> &middot; <%= PallasTrade.t(:ai_tools) %>
+<% end %>
+
+<div class="space-y-4">
+  <% if @runs.empty? %>
+    <div class="bg-white rounded shadow p-12 text-center text-gray-400">
+      <p>No AI calls recorded yet.</p>
+    </div>
+  <% else %>
+    <table class="w-full bg-white rounded shadow text-sm">
+      <thead>
+        <tr class="border-b text-left">
+          <th class="p-3">ID</th>
+          <th class="p-3">Capability</th>
+          <th class="p-3">Model</th>
+          <th class="p-3">Status</th>
+          <th class="p-3">Tokens</th>
+          <th class="p-3">Latency</th>
+          <th class="p-3">Cost</th>
+          <th class="p-3">Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @runs.each do |run| %>
+          <tr class="border-t">
+            <td class="p-3 font-mono text-xs"><%= run.id %></td>
+            <td class="p-3"><%= run.capability_key %></td>
+            <td class="p-3 font-mono text-xs"><%= run.provider_model_id %></td>
+            <td class="p-3">
+              <span class="px-2 py-0.5 rounded text-xs <%= 
+                case run.status
+                when 'succeeded' then 'bg-green-100 text-green-700'
+                when 'failed' then 'bg-red-100 text-red-700'
+                when 'running' then 'bg-blue-100 text-blue-700'
+                when 'skipped' then 'bg-gray-100 text-gray-600'
+                else 'bg-yellow-100 text-yellow-700'
+                end %>"><%= run.status %></span>
+            </td>
+            <td class="p-3 font-mono text-xs"><%= (run.input_tokens || 0) + (run.output_tokens || 0) %></td>
+            <td class="p-3 font-mono text-xs"><%= run.latency_ms ? "#{run.latency_ms}ms" : '-' %></td>
+            <td class="p-3 font-mono text-xs"><%= run.estimated_cost ? "$#{sprintf('%.4f', run.estimated_cost)}" : '-' %></td>
+            <td class="p-3 text-xs text-gray-500"><%= time_ago_in_words(run.created_at) %> ago</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <%= paginate @runs %>
+  <% end %>
+</div>

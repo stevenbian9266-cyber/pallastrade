@@ -37,6 +37,12 @@
 			"command": "docker compose -f d:\\pallastrade\\pallastrade\\docker-compose.dev.yml build 2>&1",
 			"args": [],
 			"problemMatcher": []
+		},
+		{
+			"label": "Docker Status Check",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}' 2>&1; echo '---'; docker images pallastrade-web --format '{{.CreatedAt}}' 2>&1",
+			"isBackground": false
 		}
 	]
 }

@@ -14,6 +14,22 @@ Rails.application.routes.draw do
       path: :admin_user,
       router_name: :pallastrade
     )
+
+    # AI Tools admin pages
+    scope path: PallasTrade.admin_path, module: 'admin' do
+      get 'ai', to: 'ai#index', as: :admin_ai
+      get 'ai/providers', to: 'ai#providers', as: :admin_ai_providers
+      get 'ai/providers/:id', to: 'ai#provider', as: :admin_ai_provider
+      patch 'ai/providers/:id', to: 'ai#update_provider', as: :admin_ai_update_provider
+      post 'ai/providers/:id/test_connection', to: 'ai#test_connection', as: :admin_ai_test_connection
+      delete 'ai/providers/:id/credential', to: 'ai#clear_credential', as: :admin_ai_clear_credential
+      get 'ai/models', to: 'ai#models', as: :admin_ai_models
+      patch 'ai/models/:id', to: 'ai#update_model', as: :admin_ai_update_model
+      get 'ai/capabilities', to: 'ai#capabilities', as: :admin_ai_capabilities
+      patch 'ai/capabilities/:capability_key', to: 'ai#update_capability', as: :admin_ai_update_capability
+      get 'ai/runs', to: 'ai#runs', as: :admin_ai_runs
+      patch 'ai/settings', to: 'ai#update_settings', as: :admin_ai_update_settings
+    end
   end
   # This line mounts PallasTrade's routes at the root of your application.
   # This means, any requests to URLs such as /products, will go to

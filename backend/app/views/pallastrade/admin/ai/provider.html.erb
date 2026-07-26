@@ -1,0 +1,166 @@
+<% content_for :page_title do %>
+  <%= @provider.name %> &middot; <%= PallasTrade.t(:providers) %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= form_tag PallasTrade.admin_ai_update_provider_path(@provider), method: :patch do %>
+    <%= hidden_field_tag :active, !@provider.active? %>
+    <%= submit_tag @provider.active? ? 'Deactivate' : 'Activate', class: @provider.active? ? 'btn btn-sm bg-red-500 text-white' : 'btn btn-sm bg-green-500 text-white' %>
+  <% end %>
+<% end %>
+
+<% secret = PallasTrade::AI::ProviderSecret.find_by(integration: @provider) %>
+
+<div class="space-y-6">
+
+  <div class="bg-white rounded shadow p-6" data-controller="replace password-visibility">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">API Key</h2>
+      <% if secret&.configured? %>
+        <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+          Configured
+        </span>
+      <% end %>
+    </div>
+
+    <% if secret&.configured? %>
+      <!-- Key configured: masked display + actions -->
+      <div data-replace-target="from">
+        <div class="bg-gray-50 border border-gray-200 rounded-md p-4 mb-4">
+          <div class="flex items-center gap-2 mb-2">
+            <%= icon 'lock', class: 'text-gray-500' %>
+            <span class="text-gray-700 text-sm font-medium">Secret key configured</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <code class="text-sm text-gray-600 font-mono">
+              <%= secret.key_hint_display %>
+            </code>
+          </div>
+          <% if secret.rotated_at %>
+            <p class="text-xs text-gray-400 mt-2">
+              <%= icon 'clock', class: 'inline-block mr-1', style: 'width:14px;height:14px' %>
+              Rotated <%= time_ago_in_words(secret.rotated_at) %> ago
+            </p>
+          <% end %>
+        </div>
+
+        <div class="flex gap-2">
+          <button type="button" class="btn btn-sm btn-light"
+                  data-action="click->replace#replace">
+            <%= icon 'edit' %>
+            Replace
+          </button>
+          <%= button_to 'Delete',
+                PallasTrade.admin_ai_clear_credential_path(@provider),
+                method: :delete,
+                class: 'btn btn-sm bg-red-500 text-white',
+                data: {
+                  turbo_confirm: "Delete API Key?\n\nThis will stop all AI calls using #{@provider.name}. Models and capabilities will be unavailable.\n\nThis action cannot be undone."
+                } %>
+        </div>
+      </div>
+
+      <!-- Replace form (hidden by default) -->
+      <div data-replace-target="to" class="hidden">
+        <%= form_tag PallasTrade.admin_ai_update_provider_path(@provider), method: :patch do %>
+          <div class="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <p class="text-sm text-yellow-800">The current key will be replaced immediately. This cannot be undone.</p>
+          </div>
+          <div class="input-group gap-0 pr-1 mb-3">
+            <%= password_field_tag :api_key, '', 
+                  placeholder: 'sk-...', 
+                  class: 'form-input',
+                  data: { password_visibility_target: 'input' } %>
+            <button type="button" class="btn hover:bg-gray-100 p-1 mx-1 rounded"
+                    data-action="password-visibility#toggle">
+              <span data-password-visibility-target="icon"><%= icon 'eye', class: 'mr-0' %></span>
+              <span data-password-visibility-target="icon" class="hidden"><%= icon 'eye-off', class: 'mr-0' %></span>
+            </button>
+          </div>
+          <div class="flex gap-2">
+            <%= submit_tag 'Replace Key', class: 'btn btn-primary' %>
+            <button type="button" class="btn btn-light"
+                    data-action="click->replace#replace">
+              Cancel
+            </button>
+          </div>
+        <% end %>
+      </div>
+
+    <% else %>
+      <!-- No key configured -->
+      <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+        <div class="flex items-center gap-2">
+          <%= icon 'alert-triangle', class: 'text-yellow-600' %>
+          <p class="text-sm text-yellow-800">No API key configured. Add one to enable AI capabilities.</p>
+        </div>
+      </div>
+      <%= form_tag PallasTrade.admin_ai_update_provider_path(@provider), method: :patch do %>
+        <div class="input-group gap-0 pr-1 mb-3">
+          <%= password_field_tag :api_key, '', 
+                placeholder: 'sk-...', 
+                class: 'form-input w-96',
+                data: { password_visibility_target: 'input' } %>
+          <button type="button" class="btn hover:bg-gray-100 p-1 mx-1 rounded"
+                  data-action="password-visibility#toggle">
+            <span data-password-visibility-target="icon"><%= icon 'eye', class: 'mr-0' %></span>
+            <span data-password-visibility-target="icon" class="hidden"><%= icon 'eye-off', class: 'mr-0' %></span>
+          </button>
+        </div>
+        <%= submit_tag 'Save Key', class: 'btn btn-primary' %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="bg-white rounded shadow p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">Connection</h2>
+      <%= button_to 'Test Connection', PallasTrade.admin_ai_test_connection_path(@provider), method: :post, class: 'btn btn-sm btn-secondary' %>
+    </div>
+    <dl class="space-y-2 text-sm">
+      <dt class="text-gray-500">Status</dt>
+      <dd><%= @provider.verification_status || 'Never tested' %></dd>
+      <dt class="text-gray-500">Last Verified</dt>
+      <dd><%= @provider.last_verified_at ? l(@provider.last_verified_at, format: :long) : 'Never' %></dd>
+      <dt class="text-gray-500">Base URL</dt>
+      <dd class="font-mono text-xs"><%= @provider.preferences['base_url'] %></dd>
+    </dl>
+  </div>
+
+  <div class="bg-white rounded shadow p-6">
+    <h2 class="text-lg font-semibold mb-4">Models (<%= @models.count %>)</h2>
+    <table class="w-full text-sm">
+      <thead>
+        <tr>
+          <th class="text-left py-2">Name</th>
+          <th class="text-left py-2">Remote ID</th>
+          <th class="text-center py-2">Active</th>
+          <th class="text-right py-2">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @models.each do |model| %>
+          <tr class="border-t">
+            <td class="py-2"><%= model.name %></td>
+            <td class="py-2 font-mono text-xs"><%= model.provider_model_id %></td>
+            <td class="py-2 text-center">
+              <span class="badge <%= model.active? ? 'badge-active' : 'badge-inactive' %>">
+                <%= model.active? ? 'Yes' : 'No' %>
+              </span>
+            </td>
+            <td class="py-2 text-right">
+              <%= form_tag PallasTrade.admin_ai_update_model_path(model), method: :patch, class: 'inline' do %>
+                <%= hidden_field_tag :active, !model.active? %>
+                <%= submit_tag model.active? ? 'Disable' : 'Enable',
+                      class: model.active? ? 'btn btn-sm bg-red-500 text-white' : 'btn btn-sm bg-green-500 text-white' %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <% if @models.empty? %>
+      <p class="text-gray-400 text-sm mt-4">No models configured. Models are created automatically from the provider catalog when the provider is first configured.</p>
+    <% end %>
+  </div>
+</div>

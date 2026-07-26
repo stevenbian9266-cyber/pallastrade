@@ -1,0 +1,29 @@
+en:
+  ai:
+    menu:
+      title: "AI Tools"
+      overview: "Overview"
+      providers: "Providers & Keys"
+      models: "Models"
+      capabilities: "Capabilities"
+      runs: "Runs & Usage"
+    overview:
+      title: "AI Overview"
+      system_disabled: "AI is disabled for this store."
+      store_switch: "Store AI Switch"
+    provider:
+      deepseek: "DeepSeek"
+      openai: "OpenAI (GPT)"
+      key_configured: "Key Configured"
+      key_not_configured: "Key Not Configured"
+      test_connection: "Test Connection"
+      clear_key: "Clear Key"
+    model:
+      title: "Model Management"
+    capability:
+      title: "Capabilities"
+      empty: "No AI capabilities registered yet."
+    run:
+      title: "Run History"
+    errors:
+      ai_disabled: "AI system is disabled"

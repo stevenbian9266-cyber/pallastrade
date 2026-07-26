@@ -1,0 +1,58 @@
+<% content_for :page_title do %>
+  <%= PallasTrade.t(:providers) %> &middot; <%= PallasTrade.t(:ai_tools) %>
+<% end %>
+
+<div class="space-y-4">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <% @providers.each do |provider| %>
+      <%
+        secret = PallasTrade::AI::ProviderSecret.find_by(integration: provider)
+        key_ok = secret&.configured?
+        verified = provider.verification_status == 'verified'
+
+        badge_class, badge_text = if provider.active? && key_ok && verified
+          ['badge-active', 'Active']
+        elsif provider.active? && key_ok && !verified
+          ['badge-warning', 'Active (untested)']
+        elsif provider.active? && !key_ok
+          ['badge-warning', 'Active (no key)']
+        else
+          ['badge-inactive', 'Inactive']
+        end
+      %>
+      <%= link_to PallasTrade.admin_ai_provider_path(provider),
+            class: 'block bg-white rounded border border-gray-200 shadow-sm p-6 hover:bg-gray-50 hover:border-gray-400 transition-colors no-underline' do %>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold"><%= provider.name %></h2>
+          <span class="badge <%= badge_class %>"><%= badge_text %></span>
+        </div>
+
+        <dl class="space-y-2 text-sm">
+          <dt class="text-gray-500">Key</dt>
+          <dd class="font-mono">
+            <% if secret&.configured? %>
+              <span class="text-green-600"><%= secret.key_hint_display %></span>
+              <span class="text-gray-400">(configured)</span>
+            <% else %>
+              <span class="text-red-600">Not configured</span>
+            <% end %>
+          </dd>
+
+          <dt class="text-gray-500">Connection</dt>
+          <dd><span class="<%= provider.verification_status == 'verified' ? 'text-green-600' : 'text-gray-400' %>"><%= provider.verification_status || 'unverified' %></span></dd>
+
+          <dt class="text-gray-500">Models</dt>
+          <dd><%= PallasTrade::AI::Model.where(provider: provider).count %> total, <%= PallasTrade::AI::Model.where(provider: provider, active: true).count %> active</dd>
+        </dl>
+
+        <div class="mt-4 flex gap-2" onclick="event.stopPropagation()">
+          <%= button_to 'Test Connection',
+                PallasTrade.admin_ai_test_connection_path(provider),
+                method: :post,
+                class: 'btn btn-sm btn-secondary',
+                form: { class: 'inline' } %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>

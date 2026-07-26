@@ -1,0 +1,94 @@
+{
+  "admin": {
+    "ai": {
+      "menu": {
+        "title": "AI Tools",
+        "overview": "Overview",
+        "providers": "Providers & Keys",
+        "models": "Models",
+        "capabilities": "Capabilities",
+        "runs": "Runs & Usage"
+      },
+      "overview": {
+        "title": "AI Overview",
+        "system_disabled": "AI is disabled for this store. All AI capabilities will skip model calls — no data will be sent to external providers.",
+        "store_switch": "Store AI Switch",
+        "system_status": "System Status",
+        "providers_configured": "Providers Configured",
+        "models_enabled": "Models Enabled",
+        "capabilities_enabled": "Capabilities Enabled",
+        "today_usage": "Today's Usage",
+        "recent_failures": "Recent Failures"
+      },
+      "provider": {
+        "deepseek": "DeepSeek",
+        "openai": "OpenAI (GPT)",
+        "key_configured": "Key Configured",
+        "key_not_configured": "Key Not Configured",
+        "connection_status": "Connection Status",
+        "test_connection": "Test Connection",
+        "replace_key": "Replace Key",
+        "clear_key": "Clear Key",
+        "clear_key_confirm": "Clearing the key will disable all capabilities using this provider. Are you sure?",
+        "base_url": "Base URL",
+        "advanced_settings": "Advanced Settings",
+        "not_configured": "Not Configured",
+        "verified": "Verified",
+        "unverified": "Unverified",
+        "invalid_credentials": "Invalid Credentials",
+        "timeout": "Connection Timeout",
+        "setup": "Set Up"
+      },
+      "model": {
+        "title": "Model Management",
+        "add_model": "Add Model",
+        "custom_model": "Custom Model",
+        "from_catalog": "From Catalog",
+        "provider_model_id": "Remote Model ID",
+        "kind": "Type",
+        "capabilities": "Capabilities",
+        "default_parameters": "Default Parameters",
+        "used_by_capabilities": "Used by Capabilities",
+        "disable_warning": "Disabling this model will stop AI calls for the following capabilities:",
+        "deprecated": "Deprecated",
+        "catalog": "Catalog Preset",
+        "custom": "Custom"
+      },
+      "capability": {
+        "title": "Capabilities",
+        "empty": "No AI capabilities registered yet. Install or develop a capability to select models and enable it here.",
+        "not_configured": "Not Configured",
+        "primary_model": "Primary Model",
+        "fallback_model": "Fallback Model",
+        "fallback_enabled": "Fallback Enabled",
+        "parameter_overrides": "Parameter Overrides"
+      },
+      "run": {
+        "title": "Run History",
+        "status": {
+          "queued": "Queued",
+          "running": "Running",
+          "succeeded": "Succeeded",
+          "failed": "Failed",
+          "cancelled": "Cancelled",
+          "skipped": "Skipped"
+        },
+        "mode": {
+          "sync": "Sync",
+          "async": "Async"
+        },
+        "no_data": "No runs yet"
+      },
+      "usage": {
+        "title": "Usage Statistics",
+        "total_runs": "Total Runs",
+        "succeeded": "Succeeded",
+        "failed": "Failed",
+        "skipped": "Skipped",
+        "tokens": "Token Usage",
+        "estimated_cost": "Estimated Cost",
+        "avg_latency": "Avg Latency"
+      }
+    }
+  }
+}

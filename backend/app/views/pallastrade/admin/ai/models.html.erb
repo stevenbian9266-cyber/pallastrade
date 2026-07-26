@@ -1,0 +1,40 @@
+<% content_for :page_title do %>
+  <%= PallasTrade.t(:models) %> &middot; <%= PallasTrade.t(:ai_tools) %>
+<% end %>
+
+<div class="space-y-4">
+  <table class="w-full bg-white rounded shadow">
+    <thead>
+      <tr class="border-b text-left">
+        <th class="p-3">Name</th>
+        <th class="p-3">Provider</th>
+        <th class="p-3">Model ID</th>
+        <th class="p-3">Kind</th>
+        <th class="p-3">Active</th>
+        <th class="p-3">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @models.each do |model| %>
+        <tr class="border-t">
+          <td class="p-3"><%= model.name %></td>
+          <td class="p-3"><%= model.provider&.name %></td>
+          <td class="p-3 font-mono text-xs"><%= model.provider_model_id %></td>
+          <td class="p-3"><span class="bg-gray-100 px-2 py-0.5 rounded text-xs"><%= model.kind %></span></td>
+          <td class="p-3">
+            <%= form_tag PallasTrade.admin_ai_update_model_path(model), method: :patch do %>
+              <%= hidden_field_tag :active, !model.active? %>
+              <%= submit_tag model.active? ? 'On' : 'Off', class: model.active? ? 'text-green-600 cursor-pointer bg-transparent border-0' : 'text-gray-400 cursor-pointer bg-transparent border-0' %>
+            <% end %>
+          </td>
+          <td class="p-3">
+            <span class="text-xs text-gray-400">Used by <%= PallasTrade::AI::CapabilitySetting.where(primary_model_id: model.id).count %> capabilities</span>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <% if @models.empty? %>
+    <p class="text-gray-400">No models configured.</p>
+  <% end %>
+</div>

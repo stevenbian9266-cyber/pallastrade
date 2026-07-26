@@ -19,5 +19,7 @@
   - [pallastrade_webhooks, 3]
   - [pallastrade_api_keys, 3]
   - [pallastrade_search, 3]
+  - [pallastrade_ai_interactive, 3]
+  - [pallastrade_ai_batch, 1]
   - [active_storage_analysis, 1]
   - [active_storage_purge, 1]

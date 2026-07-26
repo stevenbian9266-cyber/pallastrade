@@ -1,0 +1,29 @@
+zh-CN:
+  ai:
+    menu:
+      title: "AI Gong Ju"
+      overview: "Gai Lan"
+      providers: "Gong Ying Shang Yu Mi Yue"
+      models: "Mo Xing"
+      capabilities: "Ying Yong Neng Li"
+      runs: "Diao Yong Yu Yong Liang"
+    overview:
+      title: "AI Gai Lan"
+      system_disabled: "Ci Shang Dian de AI Neng Li Yi Guan Bi."
+      store_switch: "Shang Dian AI Zong Kai Guan"
+    provider:
+      deepseek: "DeepSeek"
+      openai: "OpenAI (GPT)"
+      key_configured: "Mi Yue Yi Pei Zhi"
+      key_not_configured: "Mi Yue Wei Pei Zhi"
+      test_connection: "Ce Shi Lian Jie"
+      clear_key: "Qing Chu Mi Yue"
+    model:
+      title: "Mo Xing Guan Li"
+    capability:
+      title: "Ying Yong Neng Li"
+      empty: "Shang Wei Zhu Ce AI Ying Yong Neng Li."
+    run:
+      title: "Diao Yong Ji Lu"
+    errors:
+      ai_disabled: "AI Xi Tong Yi Guan Bi"

@@ -29,6 +29,11 @@ x-app: &app
     # email links). Override in .env when serving from a real domain or IP.
     RAILS_HOST: ${RAILS_HOST:-localhost:${PALLASTRADE_PORT:-3000}}
     MEILISEARCH_URL: http://meilisearch:7700
+    # Active Record Encryption keys for AI Provider secrets.
+    # Generated via: bin/rails db:encryption:init
+    ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY: hDqvRwM0nEZwV2AUMUziFHqmhzaTUB7q
+    ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: NKDL96Imh9JtHZaNSfI52OmmjI7OCsBg
+    ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT: sz00IsN5HvVaC0tAWdeMHs85fbZ4lwaZ
     # All outgoing mail is captured by Mailpit — read it at http://localhost:8025.
     # Set SMTP_HOST (and friends) in .env to deliver through a real provider instead.
     SMTP_HOST: ${SMTP_HOST:-mailpit}

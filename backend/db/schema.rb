@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_15_145110) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_24_000006) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -192,6 +192,138 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_145110) do
     t.index ["return_url"], name: "index_pt_adyen_payment_sessions_on_return_url"
     t.index ["status"], name: "index_pt_adyen_payment_sessions_on_status"
     t.index ["user_id"], name: "index_pt_adyen_payment_sessions_on_user_id"
+  end
+
+  create_table "pallastrade_ai_artifacts", force: :cascade do |t|
+    t.string "checksum"
+    t.string "content_type"
+    t.datetime "created_at", null: false
+    t.string "kind", null: false
+    t.jsonb "payload"
+    t.bigint "run_id", null: false
+    t.string "schema_version"
+    t.datetime "updated_at", null: false
+    t.index ["kind"], name: "index_pallastrade_ai_artifacts_on_kind"
+    t.index ["run_id"], name: "index_pallastrade_ai_artifacts_on_run_id"
+  end
+
+  create_table "pallastrade_ai_capability_settings", force: :cascade do |t|
+    t.boolean "active", default: false, null: false
+    t.string "capability_key", null: false
+    t.datetime "created_at", null: false
+    t.bigint "daily_request_limit"
+    t.bigint "daily_token_limit"
+    t.boolean "fallback_enabled", default: false, null: false
+    t.bigint "fallback_model_id"
+    t.boolean "orphaned", default: false, null: false
+    t.jsonb "parameter_overrides", default: {}
+    t.bigint "primary_model_id"
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["fallback_model_id"], name: "index_pallastrade_ai_capability_settings_on_fallback_model_id"
+    t.index ["primary_model_id"], name: "index_pallastrade_ai_capability_settings_on_primary_model_id"
+    t.index ["store_id", "capability_key"], name: "idx_ai_capability_settings_on_store_and_key", unique: true
+    t.index ["store_id"], name: "index_pallastrade_ai_capability_settings_on_store_id"
+  end
+
+  create_table "pallastrade_ai_models", force: :cascade do |t|
+    t.boolean "active", default: false, null: false
+    t.boolean "built_in", default: false, null: false
+    t.jsonb "capabilities", default: []
+    t.string "catalog_version"
+    t.datetime "created_at", null: false
+    t.jsonb "default_parameters", default: {}
+    t.string "kind", default: "text", null: false
+    t.string "name", null: false
+    t.integer "position"
+    t.bigint "provider_id", null: false
+    t.string "provider_model_id", null: false
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_pallastrade_ai_models_on_active"
+    t.index ["kind"], name: "index_pallastrade_ai_models_on_kind"
+    t.index ["provider_id", "provider_model_id"], name: "idx_ai_models_on_provider_and_model_id", unique: true
+    t.index ["provider_id"], name: "index_pallastrade_ai_models_on_provider_id"
+    t.index ["store_id", "provider_id"], name: "index_pallastrade_ai_models_on_store_id_and_provider_id"
+    t.index ["store_id"], name: "index_pallastrade_ai_models_on_store_id"
+  end
+
+  create_table "pallastrade_ai_provider_secrets", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "credentials", null: false
+    t.string "encryption_key_version"
+    t.bigint "integration_id", null: false
+    t.string "key_hint", default: "", null: false
+    t.datetime "rotated_at"
+    t.datetime "updated_at", null: false
+    t.index ["encryption_key_version"], name: "idx_on_encryption_key_version_5790dbef9a"
+    t.index ["integration_id"], name: "index_pallastrade_ai_provider_secrets_on_integration_id", unique: true
+  end
+
+  create_table "pallastrade_ai_runs", force: :cascade do |t|
+    t.integer "attempts", default: 0, null: false
+    t.bigint "cached_input_tokens", default: 0
+    t.string "capability_key"
+    t.string "capability_version"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.string "error_code"
+    t.string "error_message"
+    t.decimal "estimated_cost", precision: 12, scale: 6
+    t.datetime "expires_at"
+    t.bigint "fallback_from_model_id"
+    t.string "idempotency_key"
+    t.string "input_digest"
+    t.string "input_schema_version"
+    t.bigint "input_tokens", default: 0
+    t.bigint "latency_ms"
+    t.string "mode", default: "sync", null: false
+    t.bigint "model_id"
+    t.string "output_schema_version"
+    t.bigint "output_tokens", default: 0
+    t.jsonb "pricing_snapshot", default: {}
+    t.string "prompt_key"
+    t.string "prompt_version"
+    t.bigint "provider_id"
+    t.string "provider_model_id"
+    t.string "provider_request_id"
+    t.string "provider_type"
+    t.datetime "queued_at"
+    t.bigint "reasoning_tokens", default: 0
+    t.jsonb "safe_parameters", default: {}
+    t.datetime "started_at"
+    t.string "status", default: "queued", null: false
+    t.bigint "store_id", null: false
+    t.string "unavailable_reason"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["capability_key"], name: "index_pallastrade_ai_runs_on_capability_key"
+    t.index ["error_code"], name: "index_pallastrade_ai_runs_on_error_code"
+    t.index ["mode"], name: "index_pallastrade_ai_runs_on_mode"
+    t.index ["model_id"], name: "index_pallastrade_ai_runs_on_model_id"
+    t.index ["provider_id"], name: "index_pallastrade_ai_runs_on_provider_id"
+    t.index ["status"], name: "index_pallastrade_ai_runs_on_status"
+    t.index ["store_id", "created_at"], name: "idx_ai_runs_on_store_and_created_at"
+    t.index ["store_id", "idempotency_key"], name: "idx_ai_runs_on_store_and_idempotency", unique: true, where: "(idempotency_key IS NOT NULL)"
+    t.index ["store_id"], name: "index_pallastrade_ai_runs_on_store_id"
+    t.index ["user_id"], name: "index_pallastrade_ai_runs_on_user_id"
+  end
+
+  create_table "pallastrade_ai_settings", force: :cascade do |t|
+    t.boolean "active", default: false, null: false
+    t.string "content_logging_mode", default: "none", null: false
+    t.datetime "created_at", null: false
+    t.decimal "daily_cost_limit", precision: 12, scale: 4
+    t.bigint "daily_input_token_limit"
+    t.bigint "daily_output_token_limit"
+    t.bigint "daily_request_limit"
+    t.bigint "default_model_id"
+    t.boolean "fallback_enabled", default: false, null: false
+    t.integer "run_retention_days", default: 30, null: false
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["default_model_id"], name: "index_pallastrade_ai_settings_on_default_model_id"
+    t.index ["store_id"], name: "index_pallastrade_ai_settings_on_store_id", unique: true
   end
 
   create_table "pallastrade_allowed_origins", force: :cascade do |t|
@@ -2262,6 +2394,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_145110) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "pallastrade_ai_artifacts", "pallastrade_ai_runs", column: "run_id"
+  add_foreign_key "pallastrade_ai_capability_settings", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_ai_models", "pallastrade_integrations", column: "provider_id"
+  add_foreign_key "pallastrade_ai_models", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_ai_provider_secrets", "pallastrade_integrations", column: "integration_id"
+  add_foreign_key "pallastrade_ai_runs", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_ai_settings", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_option_type_translations", "pallastrade_option_types"
   add_foreign_key "pallastrade_option_value_translations", "pallastrade_option_values"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_payment_methods", column: "payment_method_id"

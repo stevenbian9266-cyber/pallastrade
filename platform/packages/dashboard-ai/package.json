@@ -1,0 +1,63 @@
+{
+  "name": "@pallastrade/dashboard-ai",
+  "version": "1.0.0",
+  "description": "PallasTrade Dashboard AI Tools plugin — provider management, model config, capability settings, and run history.",
+  "author": "Steven Bian <stevenbian9266@gmail.com>",
+  "homepage": "https://pallastrade.cn",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stevenbian9266-cyber/pallastrade.git",
+    "directory": "platform/packages/dashboard-ai"
+  },
+  "keywords": ["pallastrade", "ai", "dashboard", "plugin"],
+  "type": "module",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": ["src", "README.md"],
+  "scripts": {
+    "lint": "biome check src",
+    "lint:fix": "biome check --fix src",
+    "format": "biome format --write src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsup"
+  },
+  "peerDependencies": {
+    "@pallastrade/admin-sdk": "workspace:^",
+    "@pallastrade/dashboard-core": "workspace:^",
+    "@pallastrade/dashboard-ui": "workspace:^",
+    "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-router": "^1.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.0.0",
+    "zod": "^3.0.0",
+    "i18next": "^24.0.0",
+    "react-i18next": "^15.0.0"
+  },
+  "devDependencies": {
+    "@pallastrade/dashboard-core": "workspace:^",
+    "@pallastrade/dashboard-ui": "workspace:^",
+    "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-router": "^1.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.0.0",
+    "zod": "^3.0.0",
+    "i18next": "^24.0.0",
+    "react-i18next": "^15.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0"
+  },
+  "pallastrade": {
+    "dashboard": {
+      "plugin": true
+    }
+  }
+}

@@ -1,0 +1,13 @@
+zh-CN:
+  admin:
+    ai:
+      store_switch: "Store AI Switch"
+      overview_warning: "AI is globally disabled."
+  ai_tools: "AI Tools"
+  providers: "Providers"
+  models: "Models"
+  capabilities: "Capabilities"
+  runs: "Runs"
+  manage: "Manage"
+  view: "View"
+  ai: "AI"
