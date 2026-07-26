@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PallasTrade API Documentation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container { text-align: center; padding: 2rem; }
+    .logo { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .logo span { color: #38bdf8; }
+    .subtitle { color: #94a3b8; margin-bottom: 3rem; font-size: 1.1rem; }
+    .cards { display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center; }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 320px;
+      text-decoration: none;
+      color: #e2e8f0;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .card:hover { border-color: #38bdf8; transform: translateY(-2px); }
+    .card h2 { font-size: 1.4rem; margin-bottom: 0.75rem; }
+    .card h2 .icon { margin-right: 0.5rem; }
+    .card p { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; }
+    .badge {
+      display: inline-block;
+      background: #1e3a5f;
+      color: #38bdf8;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">Pallas<span>Trade</span></div>
+    <p class="subtitle">API Documentation</p>
+    <div class="cards">
+      <a href="<%= api_docs_store_path %>" class="card">
+        <h2><span class="icon">🛒</span>Store API</h2>
+        <p>Customer-facing storefront API for building headless commerce experiences.</p>
+        <span class="badge">/api/v3/store</span>
+      </a>
+      <a href="<%= api_docs_admin_path %>" class="card">
+        <h2><span class="icon">⚙️</span>Admin API</h2>
+        <p>Administrative API for managing products, orders, and store settings.</p>
+        <span class="badge">/api/v3/admin</span>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

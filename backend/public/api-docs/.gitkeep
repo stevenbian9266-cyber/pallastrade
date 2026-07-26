@@ -1,0 +1,3 @@
+# API Docs — OpenAPI specs served by Swagger UI
+# These files are synced from platform/docs/api-reference/.
+# Run: cp ../../platform/docs/api-reference/store.yaml . && cp ../../platform/docs/api-reference/admin.yaml .

@@ -31,6 +31,11 @@ Rails.application.routes.draw do
       patch 'ai/settings', to: 'ai#update_settings', as: :admin_ai_update_settings
     end
   end
+  # API Documentation — interactive Scalar UI (must be before engine mount)
+  get 'docs/api', to: 'api_docs#index', as: :api_docs
+  get 'docs/api/store', to: 'api_docs#store', as: :api_docs_store
+  get 'docs/api/admin', to: 'api_docs#admin', as: :api_docs_admin
+
   # This line mounts PallasTrade's routes at the root of your application.
   # This means, any requests to URLs such as /products, will go to
   # PallasTrade::ProductsController.
