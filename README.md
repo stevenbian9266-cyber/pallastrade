@@ -31,7 +31,7 @@ cd pallastrade
 `pallastrade-v1.0.1`。Tag 同时绑定四个组件；Gem/npm 包可保留独立版本，但发布时
 必须由同一个 release manifest 绑定到根 Commit。
 
-完整规则和操作方式见 [单仓库与发布模型](docs/monorepo-release-model.md)。
+完整规则和操作方式见 [单仓库与发布模型](scripts/release/README.md)。
 
 ## 维护
 
