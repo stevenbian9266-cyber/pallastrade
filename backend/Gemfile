@@ -79,7 +79,8 @@ group :development, :test do
   gem 'rspec-rails'
   gem 'rspec-retry'
   gem 'rubocop-rails-omakase', require: false
-  gem 'simplecov-cobertura'
+  gem 'simplecov', require: false
+  gem 'simplecov-cobertura', require: false
 end
 
 group :development do

@@ -1,5 +1,25 @@
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 require 'spec_helper'
+
+# SimpleCov — MUST load before any application code
+require 'simplecov'
+require 'simplecov-cobertura'
+
+SimpleCov.start 'rails' do
+  enable_coverage :branch
+  minimum_coverage line: 80, branch: 60
+
+  add_group 'Application', 'app/'
+  add_group 'Gems', 'pallastrade_gems/'
+  add_filter '/spec/'
+  add_filter '/config/'
+
+  formatter SimpleCov::Formatter::MultiFormatter.new([
+    SimpleCov::Formatter::HTMLFormatter,
+    SimpleCov::Formatter::CoberturaFormatter,
+  ])
+end
+
 # Force (not ||=) because the dev container bakes RAILS_ENV=development;
 # without this, in-container rspec boots the dev env and DatabaseCleaner
 # truncates the development database.

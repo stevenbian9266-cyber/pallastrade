@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "AP-001",
+      "name": "inline-style",
+      "severity": "warning",
+      "pattern": "style=\\{?\\{",
+      "fileGlob": "storefront/src/**/*.tsx",
+      "excludeGlob": "**/emails/**",
+      "message": "Inline style detected. Prefer Tailwind className or design-system component props when possible. Dynamic values (width, color from data) are acceptable.",
+      "fix": "For static styles: use className='...' with Tailwind. For dynamic values: consider CSS variables (var(--...))."
+    },
+    {
+      "id": "AP-002",
+      "name": "raw-fetch-api",
+      "severity": "error",
+      "pattern": "fetch\\s*\\(\\s*['\"`].*\\/api\\/v3\\/",
+      "fileGlob": "{storefront/src,platform/packages}/**/*.{ts,tsx}",
+      "excludeGlob": "**/sdk/**",
+      "message": "Raw fetch to PallasTrade API. Use @pallastrade/sdk or @pallastrade/admin-sdk.",
+      "fix": "Use the typed SDK client: import { createClient } from '@pallastrade/sdk'"
+    },
+    {
+      "id": "AP-003",
+      "name": "model-create-outside-test",
+      "severity": "warning",
+      "pattern": "\\.(create!?|save!)\\s*[\\(\\{]",
+      "fileGlob": "backend/app/**/*.rb",
+      "excludeGlob": "**/spec/**",
+      "message": "Model.create/save outside spec directory. Use Factory Bot in tests, Service objects in app.",
+      "fix": "In tests: `create(:model_name)`. In app: use a proper service or repository pattern."
+    },
+    {
+      "id": "AP-004",
+      "name": "after-save-callback",
+      "severity": "warning",
+      "pattern": "after_save\\s+:",
+      "fileGlob": "backend/app/**/*.rb",
+      "message": "after_save callback used. Consider PallasTrade::Subscriber for side effects.",
+      "fix": "Create a subscriber class and register it instead of using after_save."
+    },
+    {
+      "id": "AP-005",
+      "name": "unscoped-store-query",
+      "severity": "error",
+      "pattern": "PallasTrade::(Order|Product|User|Payment)\\s*\\.\\s*(all|where|find_by)",
+      "fileGlob": "backend/app/**/*.rb",
+      "excludeGlob": "**/spec/**",
+      "message": "Unscoped query to PallasTrade model. Always scope through current_store.",
+      "fix": "Use `current_store.orders` instead of `PallasTrade::Order.all`"
+    },
+    {
+      "id": "AP-006",
+      "name": "hardcoded-hex-color",
+      "severity": "warning",
+      "pattern": "#[0-9a-fA-F]{6}\\b",
+      "fileGlob": "{storefront/src,platform/packages/dashboard-ui}/**/*.{tsx,css}",
+      "message": "Hardcoded hex color. Use CSS custom properties from design tokens.",
+      "fix": "Replace with var(--color-...) from design tokens"
+    },
+    {
+      "id": "AP-007",
+      "name": "hand-edit-generated",
+      "severity": "error",
+      "pattern": "DO NOT EDIT|AUTO-GENERATED",
+      "fileGlob": "platform/packages/*/src/types/generated/**",
+      "message": "Hand-editing auto-generated files. Run the generation command instead.",
+      "fix": "Run the appropriate generate:types or generate:zod command"
+    }
+  ]
+}

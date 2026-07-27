@@ -139,7 +139,7 @@ bin/rails db:seed      # Seed the databases
 
 ## Coding Conventions
 
-- All custom code goes in `app/` — never modify gem source
+- All custom code goes in `app/`. Gem source under `pallastrade_gems/` may be modified if needed — prefer Decorators or DI first (see Customization Patterns below). Direct gem changes should be annotated with `# PALLAS-CUSTOM: <reason>`.
 - Use decorators in `app/models/pallastrade/` for model extensions
 - Use `PallasTrade.user_class` / `PallasTrade.admin_user_class` — never reference `PallasTrade::User` directly
 - All PallasTrade models are namespaced under `PallasTrade::` (e.g., `PallasTrade::Product`, `PallasTrade::Order`)

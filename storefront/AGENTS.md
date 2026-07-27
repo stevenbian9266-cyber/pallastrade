@@ -6,11 +6,7 @@ See [CLAUDE.md](./CLAUDE.md) for full project conventions.
 
 | Document | Purpose |
 |----------|---------|
-| `../docs/governance/rename-map.yml` | Brand rename map (PallasTrade → PallasTrade) |
-| `../docs/governance/OBLIGATIONS.md` | Cross-module sync rules |
-| `../docs/governance/IMPACT_MAP.md` | Module dependency matrix |
-| `../docs/governance/PAYMENT_SECURITY_GATE.md` | Payment security gate (STR-001–012) |
-| `../docs/adr/` | Architecture Decision Records |
+| `../AGENTS.md` | Root agent instructions — single source of truth for all components |
 
 ## Quick Verification
 

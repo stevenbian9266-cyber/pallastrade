@@ -12,7 +12,7 @@ When proposing significant architectural changes:
 Use `/project:create-plan` and `/project:update-plan` for plan management.
 
 Active plans (6.0 target, work pending):
-- `6.0-multi-vendor-marketplace.md` — Open-source the marketplace core (Vendor, OrderGroup-based order splitting, commission engine with EU commission taxation, `VendorTransfer`/`VendorPayout` ledger + pluggable `PayoutProvider`) per stevenbian9266-cyber/pallastrade#13323. 6.0 headline feature; rebuilds the legacy Enterprise multi-vendor module as native models on the Cart/Order split. Basic Stripe Connect payouts (Express onboarding + on-fulfillment transfers) ship OSS in the monorepo, alongside the Stripe core gateway pulled in from the standalone `pallastrade_stripe` repo (payment-sessions classes only, likely `pallastrade/core` — decisions.md 2026-07-15); Enterprise keeps refund clawbacks/netting, reconciliation, KYC ops, DAC7 payout reports, facilitator taxes + Shopify/WooCommerce vendor apps.
+- `6.0-multi-vendor-marketplace.md` — Open-source the marketplace core (Vendor, OrderGroup-based order splitting, commission engine with EU commission taxation, `VendorTransfer`/`VendorPayout` ledger + pluggable `PayoutProvider`) per stevenbian9266-cyber/pallastrade#13323. 6.0 headline feature; rebuilds the legacy Enterprise multi-vendor module as native models on the Cart/Order split. Basic Stripe Connect payouts (Express onboarding + on-fulfillment transfers) ship OSS in the monorepo, alongside the Stripe core gateway pulled in from the standalone `pallastrade_stripe` repo (payment-sessions classes only, likely `backend/pallastrade_gems/pallastrade_core` — decisions.md 2026-07-15); Enterprise keeps refund clawbacks/netting, reconciliation, KYC ops, DAC7 payout reports, facilitator taxes + Shopify/WooCommerce vendor apps.
 - `6.0-cart-order-split.md` — Cart/Order model separation, polymorphic LineItem
 - `6.0-admin-api.md` — Admin REST API conventions, auth, endpoint list (~300 endpoints)
 - `6.0-admin-spa.md` — React admin architecture, extension points, table registry, i18n + server-error mapping
@@ -67,40 +67,40 @@ Shipped plans:
 
 | Directory | Description |
 |---|---|
-| `pallastrade/core` | Ruby gem — models, services, business logic (`pallastrade_core`) |
-| `pallastrade/api` | Ruby gem — Store & Admin REST APIs (`pallastrade_api`) |
-| `pallastrade/emails` | Ruby gem — transactional emails (optional). Rebuilt + modernized in 5.6. The default email stack for installations without a storefront app (e.g. mobile apps); headless storefronts may instead own consumer emails via webhooks. |
-| `pallastrade/dashboard` | Ruby gem (`pallastrade_dashboard`, optional) — hosts a built React Dashboard at `/dashboard` from `PallasTrade::Dashboard.dist_path` / `PALLASTRADE_DASHBOARD_DIST_PATH` (single-node topology). Successor slot to `pallastrade_admin` at 6.0. |
-| `packages/dashboard` | `@pallastrade/dashboard` — React SPA admin dashboard (PallasTrade 6.0, replaces `pallastrade/admin`). The deployable app shell, routes, schemas, resource hooks, locales. |
-| `packages/dashboard-ui` | `@pallastrade/dashboard-ui` — design system. Shadcn primitives + headless composed components + tokens. Source-only; consumer compiles via Vite/Tailwind. **Components are headless: data comes via props, no provider/hook imports.** |
-| `packages/dashboard-core` | `@pallastrade/dashboard-core` — framework. Registries (table, nav, slot, settings-nav), providers (auth, permission, store, theme), generic infra hooks, admin SDK client singleton, `defineDashboardPlugin` facade. The extension API for plugin authors. |
-| `packages/dashboard-starter` | `@pallastrade/dashboard-starter` — thin host app consuming `<Dashboard />` from `@pallastrade/dashboard`; canonical source of the `pallastrade/dashboard-starter` template repo (synced on release). Doubles as the in-repo consumer test for the plugin pipeline. |
-| `packages/sdk` | `@pallastrade/sdk` — TypeScript Store API client |
-| `packages/admin-sdk` | `@pallastrade/admin-sdk` — TypeScript Admin API client (Developer Preview) |
-| `packages/sdk-core` | `@pallastrade/sdk-core` — shared HTTP/retry/error layer (private internal) |
-| `packages/cli` | `@pallastrade/cli` — Docker-based project management CLI |
-| `packages/create-pallastrade-app` | `create-pallastrade-app` — project scaffolding |
-| `server/` | Rails app cloned from `stevenbian9266-cyber/pallastrade` (.gitignored, run `pnpm server:setup`) |
+| `backend/pallastrade_gems/pallastrade_core` | Ruby gem — models, services, business logic |
+| `backend/pallastrade_gems/pallastrade_api` | Ruby gem — Store & Admin REST APIs |
+| `backend/pallastrade_gems/pallastrade_emails` | Ruby gem — transactional emails (optional) |
+| `backend/pallastrade_gems/pallastrade_dashboard` | Ruby gem — hosts a built React Dashboard at `/dashboard` |
+| `platform/packages/dashboard` | `@pallastrade/dashboard` — React SPA admin dashboard (PallasTrade 6.0). The deployable app shell, routes, schemas, resource hooks, locales. |
+| `platform/packages/dashboard-ui` | `@pallastrade/dashboard-ui` — design system. Shadcn primitives + headless composed components + tokens. Source-only; consumer compiles via Vite/Tailwind. **Components are headless: data comes via props, no provider/hook imports.** |
+| `platform/packages/dashboard-core` | `@pallastrade/dashboard-core` — framework. Registries (table, nav, slot, settings-nav), providers (auth, permission, store, theme), generic infra hooks, admin SDK client singleton, `defineDashboardPlugin` facade. The extension API for plugin authors. |
+| `platform/packages/dashboard-starter` | `@pallastrade/dashboard-starter` — thin host app consuming `<Dashboard />` from `@pallastrade/dashboard`; canonical source of the `pallastrade/dashboard-starter` template repo (synced on release). Doubles as the in-repo consumer test for the plugin pipeline. |
+| `platform/packages/sdk` | `@pallastrade/sdk` — TypeScript Store API client |
+| `platform/packages/admin-sdk` | `@pallastrade/admin-sdk` — TypeScript Admin API client (Developer Preview) |
+| `platform/packages/sdk-core` | `@pallastrade/sdk-core` — shared HTTP/retry/error layer (private internal) |
+| `platform/packages/cli` | `@pallastrade/cli` — Docker-based project management CLI |
+| `platform/packages/create-pallastrade-app` | `create-pallastrade-app` — project scaffolding |
+| `backend/` | Rails application — runs the PallasTrade stack (PostgreSQL, Redis, Meilisearch, Sidekiq) |
 
-## Development Server (`server/`)
+## Development Environment (`backend/`)
 
-One-time bootstrap (Docker required, no host Ruby): `pnpm install && pnpm server:setup`. It clones pallastrade-starter into `server/`, boots the edge stack (monorepo gems bind-mounted via a compose overlay), and prepares + seeds the DB. Idempotent — but re-running it is a **full reset** that wipes the DB and volumes.
+One-time bootstrap (Docker required, no host Ruby): `cd backend && docker compose -f docker-compose.dev.yml up -d`. Boots the edge stack (PostgreSQL, Redis, Meilisearch, Mailpit, Rails Web, Sidekiq Worker) with monorepo gems bind-mounted.
 
-Day-to-day from the repo root: `pnpm server:dev` (foreground — streams web + worker logs, Ctrl+C stops them; postgres/redis stay warm) / `server:stop` (full teardown) / `server:restart` / `server:logs` / `server:console` / `server:seed` / `server:load_sample_data`. CLI commands run from `server/`: `pnpm exec pallastrade <cmd>` (`pallastrade migrate`, `pallastrade console`, `pallastrade generate model …`). `pallastrade dev` and `pallastrade build` refuse to run in `server/` (PALLASTRADE_PATH guard) — use the `pnpm server:*` scripts instead.
+Day-to-day from the repo root: `cd backend && docker compose -f docker-compose.dev.yml up` (foreground — streams web + worker logs, Ctrl+C stops them; postgres/redis stay warm) / `docker compose -f docker-compose.dev.yml down` (full teardown) / restart / logs / console. CLI commands run from `backend/`: `bundle exec pallastrade <cmd>` (`pallastrade migrate`, `pallastrade console`, `pallastrade generate model …`).
 
 | What changed | What to run |
 |---|---|
-| Ruby code in `pallastrade/*` gems | Nothing — bind-mounted, reloads on next request |
-| Hosted React Dashboard at `/dashboard` (single-node test) | `pnpm server:dashboard` — rebuilds `packages/dashboard-starter/dist` with `VITE_BASE_PATH=/dashboard/`; served immediately through the monorepo mount (no restart). For dashboard *development* keep using Vite on :5173 (`cd packages/dashboard && pnpm dev`). |
-| Tailwind classes in `pallastrade/admin` templates/helpers/JS | Nothing — a watcher in the web container rebuilds the admin CSS within ~15s. If changes still don't reach the browser, delete `server/public/assets/.manifest.json` (stale precompile output that freezes asset serving) and restart web — `pnpm server:dev` boots handle this automatically. |
-| New migration in a gem | Nothing — the next `pnpm server:dev` boot runs `pallastrade:install:migrations db:prepare` (or `cd server && pnpm exec pallastrade migrate` while running) |
-| Gem dependencies (gemspec / Gemfile / starter `Gemfile.lock` drift after a pull) | Nothing — the next `pnpm server:dev` boot self-heals (`bundle check || bundle install` into the `bundle_cache` volume); while running: `cd server && pnpm exec pallastrade bundle install` |
-| Compose files / `server/.env` | `pnpm server:dev` (force-recreates web + worker) |
-| `server/Dockerfile` / `.ruby-version` / starter update that breaks the image build (frozen-lockfile error) | `pnpm server:build`, then `pnpm server:dev` — the build script swaps the edge PATH lock for a RubyGems-resolved one and the next boot swaps it back |
-| Meilisearch image bump ("database version … is incompatible") | `docker compose -p server rm -sf meilisearch && docker volume rm server_meilisearch_data`, boot, then `cd server && pnpm exec pallastrade rake pallastrade:search:reindex` |
-| Broken beyond repair | `pnpm server:setup` (full reset — wipes DB + volumes) |
+| Ruby code in `backend/pallastrade_gems/pallastrade_*` gems | Nothing — bind-mounted via compose, reloads on next request |
+| Hosted React Dashboard at `/dashboard` (single-node test) | `cd backend && docker compose -f docker-compose.dev.yml exec web bin/rails assets:precompile` — rebuilds dashboard assets. For dashboard *development* keep using Vite on :5173 (`cd platform/packages/dashboard && pnpm dev`). |
+| Tailwind classes in Admin templates/helpers/JS | Nothing — a watcher in the web container rebuilds the admin CSS within ~15s. If changes still don't reach the browser, delete `backend/public/assets/.manifest.json` (stale precompile output) and restart. |
+| New migration in a gem | Nothing — the next `docker compose up` boot runs `pallastrade:install:migrations db:prepare` (or `cd backend && bundle exec pallastrade migrate` while running) |
+| Gem dependencies (gemspec / Gemfile / `Gemfile.lock` drift after a pull) | Nothing — the next boot self-heals (`bundle check || bundle install` into the `bundle_cache` volume); while running: `cd backend && bundle install` |
+| Compose files / `backend/.env` | `cd backend && docker compose -f docker-compose.dev.yml up -d` (force-recreates web + worker) |
+| `backend/Dockerfile` / `.ruby-version` changes | `cd backend && docker compose -f docker-compose.dev.yml build`, then restart |
+| Meilisearch image bump ("database version … is incompatible") | `cd backend && docker compose -f docker-compose.dev.yml rm -sf meilisearch && docker volume rm backend_meilisearch_data`, boot, then `cd backend && bundle exec rake pallastrade:search:reindex` |
+| Broken beyond repair | `cd backend && docker compose -f docker-compose.dev.yml down -v && docker compose -f docker-compose.dev.yml up -d` (full reset — wipes DB + volumes) |
 
-Backend: http://localhost:3000, admin at `/admin`, hosted React Dashboard at `/dashboard` (`pallastrade@example.com` / `pallastrade123`). Native no-Docker path: `pnpm server:create`, then `cd server && bin/setup && bin/dev`.
+Backend: http://localhost:3000, admin at `/admin`, hosted React Dashboard at `/dashboard` (`pallastrade@example.com` / `pallastrade123`).
 
 ---
 
@@ -494,7 +494,7 @@ pnpm turbo dev --filter=@pallastrade/dashboard-starter   # http://localhost:5173
 
 The starter is the canonical host — the same app `pallastrade add dashboard` scaffolds — so local dev exercises the real consumer path (shell + plugin pipeline) while still hot-reloading `@pallastrade/dashboard`/`-core`/`-ui` source through the workspace. `turbo dev` (not a bare `pnpm dev` inside the package) matters on a fresh clone: the starter's `vite.config.ts` resolves the compiled Node-side Vite entries (`@pallastrade/dashboard/vite`, `@pallastrade/dashboard-core/vite`) from `dist/`, and turbo's `^build` dependency produces them. After any full `pnpm build`, `cd packages/dashboard-starter && pnpm dev` works too.
 
-`VITE_API_PROXY_TARGET` overrides the backend the dev proxy targets (default `http://localhost:3000`); don't use `VITE_PALLASTRADE_API_URL` in dev — it flips the SDK to absolute cross-origin URLs, bypassing the proxy. Sign in with the seed admin user (`pallastrade@example.com` / `pallastrade123` — override at seed time with `ADMIN_EMAIL` / `ADMIN_PASSWORD`; see `pallastrade/core/app/services/pallastrade/seeds/admin_user.rb`).
+`VITE_API_PROXY_TARGET` overrides the backend the dev proxy targets (default `http://localhost:3000`); don't use `VITE_PALLASTRADE_API_URL` in dev — it flips the SDK to absolute cross-origin URLs, bypassing the proxy. Sign in with the seed admin user (`pallastrade@example.com` / `pallastrade123` — override at seed time with `ADMIN_EMAIL` / `ADMIN_PASSWORD`; see `backend/pallastrade_gems/pallastrade_core/app/services/pallastrade/seeds/admin_user.rb`).
 
 **When implementing a new admin feature:**
 

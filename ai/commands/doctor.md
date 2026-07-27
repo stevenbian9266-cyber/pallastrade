@@ -8,11 +8,13 @@ allowed-tools: Bash, Read, Grep, Glob
 Run every check below in order against this project. Do not stop at the first failure — run all of them, then report. Judge each against its healthy state.
 
 Pre-flight — detect the project flavor:
-- `docker-compose.yml` at the root (create-pallastrade-app / pallastrade-starter): run the Docker checks below as written.
+- `backend/docker-compose.dev.yml` exists (monorepo with Docker): run the Docker checks below as written, using `cd backend && docker compose -f docker-compose.dev.yml`.
+- `backend/docker-compose.yml` exists: same as above.
+- `docker-compose.yml` at the root (legacy create-pallastrade-app): run the Docker checks below as written.
 - No Docker wiring but a Rails app with pallastrade gems at the root (classic pre-5.4 app): skip checks 1–2, run everything else **natively** — replace `pallastrade exec <cmd>` with plain `<cmd>` from the app root, check the web on the port `bin/dev`/`bin/rails s` uses (default 3000), and read `backend/Gemfile.lock` as `Gemfile.lock`.
 - Neither: not a PallasTrade project — say so and stop.
 
-Command routing (Docker flavors): prefer `pallastrade exec <cmd>`; if the `pallastrade` CLI isn't available, fall back to `docker compose exec -T web <cmd>`. If `.env` contains `PALLASTRADE_PATH`, this is a monorepo edge project — `pallastrade dev`/`pallastrade build` refuse there by design; remedies should say `pnpm server:dev` / `pnpm server:build` (run from the monorepo root) instead. On classic apps, remedies use native forms (`bin/dev`, `bin/rails db:migrate`, `bundle exec rake`).
+Command routing (Docker flavors): prefer `cd backend && docker compose -f docker-compose.dev.yml exec web <cmd>`; if the `pallastrade` CLI isn't available, fall back to `docker compose exec -T web <cmd>`. On classic apps, remedies use native forms (`bin/dev`, `bin/rails db:migrate`, `bundle exec rake`).
 
 ## Checks
 

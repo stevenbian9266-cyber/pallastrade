@@ -1,0 +1,23 @@
+{
+  "project": "PallasTrade Commerce",
+  "version": "0.1.0",
+  "profiles": {
+    "quick": {
+      "timeout": 300,
+      "checks": ["lint", "typecheck", "monorepo-contract", "api-contract", "affected-tests", "anti-patterns"]
+    },
+    "full": {
+      "timeout": 2700,
+      "checks": ["quick", "backend-rspec", "platform-test", "e2e-dashboard", "e2e-storefront", "sdk-integration", "security", "generated-check", "doc-impact", "ai-freshness"]
+    },
+    "nightly": {
+      "checks": ["full", "payment-matrix", "browser-matrix", "flaky-rerun", "performance", "ai-scenarios", "upgrade-matrix"]
+    },
+    "release": {
+      "checks": ["full", "sandbox", "sbom", "provenance", "sign", "manifest"]
+    },
+    "upgrade": {
+      "checks": ["full", "upgrade-audit", "upgrade-baseline", "upgrade-verify", "conflict-detection", "migration-dry-run"]
+    }
+  }
+}

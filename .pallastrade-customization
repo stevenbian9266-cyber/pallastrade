@@ -1,0 +1,27 @@
+# PallasTrade Customization Manifest
+# Lists all customer-owned code. Harness uses this to:
+#   - Distinguish framework code from customer code during upgrades
+#   - Prevent silent overwrites of customer files
+#   - Generate upgrade impact reports
+
+version: 1
+customer: "Steven Bian (PallasTrade)"
+
+# Directories that are entirely customer-owned
+customization_roots:
+  - "backend/app/"
+  - "storefront/src/"
+
+# Additional specific files that are customer-owned
+extra_files:
+  - "backend/config/initializers/pallastrade_custom.rb"
+
+# Directories/files that are framework-managed (not customer-owned)
+# These WILL be overwritten during upgrades — harness warns but does not block
+framework_managed:
+  - "backend/db/migrate/"
+  - "backend/db/schema.rb"
+  - "backend/Gemfile.lock"
+  - "backend/pallastrade_gems/"
+  - "storefront/pnpm-lock.yaml"
+  - "platform/pnpm-lock.yaml"

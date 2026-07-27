@@ -1,0 +1,12 @@
+{
+  "name": "pallastrade-monorepo",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.0.0" },
+  "scripts": {
+    "harness": "node scripts/harness/cli.mjs"
+  },
+  "dependencies": {
+    "glob": "^11.0.0"
+  }
+}

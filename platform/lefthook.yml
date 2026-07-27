@@ -5,13 +5,13 @@ pre-commit:
       stage_fixed: true
       run: pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
     typelizer-and-zod:
-      glob: "pallastrade/api/app/serializers/**/*.rb"
+      glob: "backend/pallastrade_gems/pallastrade_api/app/serializers/**/*.rb"
       run: |
         echo "Serializer changes detected — regenerating TypeScript types and Zod schemas..."
-        cd pallastrade/api && bundle exec rake typelizer:generate && cd ../..
-        cd packages/sdk && pnpm generate:zod && cd ../..
-        git add packages/sdk/src/types/generated/ packages/sdk/src/zod/generated/
-        git add packages/admin-sdk/src/types/generated/
+        cd backend/pallastrade_gems/pallastrade_api && bundle exec rake typelizer:generate && cd ../../..
+        cd platform/packages/sdk && pnpm generate:zod && cd ../../..
+        git add platform/packages/sdk/src/types/generated/ platform/packages/sdk/src/zod/generated/
+        git add platform/packages/admin-sdk/src/types/generated/
 
 pre-push:
   commands:

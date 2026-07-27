@@ -1,0 +1,13 @@
+✅ git-repo: Git repo detected
+✅ node-version: Node v26.4.0
+✅ dir-backend: backend/ exists
+✅ dir-platform: platform/ exists
+✅ dir-storefront: storefront/ exists
+✅ dir-ai: ai/ exists
+✅ agents-md: AGENTS.md exists at root
+✅ compose-file: Compose found: backend/docker-compose.dev.yml
+✅ vscode-tasks: No absolute paths detected
+✅ storefront-lockfile: pnpm-lock.yaml only
+✅ harness-dirs: All harness directories present
+
+11/11 checks passed

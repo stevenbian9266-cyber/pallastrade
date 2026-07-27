@@ -1,0 +1,37 @@
+[
+  {
+    "title": "Order#state renamed to Order#status",
+    "pattern": "\\.state\\b",
+    "severity": "high",
+    "fix": "Replace all `order.state` with `order.status`.",
+    "skillRef": "pallastrade-checkout"
+  },
+  {
+    "title": "Shipment model renamed to Fulfillment",
+    "pattern": "PallasTrade::Shipment\\b",
+    "severity": "high",
+    "fix": "Replace PallasTrade::Shipment with PallasTrade::Fulfillment.",
+    "skillRef": "pallastrade-shipping-fulfillment"
+  },
+  {
+    "title": "display_on column removed — use storefront_visible boolean",
+    "pattern": "\\.display_on\\b",
+    "severity": "medium",
+    "fix": "Replace `.display_on` with `.storefront_visible`.",
+    "skillRef": "pallastrade-catalog"
+  },
+  {
+    "title": "Metafield renamed to CustomField",
+    "pattern": "PallasTrade::Metafield\\b",
+    "severity": "medium",
+    "fix": "Replace PallasTrade::Metafield with PallasTrade::CustomField. See `pallastrade-catalog` skill.",
+    "skillRef": "pallastrade-catalog"
+  },
+  {
+    "title": "Payment#state renamed to Payment#status",
+    "pattern": "payment\\.state\\b",
+    "severity": "high",
+    "fix": "Replace `payment.state` with `payment.status`.",
+    "skillRef": "pallastrade-payments"
+  }
+]

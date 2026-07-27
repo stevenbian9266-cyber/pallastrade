@@ -33,8 +33,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: storefront/package-lock.json
+          cache: pnpm
+          cache-dependency-path: storefront/pnpm-lock.yaml
       - name: Install SDK build dependencies
         working-directory: platform
         run: pnpm install --frozen-lockfile
@@ -43,7 +43,7 @@ jobs:
         run: |
           pnpm --filter @pallastrade/sdk-core build
           pnpm --filter @pallastrade/sdk build
-      - run: npm ci
-      - run: npm run check
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
       - run: npx tsc --noEmit
-      - run: npm run test
+      - run: pnpm test
