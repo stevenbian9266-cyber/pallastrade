@@ -1,0 +1,23 @@
+zh-CN:
+  activerecord:
+    attributes:
+      pallastrade/product:
+        barcode: 条形码
+        depth: 深度
+        dimensions_unit: 尺寸单位
+        height: 高度
+        is_master: 主规格
+        meta_description: Meta 描述
+        meta_keywords: Meta 关键词
+        meta_title: Meta 标题
+        sku: SKU
+        slug: URL 标识
+        status: 状态
+        weight: 重量
+        weight_unit: 重量单位
+        width: 宽度
+  category_cascade:
+    level1: 一级类目
+    level2: 二级类目
+    level3: 三级类目
+    select: 选择

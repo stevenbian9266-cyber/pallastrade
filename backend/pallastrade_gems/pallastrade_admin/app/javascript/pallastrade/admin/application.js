@@ -50,6 +50,7 @@ import BlockFormController from 'pallastrade/admin/controllers/block_form_contro
 import BulkOperationController from 'pallastrade/admin/controllers/bulk_operation_controller'
 import CalculatorFieldsController from 'pallastrade/admin/controllers/calculator_fields_controller'
 import CalendarRangeController from 'pallastrade/admin/controllers/calendar_range_controller'
+import CategoryCascadeController from 'pallastrade/admin/controllers/category_cascade_controller'
 import Clipboard from 'pallastrade/admin/controllers/clipboard_controller'
 import CodeMirrorController from 'pallastrade/admin/controllers/codemirror_controller'
 import ColorPaletteController from 'pallastrade/admin/controllers/color_palette_controller'
@@ -115,6 +116,7 @@ application.register('bulk-dialog', Dialog)
 application.register('bulk-operation', BulkOperationController)
 application.register('calculator-fields', CalculatorFieldsController)
 application.register('calendar-range', CalendarRangeController)
+application.register('category-cascade', CategoryCascadeController)
 application.register('checkbox-select-all', CheckboxSelectAll)
 application.register('clipboard', Clipboard)
 application.register('codemirror', CodeMirrorController)

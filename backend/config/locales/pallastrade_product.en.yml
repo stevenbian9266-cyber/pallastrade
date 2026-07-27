@@ -1,0 +1,23 @@
+en:
+  activerecord:
+    attributes:
+      pallastrade/product:
+        barcode: Barcode
+        depth: Depth
+        dimensions_unit: Dimensions Unit
+        height: Height
+        is_master: Master Variant
+        meta_description: Meta Description
+        meta_keywords: Meta Keywords
+        meta_title: Meta Title
+        sku: SKU
+        slug: Slug
+        status: Status
+        weight: Weight
+        weight_unit: Weight Unit
+        width: Width
+  category_cascade:
+    level1: Level 1 Category
+    level2: Level 2 Category
+    level3: Level 3 Category
+    select: Select
