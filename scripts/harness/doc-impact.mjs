@@ -1,6 +1,5 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { execSync } from 'node:child_process';
 
 // Knowledge sync rules — mirrors AGENTS.md section 7
 const SYNC_RULES = [
@@ -61,20 +60,10 @@ const SYNC_RULES = [
 export async function run({ rootDir, args }) {
   const base = args.includes('--base') ? args[args.indexOf('--base') + 1] : 'origin/main';
 
-  // Get changed files
-  let changedFiles = [];
-  try {
-    const diff = execSync(`git diff --name-only ${base}...HEAD`, { cwd: rootDir, encoding: 'utf-8' }).trim();
-    changedFiles = diff ? diff.split('\n').filter(Boolean) : [];
-  } catch {
-    // If git command fails (e.g., no commits), check staged changes
-    try {
-      const diff = execSync('git diff --name-only --cached', { cwd: rootDir, encoding: 'utf-8' }).trim();
-      changedFiles = diff ? diff.split('\n').filter(Boolean) : [];
-    } catch {
-      console.log('⚠️  Could not determine changed files. Skipping doc-impact check.');
-      return;
-    }
+  // Get changed files: committed (vs base) + staged + unstaged.
+  const { files: changedFiles, errors } = await import('./git-files.mjs').then(m => m.getChangedFiles(rootDir, base));
+  if (errors.length > 0) {
+    console.log(`⚠️  git: ${errors.join('; ')}`);
   }
 
   if (changedFiles.length === 0) {
@@ -84,8 +73,9 @@ export async function run({ rootDir, args }) {
 
   console.log(`Changed files: ${changedFiles.length}\n`);
 
-  // Build list of required docs
-  const requiredDocs = new Map(); // doc -> [{ rule, triggerFile }]
+  // Build list of mandatory docs and anyOf (one-of) groups.
+  const requiredDocs = new Map(); // doc -> [{ rule, triggers }]
+  const anyOfGroups = []; // { label, docs, triggers }
   const uncheckedFiles = [...changedFiles];
 
   for (const rule of SYNC_RULES) {
@@ -98,18 +88,23 @@ export async function run({ rootDir, args }) {
       if (idx >= 0) uncheckedFiles.splice(idx, 1);
     }
 
-    for (const doc of rule.docs) {
-      if (!requiredDocs.has(doc)) {
-        requiredDocs.set(doc, []);
+    if (rule.anyOf) {
+      // anyOf: changing ANY one of the listed docs satisfies the rule.
+      anyOfGroups.push({ label: rule.label, docs: rule.docs, triggers: matchedFiles });
+    } else {
+      for (const doc of rule.docs) {
+        if (!requiredDocs.has(doc)) {
+          requiredDocs.set(doc, []);
+        }
+        requiredDocs.get(doc).push({
+          rule: rule.label,
+          triggers: matchedFiles,
+        });
       }
-      requiredDocs.get(doc).push({
-        rule: rule.label,
-        triggers: matchedFiles,
-      });
     }
   }
 
-  if (requiredDocs.size === 0) {
+  if (requiredDocs.size === 0 && anyOfGroups.length === 0) {
     console.log('✅ doc-impact: no knowledge doc updates required for these changes.');
     if (uncheckedFiles.length > 0) {
       console.log(`   (${uncheckedFiles.length} file(s) not matched by any sync rule)`);
@@ -117,7 +112,7 @@ export async function run({ rootDir, args }) {
     return;
   }
 
-  // Check if required docs exist (were created) or were updated in this PR
+  // Check if required docs were updated in this PR.
   let synced = 0;
   let missing = 0;
   const missingDocs = [];
@@ -137,6 +132,19 @@ export async function run({ rootDir, args }) {
     } else {
       console.log(`  [ ] ${doc} MISSING ← ${sources[0].rule}`);
       missingDocs.push({ doc, exists: false, sources });
+      missing++;
+    }
+  }
+
+  // anyOf groups — any one changed doc satisfies the whole group.
+  for (const group of anyOfGroups) {
+    const changedDoc = group.docs.find(doc => changedFiles.includes(doc));
+    if (changedDoc) {
+      console.log(`  [✓] (anyOf) ${group.label} ← ${changedDoc}`);
+      synced++;
+    } else {
+      console.log(`  [ ] (anyOf) ${group.label} — none of ${group.docs.join(' / ')} changed ← ${group.triggers[0]}`);
+      missingDocs.push({ doc: group.docs.join(' | '), exists: true, sources: [{ rule: group.label, triggers: group.triggers }], anyOf: true });
       missing++;
     }
   }

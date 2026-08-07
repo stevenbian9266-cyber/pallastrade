@@ -6,6 +6,7 @@ import {
   getStoreSeoTitle,
   getStoreUrl,
 } from "@/lib/store";
+import { buildOgLocaleAlternates } from "@/lib/metadata/alternates";
 
 function normalizeOpenGraphLocale(locale: string): string {
   const parts = locale.split(/[-_]/);
@@ -25,6 +26,7 @@ export async function generateStoreMetadata({
   const metaDescription = getStoreMetaDescription();
   const metaKeywords = process.env.STORE_META_KEYWORDS;
   const twitter = process.env.STORE_TWITTER;
+  const ogLocaleAlternate = await buildOgLocaleAlternates();
 
   let metadataBaseSpread: Partial<{ metadataBase: URL }> = {};
   if (storeUrl) {
@@ -46,6 +48,9 @@ export async function generateStoreMetadata({
     openGraph: {
       siteName: getStoreName(),
       locale: normalizeOpenGraphLocale(locale),
+      ...(ogLocaleAlternate.length > 1
+        ? { alternateLocale: ogLocaleAlternate }
+        : {}),
       type: "website",
       images: [SOCIAL_IMAGE_PATH],
     },

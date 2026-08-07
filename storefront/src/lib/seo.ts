@@ -125,6 +125,31 @@ export function buildBreadcrumbJsonLd(
 }
 
 /**
+ * Build JSON-LD ItemList schema for a category page.
+ * https://schema.org/ItemList
+ */
+export function buildCategoryItemListJsonLd(
+  products: Array<{ name: string; slug: string; thumbnail_url?: string | null }>,
+  categoryName: string,
+  canonicalUrl: string,
+): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: categoryName,
+    url: canonicalUrl,
+    numberOfItems: products.length,
+    itemListElement: products.map((product, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: product.name,
+      url: `${canonicalUrl.split("/c/")[0] || ""}/products/${product.slug}`,
+      ...(product.thumbnail_url ? { image: product.thumbnail_url } : {}),
+    })),
+  };
+}
+
+/**
  * Build JSON-LD Organization schema from environment variables.
  * https://schema.org/Organization
  */

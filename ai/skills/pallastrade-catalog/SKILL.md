@@ -108,6 +108,29 @@ shirts.descendants                       # => sub-categories
 shirts.active_products_with_descendants  # => active Products in this Category or any descendant
 ```
 
+### Admin Category Management
+
+Categories are managed from the Admin panel at `/admin/categories`. The admin interface supports:
+
+- **Three-level hierarchy**: Top-level (一级) → Child (二级) → Grandchild (三级)
+- **Nested display**: The index page shows the full tree with indent levels
+- **Product count**: Each category shows its direct product count and children count
+
+Key model behaviors:
+- `acts_as_nested_set` provides `parent`, `children`, `descendants`, `root?`, `leaf?`, `depth`
+- `Category < Taxon` with `default_scope { manual }` — no Taxonomy required
+- `has_prefix_id :ctg` — all category IDs are `ctg_xxx` format
+- Validations: `name` presence, `store` presence, uniqueness within store scope
+- `SingleStoreResource` concern ensures store-scoped queries
+
+```ruby
+# Category hierarchy examples
+current_store.categories.roots          # All top-level (一级) categories
+category.children                       # Direct children (二级)
+category.descendants                    # All descendants (二级 + 三级 + ...)
+category.depth                          # 0 = root, 1 = first child, 2 = grandchild
+```
+
 ## ProductPublication (5.5 — channel-scoped visibility)
 
 In 5.5, products belong to a Store via `store_id` (single owner). Visibility per Channel is managed via `ProductPublication`:
@@ -119,7 +142,7 @@ product.product_publications.where(channel: store.default_channel)     # publica
 
 A ProductPublication has `published_at` and `unpublished_at` windows. The `Product.for_store(store)` scope returns products owned by a store (`store_id`); per-channel visibility is checked via `Product.for_channel(channel)` / ProductPublications; `Product.active(currency)` filters to products that are live with prices in the requested currency.
 
-**Pre-5.5 (4.x, early 5.x):** Products were on Stores directly via `pallastrade_products_stores`. The 5.4→5.5 upgrade migrates this. Use the `/pallastrade:audit-upgrade` command for an upgrade-readiness review.
+**Pre-5.5 (4.x, early 5.x):** Products were on Stores directly via `pallastrade_products_stores`. The 5.4→5.5 upgrade migrates this.
 
 ## Search
 

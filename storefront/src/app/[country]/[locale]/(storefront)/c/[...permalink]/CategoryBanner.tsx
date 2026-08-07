@@ -27,6 +27,9 @@ export async function CategoryBanner({
             ? { backgroundImage: `url(${category.image_url})` }
             : undefined
         }
+        {...(category.image_url
+          ? { role: "img", "aria-label": category.name }
+          : {})}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <Breadcrumbs

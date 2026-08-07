@@ -3,10 +3,68 @@ import { resolve, join } from 'node:path';
 
 export async function run({ rootDir, args }) {
   const checkFreshness = args.includes('--check-freshness');
+  const checkScenarios = args.includes('--scenarios');
 
   if (checkFreshness) {
     await checkFreshnessImpl(rootDir);
   }
+  if (checkScenarios) {
+    await checkScenariosImpl(rootDir);
+  }
+}
+
+/**
+ * Validate harness/scenarios/scenarios.json — structural contract for the
+ * GS scenario library (unique ids, mustDo/mustNotDo present, scoring weights
+ * sum to 100). Fail-closed on violations.
+ */
+async function checkScenariosImpl(rootDir) {
+  const scenariosFile = resolve(rootDir, 'harness', 'scenarios', 'scenarios.json');
+  if (!existsSync(scenariosFile)) {
+    console.log('⚠️  harness/scenarios/scenarios.json not found.');
+    return;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(readFileSync(scenariosFile, 'utf-8'));
+  } catch (e) {
+    console.log(`❌ scenarios.json is not valid JSON: ${e.message}`);
+    process.exit(1);
+  }
+
+  const scenarios = Array.isArray(data.scenarios) ? data.scenarios : [];
+  const seen = new Set();
+  let errors = 0;
+
+  console.log(`\n📋 Scenario validation: ${scenarios.length} scenario(s)\n`);
+
+  for (const s of scenarios) {
+    const issues = [];
+    if (!s.id) issues.push('missing id');
+    if (s.id && seen.has(s.id)) issues.push(`duplicate id ${s.id}`);
+    if (s.id) seen.add(s.id);
+    if (!s.name) issues.push('missing name');
+    if (!s.description) issues.push('missing description');
+    if (!Array.isArray(s.mustDo) || s.mustDo.length === 0) issues.push('mustDo must be a non-empty array');
+    if (!Array.isArray(s.mustNotDo) || s.mustNotDo.length === 0) issues.push('mustNotDo must be a non-empty array');
+    if (s.scoring && typeof s.scoring === 'object' && !Array.isArray(s.scoring)) {
+      const total = Object.values(s.scoring).reduce((a, b) => a + (Number(b) || 0), 0);
+      if (total !== 100) issues.push(`scoring weights sum to ${total}, expected 100`);
+    } else {
+      issues.push('missing scoring object');
+    }
+
+    if (issues.length > 0) {
+      errors++;
+      console.log(`  ❌ ${s.id || '?'} (${s.name || 'unnamed'}): ${issues.join('; ')}`);
+    } else {
+      console.log(`  ✅ ${s.id}: ${s.name}`);
+    }
+  }
+
+  console.log(`\n${scenarios.length - errors}/${scenarios.length} valid`);
+  if (errors > 0) process.exit(1);
 }
 
 function resolveSmartPath(rootDir, ref) {
@@ -32,6 +90,12 @@ function resolveSmartPath(rootDir, ref) {
     candidates.push(resolve(rootDir, 'backend', 'pallastrade_gems', `pallastrade_${gemMatch[1]}`));
   }
 
+  // 3b. pallastrade_<gem>/... → backend/pallastrade_gems/pallastrade_<gem>/...
+  const gemDirMatch = ref.match(/^pallastrade_(\w+)\/(.+)/);
+  if (gemDirMatch) {
+    candidates.push(resolve(rootDir, 'backend', 'pallastrade_gems', `pallastrade_${gemDirMatch[1]}`, gemDirMatch[2]));
+  }
+
   // 4. packages/... → platform/packages/...
   if (ref.startsWith('packages/')) {
     candidates.push(resolve(rootDir, 'platform', ref));
@@ -46,6 +110,21 @@ function resolveSmartPath(rootDir, ref) {
   if (ref.startsWith('docs/')) {
     candidates.push(resolve(rootDir, 'platform', ref));
     candidates.push(resolve(rootDir, ref));
+  }
+
+  // 7. Fallback: try the ref inside each pallastrade gem. Skill paths that
+  //    start with app/, lib/, config/ often refer to gem-internal files
+  //    (e.g. `lib/pallastrade/core/dependencies.rb` lives in pallastrade_core).
+  if (!ref.startsWith('backend/') && !ref.startsWith('platform/') && !ref.startsWith('storefront/') && !ref.startsWith('ai/') && !ref.startsWith('harness/') && !ref.startsWith('scripts/')) {
+    const gemsRoot = resolve(rootDir, 'backend', 'pallastrade_gems');
+    if (existsSync(gemsRoot)) {
+      const gems = readdirSync(gemsRoot, { withFileTypes: true })
+        .filter(d => d.isDirectory() && d.name.startsWith('pallastrade_'))
+        .map(d => d.name);
+      for (const gem of gems) {
+        candidates.push(resolve(gemsRoot, gem, ref));
+      }
+    }
   }
 
   // Return the first candidate that exists
@@ -68,6 +147,31 @@ function resolveSmartDir(rootDir, ref) {
   const gemMatch = ref.match(/^pallastrade\/(\w+)\/(.+)/);
   if (gemMatch) {
     candidates.push(resolve(rootDir, 'backend', 'pallastrade_gems', `pallastrade_${gemMatch[1]}`, gemMatch[2]));
+  }
+
+  // pallastrade_<gem>/... → backend/pallastrade_gems/pallastrade_<gem>/...
+  const gemDirMatch = ref.match(/^pallastrade_(\w+)\/(.+)/);
+  if (gemDirMatch) {
+    candidates.push(resolve(rootDir, 'backend', 'pallastrade_gems', `pallastrade_${gemDirMatch[1]}`, gemDirMatch[2]));
+  }
+
+  // docs/... → platform/docs/ or root docs/
+  if (ref.startsWith('docs/')) {
+    candidates.push(resolve(rootDir, 'platform', ref));
+    candidates.push(resolve(rootDir, ref));
+  }
+
+  // Fallback: try inside each pallastrade gem (mirrors resolveSmartPath #7).
+  if (!ref.startsWith('backend/') && !ref.startsWith('platform/') && !ref.startsWith('storefront/') && !ref.startsWith('ai/')) {
+    const gemsRoot = resolve(rootDir, 'backend', 'pallastrade_gems');
+    if (existsSync(gemsRoot)) {
+      const gems = readdirSync(gemsRoot, { withFileTypes: true })
+        .filter(d => d.isDirectory() && d.name.startsWith('pallastrade_'))
+        .map(d => d.name);
+      for (const gem of gems) {
+        candidates.push(resolve(gemsRoot, gem, ref));
+      }
+    }
   }
 
   for (const c of candidates) {
@@ -95,29 +199,40 @@ async function checkFreshnessImpl(rootDir) {
     const skillFile = join(skillDir, skill, 'SKILL.md');
     if (!existsSync(skillFile)) continue;
 
-    const content = readFileSync(skillFile, 'utf-8');
+    // Strip fenced code blocks BEFORE extracting references: paths inside
+    // code examples are illustrative, not normative (this caused most of the
+    // historical false positives).
+    const content = readFileSync(skillFile, 'utf-8').replace(/```[\s\S]*?```/g, '');
 
-    // Extract path references in backticks that look like file paths
-    const pathRefs = content.matchAll(/`([a-z_]+\/[a-z0-9_\/\.\-\[\]\*]+)`/gi);
-    for (const m of pathRefs) {
-      const ref = m[1];
-      if (!ref.includes('/') || ref.startsWith('http') || ref.includes(' ')) continue;
-      // Skip build output paths (dist/, node_modules/)
-      if (ref.startsWith('dist/') || ref.includes('node_modules/')) continue;
-      if (ref.endsWith('.rb') || ref.endsWith('.ts') || ref.endsWith('.tsx') || ref.endsWith('.json') || ref.endsWith('.yml') || ref.endsWith('.yaml') || ref.endsWith('.md') || ref.endsWith('.mjs') || ref.endsWith('.js') || ref.endsWith('.css')) {
-        const found = resolveSmartPath(rootDir, ref);
-        if (!found) {
-          console.log(`❌ ${skill}/SKILL.md: path not found — \`${ref}\``);
-          errors++;
+    // Lines that tell the reader WHERE TO CREATE new code are illustrative —
+    // their paths must not be required to exist in the framework repo.
+    // Covers: create/generate/install verbs, "Output at X", "X → Y" mapping,
+    // "Add ... in X", pipe-table file-layout rows (`| \`path\` | desc |`),
+    // and list items that begin with a backticked path (`- \`path\` — desc`).
+    const ILLUSTRATIVE_LINE = /\b(create|generate|install|rename|mkdir|touch)\b|example|your |output at|outputs to|generated at|^\|\s*`|^[-*]\s*`|→|add .{0,60}in `/i;
+
+    for (const line of content.split('\n')) {
+      if (ILLUSTRATIVE_LINE.test(line)) continue;
+
+      // File path references in backticks that look like file paths
+      for (const m of line.matchAll(/`([a-z_]+\/[a-z0-9_\/\.\-\[\]\*]+)`/gi)) {
+        const ref = m[1];
+        if (!ref.includes('/') || ref.startsWith('http') || ref.includes(' ')) continue;
+        // Skip build output paths (dist/, node_modules/)
+        if (ref.startsWith('dist/') || ref.includes('node_modules/')) continue;
+        if (/\.(rb|ts|tsx|json|yml|yaml|md|mjs|js|css)$/.test(ref)) {
+          const found = resolveSmartPath(rootDir, ref);
+          if (!found) {
+            console.log(`❌ ${skill}/SKILL.md: path not found — \`${ref}\``);
+            errors++;
+          }
         }
       }
-    }
 
-    // Check for directory references
-    const dirRefs = content.matchAll(/`([a-z_]+\/[a-z0-9_\/\.\-]+)\/`/gi);
-    for (const m of dirRefs) {
-      const ref = m[1];
-      if (!ref.includes(' ') && !ref.startsWith('http')) {
+      // Directory references
+      for (const m of line.matchAll(/`([a-z_]+\/[a-z0-9_\/\.\-]+)\/`/gi)) {
+        const ref = m[1];
+        if (ref.includes(' ') || ref.startsWith('http')) continue;
         // Skip build output dirs
         if (ref.startsWith('dist/') || ref.includes('node_modules/')) continue;
         const found = resolveSmartDir(rootDir, ref);

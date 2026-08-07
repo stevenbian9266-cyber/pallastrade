@@ -6,8 +6,14 @@
 /backups/
 /node_modules/
 
-# OS and IDE metadata
-/.vscode/
+# Harness session state (transient, per-task gates)
+/harness/gates/
 /.agents/
 .DS_Store
 Thumbs.db
+
+# Generated harness delivery evidence (regenerate with `harness evidence`)
+/artifacts/harness-evidence/
+
+# Editor backups
+.vscode/*.backup

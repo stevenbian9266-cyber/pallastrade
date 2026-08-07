@@ -151,7 +151,7 @@ initContainers:
     command: ["/bin/sh", "-c", "bundle exec rake pallastrade:install:migrations db:migrate && bundle exec rake pallastrade:upgrade"]
 ```
 
-`pallastrade:upgrade` walks every eligible upgrade manifest for the installed PallasTrade version. It's **idempotent** — re-running on an already-upgraded app is a safe no-op. Use the `/pallastrade:audit-upgrade` command for an upgrade-readiness review.
+`pallastrade:upgrade` walks every eligible upgrade manifest for the installed PallasTrade version. It's **idempotent** — re-running on an already-upgraded app is a safe no-op.
 
 **Why both `db:migrate` and `pallastrade:install:migrations`:** `pallastrade:install:migrations` copies new migrations from the gems into `db/migrate/`. Then `db:migrate` applies them. The order matters.
 
@@ -266,4 +266,3 @@ Meilisearch index wasn't built. Run `bundle exec rake pallastrade:search:reindex
 - **Deployment docs:** `https://pallastrade.cn/docs/developer/deployment` — platform-specific guides.
 - **Env vars:** `.env.example` at the app root, and the Environment Variables page at `https://pallastrade.cn/docs/developer/deployment/environment_variables`.
 - **Sidekiq tuning:** the `pallastrade-performance` skill.
-- **PallasTrade upgrades in production:** the `/pallastrade:audit-upgrade` command — release-phase readiness review.

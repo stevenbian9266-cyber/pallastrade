@@ -124,5 +124,4 @@ If you don't have `pallastrade` on your PATH, prefix with the package runner: `n
 - Not sure which customization pattern fits? See the `pallastrade-customization` skill — it routes the decision.
 - Need to add a new model + API endpoint? See the `pallastrade-resource` skill.
 - Need to extend an existing PallasTrade model/controller? See the `pallastrade-decorators` skill.
-- Need to upgrade PallasTrade? Run the `/pallastrade:audit-upgrade` command.
 - Need details on a specific PallasTrade concept? Read `node_modules/@pallastrade/docs/dist/developer/` first.

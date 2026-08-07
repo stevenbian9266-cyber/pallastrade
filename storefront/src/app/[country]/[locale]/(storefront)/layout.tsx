@@ -1,8 +1,10 @@
 import type { Category } from "@pallastrade/sdk";
 import Link from "next/link";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { getCategories } from "@/lib/data/categories";
+import { buildOrganizationJsonLd } from "@/lib/seo";
 
 interface StorefrontLayoutProps {
   children: React.ReactNode;
@@ -51,6 +53,7 @@ export default async function StorefrontLayout({
 
   return (
     <>
+      <JsonLd data={buildOrganizationJsonLd()} />
       <Header
         rootCategories={rootCategories}
         basePath={basePath}

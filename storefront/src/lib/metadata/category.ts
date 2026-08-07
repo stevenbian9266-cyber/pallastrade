@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getCachedCategory } from "@/lib/data/cached";
 import { buildCanonicalUrl } from "@/lib/seo";
 import { getStoreUrl } from "@/lib/store";
+import { buildHreflangAlternates } from "@/lib/metadata/alternates";
 
 export interface CategoryMetadataParams {
   country: string;
@@ -40,11 +41,24 @@ export async function generateCategoryMetadata({
       )
     : undefined;
 
+  const hreflangAlternates = await buildHreflangAlternates(
+    `/c/${category.permalink}`,
+  );
+
   return {
     title,
     description,
     ...(category.meta_keywords ? { keywords: category.meta_keywords } : {}),
-    ...(canonicalUrl ? { alternates: { canonical: canonicalUrl } } : {}),
+    ...(canonicalUrl
+      ? {
+          alternates: {
+            canonical: canonicalUrl,
+            ...(Object.keys(hreflangAlternates).length > 1
+              ? { languages: hreflangAlternates }
+              : {}),
+          },
+        }
+      : {}),
     openGraph: {
       title,
       description,

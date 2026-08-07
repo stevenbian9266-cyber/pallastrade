@@ -31,6 +31,11 @@ export const ProductCard = memo(function ProductCard({
 }: ProductCardProps) {
   const t = useTranslations("products");
   const imageUrl = product.thumbnail_url || null;
+  // SEO: prefer CMS-managed alt text from media, fall back to product name
+  const imageAlt =
+    product.primary_media?.alt ||
+    product.media?.[0]?.alt ||
+    product.name;
 
   // Current display price
   const displayPrice = product.price?.display_amount;
@@ -69,7 +74,7 @@ export const ProductCard = memo(function ProductCard({
       <div className="relative aspect-square bg-gray-100 rounded-md overflow-hidden">
         <ProductImage
           src={imageUrl}
-          alt={product.name}
+          alt={imageAlt}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 300px"

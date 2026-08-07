@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "description": "Task execution rules — enforced by AI agent, not CI",
+  "rules": [
+    {
+      "id": "TR-001",
+      "name": "requirements-doc-required",
+      "appliesTo": ["新功能", "功能优化"],
+      "description": "For new features and feature optimizations, AI MUST create a requirements document in harness/requirements/ before any code is written.",
+      "steps": [
+        "1. Read AGENTS.md + relevant Skills",
+        "2. Run harness affected --base origin/main",
+        "3. Check both backend/app/ AND backend/pallastrade_gems/ for existing capabilities",
+        "4. Fill out harness/requirements/_TEMPLATE.md",
+        "5. Save as harness/requirements/REQ-{YYYYMMDD}-{slug}.md",
+        "6. Present to user and WAIT for confirmation",
+        "7. Only proceed to implementation after user confirms"
+      ],
+      "violation": "Skipping requirements doc for new feature/optimization tasks."
+    },
+    {
+      "id": "TR-002",
+      "name": "design-doc-required",
+      "appliesTo": ["新功能", "功能优化"],
+      "description": "After requirements confirmation, AI MUST output a design document with decision tree analysis, file change list, and anti-pattern checklist.",
+      "steps": [
+        "1. Follow customization decision tree",
+        "2. List all files to create/modify",
+        "3. List Skill + Eval + Test triplet",
+        "4. List must-not-do items",
+        "5. Present to user for Go/No-Go decision"
+      ],
+      "violation": "Skipping design document for new feature/optimization tasks."
+    },
+    {
+      "id": "TR-003",
+      "name": "search-before-create-gate",
+      "appliesTo": ["管理后台视图修改", "管理后台视图新增"],
+      "description": "Admin view changes go directly into Gem source files, not Host App overrides (except net-new modules).",
+      "steps": [
+        "1. Find the target view in backend/pallastrade_gems/pallastrade_admin/app/views/",
+        "2. Edit it directly in place (no copying to backend/app/views/)",
+        "3. Add `# PALLAS-CUSTOM: <brief reason>` as the first line of the modified file",
+        "4. git diff shows exactly what you changed vs the original"
+      ],
+      "exception": "Brand-new modules with NO Gem counterpart (e.g., ai/) go in backend/app/views/. These are the only views allowed in Host App.",
+      "violation": "Copying a Gem view file to Host App for modification instead of editing it in place."
+    },
+    {
+      "id": "TR-004",
+      "name": "view-modification-protocol",
+      "appliesTo": ["所有任务"],
+      "description": "PallasTrade MVC is distributed across THREE gem layers. Finding something in one layer does NOT mean the other layers are empty. AI MUST search ALL layers independently before concluding.",
+      "searchChecklist": {
+        "layer_application": {
+          "path": "backend/app/",
+          "what_to_check": ["models", "controllers", "views", "decorators", "subscribers", "services"],
+          "when": "Always — this is customer code."
+        },
+        "layer_core": {
+          "path": "backend/pallastrade_gems/pallastrade_core/",
+          "what_to_check": ["app/models/pallastrade/", "app/services/pallastrade/"],
+          "when": "When the task involves: models, services, business logic, state machines, associations."
+        },
+        "layer_api": {
+          "path": "backend/pallastrade_gems/pallastrade_api/",
+          "what_to_check": ["app/controllers/pallastrade/api/v3/", "app/serializers/pallastrade/api/v3/"],
+          "when": "When the task involves: API endpoints, serializers, request/response formats."
+        },
+        "layer_admin": {
+          "path": "backend/pallastrade_gems/pallastrade_admin/",
+          "what_to_check": ["app/controllers/pallastrade/admin/", "app/views/pallastrade/admin/", "app/javascript/pallastrade/admin/controllers/"],
+          "when": "When the task involves: Admin UI, admin controllers, admin views, navigation, Stimulus controllers.",
+          "note": "Stimulus controllers MUST be in the ENGINE's JS path (pallastrade_admin/app/javascript/), NOT in backend/app/javascript/."
+        },
+        "layer_storefront": {
+          "path": "storefront/src/",
+          "what_to_check": ["components/", "app/"],
+          "when": "When the task involves: Storefront UI, pages, components."
+        },
+        "layer_platform": {
+          "path": "platform/packages/",
+          "what_to_check": ["sdk/", "admin-sdk/", "dashboard/", "dashboard-ui/"],
+          "when": "When the task involves: TypeScript SDK, React Dashboard, design system."
+        }
+      },
+      "antiPatterns": [
+        {
+          "id": "STOP_EARLY",
+          "description": "Finding a model in core gem does NOT mean admin controller is absent. After finding model, MUST ALSO check admin gem for corresponding controller.",
+          "example": "Found Category < Taxon in core gem → stopped searching. Missed TaxonsController in admin gem."
+        },
+        {
+          "id": "NAME_MISMATCH",
+          "description": "Controller names may NOT match model names. Category model ↔ TaxonsController. Search for domain concepts (taxon, categor), not just class names.",
+          "example": "Grepped for 'categories_controller' → found nothing. But 'taxons_controller' exists and manages Categories."
+        },
+        {
+          "id": "SINGLE_LAYER_ASSUMPTION",
+          "description": "Do NOT assume that finding capability in one layer means all layers are covered. Each layer (core/api/admin/storefront) must be independently verified.",
+          "example": "Found taxon.rb model → assumed 'no admin exists' → created duplicate."
+        },
+        {
+          "id": "STIMULUS_PATH_MISMATCH",
+          "description": "Admin Stimulus controllers must live in pallastrade_admin/app/javascript/pallastrade/admin/controllers/, NOT in backend/app/javascript/controllers/. The admin gem uses importmap with explicit imports from its own JS path.",
+          "example": "Created category_cascade_controller.js in backend/app/javascript/controllers/ → not loaded by importmap. Correct path: pallastrade_admin/app/javascript/pallastrade/admin/controllers/."
+        }
+      ],
+      "violation": "Skipping cross-layer search before concluding capability is absent."
+    },
+    {
+      "id": "TR-005",
+      "name": "search-before-create-gate",
+      "appliesTo": ["所有任务"],
+      "description": "Before creating ANY new file, AI MUST search for existing files with similar names or domain concepts. If a similar file exists in framework layers, analyze whether it can be extended via Decorator/DI rather than duplicated.",
+      "steps": [
+        "1. Identify the domain concept (e.g., 'category management')",
+        "2. Search ALL gem directories for files containing the concept name OR its synonyms",
+        "3. List files found with full paths",
+        "4. For each found file, answer: 'Does this already satisfy the requirement?'",
+        "5. If yes → report. If partial → extend via Decorator/DI. If no → then create."
+      ]
+    },
+    {
+      "id": "TR-006",
+      "name": "verification-evidence-required",
+      "appliesTo": ["所有任务"],
+      "description": "Before clearing verify-test, AI MUST provide objective evidence. UI changes: screenshot/DOM snapshot. Backend changes: log line or DB result. Config changes: restart confirmation. No-test-needed only for pure docs/comments.",
+      "evidenceTable": {
+        "UI": "Screenshot or DOM snapshot showing corrected state",
+        "Backend": "Rails log line showing Completed 200 OK / 302 Found",
+        "Data": "DB query result before/after",
+        "Config": "Server restart + log confirming new config loaded"
+      },
+      "violation": "Clearing verify-test without providing matching evidence for the change type. 'No test needed' is NOT valid for UI or backend logic changes."
+    }
+  ]
+}

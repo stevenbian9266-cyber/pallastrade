@@ -23,7 +23,11 @@ export function ProductImage({
 
   if (!src || hasError) {
     return (
-      <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-300">
+      <div
+        className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-300"
+        role="img"
+        aria-label={typeof rest.alt === "string" ? rest.alt : "Product image"}
+      >
         <Icon className={iconClassName} />
       </div>
     );

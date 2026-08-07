@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getCachedProduct, PRODUCT_METADATA_EXPAND } from "@/lib/data/cached";
 import { buildCanonicalUrl, stripHtml } from "@/lib/seo";
 import { getStoreUrl } from "@/lib/store";
+import { buildHreflangAlternates } from "@/lib/metadata/alternates";
 
 interface ProductMetadataParams {
   country: string;
@@ -36,6 +37,10 @@ export async function generateProductMetadata({
       )
     : undefined;
 
+  const hreflangAlternates = await buildHreflangAlternates(
+    `/products/${product.slug}`,
+  );
+
   const primaryMedia = product.primary_media;
   const ogSrc =
     primaryMedia?.og_image_url ||
@@ -57,7 +62,16 @@ export async function generateProductMetadata({
     title,
     description,
     ...(product.meta_keywords ? { keywords: product.meta_keywords } : {}),
-    ...(canonicalUrl ? { alternates: { canonical: canonicalUrl } } : {}),
+    ...(canonicalUrl
+      ? {
+          alternates: {
+            canonical: canonicalUrl,
+            ...(Object.keys(hreflangAlternates).length > 1
+              ? { languages: hreflangAlternates }
+              : {}),
+          },
+        }
+      : {}),
     openGraph: {
       title,
       description,

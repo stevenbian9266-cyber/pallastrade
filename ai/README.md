@@ -68,7 +68,6 @@ Invoked by Claude (not the user) for multi-step PallasTrade work that benefits f
 | Command | What it does |
 |---|---|
 | `/pallastrade:doctor` | Diagnose the local dev stack — Docker, containers, env, web, migrations, job queues — and prescribe the exact fix. |
-| `/pallastrade:audit-upgrade [version]` | Read-only upgrade-readiness audit: checks the target version's breaking changes against your code (via the `pallastrade-expert` subagent), shows the manifest plan, and produces a remediation checklist. |
 
 ### Two safety hooks (Claude Code only)
 

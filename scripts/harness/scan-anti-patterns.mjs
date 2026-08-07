@@ -2,7 +2,7 @@ import { readFileSync, existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { globSync } from 'glob';
 
-export function scan({ rootDir }) {
+export function scan({ rootDir, files: fileFilter = null }) {
   const rulesPath = resolve(rootDir, 'harness', 'policies', 'anti-patterns.json');
   if (!existsSync(rulesPath)) {
     console.log('⚠️  No anti-patterns rules file found. Skipping scan.');
@@ -13,10 +13,18 @@ export function scan({ rootDir }) {
   let totalViolations = 0;
   let errors = 0;
   let warnings = 0;
+  let scanErrors = 0;
 
   for (const rule of rules) {
     try {
-      const files = globSync(rule.fileGlob, { cwd: rootDir, ignore: rule.excludeGlob ? [rule.excludeGlob] : [] });
+      const globbed = globSync(rule.fileGlob, { cwd: rootDir, ignore: rule.excludeGlob ? [rule.excludeGlob] : [] });
+      // When a file filter is provided (e.g. lefthook {staged_files}), only
+      // scan the intersection with this rule's glob. Normalize separators —
+      // glob returns Windows backslash paths, filter may be forward-slash.
+      const norm = p => p.split('\\').join('/');
+      const files = fileFilter
+        ? fileFilter.map(norm).filter(f => globbed.map(norm).includes(f))
+        : globbed;
 
       for (const file of files) {
         const filePath = resolve(rootDir, file);
@@ -29,6 +37,9 @@ export function scan({ rootDir }) {
         const lines = content.split('\n');
 
         for (let i = 0; i < lines.length; i++) {
+          // Reset per-line: with the 'g' flag, lastIndex persists across
+          // test() calls and causes missed matches (stale lastIndex).
+          regex.lastIndex = 0;
           if (regex.test(lines[i])) {
             const lineNum = i + 1;
             const icon = rule.severity === 'error' ? '❌' : '⚠️';
@@ -45,8 +56,14 @@ export function scan({ rootDir }) {
         }
       }
     } catch (e) {
-      console.log(`⚠️  Rule ${rule.id}: error scanning: ${e.message}`);
+      scanErrors++;
+      console.log(`❌ Rule ${rule.id}: error scanning: ${e.message}`);
     }
+  }
+
+  if (scanErrors > 0) {
+    console.log(`\n❌ ${scanErrors} rule(s) failed to scan — failing the check.`);
+    process.exit(1);
   }
 
   if (totalViolations === 0) {
@@ -64,5 +81,9 @@ export function scan({ rootDir }) {
 const args = process.argv.slice(2);
 if (args.length > 0 && args[0] === 'scan') {
   const rootDir = resolve(import.meta.dirname, '..', '..');
-  scan({ rootDir });
+  const filesIdx = args.indexOf('--files');
+  const files = filesIdx >= 0 && args[filesIdx + 1]
+    ? args[filesIdx + 1].split(',').map(s => s.trim()).filter(Boolean)
+    : null;
+  scan({ rootDir, files });
 }

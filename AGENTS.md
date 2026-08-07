@@ -10,7 +10,7 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 |---|---|---|
 | `backend/` | Rails application root | — |
 | `backend/app/` | Customer application code (models, controllers, decorators, subscribers) | ✅ Yes, freely |
-| `backend/pallastrade_gems/` | Owned framework source — 13 local gems | ⚠️ Prefer Decorator/DI first. Direct changes OK with `# PALLAS-CUSTOM:` comment |
+| `backend/pallastrade_gems/` | Framework source — local gems. **This is a PallasTrade team product.** Modify gem files directly. Git tracks all changes; upgrades are merges, not replacements. Only Host App override for net-new modules (e.g., `ai/`). Mark modified gem files with `# PALLAS-CUSTOM:` comment | ✅ Yes, freely |
 | `backend/db/migrate/` | Past database migrations | 🚫 Never modify. Create a NEW migration instead |
 | `backend/db/schema.rb` | Auto-generated schema snapshot | 🚫 Never hand-edit |
 | `backend/Gemfile.lock` | Auto-generated dependency lock | 🚫 Never hand-edit |
@@ -34,10 +34,93 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 
 ## 2. Before Writing Any Code
 
-1. **Read this AGENTS.md first.** You are doing that now.
-2. **Read the relevant Skill file.** Map task domain → `ai/skills/<domain>/SKILL.md`. Use `pallastrade-customization` FIRST when the right customization approach isn't obvious.
-3. **Run `harness affected`** to see what your change will impact.
-4. **Check the anti-patterns list (§5).** Know what NOT to do before you start.
+### � Step -1: MANDATORY Gate (ALL tasks — NO exceptions — enforced by process.exit(1))
+
+**Before you invoke any file creation or edit tool, you MUST run:**
+
+```bash
+node scripts/harness/cli.mjs gate --task "<brief description>" [--type feature|bugfix|style]
+```
+
+This creates a gate file at `harness/gates/GATE-*.json` and outputs a checklist.
+The command **always exits with code 1** until every check is cleared via `gate:clear`.
+
+**The AI is physically forbidden from calling `create_file`, `replace_string_in_file`, or `multi_replace_string_in_file` while the active gate's exit code is non-zero.** Check status with:
+
+```bash
+node scripts/harness/cli.mjs gate:clear --gate <GATE-ID> --clear <check-id>
+```
+
+Only when all checks are cleared and `gate:clear` exits 0 may the AI proceed to implementation.
+
+**Gate 期间的例外（仅允许以下文件操作）：**
+
+| 允许 | 目录/场景 | 原因 |
+|---|---|---|
+| ✅ `create_file` / 编辑 | `harness/requirements/` | 需求文档，必须创建才能清 `create-req-doc` |
+| ✅ `create_file` / 编辑 | `harness/gates/` | Gate 状态文件 |
+| ✅ 读取任意文件 | 所有目录 | 跨层搜索、读 Skill 文件 |
+| 🚫 其他所有文件操作 | — | 必须先清 gate |
+
+**新建 vs 修改的判断规则：**
+
+```
+Gate cleared 开始编码后：
+  改已有文件 → ✅ 直接改
+  必须新建文件才能实现需求 → ✅ 允许（在 REQ doc 中说明原因）
+  改已有文件就能实现却新建了文件 → 🚫 违规。先检查跨层搜索是否遗漏
+```
+
+### �🔍 Step 0: Mandatory Cross-Layer Search (ALL tasks — NO exceptions)
+
+**Every task, regardless of type, starts here.** PallasTrade is a layered framework.
+Finding a capability in one layer does NOT mean it exists in another.
+Skipping this step is the #1 cause of duplicated/conflicting code.
+
+| Layer | Search Path | What to Search For |
+|---|---|---|
+| **App** (your code) | `backend/app/` | models, controllers, views, decorators, subscribers, services |
+| **Core** (framework models) | `backend/pallastrade_gems/pallastrade_core/app/` | models, services, state machines, associations |
+| **API** (framework endpoints) | `backend/pallastrade_gems/pallastrade_api/app/` | controllers, serializers, routes |
+| **Admin** (framework admin UI) | `backend/pallastrade_gems/pallastrade_admin/app/` | controllers, views, helpers, navigation |
+| **Storefront** | `storefront/src/` | components, pages, layouts |
+| **Platform** | `platform/packages/` | SDK, Admin SDK, Dashboard, CLI |
+
+**Search protocol:**
+
+1. Identify 2-3 domain keywords (and their synonyms) from the task description
+2. Search EVERY layer above independently using those keywords
+3. For each found file, answer: "Does this already satisfy the requirement?"
+4. If controller not found by model name, try admin resource name (e.g., `Category` → search `taxon`)
+5. Document findings in the response — even if "nothing found"
+
+**Three anti-patterns that cause missed capabilities:**
+
+| # | Anti-Pattern | What Happens | Rule |
+|---|---|---|---|
+| AP-SEARCH-1 | **STOP_EARLY** | Find model in core → stop searching → miss admin controller in admin gem | Never stop at first match. Always search all 6 layers. |
+| AP-SEARCH-2 | **NAME_MISMATCH** | Search "categories_controller" → not found → assume absent. Real name: "taxons_controller". | Search by domain concept, not exact class name. |
+| AP-SEARCH-3 | **LAYER_ASSUME** | Model exists in core → assume Admin UI also exists → skip admin gem search. Reality: each layer is independent. | Never assume. Always verify each layer. |
+
+### 📋 Step 1: Task-Specific Understanding
+
+1. **Read the relevant Skill file.** Map task domain → `ai/skills/<domain>/SKILL.md`. Use `pallastrade-customization` FIRST when the right approach isn't obvious.
+2. **Run `harness affected`** to see what your change will impact.
+3. **Check the anti-patterns list (§5).** Know what NOT to do before you start.
+
+### ⏸️ Step 2: Confirmation Gate (新功能 / 功能优化 ONLY)
+
+For **新功能** and **功能优化**, after completing Steps 0-1, AI MUST:
+
+1. **Create a requirements document** using `harness/requirements/_TEMPLATE.md`
+   - Include the cross-layer search results from Step 0
+2. **Save it** as `harness/requirements/REQ-{YYYYMMDD}-{slug}.md`
+3. **Present to user and WAIT for confirmation** before writing ANY code
+4. After user confirms, output design document → Go/No-Go → implementation
+
+For **Bug修复 / 样式调整**, Steps 0-1 are sufficient to proceed — but cross-layer search (Step 0) is still mandatory.
+
+**Violating Step 0 (skipping cross-layer search) or Step 2 (writing code before user confirmation for new features) is a process error.**
 
 ---
 
@@ -54,6 +137,9 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | 5 | **Generators** (`pallastrade:api_resource` / `pallastrade:model`) | Brand-new model + API endpoint | `pallastrade-resource` |
 | 6 | **Decorators** (`Module#prepend`) | Structural changes to existing PallasTrade classes | `pallastrade-decorators` |
 | 7 | **Extensions (gems)** | Share customization across multiple PallasTrade apps | `pallastrade-extensions` |
+| 8 | **Direct Gem Modification** | Modify, add, or replace existing Gem views, controllers, or models. This project uses Git to track changes — upgrades are merges. | `pallastrade-admin` |
+
+**For Admin views specifically**: Modify files directly in `backend/pallastrade_gems/pallastrade_admin/app/views/`. Add `# PALLAS-CUSTOM: <reason>` as the first line. Net-new modules (no Gem counterpart) go in `backend/app/views/`.
 
 **If you skip to a lower number without trying higher ones first, your PR will be flagged by CI.**
 
@@ -87,6 +173,9 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | AP-005 | `PallasTrade::Order.all` without store scope | Always chain from `current_store`: `current_store.orders` | AP-005 |
 | AP-006 | Hardcoded hex colors (`#ff0000`) in components | Use CSS custom properties from design tokens (`var(--color-brand-primary)`) | AP-006 |
 | AP-007 | Hand-editing auto-generated files | Run the generation command, then commit the result | `generated:check` |
+| AP-008 | Copying Gem view files to Host App for modification | Modify the Gem source file directly in `pallastrade_gems/pallastrade_admin/app/views/`. Add `# PALLAS-CUSTOM:` comment. Host App `backend/app/views/` is for new modules only. | `anti-patterns.json` AP-008 |
+| AP-009a | `redirect()` without self-redirect guard → infinite loop | Add guard: `if (target !== currentPath) { redirect(target); }` | `anti-patterns.json` AP-009a |
+| AP-009b | `.catch(() => [])` collapses unknown→empty → triggers loop | Return `null` on API failure; handle unknown state explicitly with degraded UI | `anti-patterns.json` AP-009b |
 
 ---
 
@@ -100,8 +189,20 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | UI component / style | + `harness e2e dashboard` or `harness e2e storefront` | ≤15 min |
 | Payment logic | + payment sandbox gate | ≤30 min |
 | AI Skill file (`ai/skills/`) | + `harness eval ai --check-freshness` | ≤2 min |
-| Framework version upgrade | + `harness upgrade:audit` + `harness upgrade:verify` | ≤20 min |
 | Any change | `harness doc-impact --base origin/main` — checks knowledge docs are synced | ≤1 min |
+
+### Verification Evidence Required
+
+Before clearing `verify-test`, provide objective evidence:
+
+| What you changed | Required evidence |
+|---|---|
+| UI (view/component/style) | Screenshot or DOM snapshot showing corrected state |
+| Backend logic | Rails log line showing `Completed 200 OK` or `302 Found` |
+| Data fix | DB query result before/after |
+| Config-only change | Server restart log confirming new config loaded |
+
+**"no test needed" is not valid for UI or backend logic changes.**
 
 ---
 
@@ -140,3 +241,17 @@ These commands are intercepted by safety hooks at the tool-call level, not the p
 - Writing secrets (`sk_live_...`, `AKIA...`, `ghp_...`) into source files
 
 **Bypass**: Set `PALLASTRADE_HOOKS_DISABLE=1` and run the command manually in a terminal (not through the AI tool invocation). This is for emergencies only.
+
+### Physical Enforcement (agent-agnostic)
+
+Beyond prompt-level rules, the repo has **git-level gates** that fire regardless
+of which agent (Copilot / Codex / Claude Code) or human drives it:
+
+- Root `lefthook.yml` — pre-commit runs the anti-pattern + AP-009 degraded-loop
+  scans on **staged files only** (error severity blocks); pre-push runs
+  `harness doc-impact`. Install once: `npm i && npx lefthook install`.
+- `harness gate` supports task types: feature / bugfix / style / audit /
+  research / docs / refactor / security / test. Gates bind branch + HEAD commit
+  and record `--note` on each cleared check.
+- Harness self-checks: `npm run test:harness` (node:test contract tests) and
+  `harness eval-ai --scenarios` (GS scenario library validation).

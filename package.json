@@ -4,9 +4,13 @@
   "type": "module",
   "engines": { "node": ">=22.0.0" },
   "scripts": {
-    "harness": "node scripts/harness/cli.mjs"
+    "harness": "node scripts/harness/cli.mjs",
+    "test:harness": "node --test scripts/harness/*.test.mjs"
   },
   "dependencies": {
     "glob": "^11.0.0"
+  },
+  "devDependencies": {
+    "lefthook": "^1.11.0"
   }
 }

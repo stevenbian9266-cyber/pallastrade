@@ -67,6 +67,34 @@
       "fileGlob": "platform/packages/*/src/types/generated/**",
       "message": "Hand-editing auto-generated files. Run the generation command instead.",
       "fix": "Run the appropriate generate:types or generate:zod command"
+    },
+    {
+      "id": "AP-008",
+      "name": "unnecessary-view-host-app-override",
+      "severity": "warning",
+      "pattern": "# PALLAS-CUSTOM:.*",
+      "fileGlob": "backend/app/views/pallastrade/admin/**/*.erb",
+      "excludeGlob": "backend/app/views/pallastrade/admin/ai/**",
+      "message": "Admin view file exists in Host App but likely duplicates a Gem view. This project modifies Gem source files directly. Unless this is a net-new module (like ai/), move your changes into the Gem file at pallastrade_gems/pallastrade_admin/app/views/.",
+      "fix": "Move your changes to the corresponding file in the Gem, add `# PALLAS-CUSTOM:` comment, and delete this Host App copy."
+    },
+    {
+      "id": "AP-009a",
+      "name": "redirect-without-self-guard",
+      "severity": "error",
+      "pattern": "redirect\\s*\\(",
+      "fileGlob": "storefront/src/**/*.{ts,tsx}",
+      "message": "redirect() called without a self-redirect guard. When the fallback destination equals the current URL (e.g. API fails, markets=[] -> redirect('/us/en') from /us/en), it creates an infinite loop.",
+      "fix": "Add a guard before redirect: `if (target !== currentPath) { redirect(target); }`. Also ensure fallback data does not come from a failed API returning empty collection."
+    },
+    {
+      "id": "AP-009b",
+      "name": "catch-returns-empty-collection",
+      "severity": "warning",
+      "pattern": "\\.catch\\s*\\(\\s*\\(\\s*\\)\\s*=>\\s*(\\[\\s*\\]|\\{\\s*(data\\s*:\\s*\\[\\s*\\])\\s*\\})",
+      "fileGlob": "storefront/src/**/*.{ts,tsx}",
+      "message": "API failure caught and converted to empty collection. This collapses 'unknown state' (API down) into 'known state' (empty result), which can cause downstream logic to incorrectly redirect, retry, or render invalid states.",
+      "fix": "Change `.catch(() => [])` to `.catch(() => null)`, then handle `null` separately: show degraded UI or skip the operation."
     }
   ]
 }

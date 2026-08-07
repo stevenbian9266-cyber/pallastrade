@@ -519,7 +519,9 @@ module PallasTrade
         return app_helpers.public_send(method_name, *args, &block) if app_helpers.respond_to?(method_name)
       end
 
-      return super unless core_dependency?(base_name)
+      # Guard against Rails internal methods (e.g. optimize_routes_generation? in Rails 8.1+)
+      # being routed through method_missing.
+      return super unless respond_to_missing?(method_name)
 
       if method_name.to_s.end_with?('=')
         PallasTrade::Dependencies.send(method_name, args.first)
@@ -536,6 +538,13 @@ module PallasTrade
         return true if Rails.application.routes.url_helpers.respond_to?(method_name)
       end
       core_dependency?(base_name) || super
+    end
+
+    # Rails 8.1+ calls optimize_routes_generation? on URL helper owner modules.
+    # Since PallasTrade acts as a proxy for route helpers via method_missing,
+    # we delegate this to the application's URL helpers.
+    def optimize_routes_generation?
+      Rails.application.routes.url_helpers.optimize_routes_generation?
     end
 
     private

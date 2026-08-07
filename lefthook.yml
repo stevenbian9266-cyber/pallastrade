@@ -1,0 +1,26 @@
+# Root-level harness gates — agent-agnostic physical enforcement.
+# Install once:  npm i && npx lefthook install
+# (or: pnpm i && pnpm exec lefthook install)
+#
+# pre-commit: block error-severity anti-patterns in staged files (warnings are
+#   reported but do not block — they stay advisory).
+# pre-push:   doc-impact requires knowledge docs to be synced with code.
+#
+# These hooks are the ONLY enforcement point that works regardless of which
+# AI agent (Copilot / Codex / Claude Code) or human drives the repo.
+
+pre-commit:
+  commands:
+    harness-anti-patterns:
+      glob: "**/*.{rb,ts,tsx,js,jsx,css}"
+      exclude: "**/node_modules/**|**/dist/**|**/.next/**|**/vendor/**|**/build/**"
+      run: node scripts/harness/scan-anti-patterns.mjs scan --files {staged_files}
+    harness-degraded-loop:
+      glob: "**/*.{ts,tsx,js,jsx}"
+      exclude: "**/node_modules/**|**/dist/**|**/.next/**|**/build/**"
+      run: node scripts/harness/check-degraded-loop.mjs scan --files {staged_files}
+
+pre-push:
+  commands:
+    harness-doc-impact:
+      run: node scripts/harness/cli.mjs doc-impact --base origin/main

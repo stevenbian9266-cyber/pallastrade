@@ -1,7 +1,11 @@
 <%# PALLAS-CUSTOM: Replaced single tom_select with 3-level cascade dropdowns. %>
 <% if can?(:manage, PallasTrade::Classification) %>
-  <% roots = PallasTrade::Taxon.for_store(current_store).roots.order(:name) %>
-  <% all_categories = PallasTrade::Taxon.for_store(current_store).select(:id, :name, :parent_id) %>
+  <% roots = PallasTrade::Category.for_store(current_store).roots.order(:name) %>
+  <%# PALLAS-CUSTOM: Use pluck to get raw column values — Mobility-translated
+      # .select() strips the translation layer, returning nil for name.
+      # name_map: {id => name}, children_map: {parent_id => [child_ids]} %>
+  <% name_map = PallasTrade::Category.for_store(current_store).pluck(:id, :name).to_h
+     children_map = PallasTrade::Category.for_store(current_store).where.not(parent_id: nil).pluck(:parent_id, :id).group_by(&:first).transform_values { |v| v.map(&:last) } %>
   <div class="card mb-6" data-controller="category-cascade">
     <div class="card-header">
       <h5 class="card-title">
@@ -10,19 +14,24 @@
       </h5>
     </div>
     <div class="card-body">
-      <!-- Category name map + children map for Stimulus (avoids API calls) -->
       <script id="category-name-map" type="application/json">
-        <%= raw all_categories.each_with_object({}) { |c, h| h[c.id] = c.name }.to_json %>
+        <%= raw name_map.to_json %>
       </script>
       <script id="category-children-map" type="application/json">
-        <%= raw all_categories.group_by(&:parent_id).transform_values { |v| v.map(&:id) }.to_json %>
+        <%= raw children_map.to_json %>
       </script>
 
-      <div class="flex gap-3 items-start">
-        <% selected = @product.taxons.manual.first %>
-        <% selected_parent = selected&.parent %>
-        <% selected_grandparent = selected_parent&.parent %>
+      <%
+        selected = @product.taxons.manual.first
+        if selected
+          ancestors = selected.self_and_ancestors.reject { |a| a.depth > 2 }
+          level1_id = ancestors[0]&.id
+          level2_id = ancestors[1]&.id
+          level3_id = ancestors[2]&.id
+        end
+      %>
 
+      <div class="flex gap-3 items-start">
         <!-- Level 1 -->
         <div class="form-group flex-1">
           <label class="form-label">
@@ -35,8 +44,8 @@
             <option value=""><%= PallasTrade.t('category_cascade.select') %> <%= PallasTrade.t('category_cascade.level1') %></option>
             <% roots.each do |c| %>
               <option value="<%= c.id %>"
-                      data-children="<%= (all_categories.select { |t| t.parent_id == c.id }.map(&:id)).to_json %>"
-                      <%= 'selected' if selected_grandparent&.id == c.id || (!selected_parent && !selected_grandparent && selected&.root?) %>>
+                      data-children="<%= (children_map[c.id] || []).to_json %>"
+                      <%= 'selected' if level1_id == c.id %>>
                 <%= c.name %>
               </option>
             <% end %>
@@ -49,14 +58,13 @@
           <select class="form-select w-full"
                   data-category-cascade-target="level2"
                   data-action="change->category-cascade#loadLevel3"
-                  <%= 'disabled' unless selected_parent || selected_grandparent %>>
+                  <%= 'disabled' unless level2_id || level1_id %>>
             <option value=""><%= PallasTrade.t('category_cascade.select') %> <%= PallasTrade.t('category_cascade.level2') %></option>
-            <% target_parent = selected_grandparent || (selected&.root? ? selected : nil) %>
-            <% if target_parent %>
-              <% target_parent.children.order(:name).each do |c| %>
+            <% if level1_id %>
+              <% PallasTrade::Category.find(level1_id).children.order(:name).each do |c| %>
                 <option value="<%= c.id %>"
-                        data-children="<%= (all_categories.select { |t| t.parent_id == c.id }.map(&:id)).to_json %>"
-                        <%= 'selected' if c.id == selected_parent&.id || c.id == selected&.id %>>
+                        data-children="<%= (children_map[c.id] || []).to_json %>"
+                        <%= 'selected' if level2_id == c.id %>>
                   <%= c.name %>
                 </option>
               <% end %>
@@ -70,12 +78,11 @@
           <select class="form-select w-full"
                   name="product[taxon_ids][]"
                   data-category-cascade-target="level3"
-                  <%= 'disabled' unless selected_parent || (selected && !selected.root?) %>>
+                  <%= 'disabled' unless level3_id || level2_id %>>
             <option value=""><%= PallasTrade.t('category_cascade.select') %> <%= PallasTrade.t('category_cascade.level3') %></option>
-            <% target_parent = selected_parent || (selected && !selected.root? ? selected.parent : nil) %>
-            <% if target_parent %>
-              <% target_parent.children.order(:name).each do |c| %>
-                <option value="<%= c.id %>" <%= 'selected' if c.id == selected&.id %>>
+            <% if level2_id %>
+              <% PallasTrade::Category.find(level2_id).children.order(:name).each do |c| %>
+                <option value="<%= c.id %>" <%= 'selected' if level3_id == c.id %>>
                   <%= c.name %>
                 </option>
               <% end %>

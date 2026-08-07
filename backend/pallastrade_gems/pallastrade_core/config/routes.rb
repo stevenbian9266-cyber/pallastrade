@@ -20,8 +20,12 @@ Rails.application.routes.draw do
         Cloudinary::Utils.cloudinary_url(model.blob.key)
       end
     elsif model.respond_to?(:signed_id)
+      # PALLAS-CUSTOM: Use redirect mode instead of proxy.
+      # Proxy mode streams through Rails middleware — double-proxy with
+      # Next.js Image Optimization causes 504 timeout in development.
+      # Redirect mode issues 302 to the disk file URL, bypassing Rails.
       route_for(
-        :rails_service_blob_proxy,
+        :rails_service_blob,
         model.signed_id,
         model.filename,
         opts
@@ -31,8 +35,9 @@ Rails.application.routes.draw do
       variation_key  = model.variation.key
       filename       = model.blob.filename
 
+      # PALLAS-CUSTOM: Redirect mode for variant representations.
       route_for(
-        :rails_blob_representation_proxy,
+        :rails_blob_representation,
         signed_blob_id,
         variation_key,
         filename,

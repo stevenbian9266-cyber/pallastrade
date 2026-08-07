@@ -132,7 +132,6 @@ When the task domain matches one of these, read the corresponding `skills/<name>
 | REST API v3 protocol — auth, envelopes, prefixed IDs, scopes | `pallastrade-api-v3` |
 | `@pallastrade/sdk` + `@pallastrade/admin-sdk` usage, extension patterns | `pallastrade-typescript-sdk` |
 | Calling/inspecting the Admin API from the terminal, debugging requests (`pallastrade api`) | `pallastrade-cli` |
-| Auditing an upgrade across minor/major versions | `/pallastrade:audit-upgrade` command |
 | Domain model — Orders, LineItems, Variants, Stores, Channels, Markets | `pallastrade-data-model` |
 | Events + subscribers (in-process) + outbound webhooks (HMAC, retry) | `pallastrade-events-webhooks` |
 | Installing third-party gems or writing your own extension | `pallastrade-extensions` |

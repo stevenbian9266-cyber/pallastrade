@@ -37,14 +37,21 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    unoptimized: process.env.NODE_ENV === 'development',
     qualities: [25, 50, 75, 85, 100],
     dangerouslyAllowLocalIP: true, // Allow localhost images in development
+    minimumCacheTTL: 300, // Reduce upstream pressure on Rails dev server
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       {
         protocol: "http",
         hostname: "localhost",
+        pathname: "/rails/active_storage/**",
+      },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
         pathname: "/rails/active_storage/**",
       },
       {

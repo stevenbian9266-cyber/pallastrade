@@ -1,0 +1,39 @@
+﻿{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Harness: Doctor",
+      "type": "shell",
+      "command": "node scripts/harness/cli.mjs doctor",
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Harness: Quick Check",
+      "type": "shell",
+      "command": "node scripts/harness/cli.mjs check --profile quick",
+      "group": "test"
+    },
+    {
+      "label": "Harness: Full Check",
+      "type": "shell",
+      "command": "node scripts/harness/cli.mjs check --profile full",
+      "group": "test"
+    },
+    {
+      "label": "Harness: E2E Dashboard",
+      "type": "shell",
+      "command": "node scripts/harness/cli.mjs e2e dashboard"
+    },
+    {
+      "label": "Harness: E2E Storefront",
+      "type": "shell",
+      "command": "node scripts/harness/cli.mjs e2e storefront"
+    },
+    {
+      "label": "Harness: Generated Check",
+      "type": "shell",
+      "command": "node scripts/harness/cli.mjs generated:check"
+    }
+  ]
+}

@@ -44,15 +44,17 @@ module PallasTrade
         end
       end
 
+      # PALLAS-CUSTOM: Fix NoMethodError - PallasTrade module has no url_options,
+      # use main_app (engine route proxy) instead which properly handles URL generation.
       def try_to_redirect_to_login_path
         if respond_to?(:pallastrade_admin_login_path)
           redirect_to pallastrade_admin_login_path, allow_other_host: true
         elsif respond_to?(:pallastrade_login_path)
           redirect_to pallastrade_login_path, allow_other_host: true
-        elsif PallasTrade.respond_to?(:root_path)
-          redirect_to PallasTrade.root_path, allow_other_host: true
+        elsif main_app.respond_to?(:root_path)
+          redirect_to main_app.root_path, allow_other_host: true
         else
-          redirect_to main_app.respond_to?(:root_path) ? main_app.root_path : '/'
+          redirect_to '/'
         end
       end
 

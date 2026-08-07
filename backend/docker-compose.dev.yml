@@ -44,6 +44,8 @@ x-app: &app
     RAILS_FORCE_SSL: "false"
     RAILS_ASSUME_SSL: "false"
     MEILISEARCH_URL: http://meilisearch:7700
+    # Increase dev thread pool so image redirects don't queue behind API calls.
+    RAILS_MAX_THREADS: "8"
     # All outgoing mail is captured by Mailpit — read it at http://localhost:8025.
     # Set SMTP_HOST (and friends) in .env to deliver through a real provider instead.
     SMTP_HOST: ${SMTP_HOST:-mailpit}

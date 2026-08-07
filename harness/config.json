@@ -4,7 +4,7 @@
   "profiles": {
     "quick": {
       "timeout": 300,
-      "checks": ["lint", "typecheck", "monorepo-contract", "api-contract", "affected-tests", "anti-patterns"]
+      "checks": ["lint", "typecheck", "monorepo-contract", "api-contract", "affected-tests", "anti-patterns", "degraded-loop"]
     },
     "full": {
       "timeout": 2700,
@@ -15,9 +15,6 @@
     },
     "release": {
       "checks": ["full", "sandbox", "sbom", "provenance", "sign", "manifest"]
-    },
-    "upgrade": {
-      "checks": ["full", "upgrade-audit", "upgrade-baseline", "upgrade-verify", "conflict-detection", "migration-dry-run"]
     }
   }
 }

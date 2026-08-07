@@ -91,25 +91,24 @@ jobs:
         run: |
           cd backend
           cp .env.example .env 2>/dev/null || touch .env
-          bundle exec rails db:create db:migrate 2>/dev/null || echo "DB setup skipped"
+          bundle exec rails db:create db:migrate
 
       - name: Run RSpec (root app + gem specs)
         run: |
           cd backend
           bundle exec rspec spec/ pallastrade_gems/pallastrade_*/spec/ \
             --format progress \
-            --format RspecJunitFormatter --out rspec-junit.xml \
-            2>/dev/null || echo "RSpec completed (check output)"
+            --format RspecJunitFormatter --out rspec-junit.xml
 
       - name: Run Brakeman
         run: |
           cd backend
-          bundle exec brakeman -q --no-summary 2>/dev/null || echo "Brakeman skipped"
+          bundle exec brakeman -q --no-summary
 
       - name: Run bundle-audit
         run: |
           cd backend
-          bundle exec bundle-audit check --update 2>/dev/null || echo "bundle-audit skipped"
+          bundle exec bundle-audit check --update
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -130,10 +129,10 @@ jobs:
       - name: Install & Test
         run: |
           cd storefront
-          pnpm install --frozen-lockfile 2>/dev/null || pnpm install
-          pnpm check 2>/dev/null || echo "Lint skipped"
-          pnpm typecheck 2>/dev/null || echo "Typecheck skipped"
-          pnpm test 2>/dev/null || echo "Tests completed"
+          pnpm install --frozen-lockfile
+          pnpm check
+          pnpm typecheck
+          pnpm test
 
   # ---- Platform Tests ----
   test-platform:
@@ -148,5 +147,5 @@ jobs:
       - name: Install & Test
         run: |
           cd platform
-          pnpm install --frozen-lockfile 2>/dev/null || pnpm install
-          pnpm turbo lint typecheck test build --cache-dir=.turbo 2>/dev/null || echo "Platform tests completed"
+          pnpm install --frozen-lockfile
+          pnpm turbo lint typecheck test build --cache-dir=.turbo

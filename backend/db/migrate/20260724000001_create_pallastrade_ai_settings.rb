@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreatePallasTradeAiSettings < ActiveRecord::Migration[8.1]
+class CreatePallasTradeAISettings < ActiveRecord::Migration[8.1]
   def change
     create_table :pallastrade_ai_settings do |t|
       t.references :store, null: false, foreign_key: { to_table: :pallastrade_stores }, index: { unique: true }

@@ -70,22 +70,27 @@ Rails.application.configure do
   config.active_record.migration_error = :page_load
 
   # Highlight code that triggered database queries in logs.
-  config.active_record.verbose_query_logs = true
+  # Disabled in dev for performance — verbose query logs add significant overhead.
+  config.active_record.verbose_query_logs = false
 
   # Append comments with runtime information tags to SQL queries in logs.
-  config.active_record.query_log_tags_enabled = true
+  # Disabled: source location tracking adds measurable per-query latency.
+  config.active_record.query_log_tags_enabled = false
 
   # Highlight code that enqueued background job in logs.
-  config.active_job.verbose_enqueue_logs = true
+  config.active_job.verbose_enqueue_logs = false
 
   # Highlight code that triggered redirect in logs.
-  config.action_dispatch.verbose_redirect_logs = true
+  config.action_dispatch.verbose_redirect_logs = false
+
+  # Reduce log verbosity in dev for faster request processing.
+  config.log_level = :info
 
   # Suppress logger output for asset requests.
   config.assets.quiet = true
 
-  # Annotate rendered view with file names.
-  config.action_view.annotate_rendered_view_with_filenames = true
+  # Annotate rendered view with file names — disabled for performance.
+  config.action_view.annotate_rendered_view_with_filenames = false
 
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true

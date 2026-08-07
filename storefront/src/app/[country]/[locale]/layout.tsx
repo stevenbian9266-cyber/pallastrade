@@ -52,19 +52,25 @@ export default async function CountryLocaleLayout({
 
   // Validate that the URL country belongs to an available market.
   // If not, redirect server-side to avoid SSR with wrong prices.
+  // BUT: if markets failed to load (API down / 401), don't redirect —
+  // that would create an infinite loop since every page load would fail
+  // and redirect back to the default, which would fail again, etc.
   const isValidCountry = markets.some((market) =>
     market.countries?.some(
       (c) => c.iso.toLowerCase() === country.toLowerCase(),
     ),
   );
 
-  if (!isValidCountry) {
+  if (!isValidCountry && markets.length > 0) {
     const defaultMarket = markets.find((m) => m.default) ?? markets[0];
     const fallbackCountry =
       defaultMarket?.countries?.[0]?.iso.toLowerCase() ?? getDefaultCountry();
     const fallbackLocale = defaultMarket?.default_locale ?? getDefaultLocale();
 
-    redirect(`/${fallbackCountry}/${fallbackLocale}`);
+    // Guard against redirecting to the same URL (causes infinite loop)
+    if (fallbackCountry !== country.toLowerCase() || fallbackLocale !== locale) {
+      redirect(`/${fallbackCountry}/${fallbackLocale}`);
+    }
   }
 
   // Load messages statically (no runtime data access) to avoid blocking prerender

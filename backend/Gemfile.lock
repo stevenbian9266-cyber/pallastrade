@@ -749,6 +749,7 @@ DEPENDENCIES
   sentry-ruby
   sentry-sidekiq
   sidekiq
+  simplecov
   simplecov-cobertura
   stimulus-rails
   tailwindcss-rails

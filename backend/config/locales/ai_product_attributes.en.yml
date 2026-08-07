@@ -1,0 +1,14 @@
+en:
+  activerecord:
+    attributes:
+      pallastrade/product:
+        barcode: Barcode
+        depth: Depth
+        dimensions_unit: Dimensions Unit
+        height: Height
+        is_master: Master Variant
+        sku: SKU
+        status: Status
+        weight: Weight
+        weight_unit: Weight Unit
+        width: Width

@@ -51,7 +51,7 @@ if (skillNames.length !== 24) {
 if (skillNames.includes('pallastrade-upgrade')) {
   failures.push('removed pallastrade-upgrade skill is still present')
 }
-if (JSON.stringify(commandNames) !== JSON.stringify(['audit-upgrade.md', 'doctor.md'])) {
+if (JSON.stringify(commandNames) !== JSON.stringify(['doctor.md'])) {
   failures.push(`unexpected commands: ${commandNames.join(', ')}`)
 }
 if (JSON.stringify(agentNames) !== JSON.stringify(['pallastrade-expert.md'])) {

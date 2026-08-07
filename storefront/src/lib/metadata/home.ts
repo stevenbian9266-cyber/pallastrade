@@ -5,6 +5,7 @@ import {
   getStoreSeoTitle,
   getStoreUrl,
 } from "@/lib/store";
+import { buildHreflangAlternates } from "@/lib/metadata/alternates";
 
 interface HomeMetadataParams {
   country: string;
@@ -21,11 +22,21 @@ export async function generateHomeMetadata({
   const canonicalUrl = storeUrl
     ? buildCanonicalUrl(storeUrl, `/${country}/${locale}`)
     : undefined;
+  const hreflangAlternates = await buildHreflangAlternates("");
 
   return {
     title: { absolute: storeName },
     description,
-    ...(canonicalUrl ? { alternates: { canonical: canonicalUrl } } : {}),
+    ...(canonicalUrl
+      ? {
+          alternates: {
+            canonical: canonicalUrl,
+            ...(Object.keys(hreflangAlternates).length > 1
+              ? { languages: hreflangAlternates }
+              : {}),
+          },
+        }
+      : {}),
     openGraph: {
       title: storeName,
       description,
