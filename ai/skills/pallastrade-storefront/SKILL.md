@@ -125,6 +125,25 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
 The v3 Store API uses **flat responses** — `product.name`, not `product.data.attributes.name`. Related records appear as either ID fields (e.g. `default_variant_id`) or, when expanded, as nested objects (e.g. `product.default_variant`, `product.media[]`).
 
+### SEO / metadata
+
+The storefront ships a shared SEO layer under `storefront/src/lib/`:
+
+- `seo.ts` — shared helpers (canonical URLs, Open Graph tags, structured data).
+- `metadata/` — per-route metadata builders, one per content type:
+  - `home.ts`, `category.ts`, `product.ts`, `store.ts` — `generateMetadata` data for each route.
+  - `alternates.ts` — hreflang/locale alternates (per-country/per-locale URL variants).
+
+Page routes under `[country]/[locale]/...` use these builders so every page emits
+canonical + localized `<head>` metadata. When adding a new page route, extend the
+matching builder in `metadata/` rather than inlining metadata in the page.
+
+Key components:
+
+- `ProductCard` (`components/products/ProductCard.tsx`) — product grid card; consumes the product + media via the SDK and links to the PDP.
+- `product-image` (`components/ui/product-image.tsx`) — shared image renderer with srcset/fallback handling.
+- `CategoryBanner` (`app/[country]/[locale]/(storefront)/c/[...permalink]/CategoryBanner.tsx`) — category hero banner in the category listing route.
+
 ### Client-side cart
 
 Carts are server-state, so use SWR or React Query. The cart ID + token persist in a cookie:
