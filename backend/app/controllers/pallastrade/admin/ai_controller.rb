@@ -116,7 +116,11 @@ module PallasTrade
       # PATCH /admin/ai/models/:id
       def update_model
         @model = PallasTrade::AI::Model.where(store: current_store).find(params[:id])
-        @model.update!(active: ActiveModel::Type::Boolean.new.cast(params[:active]))
+        # A checkbox that is unchecked does not submit its param, so params[:active]
+        # is nil — coerce nil → false (Boolean#cast(nil) returns nil and would
+        # violate the not-null constraint on pallastrade_ai_models.active).
+        active = ActiveModel::Type::Boolean.new.cast(params[:active]) == true
+        @model.update!(active: active)
         respond_to do |format|
           format.turbo_stream do
             flash.now[:success] = 'Model updated'

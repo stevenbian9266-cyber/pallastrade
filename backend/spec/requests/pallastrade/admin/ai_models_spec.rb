@@ -94,5 +94,16 @@ RSpec.describe 'Admin AI Models page', type: :request do
 
       expect(model.reload.active).to be false
     end
+
+    it 'turns off when active param is missing (unchecked checkbox, no 500)' do
+      model = PallasTrade::AI::Model.find_by(provider_model_id: 'deepseek-v4-flash')
+      model.update!(active: true)
+
+      patch "/admin/ai/models/#{model.id}", params: {}, as: :turbo_stream
+
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+      expect(model.reload.active).to be false
+    end
   end
 end
