@@ -39,10 +39,6 @@ flags:
     paths:
       - pallastrade/emails/
     carryforward: true
-  dashboard:
-    paths:
-      - pallastrade/dashboard/
-    carryforward: true
 
 component_management:
   individual_components:

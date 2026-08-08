@@ -9,8 +9,8 @@ See [CLAUDE.md](./CLAUDE.md) for full project instructions and conventions.
 ## PallasTrade-specific agent skills
 
 For deeper PallasTrade-specific guidance (API conventions, the data model, event system,
-testing patterns, security, deployment, the 6.0 React dashboard, the Next.js
-storefront, etc.), install the official skill set:
+testing patterns, security, deployment, the Next.js storefront, etc.), install the
+official skill set:
 
 \`\`\`bash
 npx skills add stevenbian9266-cyber/pallastrade
@@ -24,7 +24,6 @@ full skill list.
 
 export function rootClaudeMdContent(
   hasStorefront: boolean,
-  hasDashboard = false,
   pm: PackageManager = 'npm',
 ): string {
   const run = runCommand(pm)
@@ -42,10 +41,6 @@ export function rootClaudeMdContent(
     lines.push('| `apps/storefront/` | Next.js storefront |')
   }
 
-  if (hasDashboard) {
-    lines.push('| `apps/dashboard/` | React Dashboard — admin SPA (Developer Preview) |')
-  }
-
   lines.push(
     '',
     '## Agent Instructions',
@@ -59,18 +54,12 @@ export function rootClaudeMdContent(
     )
   }
 
-  if (hasDashboard) {
-    lines.push(
-      '- **React Dashboard work** (admin SPA, React, TypeScript): See `apps/dashboard/README.md`',
-      '  and https://pallastrade.cn/docs/developer/dashboard/overview',
-    )
-  }
-
   lines.push(
     '',
     '## PallasTrade Documentation',
     '',
     'Canonical repository: https://github.com/stevenbian9266-cyber/pallastrade',
+    'Full developer docs: https://pallastrade.cn/docs (also installed locally)',
     '',
     'Full developer docs are installed locally:',
     '',
@@ -92,24 +81,6 @@ export function rootClaudeMdContent(
     '',
     'Read these files when you need PallasTrade-specific guidance.',
     '',
-    '## Querying the Admin API',
-    '',
-    'Project setup mints a read-only secret key into `.pallastrade/credentials.json`',
-    '(gitignored) — and `pallastrade api` mints it on first use if setup was skipped —',
-    'so the Admin API client works without further configuration. Use it to',
-    'inspect live data instead of guessing at the schema:',
-    '',
-    '```bash',
-    `${run} pallastrade api get products                      # list products`,
-    `${run} pallastrade api get "orders?q[state_eq]=complete" # Ransack filters`,
-    `${run} pallastrade api endpoints                         # every endpoint + its required scope`,
-    `${run} pallastrade api schema "POST /products"           # request/response schema for an operation`,
-    '```',
-    '',
-    'The default key is read-only. For writes, create a scoped key and pass it via',
-    `\`PALLASTRADE_API_KEY\`: \`${run} pallastrade api-key create --scopes write_products\`, then`,
-    `\`PALLASTRADE_API_KEY=sk_... ${run} pallastrade api post products --data '{"name":"New product","prices":[{"currency":"USD","amount":"29.99"}]}'\`.`,
-    '',
     '## Common Commands',
     '',
     '```bash',
@@ -117,7 +88,6 @@ export function rootClaudeMdContent(
     `${pm} run stop             # Stop services`,
     `${pm} run console          # Rails console`,
     `${pm} run logs             # Backend logs`,
-    `${run} pallastrade api get products  # Query the Admin API (read-only key preconfigured)`,
     `${run} pallastrade eject          # Build the API locally from backend/`,
     '```',
     '',

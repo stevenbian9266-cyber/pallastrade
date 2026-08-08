@@ -82,10 +82,12 @@
       "id": "AP-009a",
       "name": "redirect-without-self-guard",
       "severity": "error",
-      "pattern": "redirect\\s*\\(",
+      "pattern": "redirect\\s*\\(\\s*['\"]",
+      "guardPattern": "(?:if\\s*\\([^)]*(?:!==|!=|===)|pathname\\s*=|target\\s*!==|currentPath)",
+      "guardLookback": 6,
       "fileGlob": "storefront/src/**/*.{ts,tsx}",
-      "message": "redirect() called without a self-redirect guard. When the fallback destination equals the current URL (e.g. API fails, markets=[] -> redirect('/us/en') from /us/en), it creates an infinite loop.",
-      "fix": "Add a guard before redirect: `if (target !== currentPath) { redirect(target); }`. Also ensure fallback data does not come from a failed API returning empty collection."
+      "message": "redirect() to a hardcoded static path without a self-redirect guard. When the fallback destination equals the current URL (e.g. API fails, markets=[] -> redirect('/us/en') from /us/en), it creates an infinite loop. Dynamic targets (template literals, variables) are exempt.",
+      "fix": "Add a guard before redirect: `if (target !== currentPath) { redirect(target); }`. Or use a dynamic target (template literal / variable). Also ensure fallback data does not come from a failed API returning empty collection."
     },
     {
       "id": "AP-009b",

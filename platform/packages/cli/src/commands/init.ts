@@ -6,16 +6,9 @@ import type { Command } from 'commander'
 import { execa, execaCommand } from 'execa'
 import pc from 'picocolors'
 import { mintProjectCredentials, writeProjectSetupMarker } from '../config.js'
-import { DASHBOARD_PORT, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD } from '../constants.js'
+import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD } from '../constants.js'
 import { detectProject, readSampleDataFromEnv } from '../context.js'
-import {
-  dashboardDevRunnable,
-  hasDashboardApp,
-  startDashboardDevServer,
-  warnDashboardNotRunnable,
-} from '../dashboard-server.js'
 import { dockerCompose, primeBundleVolume, rakeTask, streamLogs } from '../docker.js'
-import { detectPackageManager, ensureDashboardDevEnv } from './add.js'
 
 const HEALTH_CHECK_INTERVAL_MS = 3000
 const HEALTH_CHECK_TIMEOUT_MS = 120_000
@@ -81,8 +74,6 @@ export async function runFirstRunSetup(flags: {
   s.stop('API keys configured.')
 
   await installAppDeps(ctx.projectDir, 'storefront')
-  await installAppDeps(ctx.projectDir, 'dashboard')
-  ensureDashboardDevEnv(ctx.projectDir, ctx.port)
 
   if (sampleData) {
     s.start('Loading sample data...')
@@ -96,32 +87,12 @@ export async function runFirstRunSetup(flags: {
 
   writeProjectSetupMarker(ctx.projectDir)
 
-  // With the React Dashboard chosen, its dev server IS the admin — started
-  // below alongside the stack, so what the user customizes is what they use.
-  // One admin block; the classic admin gets a one-line pointer. (The
-  // production image serves the built dashboard at /dashboard — a deployment
-  // detail, not a dev-flow concept.) The summary, --open, and the spawn all
-  // key off the same runnable check so they can't disagree — if the dev
-  // server can't start (deps install failed above), the card leads with the
-  // classic admin instead of advertising a dead URL.
-  const dashboardRunnable = dashboardDevRunnable(ctx.projectDir)
-  if (hasDashboardApp(ctx.projectDir) && !dashboardRunnable) {
-    warnDashboardNotRunnable(ctx.projectDir)
-  }
-  const adminBlock = dashboardRunnable
-    ? [
-        pc.bold('Admin Dashboard (React, Developer Preview)'),
-        `  ${pc.cyan(`http://localhost:${DASHBOARD_PORT}`)}`,
-        `  Email:    ${DEFAULT_ADMIN_EMAIL}`,
-        `  Password: ${DEFAULT_ADMIN_PASSWORD}`,
-        `  ${pc.dim(`Live-reloading from apps/dashboard/ — classic admin: http://localhost:${ctx.port}/admin`)}`,
-      ]
-    : [
-        pc.bold('Admin Dashboard'),
-        `  ${pc.cyan(`http://localhost:${ctx.port}/admin`)}`,
-        `  Email:    ${DEFAULT_ADMIN_EMAIL}`,
-        `  Password: ${DEFAULT_ADMIN_PASSWORD}`,
-      ]
+  const adminBlock = [
+    pc.bold('Admin Dashboard (Classic Admin)'),
+    `  ${pc.cyan(`http://localhost:${ctx.port}/admin`)}`,
+    `  Email:    ${DEFAULT_ADMIN_EMAIL}`,
+    `  Password: ${DEFAULT_ADMIN_PASSWORD}`,
+  ]
 
   p.note(
     [
@@ -141,32 +112,12 @@ export async function runFirstRunSetup(flags: {
     'Your PallasTrade store is ready!',
   )
 
-  // Co-run the dashboard's Vite dev server so the admin the card names is
-  // actually running. Spawned after the card so its prefixed output doesn't
-  // tear through the box. The server runs in its own process group, so
-  // Ctrl+C (which would otherwise kill only this CLI and orphan Vite) gets
-  // an explicit handler: stop the group, then exit as SIGINT would have.
-  // The finally covers non-signal failures (daemon died mid-stream).
-  const dashboard = dashboardRunnable ? startDashboardDevServer(ctx.projectDir) : null
-  const onSigint = () => {
-    dashboard?.stop()
-    process.exit(130)
+  if (flags.open) {
+    await openBrowser(`http://localhost:${ctx.port}/admin`)
   }
-  process.once('SIGINT', onSigint)
 
-  try {
-    if (flags.open) {
-      // With the dashboard, wait for Vite to report ready (it auto-bumps the
-      // port when 5173 is taken) so the browser opens the real URL.
-      await openBrowser(dashboard ? await dashboard.url : `http://localhost:${ctx.port}/admin`)
-    }
-
-    p.log.info('Streaming logs (Ctrl+C to stop)...\n')
-    await streamLogs('web', ctx.projectDir)
-  } finally {
-    process.removeListener('SIGINT', onSigint)
-    dashboard?.stop()
-  }
+  p.log.info('Streaming logs (Ctrl+C to stop)...\n')
+  await streamLogs('web', ctx.projectDir)
 }
 
 // Install an optional app's dependencies when they're missing — a fresh
@@ -174,21 +125,30 @@ export async function runFirstRunSetup(flags: {
 // create-pallastrade-app's per-app install steps, so first-run setup leaves every
 // app runnable with `pnpm dev`. Best-effort: a registry hiccup shouldn't
 // fail backend setup.
-async function installAppDeps(projectDir: string, app: 'storefront' | 'dashboard'): Promise<void> {
+async function installAppDeps(projectDir: string, app: 'storefront'): Promise<void> {
   const appDir = path.join(projectDir, 'apps', app)
   if (!fs.existsSync(path.join(appDir, 'package.json'))) return
   if (fs.existsSync(path.join(appDir, 'node_modules'))) return
 
-  const pm = detectPackageManager(projectDir, appDir)
+  const pm = detectPackageManager(appDir)
   const s = p.spinner()
   s.start(`Installing ${app} dependencies with ${pm}...`)
   try {
     await execa(pm, ['install'], { cwd: appDir })
-    s.stop(`${app === 'dashboard' ? 'Dashboard' : 'Storefront'} dependencies installed.`)
+    s.stop('Storefront dependencies installed.')
   } catch (err) {
     s.stop(pc.yellow(`${pm} install failed — run it manually in apps/${app}/.`))
     p.log.warn(err instanceof Error ? err.message : String(err))
   }
+}
+
+/** Pick the package manager a directory's lockfile implies. */
+function detectPackageManager(appDir: string): 'pnpm' | 'npm' | 'yarn' {
+  if (fs.existsSync(path.join(appDir, 'pnpm-lock.yaml')) || fs.existsSync(path.join(appDir, 'pnpm-workspace.yaml'))) {
+    return 'pnpm'
+  }
+  if (fs.existsSync(path.join(appDir, 'yarn.lock'))) return 'yarn'
+  return 'npm'
 }
 
 async function waitForHealthy(port: number): Promise<void> {

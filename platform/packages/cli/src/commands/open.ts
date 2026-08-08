@@ -6,7 +6,7 @@ import { detectProject } from '../context.js'
 export function registerOpenCommand(program: Command): void {
   program
     .command('open')
-    .description('Open the admin dashboard in the browser')
+    .description('Open the Classic Admin in the browser')
     .action(async () => {
       const ctx = detectProject()
       const url = `http://localhost:${ctx.port}/admin`

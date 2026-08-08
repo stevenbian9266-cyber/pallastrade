@@ -21,6 +21,17 @@ jobs:
       - name: Run anti-pattern scan
         run: node scripts/harness/scan-anti-patterns.mjs scan
 
+  # ---- Secret / Destructive Code Scan (always runs, fast) ----
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Run secret & destructive-code scan
+        run: node scripts/harness/scan-secrets.mjs scan
+
   # ---- Doc Impact Check (always runs, fast) ----
   doc-impact:
     runs-on: ubuntu-latest
@@ -149,3 +160,37 @@ jobs:
           cd platform
           pnpm install --frozen-lockfile
           pnpm turbo lint typecheck test build --cache-dir=.turbo
+
+  # ---- Coverage Gate (storefront vitest coverage vs threshold) ----
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.1.1 }
+      - name: Generate storefront coverage
+        run: |
+          cd storefront
+          pnpm install --frozen-lockfile
+          pnpm test:coverage
+      - name: Enforce coverage threshold
+        run: node scripts/harness/cli.mjs coverage --component storefront --enforce
+
+  # ---- Harness Evidence Artifact (always runs, fast) ----
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Collect harness evidence
+        run: node scripts/harness/cli.mjs evidence
+      - uses: actions/upload-artifact@v4
+        with:
+          name: harness-evidence
+          path: artifacts/harness-evidence/
+          if-no-files-found: error

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "description": "PRD 分类自动判定规则 — AI 依据需求描述匹配关键词，取命中数最多的分类；无命中归 other/。关键词大小写不敏感。",
+  "fallback": "other",
+  "categories": {
+    "catalog": {
+      "keywords": ["商品", "产品", "类目", "分类", "taxon", "product", "variant", "搜索", "图片", "品牌", "sku", "目录"]
+    },
+    "checkout": {
+      "keywords": ["购物车", "结算", "订单", "checkout", "cart", "order", "下单", "结账", "支付流程", "line item"]
+    },
+    "payments": {
+      "keywords": ["支付", "退款", "stripe", "adyen", "payment", "refund", "发票", "收款", "网关", "gift card", "store credit"]
+    },
+    "promotions": {
+      "keywords": ["促销", "优惠券", "折扣", "promotion", "coupon", "折扣码", "满减", "赠品", "活动"]
+    },
+    "pricing": {
+      "keywords": ["价格", "货币", "定价", "price", "currency", "多币种", "汇率", "税"]
+    },
+    "shipping": {
+      "keywords": ["物流", "库存", "发货", "运费", "shipping", "stock", "fulfillment", "退货", "配送", "仓库"]
+    },
+    "admin": {
+      "keywords": ["管理后台", "后台", "admin", "侧边栏", "导航", "运营", "商品管理", "订单管理"]
+    },
+    "storefront": {
+      "keywords": ["商城", "前端", "页面", "storefront", "首页", "详情页", "seo", "布局", "主题", "落地页"]
+    },
+    "api": {
+      "keywords": ["接口", "api", "端点", "endpoint", "serializer", "schema", "openapi", "请求", "响应"]
+    },
+    "platform": {
+      "keywords": ["sdk", "cli", "平台", "dashboard", "类型", "包", "npm", "typescript", "create-app"]
+    },
+    "security": {
+      "keywords": ["安全", "权限", "认证", "加密", "security", "auth", "cve", "漏洞", "密钥", "越权"]
+    },
+    "i18n": {
+      "keywords": ["多语言", "翻译", "i18n", "国际化", "locale", "语言"]
+    },
+    "harness": {
+      "keywords": ["harness", "门禁", "工程", "工作流", "prd", "gate", "ci", "规范", "机制"]
+    },
+    "infra": {
+      "keywords": ["部署", "docker", "k8s", "kubernetes", "发布", "deploy", "infra", "流水线", "环境"]
+    }
+  }
+}

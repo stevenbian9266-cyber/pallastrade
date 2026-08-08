@@ -4,6 +4,57 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 
 ---
 
+## 0. AI Coding 文件导航地图（每会话必读）
+
+> 本表是 AI 执行 coding 任务的**唯一文件路由表**。任务开始先查 §0.2 任务路由表，
+> 按需读取对应文件。冲突时以 §0.3 冲突裁决规则为准。
+> ⚠️ 新增规范文件必须登记到 §0.1，否则视为未正式纳入。
+
+### 0.1 规范文件总表
+
+| 文件 | 类别 | 权威角色 | 何时读取 | 更新责任人 |
+|---|---|---|---|---|
+| `AGENTS.md`（本文件） | 自动注入 | **导航入口 + 全局规范权威** | 每会话 | 工程负责人 |
+| `.github/copilot-instructions.md` | 自动注入 | 强制命令速查（R0-R8） | 每会话 | 工程负责人 |
+| `backend/CLAUDE.md` | 后端规范 | 后端权威 | 涉及 backend 代码 | 后端维护者 |
+| `platform/CLAUDE.md` | 平台规范 | 平台权威 | 涉及 platform 代码 | 平台维护者 |
+| `storefront/CLAUDE.md` | 商城规范 | 商城权威（含 Code Style/样式规范） | 涉及 storefront 代码 | 商城维护者 |
+| `ai/skills/*/SKILL.md`（25 个） | Skill | 领域知识权威 | gate 强制 + §0.2 路由 | 各领域维护者 |
+| `harness/policies/anti-patterns.json` | 反模式 | **反模式唯一权威**（机器执行） | CI 强制；违规检查 | 工程负责人 |
+| `harness/policies/task-rules.json` | 任务规则 | 任务规则权威 | 新功能/优化 | 工程负责人 |
+| `harness/policies/prd-categories.json` | PRD 分类 | 分类权威 | `prd new` | 工程负责人 |
+| `harness/scenarios/scenarios.json` | 场景库 | Eval 权威 | 能力变更 | 工程负责人 |
+| `docs/standards/README.md` | 规范索引 | **规范文件指针权威** | 不确定规范位置时 | 工程负责人 |
+| `docs/prd/_TEMPLATE.md` | PRD 模板 | PRD 权威模板 | 一句话需求 | AI |
+| `ai/commands/doctor.md` | AI 命令 | 命令定义 | 运维诊断 | AI 维护者 |
+| `ai/agents/pallastrade-expert.md` | AI 代理 | 专家代理定义 | 多步调研 | AI 维护者 |
+| `ai/memories/*.md` | 记忆 | 决策记录 | 重要决策/续接任务 | AI |
+
+### 0.2 任务 → 必读文件路由表
+
+| 任务类型 | 必读文件（按顺序） |
+|---|---|
+| 新功能/一句话需求 | §0.1 → copilot-instructions → **pallastrade-prd** → **pallastrade-customization** → 领域 skill → 对应层 CLAUDE.md → task-rules.json |
+| Bug 修复 | §0.1 → copilot-instructions → 领域 skill → 对应层 CLAUDE.md → anti-patterns.json |
+| 接口增删改查 | §0.1 → **pallastrade-api-v3** → 对应层 CLAUDE.md → `backend/public/api-docs/*.yaml` → generated-check |
+| UI/组件/样式 | §0.1 → **pallastrade-storefront** → storefront/CLAUDE.md → docs/standards → anti-patterns.json（AP-001/006） |
+| 模型/DB 变更 | §0.1 → **pallastrade-data-model** → 领域 skill → 对应层 CLAUDE.md |
+| 支付相关 | §0.1 → **pallastrade-payments** → **pallastrade-security** → 对应层 CLAUDE.md |
+| 安全/权限 | §0.1 → **pallastrade-security** → anti-patterns.json → §8 危险操作 |
+| 事件/订阅者 | §0.1 → **pallastrade-events-webhooks** → 对应层 CLAUDE.md |
+| SDK/CLI/平台 | §0.1 → **pallastrade-typescript-sdk** / **pallastrade-cli** → platform/CLAUDE.md |
+| 部署/配置 | §0.1 → **pallastrade-deployment** → `.env.example` → 部署 README |
+| i18n | §0.1 → **pallastrade-i18n** → 对应层 CLAUDE.md |
+| 测试补充 | §0.1 → **pallastrade-testing** → 对应层测试约定 |
+
+### 0.3 权威与冲突裁决
+
+- 每个概念只有一个**唯一权威**（§0.1 权威角色列），其他文件为指针/摘要
+- 冲突裁决顺序：`harness/policies/anti-patterns.json` > 本文件 §5/§6 > 各层 CLAUDE.md > skill 细节
+- 新增规范文件 → 必须登记到 §0.1；修改权威文件 → 按 §7 知识同步矩阵更新指针文件
+
+---
+
 ## 1. Repository Layout
 
 | Directory | Purpose | Can Modify? |
@@ -122,6 +173,18 @@ For **Bug修复 / 样式调整**, Steps 0-1 are sufficient to proceed — but cr
 
 **Violating Step 0 (skipping cross-layer search) or Step 2 (writing code before user confirmation for new features) is a process error.**
 
+### 📋 Step 3: PRD-Driven Workflow (一句话需求 → PRD → 实施)
+
+For tasks originating from a **one-line requirement**（一句话需求）, the AI MUST follow the PRD workflow defined in **`ai/skills/pallastrade-prd/SKILL.md`**:
+
+1. **PRD generation** — expand the one-liner into a detailed PRD at `docs/prd/{category}/PRD-{YYYYMMDD}-{category}-{slug}.md` (template: `docs/prd/_TEMPLATE.md`; category auto-detected via `harness/policies/prd-categories.json`). Update `docs/prd/README.md` index.
+2. **Dedupe first** — search existing PRDs + all 6 layers before creating (AP-SEARCH).
+3. **User confirmation** — PRD → `approved` only after explicit user confirmation.
+4. **Gate + REQ** — `harness gate` (feature checks now include `create-prd-doc` + `read-skill-prd`), then generate REQ at `harness/requirements/REQ-*.md`.
+5. **Tests & acceptance** — every AC in the PRD must map to a test tagged `# PRD-xxx AC-x`; verify with `harness prd verify --id PRD-xxx`.
+6. **API docs** — interface changes MUST sync `backend/public/api-docs/{store,admin}.yaml` + `platform/docs/api-reference/` (verify with `generated:check`).
+7. **Knowledge sync gate** — before closing `verify-test`, run `harness sync-check --id PRD-xxx` and resolve every asset in the §7 knowledge matrix (Skill / README / Agent files / style & technical standards / anti-patterns / scenarios). Record conclusions in PRD §9/§10.
+
 ---
 
 ## 3. Customization Decision Tree (MUST follow this order)
@@ -174,7 +237,7 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | AP-006 | Hardcoded hex colors (`#ff0000`) in components | Use CSS custom properties from design tokens (`var(--color-brand-primary)`) | AP-006 |
 | AP-007 | Hand-editing auto-generated files | Run the generation command, then commit the result | `generated:check` |
 | AP-008 | Copying Gem view files to Host App for modification | Modify the Gem source file directly in `pallastrade_gems/pallastrade_admin/app/views/`. Add `# PALLAS-CUSTOM:` comment. Host App `backend/app/views/` is for new modules only. | `anti-patterns.json` AP-008 |
-| AP-009a | `redirect()` without self-redirect guard → infinite loop | Add guard: `if (target !== currentPath) { redirect(target); }` | `anti-patterns.json` AP-009a |
+| AP-009a | `redirect('/hardcoded-path')` (hardcoded string) without a self-redirect guard → infinite loop. **Guard-aware**: dynamic targets (template literals / variables) and redirects guarded by a condition (`if (target !== currentPath)`, pathname rewrite) are exempt | Add guard: `if (target !== currentPath) { redirect(target); }`, or use a dynamic/template-literal target | `anti-patterns.json` AP-009a (guard-aware) |
 | AP-009b | `.catch(() => [])` collapses unknown→empty → triggers loop | Return `null` on API failure; handle unknown state explicitly with degraded UI | `anti-patterns.json` AP-009b |
 
 ---
@@ -213,19 +276,25 @@ Before clearing `verify-test`, provide objective evidence:
 | Code Change (Glob) | Knowledge Docs That MUST Be Updated |
 |---|---|
 | `backend/app/models/**/*.rb` (new/modified) | `ai/skills/pallastrade-catalog/SKILL.md` or `pallastrade-data-model/SKILL.md` |
-| `backend/app/controllers/**/api/v3/**/*.rb` (new/modified) | `ai/skills/pallastrade-api-v3/SKILL.md` + `platform/docs/store.yaml` or `admin.yaml` |
+| `backend/app/controllers/**/api/v3/**/*.rb` (new/modified) | `ai/skills/pallastrade-api-v3/SKILL.md` + `backend/public/api-docs/{store,admin}.yaml` + `platform/docs/api-reference/` |
 | `backend/app/decorators/**/*.rb` (new/modified) | `ai/skills/pallastrade-decorators/SKILL.md` + relevant domain skill |
 | `backend/app/subscribers/**/*.rb` (new/modified) | `ai/skills/pallastrade-events-webhooks/SKILL.md` |
 | `storefront/src/components/**/*.tsx` (new/modified) | `ai/skills/pallastrade-storefront/SKILL.md` §Components |
 | `storefront/src/app/**/*.tsx` (new page/route) | `ai/skills/pallastrade-storefront/SKILL.md` + E2E test |
 | `*.css` / `tailwind.config.*` (modified) | `ai/skills/pallastrade-storefront/SKILL.md` §Style Guide or `pallastrade-admin/SKILL.md` §Styling |
-| `platform/packages/dashboard-ui/**/*.tsx` (modified) | Component documentation + Storybook story (if applicable) |
+| `docs/prd/**` (new/modified PRD) | `ai/skills/pallastrade-prd/SKILL.md` + `docs/prd/README.md` index |
+| `harness/policies/prd-categories.json` (modified) | `ai/skills/pallastrade-prd/SKILL.md` |
+| `harness/policies/{anti-patterns,task-rules}.json` (modified) | This `AGENTS.md` §5 + `.github/copilot-instructions.md` |
+| `ai/commands/**` / `ai/agents/**` (modified) | `ai/README.md` |
+| `platform/packages/{cli,sdk,create-pallastrade-app}/**` (modified) | `platform/README.md` or `platform/packages/README.md` |
+| `scripts/harness/**` (modified) | `AGENTS.md` + `ai/skills/pallastrade-prd/SKILL.md` + `harness/scenarios/scenarios.json` |
 | `ai/skills/**/SKILL.md` (modified) | `harness/scenarios/scenarios.json` — add/update an Eval Scenario |
-| `harness/policies/anti-patterns.json` (modified) | This `AGENTS.md` §5 — ensure the anti-pattern table matches |
 | `AGENTS.md` / `CLAUDE.md` (modified) | Run `harness docs:check` to verify no broken references |
 | Any file (framework version upgrade) | ALL Skill files — `harness eval ai --check-freshness` |
 
 **CI command**: `harness doc-impact --base origin/main` checks your PR against this table. If any required doc update is missing, the PR is blocked with status `docs-required`.
+
+**Knowledge sync gate**: for PRD-driven tasks, before closing `verify-test`, run `harness sync-check --id PRD-xxx` — it lists every knowledge asset (Skill / README / Agent files / style & technical standards / anti-patterns / scenarios) the change may require updating. Resolve each (update, or record "已评估，无需更新" in PRD §9/§10), then confirm with `harness sync-check --ack`.
 
 ---
 

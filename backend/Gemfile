@@ -30,7 +30,6 @@ gem 'pallastrade',          path: "#{pallastrade_gems_path}/pallastrade"
 gem 'pallastrade_core',     path: "#{pallastrade_gems_path}/pallastrade_core"
 gem 'pallastrade_api',      path: "#{pallastrade_gems_path}/pallastrade_api"
 gem 'pallastrade_admin',    path: "#{pallastrade_gems_path}/pallastrade_admin"
-gem 'pallastrade_dashboard', path: "#{pallastrade_gems_path}/pallastrade_dashboard"
 gem 'pallastrade_emails',   path: "#{pallastrade_gems_path}/pallastrade_emails"
 
 # Extensions (local path gems)

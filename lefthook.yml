@@ -11,6 +11,8 @@
 
 pre-commit:
   commands:
+    harness-gate:
+      run: node scripts/harness/cli.mjs gate:required
     harness-anti-patterns:
       glob: "**/*.{rb,ts,tsx,js,jsx,css}"
       exclude: "**/node_modules/**|**/dist/**|**/.next/**|**/vendor/**|**/build/**"
@@ -19,6 +21,10 @@ pre-commit:
       glob: "**/*.{ts,tsx,js,jsx}"
       exclude: "**/node_modules/**|**/dist/**|**/.next/**|**/build/**"
       run: node scripts/harness/check-degraded-loop.mjs scan --files {staged_files}
+    harness-secrets:
+      glob: "**/*.{rb,ts,tsx,js,jsx,yml,yaml,env,sh}"
+      exclude: "**/node_modules/**|**/dist/**|**/.next/**|**/vendor/**|**/build/**|**/coverage/**"
+      run: node scripts/harness/scan-secrets.mjs scan --files {staged_files}
 
 pre-push:
   commands:

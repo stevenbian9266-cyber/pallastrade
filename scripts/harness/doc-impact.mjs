@@ -11,8 +11,9 @@ const SYNC_RULES = [
   },
   {
     codeGlob: /^backend\/app\/controllers\/.*\/api\/v3\/.*\.rb$/,
-    docs: ['ai/skills/pallastrade-api-v3/SKILL.md'],
-    label: 'API endpoint change',
+    docs: ['backend/public/api-docs/store.yaml', 'backend/public/api-docs/admin.yaml', 'platform/docs/api-reference/store.yaml', 'platform/docs/api-reference/admin.yaml'],
+    anyOf: true,
+    label: 'API endpoint change → API docs sync',
   },
   {
     codeGlob: /^backend\/app\/decorators\/.*\.rb$/,
@@ -41,19 +42,48 @@ const SYNC_RULES = [
     label: 'Style change',
   },
   {
-    codeGlob: /^platform\/packages\/dashboard-ui\/.*\.tsx$/,
-    docs: ['ai/skills/pallastrade-admin/SKILL.md'],
-    label: 'Dashboard UI component change',
-  },
-  {
     codeGlob: /^ai\/skills\/.*\/SKILL\.md$/,
     docs: ['harness/scenarios/scenarios.json'],
     label: 'Skill file change',
   },
   {
-    codeGlob: /^harness\/policies\/anti-patterns\.json$/,
+    codeGlob: /^harness\/policies\/(anti-patterns|task-rules)\.json$/,
+    docs: ['AGENTS.md', '.github/copilot-instructions.md'],
+    anyOf: true,
+    label: 'Policy change → agent docs sync',
+  },
+  {
+    codeGlob: /^harness\/policies\/prd-categories\.json$/,
+    docs: ['ai/skills/pallastrade-prd/SKILL.md', 'docs/prd/README.md'],
+    anyOf: true,
+    label: 'PRD category change',
+  },
+  {
+    codeGlob: /^docs\/standards\//,
     docs: ['AGENTS.md'],
-    label: 'Policy change',
+    label: 'Standards index change → navigation map sync',
+  },
+  {
+    codeGlob: /^docs\/prd\//,
+    docs: ['ai/skills/pallastrade-prd/SKILL.md'],
+    label: 'PRD doc change',
+  },
+  {
+    codeGlob: /^ai\/commands\/|^ai\/agents\//,
+    docs: ['ai/README.md'],
+    label: 'AI command/agent change → ai README sync',
+  },
+  {
+    codeGlob: /^platform\/packages\/(cli|sdk|create-pallastrade-app)\//,
+    docs: ['platform/README.md', 'platform/packages/README.md'],
+    anyOf: true,
+    label: 'Platform package change → README sync',
+  },
+  {
+    codeGlob: /^scripts\/harness\//,
+    docs: ['AGENTS.md', 'ai/skills/pallastrade-prd/SKILL.md', 'harness/scenarios/scenarios.json'],
+    anyOf: true,
+    label: 'Harness change → workflow docs sync',
   },
 ];
 

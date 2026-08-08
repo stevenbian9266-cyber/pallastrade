@@ -28,5 +28,22 @@ const tests = [
   { component: 'ai', command: 'plugin structure check', status: 'passed', url },
 ]
 
+// Embed harness evidence (doctor / anti-patterns / affected) so every release
+// manifests machine-checkable engineering state, not just test pass flags.
+// evidence.mjs writes artifacts/harness-evidence/latest.json.
+let harness = null
+const repoRoot = path.resolve(import.meta.dirname, '..', '..')
+try {
+  execFileSync('node', [path.join(repoRoot, 'scripts', 'harness', 'cli.mjs'), 'evidence'], {
+    cwd: repoRoot, encoding: 'utf8', stdio: 'pipe',
+  })
+  const latestPath = path.join(repoRoot, 'artifacts', 'harness-evidence', 'latest.json')
+  if (fs.existsSync(latestPath)) {
+    harness = JSON.parse(fs.readFileSync(latestPath, 'utf8')).checks
+  }
+} catch (e) {
+  harness = { error: String(e.message) }
+}
+
 fs.mkdirSync(path.dirname(path.resolve(output)), { recursive: true })
-fs.writeFileSync(output, `${JSON.stringify({ schemaVersion: 1, commit, tests }, null, 2)}\n`)
+fs.writeFileSync(output, `${JSON.stringify({ schemaVersion: 1, commit, tests, harness }, null, 2)}\n`)

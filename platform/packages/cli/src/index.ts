@@ -1,12 +1,8 @@
 import { Command } from 'commander'
 import pc from 'picocolors'
-import { registerAddCommand } from './commands/add.js'
-import { registerApiCommand } from './commands/api.js'
 import { registerApiKeyCommand } from './commands/api-key.js'
-import { registerAuthCommand } from './commands/auth.js'
 import { registerBuildCommand } from './commands/build.js'
 import { registerBundleCommand } from './commands/bundle.js'
-import { registerCompletionCommand } from './commands/completion.js'
 import { registerConsoleCommand } from './commands/console.js'
 import { registerDbCommand } from './commands/db.js'
 import { registerDevCommand } from './commands/dev.js'
@@ -17,7 +13,6 @@ import { registerInitCommand } from './commands/init.js'
 import { registerLogsCommand } from './commands/logs.js'
 import { registerMigrateCommand } from './commands/migrate.js'
 import { registerOpenCommand } from './commands/open.js'
-import { registerPluginCommand } from './commands/plugin.js'
 import { registerRailsCommand } from './commands/rails.js'
 import { registerRakeCommand } from './commands/rake.js'
 import { registerRestartCommand } from './commands/restart.js'
@@ -63,7 +58,6 @@ const program = new Command()
 
 // Lifecycle / setup
 registerInitCommand(program)
-registerAddCommand(program)
 registerDevCommand(program)
 registerStopCommand(program)
 registerRestartCommand(program)
@@ -95,12 +89,6 @@ registerApiKeyCommand(program)
 registerOpenCommand(program)
 registerSeedCommand(program)
 registerSampleDataCommand(program)
-registerPluginCommand(program)
-
-// Admin API access (works against any PallasTrade 5.5+ instance, not just local projects)
-registerApiCommand(program)
-registerAuthCommand(program)
-registerCompletionCommand(program)
 
 async function main() {
   try {

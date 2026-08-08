@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, statSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -179,6 +179,10 @@ else if (cmd === 'check') {
         await import('./eval-ai.mjs').then(m => m.run({ rootDir: ROOT, args: ['--check-freshness'] }));
       } else if (checkName === 'generated-check') {
         await import('./generated-check.mjs').then(m => m.check({ rootDir: ROOT }));
+      } else if (checkName === 'coverage') {
+        await import('./coverage.mjs').then(m => m.run({ rootDir: ROOT, args: [] }));
+      } else if (checkName === 'ai-scenarios') {
+        await import('./eval-scenarios.mjs').then(m => m.run({ rootDir: ROOT, args: ['--readiness'] }));
       } else {
         console.log(`[harness] ⏭  ${checkName}: delegated to CI / external runner`);
       }
@@ -196,6 +200,20 @@ else if (cmd === 'check') {
 // ================================================================
 else if (cmd === 'eval-ai' || cmd === 'eval') {
   await import('./eval-ai.mjs').then(m => m.run({ rootDir: ROOT, args }));
+}
+
+// ================================================================
+// eval-scenarios — GS scenario readiness + executor prompts
+// ================================================================
+else if (cmd === 'eval-scenarios') {
+  await import('./eval-scenarios.mjs').then(m => m.run({ rootDir: ROOT, args }));
+}
+
+// ================================================================
+// coverage — coverage gate (SimpleCov / vitest v8)
+// ================================================================
+else if (cmd === 'coverage') {
+  await import('./coverage.mjs').then(m => m.run({ rootDir: ROOT, args }));
 }
 
 // ================================================================
@@ -329,6 +347,8 @@ else if (cmd === 'gate') {
       ...searchChecks,
       { id: 'read-skill-customization',label: 'Read Skill: pallastrade-customization/SKILL.md (always)' },
       { id: 'read-skill-domain',       label: 'Read Skill: domain-specific SKILL.md(s)' },
+      { id: 'read-skill-prd',          label: 'Read Skill: pallastrade-prd/SKILL.md (PRD workflow)' },
+      { id: 'create-prd-doc',          label: 'Create PRD doc: docs/prd/{category}/PRD-*.md' },
       { id: 'create-req-doc',          label: 'Create requirements doc: harness/requirements/REQ-*.md' },
       { id: 'req-doc-has-skill-table', label: 'REQ doc includes Skill consultation evidence table' },
       { id: 'user-confirmed',          label: 'User confirmed requirements doc (WAIT — do not proceed)' },
@@ -549,6 +569,314 @@ else if (cmd === 'gate:clean') {
 }
 
 // ================================================================
+// gate:required — git-level enforcement (wired into lefthook pre-commit).
+// Blocks commits that have no cleared, non-expired gate on the current
+// branch. This is the hard-enforcement companion to the soft prompt-level
+// R1 gate: the CLI's exit code is what lefthook turns into a blocked commit.
+// ================================================================
+else if (cmd === 'gate:required') {
+  if (process.env.HARNESS_GATE_SKIP === '1') {
+    console.log('🔓 gate:required — skipped (HARNESS_GATE_SKIP=1).');
+    process.exit(0);
+  }
+
+  const gateDir = resolve(ROOT, 'harness', 'gates');
+  if (!existsSync(gateDir)) {
+    console.log('❌ gate:required — no gates directory. Run: node scripts/harness/cli.mjs gate --task "修复：<描述>"');
+    process.exit(1);
+  }
+
+  let branch = 'unknown';
+  try {
+    branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: ROOT, encoding: 'utf-8' }).trim();
+  } catch { /* not a git repo */ }
+
+  const EXPIRY_HOURS = { feature: 48, bugfix: 24, style: 8 };
+  const files = readdirSync(gateDir).filter(f => f.endsWith('.json'));
+  const now = Date.now();
+  let valid = null;
+
+  for (const file of files) {
+    let gate;
+    try {
+      gate = JSON.parse(readFileSync(join(gateDir, file), 'utf-8'));
+    } catch { continue; }
+    if (!gate.cleared) continue;
+    if (gate.branch && gate.branch !== branch) continue;
+    const maxAge = (EXPIRY_HOURS[gate.taskType] || 24) * 3600000;
+    const age = now - new Date(gate.createdAt).getTime();
+    if (age <= maxAge) { valid = gate; break; }
+  }
+
+  if (valid) {
+    const hours = Math.round((now - new Date(valid.createdAt).getTime()) / 3600000);
+    console.log(`✅ gate:required — cleared gate ${valid.id} (${valid.taskType}) on "${branch}", ${hours}h old.`);
+    process.exit(0);
+  }
+
+  console.log(`❌ gate:required — no cleared, non-expired gate for branch "${branch}".`);
+  console.log('   Every commit needs a gate. Run:');
+  console.log('     node scripts/harness/cli.mjs gate --task "修复：<描述>"   (or 优化:/新增:/样式:/审计:...)');
+  console.log('   then clear all checks with:');
+  console.log('     node scripts/harness/cli.mjs gate:clear --gate <GATE-ID> --clear <check-id>');
+  console.log('   Emergency bypass (not recommended): HARNESS_GATE_SKIP=1');
+  process.exit(1);
+}
+
+// ================================================================
+// prd — PRD-driven workflow helpers (prd new / list / verify)
+// ================================================================
+else if (cmd === 'prd') {
+  const sub = args[1] || 'list';
+
+  // prd new — create a PRD skeleton with auto-category detection
+  if (sub === 'new') {
+    const title = getArg(args, '--title') || args[2];
+    if (!title) { console.log('Usage: harness prd new --title "<一句话需求>"'); process.exit(1); }
+
+    const categoriesFile = resolve(ROOT, 'harness', 'policies', 'prd-categories.json');
+    let categories = {};
+    try { categories = JSON.parse(readFileSync(categoriesFile, 'utf-8')).categories || {}; } catch { /* fallback to other */ }
+
+    // Auto-category: keyword score
+    const lower = title.toLowerCase();
+    let bestCat = 'other', bestScore = 0;
+    for (const [cat, cfg] of Object.entries(categories)) {
+      const score = (cfg.keywords || []).filter(kw => lower.includes(kw.toLowerCase())).length;
+      if (score > bestScore) { bestScore = score; bestCat = cat; }
+    }
+
+    const now = new Date();
+    const date = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const cleaned = title.replace(/^(需求|新增|添加|优化|改进|修复|样式|审计|研究|文档|重构|安全|测试)[：:]\s*/, '');
+    const slug = cleaned.toLowerCase()
+      .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'untitled';
+    const fileName = `PRD-${date}-${bestCat}-${slug}.md`;
+    const dir = resolve(ROOT, 'docs', 'prd', bestCat);
+    mkdirSync(dir, { recursive: true });
+    const filePath = join(dir, fileName);
+    if (existsSync(filePath)) {
+      console.log(`❌ PRD 已存在（幂等保护）: docs/prd/${bestCat}/${fileName}`);
+      process.exit(1);
+    }
+
+    let content = `# PRD-${date}-${bestCat}-${slug}\n\n`
+      + `| 元数据 | 值 |\n|---|---|\n`
+      + `| 状态 | draft |\n`
+      + `| 创建日期 | ${now.toISOString().slice(0, 10)} |\n`
+      + `| 来源 | ${title} |\n`
+      + `| 分类 | ${bestCat}（自动判定） |\n\n`
+      + `> ⚠️ AI：请按 docs/prd/_TEMPLATE.md 完整扩充本文档（背景/FR/AC/跨层搜索/测试计划/文档同步清单），再进入用户确认。\n`;
+    const tmpl = resolve(ROOT, 'docs', 'prd', '_TEMPLATE.md');
+    if (existsSync(tmpl)) content += `\n---\n\n${readFileSync(tmpl, 'utf-8')}`;
+
+    writeFileSync(filePath, content);
+    console.log(`✅ PRD 骨架已创建: docs/prd/${bestCat}/${fileName}`);
+    console.log(`   分类: ${bestCat}（关键词命中 ${bestScore}）`);
+    console.log(`   下一步: AI 按 _TEMPLATE.md 完整扩充 → 用户确认 → harness gate`);
+    process.exit(0);
+  }
+
+  // prd list — list all PRDs (optional --category / --status filter)
+  if (sub === 'list') {
+    const prdDir = resolve(ROOT, 'docs', 'prd');
+    if (!existsSync(prdDir)) { console.log('No docs/prd directory.'); process.exit(0); }
+    const categoryFilter = getArg(args, '--category');
+    const statusFilter = getArg(args, '--status');
+    const rows = [];
+    for (const cat of readdirSync(prdDir)) {
+      if (cat === 'README.md' || cat === '_TEMPLATE.md' || cat.startsWith('.')) continue;
+      const catDir = join(prdDir, cat);
+      if (!statSync(catDir).isDirectory()) continue;
+      for (const f of readdirSync(catDir).filter(x => x.endsWith('.md'))) {
+        let status = '?';
+        try {
+          const m = readFileSync(join(catDir, f), 'utf-8').match(/\| 状态 \| ([^|]+) \|/);
+          if (m) status = m[1].trim();
+        } catch { /* keep ? */ }
+        rows.push({ cat, file: f, status });
+      }
+    }
+    const filtered = rows.filter(r =>
+      (!categoryFilter || r.cat === categoryFilter) &&
+      (!statusFilter || r.status === statusFilter)
+    );
+    if (filtered.length === 0) { console.log('（无匹配 PRD）'); process.exit(0); }
+    console.log(`${'分类'.padEnd(12)} ${'状态'.padEnd(14)} PRD 文件`);
+    console.log('-'.repeat(72));
+    for (const r of filtered.sort((a, b) => a.file.localeCompare(b.file))) {
+      console.log(`${r.cat.padEnd(12)} ${r.status.padEnd(14)} ${r.file}`);
+    }
+    process.exit(0);
+  }
+
+  // prd verify — ensure every AC in the PRD has a test tagged with "<PRD> AC-x"
+  if (sub === 'verify') {
+    const id = getArg(args, '--id') || args[2];
+    if (!id) { console.log('Usage: harness prd verify --id PRD-xxx'); process.exit(1); }
+    const prdDir = resolve(ROOT, 'docs', 'prd');
+    if (!existsSync(prdDir)) { console.log('No docs/prd directory.'); process.exit(1); }
+    let prdPath = null;
+    for (const cat of readdirSync(prdDir)) {
+      if (cat === 'README.md' || cat === '_TEMPLATE.md' || cat.startsWith('.')) continue;
+      const f = join(prdDir, cat, `${id}.md`);
+      if (existsSync(f)) { prdPath = f; break; }
+    }
+    if (!prdPath) { console.log(`❌ PRD 未找到: ${id}`); process.exit(1); }
+    const content = readFileSync(prdPath, 'utf-8');
+    // Ignore HTML comments (template examples live in comments) so only real ACs count.
+    const stripped = content.replace(/<!--[\s\S]*?-->/g, '');
+    const acs = [...stripped.matchAll(/AC-(\d+)/g)].map(m => m[1]);
+    if (acs.length === 0) { console.log(`⚠️ PRD ${id} 中未找到 AC（验收标准）标注。`); process.exit(1); }
+    console.log(`PRD ${id}: ${acs.length} 个 AC`);
+    const missing = [];
+    for (const ac of acs) {
+      const tag = `AC-${ac}`;
+      let files = [];
+      try {
+        // --untracked includes new (not-yet-committed) test files
+        const out = execSync(`git grep -l --untracked "${id}.*${tag}" -- "*.rb" "*.ts" "*.tsx" "*.mjs"`, { cwd: ROOT, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });
+        files = out.split('\n').filter(Boolean);
+      } catch { /* git grep error → no matches */ }
+      if (files.length === 0) missing.push(`AC-${ac}`);
+      else console.log(`  ✅ AC-${ac} → ${files.length} 个测试文件`);
+    }
+    if (missing.length > 0) {
+      console.log(`\n❌ 以下 AC 无测试覆盖（测试文件需标注 "${id} AC-x"）:`);
+      missing.forEach(m => console.log(`   - ${m}`));
+      process.exit(1);
+    }
+    console.log('\n✅ 全部 AC 已有测试覆盖。');
+    process.exit(0);
+  }
+
+  console.log('Usage: harness prd new|list|verify');
+  console.log('  prd new --title "<一句话需求>"    创建 PRD 骨架（自动分类 + 幂等）');
+  console.log('  prd list [--category xxx] [--status x]  列出 PRD');
+  console.log('  prd verify --id PRD-xxx           校验 AC 测试覆盖（AC↔测试追溯）');
+  process.exit(1);
+}
+
+// ================================================================
+// sync-check — knowledge sync gate (assets needing review)
+//   Compares changed files against the knowledge-sync matrix and
+//   lists the knowledge assets (Skill/README/Agent/standards/API
+//   docs/scenarios) that must be evaluated. Exit 1 when matches
+//   exist (blocks verify-test) unless --ack confirms evaluation.
+// ================================================================
+else if (cmd === 'sync-check') {
+  const prdId = getArg(args, '--id');
+  const ack = hasArg(args, '--ack');
+  let changed = [];
+  try {
+    const status = execSync('git status --short', { cwd: ROOT, encoding: 'utf-8' });
+    const diff = execSync('git diff --name-only origin/main...HEAD 2>/dev/null || git diff --name-only HEAD', { cwd: ROOT, encoding: 'utf-8' });
+    changed = [...status.split('\n'), ...diff.split('\n')]
+      .map(l => l.replace(/^[ MADRCU?!]{1,2}\s+/, '').trim())
+      .filter(Boolean);
+  } catch { /* not a repo */ }
+
+  const RULES = [
+    { label: 'Model / DB 变更', re: /^(backend\/app\/models|backend\/db\/migrate|backend\/pallastrade_gems\/.*\/db\/migrate)/, assets: ['领域 Skill', 'pallastrade-data-model Skill', '测试', '场景库'] },
+    { label: 'API 端点变更', re: /(controllers\/.*\/api\/v3|config\/routes)/, assets: ['backend/public/api-docs/{store,admin}.yaml', 'pallastrade-api-v3 Skill', 'SDK 类型(generated:check)', '场景库'] },
+    { label: 'UI 组件 / 页面', re: /storefront\/src\/(components|app)\/.*\.tsx/, assets: ['pallastrade-storefront Skill', '组件测试', '场景库'] },
+    { label: '样式 / 设计 token', re: /\.(css|scss)$|tailwind\.config/, assets: ['样式规范(CLAUDE.md / Skill Style Guide 章节)', 'AP-006 检查', 'E2E 截图证据'] },
+    { label: '事件 / 订阅者', re: /(app\/subscribers|subscribers)/, assets: ['pallastrade-events-webhooks Skill'] },
+    { label: '反模式 / 任务规则', re: /harness\/policies\/(anti-patterns|task-rules)/, assets: ['AGENTS.md §5', '.github/copilot-instructions.md'] },
+    { label: 'CLI / 命令能力', re: /(platform\/packages\/cli|ai\/commands)/, assets: ['pallastrade-cli Skill', 'CLI README', 'ai/commands/'] },
+    { label: '包 / SDK 能力', re: /platform\/packages\/(sdk|create-pallastrade-app)/, assets: ['pallastrade-typescript-sdk Skill', 'platform/packages/README.md', '根 README'] },
+    { label: '技术选型 / 架构', re: /(package\.json|biome\.json|Gemfile|tsconfig|next\.config|pnpm-workspace)/, assets: ['根 AGENTS.md', '各层 CLAUDE.md/AGENTS.md', '技术规范', 'README'] },
+    { label: '安全策略', re: /(security|credential|api_key|auth|secret)/, assets: ['pallastrade-security Skill', 'AGENTS.md §8 危险操作'] },
+    { label: '部署 / 配置', re: /(Dockerfile|docker-compose|\.env\.example|Procfile|deploy|render\.yaml)/, assets: ['pallastrade-deployment Skill', '.env.example', '部署 README'] },
+    { label: 'Skill / PRD 机制', re: /(ai\/skills|harness\/requirements|docs\/prd|scripts\/harness)/, assets: ['pallastrade-prd Skill', 'AGENTS.md', 'copilot-instructions.md', 'scenarios.json'] },
+  ];
+
+  const matched = RULES.filter(r => changed.some(f => r.re.test(f)));
+  if (matched.length === 0) {
+    console.log('✅ sync-check — 无命中知识同步矩阵的变更。');
+    process.exit(0);
+  }
+  if (ack) {
+    console.log('🔎 sync-check — 命中知识同步矩阵，已确认评估完成（--ack）。');
+    console.log('   请确保评估结论已记录在 PRD §9/§10（更新 或 已评估无需更新）。');
+    process.exit(0);
+  }
+  console.log('🔎 sync-check — 以下变更触发知识资产同步评估：\n');
+  for (const m of matched) {
+    const files = changed.filter(f => m.re.test(f)).slice(0, 5);
+    const total = changed.filter(f => m.re.test(f)).length;
+    console.log(`▪ ${m.label}`);
+    console.log(`    变更: ${files.join(', ')}${total > 5 ? ` ...(+${total - 5})` : ''}`);
+    console.log(`    需评估: ${m.assets.join(' / ')}`);
+  }
+  if (prdId) console.log(`\n请在 PRD ${prdId} §9/§10 记录每项结论。`);
+  console.log('\n⚠️ 存在需评估的知识资产 — 完成评估并更新后再关闭 verify-test。');
+  console.log('   评估完成后运行: harness sync-check --ack --id PRD-xxx');
+  process.exit(1);
+}
+
+// ================================================================
+// nav:check — validate the §0 navigation map in AGENTS.md
+//   Verifies every referenced file/path exists and that pointer
+//   files (copilot-instructions) no longer duplicate full content.
+// ================================================================
+else if (cmd === 'nav:check') {
+  const agentsPath = resolve(ROOT, 'AGENTS.md');
+  if (!existsSync(agentsPath)) { console.log('❌ nav:check — AGENTS.md not found.'); process.exit(1); }
+  const agents = readFileSync(agentsPath, 'utf-8');
+  const s0Start = agents.indexOf('### 0.1');
+  const s0End = agents.indexOf('### 0.2');
+  if (s0Start < 0 || s0End < 0) { console.log('❌ nav:check — AGENTS.md §0.1 navigation map missing.'); process.exit(1); }
+  const section = agents.slice(s0Start, s0End);
+  const paths = [...section.matchAll(/`([^`]+\.(?:md|json))`/g)].map(m => m[1]);
+
+  // globExists: pattern like 'ai/skills/*/SKILL.md' (dir wildcard) or
+  // 'ai/memories/*.md' (filename wildcard).
+  function globExists(pattern) {
+    const star = pattern.indexOf('*');
+    const prefix = pattern.slice(0, star);
+    const suffix = pattern.slice(star + 1);
+    const dir = resolve(ROOT, prefix);
+    if (!existsSync(dir)) return false;
+    for (const name of readdirSync(dir)) {
+      if (suffix.startsWith('/')) {
+        if (existsSync(resolve(dir, name + suffix))) return true;
+      } else if (name.endsWith(suffix)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  const missing = [];
+  for (const p of paths) {
+    if (p.startsWith('AGENTS.md')) continue; // self-reference
+    const ok = p.includes('*') ? globExists(p) : existsSync(resolve(ROOT, p));
+    if (!ok) missing.push(p);
+  }
+
+  // Duplicate check: pointer file must not re-define AP-003/AP-005 etc.
+  const copilotPath = resolve(ROOT, '.github', 'copilot-instructions.md');
+  const copilot = existsSync(copilotPath) ? readFileSync(copilotPath, 'utf-8') : '';
+  const duplicated = ['AP-003:', 'AP-005:', 'AP-008:'].filter(ap => copilot.includes(ap));
+
+  if (missing.length > 0) {
+    console.log(`❌ nav:check — 导航地图引用的文件缺失: ${missing.join(', ')}`);
+    console.log('   修复: 更新 AGENTS.md §0.1 的路径，或创建缺失文件。');
+    process.exit(1);
+  }
+  if (duplicated.length > 0) {
+    console.log(`⚠️ nav:check — 指针文件 copilot-instructions.md 仍重复定义 ${duplicated.join(' ')}`);
+    console.log('   修复: 精简为指向 AGENTS.md §5 / anti-patterns.json。');
+    process.exit(1);
+  }
+  console.log(`✅ nav:check — 导航地图 ${paths.length} 个引用全部有效，无重复定义。`);
+  process.exit(0);
+}
+
+// ================================================================
 // help
 // ================================================================
 else {
@@ -563,6 +891,9 @@ Gate (MANDATORY before coding):
   gate:status                         Check if an active gate exists (for
                                       continuation turns on same task).
   gate:clear --gate <ID> --clear <id> Mark a gate check as completed.
+  gate:required                       Enforced by pre-commit: fail when no
+                                      cleared gate exists on this branch.
+  gate:clean [--days N]               Prune cleared gates older than N days.
 
 Environment:
   doctor [--fix-safe] [--format json]   Diagnose local dev environment
@@ -575,8 +906,17 @@ Quality:
   e2e dashboard|storefront              Run end-to-end tests
   eval-ai --check-freshness             Verify skill path validity
   eval-ai --scenarios                   Validate GS scenario library
+  eval-scenarios [--readiness|--prompts] GS readiness check / executor prompts
+  coverage [--component X] [--enforce]  Coverage gate vs thresholds
   generated:check                       Check generated files for drift
   doc-impact --base origin/main         Check knowledge docs are synced
+  sync-check [--id PRD-xxx]             Knowledge sync gate: assets needing review
+  nav:check                             Validate AGENTS.md §0 navigation map
+
+PRD (PRD-driven workflow):
+  prd new --title "<一句话需求>"         Create PRD skeleton (auto-category)
+  prd list [--category x] [--status s]  List PRDs
+  prd verify --id PRD-xxx               Check AC -> test coverage
 
 Evidence:
   evidence collect                      Collect structured delivery evidence

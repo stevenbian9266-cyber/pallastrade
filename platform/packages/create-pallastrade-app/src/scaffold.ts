@@ -4,8 +4,7 @@ import * as p from '@clack/prompts'
 import { execa } from 'execa'
 import pc from 'picocolors'
 import { downloadBackend } from './backend.js'
-import { DASHBOARD_PORT, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD } from './constants.js'
-import { scaffoldDashboard } from './dashboard.js'
+import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD } from './constants.js'
 import { cloneCanonicalRepository, removeCanonicalRepository } from './repository.js'
 import {
   downloadStorefront,
@@ -31,7 +30,7 @@ import {
 export async function scaffold(options: ScaffoldOptions): Promise<void> {
   const projectDir = path.resolve(options.directory)
   const projectName = path.basename(projectDir)
-  const { port, storefront, dashboard } = options
+  const { port, storefront } = options
 
   // Pre-flight checks
   if (options.start) {
@@ -132,41 +131,22 @@ export async function scaffold(options: ScaffoldOptions): Promise<void> {
     }
   }
 
-  // Phase 3b: React Dashboard (optional, Developer Preview). Delegates to the
-  // project-local `npx pallastrade add dashboard` — @pallastrade/cli is already installed
-  // (root deps, above) and bundles the dashboard-starter template. It reads
-  // the port from the project's .env and prints its own progress.
-  let dashboardReady = dashboard
-  if (dashboard) {
-    try {
-      await scaffoldDashboard(projectDir, { install: true, packageManager: options.packageManager })
-    } catch (err) {
-      dashboardReady = false
-      // Remove the partial scaffold so the recovery command (`pallastrade add
-      // dashboard`, which expects the directory to be absent) actually works.
-      fs.rmSync(path.join(projectDir, 'apps', 'dashboard'), { recursive: true, force: true })
-      p.log.warn(
-        `Continuing without the React Dashboard — add it later with ${pc.bold(`${runCommand(options.packageManager)} pallastrade add dashboard`)}.\n${errorMessage(err)}`,
-      )
-    }
-  }
-
   // Project docs are generated only now, from the phases' actual outcomes —
   // a README written up front from the requested flags would document apps
   // whose setup failed.
   fs.writeFileSync(
     path.join(projectDir, 'README.md'),
-    readmeContent(projectName, storefrontReady, port, dashboardReady, options.packageManager),
+    readmeContent(projectName, storefrontReady, port, options.packageManager),
   )
   fs.writeFileSync(
     path.join(projectDir, 'CLAUDE.md'),
-    rootClaudeMdContent(storefrontReady, dashboardReady, options.packageManager),
+    rootClaudeMdContent(storefrontReady, options.packageManager),
   )
   const githubDir = path.join(projectDir, '.github')
   fs.mkdirSync(githubDir, { recursive: true })
   fs.writeFileSync(
     path.join(githubDir, 'dependabot.yml'),
-    dependabotContent(storefrontReady, dashboardReady),
+    dependabotContent(storefrontReady),
   )
 
   // Phase 4: Initialize and start services
@@ -192,14 +172,10 @@ export async function scaffold(options: ScaffoldOptions): Promise<void> {
         `${pc.bold('Storefront')}: ${pc.cyan(`cd ${projectName}/apps/storefront && ${options.packageManager} run dev`)}`,
       )
     }
-    // No dashboard line here — with the dashboard chosen, `pallastrade init`'s
-    // summary already leads with it (served at /dashboard, plus the
-    // customize command).
   } else {
     printSuccessWithoutDocker(
       projectName,
       storefrontReady,
-      dashboardReady,
       port,
       options.packageManager,
     )
@@ -209,7 +185,6 @@ export async function scaffold(options: ScaffoldOptions): Promise<void> {
 function printSuccessWithoutDocker(
   projectName: string,
   hasStorefront: boolean,
-  hasDashboard: boolean,
   port: number,
   pm: PackageManager,
 ): void {
@@ -232,30 +207,14 @@ function printSuccessWithoutDocker(
     )
   }
 
-  // With the React Dashboard chosen, its dev server IS the admin — and
-  // `pallastrade dev` co-runs it with the API, so the URL is live the moment the
-  // stack is up. One admin block; the classic admin gets a one-line pointer.
-  if (hasDashboard) {
-    lines.push(
-      '',
-      `${pc.bold('Admin Dashboard (React, Developer Preview)')}`,
-      `  http://localhost:${DASHBOARD_PORT}`,
-      `  ${pc.dim('# started automatically by `pallastrade dev`, live-reloading from apps/dashboard/')}`,
-      `  Email:    ${DEFAULT_ADMIN_EMAIL}`,
-      `  Password: ${DEFAULT_ADMIN_PASSWORD}`,
-      `  ${pc.dim(`Classic admin: http://localhost:${port}/admin`)}`,
-      '',
-    )
-  } else {
-    lines.push(
-      '',
-      `${pc.bold('Admin Dashboard')}`,
-      `  http://localhost:${port}/admin`,
-      `  Email:    ${DEFAULT_ADMIN_EMAIL}`,
-      `  Password: ${DEFAULT_ADMIN_PASSWORD}`,
-      '',
-    )
-  }
+  lines.push(
+    '',
+    `${pc.bold('Admin Dashboard')}`,
+    `  http://localhost:${port}/admin`,
+    `  Email:    ${DEFAULT_ADMIN_EMAIL}`,
+    `  Password: ${DEFAULT_ADMIN_PASSWORD}`,
+    '',
+  )
 
   lines.push(
     `${pc.bold('Customize the PallasTrade API')}`,

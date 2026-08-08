@@ -83,11 +83,13 @@ describe('rootPackageJsonContent', () => {
     expect(pkg.scripts.down).toContain('docker compose')
   })
 
-  it('exposes the Admin API command groups as scripts', () => {
+  it('exposes the project management scripts', () => {
     const pkg = JSON.parse(rootPackageJsonContent('my-store'))
-    expect(pkg.scripts.api).toBe('pallastrade api')
-    expect(pkg.scripts.auth).toBe('pallastrade auth')
+    expect(pkg.scripts.dev).toBe('pallastrade dev')
+    expect(pkg.scripts.console).toBe('pallastrade console')
     expect(pkg.scripts['api-key']).toBe('pallastrade api-key')
+    expect(pkg.scripts.api).toBeUndefined()
+    expect(pkg.scripts.auth).toBeUndefined()
   })
 
   it('includes @pallastrade/cli as a dependency', () => {
@@ -161,7 +163,7 @@ describe('readmeContent', () => {
   })
 
   it('renders commands for the chosen package manager', () => {
-    const content = readmeContent('my-store', true, 3000, true, 'pnpm')
+    const content = readmeContent('my-store', true, 3000, 'pnpm')
     expect(content).toContain('pnpm pallastrade dev')
     expect(content).toContain('pnpm run dev')
     expect(content).toContain('pnpm add -g @pallastrade/cli')
@@ -169,39 +171,24 @@ describe('readmeContent', () => {
     expect(content).not.toMatch(/\bnpm /)
   })
 
-  it('includes the React Dashboard section when included', () => {
-    const content = readmeContent('my-store', true, 3000, true)
-    expect(content).toContain('### The React Dashboard (Developer Preview)')
-    // The dashboard's dev server IS the admin; the classic admin is a pointer.
-    expect(content).toContain('http://localhost:5173')
-    expect(content).toContain('Classic admin: http://localhost:3000/admin')
-    expect(content).toContain('docs/developer/dashboard')
-  })
-
-  it('omits the React Dashboard section by default', () => {
+  it('always points the admin at the Classic Admin URL', () => {
     const content = readmeContent('my-store', true, 3000)
-    expect(content).not.toContain('React Dashboard')
+    expect(content).toContain('Admin Dashboard')
+    expect(content).toContain('http://localhost:3000/admin')
   })
 })
 
 describe('rootClaudeMdContent', () => {
   it('uses canonical PallasTrade links', () => {
-    const content = rootClaudeMdContent(true, true)
+    const content = rootClaudeMdContent(true)
     expect(content).toContain('https://pallastrade.cn/docs')
     expect(content).toContain('https://github.com/stevenbian9266-cyber/pallastrade')
     expect(content).not.toMatch(/pallastradecommerce\.org|github\.com\/pallastrade\//i)
   })
 
-  it('lists apps/dashboard when the dashboard is included', () => {
-    const content = rootClaudeMdContent(true, true)
-    expect(content).toContain('`apps/dashboard/`')
-    expect(content).toContain('docs/developer/dashboard')
-  })
-
   it('renders commands for the chosen package manager', () => {
-    const content = rootClaudeMdContent(true, true, 'pnpm')
+    const content = rootClaudeMdContent(true, 'pnpm')
     expect(content).toContain('pnpm run dev')
-    expect(content).toContain('pnpm pallastrade api get products')
     expect(content).not.toContain('npx pallastrade')
   })
 
@@ -244,12 +231,6 @@ describe('dependabotContent', () => {
   it('adds the storefront npm ecosystem when the storefront is included', () => {
     const content = dependabotContent(true)
     expect(content).toContain('package-ecosystem: npm\n    directory: "/apps/storefront"')
-  })
-
-  it('adds the dashboard npm ecosystem when the dashboard is included', () => {
-    const content = dependabotContent(true, true)
-    expect(content).toContain('package-ecosystem: npm\n    directory: "/apps/dashboard"')
-    expect(content).toContain('dashboard-security:')
   })
 
   it('omits the dashboard ecosystem by default', () => {

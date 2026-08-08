@@ -14,7 +14,7 @@
     "clean": "turbo clean",
     "server:create": "node scripts/server-create.mjs",
     "server:setup": "bash scripts/server-setup.sh",
-    "server:dashboard": "turbo build --filter=@pallastrade/cli && VITE_BASE_PATH=/dashboard/ pnpm --dir packages/dashboard-starter build",
+
     "server:dev": "PALLASTRADE_GEMS_PATH=$PWD docker compose -f server/docker-compose.dev.yml -f scripts/docker-compose.edge.yml up --force-recreate web worker",
     "server:build": "bash scripts/server-build.sh",
     "server:restart": "PALLASTRADE_GEMS_PATH=$PWD docker compose -f server/docker-compose.dev.yml -f scripts/docker-compose.edge.yml restart web worker",

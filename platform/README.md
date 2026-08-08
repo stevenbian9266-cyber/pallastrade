@@ -34,7 +34,7 @@ To run PallasTrade locally instead, copy and paste the following command to your
 npx create-pallastrade-app@latest my-store
 ```
 
-This sets up the PallasTrade Commerce backend, the Admin Dashboard, and the [Next.js storefront](https://github.com/stevenbian9266-cyber/pallastrade) in a single project. The storefront is built with Next.js 16, React 19, Tailwind CSS 4, and TypeScript.
+This sets up the PallasTrade Commerce backend, the Classic Admin (`pallastrade_admin` Rails engine), and the [Next.js storefront](https://github.com/stevenbian9266-cyber/pallastrade) in a single project. The storefront is built with Next.js 16, React 19, Tailwind CSS 4, and TypeScript.
 
 You need to have Node.js (22+) installed and Docker running. Learn more in the [installation docs](https://pallastrade.cn/docs/developer/getting-started/quickstart).
 

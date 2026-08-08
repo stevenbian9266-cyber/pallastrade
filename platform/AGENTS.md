@@ -6,7 +6,10 @@ See [CLAUDE.md](./CLAUDE.md) for full project conventions.
 
 | Document | Purpose |
 |----------|---------|
-| `../AGENTS.md` | Root agent instructions — single source of truth for all components |
+| `../AGENTS.md` | Root agent instructions — single source of truth (contains §0 file navigation map) |
+| `./CLAUDE.md` | Platform conventions (type generation, code style, testing) |
+| `../ai/skills/pallastrade-typescript-sdk/SKILL.md` | `@pallastrade/sdk` / admin SDK conventions |
+| `../ai/skills/pallastrade-cli/SKILL.md` | PallasTrade CLI conventions |
 
 ## Quick Verification
 

@@ -1,5 +1,4 @@
 import fs from 'node:fs'
-import os from 'node:os'
 import path from 'node:path'
 import * as p from '@clack/prompts'
 import type { Command } from 'commander'
@@ -16,7 +15,7 @@ export function registerBuildCommand(program: Command): void {
     .option('--yes', 'skip confirmation prompts (for CI)')
     .option(
       '--production',
-      'build the production image instead — includes apps/dashboard when present',
+      'build the production image instead',
     )
     .option('--tag <tag>', 'image tag for --production (default: <project>-pallastrade:latest)')
     .action(
@@ -119,13 +118,7 @@ async function buildDevImage(flags: { resetBundle?: boolean; yes?: boolean }): P
 
 /**
  * What `pallastrade build --production` will run, computed without touching Docker
- * — exported for tests. When the project carries a customized dashboard
- * (`apps/dashboard`) AND the backend Dockerfile supports source selection
- * (the `DASHBOARD_SOURCE` build arg from pallastrade-starter), the plan stages a
- * filtered copy of the app (no node_modules/build output — Docker named
- * contexts don't apply .dockerignore) and selects the `custom` dashboard
- * stage. Older projects hit neither branch and build exactly what
- * `docker build backend/` would — nothing changes for them.
+ * — exported for tests. `docker build backend/` with the tag, nothing more.
  */
 export function planProductionBuild(
   projectDir: string,
@@ -133,8 +126,6 @@ export function planProductionBuild(
 ): {
   args: string[]
   imageTag: string
-  dashboard: 'custom' | 'stock-or-none' | 'unsupported-dockerfile'
-  stagedDashboardDir?: string
 } {
   const backendDir = path.join(projectDir, 'backend')
   const dockerfile = path.join(backendDir, 'Dockerfile')
@@ -150,26 +141,7 @@ export function planProductionBuild(
       .replace(/[^a-z0-9_-]/g, '')}-pallastrade:latest`
 
   const args = ['build', backendDir, '-f', dockerfile, '-t', imageTag]
-
-  const dashboardDir = path.join(projectDir, 'apps', 'dashboard')
-  if (!fs.existsSync(path.join(dashboardDir, 'package.json'))) {
-    return { args, imageTag, dashboard: 'stock-or-none' }
-  }
-
-  if (!fs.readFileSync(dockerfile, 'utf-8').includes('DASHBOARD_SOURCE')) {
-    return { args, imageTag, dashboard: 'unsupported-dockerfile' }
-  }
-
-  const staged = fs.mkdtempSync(path.join(os.tmpdir(), 'pallastrade-dashboard-src-'))
-  fs.cpSync(dashboardDir, staged, {
-    recursive: true,
-    filter: (src) => {
-      const base = path.basename(src)
-      return base !== 'node_modules' && base !== 'dist' && base !== '.tanstack'
-    },
-  })
-  args.push('--build-arg', 'DASHBOARD_SOURCE=custom', '--build-context', `dashboard-src=${staged}`)
-  return { args, imageTag, dashboard: 'custom', stagedDashboardDir: staged }
+  return { args, imageTag }
 }
 
 /**
@@ -186,32 +158,13 @@ async function buildProductionImage(projectDir: string, tag?: string): Promise<v
     process.exit(1)
   }
 
-  if (plan.dashboard === 'custom') {
-    p.log.info(`Including your dashboard from ${pc.bold('apps/dashboard/')} (built in-image).`)
-  } else if (plan.dashboard === 'unsupported-dockerfile') {
-    p.log.warn(
-      `${pc.bold('apps/dashboard/')} exists, but ${pc.bold('backend/Dockerfile')} predates ` +
-        `dashboard support (no DASHBOARD_SOURCE build arg) — the image will NOT include your ` +
-        `dashboard. Update the Dockerfile from the pallastrade-starter template to bake it in.`,
-    )
-  }
-
   console.log(`\n${pc.bold(`Building production image ${plan.imageTag}...`)}\n`)
-  try {
-    await execa('docker', plan.args, { cwd: projectDir, stdio: 'inherit' })
-  } finally {
-    if (plan.stagedDashboardDir) {
-      fs.rmSync(plan.stagedDashboardDir, { recursive: true, force: true })
-    }
-  }
+  await execa('docker', plan.args, { cwd: projectDir, stdio: 'inherit' })
 
   p.note(
     [
       `Run it:   ${pc.cyan(`docker run --rm -p 3000:3000 ${plan.imageTag}`)}`,
       `Push it:  ${pc.cyan(`docker tag ${plan.imageTag} <registry>/<repo> && docker push <registry>/<repo>`)}`,
-      plan.dashboard !== 'unsupported-dockerfile'
-        ? `Dashboard: served at ${pc.bold('/dashboard')} when the image includes one.`
-        : '',
     ]
       .filter(Boolean)
       .join('\n'),

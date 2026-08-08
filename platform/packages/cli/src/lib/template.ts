@@ -18,7 +18,7 @@ export interface RenderOptions {
   /**
    * Predicate evaluated against each path *relative to `src`*. When it
    * returns `true`, the file or directory (and its children) is skipped.
-   * Used to gate optional subtrees like `packages/dashboard/` behind flags.
+   * Used to gate optional subtrees behind flags.
    */
   skip?: (relPath: string) => boolean
   /**

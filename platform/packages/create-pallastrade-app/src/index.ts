@@ -13,10 +13,6 @@ const program = new Command()
   .description('Create a new PallasTrade Commerce project')
   .argument('[directory]', 'project directory')
   .option('--no-storefront', 'skip Next.js storefront setup')
-  .option(
-    '--react-dashboard',
-    'include the React Dashboard (Developer Preview — work in progress; also available later via `pallastrade add dashboard`)',
-  )
   .option('--no-sample-data', 'skip loading sample data')
   .option('--no-start', 'do not start Docker services')
   .option('--port <number>', 'port for the PallasTrade backend', String(DEFAULT_PALLASTRADE_PORT))
@@ -40,7 +36,6 @@ const program = new Command()
       const options = await runPrompts({
         directory,
         noStorefront: flags.storefront === false ? true : undefined,
-        reactDashboard: flags.reactDashboard === true,
         noSampleData: flags.sampleData === false ? true : undefined,
         noStart: flags.start === false ? true : undefined,
         packageManager,

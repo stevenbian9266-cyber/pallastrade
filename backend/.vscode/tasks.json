@@ -20,7 +20,7 @@
 		{
 			"label": "build-dev-image",
 			"type": "shell",
-			"command": "powershell -ExecutionPolicy Bypass -Command \"Set-Location 'd:\\pallastrade\\pallastrade'; docker compose -f docker-compose.dev.yml build 2>&1\"",
+			"command": "powershell -ExecutionPolicy Bypass -Command \"Set-Location 'd:\\pallastrade\\backend'; docker compose -f docker-compose.dev.yml build 2>&1\"",
 			"args": [],
 			"problemMatcher": []
 		},
@@ -34,7 +34,7 @@
 		{
 			"label": "build-dev",
 			"type": "shell",
-			"command": "docker compose -f d:\\pallastrade\\pallastrade\\docker-compose.dev.yml build 2>&1",
+			"command": "docker compose -f d:\\pallastrade\\backend\\docker-compose.dev.yml build 2>&1",
 			"args": [],
 			"problemMatcher": []
 		},

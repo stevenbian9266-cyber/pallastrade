@@ -137,9 +137,13 @@ describe("ProductCard", () => {
   it("renders placeholder when no thumbnail", () => {
     render(<ProductCard product={noImageProduct} basePath="/us/en" />);
 
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
-    const svg = document.querySelector("svg");
-    expect(svg).toBeInTheDocument();
+    // ProductImage renders an accessible placeholder (a <div role="img"> with an
+    // icon + aria-label) when there is no thumbnail — NOT a <img> element.
+    const placeholders = screen.getAllByRole("img");
+    expect(placeholders.length).toBeGreaterThan(0);
+    expect(placeholders[0].tagName).toBe("DIV");
+    expect(placeholders[0].querySelector("svg")).toBeInTheDocument();
+    expect(placeholders[0]).toHaveAttribute("aria-label");
   });
 
   it("uses empty basePath by default", () => {

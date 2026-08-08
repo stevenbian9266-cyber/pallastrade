@@ -40,7 +40,7 @@ function ecosystemBlock({ comment, ecosystem, directory, group }: Ecosystem): st
  * toggle in the repo's Settings → Advanced Security; the config only groups
  * them.
  */
-export function dependabotContent(hasStorefront: boolean, hasDashboard = false): string {
+export function dependabotContent(hasStorefront: boolean): string {
   const ecosystems: Ecosystem[] = [
     {
       comment: 'Root wrapper (@pallastrade/cli, @pallastrade/docs)',
@@ -68,15 +68,6 @@ export function dependabotContent(hasStorefront: boolean, hasDashboard = false):
       ecosystem: 'npm',
       directory: '/apps/storefront',
       group: 'storefront',
-    })
-  }
-
-  if (hasDashboard) {
-    ecosystems.push({
-      comment: 'React Dashboard (Developer Preview)',
-      ecosystem: 'npm',
-      directory: '/apps/dashboard',
-      group: 'dashboard',
     })
   }
 

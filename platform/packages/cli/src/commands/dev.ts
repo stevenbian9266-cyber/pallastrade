@@ -4,7 +4,7 @@ import * as p from '@clack/prompts'
 import type { Command } from 'commander'
 import pc from 'picocolors'
 import { projectCredentialsPath, projectSetupMarkerPath } from '../config.js'
-import { DASHBOARD_PORT, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD } from '../constants.js'
+import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD } from '../constants.js'
 import {
   detectProject,
   hasMonorepoPallasTradePath,
@@ -12,26 +12,19 @@ import {
   readSampleDataFromEnv,
 } from '../context.js'
 import {
-  dashboardDevRunnable,
-  hasDashboardApp,
-  startDashboardDevServer,
-  warnDashboardNotRunnable,
-} from '../dashboard-server.js'
-import {
   buildAdminStylesheets,
   dockerCompose,
   hasProjectContainers,
   primeBundleVolume,
   watchAdminStylesheets,
 } from '../docker.js'
-import { ensureDashboardDevEnv } from './add.js'
 import { runFirstRunSetup } from './init.js'
 
 export function registerDevCommand(program: Command): void {
   program
     .command('dev')
     .description(
-      'Run the app in the foreground — the API, plus the React Dashboard dev server when apps/dashboard exists; Ctrl+C stops them',
+      'Run the app in the foreground — the API plus the Classic Admin; Ctrl+C stops them',
     )
     .action(async () => {
       const ctx = detectProject()
@@ -47,17 +40,7 @@ export function registerDevCommand(program: Command): void {
         process.exit(1)
       }
 
-      // Every boot, not just first run: cheap and idempotent, and it's how
-      // projects scaffolded by older CLIs (broken .env.local) get repaired —
-      // they already completed setup, so the first-run path below never
-      // reaches them.
-      ensureDashboardDevEnv(ctx.projectDir, ctx.port)
-
-      // A project that was never set up gets the full first-run flow instead
-      // of a bare `up`: pull a fresh image (a mutable tag cached weeks ago by
-      // another project would otherwise boot an old PallasTrade), seed the database,
-      // mint API keys. This keeps create-pallastrade-app's contract — the app just
-      // works — on every path to a first boot (--no-start, an interrupted
+      // Completed setup writes a marker (separate from credentials.json,
       // scaffold, a fresh clone) without requiring anyone to run `pallastrade init`.
       // Completed setup writes a marker (separate from credentials.json,
       // which `pallastrade auth logout` deletes — losing auth must not look like a
@@ -93,27 +76,13 @@ export function registerDevCommand(program: Command): void {
 
       // The summary and the spawn key off the same runnable check so the
       // card never advertises a dev server that can't start (deps missing).
-      const withDashboard = hasDashboardApp(ctx.projectDir) && dashboardDevRunnable(ctx.projectDir)
-      if (hasDashboardApp(ctx.projectDir) && !withDashboard) {
-        warnDashboardNotRunnable(ctx.projectDir)
-      }
       p.note(
         [
           '',
-          ...(withDashboard
-            ? [
-                pc.bold('Admin Dashboard (React, Developer Preview)'),
-                `  ${pc.cyan(`http://localhost:${DASHBOARD_PORT}`)}`,
-                `  Email:    ${DEFAULT_ADMIN_EMAIL}`,
-                `  Password: ${DEFAULT_ADMIN_PASSWORD}`,
-                `  ${pc.dim(`Live-reloading from apps/dashboard/ — classic admin: http://localhost:${ctx.port}/admin`)}`,
-              ]
-            : [
-                pc.bold('Admin Dashboard'),
-                `  ${pc.cyan(`http://localhost:${ctx.port}/admin`)}`,
-                `  Email:    ${DEFAULT_ADMIN_EMAIL}`,
-                `  Password: ${DEFAULT_ADMIN_PASSWORD}`,
-              ]),
+          pc.bold('Admin Dashboard (Classic Admin)'),
+          `  ${pc.cyan(`http://localhost:${ctx.port}/admin`)}`,
+          `  Email:    ${DEFAULT_ADMIN_EMAIL}`,
+          `  Password: ${DEFAULT_ADMIN_PASSWORD}`,
           '',
           pc.bold('Store API'),
           `  ${pc.cyan(`http://localhost:${ctx.port}/api/v3/store`)}`,
@@ -123,7 +92,7 @@ export function registerDevCommand(program: Command): void {
       )
 
       p.log.info(
-        `Starting services — ${withDashboard ? 'API + dashboard logs' : 'web + worker logs'} stream below. ` +
+        `Starting services — web + worker logs stream below. ` +
           `${pc.bold('Ctrl+C')} stops them ` +
           `(databases keep running; ${pc.bold('pallastrade stop')} shuts everything down).\n`,
       )
@@ -136,7 +105,6 @@ export function registerDevCommand(program: Command): void {
       const ignoreSigint = () => {}
       process.on('SIGINT', ignoreSigint)
       let result: { exitCode?: number }
-      let dashboard: ReturnType<typeof startDashboardDevServer> = null
       try {
         // Prime the shared bundle_cache volume with web alone first so the
         // foreground `up web worker` below doesn't race the cold-volume
@@ -187,19 +155,11 @@ export function registerDevCommand(program: Command): void {
           }
         }
 
-        // Co-run the dashboard's Vite dev server with the Docker stack — one
-        // command, the whole dev environment. Its output joins the stream
-        // below with a `dashboard |` prefix; the terminal's Ctrl+C reaches it
-        // alongside compose (same foreground process group), and stop() in
-        // the finally covers non-signal exits.
-        dashboard = withDashboard ? startDashboardDevServer(ctx.projectDir) : null
-
         result = await dockerCompose(['up', 'web', 'worker'], ctx.projectDir, {
           stdio: 'inherit',
           reject: false,
         })
       } finally {
-        dashboard?.stop()
         process.off('SIGINT', ignoreSigint)
       }
 
@@ -213,7 +173,7 @@ export function registerDevCommand(program: Command): void {
       }
 
       p.outro(
-        `${withDashboard ? 'API + dashboard' : 'Web + worker'} stopped. Databases keep running — ${pc.bold('pallastrade stop')} shuts everything down.`,
+        `Web + worker stopped. Databases keep running — ${pc.bold('pallastrade stop')} shuts everything down.`,
       )
     })
 }

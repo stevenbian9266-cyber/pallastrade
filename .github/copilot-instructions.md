@@ -145,14 +145,10 @@ You MUST search each layer independently.
 
 ### R5: Anti-Patterns Are BLOCKED
 
-The following are physically blocked (CI enforced, not just suggested):
+**完整反模式清单（AP-001~AP-009，含 AP-007 / AP-009a / AP-009b）见 `AGENTS.md` §5 摘要表 + 唯一权威 `harness/policies/anti-patterns.json`（CI 机器执行）。** 高频违规速记：
 - AP-001: `style={{ }}` inline styles → Use Tailwind classes
 - AP-002: Raw `fetch()` calls → Use `@pallastrade/sdk`
-- AP-003: `Model.create()` outside specs → Use Factory Bot / Services
-- AP-004: `after_save` callbacks → Use Subscribers
-- AP-005: Unscoped model queries → Always scope via `current_store`
 - AP-006: Hardcoded hex colors → Use CSS custom properties
-- AP-008: Copying Gem views to Host App → Modify Gem source directly
 
 ### R6: Verify or Declare — NO SKIPPING
 
@@ -161,37 +157,10 @@ You MUST either:
 - Run relevant tests (`harness check --profile quick` or `pnpm test`), OR
 - Explicitly document "no test needed" with a reason (e.g., "纯样式调整，无逻辑变更")
 
-### Minimum Verification Per Change Type
-
-"no test needed" is the RARE exception. If you changed any of the following, run the corresponding minimum check:
-
-| What you changed | Minimum check | Est. Time |
-|---|---|---|
-| Any TypeScript/TSX file | `pnpm build` or `pnpm lint` | ≤2 min |
-| Any Ruby file | `harness check --profile quick` | ≤5 min |
-| Model / DB schema / migration | + `harness check --profile full` | ≤45 min |
-| API endpoint (new/modified) | + `harness generated:check` (OpenAPI + SDK types) | ≤5 min |
-| UI component / style | + `harness e2e dashboard` or `harness e2e storefront` | ≤15 min |
-| Payment logic | + payment sandbox gate | ≤30 min |
-| AI Skill file (`ai/skills/`) | + `harness eval ai --check-freshness` | ≤2 min |
-
-### Verification Evidence Required
-
-Before clearing `verify-test`, you MUST provide objective evidence of the fix working:
-
-| What you changed | Required evidence |
-|---|---|
-| UI (view/component/style) | Screenshot or DOM snapshot showing corrected state |
-| Backend logic | Rails log line showing success (200/302) or `Completed ... OK` |
-| Data fix | DB query result showing before/after |
-| Config-only change | Server restart + log line confirming new config loaded |
-
-**"no test needed" is NOT valid for UI or backend logic changes — browser/log verification is mandatory.**
-
-**If you skip even the minimum check and the build breaks (like a missing backtick), you have committed a process violation.**
-
-**You CANNOT skip this step or leave `verify-test` pending.**
-A gate with `verify-test` still pending is considered invalid for continuation.
+**最小验证矩阵（按改动类型）与验证证据要求见 `AGENTS.md` §6 — 本文件不再重复。** 核心强制：
+- UI 或后端逻辑变更 "no test needed" 无效 — 必须有浏览器/日志证据
+- 跳过最小检查导致构建损坏 = 流程违规
+- 不允许留下 `verify-test` pending（pending 的 gate 视为无效，不能续作）
 
 ### R7: user-confirmed Requires Explicit User Action
 
@@ -200,6 +169,20 @@ be cleared after the user explicitly confirms the requirements document with a
 clear affirmative (e.g., "确认", "实施", "go ahead", "proceed").
 Ambiguous or implicit approval (e.g., "ok", "看看吧") does NOT count — ask
 the user to clarify before proceeding.
+
+### R8: PRD-Driven Workflow (一句话需求 → PRD → 实施)
+
+**当用户输入是"一句话需求"（含前缀 `需求：`/`新增：`/`优化：`/`修复：` 等）时，MUST 遵循 `ai/skills/pallastrade-prd/SKILL.md`：**
+
+1. **PRD 生成**：先用 `node scripts/harness/cli.mjs prd new --title "<需求>"` 创建骨架（自动分类），再按 `docs/prd/_TEMPLATE.md` 完整扩充（背景/FR/AC/跨层搜索/测试计划/文档同步清单），存到 `docs/prd/{category}/PRD-{date}-{category}-{slug}.md`，更新 `docs/prd/README.md` 索引。
+2. **查重优先**：创建前搜索已有 PRD + 6 层跨层搜索（AP-SEARCH 反模式）。
+3. **用户确认**：PRD 需用户明确确认（`approved`）后才能进入实施；PRD 未 approved 不允许开 gate。
+4. **Gate + REQ**：`harness gate`（feature 类型含 `create-prd-doc` + `read-skill-prd` checks）→ 生成 `harness/requirements/REQ-*.md`。
+5. **测试/验收**：PRD 每个 AC 必须映射到测试（测试标注 `# PRD-xxx AC-x`），用 `harness prd verify --id PRD-xxx` 校验。
+6. **接口变更**：同步 `backend/public/api-docs/{store,admin}.yaml` + `platform/docs/api-reference/`，`harness generated:check` 验证。
+7. **知识同步门**：关闭 `verify-test` 前运行 `harness sync-check --id PRD-xxx`，按矩阵逐项处理（Skill / README / Agent 文件 / 样式规范 / 技术规范 / 反模式 / 场景库 / API 文档），结论记录在 PRD §9/§10，然后 `harness sync-check --ack`。
+
+**违反 R8（跳过 PRD / 未确认 / 跳知识同步门）视为流程违规。**
 
 ## Reference
 

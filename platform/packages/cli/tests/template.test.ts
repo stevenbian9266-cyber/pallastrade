@@ -102,7 +102,7 @@ describe('render', () => {
   it('skips paths matching the skip predicate', () => {
     const src = tempDir()
     const dst = path.join(tempDir(), 'out')
-    writeFile(path.join(src, 'packages', 'dashboard', 'index.ts'), '// dashboard')
+    writeFile(path.join(src, 'packages', 'optional', 'index.ts'), '// optional')
     writeFile(path.join(src, 'engine', 'lib.rb'), '# engine')
     writeFile(path.join(src, 'README.md'), 'top-level')
 
@@ -114,7 +114,7 @@ describe('render', () => {
     })
 
     expect(fs.existsSync(path.join(dst, 'engine'))).toBe(false)
-    expect(fs.existsSync(path.join(dst, 'packages', 'dashboard', 'index.ts'))).toBe(true)
+    expect(fs.existsSync(path.join(dst, 'packages', 'optional', 'index.ts'))).toBe(true)
     expect(fs.existsSync(path.join(dst, 'README.md'))).toBe(true)
   })
 

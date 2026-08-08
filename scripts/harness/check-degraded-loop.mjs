@@ -8,9 +8,8 @@
  * Rules are loaded from harness/policies/anti-patterns.json (single source of truth).
  * This is a fast read-only scan (no AST parsing).
  */
-import { readFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, existsSync, statSync, globSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
-import { globSync } from 'glob';
 
 /**
  * Load AP-009 rules from anti-patterns.json.
@@ -54,7 +53,7 @@ export function scan({ rootDir, files: fileFilter = null }) {
 
   for (const rule of rules) {
     let ruleViolations = 0;
-    const globbed = globSync(rule.fileGlob, { cwd: rootDir, nodir: true });
+    const globbed = globSync(rule.fileGlob, { cwd: rootDir });
     // Normalize separators — glob returns Windows backslash paths, the file
     // filter from lefthook {staged_files} may use forward slashes.
     const norm = p => p.split('\\').join('/');

@@ -1,5 +1,4 @@
 import {
-  DASHBOARD_PORT,
   DEFAULT_ADMIN_EMAIL,
   DEFAULT_ADMIN_PASSWORD,
   STOREFRONT_PORT,
@@ -11,7 +10,6 @@ export function readmeContent(
   name: string,
   hasStorefront: boolean,
   port: number,
-  hasDashboard = false,
   pm: PackageManager = 'npm',
 ): string {
   const run = runCommand(pm)
@@ -37,16 +35,9 @@ seeds the database, and configures API keys.
 
 Wait for the services to be healthy, then open:
 
-${
-  hasDashboard
-    ? `- **Admin Dashboard (React, Developer Preview):** http://localhost:${DASHBOARD_PORT} — started automatically by \`pallastrade dev\`
+- **Admin Dashboard:** http://localhost:${port}/admin
   - Email: \`${DEFAULT_ADMIN_EMAIL}\`
   - Password: \`${DEFAULT_ADMIN_PASSWORD}\`
-  - Classic admin: http://localhost:${port}/admin (same credentials)`
-    : `- **Admin Dashboard:** http://localhost:${port}/admin
-  - Email: \`${DEFAULT_ADMIN_EMAIL}\`
-  - Password: \`${DEFAULT_ADMIN_PASSWORD}\``
-}
 - **Store API:** http://localhost:${port}/api/v3/store
 `
 
@@ -65,34 +56,10 @@ Open http://localhost:${STOREFRONT_PORT}
 `
   }
 
-  if (hasDashboard) {
-    content += `
-### The React Dashboard (Developer Preview)
-
-\`apps/dashboard/\` is your admin — a customizable React SPA (plugins, your
-own pages, table tweaks) with live reload. \`pallastrade dev\` starts it
-automatically alongside the API; to run it on its own:
-
-\`\`\`bash
-cd apps/dashboard
-${pm} run dev
-\`\`\`
-
-Open http://localhost:${DASHBOARD_PORT} and sign in with the admin email and
-password above. The classic admin remains at http://localhost:${port}/admin.
-
-When you deploy, the production image builds your dashboard and serves it at
-\`/dashboard\` on the same origin as the API (\`${run} pallastrade build --production\`).
-
-To learn how to add pages, tweak tables, or build plugins, see the
-[React Dashboard docs](https://pallastrade.cn/docs/developer/dashboard/overview).
-`
-  }
-
   content += `
 ## Customizing the PallasTrade API
 
-The \`backend/\` directory is the PallasTrade API — a full Rails application serving the Store and Admin APIs (plus background jobs and transactional emails) that your storefront and dashboard talk to. By default, the project runs it from a prebuilt Docker image. To switch to building from your local copy:
+The \`backend/\` directory is the PallasTrade API — a full Rails application serving the Store and Admin APIs (plus background jobs and transactional emails) that your storefront and admin talk to. By default, the project runs it from a prebuilt Docker image. To switch to building from your local copy:
 
 \`\`\`bash
 ${run} pallastrade eject
@@ -116,7 +83,7 @@ This project uses [\`@pallastrade/cli\`](https://pallastrade.example.com/docs/de
 | \`pallastrade stop\` | Stop the API services |
 | \`pallastrade update\` | Pull latest PallasTrade image and restart (runs migrations automatically) |
 | \`pallastrade eject\` | Switch from prebuilt image to building from \`backend/\` |
-| \`pallastrade build --production\` | Build the production image — includes \`apps/dashboard\` when present |
+| \`pallastrade build --production\` | Build the production image |
 | \`pallastrade logs\` | View web server logs |
 | \`pallastrade logs worker\` | View background jobs logs |
 | \`pallastrade console\` | Open Rails console |

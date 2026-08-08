@@ -1,6 +1,5 @@
-import { readFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, existsSync, statSync, globSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { globSync } from 'glob';
 
 export function scan({ rootDir, files: fileFilter = null }) {
   const rulesPath = resolve(rootDir, 'harness', 'policies', 'anti-patterns.json');
@@ -17,7 +16,7 @@ export function scan({ rootDir, files: fileFilter = null }) {
 
   for (const rule of rules) {
     try {
-      const globbed = globSync(rule.fileGlob, { cwd: rootDir, ignore: rule.excludeGlob ? [rule.excludeGlob] : [] });
+      const globbed = globSync(rule.fileGlob, { cwd: rootDir, exclude: rule.excludeGlob ? [rule.excludeGlob] : [] });
       // When a file filter is provided (e.g. lefthook {staged_files}), only
       // scan the intersection with this rule's glob. Normalize separators —
       // glob returns Windows backslash paths, filter may be forward-slash.
@@ -41,6 +40,15 @@ export function scan({ rootDir, files: fileFilter = null }) {
           // test() calls and causes missed matches (stale lastIndex).
           regex.lastIndex = 0;
           if (regex.test(lines[i])) {
+            // Guard-aware rules (guardPattern + guardLookback): skip when a
+            // guard condition appears within N preceding lines. Prevents
+            // false positives on `if (x !== y) { redirect('/x') }` patterns.
+            if (rule.guardPattern && Number.isInteger(rule.guardLookback)) {
+              const start = Math.max(0, i - rule.guardLookback);
+              const context = lines.slice(start, i + 1).join('\n');
+              const guardRe = new RegExp(rule.guardPattern, 'gm');
+              if (guardRe.test(context)) continue;
+            }
             const lineNum = i + 1;
             const icon = rule.severity === 'error' ? '❌' : '⚠️';
             console.log(`${icon} ${rule.id} [${rule.severity}] ${file}:${lineNum}`);

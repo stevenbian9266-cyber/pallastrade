@@ -3,41 +3,6 @@
 
 ARG RUBY_VERSION=4.0.1
 ARG NODE_VERSION=22
-# Which React Dashboard the image bakes (served by Rails at /dashboard —
-# the single-node topology: same origin as the Admin API, so no CORS or
-# cookie configuration). Only dist/ reaches the final image; the Node
-# toolchain never does.
-#
-#   stock  (default) — the template published inside @pallastrade/cli, with
-#                      dependency pins matching that CLI release
-#   custom           — your own dashboard app, provided as a named build
-#                      context (`pallastrade build --production` does this):
-#
-#     docker build backend/ \
-#       --build-arg DASHBOARD_SOURCE=custom \
-#       --build-context dashboard-src=./apps/dashboard
-ARG DASHBOARD_SOURCE=stock
-# ── Dashboard build (disabled — @pallastrade/cli not yet published to npm) ──
-# TODO: Re-enable when @pallastrade/cli is published to npm registry.
-# ARG PALLASTRADE_CLI_VERSION=^2.4.0
-# FROM docker.io/library/node:$NODE_VERSION-slim AS dashboard-stock
-# ARG PALLASTRADE_CLI_VERSION
-# WORKDIR /dashboard
-# RUN npm pack "@pallastrade/cli@${PALLASTRADE_CLI_VERSION}" --pack-destination /tmp && \
-#   tar -xzf /tmp/pallastrade-cli-*.tgz -C /tmp && \
-#   cp -r /tmp/package/dist/templates/dashboard-starter/. . && \
-#   corepack enable pnpm && \
-#   pnpm install && \
-#   VITE_BASE_PATH=/dashboard/ pnpm build
-# FROM docker.io/library/node:$NODE_VERSION-slim AS dashboard-custom
-# WORKDIR /dashboard
-# COPY --from=dashboard-src . .
-# RUN rm -rf node_modules dist .tanstack && \
-#   corepack enable pnpm && \
-#   pnpm install && \
-#   VITE_BASE_PATH=/dashboard/ pnpm build
-# FROM dashboard-${DASHBOARD_SOURCE} AS dashboard
-# ─────────────────────────────────────────────────────────────────────────
 
 FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 

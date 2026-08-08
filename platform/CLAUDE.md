@@ -70,13 +70,7 @@ Shipped plans:
 | `backend/pallastrade_gems/pallastrade_core` | Ruby gem — models, services, business logic |
 | `backend/pallastrade_gems/pallastrade_api` | Ruby gem — Store & Admin REST APIs |
 | `backend/pallastrade_gems/pallastrade_emails` | Ruby gem — transactional emails (optional) |
-| `backend/pallastrade_gems/pallastrade_dashboard` | Ruby gem — hosts a built React Dashboard at `/dashboard` |
-| `platform/packages/dashboard` | `@pallastrade/dashboard` — React SPA admin dashboard (PallasTrade 6.0). The deployable app shell, routes, schemas, resource hooks, locales. |
-| `platform/packages/dashboard-ui` | `@pallastrade/dashboard-ui` — design system. Shadcn primitives + headless composed components + tokens. Source-only; consumer compiles via Vite/Tailwind. **Components are headless: data comes via props, no provider/hook imports.** |
-| `platform/packages/dashboard-core` | `@pallastrade/dashboard-core` — framework. Registries (table, nav, slot, settings-nav), providers (auth, permission, store, theme), generic infra hooks, admin SDK client singleton, `defineDashboardPlugin` facade. The extension API for plugin authors. |
-| `platform/packages/dashboard-starter` | `@pallastrade/dashboard-starter` — thin host app consuming `<Dashboard />` from `@pallastrade/dashboard`; canonical source of the `pallastrade/dashboard-starter` template repo (synced on release). Doubles as the in-repo consumer test for the plugin pipeline. |
 | `platform/packages/sdk` | `@pallastrade/sdk` — TypeScript Store API client |
-| `platform/packages/admin-sdk` | `@pallastrade/admin-sdk` — TypeScript Admin API client (Developer Preview) |
 | `platform/packages/sdk-core` | `@pallastrade/sdk-core` — shared HTTP/retry/error layer (private internal) |
 | `platform/packages/cli` | `@pallastrade/cli` — Docker-based project management CLI |
 | `platform/packages/create-pallastrade-app` | `create-pallastrade-app` — project scaffolding |
@@ -91,7 +85,6 @@ Day-to-day from the repo root: `cd backend && docker compose -f docker-compose.d
 | What changed | What to run |
 |---|---|
 | Ruby code in `backend/pallastrade_gems/pallastrade_*` gems | Nothing — bind-mounted via compose, reloads on next request |
-| Hosted React Dashboard at `/dashboard` (single-node test) | `cd backend && docker compose -f docker-compose.dev.yml exec web bin/rails assets:precompile` — rebuilds dashboard assets. For dashboard *development* keep using Vite on :5173 (`cd platform/packages/dashboard && pnpm dev`). |
 | Tailwind classes in Admin templates/helpers/JS | Nothing — a watcher in the web container rebuilds the admin CSS within ~15s. If changes still don't reach the browser, delete `backend/public/assets/.manifest.json` (stale precompile output) and restart. |
 | New migration in a gem | Nothing — the next `docker compose up` boot runs `pallastrade:install:migrations db:prepare` (or `cd backend && bundle exec pallastrade migrate` while running) |
 | Gem dependencies (gemspec / Gemfile / `Gemfile.lock` drift after a pull) | Nothing — the next boot self-heals (`bundle check || bundle install` into the `bundle_cache` volume); while running: `cd backend && bundle install` |

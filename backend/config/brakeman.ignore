@@ -1,29 +1,6 @@
 {
   "ignored_warnings": [
     {
-      "warning_type": "File Access",
-      "warning_code": 16,
-      "fingerprint": "7bde1189928e9bfc7bfe83c6a77a8eec06f2da7965a492bebd15403c3dbd1ece",
-      "check_name": "SendFile",
-      "message": "Parameter value used in file name",
-      "file": "pallastrade_gems/pallastrade_dashboard/app/controllers/pallastrade/dashboard/app_controller.rb",
-      "line": 30,
-      "link": "https://brakemanscanner.org/docs/warning_types/file_access/",
-      "code": "send_file(resolve_file(dist_root, params[:path].to_s), :disposition => \"inline\")",
-      "render_path": null,
-      "location": {
-        "type": "method",
-        "class": "PallasTrade::Dashboard::AppController",
-        "method": "show"
-      },
-      "user_input": "params[:path].to_s",
-      "confidence": "Weak",
-      "cwe_id": [
-        22
-      ],
-      "note": "False positive after explicit hardening: resolve_file rejects null bytes, absolute paths, and dot segments, then realpath-resolves both root and candidate and requires the candidate to remain under the trusted dashboard dist root. This also blocks symlink escapes."
-    },
-    {
       "warning_type": "Cross-Site Scripting",
       "warning_code": 114,
       "fingerprint": "8275f584e7cced41c26890e574cdbf6804bddff54374058834a562294c99d6f6",

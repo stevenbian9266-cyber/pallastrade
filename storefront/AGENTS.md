@@ -6,7 +6,10 @@ See [CLAUDE.md](./CLAUDE.md) for full project conventions.
 
 | Document | Purpose |
 |----------|---------|
-| `../AGENTS.md` | Root agent instructions — single source of truth for all components |
+| `../AGENTS.md` | Root agent instructions — single source of truth (contains §0 file navigation map) |
+| `./CLAUDE.md` | Storefront conventions (Code Style, Biome, testing) |
+| `../ai/skills/pallastrade-storefront/SKILL.md` | Storefront components / pages / Style Guide |
+| `../ai/skills/pallastrade-i18n/SKILL.md` | UI translations + data translations |
 
 ## Quick Verification
 
