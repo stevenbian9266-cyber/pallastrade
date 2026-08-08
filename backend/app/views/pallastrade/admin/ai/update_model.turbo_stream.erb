@@ -1,0 +1,4 @@
+<%= turbo_render_alerts %>
+<%= turbo_stream.replace "ai_model_row_#{@model.id}" do %>
+  <%= render 'pallastrade/admin/ai/model_row', model: @model %>
+<% end %>

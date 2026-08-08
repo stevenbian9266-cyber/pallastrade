@@ -1,0 +1,17 @@
+<tr class="border-t" id="ai_model_row_<%= model.id %>">
+  <td class="p-3"><%= model.name %></td>
+  <td class="p-3"><%= model.provider&.name %></td>
+  <td class="p-3 font-mono text-xs"><%= model.provider_model_id %></td>
+  <td class="p-3"><span class="bg-gray-100 px-2 py-0.5 rounded text-xs"><%= model.kind %></span></td>
+  <td class="p-3">
+    <%= form_tag PallasTrade.admin_ai_update_model_path(model), method: :patch do %>
+      <div class="custom-control custom-switch">
+        <%= check_box_tag :active, '1', model.active?, class: 'custom-control-input', onchange: 'this.form.requestSubmit()', id: "ai_model_active_#{model.id}" %>
+        <%= label_tag "ai_model_active_#{model.id}", '&nbsp;'.html_safe, class: 'custom-control-label' %>
+      </div>
+    <% end %>
+  </td>
+  <td class="p-3">
+    <span class="text-xs text-gray-400"><%= PallasTrade.t('ai.model.used_by', count: PallasTrade::AI::CapabilitySetting.where(primary_model_id: model.id).count) %></span>
+  </td>
+</tr>

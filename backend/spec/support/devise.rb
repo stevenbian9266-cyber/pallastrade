@@ -13,6 +13,9 @@ if defined?(Devise)
 
     config.include Devise::Test::ControllerHelpers, type: :controller
 
+    # Allow `sign_in <admin>` in request specs (Devise::Test::IntegrationHelpers)
+    config.include Devise::Test::IntegrationHelpers, type: :request
+
     config.include Warden::Test::Helpers
     config.before :suite do
       Warden.test_mode!

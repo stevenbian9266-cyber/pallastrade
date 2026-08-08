@@ -117,11 +117,27 @@ module PallasTrade
       def update_model
         @model = PallasTrade::AI::Model.where(store: current_store).find(params[:id])
         @model.update!(active: ActiveModel::Type::Boolean.new.cast(params[:active]))
-        flash[:success] = 'Model updated'
-        redirect_back fallback_location: PallasTrade.admin_ai_models_path
+        respond_to do |format|
+          format.turbo_stream do
+            flash.now[:success] = 'Model updated'
+          end
+          format.html do
+            flash[:success] = 'Model updated'
+            redirect_back fallback_location: PallasTrade.admin_ai_models_path
+          end
+        end
       rescue ActiveRecord::RecordInvalid => e
-        flash[:error] = e.message
-        redirect_back fallback_location: PallasTrade.admin_ai_models_path
+        respond_to do |format|
+          format.turbo_stream do
+            flash.now[:error] = e.message
+            # Re-render the row with the unchanged state (update! rolled back)
+            render :update_model
+          end
+          format.html do
+            flash[:error] = e.message
+            redirect_back fallback_location: PallasTrade.admin_ai_models_path
+          end
+        end
       end
 
       # GET /admin/ai/capabilities
