@@ -2,8 +2,9 @@
 
 ## 仓库结构
 
-唯一正式仓库为 `github.com/stevenbian9266-cyber/pallastrade`，唯一长期分支为
-`main`。四个组件固定在以下目录：
+唯一正式仓库为 `github.com/stevenbian9266-cyber/pallastrade`。分支策略：`dev`
+为开发/集成分支（日常开发 + CI 验证），`main` 为生产部署分支（唯一
+Tag/Release/部署来源，仅接受 `dev` 合并）。四个组件固定在以下目录：
 
 ```text
 pallastrade/
@@ -18,6 +19,25 @@ pallastrade/
 
 根目录 `.github/workflows/` 中的工作流使用路径过滤触发对应组件任务。涉及多个组件
 的变更可以并行触发多个任务。
+
+## 分支策略
+
+| 分支 | 角色 | 说明 |
+|---|---|---|
+| `dev` | 开发/集成 | 日常开发在此分支；推入即触发 CI（所有组件 workflow 监听 `[main, dev]`）；不部署 |
+| `main` | 生产部署 | 仅接受 `dev` 合并；Tag/Release/部署的唯一来源 |
+
+日常流程：
+
+```bash
+git checkout dev        # 开发（本地 + 远程）
+git push origin dev     # 推 dev（触发 CI 验证）
+git checkout main       # 发布
+git merge dev           # dev → main
+git push origin main    # 推 main（部署/打 Tag）
+```
+
+禁止：直接向 `main` 推送开发提交（`main` 只由 `dev` 合并更新）。
 
 ## Tag 规则
 

@@ -3,7 +3,7 @@ name: Monorepo Contract
 on:
   workflow_call:
   push:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - 'backend/**'
       - 'platform/**'
@@ -17,7 +17,7 @@ on:
       - '.github/workflows/**'
       - '.gitignore'
   pull_request:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - 'backend/**'
       - 'platform/**'

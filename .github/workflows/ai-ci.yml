@@ -3,12 +3,12 @@ name: AI CI
 on:
   workflow_call:
   push:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - 'ai/**'
       - '.github/workflows/ai-ci.yml'
   pull_request:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - 'ai/**'
       - '.github/workflows/ai-ci.yml'

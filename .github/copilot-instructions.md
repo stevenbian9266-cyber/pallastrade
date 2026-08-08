@@ -184,6 +184,13 @@ the user to clarify before proceeding.
 
 **违反 R8（跳过 PRD / 未确认 / 跳知识同步门）视为流程违规。**
 
+### R9: 分支策略（dev 开发 → main 生产）
+
+- 日常开发在 `dev` 分支（本地 + 远程），提交/推送均在 `dev`
+- `main` 是生产部署分支：**仅接受 `dev` 合并**，禁止直接向 `main` 推送开发提交
+- 发布流程：`git checkout main && git merge dev && git push origin main`
+- **gate 绑定当前分支**：在哪个分支开 gate 就在哪个分支完成提交（切分支前先完成 gate）
+
 ## Reference
 
 For detailed architecture, customization decision tree, and domain-specific guidance,

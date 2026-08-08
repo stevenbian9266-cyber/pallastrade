@@ -53,6 +53,13 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 - 冲突裁决顺序：`harness/policies/anti-patterns.json` > 本文件 §5/§6 > 各层 CLAUDE.md > skill 细节
 - 新增规范文件 → 必须登记到 §0.1；修改权威文件 → 按 §7 知识同步矩阵更新指针文件
 
+### 0.4 分支策略
+
+- 日常开发在 `dev`（本地 + 远程），提交/推送均在 `dev`；`main` 为生产部署分支，**仅接受 `dev` 合并**，禁止直接向 `main` 推送开发提交
+- 发布流程：`dev` 推入 → CI 验证（所有组件 workflow 监听 `[main, dev]`）→ `dev` 合并 `main` → 推送 `main`（部署/打 Tag）
+- **gate 绑定当前分支**：在哪个分支开 gate，就在哪个分支完成提交；切分支前先完成 gate
+- 详见 `scripts/release/README.md` §分支策略
+
 ---
 
 ## 1. Repository Layout
