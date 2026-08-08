@@ -8,16 +8,18 @@
       <%
         secret = PallasTrade::AI::ProviderSecret.find_by(integration: provider)
         key_ok = secret&.configured?
-        verified = provider.verification_status == 'verified'
+        # Connection verification is not yet persisted (no verification_status
+        # column); treat as unverified so badges degrade gracefully.
+        verified = false
 
         badge_class, badge_text = if provider.active? && key_ok && verified
-          ['badge-active', 'Active']
+          ['badge-active', PallasTrade.t('ai.provider.active_label')]
         elsif provider.active? && key_ok && !verified
-          ['badge-warning', 'Active (untested)']
+          ['badge-warning', PallasTrade.t('ai.provider.active_untested')]
         elsif provider.active? && !key_ok
-          ['badge-warning', 'Active (no key)']
+          ['badge-warning', PallasTrade.t('ai.provider.active_no_key')]
         else
-          ['badge-inactive', 'Inactive']
+          ['badge-inactive', PallasTrade.t('ai.provider.inactive_label')]
         end
       %>
       <%= link_to PallasTrade.admin_ai_provider_path(provider),
@@ -28,25 +30,25 @@
         </div>
 
         <dl class="space-y-2 text-sm">
-          <dt class="text-gray-500">Key</dt>
+          <dt class="text-gray-500"><%= PallasTrade.t('ai.provider.key') %></dt>
           <dd class="font-mono">
             <% if secret&.configured? %>
               <span class="text-green-600"><%= secret.key_hint_display %></span>
-              <span class="text-gray-400">(configured)</span>
+              <span class="text-gray-400">(<%= PallasTrade.t('ai.provider.configured') %>)</span>
             <% else %>
-              <span class="text-red-600">Not configured</span>
+              <span class="text-red-600"><%= PallasTrade.t('ai.provider.key_not_configured') %></span>
             <% end %>
           </dd>
 
-          <dt class="text-gray-500">Connection</dt>
-          <dd><span class="<%= provider.verification_status == 'verified' ? 'text-green-600' : 'text-gray-400' %>"><%= provider.verification_status || 'unverified' %></span></dd>
+          <dt class="text-gray-500"><%= PallasTrade.t('ai.provider.connection') %></dt>
+          <dd><span class="text-gray-400"><%= PallasTrade.t('ai.provider.never_tested') %></span></dd>
 
-          <dt class="text-gray-500">Models</dt>
-          <dd><%= PallasTrade::AI::Model.where(provider: provider).count %> total, <%= PallasTrade::AI::Model.where(provider: provider, active: true).count %> active</dd>
+          <dt class="text-gray-500"><%= PallasTrade.t('ai.models') %></dt>
+          <dd><%= PallasTrade.t('ai.provider.models_count', total: PallasTrade::AI::Model.where(provider: provider).count, active: PallasTrade::AI::Model.where(provider: provider, active: true).count) %></dd>
         </dl>
 
         <div class="mt-4 flex gap-2" onclick="event.stopPropagation()">
-          <%= button_to 'Test Connection',
+          <%= button_to PallasTrade.t('ai.provider.test_connection'),
                 PallasTrade.admin_ai_test_connection_path(provider),
                 method: :post,
                 class: 'btn btn-sm btn-secondary',

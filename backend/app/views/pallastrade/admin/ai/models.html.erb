@@ -6,12 +6,12 @@
   <table class="w-full bg-white rounded shadow">
     <thead>
       <tr class="border-b text-left">
-        <th class="p-3">Name</th>
-        <th class="p-3">Provider</th>
-        <th class="p-3">Model ID</th>
-        <th class="p-3">Kind</th>
-        <th class="p-3">Active</th>
-        <th class="p-3">Action</th>
+        <th class="p-3"><%= PallasTrade.t('ai.model.name') %></th>
+        <th class="p-3"><%= PallasTrade.t('ai.model.provider') %></th>
+        <th class="p-3"><%= PallasTrade.t('ai.model.model_id') %></th>
+        <th class="p-3"><%= PallasTrade.t('ai.model.kind') %></th>
+        <th class="p-3"><%= PallasTrade.t('ai.model.active') %></th>
+        <th class="p-3"><%= PallasTrade.t('ai.model.action') %></th>
       </tr>
     </thead>
     <tbody>
@@ -24,17 +24,20 @@
           <td class="p-3">
             <%= form_tag PallasTrade.admin_ai_update_model_path(model), method: :patch do %>
               <%= hidden_field_tag :active, !model.active? %>
-              <%= submit_tag model.active? ? 'On' : 'Off', class: model.active? ? 'text-green-600 cursor-pointer bg-transparent border-0' : 'text-gray-400 cursor-pointer bg-transparent border-0' %>
+              <%= submit_tag model.active? ? PallasTrade.t('ai.model.on') : PallasTrade.t('ai.model.off'), class: model.active? ? 'text-green-600 cursor-pointer bg-transparent border-0' : 'text-gray-400 cursor-pointer bg-transparent border-0' %>
             <% end %>
           </td>
           <td class="p-3">
-            <span class="text-xs text-gray-400">Used by <%= PallasTrade::AI::CapabilitySetting.where(primary_model_id: model.id).count %> capabilities</span>
+            <span class="text-xs text-gray-400"><%= PallasTrade.t('ai.model.used_by', count: PallasTrade::AI::CapabilitySetting.where(primary_model_id: model.id).count) %></span>
           </td>
         </tr>
       <% end %>
     </tbody>
   </table>
   <% if @models.empty? %>
-    <p class="text-gray-400">No models configured.</p>
+    <div class="bg-white rounded shadow p-6 text-center">
+      <p class="text-gray-400"><%= PallasTrade.t('ai.model.empty') %></p>
+      <%= link_to PallasTrade.t('ai.provider.test_connection'), PallasTrade.admin_ai_providers_path, class: 'btn btn-sm btn-primary mt-2' %>
+    </div>
   <% end %>
 </div>

@@ -24,6 +24,10 @@ module PallasTrade
 
       # GET /admin/ai
       def index
+        # Ensure preset providers (DeepSeek/OpenAI) exist so the overview
+        # and providers pages show them even before credentials are added.
+        PallasTrade::AI::ProvisionProviders.call(store: current_store)
+
         # Overview page 鈥?shows summary of AI configuration
         @setting = PallasTrade::AI::Setting.find_or_initialize_by(store: current_store)
         @provider_count = current_store.integrations.where(
@@ -37,6 +41,9 @@ module PallasTrade
 
       # GET /admin/ai/providers
       def providers
+        # Lazy-provision preset providers so the page shows DeepSeek/OpenAI
+        # cards with "Key not configured" status even on first visit.
+        PallasTrade::AI::ProvisionProviders.call(store: current_store)
         @providers = current_store.integrations.where(
           type: %w[PallasTrade::AI::Integrations::DeepSeek PallasTrade::AI::Integrations::OpenAI]
         )
@@ -78,7 +85,8 @@ module PallasTrade
         if entry
           adapter = entry.adapter_class.constantize.new
           result = adapter.test_connection(@provider)
-          @provider.update!(last_verified_at: Time.current, verification_status: result[:status])
+          # Note: verification status persistence is not implemented yet
+          # (no verification_status / last_verified_at columns); only report.
           flash[:success] = "Connection #{result[:status]} (latency: #{result[:latency_ms]}ms)"
         else
           flash[:error] = 'Unknown provider type'

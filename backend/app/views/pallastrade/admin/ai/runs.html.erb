@@ -5,20 +5,20 @@
 <div class="space-y-4">
   <% if @runs.empty? %>
     <div class="bg-white rounded shadow p-12 text-center text-gray-400">
-      <p>No AI calls recorded yet.</p>
+      <p><%= PallasTrade.t('ai.run.empty') %></p>
     </div>
   <% else %>
     <table class="w-full bg-white rounded shadow text-sm">
       <thead>
         <tr class="border-b text-left">
-          <th class="p-3">ID</th>
-          <th class="p-3">Capability</th>
-          <th class="p-3">Model</th>
-          <th class="p-3">Status</th>
-          <th class="p-3">Tokens</th>
-          <th class="p-3">Latency</th>
-          <th class="p-3">Cost</th>
-          <th class="p-3">Time</th>
+          <th class="p-3"><%= PallasTrade.t('ai.run.id') %></th>
+          <th class="p-3"><%= PallasTrade.t('ai.run.capability') %></th>
+          <th class="p-3"><%= PallasTrade.t('ai.run.model') %></th>
+          <th class="p-3"><%= PallasTrade.t('ai.run.status') %></th>
+          <th class="p-3"><%= PallasTrade.t('ai.run.tokens') %></th>
+          <th class="p-3"><%= PallasTrade.t('ai.run.latency') %></th>
+          <th class="p-3"><%= PallasTrade.t('ai.run.cost') %></th>
+          <th class="p-3"><%= PallasTrade.t('ai.run.time') %></th>
         </tr>
       </thead>
       <tbody>

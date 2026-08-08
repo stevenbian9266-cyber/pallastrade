@@ -5,8 +5,8 @@
 <div class="space-y-4">
   <% if @capabilities.empty? %>
     <div class="bg-white rounded shadow p-12 text-center text-gray-400">
-      <p class="text-lg">No AI capabilities registered.</p>
-      <p class="text-sm mt-2">Install or develop a capability to map it to a model here.</p>
+      <p class="text-lg"><%= PallasTrade.t('ai.capability.empty') %></p>
+      <p class="text-sm mt-2"><%= PallasTrade.t('ai.capability.empty_hint') %></p>
     </div>
   <% else %>
     <% @capabilities.each do |cap| %>
@@ -19,7 +19,7 @@
           </div>
           <%= form_tag PallasTrade.admin_ai_update_capability_path(capability_key: entry.key), method: :patch do %>
             <%= hidden_field_tag :active, !setting&.active? %>
-            <%= submit_tag setting&.active? ? 'Disable' : 'Enable', class: setting&.active? ? 'btn btn-sm bg-red-500 text-white' : 'btn btn-sm bg-green-500 text-white' %>
+            <%= submit_tag setting&.active? ? PallasTrade.t('ai.capability.disable') : PallasTrade.t('ai.capability.enable'), class: setting&.active? ? 'btn btn-sm bg-red-500 text-white' : 'btn btn-sm bg-green-500 text-white' %>
           <% end %>
         </div>
         <div class="mt-2 text-sm text-gray-600">
@@ -32,7 +32,7 @@
         </div>
         <% if setting.present? %>
           <div class="mt-3 text-xs text-gray-500">
-            Model: <%= setting.primary_model&.name || 'Not set' %>
+            Model: <%= setting.primary_model&.name || PallasTrade.t('ai.capability.not_set') %>
           </div>
         <% end %>
       </div>

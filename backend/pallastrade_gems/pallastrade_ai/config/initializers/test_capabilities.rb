@@ -4,6 +4,9 @@
 # These are ONLY loaded in development/test environments.
 unless Rails.env.production?
   Rails.application.reloader.to_prepare do
+    # Guard against double registration on dev code reloads.
+    next if PallasTrade::AI.capabilities.registered?('test.echo')
+
     PallasTrade::AI.capabilities.register(
       'test.echo',
       handler: 'PallasTrade::AI::Schemas::TestEcho::Handler',

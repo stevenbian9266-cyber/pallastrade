@@ -5,7 +5,7 @@
 <% content_for :page_actions do %>
   <%= form_tag PallasTrade.admin_ai_update_provider_path(@provider), method: :patch do %>
     <%= hidden_field_tag :active, !@provider.active? %>
-    <%= submit_tag @provider.active? ? 'Deactivate' : 'Activate', class: @provider.active? ? 'btn btn-sm bg-red-500 text-white' : 'btn btn-sm bg-green-500 text-white' %>
+    <%= submit_tag @provider.active? ? PallasTrade.t('ai.provider.deactivate') : PallasTrade.t('ai.provider.activate'), class: @provider.active? ? 'btn btn-sm bg-red-500 text-white' : 'btn btn-sm bg-green-500 text-white' %>
   <% end %>
 <% end %>
 
@@ -15,10 +15,10 @@
 
   <div class="bg-white rounded shadow p-6" data-controller="replace password-visibility">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold">API Key</h2>
+      <h2 class="text-lg font-semibold"><%= PallasTrade.t('ai.provider.api_key') %></h2>
       <% if secret&.configured? %>
         <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-          Configured
+          <%= PallasTrade.t('ai.provider.configured') %>
         </span>
       <% end %>
     </div>
@@ -29,7 +29,7 @@
         <div class="bg-gray-50 border border-gray-200 rounded-md p-4 mb-4">
           <div class="flex items-center gap-2 mb-2">
             <%= icon 'lock', class: 'text-gray-500' %>
-            <span class="text-gray-700 text-sm font-medium">Secret key configured</span>
+            <span class="text-gray-700 text-sm font-medium"><%= PallasTrade.t('ai.provider.secret_key_configured') %></span>
           </div>
           <div class="flex items-center gap-2">
             <code class="text-sm text-gray-600 font-mono">
@@ -48,14 +48,14 @@
           <button type="button" class="btn btn-sm btn-light"
                   data-action="click->replace#replace">
             <%= icon 'edit' %>
-            Replace
+            <%= PallasTrade.t('ai.provider.replace') %>
           </button>
-          <%= button_to 'Delete',
+          <%= button_to PallasTrade.t('ai.provider.delete'),
                 PallasTrade.admin_ai_clear_credential_path(@provider),
                 method: :delete,
                 class: 'btn btn-sm bg-red-500 text-white',
                 data: {
-                  turbo_confirm: "Delete API Key?\n\nThis will stop all AI calls using #{@provider.name}. Models and capabilities will be unavailable.\n\nThis action cannot be undone."
+                  turbo_confirm: PallasTrade.t('ai.provider.delete_confirm', name: @provider.name)
                 } %>
         </div>
       </div>
@@ -64,7 +64,7 @@
       <div data-replace-target="to" class="hidden">
         <%= form_tag PallasTrade.admin_ai_update_provider_path(@provider), method: :patch do %>
           <div class="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-            <p class="text-sm text-yellow-800">The current key will be replaced immediately. This cannot be undone.</p>
+            <p class="text-sm text-yellow-800"><%= PallasTrade.t('ai.provider.replace_warning') %></p>
           </div>
           <div class="input-group gap-0 pr-1 mb-3">
             <%= password_field_tag :api_key, '', 
@@ -78,10 +78,10 @@
             </button>
           </div>
           <div class="flex gap-2">
-            <%= submit_tag 'Replace Key', class: 'btn btn-primary' %>
+            <%= submit_tag PallasTrade.t('ai.provider.replace_key'), class: 'btn btn-primary' %>
             <button type="button" class="btn btn-light"
                     data-action="click->replace#replace">
-              Cancel
+              <%= PallasTrade.t('ai.provider.cancel') %>
             </button>
           </div>
         <% end %>
@@ -92,7 +92,7 @@
       <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
         <div class="flex items-center gap-2">
           <%= icon 'alert-triangle', class: 'text-yellow-600' %>
-          <p class="text-sm text-yellow-800">No API key configured. Add one to enable AI capabilities.</p>
+          <p class="text-sm text-yellow-800"><%= PallasTrade.t('ai.provider.no_key') %></p>
         </div>
       </div>
       <%= form_tag PallasTrade.admin_ai_update_provider_path(@provider), method: :patch do %>
@@ -107,22 +107,23 @@
             <span data-password-visibility-target="icon" class="hidden"><%= icon 'eye-off', class: 'mr-0' %></span>
           </button>
         </div>
-        <%= submit_tag 'Save Key', class: 'btn btn-primary' %>
+        <%= submit_tag PallasTrade.t('ai.provider.save_key'), class: 'btn btn-primary' %>
       <% end %>
     <% end %>
   </div>
 
   <div class="bg-white rounded shadow p-6">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold">Connection</h2>
-      <%= button_to 'Test Connection', PallasTrade.admin_ai_test_connection_path(@provider), method: :post, class: 'btn btn-sm btn-secondary' %>
+      <h2 class="text-lg font-semibold"><%= PallasTrade.t('ai.provider.connection') %></h2>
+      <%= button_to PallasTrade.t('ai.provider.test_connection'), PallasTrade.admin_ai_test_connection_path(@provider), method: :post, class: 'btn btn-sm btn-secondary' %>
     </div>
     <dl class="space-y-2 text-sm">
-      <dt class="text-gray-500">Status</dt>
-      <dd><%= @provider.verification_status || 'Never tested' %></dd>
-      <dt class="text-gray-500">Last Verified</dt>
-      <dd><%= @provider.last_verified_at ? l(@provider.last_verified_at, format: :long) : 'Never' %></dd>
-      <dt class="text-gray-500">Base URL</dt>
+      <dt class="text-gray-500"><%= PallasTrade.t('ai.provider.status') %></dt>
+      <%# Connection verification is not yet persisted; show untested state. %>
+      <dd><%= PallasTrade.t('ai.provider.never_tested') %></dd>
+      <dt class="text-gray-500"><%= PallasTrade.t('ai.provider.last_verified') %></dt>
+      <dd><%= PallasTrade.t('ai.provider.never') %></dd>
+      <dt class="text-gray-500"><%= PallasTrade.t('ai.provider.base_url') %></dt>
       <dd class="font-mono text-xs"><%= @provider.preferences['base_url'] %></dd>
     </dl>
   </div>

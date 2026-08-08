@@ -28,10 +28,11 @@ module PallasTrade
           klass = entry.integration_class.constantize
           next if @store.integrations.exists?(type: klass.name)
 
+          # Integration has no name column — display_name is derived from
+          # the STI class (integration_name), so only store + active are set.
           klass.create!(
             store: @store,
-            active: false,
-            name: entry.display_name
+            active: false
           )
         end
       end
