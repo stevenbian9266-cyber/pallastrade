@@ -38,6 +38,17 @@ This sets up the PallasTrade Commerce backend, the Classic Admin (`pallastrade_a
 
 You need to have Node.js (22+) installed and Docker running. Learn more in the [installation docs](https://pallastrade.cn/docs/developer/getting-started/quickstart).
 
+## Testing & Coverage
+
+Platform packages run on [Vitest](https://vitest.dev). Coverage is gated by the harness (see `scripts/harness/coverage.mjs`); each package's vitest config emits a `json-summary` report that the harness aggregates:
+
+```bash
+pnpm --filter @pallastrade/sdk test:coverage     # emits packages/sdk/coverage/coverage-summary.json
+node scripts/harness/cli.mjs coverage --enforce  # gate against harness/config.json thresholds
+```
+
+Coverage thresholds live in `harness/config.json` (`coverage.thresholds`). The nightly workflow runs the full test + coverage gate every day.
+
 If you like what you see, consider giving PallasTrade a GitHub star ⭐
 
 Thank you for supporting PallasTrade open-source ❤️
