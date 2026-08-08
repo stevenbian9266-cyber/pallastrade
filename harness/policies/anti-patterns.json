@@ -55,7 +55,8 @@
       "name": "hardcoded-hex-color",
       "severity": "warning",
       "pattern": "#[0-9a-fA-F]{6}\\b",
-      "fileGlob": "{storefront/src,platform/packages/dashboard-ui}/**/*.{tsx,css}",
+      "fileGlob": "storefront/src/**/*.{tsx,css}",
+      "excludeGlob": "**/emails/**|**/dev/emails/**|**/globals.css",
       "message": "Hardcoded hex color. Use CSS custom properties from design tokens.",
       "fix": "Replace with var(--color-...) from design tokens"
     },

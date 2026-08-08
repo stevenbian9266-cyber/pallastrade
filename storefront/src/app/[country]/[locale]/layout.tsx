@@ -48,21 +48,26 @@ export default async function CountryLocaleLayout({
 
   const markets = await getMarkets({ country, locale })
     .then((res) => res.data)
-    .catch(() => []);
+    .catch(() => null);
+
+  // Explicitly handle the "API down / 401" unknown state: treat it as no
+  // markets so we never redirect into an infinite loop, and pass an empty
+  // list to the client (degraded UI uses default locale/country).
+  const marketList = markets ?? [];
 
   // Validate that the URL country belongs to an available market.
   // If not, redirect server-side to avoid SSR with wrong prices.
   // BUT: if markets failed to load (API down / 401), don't redirect —
   // that would create an infinite loop since every page load would fail
   // and redirect back to the default, which would fail again, etc.
-  const isValidCountry = markets.some((market) =>
+  const isValidCountry = marketList.some((market) =>
     market.countries?.some(
       (c) => c.iso.toLowerCase() === country.toLowerCase(),
     ),
   );
 
-  if (!isValidCountry && markets.length > 0) {
-    const defaultMarket = markets.find((m) => m.default) ?? markets[0];
+  if (!isValidCountry && marketList.length > 0) {
+    const defaultMarket = marketList.find((m) => m.default) ?? marketList[0];
     const fallbackCountry =
       defaultMarket?.countries?.[0]?.iso.toLowerCase() ?? getDefaultCountry();
     const fallbackLocale = defaultMarket?.default_locale ?? getDefaultLocale();
@@ -84,7 +89,7 @@ export default async function CountryLocaleLayout({
       <StoreProvider
         initialCountry={country}
         initialLocale={locale}
-        initialMarkets={markets}
+        initialMarkets={marketList}
       >
         <AuthProvider>
           <CartProvider>

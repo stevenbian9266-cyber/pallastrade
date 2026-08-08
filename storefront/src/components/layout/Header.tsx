@@ -63,8 +63,7 @@ export async function Header({
             alt={storeName}
             width={90}
             height={32}
-            className="max-w-full object-contain"
-            style={{ width: "auto", height: "auto" }}
+            className="max-w-full object-contain !w-auto !h-auto"
             fetchPriority="high"
             loading="eager"
           />

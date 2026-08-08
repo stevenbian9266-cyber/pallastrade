@@ -16,7 +16,9 @@ export function scan({ rootDir, files: fileFilter = null }) {
 
   for (const rule of rules) {
     try {
-      const globbed = globSync(rule.fileGlob, { cwd: rootDir, exclude: rule.excludeGlob ? [rule.excludeGlob] : [] });
+      // excludeGlob may contain multiple patterns separated by '|'.
+      const excludes = rule.excludeGlob ? rule.excludeGlob.split('|').map(s => s.trim()).filter(Boolean) : [];
+      const globbed = globSync(rule.fileGlob, { cwd: rootDir, exclude: excludes });
       // When a file filter is provided (e.g. lefthook {staged_files}), only
       // scan the intersection with this rule's glob. Normalize separators —
       // glob returns Windows backslash paths, filter may be forward-slash.

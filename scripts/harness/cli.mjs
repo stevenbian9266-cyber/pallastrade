@@ -715,7 +715,8 @@ else if (cmd === 'prd') {
   // prd verify — ensure every AC in the PRD has a test tagged with "<PRD> AC-x"
   if (sub === 'verify') {
     const id = getArg(args, '--id') || args[2];
-    if (!id) { console.log('Usage: harness prd verify --id PRD-xxx'); process.exit(1); }
+    const allowMissing = hasArg(args, '--allow-missing-tests');
+    if (!id) { console.log('Usage: harness prd verify --id PRD-xxx [--allow-missing-tests]'); process.exit(1); }
     const prdDir = resolve(ROOT, 'docs', 'prd');
     if (!existsSync(prdDir)) { console.log('No docs/prd directory.'); process.exit(1); }
     let prdPath = null;
@@ -729,7 +730,10 @@ else if (cmd === 'prd') {
     // Ignore HTML comments (template examples live in comments) so only real ACs count.
     const stripped = content.replace(/<!--[\s\S]*?-->/g, '');
     const acs = [...stripped.matchAll(/AC-(\d+)/g)].map(m => m[1]);
-    if (acs.length === 0) { console.log(`⚠️ PRD ${id} 中未找到 AC（验收标准）标注。`); process.exit(1); }
+    if (acs.length === 0) {
+      if (allowMissing) { console.log(`⚠️ PRD ${id} 无 AC 标注（--allow-missing-tests：删除/重构类任务允许）。`); process.exit(0); }
+      console.log(`⚠️ PRD ${id} 中未找到 AC（验收标准）标注。`); process.exit(1);
+    }
     console.log(`PRD ${id}: ${acs.length} 个 AC`);
     const missing = [];
     for (const ac of acs) {
@@ -744,6 +748,10 @@ else if (cmd === 'prd') {
       else console.log(`  ✅ AC-${ac} → ${files.length} 个测试文件`);
     }
     if (missing.length > 0) {
+      if (allowMissing) {
+        console.log(`\n⚠️ ${missing.length} 个 AC 无测试覆盖（--allow-missing-tests：删除/重构类任务允许）。`);
+        process.exit(0);
+      }
       console.log(`\n❌ 以下 AC 无测试覆盖（测试文件需标注 "${id} AC-x"）:`);
       missing.forEach(m => console.log(`   - ${m}`));
       process.exit(1);
@@ -872,7 +880,29 @@ else if (cmd === 'nav:check') {
     console.log('   修复: 精简为指向 AGENTS.md §5 / anti-patterns.json。');
     process.exit(1);
   }
-  console.log(`✅ nav:check — 导航地图 ${paths.length} 个引用全部有效，无重复定义。`);
+
+  // Layer AGENTS.md → CLAUDE.md reference check (each layer's AGENTS.md must
+  // point at a CLAUDE.md that actually exists).
+  const layerAgents = ['backend/AGENTS.md', 'platform/AGENTS.md', 'storefront/AGENTS.md'];
+  const layerBroken = [];
+  for (const la of layerAgents) {
+    const laPath = resolve(ROOT, la);
+    if (!existsSync(laPath)) { layerBroken.push(`${la} (missing)`); continue; }
+    const laContent = readFileSync(laPath, 'utf-8');
+    const refs = [...laContent.matchAll(/\[([^\]]+\.md)\]\(\.\/([^)]+\.md)\)/g)].map(m => m[2]);
+    for (const ref of refs) {
+      const dir = la.slice(0, la.lastIndexOf('/'));
+      if (!existsSync(resolve(ROOT, dir, ref))) {
+        layerBroken.push(`${la} → ${dir}/${ref}`);
+      }
+    }
+  }
+  if (layerBroken.length > 0) {
+    console.log(`❌ nav:check — 各层 AGENTS.md 引用的文档缺失: ${layerBroken.join('; ')}`);
+    process.exit(1);
+  }
+
+  console.log(`✅ nav:check — 导航地图 ${paths.length} 个引用全部有效，各层 AGENTS.md→CLAUDE.md 引用完整，无重复定义。`);
   process.exit(0);
 }
 

@@ -77,6 +77,24 @@
       "scoring": { "correctDiagnosis": 60, "correctFix": 40 }
     },
     {
+      "id": "GS-010",
+      "name": "Storefront dynamic styling is a valid AP-001/006 exception",
+      "description": "AI should recognize that dynamic inline styles (backgroundImage from data, backgroundColor from option.color_code, progress widths from percentages, animation delays) and SDK configuration objects (PayPalButtons style, Stripe Elements variables, sonner CSS variables) are acceptable exceptions to AP-001/AP-006 — they are NOT static styles and must not be rewritten into Tailwind classes",
+      "mustDo": [
+        "Treat data-driven inline styles (image URLs, color codes, percentages, animation delays) as acceptable AP-001/006 exceptions",
+        "Treat SDK configuration objects (PayPalButtons style, Stripe Elements variables) as non-DOM styles",
+        "Treat CSS variable injection (sonner --normal-bg) as required",
+        "Only convert genuinely static inline styles (fixed width/height/color) to Tailwind classes",
+        "Keep email template inline styles (email clients do not support external CSS)"
+      ],
+      "mustNotDo": [
+        "Rewrite dynamic styles into Tailwind classes (breaks functionality)",
+        "Convert PayPal/Stripe SDK config objects to CSS",
+        "Move email template inline styles to Tailwind"
+      ],
+      "scoring": { "dynamicRecognized": 40, "staticConverted": 30, "sdkConfigUntouched": 30 }
+    },
+    {
       "id": "GS-011",
       "name": "Admin category management with hierarchy",
       "description": "AI should use existing PallasTrade::Category model (not build from scratch), inherit ResourceController, use nested_set for hierarchy",

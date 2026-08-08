@@ -182,3 +182,24 @@ test('nav:check validates the AGENTS.md §0 navigation map', () => {
   assert.equal(res.code, 0, res.out);
   assert.match(res.out, /导航地图/);
 });
+
+test('prd verify --allow-missing-tests passes for deletion-style PRDs', () => {
+  const ts = Date.now();
+  const title = `测试：PRD allow-missing ${ts}`;
+  const { code: newCode, out: newOut } = run('prd', 'new', '--title', title);
+  assert.equal(newCode, 0, newOut);
+  const rel = newOut.match(/docs[\\/]prd[\\/][^\s]+\.md/);
+  assert.ok(rel, `PRD path reported: ${newOut}`);
+  const filePath = rel[0];
+  const id = filePath.split(/[\\/]/).pop().replace(/\.md$/, '');
+  try {
+    // No real AC → verify fails by default…
+    const fail = run('prd', 'verify', '--id', id);
+    assert.equal(fail.code, 1, fail.out);
+    // …but --allow-missing-tests (deletion/refactor tasks) passes.
+    const pass = run('prd', 'verify', '--id', id, '--allow-missing-tests');
+    assert.equal(pass.code, 0, pass.out);
+  } finally {
+    unlinkSync(join(ROOT, filePath));
+  }
+});

@@ -207,7 +207,7 @@ function MobileOptionSection({
                         }
                       : option.color_code
                         ? { backgroundColor: option.color_code }
-                        : { backgroundColor: "#e5e7eb" }
+                        : { backgroundColor: "var(--color-gray-200)" }
                   }
                 />
                 <span
