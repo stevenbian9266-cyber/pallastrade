@@ -77,6 +77,8 @@ pallastrade restart
 
 ## Customizing the sidebar
 
+> Note (2026-08): The sidebar **Enterprise Edition upgrade notice was removed** — the admin sidebar renders navigation + user menu only, with no upgrade/Community-Edition prompt. Do not reintroduce upgrade marketing blocks.
+
 Sidebar entries are registered in initializers. Pattern:
 
 ```ruby

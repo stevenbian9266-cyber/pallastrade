@@ -64,9 +64,9 @@ const SYNC_RULES = [
     label: 'Standards index change → navigation map sync',
   },
   {
-    codeGlob: /^docs\/prd\//,
+    codeGlob: /^docs\/prd\/_TEMPLATE\.md$/,
     docs: ['ai/skills/pallastrade-prd/SKILL.md'],
-    label: 'PRD doc change',
+    label: 'PRD template change',
   },
   {
     codeGlob: /^ai\/commands\/|^ai\/agents\//,

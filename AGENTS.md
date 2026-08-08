@@ -289,7 +289,8 @@ Before clearing `verify-test`, provide objective evidence:
 | `storefront/src/components/**/*.tsx` (new/modified) | `ai/skills/pallastrade-storefront/SKILL.md` §Components |
 | `storefront/src/app/**/*.tsx` (new page/route) | `ai/skills/pallastrade-storefront/SKILL.md` + E2E test |
 | `*.css` / `tailwind.config.*` (modified) | `ai/skills/pallastrade-storefront/SKILL.md` §Style Guide or `pallastrade-admin/SKILL.md` §Styling |
-| `docs/prd/**` (new/modified PRD) | `ai/skills/pallastrade-prd/SKILL.md` + `docs/prd/README.md` index |
+| `docs/prd/_TEMPLATE.md` (modified) | `ai/skills/pallastrade-prd/SKILL.md` |
+| `docs/prd/**` (new PRD) | `docs/prd/README.md` index |
 | `harness/policies/prd-categories.json` (modified) | `ai/skills/pallastrade-prd/SKILL.md` |
 | `harness/policies/{anti-patterns,task-rules}.json` (modified) | This `AGENTS.md` §5 + `.github/copilot-instructions.md` |
 | `ai/commands/**` / `ai/agents/**` (modified) | `ai/README.md` |
