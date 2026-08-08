@@ -1,0 +1,22 @@
+# Eval Scenario GS-014: Knowledge sync gate for code changes
+
+AI should evaluate and update all knowledge assets (Skill / README / Agent files / style & technical standards / anti-patterns / scenarios / API docs) affected by a code change, not just the code
+
+## MUST do
+- Run harness sync-check --id PRD-xxx to list assets needing review
+- Update each affected asset (e.g. api-docs yaml for API changes, storefront Skill for UI changes)
+- Record conclusions (updated / evaluated-no-change-needed) in PRD §9/§10
+- Confirm with harness sync-check --ack before closing verify-test
+- Run harness doc-impact --base origin/main to verify skill sync
+
+## MUST NOT do
+- Change API endpoints without updating backend/public/api-docs/{store,admin}.yaml
+- Change storefront components without updating the storefront Skill
+- Skip asset evaluation and mark done
+- Ignore sync-check output
+
+## Scoring
+- syncCheckRun: 25
+- assetsUpdated: 35
+- prdRecorded: 20
+- docImpact: 20

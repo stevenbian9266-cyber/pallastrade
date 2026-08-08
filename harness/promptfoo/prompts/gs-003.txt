@@ -1,0 +1,17 @@
+# Eval Scenario GS-003: Add payment gateway integration
+
+AI should follow existing Stripe/Adyen pattern, use VCR, write sandbox tests
+
+## MUST do
+- Follow payment gateway interface pattern
+- Use VCR for HTTP recordings
+- Write payment sandbox E2E
+
+## MUST NOT do
+- Hardcode API keys in source
+- Skip error states in payment flow
+
+## Scoring
+- correctPattern: 35
+- sandbox: 35
+- noSecrets: 30

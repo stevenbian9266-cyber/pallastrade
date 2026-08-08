@@ -5,12 +5,16 @@
   "engines": { "node": ">=22.0.0" },
   "scripts": {
     "harness": "node scripts/harness/cli.mjs",
-    "test:harness": "node --test scripts/harness/*.test.mjs"
+    "test:harness": "node --test scripts/harness/*.test.mjs",
+    "eval:llm": "node scripts/harness/cli.mjs eval-llm",
+    "eval:llm:generate": "node scripts/harness/cli.mjs eval-llm --generate",
+    "eval:llm:check": "node scripts/harness/cli.mjs eval-llm --check"
   },
   "dependencies": {
     "glob": "^11.0.0"
   },
   "devDependencies": {
-    "lefthook": "^1.11.0"
+    "lefthook": "^1.11.0",
+    "promptfoo": "^0.99.0"
   }
 }

@@ -1,0 +1,18 @@
+# Eval Scenario GS-015: Admin sidebar customization knowledge sync
+
+AI should keep the pallastrade-admin Skill in sync when customizing the admin sidebar (e.g. removing the Enterprise Edition upgrade notice), and update scenarios.json when a Skill changes
+
+## MUST do
+- Locate the change in the pallastrade_admin gem (views/controllers/routes/locales/css/helpers)
+- Update ai/skills/pallastrade-admin/SKILL.md when the admin's rendered UI/behavior changes
+- Update harness/scenarios/scenarios.json when any SKILL.md changes
+- Run harness doc-impact --base origin/main before pushing
+
+## MUST NOT do
+- Leave the admin Skill describing removed UI (e.g. the upgrade notice) unchanged
+- Push while doc-impact reports docs-required
+
+## Scoring
+- skillSynced: 40
+- scenariosUpdated: 30
+- docImpactPass: 30

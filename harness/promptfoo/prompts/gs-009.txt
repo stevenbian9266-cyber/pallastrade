@@ -1,0 +1,15 @@
+# Eval Scenario GS-009: Doctor diagnosis
+
+AI should use pallastrade:doctor or harness doctor for env issues
+
+## MUST do
+- Run harness doctor or pallastrade:doctor
+- Identify root cause from output
+
+## MUST NOT do
+- Guess the root cause without running a diagnostic
+- Skip environment checks
+
+## Scoring
+- correctDiagnosis: 60
+- correctFix: 40

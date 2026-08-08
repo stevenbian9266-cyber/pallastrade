@@ -13,7 +13,7 @@
  *   0 — all present components meet thresholds (or no data & !enforce)
  *   1 — a component is below threshold, or (--enforce) a required component has no data
  */
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 function loadConfig(rootDir) {
@@ -43,6 +43,41 @@ function parseV8Summary(file) {
   };
 }
 
+/**
+ * Aggregates per-package vitest v8 coverage summaries under platform/packages
+ * (each package's coverage directory) into a single line/statement percentage
+ * (weighted by covered/total).
+ */
+function aggregatePlatform(rootDir) {
+  const packagesDir = resolve(rootDir, 'platform', 'packages');
+  if (!existsSync(packagesDir)) return null;
+  let totalLines = 0;
+  let coveredLines = 0;
+  let totalStatements = 0;
+  let coveredStatements = 0;
+  let found = false;
+  for (const pkg of readdirSync(packagesDir)) {
+    const f = resolve(packagesDir, pkg, 'coverage', 'coverage-summary.json');
+    if (!existsSync(f)) continue;
+    found = true;
+    const t = JSON.parse(readFileSync(f, 'utf-8'))?.total;
+    if (!t) continue;
+    if (t.lines) {
+      totalLines += t.lines.total ?? 0;
+      coveredLines += t.lines.covered ?? 0;
+    }
+    if (t.statements) {
+      totalStatements += t.statements.total ?? 0;
+      coveredStatements += t.statements.covered ?? 0;
+    }
+  }
+  if (!found) return null;
+  return {
+    lines: totalLines > 0 ? (coveredLines / totalLines) * 100 : null,
+    statements: totalStatements > 0 ? (coveredStatements / totalStatements) * 100 : null,
+  };
+}
+
 const COMPONENT_DEFS = {
   backend: {
     files: ['backend/coverage/cobertura-coverage.xml', 'coverage/cobertura-coverage.xml'],
@@ -55,6 +90,7 @@ const COMPONENT_DEFS = {
   platform: {
     files: ['platform/coverage/coverage-summary.json'],
     parser: parseV8Summary,
+    aggregate: aggregatePlatform,
   },
 };
 
@@ -75,16 +111,25 @@ export function run({ rootDir, args }) {
     }
 
     const file = def.files.find(f => existsSync(resolve(rootDir, f)));
-    if (!file) {
+    let data = null;
+    let source = null;
+    if (file) {
+      data = def.parser(resolve(rootDir, file));
+      source = file;
+    } else if (def.aggregate) {
+      data = def.aggregate(rootDir);
+      source = 'aggregated platform/packages coverage';
+    }
+
+    if (!source || !data) {
       const msg = `coverage: no data for ${comp} (looked for ${def.files.join(' or ')}). Run tests with coverage first.`;
       if (enforce) { console.log(`❌ ${msg}`); failed = true; }
       else console.log(`ℹ️  ${msg}`);
       continue;
     }
 
-    const data = def.parser(resolve(rootDir, file));
     if (!data) {
-      const msg = `coverage: unparseable data for ${comp} at ${file}`;
+      const msg = `coverage: unparseable data for ${comp} at ${source}`;
       if (enforce) { console.log(`❌ ${msg}`); failed = true; }
       else console.log(`ℹ️  ${msg}`);
       continue;

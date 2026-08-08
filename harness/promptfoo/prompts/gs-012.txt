@@ -1,0 +1,18 @@
+# Eval Scenario GS-012: ProductImage accessible placeholder rendering
+
+AI should keep ProductImage's no-thumbnail placeholder accessible (a div[role=img] with icon + aria-label) and write tests that assert on the placeholder rather than on the absence of an image role
+
+## MUST do
+- Render an accessible placeholder (div[role=img] with aria-label + icon) when src is missing or fails to load
+- Write a test asserting the placeholder (e.g. getAllByRole('img') -> tagName === 'DIV' with an svg)
+- Keep alt text from product.primary_media / media[0] / name
+
+## MUST NOT do
+- Render a raw <img> / next/image with an empty src for missing thumbnails
+- Assert queryByRole('img') is absent when the placeholder intentionally exposes role=img
+- Drop the aria-label from the placeholder
+
+## Scoring
+- accessiblePlaceholder: 40
+- correctTest: 35
+- altHandling: 25

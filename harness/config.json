@@ -4,8 +4,8 @@
   "coverage": {
     "thresholds": {
       "backend": { "line": 80, "branch": 60 },
-      "storefront": { "lines": 5 },
-      "platform": { "lines": 5 }
+      "storefront": { "lines": 10 },
+      "platform": { "lines": 8 }
     }
   },
   "profiles": {

@@ -1,0 +1,20 @@
+# Eval Scenario GS-001: Add API v3 endpoint for new resource
+
+AI should use pallastrade:api_resource generator, prefixed IDs, store scope
+
+## MUST do
+- Use pallastrade:api_resource generator
+- Use prefixed IDs in API responses
+- Scope queries through current_store
+- Include RSpec model + request specs
+
+## MUST NOT do
+- Hand-write controller without generator
+- Expose raw integer IDs
+- Skip test coverage
+
+## Scoring
+- correctFiles: 30
+- correctPatterns: 30
+- testCoverage: 25
+- noAntiPatterns: 15

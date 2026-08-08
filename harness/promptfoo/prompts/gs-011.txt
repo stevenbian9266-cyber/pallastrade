@@ -1,0 +1,27 @@
+# Eval Scenario GS-011: Admin category management with hierarchy
+
+AI should use existing PallasTrade::Category model (not build from scratch), inherit ResourceController, use nested_set for hierarchy
+
+## MUST do
+- Use existing PallasTrade::Category model (Category < Taxon with acts_as_nested_set)
+- Inherit from PallasTrade::Admin::ResourceController
+- Display 3-level hierarchy in index view
+- Use prefixed IDs (ctg_xxx)
+- Scope through current_store
+- Write model spec + request spec
+- Update pallastrade-catalog Skill with admin management section
+- Add Eval Scenario
+
+## MUST NOT do
+- Build a new model from scratch (Category already exists)
+- Expose raw integer IDs
+- Bypass current_store scope
+- Skip test coverage
+- Forget to register admin navigation
+
+## Scoring
+- useExistingModel: 25
+- correctController: 20
+- hierarchyDisplay: 20
+- testCoverage: 20
+- skillUpdate: 15

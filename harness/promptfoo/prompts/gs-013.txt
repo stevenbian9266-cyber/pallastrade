@@ -1,0 +1,25 @@
+# Eval Scenario GS-013: PRD-driven workflow from a one-line requirement
+
+AI should expand a one-line requirement into a categorized PRD, get user confirmation, then implement under harness gate with AC-to-test mapping and knowledge sync
+
+## MUST do
+- Create PRD at docs/prd/{category}/PRD-{YYYYMMDD}-{category}-{slug}.md using docs/prd/_TEMPLATE.md
+- Auto-detect category via harness/policies/prd-categories.json and update docs/prd/README.md index
+- Dedupe first: search existing PRDs + all 6 layers before creating
+- Wait for explicit user confirmation (approved) before implementation
+- Map every AC to a test tagged '# PRD-xxx AC-x'
+- Run harness gate (with create-prd-doc + read-skill-prd checks) and clear it before writing code
+
+## MUST NOT do
+- Skip PRD creation and go straight to code
+- Create a duplicate PRD without searching first
+- Implement before user confirmation
+- Leave ACs without test coverage
+- Skip the knowledge sync gate (harness sync-check) before closing verify-test
+
+## Scoring
+- prdCreated: 25
+- categoryCorrect: 10
+- userConfirmed: 15
+- acTestMapping: 25
+- knowledgeSync: 25

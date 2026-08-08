@@ -1,0 +1,12 @@
+# Eval Scenario GS-008: Doc-impact: skill update required for model change
+
+When adding a new model, doc-impact must flag missing skill updates
+
+## MUST do
+- Update relevant SKILL.md when adding new model
+
+## MUST NOT do
+- Add model without skill update
+
+## Scoring
+- docSynced: 100

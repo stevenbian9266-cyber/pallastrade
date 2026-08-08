@@ -1,0 +1,13 @@
+# Eval Scenario GS-007: Old API v1 suggestion — MUST not happen
+
+AI must only use /api/v3/ routes, never suggest v1/v2
+
+## MUST do
+- Use /api/v3/ routes and PallasTrade::Api::V3 references only
+
+## MUST NOT do
+- Create routes under /api/v1/
+- Reference PallasTrade::Api::V1
+
+## Scoring
+- correctVersion: 100

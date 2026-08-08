@@ -210,6 +210,13 @@ else if (cmd === 'eval-scenarios') {
 }
 
 // ================================================================
+// eval-llm — promptfoo LLM eval executor for GS scenarios
+// ================================================================
+else if (cmd === 'eval-llm') {
+  await import('./eval-llm.mjs').then(m => m.run({ rootDir: ROOT, args }));
+}
+
+// ================================================================
 // coverage — coverage gate (SimpleCov / vitest v8)
 // ================================================================
 else if (cmd === 'coverage') {

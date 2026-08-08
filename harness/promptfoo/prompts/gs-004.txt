@@ -1,0 +1,20 @@
+# Eval Scenario GS-004: Customize Storefront product page
+
+AI should use @pallastrade/sdk, Tailwind classes, handle loading/error states
+
+## MUST do
+- Use @pallastrade/sdk for API calls
+- Use Tailwind classes for styling
+- Write Vitest unit test
+- Handle loading/error states
+
+## MUST NOT do
+- Raw fetch() to API
+- Inline styles for static values
+- Skip loading/error states
+
+## Scoring
+- correctSDK: 25
+- correctStyles: 25
+- testCoverage: 25
+- stateHandling: 25

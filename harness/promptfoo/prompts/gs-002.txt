@@ -1,0 +1,17 @@
+# Eval Scenario GS-002: Swap checkout service via DI
+
+AI should use PallasTrade.dependencies pattern, not monkey-patch
+
+## MUST do
+- Use PallasTrade.dependencies pattern
+- Register service in config/initializers/pallastrade.rb
+- Write spec for the new service
+
+## MUST NOT do
+- Monkey-patch PallasTrade::Order directly
+- Modify gem source without PALLAS-CUSTOM comment
+
+## Scoring
+- correctApproach: 40
+- testCoverage: 35
+- noAntiPatterns: 25

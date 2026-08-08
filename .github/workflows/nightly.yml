@@ -1,0 +1,60 @@
+name: Nightly Full Test
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend full suite
+    uses: ./.github/workflows/backend-ci.yml
+
+  storefront:
+    name: Storefront suite
+    uses: ./.github/workflows/storefront-ci.yml
+
+  platform:
+    name: Platform suite
+    uses: ./.github/workflows/platform-ci.yml
+
+  harness:
+    name: Harness full check + coverage gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.1.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: platform/pnpm-lock.yaml
+      - name: Install root deps (ignore native scripts)
+        run: pnpm install --ignore-scripts
+      - name: Install + build SDK deps
+        working-directory: platform
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter @pallastrade/sdk-core build
+          pnpm --filter @pallastrade/sdk build
+      - name: Storefront coverage
+        working-directory: storefront
+        run: pnpm test:coverage
+      - name: Platform coverage (sdk)
+        working-directory: platform
+        run: pnpm --filter @pallastrade/sdk test:coverage
+      - name: Harness full checks
+        run: node scripts/harness/cli.mjs check --profile full
+      - name: Coverage gate — storefront
+        run: node scripts/harness/cli.mjs coverage --component storefront --enforce
+      - name: Coverage gate — platform
+        run: node scripts/harness/cli.mjs coverage --component platform --enforce
+      - name: Freshness + scenarios
+        run: |
+          node scripts/harness/cli.mjs eval-ai --check-freshness
+          node scripts/harness/cli.mjs eval-ai --scenarios
