@@ -17,3 +17,7 @@ Thumbs.db
 
 # Editor backups
 .vscode/*.backup
+
+# Local-only Claude Code settings (machine-specific, never commit)
+.claude/settings.local.json
+**/settings.local.json

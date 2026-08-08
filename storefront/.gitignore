@@ -34,6 +34,7 @@ yarn-error.log*
 .env
 .env.local
 .env.e2e
+e2e-backend/.env
 
 # vercel
 .vercel
