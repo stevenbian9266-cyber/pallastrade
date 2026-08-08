@@ -187,9 +187,6 @@ en:
       edit_profile: Edit Profile
       edit_shipping_address: Edit shipping address
       edit_theme: Edit theme
-      enterprise_edition_notice:
-        body: Thank you for using PallasTrade Community Edition! Please consider upgrading to Enterprise Edition for access to all features and support.
-        upgrade: Upgrade
       errors: Errors
       execution_time: Execution Time
       expand_sidebar: Expand sidebar

@@ -38,7 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
-| _（暂无 PRD，首次创建后由 AI 维护本表）_ | | | | |
+| done | PRD-20260808-admin-去掉管理后台左侧菜单的升级逻辑-community-edition-升级提示 | admin | 2026-08-08 | REQ-20260808-remove-enterprise-notice |
 
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 

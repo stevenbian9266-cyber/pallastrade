@@ -7,10 +7,6 @@ module PallasTrade
         end.join.html_safe
       end
 
-      def enterprise_edition?
-        defined?(PallasTradeEnterprise)
-      end
-
       # @return [PallasTrade::Admin::Updater] the pallastrade updater
       def pallastrade_updater
         @pallastrade_updater ||= PallasTrade::Admin::Updater

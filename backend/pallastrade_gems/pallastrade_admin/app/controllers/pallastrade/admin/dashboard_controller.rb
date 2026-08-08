@@ -58,12 +58,6 @@ module PallasTrade
         load_analytics_data
       end
 
-      # PATCH /admin/dashboard/dismiss_enterprise_edition_notice
-      def dismiss_enterprise_edition_notice
-        session[:pallastrade_enterprise_edition_notice_dismissed] = true
-        redirect_back(fallback_location: PallasTrade.admin_dashboard_path)
-      end
-
       # PATCH /admin/dashboard/dismiss_updater_notice
       def dismiss_updater_notice
         session[:pallastrade_updater_notice_dismissed] = { value: true, expires_at: 7.days.from_now }

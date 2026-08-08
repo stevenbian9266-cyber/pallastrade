@@ -390,11 +390,6 @@
     @apply flex! m-0;
   }
 
-  /* Hide enterprise edition notice when collapsed */
-  body.sidebar-collapsed #main-sidebar #enterprise-edition-notice {
-    @apply hidden;
-  }
-
   /* Hide mt-auto sections when collapsed */
   body.sidebar-collapsed #main-sidebar .mt-auto {
     @apply hidden;
@@ -559,24 +554,6 @@
 
   .sidebar-mobile.sidebar-mobile-open .sidebar-panel {
     @apply translate-x-0;
-  }
-
-  /* Enterprise Edition Notice */
-  #enterprise-edition-notice {
-    @apply relative text-xs py-2 px-3 m-3 border shadow-xs rounded-lg;
-    background-image: none;
-  }
-
-  #enterprise-edition-notice p {
-    @apply mb-2;
-  }
-
-  #enterprise-edition-notice .btn-close {
-    @apply absolute end-1 top-1 text-inherit!;
-  }
-
-  #enterprise-edition-notice .btn-close:hover {
-    @apply bg-transparent!;
   }
 
   /* Documentation Link */
