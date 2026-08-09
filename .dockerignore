@@ -1,0 +1,14 @@
+# Docker build context (repo root) ignores — keeps storefront image context lean.
+**/node_modules
+**/.next
+**/coverage
+**/log
+**/tmp
+**/storage
+**/.git
+**/.env*
+**/*.log
+.git
+lefthook.yml
+package-lock.json
+pnpm-debug.log*

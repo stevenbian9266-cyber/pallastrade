@@ -12,7 +12,7 @@ export interface CountryLocale {
  * Falls back to the default country/locale configured via env vars.
  */
 export async function resolveAllCountryLocales(): Promise<CountryLocale[]> {
-  const localeOptions = getLocaleOptions();
+  const localeOptions = await getLocaleOptions();
   try {
     const { data: markets } = await getClient().markets.list(localeOptions);
     const seen = new Set<string>();
@@ -25,7 +25,7 @@ export async function resolveAllCountryLocales(): Promise<CountryLocale[]> {
         seen.add(iso);
         result.push({
           country: iso,
-          locale: market.default_locale || localeOptions.locale,
+          locale: market.default_locale || localeOptions.locale || getDefaultLocale(),
         });
       }
     }

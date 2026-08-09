@@ -8,6 +8,16 @@ FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 
 WORKDIR /rails
 
+# Optional apt mirror for CN regions (e.g. mirrors.aliyun.com). Empty = official.
+ARG APT_MIRROR=""
+# Rewrite Debian apt sources (deb822 and legacy formats) when a mirror is set.
+RUN if [ -n "$APT_MIRROR" ]; then \
+      sed -i "s|deb.debian.org|$APT_MIRROR|g" /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+      sed -i "s|deb.debian.org|$APT_MIRROR|g" /etc/apt/sources.list 2>/dev/null || true; \
+      sed -i "s|security.debian.org|$APT_MIRROR|g" /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+      sed -i "s|security.debian.org|$APT_MIRROR|g" /etc/apt/sources.list 2>/dev/null || true; \
+    fi
+
 # Install base packages
 RUN apt-get update -qq && \
   apt-get install --no-install-recommends -y curl libjemalloc2 libvips postgresql-client && \
@@ -28,11 +38,14 @@ RUN apt-get update -qq && \
   apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config zlib1g-dev && \
   rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
+# Optional rubygems mirror for CN regions (e.g. https://gems.ruby-china.com). Empty = official.
+ARG BUNDLE_MIRROR=""
 # Install application gems from the committed lockfile so the bundle used by
 # bootsnap is identical to the bundle resolved for the application.
 COPY .ruby-version Gemfile Gemfile.lock ./
 COPY pallastrade_gems/ ./pallastrade_gems/
-RUN unset BUNDLE_DEPLOYMENT && unset BUNDLE_WITHOUT && bundle install --jobs 4 && \
+RUN if [ -n "$BUNDLE_MIRROR" ]; then bundle config set --local mirror.https://rubygems.org "$BUNDLE_MIRROR"; fi && \
+  unset BUNDLE_DEPLOYMENT && unset BUNDLE_WITHOUT && bundle install --jobs 4 && \
   rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
   bundle exec bootsnap precompile --gemfile
 

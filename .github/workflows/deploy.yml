@@ -1,0 +1,40 @@
+name: Deploy
+
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync code to server (rsync)
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avzr --delete --exclude=.git --exclude=node_modules --exclude=.next --exclude=coverage --exclude=storage --exclude=log --exclude=tmp --exclude=.env* --exclude=.DS_Store
+          path: .
+          remote_path: /opt/pallastrade/repo
+          remote_host: ${{ secrets.DEPLOY_HOST }}
+          remote_user: root
+          remote_key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Build & deploy stack via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/pallastrade/repo
+            bash deploy/deploy.sh ${{ github.ref_name }}

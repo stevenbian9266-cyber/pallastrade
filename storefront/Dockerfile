@@ -2,26 +2,18 @@
 
 # Multi-stage build for Next.js 16 (standalone output) on Node.js 22 (Alpine).
 #
-# Build (PallasTrade env required: pages are prerendered against the PallasTrade API at build time):
-#   docker build \
+# NOTE: build context is the REPOSITORY ROOT (storefront depends on local packages
+# via file:../platform/packages/*), so paths below are written against that layout:
+#   docker build -f storefront/Dockerfile \
 #     --build-arg PALLASTRADE_API_URL=https://your-pallastrade.example.com \
-#     --build-arg PALLASTRADE_PUBLISHABLE_KEY=your_publishable_key \
-#     -t storefront .
+#     --build-arg PALLASTRADE_PUBLISHABLE_KEY=your_publishable_key .
+#
+# Build (PallasTrade env required: pages are prerendered against the PallasTrade API at build time):
+#   --build-arg PALLASTRADE_API_URL=https://your-pallastrade.example.com
+#   --build-arg PALLASTRADE_PUBLISHABLE_KEY=your_publishable_key
 #
 # Run:
 #   docker run -p 3001:3001 --env-file .env.local storefront
-#
-# Optional Sentry source map upload at build time (skipped when SENTRY_DSN is unset).
-# SENTRY_AUTH_TOKEN is read via a BuildKit secret so it never lands in image
-# layers, history, or shared builder caches.
-#   SENTRY_AUTH_TOKEN=... docker build \
-#     --build-arg PALLASTRADE_API_URL=... \
-#     --build-arg PALLASTRADE_PUBLISHABLE_KEY=... \
-#     --build-arg SENTRY_DSN=... \
-#     --build-arg SENTRY_ORG=... \
-#     --build-arg SENTRY_PROJECT=... \
-#     --secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \
-#     -t storefront .
 
 ARG NODE_VERSION=22-alpine
 
@@ -30,18 +22,38 @@ ARG NODE_VERSION=22-alpine
 FROM node:${NODE_VERSION} AS deps
 WORKDIR /app
 
-# libc6-compat keeps a few native modules happy on Alpine (musl).
-RUN apk add --no-cache libc6-compat
+# Optional CN mirrors (empty = official). APK_MIRROR e.g. mirrors.aliyun.com;
+# NPM_REGISTRY e.g. https://registry.npmmirror.com
+ARG APK_MIRROR=""
+ARG NPM_REGISTRY=""
 
-COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --include=dev
+# libc6-compat keeps a few native modules happy on Alpine (musl).
+RUN if [ -n "$APK_MIRROR" ]; then \
+      sed -i "s|dl-cdn.alpinelinux.org|$APK_MIRROR|g" /etc/apk/repositories; \
+    fi && \
+    apk add --no-cache libc6-compat && corepack enable
+
+# Copy storefront manifests + local file: dependencies (../platform/packages/*)
+COPY storefront/package.json storefront/pnpm-lock.yaml storefront/pnpm-workspace.yaml ./
+COPY platform/packages/sdk ../platform/packages/sdk
+COPY platform/packages/sdk-core ../platform/packages/sdk-core
+COPY platform/packages/cli ../platform/packages/cli
+
+RUN if [ -n "$NPM_REGISTRY" ]; then pnpm config set registry "$NPM_REGISTRY"; fi
+
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# pnpm pack excludes dist/ (gitignored) when packing file: deps, so copy the
+# real sdk dist (incl. subpaths like ./webhooks) into pnpm's sdk copy.
+RUN cp -r /platform/packages/sdk/dist /app/node_modules/@pallastrade/sdk/dist
 
 
 # ---- builder: compile the Next.js app ----
 FROM node:${NODE_VERSION} AS builder
 WORKDIR /app
 
+RUN corepack enable && corepack prepare pnpm@11.1.1 --activate
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
@@ -65,11 +77,15 @@ ENV SENTRY_DSN=$SENTRY_DSN \
     SENTRY_PROJECT=$SENTRY_PROJECT
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+# Keep file:/workspace:* symlink targets alive (pnpm links ../platform/packages/* into node_modules).
+COPY platform/packages/sdk ../platform/packages/sdk
+COPY platform/packages/sdk-core ../platform/packages/sdk-core
+COPY platform/packages/cli ../platform/packages/cli
+COPY storefront/ ./
 
 RUN --mount=type=secret,id=sentry_auth_token,required=false \
     SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token 2>/dev/null || true)" \
-    npm run build
+    pnpm run build
 
 
 # ---- runner: minimal runtime image ----
