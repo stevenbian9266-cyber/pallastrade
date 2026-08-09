@@ -2,12 +2,12 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-08-09 |
 | 来源 | 需求：dev/prod 图片通过阿里云 OSS 统一维护（存 OSS + 预留自定义域名/CDN） |
 | 分类 | infra（部署 / 基础设施） |
 | 关联 Skill | pallastrade-deployment |
-| 关联 REQ | （实施时回填） |
+| 关联 REQ | REQ-20260809-oss-storage.md |
 | 需求类型 | 新功能（基础设施） |
 
 ## 1. 背景与目标
@@ -97,3 +97,4 @@
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-08-09 | 0.1 | 初稿（含 OSS 方案调研 + 凭据验证结果） | AI |
+| 2026-08-09 | 0.2 | 实施完成：aliyun service + public URL、迁移 741 blobs、nginx dev active_storage 端口修复（3100→3102）、公网图片 200 | AI |
