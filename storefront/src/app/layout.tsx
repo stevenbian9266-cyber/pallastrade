@@ -54,12 +54,13 @@ export default function RootLayout({
         className={`${geist.variable} antialiased min-h-screen flex flex-col`}
       >
         <Suspense fallback={null}>{children}</Suspense>
-        {process.env.NODE_ENV === "production" && (
-          <>
-            <Analytics />
-            <SpeedInsights />
-          </>
-        )}
+        {process.env.NODE_ENV === "production" &&
+          process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true" && (
+            <>
+              <Analytics />
+              <SpeedInsights />
+            </>
+          )}
       </body>
     </html>
   );

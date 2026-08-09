@@ -97,6 +97,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
 
+# Runtime also needs the PallasTrade client config (server components read it).
+ARG PALLASTRADE_API_URL
+ARG PALLASTRADE_PUBLISHABLE_KEY
+ENV PALLASTRADE_API_URL=$PALLASTRADE_API_URL \
+    PALLASTRADE_PUBLISHABLE_KEY=$PALLASTRADE_PUBLISHABLE_KEY
+
 RUN addgroup --system --gid 1001 nodejs \
  && adduser --system --uid 1001 nextjs
 
