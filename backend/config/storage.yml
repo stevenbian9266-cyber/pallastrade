@@ -23,3 +23,19 @@ cloudflare:
   force_path_style: true
   request_checksum_calculation: "when_required"
   response_checksum_validation: "when_required"
+
+# Aliyun OSS (S3-compatible). Uses virtual-hosted-style access (force_path_style
+# must stay false — Aliyun rejects path-style for bucket-level APIs).
+# `public: true` makes ActiveStorage upload with ACL=public-read and generate
+# unsigned public URLs — required because Aliyun OSS rejects presigned GETs that
+# override `response-content-type` (returns InvalidRequest).
+aliyun:
+  service: S3
+  endpoint: <%= ENV.fetch("OSS_ENDPOINT", "") %>
+  access_key_id: <%= ENV.fetch("OSS_ACCESS_KEY_ID", "") %>
+  secret_access_key: <%= ENV.fetch("OSS_SECRET_ACCESS_KEY", "") %>
+  region: <%= ENV.fetch("OSS_REGION", "oss-cn-hangzhou") %>
+  bucket: <%= ENV.fetch("OSS_BUCKET", "pallastrade-#{Rails.env}") %>
+  public: true
+  request_checksum_calculation: "when_required"
+  response_checksum_validation: "when_required"

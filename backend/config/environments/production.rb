@@ -19,7 +19,9 @@ Rails.application.configure do
   config.public_file_server.headers = { "cache-control" => "public, max-age=#{1.year.to_i}" }
 
   # Store uploaded files on the local file system (see config/storage.yml for options).
-  if ENV["AWS_ACCESS_KEY_ID"].present? && ENV["AWS_SECRET_ACCESS_KEY"].present?
+  if ENV["OSS_ACCESS_KEY_ID"].present? && ENV["OSS_SECRET_ACCESS_KEY"].present? && ENV["OSS_ENDPOINT"].present?
+    config.active_storage.service = :aliyun
+  elsif ENV["AWS_ACCESS_KEY_ID"].present? && ENV["AWS_SECRET_ACCESS_KEY"].present?
     config.active_storage.service = :amazon
   elsif ENV["CLOUDFLARE_ACCESS_KEY_ID"].present? && ENV["CLOUDFLARE_SECRET_ACCESS_KEY"].present? && ENV["CLOUDFLARE_ENDPOINT"].present?
     config.active_storage.service = :cloudflare

@@ -66,6 +66,16 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "img.pallastrade.cn",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "img.dev.pallastrade.cn",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
         hostname: "**.pallastrade.cn",
         pathname: "/rails/active_storage/**",
       },
