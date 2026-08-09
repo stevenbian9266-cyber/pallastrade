@@ -85,12 +85,42 @@
 - 回归：本地 storefront 图片显示、服务器 dev/prod 图片显示
 - 映射：AC-001~005 → 部署验证（无新增单测文件，属基础设施变更）
 
+## 8.5 自定义域名与证书配置（2026-08-09 实施完成）
+
+### 域名解析（阿里云云解析 DNS）
+- `img.pallastrade.cn` → CNAME → `pallastrade-prod.oss-cn-hangzhou.aliyuncs.com`
+- `img.dev.pallastrade.cn` → CNAME → `pallastrade-dev.oss-cn-hangzhou.aliyuncs.com`
+- 主机记录：`img`（prod）、`img.dev`（dev 四级域名，前缀要填完整）
+
+### OSS 自定义域名绑定（双 bucket）
+- `pallastrade-prod` ⇄ `img.pallastrade.cn`（Enabled）
+- `pallastrade-dev` ⇄ `img.dev.pallastrade.cn`（Enabled）
+- ⚠️ 踩坑：`img.pallastrade.cn` 曾被误绑到 dev bucket，已用 ossutil `bucket-cname --method delete/put` 修正到 prod
+
+### HTTPS 免费证书（Let's Encrypt，非阿里云）
+- 服务器 certbot **DNS-01** 签发（img 域名解析到 OSS，HTTP-01 不可行，必须 DNS-01；需要人工在阿里云云解析加 `_acme-challenge.*` TXT 记录）
+- 单证书 SAN：`img.pallastrade.cn` + `img.dev.pallastrade.cn`，2026-11-07 到期，certbot 自动续期；**续期后需重新上传证书到 OSS**（手动步骤）
+- 上传：`ossutil bucket-cname --method put --item certificate oss://<bucket> cert.xml`
+- ⚠️ 踩坑：证书 XML 必须带 `<Force>true</Force>` 强制覆盖 OSS 默认证书，否则 HTTPS 仍显示 `cn-hangzhou.oss.aliyuncs.com` 默认证书
+- RAM 子账号需 `AliyunYundunCertFullAccess`（上传证书实际调用 `yundun-cert:CreateSSLCertificate`）
+
+### CDN_HOST 决策（暂不启用）
+- `cdn_image_url` 生成 `https://{CDN_HOST}/rails/active_storage/...` 路径
+- img 域名是 OSS CNAME（仅对象路径，无 `active_storage` 路由）→ 直接设 CDN_HOST 会 404 破坏图片
+- 当前图片走 backend 反代（全 HTTPS），**不设置 CDN_HOST**
+- 将来配阿里云 CDN（能处理 active_storage 路径回源 OSS）后再设 `CDN_HOST=img.*.pallastrade.cn`，一行 env 切换
+
+### 当前图片链路（全 HTTPS）
+```
+storefront → dev.pallastrade.cn/rails/active_storage/... → 302 → OSS bucket 域名(HTTPS) → 200
+```
+
 ## 9. 文档同步清单（知识同步门）
 
 - [ ] `ai/skills/pallastrade-deployment/SKILL.md`（OSS 配置/环境变量）
-- [ ] `docs/prd/README.md` 索引
-- [ ] PRD 状态更新（reviewing → approved → done）
-- [ ] 服务器部署 README/notes（如 `deploy/` 说明）
+- [x] `docs/prd/README.md` 索引
+- [x] PRD 状态更新（reviewing → approved → done）
+- [x] 服务器部署 README/notes（如 `deploy/` 说明）
 
 ## 10. 变更记录
 
@@ -98,3 +128,4 @@
 |---|---|---|---|
 | 2026-08-09 | 0.1 | 初稿（含 OSS 方案调研 + 凭据验证结果） | AI |
 | 2026-08-09 | 0.2 | 实施完成：aliyun service + public URL、迁移 741 blobs、nginx dev active_storage 端口修复（3100→3102）、公网图片 200 | AI |
+| 2026-08-09 | 0.3 | 自定义域名/证书：DNS CNAME、双 bucket 绑定修正、Let's Encrypt DNS-01 签发、OSS 证书上传（Force 经验）、CDN_HOST 决策（暂不启用） | AI |
