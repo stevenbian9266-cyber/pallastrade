@@ -32,6 +32,15 @@ for f in "$ENVFILE" "$SFENV"; do
 done
 
 echo "=== 部署 $ENV（$COMPOSE）==="
+# 单栈策略：2C/3.5G 服务器双栈同时运行会 OOM，部署前先停另一栈
+if [ "$ENV" = "main" ] || [ "$ENV" = "prod" ]; then
+  echo "--- 确保 dev 栈停止（单栈策略）---"
+  docker compose -f docker-compose.dev.yml down 2>/dev/null || true
+else
+  echo "--- 确保 prod 栈停止（单栈策略）---"
+  docker compose -f docker-compose.prod.yml down 2>/dev/null || true
+fi
+
 # Backend 在服务器构建（构建缓存命中时快，且不会 OOM）
 docker compose -f "$COMPOSE" --env-file "$ENVFILE" build web worker
 # Storefront 镜像由 CI runner / 本地构建后传输（服务器不跑 next build，避免 OOM）；
