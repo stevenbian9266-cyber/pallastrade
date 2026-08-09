@@ -14,6 +14,7 @@
 | **平台规范** | `platform/CLAUDE.md`、`platform/AGENTS.md` | TypeScript 约定、Biome、包结构、发布模型 |
 | **商城前端规范** | `storefront/CLAUDE.md` | Code Style（函数式组件、命名导出、绝对导入、Tailwind）、Biome、测试（Vitest/Testing Library/Playwright） |
 | **样式/视觉规范** | `storefront/CLAUDE.md` §Code Style、`ai/skills/pallastrade-storefront/SKILL.md` Style Guide 章节、`ai/skills/pallastrade-admin/SKILL.md` Styling 章节、Tailwind 配置/设计 token | UI 一致性、AP-001（禁内联样式）、AP-006（禁硬编码色值） |
+| **Logo 使用规范** | `docs/standards/logo.md` | Logo 源文件、各使用位置（Header/结算/邮件/og/favicon/admin）的格式与尺寸要求 |
 | **领域技术规范** | `ai/skills/*/SKILL.md`（24 个） | 各领域约定：API v3（前缀 ID/分页/scope）、数据模型、事件、支付、i18n 等 |
 | **API 接口规范** | `backend/public/api-docs/{store,admin}.yaml` + `platform/docs/api-reference/` | OpenAPI：端点、参数、响应包络、错误 |
 | **反模式库** | `harness/policies/anti-patterns.json` | AP-001~AP-009（CI 强制） |
