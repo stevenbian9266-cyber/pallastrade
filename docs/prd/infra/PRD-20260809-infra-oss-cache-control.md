@@ -1,8 +1,11 @@
 # PRD-20260809-infra-oss-cache-control
 
+> 🔁 **已 merged（归档）**：内容已并入 `PRD-20260809-infra-oss-storage` §8.6（OSS 图片基础设施同一主题域）。
+> 状态置为 merged，保留作为查重回写机制的存档示例。
+
 | 元数据 | 值 |
 |---|---|
-| 状态 | done |
+| 状态 | merged |
 | 创建日期 | 2026-08-09 |
 | 来源 | 需求：OSS 图片加 Cache-Control（提升浏览器缓存性能） |
 | 分类 | infra（部署 / 基础设施 / 性能优化） |

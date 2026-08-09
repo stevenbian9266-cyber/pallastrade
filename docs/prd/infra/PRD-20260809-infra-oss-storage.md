@@ -115,6 +115,12 @@
 storefront → dev.pallastrade.cn/rails/active_storage/... → 302 → OSS bucket 域名(HTTPS) → 200
 ```
 
+### 8.6 Cache-Control 优化（并入自 PRD-20260809-infra-oss-cache-control，已 merged）
+- 目标：OSS 图片对象带 `Cache-Control: public, max-age=31536000, immutable`，浏览器强缓存（实测原为空）
+- 实现：`storage.yml` aliyun `upload.cache_control`（新对象自动带头）+ 存量 747 对象 ossutil `set-meta -r --update -f` 批量补头
+- 验证：原图 + webp 变体均带 Cache-Control，Content-Type 保留
+- ⚠️ 踩坑：ossutil `set-meta -r` 默认等待确认（无 stdin 挂起），必须加 `-f` 强制
+
 ## 9. 文档同步清单（知识同步门）
 
 - [ ] `ai/skills/pallastrade-deployment/SKILL.md`（OSS 配置/环境变量）
@@ -129,3 +135,4 @@ storefront → dev.pallastrade.cn/rails/active_storage/... → 302 → OSS bucke
 | 2026-08-09 | 0.1 | 初稿（含 OSS 方案调研 + 凭据验证结果） | AI |
 | 2026-08-09 | 0.2 | 实施完成：aliyun service + public URL、迁移 741 blobs、nginx dev active_storage 端口修复（3100→3102）、公网图片 200 | AI |
 | 2026-08-09 | 0.3 | 自定义域名/证书：DNS CNAME、双 bucket 绑定修正、Let's Encrypt DNS-01 签发、OSS 证书上传（Force 经验）、CDN_HOST 决策（暂不启用） | AI |
+| 2026-08-09 | 0.4 | 融合 PRD-20260809-infra-oss-cache-control（merged）：Cache-Control 浏览器缓存优化 | AI |

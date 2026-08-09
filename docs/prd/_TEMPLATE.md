@@ -2,13 +2,18 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | draft / reviewing / approved / implementing / verifying / done / rejected |
+| 状态 | draft / reviewing / approved / implementing / verifying / done / rejected / merged |
 | 创建日期 | YYYY-MM-DD |
 | 来源 | 一句话需求原文 |
 | 分类 | （自动判定，见 `harness/policies/prd-categories.json`） |
 | 关联 Skill | （对应领域 skill 名） |
 | 关联 REQ | REQ-YYYYMMDD-xxx.md（实施时回填） |
+| 关联 PRD | （查重回写时填原 PRD ID；全新需求填 N/A） |
 | 需求类型 | 新功能 / 优化迭代 / Bug 修复 / 接口变更 / 样式 / 文档 |
+
+> 🔁 **查重回写**：`harness prd new` 自动查重（相似度 > 0.3 阻止新建）。
+> 若本需求命中相似 PRD，用 `harness prd update --path <原PRD> --title "<需求>"` 回写原 PRD，
+> 并在原文档内完整更新（背景/FR/AC/变更记录），**不得新建重复 PRD**；确属全新需求才 `--force`。
 
 ## 1. 背景与目标
 
