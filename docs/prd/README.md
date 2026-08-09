@@ -44,6 +44,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260808-harness-l4-promotion | harness | 2026-08-08 | REQ-20260808-harness-l4-promotion |
 | done | PRD-20260809-infra-aliyun-dev-prod-deploy | infra | 2026-08-09 | REQ-20260809-infra-aliyun-dev-prod-deploy |
 | reviewing | PRD-20260809-infra-oss-storage | infra | 2026-08-09 | （实施时回填） |
+| reviewing | PRD-20260809-infra-oss-cache-control | infra | 2026-08-09 | （实施时回填） |
 
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 
