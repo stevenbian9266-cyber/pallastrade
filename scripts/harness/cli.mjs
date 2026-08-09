@@ -636,6 +636,47 @@ else if (cmd === 'gate:required') {
 else if (cmd === 'prd') {
   const sub = args[1] || 'list';
 
+  // ── PRD 相似度查重工具（避免重复新建，相似则提示回写）──
+  function textTokens(text) {
+    const lower = String(text).toLowerCase();
+    const words = lower.match(/[a-z0-9]+/g) || [];
+    const han = lower.match(/[\u4e00-\u9fa5]+/g) || [];
+    const grams = [];
+    for (const h of han) {
+      if (h.length >= 2) { for (let i = 0; i <= h.length - 2; i++) grams.push(h.slice(i, i + 2)); }
+      else grams.push(h);
+    }
+    return new Set([...words, ...grams]);
+  }
+  function similarity(a, b) {
+    const ta = textTokens(a), tb = textTokens(b);
+    if (!ta.size) return 0;
+    let inter = 0;
+    for (const x of ta) if (tb.has(x)) inter++;
+    return { ratio: inter / ta.size, inter };
+  }
+  function listExistingPrds() {
+    const out = [];
+    const prdDir = resolve(ROOT, 'docs', 'prd');
+    if (!existsSync(prdDir)) return out;
+    for (const cat of readdirSync(prdDir)) {
+      if (cat === 'README.md' || cat === '_TEMPLATE.md' || cat.startsWith('.')) continue;
+      const catDir = join(prdDir, cat);
+      if (!statSync(catDir).isDirectory()) continue;
+      for (const f of readdirSync(catDir).filter(x => x.endsWith('.md'))) {
+        try {
+          const content = readFileSync(join(catDir, f), 'utf-8');
+          const titleMatch = content.match(/^#\s+(.+)$/m);
+          const srcMatch = content.match(/\| 来源 \| ([^|]+) \|/);
+          const title = titleMatch ? titleMatch[1].trim() : f;
+          const source = srcMatch ? srcMatch[1].trim() : '';
+          out.push({ path: join(catDir, f), relative: `docs/prd/${cat}/${f}`, title, source, clean: f.replace(/\.md$/, '') });
+        } catch { /* skip unreadable */ }
+      }
+    }
+    return out;
+  }
+
   // prd new — create a PRD skeleton with auto-category detection
   if (sub === 'new') {
     const title = getArg(args, '--title') || args[2];
@@ -669,6 +710,24 @@ else if (cmd === 'prd') {
       process.exit(1);
     }
 
+    // ── 相似 PRD 查重：相似度 > 0.3 时提示回写原 PRD，除非 --force ──
+    if (!hasArg(args, '--force')) {
+      const matches = listExistingPrds()
+        .map(p => { const { ratio, inter } = similarity(cleaned, `${p.title} ${p.source} ${p.clean}`); return { ...p, sim: ratio, inter }; })
+        .filter(p => p.sim > 0.3 && p.inter >= 2)
+        .sort((a, b) => b.sim - a.sim);
+      if (matches.length > 0) {
+        console.log(`⚠️ 检测到 ${matches.length} 个相似 PRD（相似度 > 0.3），为避免重复新建，建议回写更新原 PRD：`);
+        for (const m of matches.slice(0, 5)) {
+          console.log(`   [${(m.sim * 100).toFixed(0)}%] ${m.relative}`);
+          console.log(`        «${m.title}»`);
+        }
+        console.log(`\n回写方式: node scripts/harness/cli.mjs prd update --path ${matches[0].relative} --title "${title}"`);
+        console.log(`若确属全新需求，可加 --force 强制新建。`);
+        process.exit(1);
+      }
+    }
+
     let content = `# PRD-${date}-${bestCat}-${slug}\n\n`
       + `| 元数据 | 值 |\n|---|---|\n`
       + `| 状态 | draft |\n`
@@ -683,6 +742,31 @@ else if (cmd === 'prd') {
     console.log(`✅ PRD 骨架已创建: docs/prd/${bestCat}/${fileName}`);
     console.log(`   分类: ${bestCat}（关键词命中 ${bestScore}）`);
     console.log(`   下一步: AI 按 _TEMPLATE.md 完整扩充 → 用户确认 → harness gate`);
+    process.exit(0);
+  }
+
+  // prd update — 回写：把新需求追加到已有 PRD（来源/变更记录），避免重复新建
+  if (sub === 'update') {
+    const path = getArg(args, '--path');
+    const title = getArg(args, '--title') || args[3];
+    if (!path || !title) { console.log('Usage: harness prd update --path <PRD文件> --title "<新需求>"'); process.exit(1); }
+    const abs = resolve(ROOT, path);
+    if (!existsSync(abs)) { console.log(`❌ PRD 不存在: ${path}`); process.exit(1); }
+    let content = readFileSync(abs, 'utf-8');
+    const date = new Date().toISOString().slice(0, 10);
+    if (content.includes('## 回写记录')) {
+      const row = `| ${date} | ${title} | AI |`;
+      const idx = content.indexOf('## 回写记录');
+      const tableEnd = content.indexOf('\n\n', idx);
+      if (tableEnd === -1) { content += `\n${row}\n`; }
+      else { content = content.slice(0, tableEnd) + `\n${row}` + content.slice(tableEnd); }
+    } else {
+      content = content.replace(/\s*$/, '') + `\n\n## 回写记录（harness prd update）\n\n| 日期 | 来源 | 操作者 |\n|---|---|---|\n| ${date} | ${title} | AI |\n`;
+    }
+    writeFileSync(abs, content);
+    console.log(`✅ 已回写 ${path}`);
+    console.log(`   新增需求: ${title}`);
+    console.log(`   请按 _TEMPLATE.md 在原 PRD 内完成完整更新（背景/FR/AC/变更记录）。`);
     process.exit(0);
   }
 

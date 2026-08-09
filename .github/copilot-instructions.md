@@ -175,7 +175,7 @@ the user to clarify before proceeding.
 **当用户输入是"一句话需求"（含前缀 `需求：`/`新增：`/`优化：`/`修复：` 等）时，MUST 遵循 `ai/skills/pallastrade-prd/SKILL.md`：**
 
 1. **PRD 生成**：先用 `node scripts/harness/cli.mjs prd new --title "<需求>"` 创建骨架（自动分类），再按 `docs/prd/_TEMPLATE.md` 完整扩充（背景/FR/AC/跨层搜索/测试计划/文档同步清单），存到 `docs/prd/{category}/PRD-{date}-{category}-{slug}.md`，更新 `docs/prd/README.md` 索引。
-2. **查重优先**：创建前搜索已有 PRD + 6 层跨层搜索（AP-SEARCH 反模式）。
+2. **查重优先（机制自动）**：`harness prd new` 自动扫描已有 PRD 计算标题相似度（>0.3 阻止新建）；命中相似 PRD → **必须 `harness prd update --path <原PRD> --title "<需求>"` 回写原 PRD 完整更新**，不得新建重复 PRD；确属全新需求才 `--force`。同时 6 层跨层搜索（AP-SEARCH 反模式）。
 3. **用户确认**：PRD 需用户明确确认（`approved`）后才能进入实施；PRD 未 approved 不允许开 gate。
 4. **Gate + REQ**：`harness gate`（feature 类型含 `create-prd-doc` + `read-skill-prd` checks）→ 生成 `harness/requirements/REQ-*.md`。
 5. **测试/验收**：PRD 每个 AC 必须映射到测试（测试标注 `# PRD-xxx AC-x`），用 `harness prd verify --id PRD-xxx` 校验。

@@ -188,6 +188,22 @@
         "Push while doc-impact reports docs-required"
       ],
       "scoring": { "skillSynced": 40, "scenariosUpdated": 30, "docImpactPass": 30 }
+    },
+    {
+      "id": "GS-016",
+      "name": "PRD dedupe: update existing PRD instead of creating duplicate",
+      "description": "AI should rely on harness prd new auto-dedupe (similarity check); when a similar PRD exists, use harness prd update to append the new requirement into the original PRD and complete a full update there — never create a duplicate PRD",
+      "mustDo": [
+        "Run harness prd new --title ... and let auto-dedupe detect similar PRDs",
+        "On similarity hit (exit 1), use harness prd update --path <existing PRD> --title ... to回写 the requirement into the original PRD",
+        "Complete the full update inside the original PRD (background / FR / AC / changelog)",
+        "Only use --force for genuinely new requirements"
+      ],
+      "mustNotDo": [
+        "Create a new duplicate PRD when a similar one already exists",
+        "Use --force without confirming it is a genuinely new requirement"
+      ],
+      "scoring": { "dedupeDetected": 40, "rewriteUpdate": 40, "noDuplicate": 20 }
     }
   ]
 }

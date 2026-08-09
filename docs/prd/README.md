@@ -1,4 +1,4 @@
-# PallasTrade PRD 文档库
+﻿# PallasTrade PRD 文档库
 
 > 一句话需求 → 详细 PRD → harness 门禁实施 → 测试验收 → 知识同步。本目录为 PRD 统一存放处。
 
@@ -45,6 +45,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260809-infra-aliyun-dev-prod-deploy | infra | 2026-08-09 | REQ-20260809-infra-aliyun-dev-prod-deploy |
 | reviewing | PRD-20260809-infra-oss-storage | infra | 2026-08-09 | （实施时回填） |
 | reviewing | PRD-20260809-infra-oss-cache-control | infra | 2026-08-09 | （实施时回填） |
+| reviewing | PRD-20260809-harness-prd-dedupe-update | harness | 2026-08-09 | （实施时回填） |
 
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 

@@ -185,7 +185,7 @@ For **Bug修复 / 样式调整**, Steps 0-1 are sufficient to proceed — but cr
 For tasks originating from a **one-line requirement**（一句话需求）, the AI MUST follow the PRD workflow defined in **`ai/skills/pallastrade-prd/SKILL.md`**:
 
 1. **PRD generation** — expand the one-liner into a detailed PRD at `docs/prd/{category}/PRD-{YYYYMMDD}-{category}-{slug}.md` (template: `docs/prd/_TEMPLATE.md`; category auto-detected via `harness/policies/prd-categories.json`). Update `docs/prd/README.md` index.
-2. **Dedupe first** — search existing PRDs + all 6 layers before creating (AP-SEARCH).
+2. **Dedupe first（机制自动）** — `harness prd new` 自动查重（标题相似度 >0.3 阻止新建）；命中相似 PRD → **用 `harness prd update --path <原PRD> --title "<需求>"` 回写原 PRD**（不新建重复 PRD），确属全新需求才 `--force`。再做 6 层跨层搜索（AP-SEARCH）。
 3. **User confirmation** — PRD → `approved` only after explicit user confirmation.
 4. **Gate + REQ** — `harness gate` (feature checks now include `create-prd-doc` + `read-skill-prd`), then generate REQ at `harness/requirements/REQ-*.md`.
 5. **Tests & acceptance** — every AC in the PRD must map to a test tagged `# PRD-xxx AC-x`; verify with `harness prd verify --id PRD-xxx`.

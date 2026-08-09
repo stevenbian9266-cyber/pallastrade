@@ -16,10 +16,18 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 
 ## 2. 阶段 0：PRD 生成（一句话 → PRD）
 
-### 2.1 查重（防重复，AP-SEARCH 反模式）
-1. 搜索 `docs/prd/**` 已有 PRD：标题/关键词是否命中同类需求
+### 2.1 查重（防重复，机制自动执行 + AP-SEARCH 反模式）
+
+> ✅ **机制强制**：`harness prd new --title "<需求>"` 会自动扫描 `docs/prd/**` 已有 PRD，
+> 计算标题相似度（英文词 + 中文 2-gram Jaccard）：
+> - **相似度 > 0.3** → CLI 列出候选 PRD 并**阻止新建**（exit 1）
+> - 此时**必须回写更新原 PRD**：`harness prd update --path <PRD> --title "<需求>"`，
+>   然后在原 PRD 内完整更新（背景/FR/AC/变更记录），**不得新建重复 PRD**
+> - 确属全新需求才用 `--force` 强制新建
+
+1. 运行 `harness prd new --title "<需求>"`（自动查重）
 2. 6 层跨层搜索（backend/app、core、api、admin、storefront、platform）确认无已实现能力
-3. 已存在 → 提示用户，跳转到已有 PRD 或做优化迭代（走阶段 4 流程）
+3. 命中相似 PRD → `harness prd update` 回写原 PRD（走优化迭代流程），不新建
 
 ### 2.2 分类判定
 1. 读取 `harness/policies/prd-categories.json`
@@ -119,6 +127,6 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 ## 10. 禁止事项
 
 - 禁止在未生成 PRD / 未确认 / 未清 gate 前写实现代码
-- 禁止创建重复 PRD（先查重）
+- 禁止创建重复 PRD（`harness prd new` 自动查重；相似 PRD 必须用 `harness prd update` 回写原文档）
 - 禁止跳过分层测试或知识同步门
 - 禁止在 PRD 未 done 时关闭 gate（verify-test 前置）
