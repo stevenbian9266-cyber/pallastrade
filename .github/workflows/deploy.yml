@@ -28,7 +28,39 @@ jobs:
           remote_user: root
           remote_key: ${{ secrets.DEPLOY_SSH_KEY }}
 
-      - name: Build & deploy stack via SSH
+      # Build the storefront image on the runner — the 2C/3.5G server OOMs running
+      # `next build`, so we build here and ship the image via docker save/load.
+      - name: Build storefront image (runner)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            API_URL="https://pallastrade.cn"
+            PUB_KEY="${{ secrets.PALLASTRADE_PUBLISHABLE_KEY_PROD }}"
+          else
+            API_URL="https://dev.pallastrade.cn"
+            PUB_KEY="${{ secrets.PALLASTRADE_PUBLISHABLE_KEY_DEV }}"
+          fi
+          docker build -t pallastrade-storefront-${{ github.ref_name }}:latest \
+            -f storefront/Dockerfile \
+            --build-arg PALLASTRADE_API_URL="$API_URL" \
+            --build-arg PALLASTRADE_PUBLISHABLE_KEY="$PUB_KEY" \
+            --build-arg NPM_REGISTRY=https://registry.npmmirror.com \
+            --build-arg APK_MIRROR=mirrors.aliyun.com \
+            .
+          docker save pallastrade-storefront-${{ github.ref_name }}:latest | gzip > storefront-image.tar.gz
+          ls -lh storefront-image.tar.gz
+
+      - name: Upload storefront image to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: storefront-image.tar.gz
+          target: /tmp/
+
+      - name: Load image & deploy stack via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -37,4 +69,10 @@ jobs:
           script: |
             set -e
             cd /opt/pallastrade/repo
+            gunzip -c /tmp/storefront-image.tar.gz | docker load
+            if [ "${{ github.ref_name }}" = "main" ]; then
+              docker tag pallastrade-storefront-main:latest pallastrade-prod-storefront:latest
+            else
+              docker tag pallastrade-storefront-dev:latest pallastrade-dev-storefront:latest
+            fi
             bash deploy/deploy.sh ${{ github.ref_name }}

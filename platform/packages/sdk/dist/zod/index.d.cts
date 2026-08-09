@@ -1,0 +1,1906 @@
+import { z } from 'zod';
+
+declare const AddressSchema: z.ZodObject<{
+    id: z.ZodString;
+    first_name: z.ZodNullable<z.ZodString>;
+    last_name: z.ZodNullable<z.ZodString>;
+    full_name: z.ZodString;
+    address1: z.ZodNullable<z.ZodString>;
+    address2: z.ZodNullable<z.ZodString>;
+    postal_code: z.ZodNullable<z.ZodString>;
+    city: z.ZodNullable<z.ZodString>;
+    phone: z.ZodNullable<z.ZodString>;
+    company: z.ZodNullable<z.ZodString>;
+    country_name: z.ZodString;
+    country_iso: z.ZodString;
+    state_text: z.ZodNullable<z.ZodString>;
+    state_abbr: z.ZodNullable<z.ZodString>;
+    quick_checkout: z.ZodBoolean;
+    is_default_billing: z.ZodBoolean;
+    is_default_shipping: z.ZodBoolean;
+    state_name: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type Address = z.infer<typeof AddressSchema>;
+
+declare const BaseSchema: z.ZodObject<{
+    id: z.ZodString;
+}, z.core.$strip>;
+type Base = z.infer<typeof BaseSchema>;
+
+declare const CartSchema: z.ZodObject<{
+    id: z.ZodString;
+    market_id: z.ZodNullable<z.ZodString>;
+    number: z.ZodString;
+    token: z.ZodString;
+    email: z.ZodNullable<z.ZodString>;
+    customer_note: z.ZodNullable<z.ZodString>;
+    currency: z.ZodString;
+    locale: z.ZodNullable<z.ZodString>;
+    total_quantity: z.ZodNumber;
+    warnings: z.ZodArray<z.ZodAny>;
+    item_total: z.ZodNullable<z.ZodString>;
+    display_item_total: z.ZodNullable<z.ZodString>;
+    adjustment_total: z.ZodNullable<z.ZodString>;
+    display_adjustment_total: z.ZodNullable<z.ZodString>;
+    discount_total: z.ZodNullable<z.ZodString>;
+    display_discount_total: z.ZodNullable<z.ZodString>;
+    tax_total: z.ZodNullable<z.ZodString>;
+    display_tax_total: z.ZodNullable<z.ZodString>;
+    included_tax_total: z.ZodNullable<z.ZodString>;
+    display_included_tax_total: z.ZodNullable<z.ZodString>;
+    additional_tax_total: z.ZodNullable<z.ZodString>;
+    display_additional_tax_total: z.ZodNullable<z.ZodString>;
+    total: z.ZodNullable<z.ZodString>;
+    display_total: z.ZodNullable<z.ZodString>;
+    gift_card_total: z.ZodNullable<z.ZodString>;
+    display_gift_card_total: z.ZodNullable<z.ZodString>;
+    amount_due: z.ZodNullable<z.ZodString>;
+    display_amount_due: z.ZodNullable<z.ZodString>;
+    delivery_total: z.ZodNullable<z.ZodString>;
+    display_delivery_total: z.ZodNullable<z.ZodString>;
+    store_credit_total: z.ZodNullable<z.ZodString>;
+    display_store_credit_total: z.ZodNullable<z.ZodString>;
+    covered_by_store_credit: z.ZodBoolean;
+    current_step: z.ZodString;
+    completed_steps: z.ZodArray<z.ZodString>;
+    requirements: z.ZodArray<z.ZodObject<{
+        step: z.ZodString;
+        field: z.ZodString;
+        message: z.ZodString;
+    }, z.core.$strip>>;
+    shipping_eq_billing_address: z.ZodBoolean;
+    discounts: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        promotion_id: z.ZodString;
+        name: z.ZodString;
+        description: z.ZodNullable<z.ZodString>;
+        code: z.ZodNullable<z.ZodString>;
+        amount: z.ZodNullable<z.ZodString>;
+        display_amount: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    items: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        variant_id: z.ZodString;
+        preorder: z.ZodBoolean;
+        preorder_ships_at: z.ZodNullable<z.ZodString>;
+        quantity: z.ZodNumber;
+        currency: z.ZodString;
+        name: z.ZodString;
+        slug: z.ZodString;
+        options_text: z.ZodString;
+        price: z.ZodNullable<z.ZodString>;
+        display_price: z.ZodNullable<z.ZodString>;
+        total: z.ZodNullable<z.ZodString>;
+        display_total: z.ZodNullable<z.ZodString>;
+        adjustment_total: z.ZodNullable<z.ZodString>;
+        display_adjustment_total: z.ZodNullable<z.ZodString>;
+        additional_tax_total: z.ZodNullable<z.ZodString>;
+        display_additional_tax_total: z.ZodNullable<z.ZodString>;
+        included_tax_total: z.ZodNullable<z.ZodString>;
+        display_included_tax_total: z.ZodNullable<z.ZodString>;
+        discount_total: z.ZodNullable<z.ZodString>;
+        display_discount_total: z.ZodNullable<z.ZodString>;
+        pre_tax_amount: z.ZodNullable<z.ZodString>;
+        display_pre_tax_amount: z.ZodNullable<z.ZodString>;
+        discounted_amount: z.ZodNullable<z.ZodString>;
+        display_discounted_amount: z.ZodNullable<z.ZodString>;
+        display_compare_at_amount: z.ZodNullable<z.ZodString>;
+        compare_at_amount: z.ZodNullable<z.ZodString>;
+        thumbnail_url: z.ZodNullable<z.ZodString>;
+        option_values: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            option_type_id: z.ZodString;
+            name: z.ZodString;
+            label: z.ZodString;
+            position: z.ZodNumber;
+            color_code: z.ZodNullable<z.ZodString>;
+            option_type_name: z.ZodString;
+            option_type_label: z.ZodString;
+            image_url: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        digital_links: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            access_counter: z.ZodNumber;
+            filename: z.ZodString;
+            content_type: z.ZodString;
+            download_url: z.ZodString;
+            authorizable: z.ZodBoolean;
+            expired: z.ZodBoolean;
+            access_limit_exceeded: z.ZodBoolean;
+        }, z.core.$strip>>;
+    }, z.core.$strip>>;
+    fulfillments: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        number: z.ZodString;
+        tracking: z.ZodNullable<z.ZodString>;
+        tracking_url: z.ZodNullable<z.ZodString>;
+        cost: z.ZodNullable<z.ZodString>;
+        display_cost: z.ZodNullable<z.ZodString>;
+        total: z.ZodNullable<z.ZodString>;
+        display_total: z.ZodNullable<z.ZodString>;
+        discount_total: z.ZodNullable<z.ZodString>;
+        display_discount_total: z.ZodNullable<z.ZodString>;
+        additional_tax_total: z.ZodNullable<z.ZodString>;
+        display_additional_tax_total: z.ZodNullable<z.ZodString>;
+        included_tax_total: z.ZodNullable<z.ZodString>;
+        display_included_tax_total: z.ZodNullable<z.ZodString>;
+        tax_total: z.ZodNullable<z.ZodString>;
+        display_tax_total: z.ZodNullable<z.ZodString>;
+        status: z.ZodString;
+        fulfillment_type: z.ZodString;
+        fulfilled_at: z.ZodNullable<z.ZodString>;
+        items: z.ZodArray<z.ZodObject<{
+            item_id: z.ZodAny;
+        }, z.core.$strip>>;
+        delivery_method: z.ZodObject<{
+            id: z.ZodString;
+            name: z.ZodString;
+            code: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>;
+        stock_location: z.ZodObject<{
+            id: z.ZodString;
+            state_abbr: z.ZodNullable<z.ZodString>;
+            name: z.ZodString;
+            address1: z.ZodNullable<z.ZodString>;
+            city: z.ZodNullable<z.ZodString>;
+            zipcode: z.ZodNullable<z.ZodString>;
+            country_iso: z.ZodNullable<z.ZodString>;
+            country_name: z.ZodNullable<z.ZodString>;
+            state_text: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>;
+        delivery_rates: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            delivery_method_id: z.ZodString;
+            name: z.ZodString;
+            selected: z.ZodBoolean;
+            cost: z.ZodString;
+            total: z.ZodString;
+            additional_tax_total: z.ZodString;
+            included_tax_total: z.ZodString;
+            tax_total: z.ZodString;
+            display_cost: z.ZodString;
+            display_total: z.ZodString;
+            display_additional_tax_total: z.ZodString;
+            display_included_tax_total: z.ZodString;
+            display_tax_total: z.ZodString;
+            delivery_method: z.ZodObject<{
+                id: z.ZodString;
+                name: z.ZodString;
+                code: z.ZodNullable<z.ZodString>;
+            }, z.core.$strip>;
+        }, z.core.$strip>>;
+    }, z.core.$strip>>;
+    payments: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        payment_method_id: z.ZodString;
+        response_code: z.ZodNullable<z.ZodString>;
+        number: z.ZodString;
+        amount: z.ZodNullable<z.ZodString>;
+        display_amount: z.ZodNullable<z.ZodString>;
+        status: z.ZodString;
+        source_type: z.ZodNullable<z.ZodString>;
+        source_id: z.ZodNullable<z.ZodString>;
+        source: z.ZodAny;
+        payment_method: z.ZodObject<{
+            id: z.ZodString;
+            name: z.ZodString;
+            description: z.ZodNullable<z.ZodString>;
+            type: z.ZodString;
+            session_required: z.ZodBoolean;
+            source_required: z.ZodBoolean;
+        }, z.core.$strip>;
+    }, z.core.$strip>>;
+    billing_address: z.ZodNullable<z.ZodObject<{
+        id: z.ZodString;
+        first_name: z.ZodNullable<z.ZodString>;
+        last_name: z.ZodNullable<z.ZodString>;
+        full_name: z.ZodString;
+        address1: z.ZodNullable<z.ZodString>;
+        address2: z.ZodNullable<z.ZodString>;
+        postal_code: z.ZodNullable<z.ZodString>;
+        city: z.ZodNullable<z.ZodString>;
+        phone: z.ZodNullable<z.ZodString>;
+        company: z.ZodNullable<z.ZodString>;
+        country_name: z.ZodString;
+        country_iso: z.ZodString;
+        state_text: z.ZodNullable<z.ZodString>;
+        state_abbr: z.ZodNullable<z.ZodString>;
+        quick_checkout: z.ZodBoolean;
+        is_default_billing: z.ZodBoolean;
+        is_default_shipping: z.ZodBoolean;
+        state_name: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    shipping_address: z.ZodNullable<z.ZodObject<{
+        id: z.ZodString;
+        first_name: z.ZodNullable<z.ZodString>;
+        last_name: z.ZodNullable<z.ZodString>;
+        full_name: z.ZodString;
+        address1: z.ZodNullable<z.ZodString>;
+        address2: z.ZodNullable<z.ZodString>;
+        postal_code: z.ZodNullable<z.ZodString>;
+        city: z.ZodNullable<z.ZodString>;
+        phone: z.ZodNullable<z.ZodString>;
+        company: z.ZodNullable<z.ZodString>;
+        country_name: z.ZodString;
+        country_iso: z.ZodString;
+        state_text: z.ZodNullable<z.ZodString>;
+        state_abbr: z.ZodNullable<z.ZodString>;
+        quick_checkout: z.ZodBoolean;
+        is_default_billing: z.ZodBoolean;
+        is_default_shipping: z.ZodBoolean;
+        state_name: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    payment_methods: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        name: z.ZodString;
+        description: z.ZodNullable<z.ZodString>;
+        type: z.ZodString;
+        session_required: z.ZodBoolean;
+        source_required: z.ZodBoolean;
+    }, z.core.$strip>>;
+    gift_card: z.ZodNullable<z.ZodObject<{
+        id: z.ZodString;
+        code: z.ZodString;
+        status: z.ZodString;
+        currency: z.ZodString;
+        amount: z.ZodNullable<z.ZodString>;
+        amount_used: z.ZodNullable<z.ZodString>;
+        amount_authorized: z.ZodNullable<z.ZodString>;
+        amount_remaining: z.ZodNullable<z.ZodString>;
+        display_amount: z.ZodNullable<z.ZodString>;
+        display_amount_used: z.ZodNullable<z.ZodString>;
+        display_amount_remaining: z.ZodNullable<z.ZodString>;
+        expires_at: z.ZodNullable<z.ZodString>;
+        redeemed_at: z.ZodNullable<z.ZodString>;
+        expired: z.ZodBoolean;
+        active: z.ZodBoolean;
+    }, z.core.$strip>>;
+    market: z.ZodNullable<z.ZodLazy<z.ZodObject<any, z.core.$strip>>>;
+}, z.core.$strip>;
+type Cart = z.infer<typeof CartSchema>;
+
+declare const CategorySchema: z.ZodObject<any>;
+type Category = z.infer<typeof CategorySchema>;
+
+declare const ChannelSchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+    code: z.ZodString;
+    active: z.ZodBoolean;
+    default: z.ZodBoolean;
+}, z.core.$strip>;
+type Channel = z.infer<typeof ChannelSchema>;
+
+declare const CountrySchema: z.ZodObject<any>;
+type Country = z.infer<typeof CountrySchema>;
+
+declare const CreditCardSchema: z.ZodObject<{
+    id: z.ZodString;
+    brand: z.ZodString;
+    last4: z.ZodString;
+    month: z.ZodNumber;
+    year: z.ZodNumber;
+    name: z.ZodNullable<z.ZodString>;
+    default: z.ZodBoolean;
+    gateway_payment_profile_id: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type CreditCard = z.infer<typeof CreditCardSchema>;
+
+declare const CurrencySchema: z.ZodObject<{
+    iso_code: z.ZodString;
+    name: z.ZodString;
+    symbol: z.ZodString;
+}, z.core.$strip>;
+type Currency = z.infer<typeof CurrencySchema>;
+
+declare const CustomFieldSchema: z.ZodObject<{
+    id: z.ZodString;
+    label: z.ZodString;
+    type: z.ZodString;
+    field_type: z.ZodString;
+    key: z.ZodString;
+    value: z.ZodAny;
+}, z.core.$strip>;
+type CustomField = z.infer<typeof CustomFieldSchema>;
+
+declare const CustomerSchema: z.ZodObject<{
+    id: z.ZodString;
+    email: z.ZodString;
+    first_name: z.ZodNullable<z.ZodString>;
+    last_name: z.ZodNullable<z.ZodString>;
+    phone: z.ZodNullable<z.ZodString>;
+    accepts_email_marketing: z.ZodBoolean;
+    full_name: z.ZodString;
+    available_store_credit_total: z.ZodString;
+    display_available_store_credit_total: z.ZodString;
+    addresses: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        first_name: z.ZodNullable<z.ZodString>;
+        last_name: z.ZodNullable<z.ZodString>;
+        full_name: z.ZodString;
+        address1: z.ZodNullable<z.ZodString>;
+        address2: z.ZodNullable<z.ZodString>;
+        postal_code: z.ZodNullable<z.ZodString>;
+        city: z.ZodNullable<z.ZodString>;
+        phone: z.ZodNullable<z.ZodString>;
+        company: z.ZodNullable<z.ZodString>;
+        country_name: z.ZodString;
+        country_iso: z.ZodString;
+        state_text: z.ZodNullable<z.ZodString>;
+        state_abbr: z.ZodNullable<z.ZodString>;
+        quick_checkout: z.ZodBoolean;
+        is_default_billing: z.ZodBoolean;
+        is_default_shipping: z.ZodBoolean;
+        state_name: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    default_billing_address: z.ZodNullable<z.ZodObject<{
+        id: z.ZodString;
+        first_name: z.ZodNullable<z.ZodString>;
+        last_name: z.ZodNullable<z.ZodString>;
+        full_name: z.ZodString;
+        address1: z.ZodNullable<z.ZodString>;
+        address2: z.ZodNullable<z.ZodString>;
+        postal_code: z.ZodNullable<z.ZodString>;
+        city: z.ZodNullable<z.ZodString>;
+        phone: z.ZodNullable<z.ZodString>;
+        company: z.ZodNullable<z.ZodString>;
+        country_name: z.ZodString;
+        country_iso: z.ZodString;
+        state_text: z.ZodNullable<z.ZodString>;
+        state_abbr: z.ZodNullable<z.ZodString>;
+        quick_checkout: z.ZodBoolean;
+        is_default_billing: z.ZodBoolean;
+        is_default_shipping: z.ZodBoolean;
+        state_name: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    default_shipping_address: z.ZodNullable<z.ZodObject<{
+        id: z.ZodString;
+        first_name: z.ZodNullable<z.ZodString>;
+        last_name: z.ZodNullable<z.ZodString>;
+        full_name: z.ZodString;
+        address1: z.ZodNullable<z.ZodString>;
+        address2: z.ZodNullable<z.ZodString>;
+        postal_code: z.ZodNullable<z.ZodString>;
+        city: z.ZodNullable<z.ZodString>;
+        phone: z.ZodNullable<z.ZodString>;
+        company: z.ZodNullable<z.ZodString>;
+        country_name: z.ZodString;
+        country_iso: z.ZodString;
+        state_text: z.ZodNullable<z.ZodString>;
+        state_abbr: z.ZodNullable<z.ZodString>;
+        quick_checkout: z.ZodBoolean;
+        is_default_billing: z.ZodBoolean;
+        is_default_shipping: z.ZodBoolean;
+        state_name: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    newsletter_subscriber: z.ZodNullable<z.ZodObject<{
+        id: z.ZodString;
+        email: z.ZodString;
+        created_at: z.ZodString;
+        updated_at: z.ZodString;
+        verified: z.ZodBoolean;
+        verified_at: z.ZodNullable<z.ZodString>;
+        customer_id: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+}, z.core.$strip>;
+type Customer = z.infer<typeof CustomerSchema>;
+
+declare const DeliveryMethodSchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+    code: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type DeliveryMethod = z.infer<typeof DeliveryMethodSchema>;
+
+declare const DeliveryRateSchema: z.ZodObject<{
+    id: z.ZodString;
+    delivery_method_id: z.ZodString;
+    name: z.ZodString;
+    selected: z.ZodBoolean;
+    cost: z.ZodString;
+    total: z.ZodString;
+    additional_tax_total: z.ZodString;
+    included_tax_total: z.ZodString;
+    tax_total: z.ZodString;
+    display_cost: z.ZodString;
+    display_total: z.ZodString;
+    display_additional_tax_total: z.ZodString;
+    display_included_tax_total: z.ZodString;
+    display_tax_total: z.ZodString;
+    delivery_method: z.ZodObject<{
+        id: z.ZodString;
+        name: z.ZodString;
+        code: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+type DeliveryRate = z.infer<typeof DeliveryRateSchema>;
+
+declare const DigitalSchema: z.ZodObject<{
+    id: z.ZodString;
+    created_at: z.ZodString;
+    updated_at: z.ZodString;
+    variant_id: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type Digital = z.infer<typeof DigitalSchema>;
+
+declare const DigitalLinkSchema: z.ZodObject<{
+    id: z.ZodString;
+    access_counter: z.ZodNumber;
+    filename: z.ZodString;
+    content_type: z.ZodString;
+    download_url: z.ZodString;
+    authorizable: z.ZodBoolean;
+    expired: z.ZodBoolean;
+    access_limit_exceeded: z.ZodBoolean;
+}, z.core.$strip>;
+type DigitalLink = z.infer<typeof DigitalLinkSchema>;
+
+declare const DiscountSchema: z.ZodObject<{
+    id: z.ZodString;
+    promotion_id: z.ZodString;
+    name: z.ZodString;
+    description: z.ZodNullable<z.ZodString>;
+    code: z.ZodNullable<z.ZodString>;
+    amount: z.ZodNullable<z.ZodString>;
+    display_amount: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type Discount = z.infer<typeof DiscountSchema>;
+
+declare const FulfillmentSchema: z.ZodObject<{
+    id: z.ZodString;
+    number: z.ZodString;
+    tracking: z.ZodNullable<z.ZodString>;
+    tracking_url: z.ZodNullable<z.ZodString>;
+    cost: z.ZodNullable<z.ZodString>;
+    display_cost: z.ZodNullable<z.ZodString>;
+    total: z.ZodNullable<z.ZodString>;
+    display_total: z.ZodNullable<z.ZodString>;
+    discount_total: z.ZodNullable<z.ZodString>;
+    display_discount_total: z.ZodNullable<z.ZodString>;
+    additional_tax_total: z.ZodNullable<z.ZodString>;
+    display_additional_tax_total: z.ZodNullable<z.ZodString>;
+    included_tax_total: z.ZodNullable<z.ZodString>;
+    display_included_tax_total: z.ZodNullable<z.ZodString>;
+    tax_total: z.ZodNullable<z.ZodString>;
+    display_tax_total: z.ZodNullable<z.ZodString>;
+    status: z.ZodString;
+    fulfillment_type: z.ZodString;
+    fulfilled_at: z.ZodNullable<z.ZodString>;
+    items: z.ZodArray<z.ZodObject<{
+        item_id: z.ZodAny;
+    }, z.core.$strip>>;
+    delivery_method: z.ZodObject<{
+        id: z.ZodString;
+        name: z.ZodString;
+        code: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>;
+    stock_location: z.ZodObject<{
+        id: z.ZodString;
+        state_abbr: z.ZodNullable<z.ZodString>;
+        name: z.ZodString;
+        address1: z.ZodNullable<z.ZodString>;
+        city: z.ZodNullable<z.ZodString>;
+        zipcode: z.ZodNullable<z.ZodString>;
+        country_iso: z.ZodNullable<z.ZodString>;
+        country_name: z.ZodNullable<z.ZodString>;
+        state_text: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>;
+    delivery_rates: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        delivery_method_id: z.ZodString;
+        name: z.ZodString;
+        selected: z.ZodBoolean;
+        cost: z.ZodString;
+        total: z.ZodString;
+        additional_tax_total: z.ZodString;
+        included_tax_total: z.ZodString;
+        tax_total: z.ZodString;
+        display_cost: z.ZodString;
+        display_total: z.ZodString;
+        display_additional_tax_total: z.ZodString;
+        display_included_tax_total: z.ZodString;
+        display_tax_total: z.ZodString;
+        delivery_method: z.ZodObject<{
+            id: z.ZodString;
+            name: z.ZodString;
+            code: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>;
+    }, z.core.$strip>>;
+}, z.core.$strip>;
+type Fulfillment = z.infer<typeof FulfillmentSchema>;
+
+declare const GiftCardSchema: z.ZodObject<{
+    id: z.ZodString;
+    code: z.ZodString;
+    status: z.ZodString;
+    currency: z.ZodString;
+    amount: z.ZodNullable<z.ZodString>;
+    amount_used: z.ZodNullable<z.ZodString>;
+    amount_authorized: z.ZodNullable<z.ZodString>;
+    amount_remaining: z.ZodNullable<z.ZodString>;
+    display_amount: z.ZodNullable<z.ZodString>;
+    display_amount_used: z.ZodNullable<z.ZodString>;
+    display_amount_remaining: z.ZodNullable<z.ZodString>;
+    expires_at: z.ZodNullable<z.ZodString>;
+    redeemed_at: z.ZodNullable<z.ZodString>;
+    expired: z.ZodBoolean;
+    active: z.ZodBoolean;
+}, z.core.$strip>;
+type GiftCard = z.infer<typeof GiftCardSchema>;
+
+declare const GiftCardBatchSchema: z.ZodObject<{
+    id: z.ZodString;
+    codes_count: z.ZodNumber;
+    currency: z.ZodNullable<z.ZodString>;
+    prefix: z.ZodNullable<z.ZodString>;
+    created_at: z.ZodString;
+    updated_at: z.ZodString;
+    amount: z.ZodNullable<z.ZodString>;
+    expires_at: z.ZodNullable<z.ZodString>;
+    created_by_id: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type GiftCardBatch = z.infer<typeof GiftCardBatchSchema>;
+
+declare const InvitationSchema: z.ZodObject<{
+    id: z.ZodString;
+    email: z.ZodString;
+    resource_type: z.ZodNullable<z.ZodString>;
+    inviter_type: z.ZodNullable<z.ZodString>;
+    invitee_type: z.ZodNullable<z.ZodString>;
+    created_at: z.ZodString;
+    updated_at: z.ZodString;
+    status: z.ZodString;
+    resource_id: z.ZodNullable<z.ZodString>;
+    inviter_id: z.ZodNullable<z.ZodString>;
+    invitee_id: z.ZodNullable<z.ZodString>;
+    role_id: z.ZodNullable<z.ZodString>;
+    expires_at: z.ZodNullable<z.ZodString>;
+    accepted_at: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type Invitation = z.infer<typeof InvitationSchema>;
+
+declare const LineItemSchema: z.ZodObject<{
+    id: z.ZodString;
+    variant_id: z.ZodString;
+    preorder: z.ZodBoolean;
+    preorder_ships_at: z.ZodNullable<z.ZodString>;
+    quantity: z.ZodNumber;
+    currency: z.ZodString;
+    name: z.ZodString;
+    slug: z.ZodString;
+    options_text: z.ZodString;
+    price: z.ZodNullable<z.ZodString>;
+    display_price: z.ZodNullable<z.ZodString>;
+    total: z.ZodNullable<z.ZodString>;
+    display_total: z.ZodNullable<z.ZodString>;
+    adjustment_total: z.ZodNullable<z.ZodString>;
+    display_adjustment_total: z.ZodNullable<z.ZodString>;
+    additional_tax_total: z.ZodNullable<z.ZodString>;
+    display_additional_tax_total: z.ZodNullable<z.ZodString>;
+    included_tax_total: z.ZodNullable<z.ZodString>;
+    display_included_tax_total: z.ZodNullable<z.ZodString>;
+    discount_total: z.ZodNullable<z.ZodString>;
+    display_discount_total: z.ZodNullable<z.ZodString>;
+    pre_tax_amount: z.ZodNullable<z.ZodString>;
+    display_pre_tax_amount: z.ZodNullable<z.ZodString>;
+    discounted_amount: z.ZodNullable<z.ZodString>;
+    display_discounted_amount: z.ZodNullable<z.ZodString>;
+    display_compare_at_amount: z.ZodNullable<z.ZodString>;
+    compare_at_amount: z.ZodNullable<z.ZodString>;
+    thumbnail_url: z.ZodNullable<z.ZodString>;
+    option_values: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        option_type_id: z.ZodString;
+        name: z.ZodString;
+        label: z.ZodString;
+        position: z.ZodNumber;
+        color_code: z.ZodNullable<z.ZodString>;
+        option_type_name: z.ZodString;
+        option_type_label: z.ZodString;
+        image_url: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    digital_links: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        access_counter: z.ZodNumber;
+        filename: z.ZodString;
+        content_type: z.ZodString;
+        download_url: z.ZodString;
+        authorizable: z.ZodBoolean;
+        expired: z.ZodBoolean;
+        access_limit_exceeded: z.ZodBoolean;
+    }, z.core.$strip>>;
+}, z.core.$strip>;
+type LineItem = z.infer<typeof LineItemSchema>;
+
+declare const LocaleSchema: z.ZodObject<{
+    code: z.ZodString;
+    name: z.ZodString;
+    default: z.ZodBoolean;
+    rtl: z.ZodBoolean;
+}, z.core.$strip>;
+type Locale = z.infer<typeof LocaleSchema>;
+
+declare const MarketSchema: z.ZodObject<any>;
+type Market = z.infer<typeof MarketSchema>;
+
+declare const MediaSchema: z.ZodObject<{
+    id: z.ZodString;
+    product_id: z.ZodNullable<z.ZodString>;
+    variant_ids: z.ZodArray<z.ZodString>;
+    position: z.ZodNumber;
+    alt: z.ZodNullable<z.ZodString>;
+    media_type: z.ZodString;
+    focal_point_x: z.ZodNullable<z.ZodNumber>;
+    focal_point_y: z.ZodNullable<z.ZodNumber>;
+    external_video_url: z.ZodNullable<z.ZodString>;
+    original_url: z.ZodNullable<z.ZodString>;
+    mini_url: z.ZodNullable<z.ZodString>;
+    small_url: z.ZodNullable<z.ZodString>;
+    medium_url: z.ZodNullable<z.ZodString>;
+    large_url: z.ZodNullable<z.ZodString>;
+    xlarge_url: z.ZodNullable<z.ZodString>;
+    og_image_url: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type Media = z.infer<typeof MediaSchema>;
+
+declare const NewsletterSubscriberSchema: z.ZodObject<{
+    id: z.ZodString;
+    email: z.ZodString;
+    created_at: z.ZodString;
+    updated_at: z.ZodString;
+    verified: z.ZodBoolean;
+    verified_at: z.ZodNullable<z.ZodString>;
+    customer_id: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type NewsletterSubscriber = z.infer<typeof NewsletterSubscriberSchema>;
+
+declare const OptionTypeSchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+    label: z.ZodString;
+    position: z.ZodNumber;
+    kind: z.ZodString;
+}, z.core.$strip>;
+type OptionType = z.infer<typeof OptionTypeSchema>;
+
+declare const OptionValueSchema: z.ZodObject<{
+    id: z.ZodString;
+    option_type_id: z.ZodString;
+    name: z.ZodString;
+    label: z.ZodString;
+    position: z.ZodNumber;
+    color_code: z.ZodNullable<z.ZodString>;
+    option_type_name: z.ZodString;
+    option_type_label: z.ZodString;
+    image_url: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type OptionValue = z.infer<typeof OptionValueSchema>;
+
+declare const OrderSchema: z.ZodObject<{
+    id: z.ZodString;
+    market_id: z.ZodNullable<z.ZodString>;
+    channel_id: z.ZodNullable<z.ZodString>;
+    number: z.ZodString;
+    email: z.ZodString;
+    customer_note: z.ZodNullable<z.ZodString>;
+    currency: z.ZodString;
+    locale: z.ZodNullable<z.ZodString>;
+    total_quantity: z.ZodNumber;
+    fulfillment_status: z.ZodNullable<z.ZodString>;
+    payment_status: z.ZodNullable<z.ZodString>;
+    completed_at: z.ZodNullable<z.ZodString>;
+    item_total: z.ZodNullable<z.ZodString>;
+    display_item_total: z.ZodNullable<z.ZodString>;
+    adjustment_total: z.ZodNullable<z.ZodString>;
+    display_adjustment_total: z.ZodNullable<z.ZodString>;
+    discount_total: z.ZodNullable<z.ZodString>;
+    display_discount_total: z.ZodNullable<z.ZodString>;
+    tax_total: z.ZodNullable<z.ZodString>;
+    display_tax_total: z.ZodNullable<z.ZodString>;
+    included_tax_total: z.ZodNullable<z.ZodString>;
+    display_included_tax_total: z.ZodNullable<z.ZodString>;
+    additional_tax_total: z.ZodNullable<z.ZodString>;
+    display_additional_tax_total: z.ZodNullable<z.ZodString>;
+    total: z.ZodNullable<z.ZodString>;
+    display_total: z.ZodNullable<z.ZodString>;
+    gift_card_total: z.ZodNullable<z.ZodString>;
+    display_gift_card_total: z.ZodNullable<z.ZodString>;
+    amount_due: z.ZodNullable<z.ZodString>;
+    display_amount_due: z.ZodNullable<z.ZodString>;
+    delivery_total: z.ZodNullable<z.ZodString>;
+    display_delivery_total: z.ZodNullable<z.ZodString>;
+    store_credit_total: z.ZodNullable<z.ZodString>;
+    display_store_credit_total: z.ZodNullable<z.ZodString>;
+    covered_by_store_credit: z.ZodBoolean;
+    discounts: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        promotion_id: z.ZodString;
+        name: z.ZodString;
+        description: z.ZodNullable<z.ZodString>;
+        code: z.ZodNullable<z.ZodString>;
+        amount: z.ZodNullable<z.ZodString>;
+        display_amount: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    items: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        variant_id: z.ZodString;
+        preorder: z.ZodBoolean;
+        preorder_ships_at: z.ZodNullable<z.ZodString>;
+        quantity: z.ZodNumber;
+        currency: z.ZodString;
+        name: z.ZodString;
+        slug: z.ZodString;
+        options_text: z.ZodString;
+        price: z.ZodNullable<z.ZodString>;
+        display_price: z.ZodNullable<z.ZodString>;
+        total: z.ZodNullable<z.ZodString>;
+        display_total: z.ZodNullable<z.ZodString>;
+        adjustment_total: z.ZodNullable<z.ZodString>;
+        display_adjustment_total: z.ZodNullable<z.ZodString>;
+        additional_tax_total: z.ZodNullable<z.ZodString>;
+        display_additional_tax_total: z.ZodNullable<z.ZodString>;
+        included_tax_total: z.ZodNullable<z.ZodString>;
+        display_included_tax_total: z.ZodNullable<z.ZodString>;
+        discount_total: z.ZodNullable<z.ZodString>;
+        display_discount_total: z.ZodNullable<z.ZodString>;
+        pre_tax_amount: z.ZodNullable<z.ZodString>;
+        display_pre_tax_amount: z.ZodNullable<z.ZodString>;
+        discounted_amount: z.ZodNullable<z.ZodString>;
+        display_discounted_amount: z.ZodNullable<z.ZodString>;
+        display_compare_at_amount: z.ZodNullable<z.ZodString>;
+        compare_at_amount: z.ZodNullable<z.ZodString>;
+        thumbnail_url: z.ZodNullable<z.ZodString>;
+        option_values: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            option_type_id: z.ZodString;
+            name: z.ZodString;
+            label: z.ZodString;
+            position: z.ZodNumber;
+            color_code: z.ZodNullable<z.ZodString>;
+            option_type_name: z.ZodString;
+            option_type_label: z.ZodString;
+            image_url: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        digital_links: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            access_counter: z.ZodNumber;
+            filename: z.ZodString;
+            content_type: z.ZodString;
+            download_url: z.ZodString;
+            authorizable: z.ZodBoolean;
+            expired: z.ZodBoolean;
+            access_limit_exceeded: z.ZodBoolean;
+        }, z.core.$strip>>;
+    }, z.core.$strip>>;
+    fulfillments: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        number: z.ZodString;
+        tracking: z.ZodNullable<z.ZodString>;
+        tracking_url: z.ZodNullable<z.ZodString>;
+        cost: z.ZodNullable<z.ZodString>;
+        display_cost: z.ZodNullable<z.ZodString>;
+        total: z.ZodNullable<z.ZodString>;
+        display_total: z.ZodNullable<z.ZodString>;
+        discount_total: z.ZodNullable<z.ZodString>;
+        display_discount_total: z.ZodNullable<z.ZodString>;
+        additional_tax_total: z.ZodNullable<z.ZodString>;
+        display_additional_tax_total: z.ZodNullable<z.ZodString>;
+        included_tax_total: z.ZodNullable<z.ZodString>;
+        display_included_tax_total: z.ZodNullable<z.ZodString>;
+        tax_total: z.ZodNullable<z.ZodString>;
+        display_tax_total: z.ZodNullable<z.ZodString>;
+        status: z.ZodString;
+        fulfillment_type: z.ZodString;
+        fulfilled_at: z.ZodNullable<z.ZodString>;
+        items: z.ZodArray<z.ZodObject<{
+            item_id: z.ZodAny;
+        }, z.core.$strip>>;
+        delivery_method: z.ZodObject<{
+            id: z.ZodString;
+            name: z.ZodString;
+            code: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>;
+        stock_location: z.ZodObject<{
+            id: z.ZodString;
+            state_abbr: z.ZodNullable<z.ZodString>;
+            name: z.ZodString;
+            address1: z.ZodNullable<z.ZodString>;
+            city: z.ZodNullable<z.ZodString>;
+            zipcode: z.ZodNullable<z.ZodString>;
+            country_iso: z.ZodNullable<z.ZodString>;
+            country_name: z.ZodNullable<z.ZodString>;
+            state_text: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>;
+        delivery_rates: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            delivery_method_id: z.ZodString;
+            name: z.ZodString;
+            selected: z.ZodBoolean;
+            cost: z.ZodString;
+            total: z.ZodString;
+            additional_tax_total: z.ZodString;
+            included_tax_total: z.ZodString;
+            tax_total: z.ZodString;
+            display_cost: z.ZodString;
+            display_total: z.ZodString;
+            display_additional_tax_total: z.ZodString;
+            display_included_tax_total: z.ZodString;
+            display_tax_total: z.ZodString;
+            delivery_method: z.ZodObject<{
+                id: z.ZodString;
+                name: z.ZodString;
+                code: z.ZodNullable<z.ZodString>;
+            }, z.core.$strip>;
+        }, z.core.$strip>>;
+    }, z.core.$strip>>;
+    payments: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        payment_method_id: z.ZodString;
+        response_code: z.ZodNullable<z.ZodString>;
+        number: z.ZodString;
+        amount: z.ZodNullable<z.ZodString>;
+        display_amount: z.ZodNullable<z.ZodString>;
+        status: z.ZodString;
+        source_type: z.ZodNullable<z.ZodString>;
+        source_id: z.ZodNullable<z.ZodString>;
+        source: z.ZodAny;
+        payment_method: z.ZodObject<{
+            id: z.ZodString;
+            name: z.ZodString;
+            description: z.ZodNullable<z.ZodString>;
+            type: z.ZodString;
+            session_required: z.ZodBoolean;
+            source_required: z.ZodBoolean;
+        }, z.core.$strip>;
+    }, z.core.$strip>>;
+    billing_address: z.ZodNullable<z.ZodObject<{
+        id: z.ZodString;
+        first_name: z.ZodNullable<z.ZodString>;
+        last_name: z.ZodNullable<z.ZodString>;
+        full_name: z.ZodString;
+        address1: z.ZodNullable<z.ZodString>;
+        address2: z.ZodNullable<z.ZodString>;
+        postal_code: z.ZodNullable<z.ZodString>;
+        city: z.ZodNullable<z.ZodString>;
+        phone: z.ZodNullable<z.ZodString>;
+        company: z.ZodNullable<z.ZodString>;
+        country_name: z.ZodString;
+        country_iso: z.ZodString;
+        state_text: z.ZodNullable<z.ZodString>;
+        state_abbr: z.ZodNullable<z.ZodString>;
+        quick_checkout: z.ZodBoolean;
+        is_default_billing: z.ZodBoolean;
+        is_default_shipping: z.ZodBoolean;
+        state_name: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    shipping_address: z.ZodNullable<z.ZodObject<{
+        id: z.ZodString;
+        first_name: z.ZodNullable<z.ZodString>;
+        last_name: z.ZodNullable<z.ZodString>;
+        full_name: z.ZodString;
+        address1: z.ZodNullable<z.ZodString>;
+        address2: z.ZodNullable<z.ZodString>;
+        postal_code: z.ZodNullable<z.ZodString>;
+        city: z.ZodNullable<z.ZodString>;
+        phone: z.ZodNullable<z.ZodString>;
+        company: z.ZodNullable<z.ZodString>;
+        country_name: z.ZodString;
+        country_iso: z.ZodString;
+        state_text: z.ZodNullable<z.ZodString>;
+        state_abbr: z.ZodNullable<z.ZodString>;
+        quick_checkout: z.ZodBoolean;
+        is_default_billing: z.ZodBoolean;
+        is_default_shipping: z.ZodBoolean;
+        state_name: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    gift_card: z.ZodNullable<z.ZodObject<{
+        id: z.ZodString;
+        code: z.ZodString;
+        status: z.ZodString;
+        currency: z.ZodString;
+        amount: z.ZodNullable<z.ZodString>;
+        amount_used: z.ZodNullable<z.ZodString>;
+        amount_authorized: z.ZodNullable<z.ZodString>;
+        amount_remaining: z.ZodNullable<z.ZodString>;
+        display_amount: z.ZodNullable<z.ZodString>;
+        display_amount_used: z.ZodNullable<z.ZodString>;
+        display_amount_remaining: z.ZodNullable<z.ZodString>;
+        expires_at: z.ZodNullable<z.ZodString>;
+        redeemed_at: z.ZodNullable<z.ZodString>;
+        expired: z.ZodBoolean;
+        active: z.ZodBoolean;
+    }, z.core.$strip>>;
+    market: z.ZodNullable<z.ZodLazy<z.ZodObject<any, z.core.$strip>>>;
+}, z.core.$strip>;
+type Order = z.infer<typeof OrderSchema>;
+
+declare const PaymentSchema: z.ZodObject<{
+    id: z.ZodString;
+    payment_method_id: z.ZodString;
+    response_code: z.ZodNullable<z.ZodString>;
+    number: z.ZodString;
+    amount: z.ZodNullable<z.ZodString>;
+    display_amount: z.ZodNullable<z.ZodString>;
+    status: z.ZodString;
+    source_type: z.ZodNullable<z.ZodString>;
+    source_id: z.ZodNullable<z.ZodString>;
+    source: z.ZodAny;
+    payment_method: z.ZodObject<{
+        id: z.ZodString;
+        name: z.ZodString;
+        description: z.ZodNullable<z.ZodString>;
+        type: z.ZodString;
+        session_required: z.ZodBoolean;
+        source_required: z.ZodBoolean;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+type Payment = z.infer<typeof PaymentSchema>;
+
+declare const PaymentMethodSchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+    description: z.ZodNullable<z.ZodString>;
+    type: z.ZodString;
+    session_required: z.ZodBoolean;
+    source_required: z.ZodBoolean;
+}, z.core.$strip>;
+type PaymentMethod = z.infer<typeof PaymentMethodSchema>;
+
+declare const PaymentSessionSchema: z.ZodObject<{
+    id: z.ZodString;
+    status: z.ZodString;
+    currency: z.ZodString;
+    external_id: z.ZodString;
+    external_data: z.ZodRecord<z.ZodString, z.ZodUnknown>;
+    customer_external_id: z.ZodNullable<z.ZodString>;
+    expires_at: z.ZodNullable<z.ZodString>;
+    amount: z.ZodString;
+    payment_method_id: z.ZodString;
+    order_id: z.ZodString;
+    payment_method: z.ZodObject<{
+        id: z.ZodString;
+        name: z.ZodString;
+        description: z.ZodNullable<z.ZodString>;
+        type: z.ZodString;
+        session_required: z.ZodBoolean;
+        source_required: z.ZodBoolean;
+    }, z.core.$strip>;
+    payment: z.ZodOptional<z.ZodObject<{
+        id: z.ZodString;
+        payment_method_id: z.ZodString;
+        response_code: z.ZodNullable<z.ZodString>;
+        number: z.ZodString;
+        amount: z.ZodNullable<z.ZodString>;
+        display_amount: z.ZodNullable<z.ZodString>;
+        status: z.ZodString;
+        source_type: z.ZodNullable<z.ZodString>;
+        source_id: z.ZodNullable<z.ZodString>;
+        source: z.ZodAny;
+        payment_method: z.ZodObject<{
+            id: z.ZodString;
+            name: z.ZodString;
+            description: z.ZodNullable<z.ZodString>;
+            type: z.ZodString;
+            session_required: z.ZodBoolean;
+            source_required: z.ZodBoolean;
+        }, z.core.$strip>;
+    }, z.core.$strip>>;
+}, z.core.$strip>;
+type PaymentSession = z.infer<typeof PaymentSessionSchema>;
+
+declare const PaymentSetupSessionSchema: z.ZodObject<{
+    id: z.ZodString;
+    status: z.ZodString;
+    external_id: z.ZodNullable<z.ZodString>;
+    external_client_secret: z.ZodNullable<z.ZodString>;
+    external_data: z.ZodRecord<z.ZodString, z.ZodUnknown>;
+    payment_method_id: z.ZodNullable<z.ZodString>;
+    payment_source_id: z.ZodNullable<z.ZodString>;
+    payment_source_type: z.ZodNullable<z.ZodString>;
+    customer_id: z.ZodNullable<z.ZodString>;
+    payment_method: z.ZodObject<{
+        id: z.ZodString;
+        name: z.ZodString;
+        description: z.ZodNullable<z.ZodString>;
+        type: z.ZodString;
+        session_required: z.ZodBoolean;
+        source_required: z.ZodBoolean;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+type PaymentSetupSession = z.infer<typeof PaymentSetupSessionSchema>;
+
+declare const PaymentSourceSchema: z.ZodObject<{
+    id: z.ZodString;
+    gateway_payment_profile_id: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type PaymentSource = z.infer<typeof PaymentSourceSchema>;
+
+declare const PolicySchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+    slug: z.ZodString;
+    body: z.ZodNullable<z.ZodString>;
+    body_html: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type Policy = z.infer<typeof PolicySchema>;
+
+declare const PriceSchema: z.ZodObject<{
+    id: z.ZodString;
+    amount: z.ZodNullable<z.ZodString>;
+    amount_in_cents: z.ZodNullable<z.ZodNumber>;
+    compare_at_amount: z.ZodNullable<z.ZodString>;
+    compare_at_amount_in_cents: z.ZodNullable<z.ZodNumber>;
+    currency: z.ZodNullable<z.ZodString>;
+    display_amount: z.ZodNullable<z.ZodString>;
+    display_compare_at_amount: z.ZodNullable<z.ZodString>;
+    price_list_id: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type Price = z.infer<typeof PriceSchema>;
+
+declare const PriceHistorySchema: z.ZodObject<{
+    id: z.ZodString;
+    amount: z.ZodString;
+    amount_in_cents: z.ZodNumber;
+    currency: z.ZodString;
+    display_amount: z.ZodString;
+    recorded_at: z.ZodString;
+}, z.core.$strip>;
+type PriceHistory = z.infer<typeof PriceHistorySchema>;
+
+declare const ProductSchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+    slug: z.ZodString;
+    meta_title: z.ZodNullable<z.ZodString>;
+    meta_description: z.ZodNullable<z.ZodString>;
+    meta_keywords: z.ZodNullable<z.ZodString>;
+    variant_count: z.ZodNumber;
+    available_on: z.ZodNullable<z.ZodString>;
+    preorder_ships_at: z.ZodNullable<z.ZodString>;
+    purchasable: z.ZodBoolean;
+    preorder: z.ZodBoolean;
+    in_stock: z.ZodBoolean;
+    backorderable: z.ZodBoolean;
+    available: z.ZodBoolean;
+    description: z.ZodNullable<z.ZodString>;
+    description_html: z.ZodNullable<z.ZodString>;
+    default_variant_id: z.ZodString;
+    thumbnail_url: z.ZodNullable<z.ZodString>;
+    tags: z.ZodArray<z.ZodString>;
+    price: z.ZodObject<{
+        id: z.ZodString;
+        amount: z.ZodNullable<z.ZodString>;
+        amount_in_cents: z.ZodNullable<z.ZodNumber>;
+        compare_at_amount: z.ZodNullable<z.ZodString>;
+        compare_at_amount_in_cents: z.ZodNullable<z.ZodNumber>;
+        currency: z.ZodNullable<z.ZodString>;
+        display_amount: z.ZodNullable<z.ZodString>;
+        display_compare_at_amount: z.ZodNullable<z.ZodString>;
+        price_list_id: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>;
+    original_price: z.ZodNullable<z.ZodObject<{
+        id: z.ZodString;
+        amount: z.ZodNullable<z.ZodString>;
+        amount_in_cents: z.ZodNullable<z.ZodNumber>;
+        compare_at_amount: z.ZodNullable<z.ZodString>;
+        compare_at_amount_in_cents: z.ZodNullable<z.ZodNumber>;
+        currency: z.ZodNullable<z.ZodString>;
+        display_amount: z.ZodNullable<z.ZodString>;
+        display_compare_at_amount: z.ZodNullable<z.ZodString>;
+        price_list_id: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    primary_media: z.ZodOptional<z.ZodObject<{
+        id: z.ZodString;
+        product_id: z.ZodNullable<z.ZodString>;
+        variant_ids: z.ZodArray<z.ZodString>;
+        position: z.ZodNumber;
+        alt: z.ZodNullable<z.ZodString>;
+        media_type: z.ZodString;
+        focal_point_x: z.ZodNullable<z.ZodNumber>;
+        focal_point_y: z.ZodNullable<z.ZodNumber>;
+        external_video_url: z.ZodNullable<z.ZodString>;
+        original_url: z.ZodNullable<z.ZodString>;
+        mini_url: z.ZodNullable<z.ZodString>;
+        small_url: z.ZodNullable<z.ZodString>;
+        medium_url: z.ZodNullable<z.ZodString>;
+        large_url: z.ZodNullable<z.ZodString>;
+        xlarge_url: z.ZodNullable<z.ZodString>;
+        og_image_url: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    media: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        product_id: z.ZodNullable<z.ZodString>;
+        variant_ids: z.ZodArray<z.ZodString>;
+        position: z.ZodNumber;
+        alt: z.ZodNullable<z.ZodString>;
+        media_type: z.ZodString;
+        focal_point_x: z.ZodNullable<z.ZodNumber>;
+        focal_point_y: z.ZodNullable<z.ZodNumber>;
+        external_video_url: z.ZodNullable<z.ZodString>;
+        original_url: z.ZodNullable<z.ZodString>;
+        mini_url: z.ZodNullable<z.ZodString>;
+        small_url: z.ZodNullable<z.ZodString>;
+        medium_url: z.ZodNullable<z.ZodString>;
+        large_url: z.ZodNullable<z.ZodString>;
+        xlarge_url: z.ZodNullable<z.ZodString>;
+        og_image_url: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>>;
+    variants: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        product_id: z.ZodString;
+        sku: z.ZodNullable<z.ZodString>;
+        options_text: z.ZodString;
+        track_inventory: z.ZodBoolean;
+        media_count: z.ZodNumber;
+        preorder_ships_at: z.ZodNullable<z.ZodString>;
+        thumbnail_url: z.ZodNullable<z.ZodString>;
+        purchasable: z.ZodBoolean;
+        in_stock: z.ZodBoolean;
+        backorderable: z.ZodBoolean;
+        preorder: z.ZodBoolean;
+        weight: z.ZodNullable<z.ZodNumber>;
+        height: z.ZodNullable<z.ZodNumber>;
+        width: z.ZodNullable<z.ZodNumber>;
+        depth: z.ZodNullable<z.ZodNumber>;
+        price: z.ZodObject<{
+            id: z.ZodString;
+            amount: z.ZodNullable<z.ZodString>;
+            amount_in_cents: z.ZodNullable<z.ZodNumber>;
+            compare_at_amount: z.ZodNullable<z.ZodString>;
+            compare_at_amount_in_cents: z.ZodNullable<z.ZodNumber>;
+            currency: z.ZodNullable<z.ZodString>;
+            display_amount: z.ZodNullable<z.ZodString>;
+            display_compare_at_amount: z.ZodNullable<z.ZodString>;
+            price_list_id: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>;
+        original_price: z.ZodNullable<z.ZodObject<{
+            id: z.ZodString;
+            amount: z.ZodNullable<z.ZodString>;
+            amount_in_cents: z.ZodNullable<z.ZodNumber>;
+            compare_at_amount: z.ZodNullable<z.ZodString>;
+            compare_at_amount_in_cents: z.ZodNullable<z.ZodNumber>;
+            currency: z.ZodNullable<z.ZodString>;
+            display_amount: z.ZodNullable<z.ZodString>;
+            display_compare_at_amount: z.ZodNullable<z.ZodString>;
+            price_list_id: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        primary_media: z.ZodOptional<z.ZodObject<{
+            id: z.ZodString;
+            product_id: z.ZodNullable<z.ZodString>;
+            variant_ids: z.ZodArray<z.ZodString>;
+            position: z.ZodNumber;
+            alt: z.ZodNullable<z.ZodString>;
+            media_type: z.ZodString;
+            focal_point_x: z.ZodNullable<z.ZodNumber>;
+            focal_point_y: z.ZodNullable<z.ZodNumber>;
+            external_video_url: z.ZodNullable<z.ZodString>;
+            original_url: z.ZodNullable<z.ZodString>;
+            mini_url: z.ZodNullable<z.ZodString>;
+            small_url: z.ZodNullable<z.ZodString>;
+            medium_url: z.ZodNullable<z.ZodString>;
+            large_url: z.ZodNullable<z.ZodString>;
+            xlarge_url: z.ZodNullable<z.ZodString>;
+            og_image_url: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        media: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            product_id: z.ZodNullable<z.ZodString>;
+            variant_ids: z.ZodArray<z.ZodString>;
+            position: z.ZodNumber;
+            alt: z.ZodNullable<z.ZodString>;
+            media_type: z.ZodString;
+            focal_point_x: z.ZodNullable<z.ZodNumber>;
+            focal_point_y: z.ZodNullable<z.ZodNumber>;
+            external_video_url: z.ZodNullable<z.ZodString>;
+            original_url: z.ZodNullable<z.ZodString>;
+            mini_url: z.ZodNullable<z.ZodString>;
+            small_url: z.ZodNullable<z.ZodString>;
+            medium_url: z.ZodNullable<z.ZodString>;
+            large_url: z.ZodNullable<z.ZodString>;
+            xlarge_url: z.ZodNullable<z.ZodString>;
+            og_image_url: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>>;
+        option_values: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            option_type_id: z.ZodString;
+            name: z.ZodString;
+            label: z.ZodString;
+            position: z.ZodNumber;
+            color_code: z.ZodNullable<z.ZodString>;
+            option_type_name: z.ZodString;
+            option_type_label: z.ZodString;
+            image_url: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        custom_fields: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            label: z.ZodString;
+            type: z.ZodString;
+            field_type: z.ZodString;
+            key: z.ZodString;
+            value: z.ZodAny;
+        }, z.core.$strip>>>;
+        prior_price: z.ZodOptional<z.ZodNullable<z.ZodObject<{
+            id: z.ZodString;
+            amount: z.ZodString;
+            amount_in_cents: z.ZodNumber;
+            currency: z.ZodString;
+            display_amount: z.ZodString;
+            recorded_at: z.ZodString;
+        }, z.core.$strip>>>;
+    }, z.core.$strip>>>;
+    default_variant: z.ZodOptional<z.ZodObject<{
+        id: z.ZodString;
+        product_id: z.ZodString;
+        sku: z.ZodNullable<z.ZodString>;
+        options_text: z.ZodString;
+        track_inventory: z.ZodBoolean;
+        media_count: z.ZodNumber;
+        preorder_ships_at: z.ZodNullable<z.ZodString>;
+        thumbnail_url: z.ZodNullable<z.ZodString>;
+        purchasable: z.ZodBoolean;
+        in_stock: z.ZodBoolean;
+        backorderable: z.ZodBoolean;
+        preorder: z.ZodBoolean;
+        weight: z.ZodNullable<z.ZodNumber>;
+        height: z.ZodNullable<z.ZodNumber>;
+        width: z.ZodNullable<z.ZodNumber>;
+        depth: z.ZodNullable<z.ZodNumber>;
+        price: z.ZodObject<{
+            id: z.ZodString;
+            amount: z.ZodNullable<z.ZodString>;
+            amount_in_cents: z.ZodNullable<z.ZodNumber>;
+            compare_at_amount: z.ZodNullable<z.ZodString>;
+            compare_at_amount_in_cents: z.ZodNullable<z.ZodNumber>;
+            currency: z.ZodNullable<z.ZodString>;
+            display_amount: z.ZodNullable<z.ZodString>;
+            display_compare_at_amount: z.ZodNullable<z.ZodString>;
+            price_list_id: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>;
+        original_price: z.ZodNullable<z.ZodObject<{
+            id: z.ZodString;
+            amount: z.ZodNullable<z.ZodString>;
+            amount_in_cents: z.ZodNullable<z.ZodNumber>;
+            compare_at_amount: z.ZodNullable<z.ZodString>;
+            compare_at_amount_in_cents: z.ZodNullable<z.ZodNumber>;
+            currency: z.ZodNullable<z.ZodString>;
+            display_amount: z.ZodNullable<z.ZodString>;
+            display_compare_at_amount: z.ZodNullable<z.ZodString>;
+            price_list_id: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        primary_media: z.ZodOptional<z.ZodObject<{
+            id: z.ZodString;
+            product_id: z.ZodNullable<z.ZodString>;
+            variant_ids: z.ZodArray<z.ZodString>;
+            position: z.ZodNumber;
+            alt: z.ZodNullable<z.ZodString>;
+            media_type: z.ZodString;
+            focal_point_x: z.ZodNullable<z.ZodNumber>;
+            focal_point_y: z.ZodNullable<z.ZodNumber>;
+            external_video_url: z.ZodNullable<z.ZodString>;
+            original_url: z.ZodNullable<z.ZodString>;
+            mini_url: z.ZodNullable<z.ZodString>;
+            small_url: z.ZodNullable<z.ZodString>;
+            medium_url: z.ZodNullable<z.ZodString>;
+            large_url: z.ZodNullable<z.ZodString>;
+            xlarge_url: z.ZodNullable<z.ZodString>;
+            og_image_url: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        media: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            product_id: z.ZodNullable<z.ZodString>;
+            variant_ids: z.ZodArray<z.ZodString>;
+            position: z.ZodNumber;
+            alt: z.ZodNullable<z.ZodString>;
+            media_type: z.ZodString;
+            focal_point_x: z.ZodNullable<z.ZodNumber>;
+            focal_point_y: z.ZodNullable<z.ZodNumber>;
+            external_video_url: z.ZodNullable<z.ZodString>;
+            original_url: z.ZodNullable<z.ZodString>;
+            mini_url: z.ZodNullable<z.ZodString>;
+            small_url: z.ZodNullable<z.ZodString>;
+            medium_url: z.ZodNullable<z.ZodString>;
+            large_url: z.ZodNullable<z.ZodString>;
+            xlarge_url: z.ZodNullable<z.ZodString>;
+            og_image_url: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>>;
+        option_values: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            option_type_id: z.ZodString;
+            name: z.ZodString;
+            label: z.ZodString;
+            position: z.ZodNumber;
+            color_code: z.ZodNullable<z.ZodString>;
+            option_type_name: z.ZodString;
+            option_type_label: z.ZodString;
+            image_url: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        custom_fields: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            label: z.ZodString;
+            type: z.ZodString;
+            field_type: z.ZodString;
+            key: z.ZodString;
+            value: z.ZodAny;
+        }, z.core.$strip>>>;
+        prior_price: z.ZodOptional<z.ZodNullable<z.ZodObject<{
+            id: z.ZodString;
+            amount: z.ZodString;
+            amount_in_cents: z.ZodNumber;
+            currency: z.ZodString;
+            display_amount: z.ZodString;
+            recorded_at: z.ZodString;
+        }, z.core.$strip>>>;
+    }, z.core.$strip>>;
+    option_types: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        name: z.ZodString;
+        label: z.ZodString;
+        position: z.ZodNumber;
+        kind: z.ZodString;
+    }, z.core.$strip>>>;
+    option_values: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        option_type_id: z.ZodString;
+        name: z.ZodString;
+        label: z.ZodString;
+        position: z.ZodNumber;
+        color_code: z.ZodNullable<z.ZodString>;
+        option_type_name: z.ZodString;
+        option_type_label: z.ZodString;
+        image_url: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>>;
+    categories: z.ZodOptional<z.ZodArray<z.ZodLazy<z.ZodObject<any, z.core.$strip>>>>;
+    custom_fields: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        label: z.ZodString;
+        type: z.ZodString;
+        field_type: z.ZodString;
+        key: z.ZodString;
+        value: z.ZodAny;
+    }, z.core.$strip>>>;
+    prior_price: z.ZodOptional<z.ZodNullable<z.ZodObject<{
+        id: z.ZodString;
+        amount: z.ZodString;
+        amount_in_cents: z.ZodNumber;
+        currency: z.ZodString;
+        display_amount: z.ZodString;
+        recorded_at: z.ZodString;
+    }, z.core.$strip>>>;
+}, z.core.$strip>;
+type Product = z.infer<typeof ProductSchema>;
+
+declare const ProductFilterAvailabilitySchema: z.ZodObject<{
+    id: z.ZodString;
+    type: z.ZodAny;
+    options: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        count: z.ZodNumber;
+    }, z.core.$strip>>;
+}, z.core.$strip>;
+type ProductFilterAvailability = z.infer<typeof ProductFilterAvailabilitySchema>;
+
+declare const ProductFilterAvailabilityOptionSchema: z.ZodObject<{
+    id: z.ZodString;
+    count: z.ZodNumber;
+}, z.core.$strip>;
+type ProductFilterAvailabilityOption = z.infer<typeof ProductFilterAvailabilityOptionSchema>;
+
+declare const ProductFilterCategorySchema: z.ZodObject<{
+    id: z.ZodString;
+    type: z.ZodAny;
+    options: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        name: z.ZodString;
+        permalink: z.ZodString;
+        count: z.ZodNumber;
+    }, z.core.$strip>>;
+}, z.core.$strip>;
+type ProductFilterCategory = z.infer<typeof ProductFilterCategorySchema>;
+
+declare const ProductFilterCategoryOptionSchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+    permalink: z.ZodString;
+    count: z.ZodNumber;
+}, z.core.$strip>;
+type ProductFilterCategoryOption = z.infer<typeof ProductFilterCategoryOptionSchema>;
+
+declare const ProductFilterOptionSchema: z.ZodObject<{
+    id: z.ZodString;
+    type: z.ZodAny;
+    name: z.ZodString;
+    label: z.ZodString;
+    kind: z.ZodString;
+    options: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        name: z.ZodString;
+        label: z.ZodString;
+        position: z.ZodNumber;
+        color_code: z.ZodNullable<z.ZodString>;
+        image_url: z.ZodNullable<z.ZodString>;
+        count: z.ZodNumber;
+    }, z.core.$strip>>;
+}, z.core.$strip>;
+type ProductFilterOption = z.infer<typeof ProductFilterOptionSchema>;
+
+declare const ProductFilterOptionValueSchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+    label: z.ZodString;
+    position: z.ZodNumber;
+    color_code: z.ZodNullable<z.ZodString>;
+    image_url: z.ZodNullable<z.ZodString>;
+    count: z.ZodNumber;
+}, z.core.$strip>;
+type ProductFilterOptionValue = z.infer<typeof ProductFilterOptionValueSchema>;
+
+declare const ProductFilterPriceRangeSchema: z.ZodObject<{
+    id: z.ZodString;
+    type: z.ZodAny;
+    min: z.ZodNumber;
+    max: z.ZodNumber;
+    currency: z.ZodString;
+}, z.core.$strip>;
+type ProductFilterPriceRange = z.infer<typeof ProductFilterPriceRangeSchema>;
+
+declare const ProductFilterSortOptionSchema: z.ZodObject<{
+    id: z.ZodString;
+}, z.core.$strip>;
+type ProductFilterSortOption = z.infer<typeof ProductFilterSortOptionSchema>;
+
+declare const ProductFiltersSchema: z.ZodObject<{
+    id: z.ZodString;
+    default_sort: z.ZodString;
+    total_count: z.ZodNumber;
+    filters: z.ZodArray<z.ZodAny>;
+    sort_options: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+    }, z.core.$strip>>;
+}, z.core.$strip>;
+type ProductFilters = z.infer<typeof ProductFiltersSchema>;
+
+declare const ProductPublicationSchema: z.ZodObject<{
+    id: z.ZodString;
+    published_at: z.ZodNullable<z.ZodString>;
+    unpublished_at: z.ZodNullable<z.ZodString>;
+    product_id: z.ZodString;
+    channel_id: z.ZodString;
+}, z.core.$strip>;
+type ProductPublication = z.infer<typeof ProductPublicationSchema>;
+
+declare const PromotionSchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+    description: z.ZodNullable<z.ZodString>;
+    code: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type Promotion = z.infer<typeof PromotionSchema>;
+
+declare const RefundSchema: z.ZodObject<{
+    id: z.ZodString;
+    transaction_id: z.ZodNullable<z.ZodString>;
+    amount: z.ZodNullable<z.ZodString>;
+    payment_id: z.ZodNullable<z.ZodString>;
+    refund_reason_id: z.ZodNullable<z.ZodString>;
+    reimbursement_id: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type Refund = z.infer<typeof RefundSchema>;
+
+declare const ReturnAuthorizationSchema: z.ZodObject<{
+    id: z.ZodString;
+    number: z.ZodString;
+    status: z.ZodString;
+    order_id: z.ZodNullable<z.ZodString>;
+    stock_location_id: z.ZodNullable<z.ZodString>;
+    return_authorization_reason_id: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type ReturnAuthorization = z.infer<typeof ReturnAuthorizationSchema>;
+
+declare const ReturnItemSchema: z.ZodObject<{
+    id: z.ZodString;
+    reception_status: z.ZodNullable<z.ZodString>;
+    acceptance_status: z.ZodNullable<z.ZodString>;
+    created_at: z.ZodString;
+    updated_at: z.ZodString;
+    pre_tax_amount: z.ZodNullable<z.ZodString>;
+    included_tax_total: z.ZodNullable<z.ZodString>;
+    additional_tax_total: z.ZodNullable<z.ZodString>;
+    inventory_unit_id: z.ZodNullable<z.ZodString>;
+    return_authorization_id: z.ZodNullable<z.ZodString>;
+    customer_return_id: z.ZodNullable<z.ZodString>;
+    reimbursement_id: z.ZodNullable<z.ZodString>;
+    exchange_variant_id: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type ReturnItem = z.infer<typeof ReturnItemSchema>;
+
+declare const StateSchema: z.ZodObject<{
+    abbr: z.ZodString;
+    name: z.ZodString;
+}, z.core.$strip>;
+type State = z.infer<typeof StateSchema>;
+
+declare const StockLocationSchema: z.ZodObject<{
+    id: z.ZodString;
+    state_abbr: z.ZodNullable<z.ZodString>;
+    name: z.ZodString;
+    address1: z.ZodNullable<z.ZodString>;
+    city: z.ZodNullable<z.ZodString>;
+    zipcode: z.ZodNullable<z.ZodString>;
+    country_iso: z.ZodNullable<z.ZodString>;
+    country_name: z.ZodNullable<z.ZodString>;
+    state_text: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type StockLocation = z.infer<typeof StockLocationSchema>;
+
+declare const StockReservationSchema: z.ZodObject<{
+    id: z.ZodString;
+}, z.core.$strip>;
+type StockReservation = z.infer<typeof StockReservationSchema>;
+
+declare const StoreCreditSchema: z.ZodObject<{
+    id: z.ZodString;
+    amount: z.ZodString;
+    amount_used: z.ZodString;
+    amount_remaining: z.ZodString;
+    display_amount: z.ZodString;
+    display_amount_used: z.ZodString;
+    display_amount_remaining: z.ZodString;
+    currency: z.ZodString;
+}, z.core.$strip>;
+type StoreCredit = z.infer<typeof StoreCreditSchema>;
+
+declare const VariantSchema: z.ZodObject<{
+    id: z.ZodString;
+    product_id: z.ZodString;
+    sku: z.ZodNullable<z.ZodString>;
+    options_text: z.ZodString;
+    track_inventory: z.ZodBoolean;
+    media_count: z.ZodNumber;
+    preorder_ships_at: z.ZodNullable<z.ZodString>;
+    thumbnail_url: z.ZodNullable<z.ZodString>;
+    purchasable: z.ZodBoolean;
+    in_stock: z.ZodBoolean;
+    backorderable: z.ZodBoolean;
+    preorder: z.ZodBoolean;
+    weight: z.ZodNullable<z.ZodNumber>;
+    height: z.ZodNullable<z.ZodNumber>;
+    width: z.ZodNullable<z.ZodNumber>;
+    depth: z.ZodNullable<z.ZodNumber>;
+    price: z.ZodObject<{
+        id: z.ZodString;
+        amount: z.ZodNullable<z.ZodString>;
+        amount_in_cents: z.ZodNullable<z.ZodNumber>;
+        compare_at_amount: z.ZodNullable<z.ZodString>;
+        compare_at_amount_in_cents: z.ZodNullable<z.ZodNumber>;
+        currency: z.ZodNullable<z.ZodString>;
+        display_amount: z.ZodNullable<z.ZodString>;
+        display_compare_at_amount: z.ZodNullable<z.ZodString>;
+        price_list_id: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>;
+    original_price: z.ZodNullable<z.ZodObject<{
+        id: z.ZodString;
+        amount: z.ZodNullable<z.ZodString>;
+        amount_in_cents: z.ZodNullable<z.ZodNumber>;
+        compare_at_amount: z.ZodNullable<z.ZodString>;
+        compare_at_amount_in_cents: z.ZodNullable<z.ZodNumber>;
+        currency: z.ZodNullable<z.ZodString>;
+        display_amount: z.ZodNullable<z.ZodString>;
+        display_compare_at_amount: z.ZodNullable<z.ZodString>;
+        price_list_id: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    primary_media: z.ZodOptional<z.ZodObject<{
+        id: z.ZodString;
+        product_id: z.ZodNullable<z.ZodString>;
+        variant_ids: z.ZodArray<z.ZodString>;
+        position: z.ZodNumber;
+        alt: z.ZodNullable<z.ZodString>;
+        media_type: z.ZodString;
+        focal_point_x: z.ZodNullable<z.ZodNumber>;
+        focal_point_y: z.ZodNullable<z.ZodNumber>;
+        external_video_url: z.ZodNullable<z.ZodString>;
+        original_url: z.ZodNullable<z.ZodString>;
+        mini_url: z.ZodNullable<z.ZodString>;
+        small_url: z.ZodNullable<z.ZodString>;
+        medium_url: z.ZodNullable<z.ZodString>;
+        large_url: z.ZodNullable<z.ZodString>;
+        xlarge_url: z.ZodNullable<z.ZodString>;
+        og_image_url: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    media: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        product_id: z.ZodNullable<z.ZodString>;
+        variant_ids: z.ZodArray<z.ZodString>;
+        position: z.ZodNumber;
+        alt: z.ZodNullable<z.ZodString>;
+        media_type: z.ZodString;
+        focal_point_x: z.ZodNullable<z.ZodNumber>;
+        focal_point_y: z.ZodNullable<z.ZodNumber>;
+        external_video_url: z.ZodNullable<z.ZodString>;
+        original_url: z.ZodNullable<z.ZodString>;
+        mini_url: z.ZodNullable<z.ZodString>;
+        small_url: z.ZodNullable<z.ZodString>;
+        medium_url: z.ZodNullable<z.ZodString>;
+        large_url: z.ZodNullable<z.ZodString>;
+        xlarge_url: z.ZodNullable<z.ZodString>;
+        og_image_url: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>>;
+    option_values: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        option_type_id: z.ZodString;
+        name: z.ZodString;
+        label: z.ZodString;
+        position: z.ZodNumber;
+        color_code: z.ZodNullable<z.ZodString>;
+        option_type_name: z.ZodString;
+        option_type_label: z.ZodString;
+        image_url: z.ZodNullable<z.ZodString>;
+    }, z.core.$strip>>;
+    custom_fields: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        label: z.ZodString;
+        type: z.ZodString;
+        field_type: z.ZodString;
+        key: z.ZodString;
+        value: z.ZodAny;
+    }, z.core.$strip>>>;
+    prior_price: z.ZodOptional<z.ZodNullable<z.ZodObject<{
+        id: z.ZodString;
+        amount: z.ZodString;
+        amount_in_cents: z.ZodNumber;
+        currency: z.ZodString;
+        display_amount: z.ZodString;
+        recorded_at: z.ZodString;
+    }, z.core.$strip>>>;
+}, z.core.$strip>;
+type Variant = z.infer<typeof VariantSchema>;
+
+declare const WishlistSchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+    token: z.ZodString;
+    is_default: z.ZodBoolean;
+    is_private: z.ZodBoolean;
+    items: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        variant_id: z.ZodString;
+        wishlist_id: z.ZodString;
+        quantity: z.ZodNumber;
+        variant: z.ZodObject<{
+            id: z.ZodString;
+            product_id: z.ZodString;
+            sku: z.ZodNullable<z.ZodString>;
+            options_text: z.ZodString;
+            track_inventory: z.ZodBoolean;
+            media_count: z.ZodNumber;
+            preorder_ships_at: z.ZodNullable<z.ZodString>;
+            thumbnail_url: z.ZodNullable<z.ZodString>;
+            purchasable: z.ZodBoolean;
+            in_stock: z.ZodBoolean;
+            backorderable: z.ZodBoolean;
+            preorder: z.ZodBoolean;
+            weight: z.ZodNullable<z.ZodNumber>;
+            height: z.ZodNullable<z.ZodNumber>;
+            width: z.ZodNullable<z.ZodNumber>;
+            depth: z.ZodNullable<z.ZodNumber>;
+            price: z.ZodObject<{
+                id: z.ZodString;
+                amount: z.ZodNullable<z.ZodString>;
+                amount_in_cents: z.ZodNullable<z.ZodNumber>;
+                compare_at_amount: z.ZodNullable<z.ZodString>;
+                compare_at_amount_in_cents: z.ZodNullable<z.ZodNumber>;
+                currency: z.ZodNullable<z.ZodString>;
+                display_amount: z.ZodNullable<z.ZodString>;
+                display_compare_at_amount: z.ZodNullable<z.ZodString>;
+                price_list_id: z.ZodNullable<z.ZodString>;
+            }, z.core.$strip>;
+            original_price: z.ZodNullable<z.ZodObject<{
+                id: z.ZodString;
+                amount: z.ZodNullable<z.ZodString>;
+                amount_in_cents: z.ZodNullable<z.ZodNumber>;
+                compare_at_amount: z.ZodNullable<z.ZodString>;
+                compare_at_amount_in_cents: z.ZodNullable<z.ZodNumber>;
+                currency: z.ZodNullable<z.ZodString>;
+                display_amount: z.ZodNullable<z.ZodString>;
+                display_compare_at_amount: z.ZodNullable<z.ZodString>;
+                price_list_id: z.ZodNullable<z.ZodString>;
+            }, z.core.$strip>>;
+            primary_media: z.ZodOptional<z.ZodObject<{
+                id: z.ZodString;
+                product_id: z.ZodNullable<z.ZodString>;
+                variant_ids: z.ZodArray<z.ZodString>;
+                position: z.ZodNumber;
+                alt: z.ZodNullable<z.ZodString>;
+                media_type: z.ZodString;
+                focal_point_x: z.ZodNullable<z.ZodNumber>;
+                focal_point_y: z.ZodNullable<z.ZodNumber>;
+                external_video_url: z.ZodNullable<z.ZodString>;
+                original_url: z.ZodNullable<z.ZodString>;
+                mini_url: z.ZodNullable<z.ZodString>;
+                small_url: z.ZodNullable<z.ZodString>;
+                medium_url: z.ZodNullable<z.ZodString>;
+                large_url: z.ZodNullable<z.ZodString>;
+                xlarge_url: z.ZodNullable<z.ZodString>;
+                og_image_url: z.ZodNullable<z.ZodString>;
+            }, z.core.$strip>>;
+            media: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                id: z.ZodString;
+                product_id: z.ZodNullable<z.ZodString>;
+                variant_ids: z.ZodArray<z.ZodString>;
+                position: z.ZodNumber;
+                alt: z.ZodNullable<z.ZodString>;
+                media_type: z.ZodString;
+                focal_point_x: z.ZodNullable<z.ZodNumber>;
+                focal_point_y: z.ZodNullable<z.ZodNumber>;
+                external_video_url: z.ZodNullable<z.ZodString>;
+                original_url: z.ZodNullable<z.ZodString>;
+                mini_url: z.ZodNullable<z.ZodString>;
+                small_url: z.ZodNullable<z.ZodString>;
+                medium_url: z.ZodNullable<z.ZodString>;
+                large_url: z.ZodNullable<z.ZodString>;
+                xlarge_url: z.ZodNullable<z.ZodString>;
+                og_image_url: z.ZodNullable<z.ZodString>;
+            }, z.core.$strip>>>;
+            option_values: z.ZodArray<z.ZodObject<{
+                id: z.ZodString;
+                option_type_id: z.ZodString;
+                name: z.ZodString;
+                label: z.ZodString;
+                position: z.ZodNumber;
+                color_code: z.ZodNullable<z.ZodString>;
+                option_type_name: z.ZodString;
+                option_type_label: z.ZodString;
+                image_url: z.ZodNullable<z.ZodString>;
+            }, z.core.$strip>>;
+            custom_fields: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                id: z.ZodString;
+                label: z.ZodString;
+                type: z.ZodString;
+                field_type: z.ZodString;
+                key: z.ZodString;
+                value: z.ZodAny;
+            }, z.core.$strip>>>;
+            prior_price: z.ZodOptional<z.ZodNullable<z.ZodObject<{
+                id: z.ZodString;
+                amount: z.ZodString;
+                amount_in_cents: z.ZodNumber;
+                currency: z.ZodString;
+                display_amount: z.ZodString;
+                recorded_at: z.ZodString;
+            }, z.core.$strip>>>;
+        }, z.core.$strip>;
+    }, z.core.$strip>>>;
+}, z.core.$strip>;
+type Wishlist = z.infer<typeof WishlistSchema>;
+
+declare const WishlistItemSchema: z.ZodObject<{
+    id: z.ZodString;
+    variant_id: z.ZodString;
+    wishlist_id: z.ZodString;
+    quantity: z.ZodNumber;
+    variant: z.ZodObject<{
+        id: z.ZodString;
+        product_id: z.ZodString;
+        sku: z.ZodNullable<z.ZodString>;
+        options_text: z.ZodString;
+        track_inventory: z.ZodBoolean;
+        media_count: z.ZodNumber;
+        preorder_ships_at: z.ZodNullable<z.ZodString>;
+        thumbnail_url: z.ZodNullable<z.ZodString>;
+        purchasable: z.ZodBoolean;
+        in_stock: z.ZodBoolean;
+        backorderable: z.ZodBoolean;
+        preorder: z.ZodBoolean;
+        weight: z.ZodNullable<z.ZodNumber>;
+        height: z.ZodNullable<z.ZodNumber>;
+        width: z.ZodNullable<z.ZodNumber>;
+        depth: z.ZodNullable<z.ZodNumber>;
+        price: z.ZodObject<{
+            id: z.ZodString;
+            amount: z.ZodNullable<z.ZodString>;
+            amount_in_cents: z.ZodNullable<z.ZodNumber>;
+            compare_at_amount: z.ZodNullable<z.ZodString>;
+            compare_at_amount_in_cents: z.ZodNullable<z.ZodNumber>;
+            currency: z.ZodNullable<z.ZodString>;
+            display_amount: z.ZodNullable<z.ZodString>;
+            display_compare_at_amount: z.ZodNullable<z.ZodString>;
+            price_list_id: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>;
+        original_price: z.ZodNullable<z.ZodObject<{
+            id: z.ZodString;
+            amount: z.ZodNullable<z.ZodString>;
+            amount_in_cents: z.ZodNullable<z.ZodNumber>;
+            compare_at_amount: z.ZodNullable<z.ZodString>;
+            compare_at_amount_in_cents: z.ZodNullable<z.ZodNumber>;
+            currency: z.ZodNullable<z.ZodString>;
+            display_amount: z.ZodNullable<z.ZodString>;
+            display_compare_at_amount: z.ZodNullable<z.ZodString>;
+            price_list_id: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        primary_media: z.ZodOptional<z.ZodObject<{
+            id: z.ZodString;
+            product_id: z.ZodNullable<z.ZodString>;
+            variant_ids: z.ZodArray<z.ZodString>;
+            position: z.ZodNumber;
+            alt: z.ZodNullable<z.ZodString>;
+            media_type: z.ZodString;
+            focal_point_x: z.ZodNullable<z.ZodNumber>;
+            focal_point_y: z.ZodNullable<z.ZodNumber>;
+            external_video_url: z.ZodNullable<z.ZodString>;
+            original_url: z.ZodNullable<z.ZodString>;
+            mini_url: z.ZodNullable<z.ZodString>;
+            small_url: z.ZodNullable<z.ZodString>;
+            medium_url: z.ZodNullable<z.ZodString>;
+            large_url: z.ZodNullable<z.ZodString>;
+            xlarge_url: z.ZodNullable<z.ZodString>;
+            og_image_url: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        media: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            product_id: z.ZodNullable<z.ZodString>;
+            variant_ids: z.ZodArray<z.ZodString>;
+            position: z.ZodNumber;
+            alt: z.ZodNullable<z.ZodString>;
+            media_type: z.ZodString;
+            focal_point_x: z.ZodNullable<z.ZodNumber>;
+            focal_point_y: z.ZodNullable<z.ZodNumber>;
+            external_video_url: z.ZodNullable<z.ZodString>;
+            original_url: z.ZodNullable<z.ZodString>;
+            mini_url: z.ZodNullable<z.ZodString>;
+            small_url: z.ZodNullable<z.ZodString>;
+            medium_url: z.ZodNullable<z.ZodString>;
+            large_url: z.ZodNullable<z.ZodString>;
+            xlarge_url: z.ZodNullable<z.ZodString>;
+            og_image_url: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>>;
+        option_values: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            option_type_id: z.ZodString;
+            name: z.ZodString;
+            label: z.ZodString;
+            position: z.ZodNumber;
+            color_code: z.ZodNullable<z.ZodString>;
+            option_type_name: z.ZodString;
+            option_type_label: z.ZodString;
+            image_url: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        custom_fields: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            label: z.ZodString;
+            type: z.ZodString;
+            field_type: z.ZodString;
+            key: z.ZodString;
+            value: z.ZodAny;
+        }, z.core.$strip>>>;
+        prior_price: z.ZodOptional<z.ZodNullable<z.ZodObject<{
+            id: z.ZodString;
+            amount: z.ZodString;
+            amount_in_cents: z.ZodNumber;
+            currency: z.ZodString;
+            display_amount: z.ZodString;
+            recorded_at: z.ZodString;
+        }, z.core.$strip>>>;
+    }, z.core.$strip>;
+}, z.core.$strip>;
+type WishlistItem = z.infer<typeof WishlistItemSchema>;
+
+export { type Address, AddressSchema, type Base, BaseSchema, type Cart, CartSchema, type Category, CategorySchema, type Channel, ChannelSchema, type Country, CountrySchema, type CreditCard, CreditCardSchema, type Currency, CurrencySchema, type CustomField, CustomFieldSchema, type Customer, CustomerSchema, type DeliveryMethod, DeliveryMethodSchema, type DeliveryRate, DeliveryRateSchema, type Digital, type DigitalLink, DigitalLinkSchema, DigitalSchema, type Discount, DiscountSchema, type Fulfillment, FulfillmentSchema, type GiftCard, type GiftCardBatch, GiftCardBatchSchema, GiftCardSchema, type Invitation, InvitationSchema, type LineItem, LineItemSchema, type Locale, LocaleSchema, type Market, MarketSchema, type Media, MediaSchema, type NewsletterSubscriber, NewsletterSubscriberSchema, type OptionType, OptionTypeSchema, type OptionValue, OptionValueSchema, type Order, OrderSchema, type Payment, type PaymentMethod, PaymentMethodSchema, PaymentSchema, type PaymentSession, PaymentSessionSchema, type PaymentSetupSession, PaymentSetupSessionSchema, type PaymentSource, PaymentSourceSchema, type Policy, PolicySchema, type Price, type PriceHistory, PriceHistorySchema, PriceSchema, type Product, type ProductFilterAvailability, type ProductFilterAvailabilityOption, ProductFilterAvailabilityOptionSchema, ProductFilterAvailabilitySchema, type ProductFilterCategory, type ProductFilterCategoryOption, ProductFilterCategoryOptionSchema, ProductFilterCategorySchema, type ProductFilterOption, ProductFilterOptionSchema, type ProductFilterOptionValue, ProductFilterOptionValueSchema, type ProductFilterPriceRange, ProductFilterPriceRangeSchema, type ProductFilterSortOption, ProductFilterSortOptionSchema, type ProductFilters, ProductFiltersSchema, type ProductPublication, ProductPublicationSchema, ProductSchema, type Promotion, PromotionSchema, type Refund, RefundSchema, type ReturnAuthorization, ReturnAuthorizationSchema, type ReturnItem, ReturnItemSchema, type State, StateSchema, type StockLocation, StockLocationSchema, type StockReservation, StockReservationSchema, type StoreCredit, StoreCreditSchema, type Variant, VariantSchema, type Wishlist, type WishlistItem, WishlistItemSchema, WishlistSchema };
