@@ -92,6 +92,6 @@
 - **覆盖率门槛（AC-001/002/005）**：`harness/config.json` storefront 5→10%、platform 5→8%；`coverage.mjs` 新增 platform 多包聚合（遍历 packages/*/coverage/coverage-summary.json）；`platform/packages/sdk/vitest.config.ts` 补 `json-summary` reporter；storefront 补 4 个测试文件（utils/cookies/price-buckets/product-query），**实测 storefront lines 10.3%、platform lines 63.9%**，`coverage --enforce` 全通过
 - **nightly workflow（AC-003）**：新增 `.github/workflows/nightly.yml`（每日 00:00 UTC cron + workflow_dispatch），复用 backend/storefront/platform CI + harness job（storefront/platform coverage + `check --profile full` + coverage enforce + freshness/scenarios）
 - **promptfoo（AC-004）**：新增 `scripts/harness/eval-llm.mjs`（从 GS 场景生成 promptfoo 配置/prompts + `--check`/`--list`/运行），cli.mjs 注册 `eval-llm`；生成 `harness/promptfoo/`（15 个 prompt + promptfooconfig.yaml）；package.json 加 promptfoo devDependency + `eval:llm` 脚本
-- **已知限制**：本机 `npm install` 因 promptfoo 依赖 `better-sqlite3` 需 node-gyp 原生编译（Windows 无 VS Build Tools）失败——框架/配置生成已工作，实际 LLM 运行需在可编译环境执行并设置 `PALLAS_LLM_API_KEY`
+- **已知限制（已解决 2026-08-09）**：本机 `npm install` 曾因 promptfoo 依赖 `better-sqlite3` 需 node-gyp 原生编译（Windows 无 VS Build Tools）失败。**解决**：①安装 Node 22 LTS portable（`better-sqlite3` 有 node22 prebuild，免编译）②promptfoo 升级 0.99.1→0.122.0（修复 drizzle FK 约束崩溃）。本机 `promptfoo eval` 已可用，实际 LLM 运行仅需设置 `OPENAI_API_KEY`/`PALLAS_LLM_API_KEY`
 
 **AC 验证**：AC-001✅（storefront 10.3%≥10%）、AC-002✅（platform 63.9%≥8%）、AC-003✅（nightly.yml 含 cron+dispatch）、AC-004✅（eval-llm 生成 15 prompts + check 通过）、AC-005✅（storefront/platform enforce 通过；backend 需容器 SimpleCov）。
