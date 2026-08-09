@@ -90,6 +90,31 @@ Quick summary of the priority order:
 - **Prefixed IDs in the API** — every v3 API response returns Stripe-style prefixed IDs (`prod_86Rf07xd4z`, `or_m3Rp9wXz`). Never expose raw integer IDs. Same on writes — the API accepts prefixed IDs.
 - **`PallasTrade.base_class`** — inherit from this, not `ActiveRecord::Base`. It applies PallasTrade's base configuration.
 
+## Code quality rules（代码质量规范）
+
+> 目标：可读、可维护、可测试、可升级。代码是写给"六个月后的自己和其他人"读的。
+> 所有代码变更须同时满足 §Anti-Patterns（AGENTS.md §5）与本文规则。
+
+### 代码合理性（KISS / YAGNI / 语义清晰）
+- **KISS（保持简单）**：优先最简单的正确实现；不引入过度设计（不为"优雅"而加不必要的抽象层、泛化、配置项）
+- **YAGNI（不做不需要的）**：不为"将来可能用到"预写代码；确需时再通过 gate 追加，变更可追溯
+- **语义命名**：类/方法/变量名表达意图（`calculate_tax_total` 而非 `do_stuff`）；命名随代码演进保持准确
+- **单一职责（SRP）**：一个方法/类只做一件事；方法超过 ~20 行或逻辑里出现"并且"就考虑拆分
+
+### 该封装就要封装成公共（DRY / 复用优先）
+- **DRY**：同一逻辑出现 ≥2 次必须抽取为公共方法/Service/组件（如 PallasTrade 的 `ServiceModule`、`@pallastrade/sdk` 工具）
+- **复用既有能力**：动手前先做 6 层跨层搜索（backend/core/api/admin/storefront/platform），确认无现成实现（AP-SEARCH 反模式）；有 → 复用并扩展，不另写
+- **分层正确**：业务逻辑放 Service/Model，不放 Controller/View；通用工具放公共模块；storefront 用 SDK/数据层，不在组件里裸 fetch（AP-002）
+- **抽象恰到好处**：跨 App/Gem 复用的逻辑 → 提到 core gem 或公共模块（gem 内修改加 `# PALLAS-CUSTOM:` 注释）；仅单处使用的逻辑 → 留在原地，勿提前抽象
+
+### 避免屎山代码（可维护性红线）
+- **不留死代码**：不提交注释掉的代码块、未使用 import/方法/变量（lint 可检出）
+- **不复制粘贴改参数**：出现"同一结构改参数"≥2 处 → 抽取公共函数/组件/配置
+- **注释解释"为什么"**：代码本身表达"是什么"；不写显而易见的废话注释；删除误导性/过期注释
+- **命名与结构一致**：遵循项目约定（Rails 复数资源、service 命名、TS 组件驼峰、文件路径分层）
+- **改动可回归**：公共逻辑改动必须配测试（按 AGENTS.md §6 最小验证矩阵）；不出现"改 A 坏 B"
+- **不带着 TODO 提交**：TODO 要么立即实现，要么记录到 PRD/gate 排期；禁止遗留未决 TODO 合并
+
 ## Common commands
 
 `@pallastrade/cli` (installed by `create-pallastrade-app`) wraps the Docker-based dev workflow:

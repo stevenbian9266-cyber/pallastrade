@@ -204,6 +204,23 @@
         "Use --force without confirming it is a genuinely new requirement"
       ],
       "scoring": { "dedupeDetected": 40, "rewriteUpdate": 40, "noDuplicate": 20 }
+    },
+    {
+      "id": "GS-017",
+      "name": "Code quality: extract shared logic, avoid copy-paste and dead code",
+      "description": "AI should follow the code quality rules: cross-layer search before writing, extract duplicated logic into shared methods/services/components, avoid dead code and over-engineering",
+      "mustDo": [
+        "Run 6-layer cross-layer search before writing new code (reuse existing capability)",
+        "Extract duplicated logic (>=2 occurrences) into a shared method/service/component",
+        "Remove commented-out code and unused imports when touching a file",
+        "Use semantic, intent-revealing names"
+      ],
+      "mustNotDo": [
+        "Copy-paste the same structure with only parameter changes (>=2 copies)",
+        "Leave commented-out code blocks or TODO when committing",
+        "Introduce over-engineered abstractions for single-use logic"
+      ],
+      "scoring": { "reuseFirst": 30, "extraction": 30, "noDeadCode": 20, "noOverEngineering": 20 }
     }
   ]
 }
