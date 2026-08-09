@@ -3,9 +3,9 @@ import { ensureProtocol, getStoreName, getStoreUrl } from "@/lib/store";
 
 /**
  * Default social image path (stored in public/).
- * Replace public/social-image.png with your own 1200x630 OG image.
+ * Brand OG image 1200x630 — see docs/standards/logo.md.
  */
-export const SOCIAL_IMAGE_PATH = "/social-image.webp";
+export const SOCIAL_IMAGE_PATH = "/pallastrade-og.png";
 
 /**
  * Build a full canonical URL from a store URL and a relative path.
