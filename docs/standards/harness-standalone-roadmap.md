@@ -257,6 +257,7 @@ export default {
 |---|---|---|---|
 | 2026-08-10 | v2.0 | 方案定稿：整合冷启动/渐进/自学习模型 + 自有项目可用提效约束；批准实施 | AI + 用户确认 |
 | 2026-08-10 | v2.1 | **Phase 1 实施中**（GATE-2026-08-10T14-16-38）：T1.1 config-loader.mjs（findConfigPath/loadConfig/getGateChecks/默认配置）+ 12 测试；T1.2~1.5 cli/doctor/affected/check/gate/prd/sync-check/coverage/eval-*/generated-check/doc-impact/扫描器全部去硬编码；T1.6 init/config:check/cache:clean；T1.8 harness.config.mjs 落地 + AGENTS.md §0.1 登记。**已知边界**：eval-scenarios 的 READINESS_CHECKS（GS-xxx）与 nav:check 为 PallasTrade 内容级资产，Phase 2 迁入 preset-pallastrade。 | AI |
+| 2026-08-10 | v2.2 | **Phase 1 提效（§1.2 落地）**：① config-loader 进程内 memo（同一进程复用配置）② `check` 变更感知——本地默认只扫 changed-files，`--full`/CI 全量（实测增量 0.53s vs 全量 1.46s ≈ 2.7x）。**暂缓**：跨进程 `.harness-cache`（RegExp 不可 JSON 序列化，收益低）、并行 check（doc-impact/coverage 内部 process.exit 会中断并行）。24 测试全过。 | AI |
 | | | （Phase 0~3 实施进度在此追加） | |
 
 ---

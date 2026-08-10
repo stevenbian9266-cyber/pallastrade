@@ -126,3 +126,17 @@ test('validateConfig rejects empty layers', () => {
 test('validateConfig accepts a valid config', () => {
   assert.equal(validateConfig(DEFAULT_CONFIG).length, 0);
 });
+
+test('loadConfig memoizes within same process (per rootDir)', async () => {
+  const dir = makeTmpProject({ 'harness.config.mjs': 'export default { name: "memo-a" };' });
+  const first = await loadConfig({ rootDir: dir });
+  const second = await loadConfig({ rootDir: dir });
+  assert.equal(first, second, 'same rootDir returns memoized result');
+  // Different rootDir → fresh load (memo is per-root)
+  const dir2 = makeTmpProject({ 'harness.config.mjs': 'export default { name: "memo-b" };' });
+  const other = await loadConfig({ rootDir: dir2 });
+  assert.notEqual(other, first);
+  assert.equal(other.config.name, 'memo-b');
+  rmSync(dir, { recursive: true, force: true });
+  rmSync(dir2, { recursive: true, force: true });
+});

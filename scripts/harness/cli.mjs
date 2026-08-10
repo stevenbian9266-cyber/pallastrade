@@ -145,7 +145,16 @@ else if (cmd === 'affected') {
 // ================================================================
 else if (cmd === 'check') {
   const profile = getArg(args, '--profile') || 'quick';
-  console.log(`[harness] check --profile ${profile}`);
+  // 变更感知：本地默认只扫变更文件（--full / CI 全量）
+  const full = hasArg(args, '--full') || process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+  let changedFiles = null;
+  if (!full) {
+    try {
+      const { files } = await import('./git-files.mjs').then(m => m.getChangedFiles(ROOT, 'HEAD'));
+      changedFiles = files;
+    } catch { /* not a git repo — fallback to full scan */ }
+  }
+  console.log(`[harness] check --profile ${profile}${full ? ' (full)' : ` (changed-files: ${changedFiles?.length ?? 'full'})`}`);
 
   // Load profile from project config (harness.config.mjs / legacy harness/config.json)
   const profileChecks = config.profiles?.[profile]?.checks || ['degraded-loop'];
@@ -156,9 +165,9 @@ else if (cmd === 'check') {
   for (const checkName of profileChecks) {
     try {
       if (checkName === 'anti-patterns') {
-        await import('./scan-anti-patterns.mjs').then(m => m.scan({ rootDir: ROOT, config }));
+        await import('./scan-anti-patterns.mjs').then(m => m.scan({ rootDir: ROOT, config, files: changedFiles }));
       } else if (checkName === 'degraded-loop') {
-        const result = await import('./check-degraded-loop.mjs').then(m => m.scan({ rootDir: ROOT, config }));
+        const result = await import('./check-degraded-loop.mjs').then(m => m.scan({ rootDir: ROOT, config, files: changedFiles }));
         if (result.errors > 0) exitCode = 1;
       } else if (checkName === 'doc-impact') {
         await import('./doc-impact.mjs').then(m => m.run({ rootDir: ROOT, args: ['--base', 'origin/main'], config }));

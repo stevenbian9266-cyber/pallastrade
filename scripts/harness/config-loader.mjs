@@ -187,10 +187,16 @@ export function validateConfig(cfg) {
 
 /**
  * 加载项目配置（默认值 + 文件配置深合并 + schema 校验）
+ * 进程内 memo：同一进程重复调用直接复用（高频命令/独立入口共享）。
  * @returns {{ config, sourcePath: string|null, usedDefaults: string[] }}
  */
+let _memo = null;
+let _memoRoot = null;
+
 export async function loadConfig({ rootDir } = {}) {
   const start = rootDir || process.cwd();
+  if (_memo && _memoRoot === start) return _memo;
+
   const cfgPath = findConfigPath(start);
   let fileConfig = {};
   let sourcePath = null;
@@ -220,5 +226,8 @@ export async function loadConfig({ rootDir } = {}) {
     process.exit(1);
   }
 
-  return { config, sourcePath, usedDefaults };
+  const result = { config, sourcePath, usedDefaults };
+  _memo = result;
+  _memoRoot = start;
+  return result;
 }
