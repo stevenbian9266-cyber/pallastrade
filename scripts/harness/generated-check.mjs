@@ -1,21 +1,19 @@
 import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
+import { loadConfig } from './config-loader.mjs';
 
-export function check({ rootDir }) {
+export function check({ rootDir, config }) {
   console.log('Checking generated files for drift...\n');
 
-  const checks = [
-    {
-      name: 'SDK Types',
-      cwd: resolve(rootDir, 'platform'),
-      cmd: 'pnpm --filter @pallastrade/sdk generate:types 2>/dev/null || echo "SKIP: sdk types generation not configured"',
-    },
-    {
-      name: 'CLI Admin Spec',
-      cwd: resolve(rootDir, 'platform'),
-      cmd: 'pnpm --filter @pallastrade/cli generate:admin-spec 2>/dev/null || echo "SKIP: cli spec generation not configured"',
-    },
-  ];
+  // 生成命令由 harness.config.mjs → generatedCheck.checks 驱动（默认空 = 跳过）
+  const checks = (config?.generatedCheck?.checks || []).map(c => ({
+    name: c.name,
+    cwd: resolve(rootDir, c.cwd || '.'),
+    cmd: c.cmd,
+  }));
+  if (checks.length === 0) {
+    console.log('⚠️  generated:check — no generation commands configured (harness.config.mjs → generatedCheck).');
+  }
 
   for (const check of checks) {
     try {

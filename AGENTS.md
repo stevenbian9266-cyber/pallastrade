@@ -23,6 +23,7 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 | `harness/policies/anti-patterns.json` | 反模式 | **反模式唯一权威**（机器执行） | CI 强制；违规检查 | 工程负责人 |
 | `harness/policies/task-rules.json` | 任务规则 | 任务规则权威 | 新功能/优化 | 工程负责人 |
 | `harness/policies/prd-categories.json` | PRD 分类 | 分类权威 | `prd new` | 工程负责人 |
+| `harness.config.mjs` | Harness 项目配置 | **引擎配置权威**（layers/gates/docImpact/coverage/profiles/syncCheck） | 引擎配置相关任务；引擎默认值见 `scripts/harness/config-loader.mjs` | 工程负责人 |
 | `harness/scenarios/scenarios.json` | 场景库 | Eval 权威 | 能力变更 | 工程负责人 |
 | `docs/standards/README.md` | 规范索引 | **规范文件指针权威** | 不确定规范位置时 | 工程负责人 |
 | `docs/prd/_TEMPLATE.md` | PRD 模板 | PRD 权威模板 | 一句话需求 | AI |

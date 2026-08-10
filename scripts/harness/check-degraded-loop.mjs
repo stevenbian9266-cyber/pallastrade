@@ -10,15 +10,17 @@
  */
 import { readFileSync, existsSync, statSync, globSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
+import { loadConfig } from './config-loader.mjs';
 
 /**
- * Load AP-009 rules from anti-patterns.json.
+ * Load AP-009 rules from anti-patterns.json (path from project config).
  * Only rules with id starting "AP-009" are used.
  * @param {string} rootDir
+ * @param {object} config
  * @returns {Array<{id:string, severity:string, pattern:RegExp, fileGlob:string, message:string, fix:string}>}
  */
-function loadRules(rootDir) {
-  const rulesPath = resolve(rootDir, 'harness', 'policies', 'anti-patterns.json');
+function loadRules(rootDir, config) {
+  const rulesPath = resolve(rootDir, config?.scanners?.antiPatterns || 'harness/policies/anti-patterns.json');
   if (!existsSync(rulesPath)) return [];
 
   const { rules } = JSON.parse(readFileSync(rulesPath, 'utf-8'));
@@ -32,11 +34,11 @@ function loadRules(rootDir) {
 
 /**
  * Run the degraded-loop scan against the workspace.
- * @param {{ rootDir: string }} options
+ * @param {{ rootDir: string, config?: object }} options
  * @returns {{ violations: number, errors: number, warnings: number }}
  */
-export function scan({ rootDir, files: fileFilter = null }) {
-  const rules = loadRules(rootDir);
+export function scan({ rootDir, files: fileFilter = null, config }) {
+  const rules = loadRules(rootDir, config);
   if (rules.length === 0) {
     console.log('');
     console.log('🔍 AP-009 degraded-loop scan: no AP-009 rules found in anti-patterns.json');
@@ -115,7 +117,8 @@ if (args.length > 0 && args[0] === 'scan') {
   const files = filesIdx >= 0 && args[filesIdx + 1]
     ? args[filesIdx + 1].split(',').map(s => s.trim()).filter(Boolean)
     : null;
-  const result = scan({ rootDir, files });
+  const { config } = await loadConfig({ rootDir });
+  const result = scan({ rootDir, files, config });
   // Fail-closed: standalone CLI must exit non-zero when error-severity
   // violations exist (lefthook pre-commit relies on this).
   if (result.errors > 0) process.exit(1);

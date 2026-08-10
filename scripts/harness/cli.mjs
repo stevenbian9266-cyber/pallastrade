@@ -1,14 +1,17 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, statSync } from 'node:fs';
-import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, statSync, rmSync } from 'node:fs';
+import { resolve, join } from 'node:path';
 import { execSync } from 'node:child_process';
+import { loadConfig, resolveProjectRoot, getGateChecks } from './config-loader.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, '..', '..');
+// 项目根：从 cwd 向上查找 harness.config.*（找不到则回退脚本位置）
+const ROOT = resolveProjectRoot();
 
 const args = process.argv.slice(2);
 const cmd = args[0];
+
+// 加载项目配置（默认值 + harness.config.mjs 深合并；无配置文件则用引擎默认）
+const { config } = await loadConfig({ rootDir: ROOT });
 
 function getArg(args, flag) {
   const idx = args.indexOf(flag);
@@ -40,31 +43,19 @@ if (cmd === 'doctor') {
           : { pass: false, detail: `Node ${process.version} (need >=22)`, fix: 'Install Node.js 22+' };
       },
     },
-    {
-      name: 'dir-backend',
-      run: () => existsSync(resolve(ROOT, 'backend')) ? { pass: true, detail: 'backend/ exists' } : { pass: false, detail: 'backend/ MISSING' },
-    },
-    {
-      name: 'dir-platform',
-      run: () => existsSync(resolve(ROOT, 'platform')) ? { pass: true, detail: 'platform/ exists' } : { pass: false, detail: 'platform/ MISSING' },
-    },
-    {
-      name: 'dir-storefront',
-      run: () => existsSync(resolve(ROOT, 'storefront')) ? { pass: true, detail: 'storefront/ exists' } : { pass: false, detail: 'storefront/ MISSING' },
-    },
-    {
-      name: 'dir-ai',
-      run: () => existsSync(resolve(ROOT, 'ai')) ? { pass: true, detail: 'ai/ exists' } : { pass: false, detail: 'ai/ MISSING' },
-    },
-    {
-      name: 'agents-md',
-      run: () => existsSync(resolve(ROOT, 'AGENTS.md')) ? { pass: true, detail: 'AGENTS.md exists at root' }
-        : { pass: false, detail: 'AGENTS.md missing', fix: 'Create AGENTS.md at repository root' },
-    },
+    // 目录/文件检查项由 harness.config.mjs 的 doctor 段驱动（通用化）
+    ...(config.doctor?.requiredDirs || []).map(d => ({
+      name: `dir-${d}`,
+      run: () => existsSync(resolve(ROOT, d)) ? { pass: true, detail: `${d}/ exists` } : { pass: false, detail: `${d}/ MISSING` },
+    })),
+    ...(config.doctor?.requiredFiles || []).map(f => ({
+      name: `file-${f.replace(/[^\w-]+/g, '-')}`,
+      run: () => existsSync(resolve(ROOT, f)) ? { pass: true, detail: `${f} exists` } : { pass: false, detail: `${f} missing`, fix: `Create ${f} at repository root` },
+    })),
     {
       name: 'compose-file',
       run: () => {
-        const candidates = ['backend/docker-compose.dev.yml', 'backend/docker-compose.yml', 'docker-compose.yml'];
+        const candidates = config.doctor?.composeCandidates || [];
         const found = candidates.find(f => existsSync(resolve(ROOT, f)));
         return found ? { pass: true, detail: `Compose found: ${found}` }
           : { pass: false, detail: 'No docker-compose file found' };
@@ -82,12 +73,12 @@ if (cmd === 'doctor') {
       },
     },
     {
-      name: 'storefront-lockfile',
+      name: 'lockfile-consistency',
       run: () => {
-        const npmLock = existsSync(resolve(ROOT, 'storefront', 'package-lock.json'));
-        const pnpmLock = existsSync(resolve(ROOT, 'storefront', 'pnpm-lock.yaml'));
-        if (npmLock && pnpmLock) return { pass: false, detail: 'Both package-lock.json and pnpm-lock.yaml exist', fix: 'Standardize on pnpm: delete package-lock.json' };
-        return { pass: true, detail: pnpmLock ? 'pnpm-lock.yaml only' : 'package-lock.json only' };
+        const dirs = ['.', ...(config.doctor?.requiredDirs || [])];
+        const conflicts = dirs.filter(d => existsSync(resolve(ROOT, d, 'package-lock.json')) && existsSync(resolve(ROOT, d, 'pnpm-lock.yaml')));
+        if (conflicts.length > 0) return { pass: true, detail: `⚠️ Both package-lock.json and pnpm-lock.yaml tracked in: ${conflicts.join(', ')} — standardize on one package manager` };
+        return { pass: true, detail: 'No lockfile conflicts detected' };
       },
     },
     {
@@ -139,12 +130,12 @@ else if (cmd === 'affected') {
   const base = getArg(args, '--base') || 'origin/main';
   const { files, errors } = await import('./git-files.mjs').then(m => m.getChangedFiles(ROOT, base));
   const components = new Set();
+  const topDirs = [...new Set((config.layers || []).map(l => l.path.split('/')[0]))];
   for (const f of files) {
-    if (f.startsWith('backend/')) components.add('backend');
-    else if (f.startsWith('platform/')) components.add('platform');
-    else if (f.startsWith('storefront/')) components.add('storefront');
-    else if (f.startsWith('ai/')) components.add('ai');
-    else if (f.startsWith('harness/') || f.startsWith('scripts/') || f.startsWith('.github/')) components.add('harness');
+    const top = f.split('/')[0];
+    if (topDirs.includes(top)) components.add(top);
+    else if (top === 'ai') components.add('ai');
+    else if (['harness', 'scripts', '.github'].includes(top)) components.add('harness');
   }
   console.log(JSON.stringify({ filesChanged: files.length, affectedComponents: [...components], errors, estimatedTests: files.length * 3 }, null, 2));
 }
@@ -156,12 +147,8 @@ else if (cmd === 'check') {
   const profile = getArg(args, '--profile') || 'quick';
   console.log(`[harness] check --profile ${profile}`);
 
-  // Load profile config
-  const configPath = resolve(ROOT, 'harness', 'config.json');
-  const profiles = existsSync(configPath)
-    ? JSON.parse(readFileSync(configPath, 'utf-8')).profiles
-    : {};
-  const profileChecks = profiles[profile]?.checks || ['degraded-loop'];
+  // Load profile from project config (harness.config.mjs / legacy harness/config.json)
+  const profileChecks = config.profiles?.[profile]?.checks || ['degraded-loop'];
 
   console.log(`[harness] Running: ${profileChecks.join(', ')}`);
   let exitCode = 0;
@@ -169,20 +156,20 @@ else if (cmd === 'check') {
   for (const checkName of profileChecks) {
     try {
       if (checkName === 'anti-patterns') {
-        await import('./scan-anti-patterns.mjs').then(m => m.scan({ rootDir: ROOT }));
+        await import('./scan-anti-patterns.mjs').then(m => m.scan({ rootDir: ROOT, config }));
       } else if (checkName === 'degraded-loop') {
-        const result = await import('./check-degraded-loop.mjs').then(m => m.scan({ rootDir: ROOT }));
+        const result = await import('./check-degraded-loop.mjs').then(m => m.scan({ rootDir: ROOT, config }));
         if (result.errors > 0) exitCode = 1;
       } else if (checkName === 'doc-impact') {
-        await import('./doc-impact.mjs').then(m => m.run({ rootDir: ROOT, args: ['--base', 'origin/main'] }));
+        await import('./doc-impact.mjs').then(m => m.run({ rootDir: ROOT, args: ['--base', 'origin/main'], config }));
       } else if (checkName === 'ai-freshness') {
-        await import('./eval-ai.mjs').then(m => m.run({ rootDir: ROOT, args: ['--check-freshness'] }));
+        await import('./eval-ai.mjs').then(m => m.run({ rootDir: ROOT, args: ['--check-freshness'], config }));
       } else if (checkName === 'generated-check') {
-        await import('./generated-check.mjs').then(m => m.check({ rootDir: ROOT }));
+        await import('./generated-check.mjs').then(m => m.check({ rootDir: ROOT, config }));
       } else if (checkName === 'coverage') {
-        await import('./coverage.mjs').then(m => m.run({ rootDir: ROOT, args: [] }));
+        await import('./coverage.mjs').then(m => m.run({ rootDir: ROOT, args: [], config }));
       } else if (checkName === 'ai-scenarios') {
-        await import('./eval-scenarios.mjs').then(m => m.run({ rootDir: ROOT, args: ['--readiness'] }));
+        await import('./eval-scenarios.mjs').then(m => m.run({ rootDir: ROOT, args: ['--readiness'], config }));
       } else {
         console.log(`[harness] ⏭  ${checkName}: delegated to CI / external runner`);
       }
@@ -199,42 +186,42 @@ else if (cmd === 'check') {
 // eval-ai
 // ================================================================
 else if (cmd === 'eval-ai' || cmd === 'eval') {
-  await import('./eval-ai.mjs').then(m => m.run({ rootDir: ROOT, args }));
+  await import('./eval-ai.mjs').then(m => m.run({ rootDir: ROOT, args, config }));
 }
 
 // ================================================================
 // eval-scenarios — GS scenario readiness + executor prompts
 // ================================================================
 else if (cmd === 'eval-scenarios') {
-  await import('./eval-scenarios.mjs').then(m => m.run({ rootDir: ROOT, args }));
+  await import('./eval-scenarios.mjs').then(m => m.run({ rootDir: ROOT, args, config }));
 }
 
 // ================================================================
 // eval-llm — promptfoo LLM eval executor for GS scenarios
 // ================================================================
 else if (cmd === 'eval-llm') {
-  await import('./eval-llm.mjs').then(m => m.run({ rootDir: ROOT, args }));
+  await import('./eval-llm.mjs').then(m => m.run({ rootDir: ROOT, args, config }));
 }
 
 // ================================================================
 // coverage — coverage gate (SimpleCov / vitest v8)
 // ================================================================
 else if (cmd === 'coverage') {
-  await import('./coverage.mjs').then(m => m.run({ rootDir: ROOT, args }));
+  await import('./coverage.mjs').then(m => m.run({ rootDir: ROOT, args, config }));
 }
 
 // ================================================================
 // generated:check
 // ================================================================
 else if (cmd === 'generated:check') {
-  await import('./generated-check.mjs').then(m => m.check({ rootDir: ROOT }));
+  await import('./generated-check.mjs').then(m => m.check({ rootDir: ROOT, config }));
 }
 
 // ================================================================
 // doc-impact
 // ================================================================
 else if (cmd === 'doc-impact') {
-  await import('./doc-impact.mjs').then(m => m.run({ rootDir: ROOT, args }));
+  await import('./doc-impact.mjs').then(m => m.run({ rootDir: ROOT, args, config }));
 }
 
 // ================================================================
@@ -331,7 +318,7 @@ else if (cmd === 'gate') {
   const detectedVia = getArg(args, '--type') ? '--type flag' :
     PREFIX_MAP[Object.keys(PREFIX_MAP).find(p => taskDesc.startsWith(p))] ? '前缀' : '内容关键词';
   console.log(`\n   ↳ 识别方式: ${detectedVia} → 任务类型: ${taskType}`);
-  const gateDir = resolve(ROOT, 'harness', 'gates');
+  const gateDir = resolve(ROOT, config.paths.gates);
   mkdirSync(gateDir, { recursive: true });
 
   const now = new Date();
@@ -339,67 +326,8 @@ else if (cmd === 'gate') {
   const gateId = `GATE-${ts}`;
   const gateFile = join(gateDir, `${gateId}.json`);
 
-  const searchChecks = [
-    { id: 'search-backend-app',      label: 'Cross-layer: Search backend/app/' },
-    { id: 'search-core',             label: 'Cross-layer: Search pallastrade_gems/pallastrade_core/' },
-    { id: 'search-api',              label: 'Cross-layer: Search pallastrade_gems/pallastrade_api/' },
-    { id: 'search-admin',            label: 'Cross-layer: Search pallastrade_gems/pallastrade_admin/' },
-    { id: 'search-storefront',       label: 'Cross-layer: Search storefront/src/' },
-    { id: 'search-platform',         label: 'Cross-layer: Search platform/packages/' },
-  ];
-  const verifyCheck = { id: 'verify-test', label: 'Verify: screenshot/log/DB — see TR-006 (no-test-needed only for docs)' };
-
-  const checkDefs = {
-    feature: [
-      ...searchChecks,
-      { id: 'read-skill-customization',label: 'Read Skill: pallastrade-customization/SKILL.md (always)' },
-      { id: 'read-skill-domain',       label: 'Read Skill: domain-specific SKILL.md(s)' },
-      { id: 'read-skill-prd',          label: 'Read Skill: pallastrade-prd/SKILL.md (PRD workflow)' },
-      { id: 'create-prd-doc',          label: 'Create PRD doc: docs/prd/{category}/PRD-*.md' },
-      { id: 'create-req-doc',          label: 'Create requirements doc: harness/requirements/REQ-*.md' },
-      { id: 'req-doc-has-skill-table', label: 'REQ doc includes Skill consultation evidence table' },
-      { id: 'user-confirmed',          label: 'User confirmed requirements doc (WAIT — do not proceed)' },
-      verifyCheck,
-    ],
-    bugfix: [
-      ...searchChecks,
-      { id: 'read-skill-domain',       label: 'Read Skill: domain-specific SKILL.md(s)' },
-      verifyCheck,
-    ],
-    style: [
-      ...searchChecks,
-      verifyCheck,
-    ],
-    audit: [
-      ...searchChecks,
-      { id: 'read-skill-domain',       label: 'Read Skill: domain-specific SKILL.md(s)' },
-      verifyCheck,
-    ],
-    research: [
-      ...searchChecks,
-      { id: 'read-skill-domain',       label: 'Read Skill: domain-specific SKILL.md(s)' },
-      verifyCheck,
-    ],
-    docs: [
-      ...searchChecks,
-      verifyCheck,
-    ],
-    refactor: [
-      ...searchChecks,
-      verifyCheck,
-    ],
-    security: [
-      ...searchChecks,
-      { id: 'read-skill-security',     label: 'Read Skill: pallastrade-security/SKILL.md' },
-      verifyCheck,
-    ],
-    test: [
-      ...searchChecks,
-      verifyCheck,
-    ],
-  };
-
-  const checks = checkDefs[taskType] || checkDefs.feature;
+  // Gate check 集由配置驱动：layers 搜索 + 内置基础 + 配置追加 + verify-test
+  const checks = getGateChecks(config, taskType);
 
   let branch = 'unknown';
   let head = 'unknown';
@@ -443,7 +371,7 @@ else if (cmd === 'gate') {
 // ================================================================
 else if (cmd === 'gate:status') {
   const { readdirSync } = await import('node:fs');
-  const gateDir = resolve(ROOT, 'harness', 'gates');
+  const gateDir = resolve(ROOT, config.paths.gates);
   if (!existsSync(gateDir)) {
     console.log('No gates directory. Run `harness gate` to create one.');
     process.exit(1);
@@ -464,9 +392,8 @@ else if (cmd === 'gate:status') {
   const elapsed = Date.now() - new Date(gateState.createdAt).getTime();
   const hoursAgo = Math.round(elapsed / 3600000);
 
-  // Differentiated expiry: feature 48h, bugfix 24h, style 8h
-  const EXPIRY_HOURS = { feature: 48, bugfix: 24, style: 8 };
-  const maxAge = EXPIRY_HOURS[gateState.taskType] || 24;
+  // Differentiated expiry: from project config gates.expiryHours
+  const maxAge = config.gates?.expiryHours?.[gateState.taskType] || 24;
 
   console.log(`\n📋 Active Gate: ${gateState.id}`);
   console.log(`   Task: ${gateState.taskDescription}`);
@@ -511,7 +438,7 @@ else if (cmd === 'gate:clear') {
     process.exit(1);
   }
 
-  const gateFile = resolve(ROOT, 'harness', 'gates', `${gateId}.json`);
+  const gateFile = resolve(ROOT, config.paths.gates, `${gateId}.json`);
   if (!existsSync(gateFile)) {
     console.log(`Gate file not found: harness/gates/${gateId}.json`);
     process.exit(1);
@@ -553,7 +480,7 @@ else if (cmd === 'gate:clear') {
 // ================================================================
 else if (cmd === 'gate:clean') {
   const days = parseInt(getArg(args, '--days') || '7', 10);
-  const gateDir = resolve(ROOT, 'harness', 'gates');
+  const gateDir = resolve(ROOT, config.paths.gates);
   if (!existsSync(gateDir)) { console.log('No gates directory.'); process.exit(0); }
 
   const files = readdirSync(gateDir).filter(f => f.endsWith('.json'));
@@ -587,7 +514,7 @@ else if (cmd === 'gate:required') {
     process.exit(0);
   }
 
-  const gateDir = resolve(ROOT, 'harness', 'gates');
+  const gateDir = resolve(ROOT, config.paths.gates);
   if (!existsSync(gateDir)) {
     console.log('❌ gate:required — no gates directory. Run: node scripts/harness/cli.mjs gate --task "修复：<描述>"');
     process.exit(1);
@@ -598,7 +525,6 @@ else if (cmd === 'gate:required') {
     branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: ROOT, encoding: 'utf-8' }).trim();
   } catch { /* not a git repo */ }
 
-  const EXPIRY_HOURS = { feature: 48, bugfix: 24, style: 8 };
   const files = readdirSync(gateDir).filter(f => f.endsWith('.json'));
   const now = Date.now();
   let valid = null;
@@ -610,7 +536,7 @@ else if (cmd === 'gate:required') {
     } catch { continue; }
     if (!gate.cleared) continue;
     if (gate.branch && gate.branch !== branch) continue;
-    const maxAge = (EXPIRY_HOURS[gate.taskType] || 24) * 3600000;
+    const maxAge = (config.gates?.expiryHours?.[gate.taskType] || 24) * 3600000;
     const age = now - new Date(gate.createdAt).getTime();
     if (age <= maxAge) { valid = gate; break; }
   }
@@ -657,7 +583,7 @@ else if (cmd === 'prd') {
   }
   function listExistingPrds() {
     const out = [];
-    const prdDir = resolve(ROOT, 'docs', 'prd');
+    const prdDir = resolve(ROOT, config.paths.prd);
     if (!existsSync(prdDir)) return out;
     for (const cat of readdirSync(prdDir)) {
       if (cat === 'README.md' || cat === '_TEMPLATE.md' || cat.startsWith('.')) continue;
@@ -702,7 +628,7 @@ else if (cmd === 'prd') {
       .replace(/^-+|-+$/g, '')
       .slice(0, 60) || 'untitled';
     const fileName = `PRD-${date}-${bestCat}-${slug}.md`;
-    const dir = resolve(ROOT, 'docs', 'prd', bestCat);
+    const dir = resolve(ROOT, config.paths.prd, bestCat);
     mkdirSync(dir, { recursive: true });
     const filePath = join(dir, fileName);
     if (existsSync(filePath)) {
@@ -735,7 +661,7 @@ else if (cmd === 'prd') {
       + `| 来源 | ${title} |\n`
       + `| 分类 | ${bestCat}（自动判定） |\n\n`
       + `> ⚠️ AI：请按 docs/prd/_TEMPLATE.md 完整扩充本文档（背景/FR/AC/跨层搜索/测试计划/文档同步清单），再进入用户确认。\n`;
-    const tmpl = resolve(ROOT, 'docs', 'prd', '_TEMPLATE.md');
+    const tmpl = resolve(ROOT, config.paths.prd, '_TEMPLATE.md');
     if (existsSync(tmpl)) content += `\n---\n\n${readFileSync(tmpl, 'utf-8')}`;
 
     writeFileSync(filePath, content);
@@ -772,7 +698,7 @@ else if (cmd === 'prd') {
 
   // prd list — list all PRDs (optional --category / --status filter)
   if (sub === 'list') {
-    const prdDir = resolve(ROOT, 'docs', 'prd');
+    const prdDir = resolve(ROOT, config.paths.prd);
     if (!existsSync(prdDir)) { console.log('No docs/prd directory.'); process.exit(0); }
     const categoryFilter = getArg(args, '--category');
     const statusFilter = getArg(args, '--status');
@@ -808,7 +734,7 @@ else if (cmd === 'prd') {
     const id = getArg(args, '--id') || args[2];
     const allowMissing = hasArg(args, '--allow-missing-tests');
     if (!id) { console.log('Usage: harness prd verify --id PRD-xxx [--allow-missing-tests]'); process.exit(1); }
-    const prdDir = resolve(ROOT, 'docs', 'prd');
+    const prdDir = resolve(ROOT, config.paths.prd);
     if (!existsSync(prdDir)) { console.log('No docs/prd directory.'); process.exit(1); }
     let prdPath = null;
     for (const cat of readdirSync(prdDir)) {
@@ -877,20 +803,8 @@ else if (cmd === 'sync-check') {
       .filter(Boolean);
   } catch { /* not a repo */ }
 
-  const RULES = [
-    { label: 'Model / DB 变更', re: /^(backend\/app\/models|backend\/db\/migrate|backend\/pallastrade_gems\/.*\/db\/migrate)/, assets: ['领域 Skill', 'pallastrade-data-model Skill', '测试', '场景库'] },
-    { label: 'API 端点变更', re: /(controllers\/.*\/api\/v3|config\/routes)/, assets: ['backend/public/api-docs/{store,admin}.yaml', 'pallastrade-api-v3 Skill', 'SDK 类型(generated:check)', '场景库'] },
-    { label: 'UI 组件 / 页面', re: /storefront\/src\/(components|app)\/.*\.tsx/, assets: ['pallastrade-storefront Skill', '组件测试', '场景库'] },
-    { label: '样式 / 设计 token', re: /\.(css|scss)$|tailwind\.config/, assets: ['样式规范(CLAUDE.md / Skill Style Guide 章节)', 'AP-006 检查', 'E2E 截图证据'] },
-    { label: '事件 / 订阅者', re: /(app\/subscribers|subscribers)/, assets: ['pallastrade-events-webhooks Skill'] },
-    { label: '反模式 / 任务规则', re: /harness\/policies\/(anti-patterns|task-rules)/, assets: ['AGENTS.md §5', '.github/copilot-instructions.md'] },
-    { label: 'CLI / 命令能力', re: /(platform\/packages\/cli|ai\/commands)/, assets: ['pallastrade-cli Skill', 'CLI README', 'ai/commands/'] },
-    { label: '包 / SDK 能力', re: /platform\/packages\/(sdk|create-pallastrade-app)/, assets: ['pallastrade-typescript-sdk Skill', 'platform/packages/README.md', '根 README'] },
-    { label: '技术选型 / 架构', re: /(package\.json|biome\.json|Gemfile|tsconfig|next\.config|pnpm-workspace)/, assets: ['根 AGENTS.md', '各层 CLAUDE.md/AGENTS.md', '技术规范', 'README'] },
-    { label: '安全策略', re: /(security|credential|api_key|auth|secret)/, assets: ['pallastrade-security Skill', 'AGENTS.md §8 危险操作'] },
-    { label: '部署 / 配置', re: /(Dockerfile|docker-compose|\.env\.example|Procfile|deploy|render\.yaml)/, assets: ['pallastrade-deployment Skill', '.env.example', '部署 README'] },
-    { label: 'Skill / PRD 机制', re: /(ai\/skills|harness\/requirements|docs\/prd|scripts\/harness)/, assets: ['pallastrade-prd Skill', 'AGENTS.md', 'copilot-instructions.md', 'scenarios.json'] },
-  ];
+  // 知识同步矩阵由 harness.config.mjs 的 syncCheck.rules 驱动（通用化）
+  const RULES = config.syncCheck?.rules || [];
 
   const matched = RULES.filter(r => changed.some(f => r.re.test(f)));
   if (matched.length === 0) {
@@ -994,6 +908,98 @@ else if (cmd === 'nav:check') {
   }
 
   console.log(`✅ nav:check — 导航地图 ${paths.length} 个引用全部有效，各层 AGENTS.md→CLAUDE.md 引用完整，无重复定义。`);
+  process.exit(0);
+}
+
+// ================================================================
+// init — scaffold a harness.config.mjs (v1: skeleton; wizard in Phase 2)
+// ================================================================
+else if (cmd === 'init') {
+  // init 在用户当前目录创建配置（不向上解析 ROOT — 这是"新建项目"场景）
+  const target = resolve(process.cwd(), 'harness.config.mjs');
+  if (existsSync(target)) {
+    console.log(`❌ harness.config.mjs already exists at ${target}.`);
+    console.log('   Edit it directly, or delete it and re-run `harness init`.');
+    process.exit(1);
+  }
+  const skeleton = `// harness.config.mjs — 项目配置（引擎通用机制，本文件声明项目自身结构）
+// Schema 说明见 docs/standards/harness-standalone-roadmap.md §6（或引擎文档）。
+export default {
+  name: 'my-project',
+
+  // ① 层定义：gate 跨层搜索来源。单层项目配 [{ id: 'app', path: 'src' }]
+  layers: [
+    { id: 'app', path: 'app', label: 'App' },
+    { id: 'src', path: 'src', label: 'Source' },
+  ],
+
+  // ② gate：可追加项目特定 check（可选）
+  gates: {
+    // checkDefs: { feature: [{ id: 'my-check', label: 'My project check' }] },
+  },
+
+  // ③ 知识同步规则（doc-impact）— 默认空数组不阻塞
+  docImpact: {
+    base: 'origin/main',
+    rules: [
+      // { codeGlob: /^src\/.*\.ts$/, docs: ['docs/README.md'], label: 'Source change' },
+    ],
+  },
+
+  // ④ 覆盖率（可选）
+  coverage: { thresholds: {}, targets: [] },
+
+  // ⑤ 扫描器规则文件
+  scanners: { antiPatterns: 'harness/policies/anti-patterns.json' },
+
+  // ⑥ scenarios（可选）
+  scenarios: 'harness/scenarios/scenarios.json',
+
+  // ⑦ check profiles（可选）
+  profiles: {},
+
+  // ⑧ doctor 检查项（可选）
+  doctor: { requiredDirs: [], requiredFiles: [], composeCandidates: [] },
+
+  // ⑨ 状态/产物路径（默认值即可）
+  paths: { gates: 'harness/gates', requirements: 'harness/requirements', evidence: 'artifacts/harness-evidence', prd: 'docs/prd' },
+};
+`;
+  writeFileSync(target, skeleton);
+  console.log(`✅ Created ${target}`);
+  console.log('   Next: run `harness config:check` to validate, then `harness doctor`.');
+  process.exit(0);
+}
+
+// ================================================================
+// config:check — validate project config + report engine defaults in use
+// ================================================================
+else if (cmd === 'config:check') {
+  const { config: cfg, sourcePath, usedDefaults } = await loadConfig({ rootDir: ROOT });
+  console.log(`✅ Config valid: ${sourcePath || '(no config file — engine defaults in use)'}`);
+  console.log(`   Project: ${cfg.name}`);
+  console.log(`   Layers (${cfg.layers.length}): ${cfg.layers.map(l => l.id).join(', ')}`);
+  console.log(`   Gate dir: ${cfg.paths.gates}`);
+  console.log(`   docImpact rules: ${cfg.docImpact?.rules?.length ?? 0}`);
+  if (usedDefaults.length > 0) {
+    console.log(`\nℹ️  Engine defaults in use: ${usedDefaults.join(', ')}`);
+  } else {
+    console.log('\n✅ No engine defaults in use — fully configured.');
+  }
+  process.exit(0);
+}
+
+// ================================================================
+// cache:clean — remove harness cache directory (.harness-cache)
+// ================================================================
+else if (cmd === 'cache:clean') {
+  const cacheDir = resolve(ROOT, '.harness-cache');
+  if (existsSync(cacheDir)) {
+    rmSync(cacheDir, { recursive: true, force: true });
+    console.log('🗑  Removed .harness-cache');
+  } else {
+    console.log('No cache to clean.');
+  }
   process.exit(0);
 }
 

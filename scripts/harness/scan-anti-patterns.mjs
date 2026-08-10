@@ -1,8 +1,9 @@
 import { readFileSync, existsSync, statSync, globSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { loadConfig } from './config-loader.mjs';
 
-export function scan({ rootDir, files: fileFilter = null }) {
-  const rulesPath = resolve(rootDir, 'harness', 'policies', 'anti-patterns.json');
+export function scan({ rootDir, files: fileFilter = null, config }) {
+  const rulesPath = resolve(rootDir, config?.scanners?.antiPatterns || 'harness/policies/anti-patterns.json');
   if (!existsSync(rulesPath)) {
     console.log('⚠️  No anti-patterns rules file found. Skipping scan.');
     return;
@@ -95,5 +96,6 @@ if (args.length > 0 && args[0] === 'scan') {
   const files = filesIdx >= 0 && args[filesIdx + 1]
     ? args[filesIdx + 1].split(',').map(s => s.trim()).filter(Boolean)
     : null;
-  scan({ rootDir, files });
+  const { config } = await loadConfig({ rootDir });
+  scan({ rootDir, files, config });
 }

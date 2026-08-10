@@ -1,7 +1,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
-export async function run({ rootDir, args }) {
+export async function run({ rootDir, args, config }) {
   const checkFreshness = args.includes('--check-freshness');
   const checkScenarios = args.includes('--scenarios');
 
@@ -9,19 +9,19 @@ export async function run({ rootDir, args }) {
     await checkFreshnessImpl(rootDir);
   }
   if (checkScenarios) {
-    await checkScenariosImpl(rootDir);
+    await checkScenariosImpl(rootDir, config);
   }
 }
 
 /**
- * Validate harness/scenarios/scenarios.json — structural contract for the
+ * Validate scenarios file (from project config) — structural contract for the
  * GS scenario library (unique ids, mustDo/mustNotDo present, scoring weights
  * sum to 100). Fail-closed on violations.
  */
-async function checkScenariosImpl(rootDir) {
-  const scenariosFile = resolve(rootDir, 'harness', 'scenarios', 'scenarios.json');
+async function checkScenariosImpl(rootDir, config) {
+  const scenariosFile = resolve(rootDir, config?.scenarios || 'harness/scenarios/scenarios.json');
   if (!existsSync(scenariosFile)) {
-    console.log('⚠️  harness/scenarios/scenarios.json not found.');
+    console.log('⚠️  scenarios file not found (config scenarios or harness/scenarios/scenarios.json).');
     return;
   }
 

@@ -17,16 +17,26 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const ROOT = resolve(import.meta.dirname, '..', '..');
-const SCENARIOS_FILE = resolve(ROOT, 'harness', 'scenarios', 'scenarios.json');
-const OUT_DIR = resolve(ROOT, 'harness', 'promptfoo');
-const PROMPTS_DIR = resolve(OUT_DIR, 'prompts');
-const CONFIG_FILE = resolve(OUT_DIR, 'promptfooconfig.yaml');
+import { loadConfig } from './config-loader.mjs';
 
-function loadScenarios() {
-  if (!existsSync(SCENARIOS_FILE)) return [];
+const ROOT = resolve(import.meta.dirname, '..', '..');
+
+/** Resolve eval paths from project config (scenarios + paths.promptfoo). */
+function pathsFor(rootDir, config) {
+  const outDir = resolve(rootDir, config?.paths?.promptfoo || 'harness/promptfoo');
+  return {
+    scenariosFile: resolve(rootDir, config?.scenarios || 'harness/scenarios/scenarios.json'),
+    outDir,
+    promptsDir: resolve(outDir, 'prompts'),
+    configFile: resolve(outDir, 'promptfooconfig.yaml'),
+  };
+}
+
+function loadScenarios(rootDir, config) {
+  const { scenariosFile } = pathsFor(rootDir, config);
+  if (!existsSync(scenariosFile)) return [];
   try {
-    return JSON.parse(readFileSync(SCENARIOS_FILE, 'utf-8')).scenarios || [];
+    return JSON.parse(readFileSync(scenariosFile, 'utf-8')).scenarios || [];
   } catch {
     return [];
   }
@@ -50,14 +60,15 @@ export function buildPrompt(scenario) {
   return lines.join('\n');
 }
 
-export function generate({ rootDir = ROOT } = {}) {
-  const scenarios = loadScenarios();
-  mkdirSync(PROMPTS_DIR, { recursive: true });
+export function generate({ rootDir = ROOT, config } = {}) {
+  const { promptsDir, configFile } = pathsFor(rootDir, config);
+  const scenarios = loadScenarios(rootDir, config);
+  mkdirSync(promptsDir, { recursive: true });
 
   const promptRefs = [];
   for (const s of scenarios) {
     const key = `prompts/${s.id.toLowerCase()}.txt`;
-    writeFileSync(resolve(PROMPTS_DIR, `${s.id.toLowerCase()}.txt`), buildPrompt(s));
+    writeFileSync(resolve(promptsDir, `${s.id.toLowerCase()}.txt`), buildPrompt(s));
     promptRefs.push({ id: s.id, file: key });
   }
 
@@ -81,18 +92,19 @@ export function generate({ rootDir = ROOT } = {}) {
     '',
   ].join('\n');
 
-  writeFileSync(CONFIG_FILE, yaml);
-  return { scenarios: promptRefs.length, config: CONFIG_FILE };
+  writeFileSync(configFile, yaml);
+  return { scenarios: promptRefs.length, config: configFile };
 }
 
-export function check({ rootDir = ROOT } = {}) {
+export function check({ rootDir = ROOT, config } = {}) {
+  const { promptsDir, configFile } = pathsFor(rootDir, config);
   const problems = [];
-  if (!existsSync(CONFIG_FILE)) problems.push(`missing ${CONFIG_FILE}`);
-  if (!existsSync(PROMPTS_DIR)) problems.push(`missing ${PROMPTS_DIR}`);
+  if (!existsSync(configFile)) problems.push(`missing ${configFile}`);
+  if (!existsSync(promptsDir)) problems.push(`missing ${promptsDir}`);
 
-  const scenarios = loadScenarios();
+  const scenarios = loadScenarios(rootDir, config);
   for (const s of scenarios) {
-    const f = resolve(PROMPTS_DIR, `${s.id.toLowerCase()}.txt`);
+    const f = resolve(promptsDir, `${s.id.toLowerCase()}.txt`);
     if (!existsSync(f)) problems.push(`missing prompt file for ${s.id}`);
   }
   if (problems.length === 0) {
@@ -103,29 +115,29 @@ export function check({ rootDir = ROOT } = {}) {
   return { ok: false, count: scenarios.length };
 }
 
-export function list({ rootDir = ROOT } = {}) {
-  const scenarios = loadScenarios();
+export function list({ rootDir = ROOT, config } = {}) {
+  const scenarios = loadScenarios(rootDir, config);
   for (const s of scenarios) console.log(`${s.id}\t${s.name}`);
   return { count: scenarios.length };
 }
 
-export function run({ rootDir = ROOT, args = [] } = {}) {
+export function run({ rootDir = ROOT, args = [], config } = {}) {
   if (args.includes('--generate')) {
-    const { scenarios, config } = generate({ rootDir });
-    console.log(`✅ eval-llm: generated ${scenarios} scenario prompt(s) + ${config}`);
+    const { scenarios, config: cfgFile } = generate({ rootDir, config });
+    console.log(`✅ eval-llm: generated ${scenarios} scenario prompt(s) + ${cfgFile}`);
     return;
   }
   if (args.includes('--check')) {
-    check({ rootDir });
+    check({ rootDir, config });
     return;
   }
   if (args.includes('--list')) {
-    list({ rootDir });
+    list({ rootDir, config });
     return;
   }
 
   // Default: run promptfoo eval.
-  const preflight = check({ rootDir });
+  const preflight = check({ rootDir, config });
   if (!preflight.ok) {
     console.error('❌ eval-llm: run --generate first, then retry.');
     process.exitCode = 1;

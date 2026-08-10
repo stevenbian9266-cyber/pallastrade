@@ -1,94 +1,13 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-// Knowledge sync rules — mirrors AGENTS.md section 7
-const SYNC_RULES = [
-  {
-    codeGlob: /^backend\/app\/models\/.*\.rb$/,
-    docs: ['ai/skills/pallastrade-catalog/SKILL.md', 'ai/skills/pallastrade-data-model/SKILL.md'],
-    anyOf: true,
-    label: 'Model change',
-  },
-  {
-    codeGlob: /^backend\/app\/controllers\/.*\/api\/v3\/.*\.rb$/,
-    docs: ['backend/public/api-docs/store.yaml', 'backend/public/api-docs/admin.yaml', 'platform/docs/api-reference/store.yaml', 'platform/docs/api-reference/admin.yaml'],
-    anyOf: true,
-    label: 'API endpoint change → API docs sync',
-  },
-  {
-    codeGlob: /^backend\/app\/decorators\/.*\.rb$/,
-    docs: ['ai/skills/pallastrade-decorators/SKILL.md'],
-    label: 'Decorator change',
-  },
-  {
-    codeGlob: /^backend\/app\/subscribers\/.*\.rb$/,
-    docs: ['ai/skills/pallastrade-events-webhooks/SKILL.md'],
-    label: 'Subscriber change',
-  },
-  {
-    codeGlob: /^storefront\/src\/components\/.*\.tsx$/,
-    docs: ['ai/skills/pallastrade-storefront/SKILL.md'],
-    label: 'Storefront component change',
-  },
-  {
-    codeGlob: /^storefront\/src\/app\/.*\.tsx$/,
-    docs: ['ai/skills/pallastrade-storefront/SKILL.md'],
-    label: 'Storefront page change',
-  },
-  {
-    codeGlob: /\.(css|scss)$|tailwind\.config\./,
-    docs: ['ai/skills/pallastrade-storefront/SKILL.md', 'ai/skills/pallastrade-admin/SKILL.md'],
-    anyOf: true,
-    label: 'Style change',
-  },
-  {
-    codeGlob: /^ai\/skills\/.*\/SKILL\.md$/,
-    docs: ['harness/scenarios/scenarios.json'],
-    label: 'Skill file change',
-  },
-  {
-    codeGlob: /^harness\/policies\/(anti-patterns|task-rules)\.json$/,
-    docs: ['AGENTS.md', '.github/copilot-instructions.md'],
-    anyOf: true,
-    label: 'Policy change → agent docs sync',
-  },
-  {
-    codeGlob: /^harness\/policies\/prd-categories\.json$/,
-    docs: ['ai/skills/pallastrade-prd/SKILL.md', 'docs/prd/README.md'],
-    anyOf: true,
-    label: 'PRD category change',
-  },
-  {
-    codeGlob: /^docs\/standards\//,
-    docs: ['AGENTS.md'],
-    label: 'Standards index change → navigation map sync',
-  },
-  {
-    codeGlob: /^docs\/prd\/_TEMPLATE\.md$/,
-    docs: ['ai/skills/pallastrade-prd/SKILL.md'],
-    label: 'PRD template change',
-  },
-  {
-    codeGlob: /^ai\/commands\/|^ai\/agents\//,
-    docs: ['ai/README.md'],
-    label: 'AI command/agent change → ai README sync',
-  },
-  {
-    codeGlob: /^platform\/packages\/(cli|sdk|create-pallastrade-app)\//,
-    docs: ['platform/README.md', 'platform/packages/README.md'],
-    anyOf: true,
-    label: 'Platform package change → README sync',
-  },
-  {
-    codeGlob: /^scripts\/harness\//,
-    docs: ['AGENTS.md', 'ai/skills/pallastrade-prd/SKILL.md', 'harness/scenarios/scenarios.json'],
-    anyOf: true,
-    label: 'Harness change → workflow docs sync',
-  },
-];
-
-export async function run({ rootDir, args }) {
-  const base = args.includes('--base') ? args[args.indexOf('--base') + 1] : 'origin/main';
+/**
+ * Knowledge sync rules come from harness.config.mjs → docImpact.rules
+ * (mirrors AGENTS.md §7). Default empty array — no rules = no block.
+ */
+export async function run({ rootDir, args, config }) {
+  const SYNC_RULES = config?.docImpact?.rules || [];
+  const base = args.includes('--base') ? args[args.indexOf('--base') + 1] : (config?.docImpact?.base || 'origin/main');
 
   // Get changed files: committed (vs base) + staged + unstaged.
   const { files: changedFiles, errors } = await import('./git-files.mjs').then(m => m.getChangedFiles(rootDir, base));

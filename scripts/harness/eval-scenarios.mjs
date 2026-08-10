@@ -17,9 +17,10 @@
  */
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { loadConfig } from './config-loader.mjs';
 
-function loadScenarios(rootDir) {
-  const p = resolve(rootDir, 'harness', 'scenarios', 'scenarios.json');
+function loadScenarios(rootDir, config) {
+  const p = resolve(rootDir, config?.scenarios || 'harness/scenarios/scenarios.json');
   if (!existsSync(p)) return [];
   try { return JSON.parse(readFileSync(p, 'utf-8')).scenarios || []; } catch { return []; }
 }
@@ -86,7 +87,7 @@ const READINESS_CHECKS = {
       && findFiles(r, 'backend/pallastrade_gems', /v[12]\.rb$/i).length === 0],
   ],
   'GS-008': [
-    ['doc-impact sync rules', r => contains(r, 'scripts/harness/doc-impact.mjs', /SYNC_RULES/)],
+    ['doc-impact sync rules', r => contains(r, 'harness.config.mjs', /docImpact/)],
   ],
   'GS-009': [
     ['harness doctor', r => contains(r, 'scripts/harness/cli.mjs', /cmd === 'doctor'/)],
@@ -104,7 +105,7 @@ const READINESS_CHECKS = {
   ],
   'GS-014': [
     ['sync-check command', r => contains(r, 'scripts/harness/cli.mjs', /cmd === 'sync-check'/)],
-    ['doc-impact matrix', r => contains(r, 'scripts/harness/doc-impact.mjs', /SYNC_RULES/)],
+    ['doc-impact matrix', r => contains(r, 'harness.config.mjs', /docImpact/)],
     ['GS-014 scenario entry', r => contains(r, 'harness/scenarios/scenarios.json', /GS-014/)],
   ],
 };
@@ -132,10 +133,10 @@ function buildPrompt(rootDir, scenario) {
   return lines.join('\n');
 }
 
-export function run({ rootDir, args }) {
+export function run({ rootDir, args, config }) {
   const wantPrompts = args.includes('--prompts');
   const wantReadiness = args.includes('--readiness') || !wantPrompts;
-  const scenarios = loadScenarios(rootDir);
+  const scenarios = loadScenarios(rootDir, config);
 
   if (scenarios.length === 0) {
     console.log('⚠️  No scenarios found in harness/scenarios/scenarios.json.');
@@ -186,5 +187,7 @@ export function run({ rootDir, args }) {
 // CLI entry
 const args = process.argv.slice(2);
 if (args.length > 0 && args[0] === 'eval-scenarios') {
-  run({ rootDir: resolve(import.meta.dirname, '..', '..'), args: args.slice(1) });
+  const rootDir = resolve(import.meta.dirname, '..', '..');
+  const { config } = await loadConfig({ rootDir });
+  run({ rootDir, args: args.slice(1), config });
 }

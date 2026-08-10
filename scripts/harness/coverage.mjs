@@ -15,12 +15,7 @@
  */
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-
-function loadConfig(rootDir) {
-  const p = resolve(rootDir, 'harness', 'config.json');
-  if (!existsSync(p)) return null;
-  try { return JSON.parse(readFileSync(p, 'utf-8')); } catch { return null; }
-}
+import { loadConfig } from './config-loader.mjs';
 
 /** SimpleCov Cobertura: <coverage line-rate="0.85" branch-rate="0.6" ...> */
 function parseCobertura(file) {
@@ -48,8 +43,8 @@ function parseV8Summary(file) {
  * (each package's coverage directory) into a single line/statement percentage
  * (weighted by covered/total).
  */
-function aggregatePlatform(rootDir) {
-  const packagesDir = resolve(rootDir, 'platform', 'packages');
+function aggregatePlatform(rootDir, dir) {
+  const packagesDir = resolve(rootDir, dir || 'platform/packages');
   if (!existsSync(packagesDir)) return null;
   let totalLines = 0;
   let coveredLines = 0;
@@ -78,27 +73,40 @@ function aggregatePlatform(rootDir) {
   };
 }
 
-const COMPONENT_DEFS = {
-  backend: {
-    files: ['backend/coverage/cobertura-coverage.xml', 'coverage/cobertura-coverage.xml'],
-    parser: parseCobertura,
-  },
-  storefront: {
-    files: ['storefront/coverage/coverage-summary.json', 'storefront/coverage/coverage-final.json'],
-    parser: parseV8Summary,
-  },
-  platform: {
-    files: ['platform/coverage/coverage-summary.json'],
-    parser: parseV8Summary,
-    aggregate: aggregatePlatform,
-  },
-};
+/**
+ * Component definitions generated from harness.config.mjs → coverage.targets.
+ * backend uses SimpleCov Cobertura; platform aggregates per-package v8; others use vitest v8 JSON summary.
+ */
+function buildComponentDefs(config) {
+  const targets = config?.coverage?.targets || [];
+  const defs = {};
+  for (const t of targets) {
+    if (t.id === 'backend') {
+      defs[t.id] = {
+        files: [`${t.path}/coverage/cobertura-coverage.xml`, 'coverage/cobertura-coverage.xml'],
+        parser: parseCobertura,
+      };
+    } else if (t.id === 'platform') {
+      defs[t.id] = {
+        files: [`${t.path}/coverage/coverage-summary.json`],
+        parser: parseV8Summary,
+        aggregateDir: t.path,
+      };
+    } else {
+      defs[t.id] = {
+        files: [`${t.path}/coverage/coverage-summary.json`, `${t.path}/coverage/coverage-final.json`],
+        parser: parseV8Summary,
+      };
+    }
+  }
+  return defs;
+}
 
-export function run({ rootDir, args }) {
+export function run({ rootDir, args, config: cfg }) {
   const enforce = args.includes('--enforce');
   const componentArg = args.includes('--component') ? args[args.indexOf('--component') + 1] : null;
-  const config = loadConfig(rootDir);
-  const thresholds = config?.coverage?.thresholds || {};
+  const COMPONENT_DEFS = buildComponentDefs(cfg);
+  const thresholds = cfg?.coverage?.thresholds || {};
   const components = componentArg ? [componentArg] : Object.keys(COMPONENT_DEFS);
 
   let failed = false;
@@ -116,9 +124,9 @@ export function run({ rootDir, args }) {
     if (file) {
       data = def.parser(resolve(rootDir, file));
       source = file;
-    } else if (def.aggregate) {
-      data = def.aggregate(rootDir);
-      source = 'aggregated platform/packages coverage';
+    } else if (def.aggregateDir) {
+      data = aggregatePlatform(rootDir, def.aggregateDir);
+      source = `aggregated ${def.aggregateDir} coverage`;
     }
 
     if (!source || !data) {
@@ -159,5 +167,7 @@ export function run({ rootDir, args }) {
 // CLI entry
 const args = process.argv.slice(2);
 if (args.length > 0 && args[0] === 'coverage') {
-  run({ rootDir: resolve(import.meta.dirname, '..', '..'), args: args.slice(1) });
+  const rootDir = resolve(import.meta.dirname, '..', '..');
+  const { config: cfg } = await loadConfig({ rootDir });
+  run({ rootDir, args: args.slice(1), config: cfg });
 }
