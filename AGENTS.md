@@ -98,7 +98,7 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 **Before you invoke any file creation or edit tool, you MUST run:**
 
 ```bash
-node scripts/harness/cli.mjs gate --task "<brief description>" [--type feature|bugfix|style]
+npx harness gate --task "<brief description>" [--type feature|bugfix|style]
 ```
 
 This creates a gate file at `harness/gates/GATE-*.json` and outputs a checklist.
@@ -107,7 +107,7 @@ The command **always exits with code 1** until every check is cleared via `gate:
 **The AI is physically forbidden from calling `create_file`, `replace_string_in_file`, or `multi_replace_string_in_file` while the active gate's exit code is non-zero.** Check status with:
 
 ```bash
-node scripts/harness/cli.mjs gate:clear --gate <GATE-ID> --clear <check-id>
+npx harness gate:clear --gate <GATE-ID> --clear <check-id>
 ```
 
 Only when all checks are cleared and `gate:clear` exits 0 may the AI proceed to implementation.
