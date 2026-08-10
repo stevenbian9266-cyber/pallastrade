@@ -39,6 +39,16 @@ git push origin main    # 推 main（部署/打 Tag）
 
 禁止：直接向 `main` 推送开发提交（`main` 只由 `dev` 合并更新）。
 
+## 服务器部署与栈切换
+
+自有服务器（阿里云 `115.29.185.128`）上运行 dev/prod 双环境 Docker 栈，机制详见 **`deploy/README.md`**（唯一权威）。要点：
+
+- **单栈策略**：2C/3.5G 服务器不能双栈并行（OOM），任一时刻只跑一栈。
+- **默认态（常驻）**：dev 栈运行，prod 栈停止；prod 按需启动。
+- **任务结束标准流程**：本地验证 → 本地构建 storefront 镜像（`NEXT_PUBLIC_*` 构建时内联，需带 tawk ID build-arg）→ save/scp/load 传输 → 部署 dev → 部署 prod（`deploy.sh prod` 自动停 dev）→ **最终启动 dev、关闭 prod**。
+- 快捷脚本：`deploy/prod.sh` / `deploy/dev.sh`（up/down/status）、`deploy/deploy.sh dev|prod`（全量部署）。
+- dev/prod **数据库相互独立**，示例数据需分别创建。
+
 ## Tag 规则
 
 统一 Tag 格式：
