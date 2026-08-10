@@ -97,6 +97,8 @@ services:
       args:
         PALLASTRADE_API_URL: https://dev.pallastrade.cn
         PALLASTRADE_PUBLISHABLE_KEY: ${PALLASTRADE_PUBLISHABLE_KEY}
+        NEXT_PUBLIC_TAWK_TO_PROPERTY_ID: ${NEXT_PUBLIC_TAWK_TO_PROPERTY_ID:-}
+        NEXT_PUBLIC_TAWK_TO_WIDGET_ID: ${NEXT_PUBLIC_TAWK_TO_WIDGET_ID:-}
         APK_MIRROR: ${APK_MIRROR:-}
         NPM_REGISTRY: ${NPM_REGISTRY:-}
     env_file: .env.storefront.dev

@@ -64,6 +64,15 @@ ARG PALLASTRADE_PUBLISHABLE_KEY
 ENV PALLASTRADE_API_URL=$PALLASTRADE_API_URL \
     PALLASTRADE_PUBLISHABLE_KEY=$PALLASTRADE_PUBLISHABLE_KEY
 
+# Optional Tawk.to live-chat widget (PRD-20260810). The widget is a client
+# component reading NEXT_PUBLIC_* env — those are inlined into the bundle at
+# build time, so they MUST be passed here as build args (runtime env alone does
+# not reach the client bundle). Empty = widget disabled.
+ARG NEXT_PUBLIC_TAWK_TO_PROPERTY_ID
+ARG NEXT_PUBLIC_TAWK_TO_WIDGET_ID
+ENV NEXT_PUBLIC_TAWK_TO_PROPERTY_ID=$NEXT_PUBLIC_TAWK_TO_PROPERTY_ID \
+    NEXT_PUBLIC_TAWK_TO_WIDGET_ID=$NEXT_PUBLIC_TAWK_TO_WIDGET_ID
+
 # Optional Sentry release/source-map upload. When SENTRY_DSN is empty,
 # next.config.ts skips withSentryConfig entirely, so the build still works.
 # SENTRY_AUTH_TOKEN is intentionally not declared as ARG/ENV — it's mounted
