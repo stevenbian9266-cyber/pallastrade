@@ -63,7 +63,7 @@ export function CategoryNav({ rootCategories, basePath }: CategoryNavProps) {
     <nav
       ref={navRef}
       aria-label={t("categories")}
-      className="hidden md:block border-b border-gray-200 bg-white"
+      className="sticky top-16 z-40 hidden md:block border-b border-gray-200 bg-white"
       onMouseLeave={() => setHoveredId(null)}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
