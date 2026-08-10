@@ -9,17 +9,16 @@ import { useEffect, useRef, useState } from "react";
 /**
  * Persistent category navigation bar (常驻顶部分类导航条).
  *
- * Desktop only (`hidden md:block`) — the mobile drawer (MobileMenu) remains the
+ * Desktop only (`hidden md:block`) — the mobile drawer (MobileMenu) is the
  * small-screen entry point.
  *
- * Multi-level category panel (多级分类，点击展开关联子分类菜单面板):
- * - Clicking a root category NAME opens a mega panel listing ALL its children
- *   (level 2) and grandchildren (level 3) in a grid — the linked sub-category
- *   menu panel.
- * - Hovering the root item also opens the panel (desktop habit).
- * - Clicking anywhere outside the nav closes the panel; clicking the same
- *   category again toggles it closed.
- * - "View all" link at the panel footer navigates to the category page.
+ * Multi-level category panel with BOTH hover and click:
+ * - **Hover a root category** → its sub-category menu panel opens (mouse
+ *   entering the panel keeps it open; leaving the whole nav bar closes it).
+ * - **Click a root category name** → toggles the panel (click "locks" it open
+ *   even after the mouse leaves — click again or click outside to close).
+ * - The panel lists ALL level-2 children as columns, each with its level-3
+ *   grandchildren inline, plus a "View all" footer link.
  *
  * # PRD-20260810-storefront-对商城前台进行重新规划 AC-102
  */
@@ -30,12 +29,19 @@ interface CategoryNavProps {
 
 export function CategoryNav({ rootCategories, basePath }: CategoryNavProps) {
   const t = useTranslations("header");
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [clickedId, setClickedId] = useState<string | null>(null);
   const navRef = useRef<HTMLElement>(null);
 
-  const close = () => setOpenId(null);
+  // Hover opens the panel; a click "locks" it open even after hover leaves.
+  const openId = hoveredId ?? clickedId;
 
-  // Close the panel when clicking outside the nav.
+  const close = () => {
+    setHoveredId(null);
+    setClickedId(null);
+  };
+
+  // Close when clicking outside the nav.
   useEffect(() => {
     if (openId === null) return;
     const onPointerDown = (event: MouseEvent) => {
@@ -47,8 +53,8 @@ export function CategoryNav({ rootCategories, basePath }: CategoryNavProps) {
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [openId]);
 
-  const toggle = (id: string) =>
-    setOpenId((current) => (current === id ? null : id));
+  const toggleClick = (id: string) =>
+    setClickedId((current) => (current === id ? null : id));
 
   const navLinkClass =
     "inline-flex items-center gap-1 px-3 py-2.5 font-medium text-gray-700 hover:text-primary transition-colors";
@@ -58,6 +64,7 @@ export function CategoryNav({ rootCategories, basePath }: CategoryNavProps) {
       ref={navRef}
       aria-label={t("categories")}
       className="hidden md:block border-b border-gray-200 bg-white"
+      onMouseLeave={() => setHoveredId(null)}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <ul className="flex items-center text-sm overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -72,7 +79,8 @@ export function CategoryNav({ rootCategories, basePath }: CategoryNavProps) {
             </Link>
           </li>
           {rootCategories.map((category) => {
-            const hasChildren = !!category.children && category.children.length > 0;
+            const hasChildren =
+              !!category.children && category.children.length > 0;
             const isOpen = openId === category.id;
 
             return (
@@ -80,15 +88,12 @@ export function CategoryNav({ rootCategories, basePath }: CategoryNavProps) {
                 key={category.id}
                 className="relative"
                 onMouseEnter={() => {
-                  if (hasChildren) setOpenId(category.id);
-                }}
-                onMouseLeave={() => {
-                  if (openId === category.id) setOpenId(null);
+                  if (hasChildren) setHoveredId(category.id);
                 }}
               >
                 <button
                   type="button"
-                  onClick={() => toggle(category.id)}
+                  onClick={() => toggleClick(category.id)}
                   aria-expanded={isOpen}
                   aria-haspopup="true"
                   className="inline-flex cursor-pointer items-center gap-1 px-3 py-2.5 font-medium text-gray-700 transition-colors hover:text-primary"
@@ -97,9 +102,7 @@ export function CategoryNav({ rootCategories, basePath }: CategoryNavProps) {
                   {hasChildren && (
                     <ChevronDown
                       className={`size-3.5 transition-transform ${
-                        isOpen
-                          ? "rotate-180 text-primary"
-                          : "text-gray-400"
+                        isOpen ? "rotate-180 text-primary" : "text-gray-400"
                       }`}
                     />
                   )}
@@ -155,5 +158,6 @@ export function CategoryNav({ rootCategories, basePath }: CategoryNavProps) {
     </nav>
   );
 }
+
 
 

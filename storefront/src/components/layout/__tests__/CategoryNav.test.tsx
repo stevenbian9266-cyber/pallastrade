@@ -54,6 +54,17 @@ describe("CategoryNav", () => {
     expect(screen.getByRole("link", { name: "Computers" })).toBeTruthy();
   });
 
+  it("opens the panel when hovering a root category (mouse)", () => {
+    render(<CategoryNav rootCategories={rootCategories} basePath="/us/en" />);
+
+    expect(screen.queryByRole("link", { name: "Audio" })).toBeNull();
+
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Electronics" }).closest("li")!);
+
+    expect(screen.getByRole("link", { name: "Audio" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Computers" })).toBeTruthy();
+  });
+
   it("shows three levels in the panel: root -> child -> grandchild", () => {
     render(<CategoryNav rootCategories={rootCategories} basePath="/us/en" />);
 

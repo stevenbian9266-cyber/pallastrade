@@ -157,7 +157,7 @@ The home page (`app/[country]/[locale]/(storefront)/page.tsx`) composes 7 sectio
 - `FaqSection` — visible Q&A + matching `FAQPage` JSON-LD (structured data always mirrors visible content).
 - `NewsletterSignup` — client component, front-end validation + success state (no backend yet).
 
-`CategoryNav` (`components/layout/CategoryNav.tsx`) is a **persistent desktop category bar** — a **client component** (receives categories as props from the server layout). **Clicking a root category NAME opens a mega sub-category panel**: a grid of all level-2 children (each column lists its level-3 grandchildren inline) plus a "View all" footer link. Hovering the root item also opens the panel; clicking outside closes it. `hidden md:block`, `overflow-x-auto` so many categories never break the layout. The mobile drawer `MobileMenu` remains the small-screen entry point. There is deliberately **no separate home "shop by category" section** — the nav bar already covers category browsing (avoid duplicate entry points).
+`CategoryNav` (`components/layout/CategoryNav.tsx`) is a **persistent desktop category bar** — a **client component** (receives categories as props from the server layout). **Hovering a root category opens its sub-category mega panel** (grid of all level-2 children, each column listing level-3 grandchildren inline, plus a "View all" footer link); **clicking locks the panel open** (click again / click outside closes). `hidden md:block`, `overflow-x-auto` for many categories. The mobile drawer `MobileMenu` (`md:hidden` trigger) remains the small-screen entry point. There is deliberately **no separate home "shop by category" section** and **no sr-only category nav** — the visible nav bar already covers category browsing.
 
 ### SEO / GEO (2026-08)
 

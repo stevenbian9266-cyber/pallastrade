@@ -124,7 +124,7 @@ export function MobileMenu({ rootCategories, basePath }: MobileMenuProps) {
           setOpen(!open);
         }}
         aria-label={open ? t("closeMenu") : t("openMenu")}
-        className="relative z-[60] cursor-pointer"
+        className="relative z-[60] cursor-pointer md:hidden"
       >
         <div className="relative w-5 h-5">
           {/* Top line: phase 1 translates to center, phase 2 rotates 45° */}
