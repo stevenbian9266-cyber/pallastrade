@@ -37,7 +37,8 @@
     "viewAllCategory": "Voir tout dans {category}",
     "openSearch": "Ouvrir la recherche",
     "closeSearch": "Fermer la recherche",
-    "myAccount": "Mon compte"
+    "myAccount": "Mon compte",
+    "search": "Rechercher"
   },
   "footer": {
     "description": "PallasTrade - Expérience de shopping premium. Plateforme e-commerce auto-hébergée.",
@@ -53,7 +54,8 @@
     "cart": "Panier",
     "policies": "Politiques",
     "poweredBy": "Propulse par",
-    "copyright": "\u00a9 {year} {storeName}. Propulsé par PallasTrade."
+    "copyright": "© {year} {storeName}. Propulsé par PallasTrade.",
+    "contact": "Contact"
   },
   "home": {
     "welcome": "{storeName} Storefront",
@@ -68,7 +70,39 @@
     "fastShipping": "Livraison rapide",
     "shippingDescription": "Livraison rapide et fiable jusqu'a votre porte.",
     "support": "Support 24/7",
-    "supportDescription": "Notre equipe est la pour vous aider a tout moment."
+    "supportDescription": "Notre equipe est la pour vous aider a tout moment.",
+    "heroTagline": "Bienvenue chez {storeName}",
+    "heroTitle": "Découvrez des produits premium, livrés avec soin",
+    "browseCategories": "Parcourir les catégories",
+    "browseByCategory": "Acheter par catégorie",
+    "shopCategory": "Voir la catégorie",
+    "authenticProducts": "Produits authentiques",
+    "authenticDescription": "Chaque article provient directement de marques de confiance.",
+    "easyReturns": "Retours faciles",
+    "returnsDescription": "30 jours de retour sans tracas.",
+    "whyShopWithUs": "Pourquoi acheter chez nous",
+    "promoTitle": "Nouvelle saison, nouveaux favoris",
+    "promoSubtitle": "Découvrez nos dernières nouveautés et offres exclusives.",
+    "promoCta": "Voir la collection",
+    "brandTitle": "PallasTrade — votre chat de Pallas du commerce quotidien",
+    "brandBody": "PallasTrade est une plateforme e-commerce auto-hébergée avec une boutique agile et un commerce professionnel en arrière-plan. Nous sélectionnons des essentiels du quotidien, livrons rapidement, et vos données restent sur vos propres serveurs.",
+    "brandCta": "Explorer la boutique",
+    "newsletterTitle": "Restez informé",
+    "newsletterDescription": "Abonnez-vous pour les nouveautés, offres exclusives et actualités.",
+    "newsletterPlaceholder": "Entrez votre e-mail",
+    "newsletterButton": "S'abonner",
+    "newsletterSuccess": "Merci de votre abonnement ! Vérifiez votre boîte mail.",
+    "newsletterEmpty": "Veuillez saisir votre adresse e-mail.",
+    "newsletterInvalid": "Veuillez saisir une adresse e-mail valide.",
+    "faqTitle": "Questions fréquentes",
+    "faqShippingQ": "Combien de temps prend la livraison ?",
+    "faqShippingA": "Les commandes sont traitées sous 24 h. La livraison standard prend 3 à 7 jours ouvrés.",
+    "faqReturnsQ": "Quelle est votre politique de retour ?",
+    "faqReturnsA": "Vous pouvez retourner tout article non utilisé sous 30 jours.",
+    "faqPaymentQ": "Quels moyens de paiement acceptez-vous ?",
+    "faqPaymentA": "Nous acceptons les principales cartes bancaires, PayPal et les moyens de paiement locaux.",
+    "faqSupportQ": "Comment contacter le support ?",
+    "faqSupportA": "Contactez-nous via le chat en direct ou par e-mail ; réponse sous 24 h."
   },
   "cart": {
     "cart": "Panier",
@@ -163,7 +197,7 @@
     "openImageZoom": "Ouvrir le zoom de l'image",
     "priceUnder": "Moins de {price}",
     "priceAbove": "{price}+",
-    "priceRangeBucket": "{min} \u2013 {max}",
+    "priceRangeBucket": "{min} – {max}",
     "properties": "Proprietes",
     "yes": "Oui",
     "no": "Non",
@@ -355,7 +389,7 @@
     "paymentInformation": "Informations de paiement",
     "cardEndingIn": "{label} se terminant par {digits}",
     "cardExpires": "Expire le {month}/{year}",
-    "storeCreditApplied": "{amount} applique \u2014 {remaining} restant",
+    "storeCreditApplied": "{amount} applique — {remaining} restant",
     "billingAddress": "Adresse de facturation",
     "orderNotFoundDescription": "La commande que vous recherchez n'existe pas.",
     "storeCredit": "Credit boutique",
@@ -377,7 +411,7 @@
     "notAvailable": "N/D",
     "unknownShipmentStatus": "Inconnu",
     "orderTitle": "Commande #{number}",
-    "shipmentCanceledRefund": "Expedition annulee \u2014 un remboursement a ete emis.",
+    "shipmentCanceledRefund": "Expedition annulee — un remboursement a ete emis.",
     "shippingMethodUnavailable": "Indisponible",
     "totalColumn": "Total"
   },
@@ -417,7 +451,7 @@
     "backToStore": "Retour a la boutique",
     "showOrderSummary": "Afficher le recapitulatif de la commande",
     "hideOrderSummary": "Masquer le recapitulatif de la commande",
-    "allRightsReserved": "\u00a9 {year} {storeName}. Tous droits reserves."
+    "allRightsReserved": "© {year} {storeName}. Tous droits reserves."
   },
   "profile": {
     "profile": "Profil",

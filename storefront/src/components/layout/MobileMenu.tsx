@@ -1,7 +1,14 @@
 "use client";
 
 import type { Category } from "@pallastrade/sdk";
-import { ArrowLeft, Check, ChevronRight, User, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronRight,
+  Search,
+  User,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
@@ -231,6 +238,15 @@ export function MobileMenu({ rootCategories, basePath }: MobileMenuProps) {
               >
                 {t("allProducts")}
               </Link>
+              <SheetClose asChild className="md:hidden">
+                <Link
+                  href={`${basePath}/products`}
+                  className="flex items-center gap-3 text-left text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg px-3 py-2.5 text-base transition-colors"
+                >
+                  <Search className="w-5 h-5 text-gray-400" />
+                  <span>{t("search")}</span>
+                </Link>
+              </SheetClose>
               {rootCategories.map((category) =>
                 category.children && category.children.length > 0 ? (
                   <button

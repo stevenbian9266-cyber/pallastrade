@@ -37,7 +37,8 @@
     "viewAllCategory": "Zobacz wszystkie {category}",
     "openSearch": "Otwórz wyszukiwanie",
     "closeSearch": "Zamknij wyszukiwanie",
-    "myAccount": "Moje konto"
+    "myAccount": "Moje konto",
+    "search": "Szukaj"
   },
   "footer": {
     "description": "PallasTrade - Doświadczenie zakupowe premium. Samodzielnie hostowana platforma e-commerce.",
@@ -53,7 +54,8 @@
     "cart": "Koszyk",
     "policies": "Regulaminy",
     "poweredBy": "Zasilany przez",
-    "copyright": "© {year} {storeName}. Zasilany przez PallasTrade."
+    "copyright": "© {year} {storeName}. Zasilany przez PallasTrade.",
+    "contact": "Kontakt"
   },
   "home": {
     "welcome": "{storeName} Storefront",
@@ -68,7 +70,39 @@
     "fastShipping": "Szybka wysyłka",
     "shippingDescription": "Szybka i niezawodna dostawa pod Twoje drzwi.",
     "support": "Wsparcie 24/7",
-    "supportDescription": "Nasz zespół jest do Twojej dyspozycji o każdej porze."
+    "supportDescription": "Nasz zespół jest do Twojej dyspozycji o każdej porze.",
+    "heroTagline": "Witamy w {storeName}",
+    "heroTitle": "Odkryj produkty premium, dostarczane z troską",
+    "browseCategories": "Przeglądaj kategorie",
+    "browseByCategory": "Kupuj według kategorii",
+    "shopCategory": "Przejdź do kategorii",
+    "authenticProducts": "Autentyczne produkty",
+    "authenticDescription": "Każdy produkt pochodzi bezpośrednio od zaufanych marek.",
+    "easyReturns": "Łatwe zwroty",
+    "returnsDescription": "30 dni na bezproblemowy zwrot, bez pytań.",
+    "whyShopWithUs": "Dlaczego warto kupować u nas",
+    "promoTitle": "Nowy sezon, nowe ulubione",
+    "promoSubtitle": "Odkryj nasze najnowsze produkty i ekskluzywne oferty.",
+    "promoCta": "Zobacz kolekcję",
+    "brandTitle": "PallasTrade – Twój manul codziennych zakupów",
+    "brandBody": "PallasTrade to samodzielnie hostowana platforma e-commerce z zwiną witryną sklepową i profesjonalnym zapleczem. Kurujemy codzienne niezbędniki, dostarczamy szybko, a Twoje dane pozostają na Twoich serwerach.",
+    "brandCta": "Odkryj sklep",
+    "newsletterTitle": "Bądź na bieżąco",
+    "newsletterDescription": "Zapisz się, aby otrzymywać nowości, ekskluzywne oferty i aktualizacje.",
+    "newsletterPlaceholder": "Wpisz swój e-mail",
+    "newsletterButton": "Subskrybuj",
+    "newsletterSuccess": "Dziękujemy za subskrypcję! Sprawdź swoją skrzynkę.",
+    "newsletterEmpty": "Wpisz swój adres e-mail.",
+    "newsletterInvalid": "Wpisz poprawny adres e-mail.",
+    "faqTitle": "Często zadawane pytania",
+    "faqShippingQ": "Ile trwa dostawa?",
+    "faqShippingA": "Zamówienia realizujemy w ciągu 24 godzin. Standardowa dostawa: 3–7 dni roboczych.",
+    "faqReturnsQ": "Jaka jest polityka zwrotów?",
+    "faqReturnsA": "Możesz zwrócić nieużywane produkty w ciągu 30 dni od dostawy.",
+    "faqPaymentQ": "Jakie metody płatności akceptujecie?",
+    "faqPaymentA": "Akceptujemy główne karty kredytowe, PayPal i popularne lokalne metody płatności.",
+    "faqSupportQ": "Jak skontaktować się z obsługą?",
+    "faqSupportA": "Skontaktuj się z nami przez czat na żywo lub e-mail – odpowiadamy w ciągu 24 godzin."
   },
   "cart": {
     "cart": "Koszyk",

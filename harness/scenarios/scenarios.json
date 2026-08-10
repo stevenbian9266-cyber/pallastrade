@@ -240,6 +240,26 @@
         "Leave the widget undocumented in deployment env tables"
       ],
       "scoring": { "envGated": 30, "asyncLoad": 20, "rootMount": 15, "tests": 20, "docs": 15 }
+    },
+    {
+      "id": "GS-019",
+      "name": "Storefront redesign: persistent category nav + GEO-friendly home",
+      "description": "When redesigning the storefront home, add a persistent desktop category nav (mobile drawer stays), compose multi-section home (hero/categories/featured/promo/trust/brand story/FAQ/newsletter), remove all demo-only href='#' links, keep exactly one h1, and strengthen GEO: WebSite+SearchAction JSON-LD, FAQPage JSON-LD matching visible FAQ, and /llms.txt",
+      "mustDo": [
+        "Add a persistent desktop category nav bar (server component, hover dropdowns) while keeping the mobile drawer",
+        "Compose the home page from multiple semantic sections (>=6) with a single h1",
+        "Remove all demo-only links (href='#', GitHub/quickstart placeholders) before shipping",
+        "Inject WebSite + SearchAction JSON-LD and FAQPage JSON-LD matching visible content",
+        "Provide /llms.txt (llmstxt.org) with site title, about, categories and key pages",
+        "Sync all new i18n keys across every supported locale file"
+      ],
+      "mustNotDo": [
+        "Leave demo links or placeholder href='#' in shipped components",
+        "Render multiple h1 on one page",
+        "Ship FAQPage JSON-LD that does not match visible FAQ content",
+        "Add NEXT_PUBLIC_* runtime-only vars that are not inlined at build time for client components"
+      ],
+      "scoring": { "persistentNav": 20, "multiSection": 15, "noDemo": 15, "jsonLd": 20, "llmsTxt": 15, "i18nAll": 15 }
     }
   ]
 }

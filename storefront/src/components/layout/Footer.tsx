@@ -1,4 +1,5 @@
 import type { Category } from "@pallastrade/sdk";
+import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { POLICY_LINKS } from "@/lib/constants/policies";
@@ -7,11 +8,7 @@ import { CurrentYear } from "./CurrentYear";
 
 const storeName = getStoreName();
 const storeDescription = getStoreDescription();
-
-// Demo-only: Remove for production.
-const githubUrl = "#";
-const quickstartUrl = "#";
-const learnMoreUrl = "#";
+const supportEmail = process.env.STORE_SUPPORT_EMAIL;
 
 interface FooterProps {
   rootCategories: Category[];
@@ -31,38 +28,32 @@ export async function Footer({
     <footer className="bg-primary text-gray-300">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-5">
-          {/* Demo-only: Remove for production. */}
           {/* Brand */}
           <div className="col-span-1 md:col-span-2">
-            <span className="text-xl font-bold text-white">{storeName}</span>
+            <Image
+              src="/pallastrade-logo.svg"
+              alt={storeName}
+              width={90}
+              height={32}
+              className="max-w-full object-contain !w-auto !h-auto"
+            />
             <p className="mt-4 text-sm text-neutral-400">
               {t("description") || storeDescription}
             </p>
-            {/* Demo-only: Remove for production. */}
             <div className="mt-4 flex flex-col gap-2">
+              {supportEmail && (
+                <Link
+                  href={`mailto:${supportEmail}`}
+                  className="text-sm text-white hover:text-neutral-200 transition-colors font-medium"
+                >
+                  {supportEmail}
+                </Link>
+              )}
               <Link
-                href={githubUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-white hover:text-neutral-200 transition-colors font-medium"
-              >
-                {t("forkOnGithub")} &rarr;
-              </Link>
-              <Link
-                href={quickstartUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={`${basePath}/#contact`}
                 className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
               >
-                {t("quickstartGuide")}
-              </Link>
-              <Link
-                href={learnMoreUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
-              >
-                {t("learnMore")}
+                {t("contact")}
               </Link>
             </div>
           </div>

@@ -145,6 +145,27 @@ Key components:
 - `CategoryBanner` (`app/[country]/[locale]/(storefront)/c/[...permalink]/CategoryBanner.tsx`) — category hero banner in the category listing route.
 - `TawkToWidget` (`components/layout/TawkToWidget.tsx`) — optional Tawk.to live-chat widget, mounted in the root layout `<body>`. Enabled only when BOTH `NEXT_PUBLIC_TAWK_TO_PROPERTY_ID` and `NEXT_PUBLIC_TAWK_TO_WIDGET_ID` are set (public IDs, like publishable keys — safe for `NEXT_PUBLIC_`); loads via `next/script` `afterInteractive` so it never blocks first paint. Renders `null` (no third-party script) when either var is missing.
 
+### Home page sections (2026-08 redesign, PRD-20260810)
+
+The home page (`app/[country]/[locale]/(storefront)/page.tsx`) composes 8 sections in `components/home/`:
+
+- `HeroSection` — brand tagline + value prop + primary/secondary CTAs (no demo links).
+- `CategoryShowcase` — root category cards; renders `null` when no categories (graceful degrade).
+- `FeaturedProductsSection` — existing product grid + "view all".
+- `PromoBanner` — wide gradient band with a single CTA.
+- `ValueProps` — 4 trust props (shipping / authenticity / returns / support).
+- `BrandStory` — GEO-friendly "answer-ready" brand paragraph.
+- `FaqSection` — visible Q&A + matching `FAQPage` JSON-LD (structured data always mirrors visible content).
+- `NewsletterSignup` — client component, front-end validation + success state (no backend yet).
+
+`CategoryNav` (`components/layout/CategoryNav.tsx`) is a **persistent desktop category bar** (server component, pure-CSS hover dropdowns, `hidden md:block`). The mobile drawer `MobileMenu` remains the small-screen entry point.
+
+### SEO / GEO (2026-08)
+
+- JSON-LD helpers in `lib/seo.ts`: `buildOrganizationJsonLd`, `buildWebsiteJsonLd` (WebSite + SearchAction → `{basePath}/products?q={search_term_string}`), `buildProductJsonLd`, `buildBreadcrumbJsonLd`, `buildCategoryItemListJsonLd`. The storefront layout injects Organization + WebSite; pages inject Product / Breadcrumb / ItemList / FAQPage.
+- `/llms.txt` (`app/llms.txt/route.ts`) — llmstxt.org site overview (title, about, categories, key pages, structured-data note). Route handlers are dynamic by default; do NOT add `export const dynamic` (incompatible with Cache Components mode).
+- Semantic HTML rules: exactly one `h1` per page; sections use `section[aria-labelledby]`; images carry meaningful `alt`.
+
 ### Client-side cart
 
 Carts are server-state, so use SWR or React Query. The cart ID + token persist in a cookie:

@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
+import { BrandStory } from "@/components/home/BrandStory";
+import { CategoryShowcase } from "@/components/home/CategoryShowcase";
+import { FaqSection } from "@/components/home/FaqSection";
 import { FeaturedProductsSection } from "@/components/home/FeaturedProductsSection";
 import { HeroSection } from "@/components/home/HeroSection";
+import { NewsletterSignup } from "@/components/home/NewsletterSignup";
+import { PromoBanner } from "@/components/home/PromoBanner";
+import { ValueProps } from "@/components/home/ValueProps";
 import { getMarkets, resolveCurrency } from "@/lib/data/markets";
 import { generateHomeMetadata } from "@/lib/metadata/home";
 import { getDefaultCountry, getDefaultLocale } from "@/lib/store";
@@ -80,12 +86,18 @@ export default async function HomePage({ params }: HomePageProps) {
   return (
     <div>
       <HeroSection basePath={basePath} locale={locale} />
+      <CategoryShowcase basePath={basePath} locale={locale} />
       <FeaturedProductsSection
         basePath={basePath}
         locale={locale}
         country={country}
         currency={currency}
       />
+      <PromoBanner basePath={basePath} locale={locale} />
+      <ValueProps locale={locale} />
+      <BrandStory basePath={basePath} locale={locale} />
+      <FaqSection locale={locale} />
+      <NewsletterSignup />
     </div>
   );
 }

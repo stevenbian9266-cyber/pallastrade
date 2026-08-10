@@ -203,3 +203,29 @@ export function buildOrganizationJsonLd(): Record<string, unknown> {
 
   return schema;
 }
+
+/**
+ * Build JSON-LD WebSite schema with SearchAction (site search endpoint).
+ * GEO/SEO: tells search + generative engines about the store's search
+ * capability (PRD-20260810-storefront-... AC-112).
+ * https://schema.org/WebSite
+ */
+export function buildWebsiteJsonLd(
+  storeUrl: string,
+  searchBaseUrl: string,
+): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: getStoreName(),
+    url: storeUrl,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${searchBaseUrl}?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
+}

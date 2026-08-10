@@ -37,7 +37,8 @@
     "viewAllCategory": "View all {category}",
     "openSearch": "Open search",
     "closeSearch": "Close search",
-    "myAccount": "My Account"
+    "myAccount": "My Account",
+    "search": "Search"
   },
   "footer": {
     "description": "PallasTrade - Premium online shopping experience. Self-hosted ecommerce platform.",
@@ -53,7 +54,8 @@
     "cart": "Cart",
     "policies": "Policies",
     "poweredBy": "Powered by",
-    "copyright": "© {year} {storeName}. Powered by PallasTrade."
+    "copyright": "© {year} {storeName}. Powered by PallasTrade.",
+    "contact": "Contact"
   },
   "home": {
     "welcome": "{storeName} Storefront",
@@ -68,7 +70,39 @@
     "fastShipping": "Fast Shipping",
     "shippingDescription": "Quick and reliable delivery to your doorstep.",
     "support": "24/7 Support",
-    "supportDescription": "Our team is here to help you anytime."
+    "supportDescription": "Our team is here to help you anytime.",
+    "heroTagline": "Welcome to {storeName}",
+    "heroTitle": "Discover Premium Products, Delivered with Care",
+    "browseCategories": "Browse Categories",
+    "browseByCategory": "Shop by Category",
+    "shopCategory": "Shop category",
+    "authenticProducts": "Authentic Products",
+    "authenticDescription": "Every item is sourced directly from trusted brands.",
+    "easyReturns": "Easy Returns",
+    "returnsDescription": "30-day hassle-free returns, no questions asked.",
+    "whyShopWithUs": "Why shop with us",
+    "promoTitle": "New Season, New Favorites",
+    "promoSubtitle": "Explore our latest arrivals and exclusive offers — fresh picks added every week.",
+    "promoCta": "Shop the collection",
+    "brandTitle": "PallasTrade — Your Pallas Cat of Everyday Commerce",
+    "brandBody": "PallasTrade is a self-hosted e-commerce platform that pairs a nimble, Pallas-cat-like storefront with enterprise-grade commerce under the hood. We curate premium everyday essentials, ship fast, and keep your data on your own servers — full control, no compromise.",
+    "brandCta": "Explore the store",
+    "newsletterTitle": "Stay in the loop",
+    "newsletterDescription": "Subscribe for new arrivals, exclusive offers and behind-the-scenes updates.",
+    "newsletterPlaceholder": "Enter your email",
+    "newsletterButton": "Subscribe",
+    "newsletterSuccess": "Thanks for subscribing! Check your inbox.",
+    "newsletterEmpty": "Please enter your email address.",
+    "newsletterInvalid": "Please enter a valid email address.",
+    "faqTitle": "Frequently Asked Questions",
+    "faqShippingQ": "How long does shipping take?",
+    "faqShippingA": "Orders are processed within 24 hours. Standard delivery takes 3–7 business days depending on your region.",
+    "faqReturnsQ": "What is your return policy?",
+    "faqReturnsA": "You can return any unused item within 30 days of delivery for a full refund.",
+    "faqPaymentQ": "Which payment methods do you accept?",
+    "faqPaymentA": "We accept all major credit cards, PayPal, and popular local payment methods at checkout.",
+    "faqSupportQ": "How can I contact customer support?",
+    "faqSupportA": "Reach us any time through the live chat widget or email — our team responds within 24 hours."
   },
   "cart": {
     "cart": "Cart",
