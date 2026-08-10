@@ -74,11 +74,7 @@ export default async function StorefrontLayout({
         basePath={basePath}
         locale={locale as Locale}
       />
-      <CategoryNav
-        rootCategories={rootCategories}
-        basePath={basePath}
-        locale={locale as Locale}
-      />
+      <CategoryNav rootCategories={rootCategories} basePath={basePath} />
       {rootCategories.length > 0 && (
         <nav aria-label="Category navigation" className="sr-only">
           <CategoryLinks categories={rootCategories} basePath={basePath} />

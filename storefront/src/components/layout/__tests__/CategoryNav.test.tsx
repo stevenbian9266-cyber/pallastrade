@@ -1,9 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { CategoryNav } from "@/components/layout/CategoryNav";
 
-vi.mock("next-intl/server", () => ({
-  getTranslations: async () => (key: string) => key,
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
 }));
 
 const rootCategories = [
@@ -28,21 +28,52 @@ const rootCategories = [
 
 // # PRD-20260810-storefront-对商城前台进行重新规划 AC-102
 describe("CategoryNav", () => {
-  it("renders home, all products and root categories with correct links", async () => {
-    const element = await CategoryNav({
-      rootCategories,
-      basePath: "/us/en",
-      locale: "en",
-    });
-    render(element);
+  it("renders home, all products and root categories with correct links", () => {
+    render(<CategoryNav rootCategories={rootCategories} basePath="/us/en" />);
 
-    const homeLink = screen.getByRole("link", { name: "home" });
-    expect(homeLink.getAttribute("href")).toBe("/us/en");
+    expect(screen.getByRole("link", { name: "home" }).getAttribute("href")).toBe(
+      "/us/en",
+    );
+    expect(
+      screen.getByRole("link", { name: "allProducts" }).getAttribute("href"),
+    ).toBe("/us/en/products");
+    expect(
+      screen.getByRole("link", { name: "Electronics" }).getAttribute("href"),
+    ).toBe("/us/en/c/electronics");
+  });
 
-    const allLink = screen.getByRole("link", { name: "allProducts" });
-    expect(allLink.getAttribute("href")).toBe("/us/en/products");
+  it("opens the dropdown when clicking the chevron of a root category", () => {
+    render(<CategoryNav rootCategories={rootCategories} basePath="/us/en" />);
 
-    const electronics = screen.getByRole("link", { name: "Electronics" });
-    expect(electronics.getAttribute("href")).toBe("/us/en/c/electronics");
+    // Dropdown hidden before interaction
+    expect(screen.queryByRole("link", { name: "Audio" })).toBeNull();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "categories: Electronics" }),
+    );
+
+    expect(screen.getByRole("link", { name: "Audio" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Computers" })).toBeTruthy();
+  });
+
+  it("shows three levels: root -> child -> grandchild", () => {
+    render(<CategoryNav rootCategories={rootCategories} basePath="/us/en" />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "categories: Electronics" }),
+    );
+
+    // Grandchild hidden until child is expanded
+    expect(screen.queryByRole("link", { name: "Laptops" })).toBeNull();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "categories: Computers" }),
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Laptops" }).getAttribute("href"),
+    ).toBe("/us/en/c/laptops");
   });
 });
+
+
