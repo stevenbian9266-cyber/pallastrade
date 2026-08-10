@@ -16,8 +16,8 @@ importers:
         specifier: ^1.11.0
         version: 1.13.6
       pallastrade-harness:
-        specifier: github:stevenbian9266-cyber/pallastradeharness
-        version: git+https://git@github.com:stevenbian9266-cyber/pallastradeharness.git#390241ee379b9e929dcf999c917b9f10908a46b9
+        specifier: ^0.1.0
+        version: 0.1.0
       promptfoo:
         specifier: ^0.122.0
         version: 0.122.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(@types/json-schema@7.0.15)(@types/node@26.2.0)(pg@8.23.0)(playwright-core@1.62.1)(socks@2.8.9)
@@ -2970,9 +2970,8 @@ packages:
   package-json-from-dist@1.0.1:
     resolution: {integrity: sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==}
 
-  pallastrade-harness@git+https://git@github.com:stevenbian9266-cyber/pallastradeharness.git#390241ee379b9e929dcf999c917b9f10908a46b9:
-    resolution: {commit: 390241ee379b9e929dcf999c917b9f10908a46b9, repo: git@github.com:stevenbian9266-cyber/pallastradeharness.git, type: git}
-    version: 0.1.0
+  pallastrade-harness@0.1.0:
+    resolution: {integrity: sha512-E5EInFZrkSmJbqXDCkB1p0rRcxtT1R/DPB1o0grIawFth9SVynomLMpDgLWEuMc9xIFyvtXh4U7zv95KjKl7Qg==}
     engines: {node: '>=22.0.0'}
     hasBin: true
 
@@ -6791,7 +6790,7 @@ snapshots:
 
   package-json-from-dist@1.0.1: {}
 
-  pallastrade-harness@git+https://git@github.com:stevenbian9266-cyber/pallastradeharness.git#390241ee379b9e929dcf999c917b9f10908a46b9:
+  pallastrade-harness@0.1.0:
     dependencies:
       glob: 11.1.0
 
