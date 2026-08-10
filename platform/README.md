@@ -40,14 +40,14 @@ You need to have Node.js (22+) installed and Docker running. Learn more in the [
 
 ## Testing & Coverage
 
-Platform packages run on [Vitest](https://vitest.dev). Coverage is gated by the harness (see `scripts/harness/coverage.mjs`); each package's vitest config emits a `json-summary` report that the harness aggregates:
+Platform packages run on [Vitest](https://vitest.dev). Coverage is gated by the harness (see the `pallastrade-harness` package); each package's vitest config emits a `json-summary` report that the harness aggregates:
 
 ```bash
 pnpm --filter @pallastrade/sdk test:coverage     # emits packages/sdk/coverage/coverage-summary.json
-node scripts/harness/cli.mjs coverage --enforce  # gate against harness/config.json thresholds
+npx harness coverage --enforce                  # gate against harness.config.mjs coverage thresholds
 ```
 
-Coverage thresholds live in `harness/config.json` (`coverage.thresholds`). The nightly workflow runs the full test + coverage gate every day.
+Coverage thresholds live in `harness.config.mjs` (`coverage.thresholds`). The nightly workflow runs the full test + coverage gate every day.
 
 If you like what you see, consider giving PallasTrade a GitHub star ⭐
 

@@ -7,8 +7,6 @@
   },
   "scripts": {
     "harness": "harness",
-    "harness:legacy": "node scripts/harness/cli.mjs",
-    "test:harness": "node --test scripts/harness/*.test.mjs",
     "eval:llm": "harness eval-llm",
     "eval:llm:generate": "harness eval-llm --generate",
     "eval:llm:check": "harness eval-llm --check"
@@ -18,7 +16,7 @@
   },
   "devDependencies": {
     "lefthook": "^1.11.0",
-    "promptfoo": "^0.122.0",
-    "pallastrade-harness": "github:stevenbian9266-cyber/pallastradeharness"
+    "pallastrade-harness": "github:stevenbian9266-cyber/pallastradeharness",
+    "promptfoo": "^0.122.0"
   }
 }

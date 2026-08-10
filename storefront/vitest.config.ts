@@ -14,7 +14,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/__tests__/setup.tsx"],
     include: ["src/**/*.test.{ts,tsx}"],
-    // Coverage gate — consumed by `harness coverage` (scripts/harness/coverage.mjs)
+    // Coverage gate — consumed by `harness coverage` (pallastrade-harness package)
     // and the harness-full.yml `coverage` CI job. Thresholds live in
     // harness/config.json (coverage.thresholds.storefront).
     coverage: {

@@ -38,7 +38,7 @@
 ### Run the gate
 
 ```bash
-node scripts/harness/cli.mjs gate --task "<prefix：description>"
+npx harness gate --task "<prefix：description>"
 ```
 
 The CLI auto-detects the `--type` from the prefix. No need to pass `--type` manually.
@@ -74,7 +74,7 @@ when one already exists in a gem layer it didn't search.
 **Before invoking ANY file creation or file editing tool**, you MUST run:
 
 ```bash
-node scripts/harness/cli.mjs gate --task "<brief description>" [--type feature|bugfix|style|audit|research|docs|refactor|security|test]
+npx harness gate --task "<brief description>" [--type feature|bugfix|style|audit|research|docs|refactor|security|test]
 ```
 
 This command creates a gate at `harness/gates/GATE-*.json` and outputs a checklist.
@@ -87,7 +87,7 @@ This command creates a gate at `harness/gates/GATE-*.json` and outputs a checkli
 
 To clear gate checks one at a time:
 ```bash
-node scripts/harness/cli.mjs gate:clear --gate <GATE-ID> --clear <check-id>
+npx harness gate:clear --gate <GATE-ID> --clear <check-id>
 ```
 
 Only proceed to implementation when `gate:clear` exits 0 (all checks cleared).
@@ -97,7 +97,7 @@ Only proceed to implementation when `gate:clear` exits 0 (all checks cleared).
 在调用任何文件修改工具之前，AI MUST 先运行：
 
 ```bash
-node scripts/harness/cli.mjs gate:status
+npx harness gate:status
 ```
 
 - **exit 0** → 存在有效 gate → 允许继续编辑
@@ -110,7 +110,7 @@ node scripts/harness/cli.mjs gate:status
 **当在同一需求上继续工作时**（例如"做 P1-6"这种分项实施），先检查 gate 是否仍有效：
 
 ```bash
-node scripts/harness/cli.mjs gate:status
+npx harness gate:status
 ```
 
 - 如果 exit 0 → gate 有效，可以继续编辑
@@ -174,7 +174,7 @@ the user to clarify before proceeding.
 
 **当用户输入是"一句话需求"（含前缀 `需求：`/`新增：`/`优化：`/`修复：` 等）时，MUST 遵循 `ai/skills/pallastrade-prd/SKILL.md`：**
 
-1. **PRD 生成**：先用 `node scripts/harness/cli.mjs prd new --title "<需求>"` 创建骨架（自动分类），再按 `docs/prd/_TEMPLATE.md` 完整扩充（背景/FR/AC/跨层搜索/测试计划/文档同步清单），存到 `docs/prd/{category}/PRD-{date}-{category}-{slug}.md`，更新 `docs/prd/README.md` 索引。
+1. **PRD 生成**：先用 `npx harness prd new --title "<需求>"` 创建骨架（自动分类），再按 `docs/prd/_TEMPLATE.md` 完整扩充（背景/FR/AC/跨层搜索/测试计划/文档同步清单），存到 `docs/prd/{category}/PRD-{date}-{category}-{slug}.md`，更新 `docs/prd/README.md` 索引。
 2. **查重优先（机制自动）**：`harness prd new` 自动扫描已有 PRD 计算标题相似度（>0.3 阻止新建）；命中相似 PRD → **必须 `harness prd update --path <原PRD> --title "<需求>"` 回写原 PRD 完整更新**，不得新建重复 PRD；确属全新需求才 `--force`。同时 6 层跨层搜索（AP-SEARCH 反模式）。
 3. **用户确认**：PRD 需用户明确确认（`approved`）后才能进入实施；PRD 未 approved 不允许开 gate。
 4. **Gate + REQ**：`harness gate`（feature 类型含 `create-prd-doc` + `read-skill-prd` checks）→ 生成 `harness/requirements/REQ-*.md`。

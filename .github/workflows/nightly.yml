@@ -49,12 +49,12 @@ jobs:
         working-directory: platform
         run: pnpm --filter @pallastrade/sdk test:coverage
       - name: Harness full checks
-        run: node scripts/harness/cli.mjs check --profile full
+        run: npx harness check --profile full
       - name: Coverage gate — storefront
-        run: node scripts/harness/cli.mjs coverage --component storefront --enforce
+        run: npx harness coverage --component storefront --enforce
       - name: Coverage gate — platform
-        run: node scripts/harness/cli.mjs coverage --component platform --enforce
+        run: npx harness coverage --component platform --enforce
       - name: Freshness + scenarios
         run: |
-          node scripts/harness/cli.mjs eval-ai --check-freshness
-          node scripts/harness/cli.mjs eval-ai --scenarios
+          npx harness eval-ai --check-freshness
+          npx harness eval-ai --scenarios

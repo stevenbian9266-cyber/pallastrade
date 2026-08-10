@@ -18,8 +18,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
+      - name: Install root deps
+        run: npm ci
       - name: Run anti-pattern scan
-        run: node scripts/harness/scan-anti-patterns.mjs scan
+        run: npx harness scan-anti-patterns
 
   # ---- Secret / Destructive Code Scan (always runs, fast) ----
   secrets:
@@ -29,8 +31,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
+      - name: Install root deps
+        run: npm ci
       - name: Run secret & destructive-code scan
-        run: node scripts/harness/scan-secrets.mjs scan
+        run: npx harness scan-secrets
 
   # ---- Doc Impact Check (always runs, fast) ----
   doc-impact:
@@ -41,8 +45,10 @@ jobs:
         with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
+      - name: Install root deps
+        run: npm ci
       - name: Check knowledge doc sync
-        run: node scripts/harness/cli.mjs doc-impact --base origin/main
+        run: npx harness doc-impact --base origin/main
 
   # ---- AI Freshness Check (runs when ai/ changes) ----
   ai-freshness:
@@ -53,8 +59,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
+      - name: Install root deps
+        run: npm ci
       - name: Check skill freshness
-        run: node scripts/harness/cli.mjs eval-ai --check-freshness
+        run: npx harness eval-ai --check-freshness
 
   # ---- Generated Drift Check ----
   generated-check:
@@ -66,8 +74,10 @@ jobs:
         with: { node-version: '22' }
       - uses: pnpm/action-setup@v4
         with: { version: 11.1.1 }
+      - name: Install root deps
+        run: npm ci
       - name: Run generated:check
-        run: node scripts/harness/cli.mjs generated:check
+        run: npx harness generated:check
 
   # ---- Backend Tests (RSpec + Brakeman + bundle-audit) ----
   test-backend:
@@ -177,7 +187,7 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm test:coverage
       - name: Enforce coverage threshold
-        run: node scripts/harness/cli.mjs coverage --component storefront --enforce
+        run: npx harness coverage --component storefront --enforce
 
   # ---- Harness Evidence Artifact (always runs, fast) ----
   evidence:
@@ -188,7 +198,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
       - name: Collect harness evidence
-        run: node scripts/harness/cli.mjs evidence
+        run: npx harness evidence
       - uses: actions/upload-artifact@v4
         with:
           name: harness-evidence

@@ -23,7 +23,7 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 | `harness/policies/anti-patterns.json` | 反模式 | **反模式唯一权威**（机器执行） | CI 强制；违规检查 | 工程负责人 |
 | `harness/policies/task-rules.json` | 任务规则 | 任务规则权威 | 新功能/优化 | 工程负责人 |
 | `harness/policies/prd-categories.json` | PRD 分类 | 分类权威 | `prd new` | 工程负责人 |
-| `harness.config.mjs` | Harness 项目配置 | **引擎配置权威**（layers/gates/docImpact/coverage/profiles/syncCheck） | 引擎配置相关任务；引擎默认值见 `scripts/harness/config-loader.mjs` | 工程负责人 |
+| `harness.config.mjs` | Harness 项目配置 | **引擎配置权威**（layers/gates/docImpact/coverage/profiles/syncCheck） | 引擎配置相关任务；引擎默认值见独立包 `pallastrade-harness`（`bin/config-loader.mjs`） | 工程负责人 |
 | `harness/scenarios/scenarios.json` | 场景库 | Eval 权威 | 能力变更 | 工程负责人 |
 | `docs/standards/README.md` | 规范索引 | **规范文件指针权威** | 不确定规范位置时 | 工程负责人 |
 | `docs/prd/_TEMPLATE.md` | PRD 模板 | PRD 权威模板 | 一句话需求 | AI |
@@ -87,7 +87,7 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 | `ai/hooks/` | Safety hooks (bash scripts) | ⚠️ Understand full impact before modifying |
 | `.github/workflows/` | GitHub Actions CI definitions | ⚠️ Understand full impact before modifying |
 | `harness/` | Engineering policies and configs | ✅ Yes (active construction zone) |
-| `scripts/harness/` | Harness CLI Node.js source | ✅ Yes (active construction zone) |
+| `node_modules/pallastrade-harness/` | Harness 引擎（独立 npm 包，`npx harness` 调用） | ✅ Yes |
 
 ---
 
@@ -296,7 +296,7 @@ Before clearing `verify-test`, provide objective evidence:
 | `harness/policies/{anti-patterns,task-rules}.json` (modified) | This `AGENTS.md` §5 + `.github/copilot-instructions.md` |
 | `ai/commands/**` / `ai/agents/**` (modified) | `ai/README.md` |
 | `platform/packages/{cli,sdk,create-pallastrade-app}/**` (modified) | `platform/README.md` or `platform/packages/README.md` |
-| `scripts/harness/**` (modified) | `AGENTS.md` + `ai/skills/pallastrade-prd/SKILL.md` + `harness/scenarios/scenarios.json` |
+| `harness.config.mjs` / `package.json` / `lefthook.yml` (harness 配置/依赖变更) | `AGENTS.md` + `ai/skills/pallastrade-prd/SKILL.md` + `harness/scenarios/scenarios.json` |
 | `ai/skills/**/SKILL.md` (modified) | `harness/scenarios/scenarios.json` — add/update an Eval Scenario |
 | `AGENTS.md` / `CLAUDE.md` (modified) | Run `harness docs:check` to verify no broken references |
 | Any file (framework version upgrade) | ALL Skill files — `harness eval ai --check-freshness` |

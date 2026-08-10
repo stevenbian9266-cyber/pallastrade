@@ -1,5 +1,5 @@
 // harness.config.mjs — PallasTrade 项目配置（唯一项目特定配置入口）
-// 引擎通用机制见 scripts/harness/；本文件声明 PallasTrade 自身结构。
+// 引擎通用机制见独立包 pallastrade-harness（npx harness）；本文件声明 PallasTrade 自身结构。
 // Schema 说明：docs/standards/harness-standalone-roadmap.md §6
 export default {
   name: 'pallastrade',
@@ -46,7 +46,7 @@ export default {
       { codeGlob: /^docs\/prd\/_TEMPLATE\.md$/, docs: ['ai/skills/pallastrade-prd/SKILL.md'], label: 'PRD template change' },
       { codeGlob: /^ai\/commands\/|^ai\/agents\//, docs: ['ai/README.md'], label: 'AI command/agent change → ai README sync' },
       { codeGlob: /^platform\/packages\/(cli|sdk|create-pallastrade-app)\//, docs: ['platform/README.md', 'platform/packages/README.md'], anyOf: true, label: 'Platform package change → README sync' },
-      { codeGlob: /^scripts\/harness\//, docs: ['AGENTS.md', 'ai/skills/pallastrade-prd/SKILL.md', 'harness/scenarios/scenarios.json'], anyOf: true, label: 'Harness change → workflow docs sync' },
+      { codeGlob: /^(harness\.config\.mjs|package\.json|lefthook\.yml)$/, docs: ['AGENTS.md', 'ai/skills/pallastrade-prd/SKILL.md', 'harness/scenarios/scenarios.json'], anyOf: true, label: 'Harness config/deps change → workflow docs sync' },
     ],
   },
 

@@ -61,7 +61,7 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 
 ## 4. 阶段 2：gate + 实施
 
-1. `node scripts/harness/cli.mjs gate --task "<PRD 标题>"`（前缀自动判定类型）
+1. `npx harness gate --task "<PRD 标题>"`（前缀自动判定类型）
 2. 依据 PRD 生成 REQ：`harness/requirements/REQ-{YYYYMMDD}-{slug}.md`（用 `_TEMPLATE.md`），回填关联 PRD
 3. 清除 gate checks（6 层搜索 / skill 读取 / create-req-doc / req-doc-has-skill-table / user-confirmed）
 4. 实施（按 PRD FR 逐个实现）：
@@ -85,7 +85,7 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 - 同步：
   - `backend/public/api-docs/store.yaml` / `admin.yaml`
   - `platform/docs/api-reference/store.yaml` / `admin.yaml`
-- 验证：`node scripts/harness/cli.mjs generated:check` + `pnpm --filter @pallastrade/sdk generate:types`
+- 验证：`npx harness generated:check` + `pnpm --filter @pallastrade/sdk generate:types`
 
 ## 7. 阶段 3：验证（R6 强制）
 
@@ -113,11 +113,11 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 | 流程机制 | 本 Skill、AGENTS.md、copilot-instructions、场景库 |
 
 执行：
-1. 运行 `node scripts/harness/cli.mjs sync-check`（若已实现）输出待评估清单
+1. 运行 `npx harness sync-check`（若已实现）输出待评估清单
 2. 逐项处理：有变更 → 更新；无变更 → 记录"已评估，无需更新"
 3. 结论写入 PRD §9/§10
 4. 更新 `docs/prd/README.md` 索引
-5. 运行 `node scripts/harness/cli.mjs doc-impact --base origin/main` + `eval-ai --check-freshness`
+5. 运行 `npx harness doc-impact --base origin/main` + `eval-ai --check-freshness`
 
 ## 9. Bug 修复简版
 
