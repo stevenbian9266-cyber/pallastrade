@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { Suspense } from "react";
+import { TawkToWidget } from "@/components/layout/TawkToWidget";
 import { getStoreDescription, getStoreName } from "@/lib/store";
 
 const gtmId = process.env.GTM_ID;
@@ -54,6 +55,7 @@ export default function RootLayout({
         className={`${geist.variable} antialiased min-h-screen flex flex-col`}
       >
         <Suspense fallback={null}>{children}</Suspense>
+        <TawkToWidget />
         {process.env.NODE_ENV === "production" &&
           process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true" && (
             <>

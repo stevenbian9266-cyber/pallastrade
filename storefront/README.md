@@ -100,6 +100,8 @@ PALLASTRADE_PUBLISHABLE_KEY=your_publishable_api_key_here
 | `NEXT_PUBLIC_DEFAULT_COUNTRY` | Default country ISO code, used for initial redirects and as build-time fallback for sitemap generation | `us` |
 | `NEXT_PUBLIC_DEFAULT_LOCALE` | Default locale code, used for initial redirects and as build-time fallback for sitemap generation | `en` |
 | `GTM_ID` | Google Tag Manager container ID (e.g. `GTM-XXXXXXX`) | _(disabled)_ |
+| `NEXT_PUBLIC_TAWK_TO_PROPERTY_ID` | Tawk.to live-chat Property ID — from your embed code `https://embed.tawk.to/{PROPERTY_ID}/{WIDGET_ID}`. BOTH IDs required to enable the chat widget | _(disabled)_ |
+| `NEXT_PUBLIC_TAWK_TO_WIDGET_ID` | Tawk.to live-chat Widget ID — from your embed code `https://embed.tawk.to/{PROPERTY_ID}/{WIDGET_ID}`. BOTH IDs required to enable the chat widget | _(disabled)_ |
 | `SENTRY_DSN` | Sentry DSN for error tracking (e.g. `https://key@o0.ingest.sentry.io/0`) | _(disabled)_ |
 | `SENTRY_ORG` | Sentry organization slug (for source map uploads) | _(none)_ |
 | `SENTRY_PROJECT` | Sentry project slug (for source map uploads) | _(none)_ |

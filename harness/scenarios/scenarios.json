@@ -221,6 +221,25 @@
         "Introduce over-engineered abstractions for single-use logic"
       ],
       "scoring": { "reuseFirst": 30, "extraction": 30, "noDeadCode": 20, "noOverEngineering": 20 }
+    },
+    {
+      "id": "GS-018",
+      "name": "Third-party chat widget: env-gated async injection",
+      "description": "When integrating a third-party live-chat/widget (e.g. Tawk.to) into the storefront, gate it behind public NEXT_PUBLIC_* env IDs, load it asynchronously via next/script afterInteractive (never blocking first paint), render null when any required ID is missing, and document the vars in .env.example / README / deployment docs",
+      "mustDo": [
+        "Gate the widget behind env vars (both required IDs set → enabled; either missing → render null, zero requests)",
+        "Load via next/script with afterInteractive strategy (async, non-blocking)",
+        "Mount the widget in the root layout so it applies to all pages",
+        "Add unit tests covering enabled / disabled / partial-config cases",
+        "Document the new env vars in .env.example, storefront README and deployment.mdx"
+      ],
+      "mustNotDo": [
+        "Inject the widget inline in page components (should be root layout, single mount point)",
+        "Use beforeInteractive (blocks rendering) for a chat widget",
+        "Treat public widget IDs as secrets or leave them out of NEXT_PUBLIC_*",
+        "Leave the widget undocumented in deployment env tables"
+      ],
+      "scoring": { "envGated": 30, "asyncLoad": 20, "rootMount": 15, "tests": 20, "docs": 15 }
     }
   ]
 }
