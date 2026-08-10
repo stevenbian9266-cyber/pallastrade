@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { BrandStory } from "@/components/home/BrandStory";
-import { CategoryShowcase } from "@/components/home/CategoryShowcase";
 import { FaqSection } from "@/components/home/FaqSection";
 import { FeaturedProductsSection } from "@/components/home/FeaturedProductsSection";
 import { HeroSection } from "@/components/home/HeroSection";
@@ -86,7 +85,6 @@ export default async function HomePage({ params }: HomePageProps) {
   return (
     <div>
       <HeroSection basePath={basePath} locale={locale} />
-      <CategoryShowcase basePath={basePath} locale={locale} />
       <FeaturedProductsSection
         basePath={basePath}
         locale={locale}

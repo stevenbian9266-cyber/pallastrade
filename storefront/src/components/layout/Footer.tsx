@@ -25,7 +25,7 @@ export async function Footer({
   const tp = await getTranslations({ locale, namespace: "policies" });
 
   return (
-    <footer className="bg-primary text-gray-300">
+    <footer className="bg-gray-950 text-gray-300">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-5">
           {/* Brand */}

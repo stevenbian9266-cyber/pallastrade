@@ -147,18 +147,17 @@ Key components:
 
 ### Home page sections (2026-08 redesign, PRD-20260810)
 
-The home page (`app/[country]/[locale]/(storefront)/page.tsx`) composes 8 sections in `components/home/`:
+The home page (`app/[country]/[locale]/(storefront)/page.tsx`) composes 7 sections in `components/home/`:
 
 - `HeroSection` — brand tagline + value prop + primary/secondary CTAs (no demo links).
-- `CategoryShowcase` — root category cards; renders `null` when no categories (graceful degrade).
-- `FeaturedProductsSection` — existing product grid + "view all".
-- `PromoBanner` — wide gradient band with a single CTA.
+- `FeaturedProductsSection` — product grid + "view all".
+- `PromoBanner` — wide gradient band, retargeted as a "limited-time offers" sale banner (distinct from featured products).
 - `ValueProps` — 4 trust props (shipping / authenticity / returns / support).
 - `BrandStory` — GEO-friendly "answer-ready" brand paragraph.
 - `FaqSection` — visible Q&A + matching `FAQPage` JSON-LD (structured data always mirrors visible content).
 - `NewsletterSignup` — client component, front-end validation + success state (no backend yet).
 
-`CategoryNav` (`components/layout/CategoryNav.tsx`) is a **persistent desktop category bar** (server component, pure-CSS hover dropdowns, `hidden md:block`). The mobile drawer `MobileMenu` remains the small-screen entry point.
+`CategoryNav` (`components/layout/CategoryNav.tsx`) is a **persistent desktop category bar** (server component, pure-CSS hover dropdowns, `hidden md:block`, `overflow-x-auto` so many categories never break the layout). The mobile drawer `MobileMenu` remains the small-screen entry point. There is deliberately **no separate home "shop by category" section** — the nav bar already covers category browsing (avoid duplicate entry points).
 
 ### SEO / GEO (2026-08)
 

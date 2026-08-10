@@ -203,3 +203,4 @@
 | 2026-08-10 | 0.4 | 用户确认「确认」→ **approved**；准备开 gate 分阶段实施 | 用户 + AI |
 | 2026-08-10 | 0.5 | 实施中发现：支持语言为 **en/de/pl/es/fr（无中文）** → 全文「en/zh」表述修正为全部支持语言；新增文案同步 5 语言文件 | AI |
 | 2026-08-10 | 0.6 | 实施完成（GATE-2026-08-10T05-18-09 14/14 全清）：P1 token 品牌蓝统一；P2 CategoryNav 常驻导航条+Footer 去 demo；P3 首页 8 板块；P4 demo 链接归零+5 语言 i18n；P5 WebSite+SearchAction/FAQPage/llms.txt/语义 HTML。156 测试通过（含 10 新增）+ build 成功 + 浏览器实测（8 板块/导航/JSON-LD/llms.txt 200）→ done | AI |
+| 2026-08-10 | 0.7 | 用户 review 迭代（GATE-2026-08-10T06-35-54 14/14）：① Footer 改深色 bg-gray-950（去品牌蓝整底）；② CategoryNav 加横向滚动 overflow-x-auto+nowrap（类目多不溢出）；③ 移除 CategoryShowcase（与导航重复，首页 8→7 板块）；④ PromoBanner 重定位为「Limited-Time Offers」促销主题（避免与精选重复）。154 测试通过 + build 成功 + 浏览器实测 | AI |

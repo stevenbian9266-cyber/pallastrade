@@ -35,7 +35,7 @@ export async function CategoryNav({
       className="hidden md:block border-b border-gray-200 bg-white"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <ul className="flex items-center text-sm">
+        <ul className="flex items-center text-sm overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <li>
             <Link href={basePath || "/"} className={navLinkClass}>
               {t("home")}
