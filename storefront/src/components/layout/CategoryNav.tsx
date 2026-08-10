@@ -67,7 +67,10 @@ export function CategoryNav({ rootCategories, basePath }: CategoryNavProps) {
       onMouseLeave={() => setHoveredId(null)}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <ul className="flex items-center text-sm overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ul className="flex items-center text-sm">
+          {/* Note: no overflow-x-auto here — it would create a clipping
+              container that cuts off the absolutely-positioned sub-category
+              panel (overflow-y computes to auto when overflow-x is set). */}
           <li>
             <Link href={basePath || "/"} className={navLinkClass}>
               {t("home")}
