@@ -85,3 +85,10 @@
 |---|---|---|---|
 | 2026-08-09 | 0.1 | 初稿 | AI |
 | 2026-08-09 | 0.2 | 实施完成：品牌资产部署 storefront/public（logo/favicon×4/og/email）、seo.ts SOCIAL_IMAGE_PATH、mailer_logo attach（本地+dev）、STORE_LOGO_URL env、dev storefront 镜像部署验证 200。prod 待 prod 栈启动时同步 | AI |
+| 2026-08-10 | 0.3 | prod 待办完成：prod storefront 新镜像部署、prod mailer_logo attach、公网品牌资源 200；提交品牌资源套件文件（catalog PRD/REQ/tests/源目录） | AI |
+
+## 回写记录（harness prd update）
+
+| 日期 | 来源 | 操作者 |
+|---|---|---|
+| 2026-08-10 | 需求：prod 品牌资产部署待办（镜像 + mailer_logo） | AI |
