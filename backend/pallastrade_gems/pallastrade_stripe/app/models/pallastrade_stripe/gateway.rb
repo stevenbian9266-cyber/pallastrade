@@ -16,6 +16,11 @@ module PallasTradeStripe
 
     has_one_attached :apple_developer_merchantid_domain_association, service: PallasTrade.private_storage_service_name
 
+    # webhook_keys 反向关联（通过 payment_methods_webhook_keys 中间表）——
+    # `create_webhook_endpoint_async` 依赖它判断是否已创建 webhook endpoint。
+    has_many :payment_methods_webhook_keys, class_name: 'PallasTradeStripe::PaymentMethodsWebhookKey', dependent: :destroy
+    has_many :webhook_keys, through: :payment_methods_webhook_keys, class_name: 'PallasTradeStripe::WebhookKey'
+
     validates :preferred_secret_key, :preferred_publishable_key, presence: true
     validate :validate_secret_key, unless: -> { Rails.env.test? }, if: -> { preferred_secret_key.present? }
 
