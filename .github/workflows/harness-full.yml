@@ -87,6 +87,7 @@ jobs:
       DATABASE_HOST: 127.0.0.1
       DATABASE_USERNAME: postgres
       DATABASE_PORT: "5432"
+      DISABLE_SIMPLECOV_MINIMUM: "1"   # 覆盖率阈值由独立 coverage job 管
     services:
       postgres:
         image: postgres:16

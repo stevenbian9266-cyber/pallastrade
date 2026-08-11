@@ -7,7 +7,9 @@ require 'simplecov-cobertura'
 
 SimpleCov.start 'rails' do
   enable_coverage :branch
-  minimum_coverage line: 80, branch: 60
+  # 覆盖率阈值门禁由 harness-full.yml 的独立 `coverage` job 负责；
+  # CI 用 DISABLE_SIMPLECOV_MINIMUM=1 跳过此处内嵌检查（本地开发保留提示）。
+  minimum_coverage line: 80, branch: 60 unless ENV['DISABLE_SIMPLECOV_MINIMUM'] == '1'
 
   add_group 'Application', 'app/'
   add_group 'Gems', 'pallastrade_gems/'
