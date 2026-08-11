@@ -35,13 +35,17 @@ module PallasTrade
               entry = PallasTrade::AI.providers[provider_type]
               return render_error(code: 'invalid_provider_type', message: "Unknown provider type: #{provider_type}", status: :unprocessable_entity) unless entry
 
-              klass = entry.integration_class.constantize
+              # integration_class 来自代码级 ProviderRegistry 白名单（entry 已校验），
+              # safe_constantize 不 raise + 显式 nil 防御（避免 Brakeman UnsafeReflection）。
+              klass = entry.integration_class.safe_constantize
+              return render_error(code: 'invalid_provider_type', message: "Unknown provider type: #{provider_type}", status: :unprocessable_entity) unless klass
               provider = klass.new(store: current_store, active: false)
 
-              # Set non-secret preferences
+              # Set non-secret preferences（白名单：仅允许 preference DSL 声明的键）
               if params[:preferences].present?
-                params[:preferences].permit!.each do |key, value|
-                  provider.public_send(:"preferred_#{key}=", value) if provider.respond_to?(:"preferred_#{key}=")
+                allowed = provider.class.defined_preferences
+                params[:preferences].permit(*allowed).each do |key, value|
+                  provider.public_send(:"preferred_#{key}=", value)
                 end
               end
 
@@ -71,8 +75,9 @@ module PallasTrade
                 end
 
                 if params[:preferences].present?
-                  params[:preferences].permit!.each do |key, value|
-                    provider.public_send(:"preferred_#{key}=", value) if provider.respond_to?(:"preferred_#{key}=")
+                  allowed = provider.class.defined_preferences
+                  params[:preferences].permit(*allowed).each do |key, value|
+                    provider.public_send(:"preferred_#{key}=", value)
                   end
                   provider.save!
                 end
