@@ -61,11 +61,12 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 
 ## 4. 阶段 2：gate + 实施
 
-1. `npx harness gate --task "<PRD 标题>"`（前缀自动判定类型）
-2. 依据 PRD 生成 REQ：`harness/requirements/REQ-{YYYYMMDD}-{slug}.md`（用 `_TEMPLATE.md`），回填关联 PRD
-3. 清除 gate checks（6 层搜索 / skill 读取 / create-req-doc / req-doc-has-skill-table / user-confirmed）
-4. Harness 0.4+：运行 `harness supervise plan --task "<PRD 标题>" --allow <glob...>`，固化 Change Plan、风险、适用规范与证据需求
-5. 实施（按 PRD FR 逐个实现）：
+1. `npx harness task start --title "<PRD 标题>" --allow <glob...> --json`，随后运行 `brain context` 与 `risk check`
+2. `npx harness gate --task "<PRD 标题>" --task-id <TASK-ID>`（前缀自动判定类型）
+3. 依据 PRD 生成 REQ：`harness/requirements/REQ-{YYYYMMDD}-{slug}.md`（用 `_TEMPLATE.md`），回填关联 PRD
+4. 清除 gate preparation checks（6 层搜索 / skill 读取 / create-req-doc / req-doc-has-skill-table / user-confirmed）
+5. 运行 `harness supervise plan --task "<PRD 标题>" --allow <glob...>`，固化 Change Plan、风险、适用规范与证据需求
+6. 实施（按 PRD FR 逐个实现）：
    - 新功能 → 创建测试文件（见 §5）
    - 优化迭代 → 升级测试 + 更新 PRD §8/§10
    - 接口变更 → 同步 API 文档（见 §6）
@@ -92,8 +93,10 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 ## 7. 阶段 3：验证（R6 强制）
 
 - 按改动类型跑最小验证（见 AGENTS.md §6 表格：Ruby→quick check、TS/TSX→pnpm build/lint、UI→截图/DOM、后端→Rails log）
-- 证据必须客观（截图/日志/DB 查询），"no test needed" 是极少数例外
-- preparation checks 清除后即可进入 implementation；`verify-test` 始终留在 verification 阶段，附证据清除后 gate 才进入 `finished`，PRD 状态 `verifying` → `done`
+- 证据必须通过 `harness evidence run|record` 采集并绑定当前 HEAD/worktree/文件 hash；截图/日志/DB 查询等必须来自实际执行
+- preparation checks 清除后即可进入 implementation；task-bound `verify-test` 禁止手工 clear，必须在知识评估完成后运行 `harness evidence verify --task <TASK-ID> --gate <GATE-ID>`
+- Standard/Critical 任务需满足 review/knowledge 等证据；Critical 任务还必须有 `harness recovery create|verify` 的人工恢复计划
+- 最后运行 `harness task finish --task <TASK-ID>`；PRD 状态 `verifying` → `done`
 
 ## 8. 阶段 4：知识同步门（收尾）
 

@@ -8,7 +8,7 @@
 
 ## ⛔ R0: THE FIRST THING YOU DO — NO EXCEPTIONS
 
-**Before you invoke `create_file`, `replace_string_in_file`, `multi_replace_string_in_file`, or ANY file mutation tool — you MUST first confirm the task uses a valid prefix, then run `harness gate`.**
+**Before you invoke `create_file`, `replace_string_in_file`, `multi_replace_string_in_file`, or ANY file mutation tool — you MUST first confirm the task uses a valid prefix, start/resume a Harness Task, build context, then open a task-bound Gate.**
 
 ### Required Prefix Convention
 
@@ -35,10 +35,13 @@
 - 如果用户输入**涉及代码修改**但缺前缀 → AI 提醒用户加前缀后再继续
 - 如果用户输入含糊 → AI 用 `vscode_askQuestions` 让用户确认意图（提需求 or 问问题）
 
-### Run the gate
+### Start the lifecycle and run the gate
 
 ```bash
-npx harness gate --task "<prefix：description>"
+npx harness task start --title "<prefix：description>" --allow "<approved-glob>" --json
+npx harness brain context --task <TASK-ID>
+npx harness risk check --task <TASK-ID>
+npx harness gate --task "<prefix：description>" --task-id <TASK-ID>
 ```
 
 The CLI auto-detects the `--type` from the prefix. No need to pass `--type` manually.
@@ -74,7 +77,7 @@ when one already exists in a gem layer it didn't search.
 **Before invoking ANY file creation or file editing tool**, you MUST run:
 
 ```bash
-npx harness gate --task "<brief description>" [--type feature|bugfix|style|audit|research|docs|refactor|security|test]
+npx harness gate --task "<brief description>" --task-id <TASK-ID> [--type feature|bugfix|style|audit|research|docs|refactor|security|test]
 ```
 
 This command creates a gate at `harness/gates/GATE-*.json` and outputs a checklist.
@@ -90,7 +93,9 @@ To clear gate checks one at a time:
 npx harness gate:clear --gate <GATE-ID> --clear <check-id>
 ```
 
-Only proceed to implementation when `gate:clear` exits 0 (all checks cleared).
+Only proceed to implementation when preparation checks are cleared. A task-bound `verify-test` cannot
+be cleared manually: collect typed evidence, run `knowledge verify`, then run
+`evidence verify --task <TASK-ID> --gate <GATE-ID>`.
 
 ### R1-前置：编辑前强制校验（每个回合都必须做）
 
@@ -113,7 +118,7 @@ npx harness gate:status
 npx harness gate:status
 ```
 
-- 如果 exit 0 → gate 有效，可以继续编辑
+- 如果 exit 0 → gate 有效；同时运行 `task status --task <TASK-ID>` 确认 worktree 身份后继续编辑
 - 如果 exit 1 → 说明 gate 过期（>24h）或 `verify-test` 未完成，需要处理
 - 如果无活跃 gate → 必须创建新 gate
 
@@ -152,15 +157,15 @@ You MUST search each layer independently.
 
 ### R6: Verify or Declare — NO SKIPPING
 
-After implementing code changes, the `verify-test` gate check MUST be resolved.
-You MUST either:
-- Run relevant tests (`harness check --profile quick` or `pnpm test`), OR
-- Explicitly document "no test needed" with a reason (e.g., "纯样式调整，无逻辑变更")
+After implementing code changes, the `verify-test` gate check MUST be resolved through fresh typed evidence.
+Run relevant tests with `harness evidence run --task <TASK-ID> --type test -- <command>`; non-code work may
+record a justified review evidence, but must still satisfy the task's risk profile and knowledge assessment.
 
 **最小验证矩阵（按改动类型）与验证证据要求见 `AGENTS.md` §6 — 本文件不再重复。** 核心强制：
 - UI 或后端逻辑变更 "no test needed" 无效 — 必须有浏览器/日志证据
 - 跳过最小检查导致构建损坏 = 流程违规
 - 不允许留下 `verify-test` pending（pending 的 gate 视为无效，不能续作）
+- 禁止手工 clear task-bound `verify-test`；使用 `evidence verify`
 
 ### R7: user-confirmed Requires Explicit User Action
 

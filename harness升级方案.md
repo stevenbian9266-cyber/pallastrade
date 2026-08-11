@@ -1,5 +1,9 @@
 # PallasTrade Harness 总体升级方案（整合版）
 
+> 实施状态：✅ Phase 0–6 已于 2026-08-12 完成；独立包 `pallastrade-harness@1.0.3` 已通过
+> Windows/macOS/Ubuntu × Node 22/24 CI、npm OIDC 发布与 SLSA provenance 验证；PallasTrade dogfood
+> 发现的上下文精度、状态迁移幂等性和生成物基线误报由兼容补丁 `1.0.1`–`1.0.3` 修正。本文件继续作为产品与架构蓝图。
+
 ## 一、产品定位
 
 更准确的定位应该是：
@@ -874,6 +878,8 @@ Adapters
 - LLM 不能成为唯一安全边界。
 
 ## 十七、升级路线
+
+以下 Phase 0–6 均已在 1.0.0 实现；具体合同、命令和迁移说明以独立仓库 README/docs 为准。
 
 ## Phase 0：可靠性基线，目标 0.3
 

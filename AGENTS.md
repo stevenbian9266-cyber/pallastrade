@@ -24,7 +24,7 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 | `harness/policies/anti-patterns.json` | 反模式 | **反模式唯一权威**（机器执行） | CI 强制；违规检查 | 工程负责人 |
 | `harness/policies/task-rules.json` | 任务规则 | 任务规则权威 | 新功能/优化 | 工程负责人 |
 | `harness/policies/prd-categories.json` | PRD 分类 | 分类权威 | `prd new` | 工程负责人 |
-| `harness.config.mjs` | Harness 项目配置 | **引擎配置权威**（layers/gates/standards/supervisor/docImpact/coverage/profiles/syncCheck） | 引擎配置相关任务；引擎默认值见独立包 `pallastrade-harness`（`bin/config-loader.mjs`） | 工程负责人 |
+| `harness.config.mjs` | Harness 项目配置 | **引擎配置权威**（Task/Brain/Risk/Evidence + layers/gates/standards/supervisor/docImpact/coverage/profiles/syncCheck） | 引擎配置相关任务；引擎默认值见独立包 `pallastrade-harness`（`bin/config-loader.mjs`） | 工程负责人 |
 | `harness升级方案.md` | Harness 产品方案 | 下一代治理能力的已确认产品蓝图（具体规则仍以各权威文件为准） | Harness 能力规划/阶段升级 | 工程负责人 |
 | `harness/scenarios/scenarios.json` | 场景库 | Eval 权威 | 能力变更 | 工程负责人 |
 | `docs/standards/README.md` | 规范索引 | **规范文件指针权威** | 不确定规范位置时 | 工程负责人 |
@@ -95,12 +95,28 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 
 ## 2. Before Writing Any Code
 
+### Step -2: MANDATORY Task Lifecycle (ALL mutation tasks)
+
+Before opening a Gate, create or resume a persistent task and build its minimal context:
+
+```bash
+npx harness task start --title "<prefix：description>" --allow "<approved-glob>" --json
+npx harness brain context --task <TASK-ID>
+npx harness risk check --task <TASK-ID>
+npx harness gate --task "<prefix：description>" --task-id <TASK-ID>
+```
+
+Task state is bound to repository/worktree/branch/HEAD. Use `task checkpoint`, `task resume`, and
+`task handoff` for continuation; never recreate context from memory when a live task exists. Critical
+tasks must also create and verify a manual-only recovery plan before completion. Legacy unbound Gates
+may finish an already-running task, but every new Gate must use `--task-id`.
+
 ### � Step -1: MANDATORY Gate (ALL tasks — NO exceptions — enforced by process.exit(1))
 
 **Before you invoke any file creation or edit tool, you MUST run:**
 
 ```bash
-npx harness gate --task "<brief description>" [--type feature|bugfix|style]
+npx harness gate --task "<brief description>" --task-id <TASK-ID> [--type feature|bugfix|style]
 ```
 
 This creates a gate file at `harness/gates/GATE-*.json` and outputs a checklist.
@@ -112,7 +128,8 @@ The command **always exits with code 1** until every check is cleared via `gate:
 npx harness gate:clear --gate <GATE-ID> --clear <check-id>
 ```
 
-Only when all checks are cleared and `gate:clear` exits 0 may the AI proceed to implementation.
+Only when all preparation checks are cleared and `gate:clear` exits 0 may the AI proceed to implementation.
+For task-bound Gates, `verify-test` is evidence-controlled and cannot be cleared manually.
 
 **Gate 期间的例外（仅允许以下文件操作）：**
 
@@ -190,10 +207,10 @@ For tasks originating from a **one-line requirement**（一句话需求）, the 
 1. **PRD generation** — expand the one-liner into a detailed PRD at `docs/prd/{category}/PRD-{YYYYMMDD}-{category}-{slug}.md` (template: `docs/prd/_TEMPLATE.md`; category auto-detected via `harness/policies/prd-categories.json`). Update `docs/prd/README.md` index.
 2. **Dedupe first（机制自动）** — `harness prd new` 自动查重（标题相似度 >0.3 阻止新建）；命中相似 PRD → **用 `harness prd update --path <原PRD> --title "<需求>"` 回写原 PRD**（不新建重复 PRD），确属全新需求才 `--force`。再做 6 层跨层搜索（AP-SEARCH）。
 3. **User confirmation** — PRD → `approved` only after explicit user confirmation.
-4. **Gate + REQ** — `harness gate` (feature checks now include `create-prd-doc` + `read-skill-prd`), then generate REQ at `harness/requirements/REQ-*.md`.
+4. **Task + Gate + REQ** — `harness task start` → `brain context` → `risk check` → task-bound `harness gate --task-id <TASK-ID>` (feature checks include `create-prd-doc` + `read-skill-prd`), then generate REQ at `harness/requirements/REQ-*.md`.
 5. **Tests & acceptance** — every AC in the PRD must map to a test tagged `# PRD-xxx AC-x`; verify with `harness prd verify --id PRD-xxx`.
 6. **API docs** — interface changes MUST sync `backend/public/api-docs/{store,admin}.yaml` + `platform/docs/api-reference/` (verify with `generated:check`).
-7. **Knowledge sync gate** — before closing `verify-test`, run `harness sync-check --id PRD-xxx` and resolve every asset in the §7 knowledge matrix (Skill / README / Agent files / style & technical standards / anti-patterns / scenarios). Record conclusions in PRD §9/§10.
+7. **Knowledge + Evidence finish** — run `harness sync-check --id PRD-xxx`, resolve every asset in the §7 matrix, record conclusions in PRD §9/§10, then use `knowledge verify` + `evidence verify` to close `verify-test` and `task finish` to complete the task.
 
 ### 🔎 Step 4: Development Supervisor（Harness 0.4+）
 
@@ -278,6 +295,10 @@ Lower number = safer upgrade, cleaner code, easier to test.
 
 ### Verification Evidence Required
 
+Use `npx harness evidence run|record` to capture typed evidence. Before closing the task, run
+`npx harness knowledge verify --task <TASK-ID>` and `npx harness evidence verify --task <TASK-ID> --gate <GATE-ID>`;
+only fresh evidence bound to the current HEAD/worktree/file hashes may finish the Gate.
+
 Before clearing `verify-test`, provide objective evidence:
 
 | What you changed | Required evidence |
@@ -342,8 +363,10 @@ of which agent (Copilot / Codex / Claude Code) or human drives it:
 - Root `lefthook.yml` — pre-commit runs the anti-pattern + AP-009 degraded-loop
   scans on **staged files only** (error severity blocks); pre-push runs
   `harness doc-impact`. Install once: `npm i && npx lefthook install`.
+- `harness task` persists repository/worktree-bound state, checkpoints and handoffs; `.harness-state/`
+  is local runtime state and must not be committed.
 - `harness gate` supports task types: feature / bugfix / style / audit /
   research / docs / refactor / security / test. Gates bind branch + HEAD commit
-  and record `--note` on each cleared check.
+  and record `--note` on each cleared check; task-bound verification is completed only by typed evidence.
 - Harness self-checks: `npm run test:harness` (node:test contract tests) and
   `harness eval-ai --scenarios` (GS scenario library validation).

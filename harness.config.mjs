@@ -2,6 +2,7 @@
 // 引擎通用机制见独立包 pallastrade-harness（npx harness）；本文件声明 PallasTrade 自身结构。
 // Schema 说明：docs/standards/harness-standalone-roadmap.md §6
 export default {
+  schemaVersion: '1.0',
   name: 'pallastrade',
 
   // ① 层定义：gate 跨层搜索（id 需与既有 gate check id 一致）
@@ -81,7 +82,6 @@ export default {
     generatedFiles: [
       'backend/db/schema.rb',
       'backend/Gemfile.lock',
-      '**/package-lock.json',
     ],
     protectedFiles: [],
     dependencyFiles: [
@@ -90,6 +90,10 @@ export default {
       'storefront/package.json',
       'platform/**/package.json',
     ],
+    testFiles: ['**/*.test.*', '**/*.spec.*', '**/test/**', '**/tests/**', '**/spec/**', '**/fixtures/**'],
+    ruleDefinitionFiles: ['**/risk-engine.*', '**/domain-supervisors.*', '**/scan-*', '**/policies/**', '**/rules/**'],
+    maxFiles: 20000,
+    shardSize: 500,
     complexity: {
       maxDecisionPoints: 12,
       duplicateBlockLines: 6,
@@ -108,10 +112,58 @@ export default {
     ],
   },
 
-  // ⑦ eval / scenarios
+  // ⑦ Project Brain / Risk / Evidence（1.0 生命周期治理）
+  brain: {
+    sources: [
+      'AGENTS.md',
+      '.github/copilot-instructions.md',
+      '{backend,platform,storefront}/CLAUDE.md',
+      'README.md',
+      'docs/**/*.{md,mdx,json,yaml,yml}',
+      'ai/skills/**/SKILL.md',
+      'harness/**/*.{md,json,yaml,yml}',
+    ],
+    exclude: [
+      '**/node_modules/**',
+      '**/.git/**',
+      '**/.env*',
+      '**/*secret*',
+      '**/artifacts/**',
+      'harness/gates/**',
+      '.harness-state/**',
+      '.harness-cache/**',
+    ],
+    maxAssetBytes: 524288,
+    maxContextAssets: 24,
+    maxAssets: 20000,
+    shardSize: 500,
+  },
+  risk: {
+    criticalPaths: [
+      'backend/db/migrate/**',
+      '**/*payment*',
+      '**/*auth*',
+      '**/*permission*',
+      '**/*secret*',
+      '**/*deploy*',
+      '.github/workflows/**',
+      '**/Dockerfile*',
+    ],
+    standardPaths: ['backend/**/api/**', 'storefront/src/**', 'platform/packages/**', '**/package.json', '**/Gemfile', '**/*config*', '**/*schema*'],
+  },
+  evidence: {
+    autoVerify: true,
+    maxOutputBytes: 262144,
+  },
+  plugins: {
+    apiVersion: '1.0',
+    strict: false,
+  },
+
+  // ⑧ eval / scenarios
   scenarios: 'harness/scenarios/scenarios.json',
 
-  // ⑦ check profiles（原 harness/config.json 搬入）
+  // ⑨ check profiles（原 harness/config.json 搬入）
   profiles: {
     quick: {
       timeout: 300,
@@ -129,22 +181,23 @@ export default {
     },
   },
 
-  // ⑧ doctor 检查项
+  // ⑩ doctor 检查项
   doctor: {
     requiredDirs: ['backend', 'platform', 'storefront', 'ai'],
     requiredFiles: ['AGENTS.md'],
     composeCandidates: ['backend/docker-compose.dev.yml', 'backend/docker-compose.yml', 'docker-compose.yml'],
   },
 
-  // ⑨ 状态/产物路径
+  // ⑪ 状态/产物路径
   paths: {
     gates: 'harness/gates',
     requirements: 'harness/requirements',
     evidence: 'artifacts/harness-evidence',
     prd: 'docs/prd',
+    state: '.harness-state',
   },
 
-  // ⑩ sync-check 知识同步矩阵（原 cli.mjs 硬编码 RULES 搬入）
+  // ⑫ sync-check 知识同步矩阵（原 cli.mjs 硬编码 RULES 搬入）
   syncCheck: {
     rules: [
       { label: 'Model / DB 变更', re: /^(backend\/app\/models|backend\/db\/migrate|backend\/pallastrade_gems\/.*\/db\/migrate)/, assets: ['领域 Skill', 'pallastrade-data-model Skill', '测试', '场景库'] },
@@ -162,7 +215,7 @@ export default {
     ],
   },
 
-  // ⑪ generated:check 生成命令（SDK 类型 / CLI spec）
+  // ⑬ generated:check 生成命令（SDK 类型 / CLI spec）
   generatedCheck: {
     checks: [
       { name: 'SDK Types', cwd: 'platform', cmd: 'pnpm --filter @pallastrade/sdk generate:types 2>/dev/null || echo "SKIP: sdk types generation not configured"' },

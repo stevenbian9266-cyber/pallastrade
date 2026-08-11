@@ -11,10 +11,18 @@ backend/      Rails 后端与部署模板
 platform/     管理平台、SDK、CLI、文档与开发工具
 storefront/   Next.js 商店前端
 ai/           PallasTrade AI 开发能力
+harness/      项目规范、场景、需求和治理策略
 ```
 
-四个目录共享根 Git Commit 和统一发布 Tag。仓库只维护长期分支 `main`，组件目录
-不得包含独立 Git 元数据。
+各目录共享根 Git Commit 和统一发布 Tag。日常开发在 `dev`，验证后合并到生产分支
+`main`；组件目录不得包含独立 Git 元数据。
+
+## AI 开发生命周期
+
+仓库使用 `pallastrade-harness@1.0.3` 约束 AI 开发：持久 Task、Project Brain、风险分级、
+task-bound Gate、实际 Diff/领域监督、typed evidence、恢复计划与知识回写。新修改任务从
+`npx harness task start` 开始，只有当前代码状态对应的证据通过 `evidence verify` 后才可完成。
+详细规则以 [AGENTS.md](AGENTS.md) 和 [Harness 升级方案](harness升级方案.md) 为准。
 
 ## 获取源码
 
