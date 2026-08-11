@@ -121,9 +121,7 @@ jobs:
       - name: Run RSpec (root app + gem specs)
         run: |
           cd backend
-          bundle exec rspec spec/ pallastrade_gems/pallastrade_*/spec/ \
-            --format progress \
-            --format RspecJunitFormatter --out rspec-junit.xml
+          bundle exec rspec spec/ pallastrade_gems/pallastrade_*/spec/ --format progress
 
       - name: Run Brakeman
         run: |
@@ -134,12 +132,6 @@ jobs:
         run: |
           cd backend
           bundle exec bundle-audit check --update
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: rspec-junit
-          path: backend/rspec-junit.xml
 
   # ---- Storefront Tests ----
   test-storefront:

@@ -9,5 +9,4 @@ type ParamValue = string | number | boolean | (string | number)[] | undefined
 export declare function transformListParams(
   params: Record<string, unknown>,
 ): Record<string, ParamValue>
-export {}
 //# sourceMappingURL=params.d.ts.map
