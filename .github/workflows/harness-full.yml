@@ -121,7 +121,9 @@ jobs:
       - name: Run RSpec (root app + gem specs)
         run: |
           cd backend
-          bundle exec rspec spec/ pallastrade_gems/pallastrade_*/spec/ --format progress
+          # 排除未加载的 legacy gem（不在 Gemfile）——其 spec 引用未定义类会加载失败
+          SPEC_DIRS=$(find pallastrade_gems -mindepth 2 -maxdepth 2 -type d -name spec | grep -v 'legacy_product_properties')
+          bundle exec rspec spec/ $SPEC_DIRS --format progress
 
       - name: Run Brakeman
         run: |
