@@ -18,7 +18,9 @@ module PallasTradeStripe
 
     # webhook_keys 反向关联（通过 payment_methods_webhook_keys 中间表）——
     # `create_webhook_endpoint_async` 依赖它判断是否已创建 webhook endpoint。
-    has_many :payment_methods_webhook_keys, class_name: 'PallasTradeStripe::PaymentMethodsWebhookKey', dependent: :destroy
+    # 注意：Gateway 是 PaymentMethod 的 STI 子类，中间表外键是 payment_method_id
+    #（不是默认推断的 gateway_id）。
+    has_many :payment_methods_webhook_keys, class_name: 'PallasTradeStripe::PaymentMethodsWebhookKey', foreign_key: :payment_method_id, dependent: :destroy
     has_many :webhook_keys, through: :payment_methods_webhook_keys, class_name: 'PallasTradeStripe::WebhookKey'
 
     validates :preferred_secret_key, :preferred_publishable_key, presence: true
