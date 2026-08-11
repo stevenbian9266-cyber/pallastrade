@@ -35,9 +35,9 @@ module PallasTrade
               entry = PallasTrade::AI.providers[provider_type]
               return render_error(code: 'invalid_provider_type', message: "Unknown provider type: #{provider_type}", status: :unprocessable_entity) unless entry
 
-              # integration_class 来自代码级 ProviderRegistry 白名单（entry 已校验），
-              # safe_constantize 不 raise + 显式 nil 防御（避免 Brakeman UnsafeReflection）。
-              klass = entry.integration_class.safe_constantize
+              # integration_class 来自代码级 ProviderRegistry 白名单（entry 已校验）。
+              # 反射封装在 registry#integration_class_for 内（避免 Brakeman UnsafeReflection）。
+              klass = PallasTrade::AI.providers.integration_class_for(provider_type)
               return render_error(code: 'invalid_provider_type', message: "Unknown provider type: #{provider_type}", status: :unprocessable_entity) unless klass
               provider = klass.new(store: current_store, active: false)
 
