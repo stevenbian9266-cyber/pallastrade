@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { getCachedProduct, PRODUCT_METADATA_EXPAND } from "@/lib/data/cached";
+import { buildHreflangAlternates } from "@/lib/metadata/alternates";
 import { buildCanonicalUrl, stripHtml } from "@/lib/seo";
 import { getStoreUrl } from "@/lib/store";
-import { buildHreflangAlternates } from "@/lib/metadata/alternates";
 
 interface ProductMetadataParams {
   country: string;

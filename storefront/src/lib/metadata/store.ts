@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { buildOgLocaleAlternates } from "@/lib/metadata/alternates";
 import { SOCIAL_IMAGE_PATH } from "@/lib/seo";
 import {
   getStoreMetaDescription,
@@ -6,7 +7,6 @@ import {
   getStoreSeoTitle,
   getStoreUrl,
 } from "@/lib/store";
-import { buildOgLocaleAlternates } from "@/lib/metadata/alternates";
 
 function normalizeOpenGraphLocale(locale: string): string {
   const parts = locale.split(/[-_]/);

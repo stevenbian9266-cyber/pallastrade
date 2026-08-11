@@ -1,4 +1,4 @@
-import { Truck, ShieldCheck, RotateCcw, Headset } from "lucide-react";
+import { Headset, RotateCcw, ShieldCheck, Truck } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 /**

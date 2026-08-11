@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/pallastrade", () => ({
   getAccessToken: vi.fn(),
@@ -15,7 +15,7 @@ beforeEach(() => {
 
 describe("isAuthenticated", () => {
   it("returns false when there is no access token", async () => {
-    vi.mocked(getAccessToken).mockResolvedValue(null);
+    vi.mocked(getAccessToken).mockResolvedValue(undefined);
     expect(await isAuthenticated()).toBe(false);
     expect(isJwtExpired).not.toHaveBeenCalled();
   });

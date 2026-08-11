@@ -22,10 +22,7 @@ full skill list.
 `
 }
 
-export function rootClaudeMdContent(
-  hasStorefront: boolean,
-  pm: PackageManager = 'npm',
-): string {
+export function rootClaudeMdContent(hasStorefront: boolean, pm: PackageManager = 'npm'): string {
   const run = runCommand(pm)
   const lines = [
     '# PallasTrade Commerce Application',

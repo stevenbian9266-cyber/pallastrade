@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { buildProductQueryParams, wrapInRansackParams } from "../product-query";
+import { describe, expect, it } from "vitest";
 import type { ActiveFilters } from "@/types/filters";
+import { buildProductQueryParams, wrapInRansackParams } from "../product-query";
 
 function baseFilters(overrides: Partial<ActiveFilters> = {}): ActiveFilters {
   return {
@@ -15,7 +15,9 @@ function baseFilters(overrides: Partial<ActiveFilters> = {}): ActiveFilters {
 
 describe("buildProductQueryParams", () => {
   it("sets search when a query is provided", () => {
-    expect(buildProductQueryParams(baseFilters(), "shirt").search).toBe("shirt");
+    expect(buildProductQueryParams(baseFilters(), "shirt").search).toBe(
+      "shirt",
+    );
   });
 
   it("maps price bounds to gte/lte params", () => {
@@ -35,7 +37,8 @@ describe("buildProductQueryParams", () => {
 
   it("maps availability to in_stock / out_of_stock", () => {
     expect(
-      buildProductQueryParams(baseFilters({ availability: "in_stock" })).in_stock,
+      buildProductQueryParams(baseFilters({ availability: "in_stock" }))
+        .in_stock,
     ).toBe(true);
     expect(
       buildProductQueryParams(baseFilters({ availability: "out_of_stock" }))
@@ -66,10 +69,14 @@ describe("wrapInRansackParams", () => {
   });
 
   it("wraps arrays with empty brackets", () => {
-    expect(wrapInRansackParams({ ids: [1, 2] })).toEqual({ "q[ids][]": [1, 2] });
+    expect(wrapInRansackParams({ ids: [1, 2] })).toEqual({
+      "q[ids][]": [1, 2],
+    });
   });
 
   it("wraps scalars in q[...]", () => {
-    expect(wrapInRansackParams({ price_gte: 10 })).toEqual({ "q[price_gte]": 10 });
+    expect(wrapInRansackParams({ price_gte: 10 })).toEqual({
+      "q[price_gte]": 10,
+    });
   });
 });

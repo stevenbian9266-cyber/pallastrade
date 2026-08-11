@@ -1,6 +1,6 @@
 "use client";
 
-import { Mail, Check } from "lucide-react";
+import { Check, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -34,10 +34,7 @@ export function NewsletterSignup() {
   };
 
   return (
-    <section
-      aria-labelledby="newsletter-heading"
-      className="bg-gray-50 py-16"
-    >
+    <section aria-labelledby="newsletter-heading" className="bg-gray-50 py-16">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-xl text-center">
           <h2

@@ -73,7 +73,10 @@ export default async function CountryLocaleLayout({
     const fallbackLocale = defaultMarket?.default_locale ?? getDefaultLocale();
 
     // Guard against redirecting to the same URL (causes infinite loop)
-    if (fallbackCountry !== country.toLowerCase() || fallbackLocale !== locale) {
+    if (
+      fallbackCountry !== country.toLowerCase() ||
+      fallbackLocale !== locale
+    ) {
       redirect(`/${fallbackCountry}/${fallbackLocale}`);
     }
   }

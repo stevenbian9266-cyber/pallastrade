@@ -33,9 +33,7 @@ export const ProductCard = memo(function ProductCard({
   const imageUrl = product.thumbnail_url || null;
   // SEO: prefer CMS-managed alt text from media, fall back to product name
   const imageAlt =
-    product.primary_media?.alt ||
-    product.media?.[0]?.alt ||
-    product.name;
+    product.primary_media?.alt || product.media?.[0]?.alt || product.name;
 
   // Current display price
   const displayPrice = product.price?.display_amount;

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { getCachedCategory } from "@/lib/data/cached";
+import { buildHreflangAlternates } from "@/lib/metadata/alternates";
 import { buildCanonicalUrl } from "@/lib/seo";
 import { getStoreUrl } from "@/lib/store";
-import { buildHreflangAlternates } from "@/lib/metadata/alternates";
 
 export interface CategoryMetadataParams {
   country: string;

@@ -12,7 +12,12 @@ describe("ValueProps", () => {
     const element = await ValueProps({ locale: "en" });
     render(element);
 
-    const titles = ["fastShipping", "authenticProducts", "easyReturns", "support"];
+    const titles = [
+      "fastShipping",
+      "authenticProducts",
+      "easyReturns",
+      "support",
+    ];
     for (const title of titles) {
       expect(screen.getByText(title)).toBeTruthy();
     }

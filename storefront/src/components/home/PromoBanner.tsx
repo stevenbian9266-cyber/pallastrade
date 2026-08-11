@@ -31,16 +31,9 @@ export async function PromoBanner({ basePath, locale }: PromoBannerProps) {
           >
             {t("promoTitle")}
           </h2>
-          <p className="mt-2 text-primary-100 max-w-xl">
-            {t("promoSubtitle")}
-          </p>
+          <p className="mt-2 text-primary-100 max-w-xl">{t("promoSubtitle")}</p>
         </div>
-        <Button
-          size="lg"
-          variant="secondary"
-          className="shrink-0"
-          asChild
-        >
+        <Button size="lg" variant="secondary" className="shrink-0" asChild>
           <Link href={`${basePath}/products`}>{t("promoCta")}</Link>
         </Button>
       </div>

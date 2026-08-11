@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    unoptimized: process.env.NODE_ENV === 'development',
+    unoptimized: process.env.NODE_ENV === "development",
     qualities: [25, 50, 75, 85, 100],
     dangerouslyAllowLocalIP: true, // Allow localhost images in development
     minimumCacheTTL: 300, // Reduce upstream pressure on Rails dev server

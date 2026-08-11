@@ -144,7 +144,10 @@ async function installAppDeps(projectDir: string, app: 'storefront'): Promise<vo
 
 /** Pick the package manager a directory's lockfile implies. */
 function detectPackageManager(appDir: string): 'pnpm' | 'npm' | 'yarn' {
-  if (fs.existsSync(path.join(appDir, 'pnpm-lock.yaml')) || fs.existsSync(path.join(appDir, 'pnpm-workspace.yaml'))) {
+  if (
+    fs.existsSync(path.join(appDir, 'pnpm-lock.yaml')) ||
+    fs.existsSync(path.join(appDir, 'pnpm-workspace.yaml'))
+  ) {
     return 'pnpm'
   }
   if (fs.existsSync(path.join(appDir, 'yarn.lock'))) return 'yarn'

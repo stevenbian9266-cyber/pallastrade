@@ -1,8 +1,8 @@
 import type { Category } from "@pallastrade/sdk";
-import { JsonLd } from "@/components/seo/JsonLd";
 import { CategoryNav } from "@/components/layout/CategoryNav";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { getCategories } from "@/lib/data/categories";
 import {
   buildCanonicalUrl,

@@ -13,10 +13,7 @@ export function registerBuildCommand(program: Command): void {
     .description('Rebuild the dev image (after Dockerfile / .ruby-version changes)')
     .option('--reset-bundle', 'also wipe the bundle_cache volume to re-seed gems')
     .option('--yes', 'skip confirmation prompts (for CI)')
-    .option(
-      '--production',
-      'build the production image instead',
-    )
+    .option('--production', 'build the production image instead')
     .option('--tag <tag>', 'image tag for --production (default: <project>-pallastrade:latest)')
     .action(
       async (flags: {

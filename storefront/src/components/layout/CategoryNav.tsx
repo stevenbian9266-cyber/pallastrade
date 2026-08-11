@@ -161,6 +161,3 @@ export function CategoryNav({ rootCategories, basePath }: CategoryNavProps) {
     </nav>
   );
 }
-
-
-

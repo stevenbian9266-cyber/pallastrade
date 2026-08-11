@@ -83,12 +83,16 @@ jobs:
   test-backend:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_USERNAME: postgres
+      DATABASE_PORT: "5432"
     services:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: pallastrade
-          POSTGRES_PASSWORD: password
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
         options: >-
           --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
         ports: [5432:5432]
@@ -181,6 +185,8 @@ jobs:
         with: { node-version: '22' }
       - uses: pnpm/action-setup@v4
         with: { version: 11.1.1 }
+      - name: Install root deps
+        run: npm ci
       - name: Generate storefront coverage
         run: |
           cd storefront

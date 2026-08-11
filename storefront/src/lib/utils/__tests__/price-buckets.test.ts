@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { generatePriceBuckets, findMatchingBucket } from "../price-buckets";
+import { describe, expect, it } from "vitest";
+import { findMatchingBucket, generatePriceBuckets } from "../price-buckets";
 
 describe("generatePriceBuckets", () => {
   it("creates under-50 bucket when filterMin is below the first threshold", () => {

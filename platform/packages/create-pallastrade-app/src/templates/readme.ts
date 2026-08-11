@@ -1,8 +1,4 @@
-import {
-  DEFAULT_ADMIN_EMAIL,
-  DEFAULT_ADMIN_PASSWORD,
-  STOREFRONT_PORT,
-} from '../constants.js'
+import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, STOREFRONT_PORT } from '../constants.js'
 import type { PackageManager } from '../types.js'
 import { globalAddCommand, runCommand } from '../utils.js'
 

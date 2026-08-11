@@ -129,7 +129,11 @@ export function buildBreadcrumbJsonLd(
  * https://schema.org/ItemList
  */
 export function buildCategoryItemListJsonLd(
-  products: Array<{ name: string; slug: string; thumbnail_url?: string | null }>,
+  products: Array<{
+    name: string;
+    slug: string;
+    thumbnail_url?: string | null;
+  }>,
   categoryName: string,
   canonicalUrl: string,
 ): Record<string, unknown> {

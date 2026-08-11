@@ -5,7 +5,12 @@ vi.mock("@/lib/data/categories", () => ({
   getCategories: async () => ({
     data: [
       { id: "c1", name: "Electronics", permalink: "electronics", children: [] },
-      { id: "c2", name: "Home & Garden", permalink: "home-garden", children: [] },
+      {
+        id: "c2",
+        name: "Home & Garden",
+        permalink: "home-garden",
+        children: [],
+      },
     ],
   }),
 }));

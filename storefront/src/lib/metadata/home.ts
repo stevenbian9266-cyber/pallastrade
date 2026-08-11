@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
+import { buildHreflangAlternates } from "@/lib/metadata/alternates";
 import { buildCanonicalUrl, SOCIAL_IMAGE_PATH } from "@/lib/seo";
 import {
   getStoreMetaDescription,
   getStoreSeoTitle,
   getStoreUrl,
 } from "@/lib/store";
-import { buildHreflangAlternates } from "@/lib/metadata/alternates";
 
 interface HomeMetadataParams {
   country: string;

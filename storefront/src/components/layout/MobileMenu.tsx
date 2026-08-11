@@ -1,14 +1,7 @@
 "use client";
 
 import type { Category } from "@pallastrade/sdk";
-import {
-  ArrowLeft,
-  Check,
-  ChevronRight,
-  Search,
-  User,
-  X,
-} from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, Search, User, X } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";

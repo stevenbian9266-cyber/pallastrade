@@ -25,7 +25,8 @@ export async function resolveAllCountryLocales(): Promise<CountryLocale[]> {
         seen.add(iso);
         result.push({
           country: iso,
-          locale: market.default_locale || localeOptions.locale || getDefaultLocale(),
+          locale:
+            market.default_locale || localeOptions.locale || getDefaultLocale(),
         });
       }
     }
@@ -63,10 +64,7 @@ export async function buildHreflangAlternates(
 
   for (const { country, locale } of countryLocales) {
     const hreflang = `${locale}-${country.toUpperCase()}`;
-    const url = buildCanonicalUrl(
-      storeUrl,
-      `/${country}/${locale}${path}`,
-    );
+    const url = buildCanonicalUrl(storeUrl, `/${country}/${locale}${path}`);
     alternates[hreflang] = url;
   }
 

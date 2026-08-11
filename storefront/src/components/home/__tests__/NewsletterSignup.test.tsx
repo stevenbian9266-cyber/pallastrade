@@ -11,10 +11,10 @@ vi.mock("next-intl", () => ({
 describe("NewsletterSignup", () => {
   it("renders email input and subscribe button", () => {
     render(<NewsletterSignup />);
+    expect(screen.getByPlaceholderText("newsletterPlaceholder")).toBeTruthy();
     expect(
-      screen.getByPlaceholderText("newsletterPlaceholder"),
+      screen.getByRole("button", { name: "newsletterButton" }),
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: "newsletterButton" })).toBeTruthy();
   });
 
   it("shows an error when submitting an empty email", async () => {

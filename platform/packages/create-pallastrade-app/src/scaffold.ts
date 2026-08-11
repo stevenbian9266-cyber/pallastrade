@@ -144,10 +144,7 @@ export async function scaffold(options: ScaffoldOptions): Promise<void> {
   )
   const githubDir = path.join(projectDir, '.github')
   fs.mkdirSync(githubDir, { recursive: true })
-  fs.writeFileSync(
-    path.join(githubDir, 'dependabot.yml'),
-    dependabotContent(storefrontReady),
-  )
+  fs.writeFileSync(path.join(githubDir, 'dependabot.yml'), dependabotContent(storefrontReady))
 
   // Phase 4: Initialize and start services
   if (options.start) {
@@ -173,12 +170,7 @@ export async function scaffold(options: ScaffoldOptions): Promise<void> {
       )
     }
   } else {
-    printSuccessWithoutDocker(
-      projectName,
-      storefrontReady,
-      port,
-      options.packageManager,
-    )
+    printSuccessWithoutDocker(projectName, storefrontReady, port, options.packageManager)
   }
 }
 

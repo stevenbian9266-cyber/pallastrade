@@ -31,9 +31,9 @@ describe("CategoryNav", () => {
   it("renders home, all products and root category buttons with correct links", () => {
     render(<CategoryNav rootCategories={rootCategories} basePath="/us/en" />);
 
-    expect(screen.getByRole("link", { name: "home" }).getAttribute("href")).toBe(
-      "/us/en",
-    );
+    expect(
+      screen.getByRole("link", { name: "home" }).getAttribute("href"),
+    ).toBe("/us/en");
     expect(
       screen.getByRole("link", { name: "allProducts" }).getAttribute("href"),
     ).toBe("/us/en/products");
@@ -59,7 +59,9 @@ describe("CategoryNav", () => {
 
     expect(screen.queryByRole("link", { name: "Audio" })).toBeNull();
 
-    fireEvent.mouseEnter(screen.getByRole("button", { name: "Electronics" }).closest("li")!);
+    fireEvent.mouseEnter(
+      screen.getByRole("button", { name: "Electronics" }).closest("li")!,
+    );
 
     expect(screen.getByRole("link", { name: "Audio" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Computers" })).toBeTruthy();
@@ -83,6 +85,3 @@ describe("CategoryNav", () => {
     ).toBe("/us/en/c/electronics");
   });
 });
-
-
-
