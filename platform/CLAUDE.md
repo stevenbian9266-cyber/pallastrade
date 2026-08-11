@@ -465,7 +465,7 @@ Same patterns as `@pallastrade/sdk` but for the Admin API. Supports both secret 
 
 ### @pallastrade/dashboard — Admin UI (React SPA)
 
-The PallasTrade 6.0 admin dashboard — a Vite-built React SPA that replaces the legacy Rails `pallastrade/admin` engine entirely. Tech stack: Vite, TanStack Router (file-based, type-safe), TanStack Query, React Hook Form + Zod, shadcn/ui + Base UI + Tailwind, Biome, Vitest. All API calls go through `@pallastrade/admin-sdk`. See [`packages/dashboard/README.md`](packages/dashboard/README.md) and `docs/plans/6.0-admin-spa.md` for the full architecture (auth, permissions, multi-store, extension points, the three-package split).
+The PallasTrade 6.0 admin dashboard — a Vite-built React SPA that replaces the legacy Rails `pallastrade/admin` engine entirely. Tech stack: Vite, TanStack Router (file-based, type-safe), TanStack Query, React Hook Form + Zod, shadcn/ui + Base UI + Tailwind, Biome, Vitest. All API calls go through `@pallastrade/admin-sdk`. See [`docs/plans/6.0-admin-spa.md`](docs/plans/6.0-admin-spa.md) for the full architecture (auth, permissions, multi-store, extension points, the three-package split).
 
 **Package boundary rules** (see `docs/plans/6.0-admin-spa.md` → "Package Split"):
 - `@pallastrade/dashboard-ui` — primitives + headless compounds. Components accept data via props, never import providers or hooks.

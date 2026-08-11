@@ -20,10 +20,12 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 | `platform/CLAUDE.md` | 平台规范 | 平台权威 | 涉及 platform 代码 | 平台维护者 |
 | `storefront/CLAUDE.md` | 商城规范 | 商城权威（含 Code Style/样式规范） | 涉及 storefront 代码 | 商城维护者 |
 | `ai/skills/*/SKILL.md`（25 个） | Skill | 领域知识权威 | gate 强制 + §0.2 路由 | 各领域维护者 |
+| `harness/standards/*.json` | 规范注册表 | **机器可读开发规范索引**（不复制权威正文） | Change Plan / 开发监督 / 规范覆盖率检查 | 工程负责人 |
 | `harness/policies/anti-patterns.json` | 反模式 | **反模式唯一权威**（机器执行） | CI 强制；违规检查 | 工程负责人 |
 | `harness/policies/task-rules.json` | 任务规则 | 任务规则权威 | 新功能/优化 | 工程负责人 |
 | `harness/policies/prd-categories.json` | PRD 分类 | 分类权威 | `prd new` | 工程负责人 |
-| `harness.config.mjs` | Harness 项目配置 | **引擎配置权威**（layers/gates/docImpact/coverage/profiles/syncCheck） | 引擎配置相关任务；引擎默认值见独立包 `pallastrade-harness`（`bin/config-loader.mjs`） | 工程负责人 |
+| `harness.config.mjs` | Harness 项目配置 | **引擎配置权威**（layers/gates/standards/supervisor/docImpact/coverage/profiles/syncCheck） | 引擎配置相关任务；引擎默认值见独立包 `pallastrade-harness`（`bin/config-loader.mjs`） | 工程负责人 |
+| `harness升级方案.md` | Harness 产品方案 | 下一代治理能力的已确认产品蓝图（具体规则仍以各权威文件为准） | Harness 能力规划/阶段升级 | 工程负责人 |
 | `harness/scenarios/scenarios.json` | 场景库 | Eval 权威 | 能力变更 | 工程负责人 |
 | `docs/standards/README.md` | 规范索引 | **规范文件指针权威** | 不确定规范位置时 | 工程负责人 |
 | `docs/prd/_TEMPLATE.md` | PRD 模板 | PRD 权威模板 | 一句话需求 | AI |
@@ -192,6 +194,18 @@ For tasks originating from a **one-line requirement**（一句话需求）, the 
 5. **Tests & acceptance** — every AC in the PRD must map to a test tagged `# PRD-xxx AC-x`; verify with `harness prd verify --id PRD-xxx`.
 6. **API docs** — interface changes MUST sync `backend/public/api-docs/{store,admin}.yaml` + `platform/docs/api-reference/` (verify with `generated:check`).
 7. **Knowledge sync gate** — before closing `verify-test`, run `harness sync-check --id PRD-xxx` and resolve every asset in the §7 knowledge matrix (Skill / README / Agent files / style & technical standards / anti-patterns / scenarios). Record conclusions in PRD §9/§10.
+
+### 🔎 Step 4: Development Supervisor（Harness 0.4+）
+
+For feature / refactor / security tasks, use the machine-readable registry as a second control loop around implementation:
+
+1. Before implementation, run `harness supervise plan --task "<task>" --allow <glob...>` to persist the allowed scope, risk, applicable standards, and required evidence.
+2. During implementation and before commit, run `harness supervise diff --base <base> --plan <plan-path>`.
+3. `assist` reports only; `guard` blocks error/critical findings; `strict` also blocks review-required findings. PallasTrade uses `guard`.
+4. Every finding must include `standardId + file + line + risk + recommendation + confidence`; do not accept an untraceable prose-only judgment.
+5. The supervisor complements `gate`, tests, anti-pattern scans, `sync-check`, and `doc-impact`; it does not replace them.
+
+Gate phases are `preparation → implementation → verification → finished`: clearing preparation authorizes edits, while `verify-test` stays pending until objective evidence exists.
 
 ---
 

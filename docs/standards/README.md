@@ -16,9 +16,11 @@
 | **样式/视觉规范** | `storefront/CLAUDE.md` §Code Style、`ai/skills/pallastrade-storefront/SKILL.md` Style Guide 章节、`ai/skills/pallastrade-admin/SKILL.md` Styling 章节、Tailwind 配置/设计 token | UI 一致性、AP-001（禁内联样式）、AP-006（禁硬编码色值） |
 | **Logo 使用规范** | `docs/standards/logo.md` | Logo 源文件、各使用位置（Header/结算/邮件/og/favicon/admin）的格式与尺寸要求 |
 | **Harness 独立化路线图** | `docs/standards/harness-standalone-roadmap.md` | harness 引擎解耦/开源/冷启动/渐进/自学习 + 自有项目提效的权威方案（已批准 v2） |
+| **Harness 下一代升级蓝图** | `harness升级方案.md` | 面向独立开发者的 AI 原生工程操作系统定位，以及 Project Brain、Task Orchestrator、Risk Engine、Standards Registry、Development Supervisor、Evidence System、Knowledge Loop 的阶段方案；具体执行规则仍以本索引登记的权威文件为准 |
 | **领域技术规范** | `ai/skills/*/SKILL.md`（24 个） | 各领域约定：API v3（前缀 ID/分页/scope）、数据模型、事件、支付、i18n 等 |
 | **API 接口规范** | `backend/public/api-docs/{store,admin}.yaml` + `platform/docs/api-reference/` | OpenAPI：端点、参数、响应包络、错误 |
 | **反模式库** | `harness/policies/anti-patterns.json` | AP-001~AP-009（CI 强制） |
+| **机器可读开发规范注册表** | `harness/standards/pallastrade.json` | 将架构、技术选型、代码质量、数据库、API、安全、样式、交互、测试和知识同步规范映射到权威文件、作用域、执行等级、证据与修复建议；权威正文仍在本索引指向的文件中 |
 | **任务规则** | `harness/policies/task-rules.json` | TR-001~（AI 执行规则） |
 | **PRD 分类规则** | `harness/policies/prd-categories.json` | PRD 自动分类关键词 |
 | **评估场景库** | `harness/scenarios/scenarios.json` | GS-xxx Eval 场景（AI 行为验证） |

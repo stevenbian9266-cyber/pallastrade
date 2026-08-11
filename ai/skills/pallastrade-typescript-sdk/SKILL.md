@@ -604,6 +604,6 @@ function useCreateCart() {
 ## Where to read further
 
 - **Store SDK source:** `packages/sdk/src/store-client.ts` — every resource and its methods.
-- **Admin SDK source:** `packages/admin-sdk/src/admin-client.ts`.
+- **Admin SDK source status:** the Developer Preview package is described by this Skill, but the former `admin-sdk` package directory is not present under `platform/packages` in the current repository checkout. Do not invent or edit a local source path; verify the released package/current integration branch before proposing source changes.
 - **API protocol details:** see the `pallastrade-api-v3` skill — auth, prefixed IDs, pagination, envelope.
 - **Webhooks delivery side:** see the `pallastrade-events-webhooks` skill — endpoint config, retry logic, payload shape.

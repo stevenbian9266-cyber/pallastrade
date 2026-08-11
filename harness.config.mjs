@@ -69,7 +69,46 @@ export default {
     antiPatterns: 'harness/policies/anti-patterns.json',
   },
 
-  // ⑥ eval / scenarios
+  // ⑥ 项目级规范注册表与开发监督器（通用规则由独立包内置）
+  standards: {
+    includeBundled: true,
+    sources: ['harness/standards/**/*.json'],
+  },
+
+  supervisor: {
+    mode: 'guard',
+    plansDir: '.harness-cache/plans',
+    generatedFiles: [
+      'backend/db/schema.rb',
+      'backend/Gemfile.lock',
+      '**/package-lock.json',
+    ],
+    protectedFiles: [],
+    dependencyFiles: [
+      'package.json',
+      'backend/Gemfile',
+      'storefront/package.json',
+      'platform/**/package.json',
+    ],
+    complexity: {
+      maxDecisionPoints: 12,
+      duplicateBlockLines: 6,
+    },
+    boundaries: [
+      {
+        id: 'storefront-does-not-import-backend',
+        from: 'storefront/src/**/*.{js,jsx,ts,tsx}',
+        denyImports: ['backend/**', '../backend/**', '../../backend/**'],
+      },
+      {
+        id: 'platform-does-not-import-backend',
+        from: 'platform/packages/**/*.{js,jsx,ts,tsx}',
+        denyImports: ['backend/**', '../backend/**', '../../backend/**'],
+      },
+    ],
+  },
+
+  // ⑦ eval / scenarios
   scenarios: 'harness/scenarios/scenarios.json',
 
   // ⑦ check profiles（原 harness/config.json 搬入）

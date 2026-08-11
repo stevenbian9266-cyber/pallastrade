@@ -64,10 +64,12 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 1. `npx harness gate --task "<PRD 标题>"`（前缀自动判定类型）
 2. 依据 PRD 生成 REQ：`harness/requirements/REQ-{YYYYMMDD}-{slug}.md`（用 `_TEMPLATE.md`），回填关联 PRD
 3. 清除 gate checks（6 层搜索 / skill 读取 / create-req-doc / req-doc-has-skill-table / user-confirmed）
-4. 实施（按 PRD FR 逐个实现）：
+4. Harness 0.4+：运行 `harness supervise plan --task "<PRD 标题>" --allow <glob...>`，固化 Change Plan、风险、适用规范与证据需求
+5. 实施（按 PRD FR 逐个实现）：
    - 新功能 → 创建测试文件（见 §5）
    - 优化迭代 → 升级测试 + 更新 PRD §8/§10
    - 接口变更 → 同步 API 文档（见 §6）
+6. 实施中和提交前运行 `harness supervise diff --base <base> --plan <plan-path>`；PallasTrade `guard` 模式下阻断 error/critical，所有 finding 必须可追溯到 Standard ID 和源码位置
 
 ## 5. 测试与验收机制
 
@@ -91,7 +93,7 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 
 - 按改动类型跑最小验证（见 AGENTS.md §6 表格：Ruby→quick check、TS/TSX→pnpm build/lint、UI→截图/DOM、后端→Rails log）
 - 证据必须客观（截图/日志/DB 查询），"no test needed" 是极少数例外
-- 清除 `verify-test`（附证据）→ PRD 状态 `verifying` → `done`
+- preparation checks 清除后即可进入 implementation；`verify-test` 始终留在 verification 阶段，附证据清除后 gate 才进入 `finished`，PRD 状态 `verifying` → `done`
 
 ## 8. 阶段 4：知识同步门（收尾）
 

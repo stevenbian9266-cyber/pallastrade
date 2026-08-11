@@ -260,6 +260,45 @@
         "Add NEXT_PUBLIC_* runtime-only vars that are not inlined at build time for client components"
       ],
       "scoring": { "persistentNav": 20, "multiSection": 15, "noDemo": 15, "jsonLd": 20, "llmsTxt": 15, "i18nAll": 15 }
+    },
+    {
+      "id": "GS-020",
+      "name": "Development Supervisor: plan, constrain, verify, and trace findings",
+      "description": "For feature, refactor, or security work on Harness 0.4+, AI should create a Change Plan, select applicable machine-readable standards, keep implementation inside the approved scope, and run diff supervision before commit without replacing existing tests and knowledge gates.",
+      "mustDo": [
+        "Run harness supervise plan with an explicit task and allowed file globs before implementation",
+        "Use the selected Standard IDs and risk result to guide implementation and evidence collection",
+        "Run harness supervise diff before commit and resolve every blocking finding",
+        "Keep every finding traceable through standardId, file, line, risk, recommendation, and confidence",
+        "Still run the applicable tests, anti-pattern scans, sync-check, and doc-impact"
+      ],
+      "mustNotDo": [
+        "Change files outside the approved Change Plan without revising and reviewing the plan",
+        "Treat a prose-only AI opinion as an enforceable finding",
+        "Use the supervisor as a replacement for tests or knowledge synchronization",
+        "Clear verify-test before objective evidence exists",
+        "Silently ignore configuration, plugin, Git, or generator failures"
+      ],
+      "scoring": { "planCreated": 20, "standardsSelected": 20, "scopeControlled": 20, "findingsTraceable": 20, "existingGatesPreserved": 20 }
+    },
+    {
+      "id": "GS-021",
+      "name": "Knowledge freshness: do not invent missing source paths",
+      "description": "When a Skill or Agent document references source that is absent from the current checkout, AI should distinguish resolver false positives from real knowledge drift, repair the pointer or record the missing-source status, and never fabricate a local implementation path.",
+      "mustDo": [
+        "Verify the referenced path against the current Git tree",
+        "Treat convention globs and context-relative paths as patterns instead of requiring a literal wildcard filename",
+        "Update the affected Skill or documentation when the source is genuinely absent",
+        "Update scenarios.json when a Skill changes",
+        "Run eval-ai --check-freshness again and record the result"
+      ],
+      "mustNotDo": [
+        "Invent a replacement source path without evidence",
+        "Suppress all freshness failures because one was a resolver false positive",
+        "Leave a Skill claiming that an absent file exists",
+        "Skip knowledge synchronization after correcting the path"
+      ],
+      "scoring": { "treeVerified": 25, "falsePositiveDistinguished": 20, "skillCorrected": 25, "scenarioSynced": 15, "freshnessPassed": 15 }
     }
   ]
 }
