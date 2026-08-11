@@ -108,6 +108,16 @@ module PallasTrade
         @providers.key?(key.to_sym)
       end
 
+      # Resolve the Integration STI class for a registered provider key.
+      # 反射（constantize）集中在此处，避免 controller 对参数派生值直接反射
+      #（Brakeman UnsafeReflection）。调用方必须先 `registered?`/`[]` 校验 key。
+      # @param key [Symbol, String] registered provider key
+      # @return [Class, nil]
+      def integration_class_for(key)
+        entry = @providers[key.to_sym]
+        entry&.integration_class&.safe_constantize
+      end
+
       # Get the list of allowed provider keys for API validation.
       def allowed_keys
         @providers.keys.map(&:to_s)
