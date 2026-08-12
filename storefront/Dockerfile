@@ -73,6 +73,13 @@ ARG NEXT_PUBLIC_TAWK_TO_WIDGET_ID
 ENV NEXT_PUBLIC_TAWK_TO_PROPERTY_ID=$NEXT_PUBLIC_TAWK_TO_PROPERTY_ID \
     NEXT_PUBLIC_TAWK_TO_WIDGET_ID=$NEXT_PUBLIC_TAWK_TO_WIDGET_ID
 
+# Optional Cloudflare Turnstile human verification (PRD-20260812). The widget
+# is a client component reading NEXT_PUBLIC_* env — inlined into the bundle at
+# build time, so it MUST be passed here as a build arg. The site key is PUBLIC
+# (not a secret). Empty = widget disabled.
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
+ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
+
 # Optional Sentry release/source-map upload. When SENTRY_DSN is empty,
 # next.config.ts skips withSentryConfig entirely, so the build still works.
 # SENTRY_AUTH_TOKEN is intentionally not declared as ARG/ENV — it's mounted
