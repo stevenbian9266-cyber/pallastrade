@@ -1,6 +1,32 @@
 import { type Client, createClient } from "@pallastrade/sdk";
 import type { PallasTradeNextConfig } from "./types";
 
+/**
+ * 单次 Store API 请求超时（毫秒）。
+ *
+ * 背景（修复：storefront API 请求缺超时导致预渲染挂起/构建失败）：
+ * SDK 对 GET 网络错误默认指数退避重试（maxRetries=2），且 fetch 本身无超时。
+ * 当 API 不可达（如部署/重建期间、DNS/网络故障），单个请求可挂起数分钟，
+ * 导致 Next.js 预渲染 "use cache" 缓存填充超时（USE_CACHE_TIMEOUT）→ 构建失败、
+ * SSR 长时间阻塞。此处为每次请求注入 AbortSignal.timeout，快速失败并走上层降级。
+ */
+const API_FETCH_TIMEOUT_MS = 8_000;
+
+/**
+ * 包装 fetch，为每次请求附加 AbortSignal.timeout 超时。
+ * SDK 调用 fetch 时不传 signal，因此这里注入的 signal 不会被覆盖。
+ */
+export function createFetchWithTimeout(
+  timeoutMs: number = API_FETCH_TIMEOUT_MS,
+  fetchFn: typeof fetch = fetch,
+): typeof fetch {
+  return (input, init) =>
+    fetchFn(input, {
+      ...init,
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+}
+
 let _client: Client | null = null;
 let _config: PallasTradeNextConfig | null = null;
 
@@ -14,6 +40,7 @@ export function initPallasTradeNext(config: PallasTradeNextConfig): void {
   _client = createClient({
     baseUrl: config.baseUrl,
     publishableKey: config.publishableKey,
+    fetch: createFetchWithTimeout(),
   });
 }
 

@@ -62,6 +62,16 @@ The SDK includes:
 - Ransack query param transformation
 - Webhook signature verification in `@pallastrade/sdk/webhooks`
 
+> **Request timeout（修复：storefront API 请求缺超时导致预渲染挂起/构建失败）**：
+> The SDK's fetch has **no built-in timeout** and retries GET network errors (maxRetries=2,
+> exponential backoff). When the API is unreachable (deployment/rebuild window, DNS/network
+> fault), a single request can hang for minutes — Next.js prerender "use cache" cache-fill
+> then times out (`USE_CACHE_TIMEOUT`) and the **build fails**. `lib/pallastrade/config.ts`
+> therefore wraps the SDK client's `fetch` with `createFetchWithTimeout()` (8s
+> `AbortSignal.timeout`), so every API call fails fast and bubbles to the existing
+> `.catch(() => …)` degradation instead of hanging. Keep this timeout when touching
+> `getClient()`/`initPallasTradeNext()`.
+
 ## Authentication modes
 
 | Who | How | Use for |
