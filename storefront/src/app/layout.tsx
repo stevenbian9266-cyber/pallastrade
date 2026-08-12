@@ -1,14 +1,11 @@
-import { GoogleTagManager } from "@next/third-parties/google";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { Suspense } from "react";
-import { TawkToWidget } from "@/components/layout/TawkToWidget";
+import { GatedScripts } from "@/components/cookie/GatedScripts";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { getStoreDescription, getStoreName } from "@/lib/store";
 
-const gtmId = process.env.GTM_ID;
 const pallastradeApiOrigin = (() => {
   try {
     return process.env.PALLASTRADE_API_URL
@@ -50,19 +47,15 @@ export default function RootLayout({
           </>
         )}
       </head>
-      {gtmId && <GoogleTagManager gtmId={gtmId} />}
       <body
         className={`${geist.variable} antialiased min-h-screen flex flex-col`}
       >
-        <Suspense fallback={null}>{children}</Suspense>
-        <TawkToWidget />
-        {process.env.NODE_ENV === "production" &&
-          process.env.NEXT_PUBLIC_VERCEL_ANALYTICS === "true" && (
-            <>
-              <Analytics />
-              <SpeedInsights />
-            </>
-          )}
+        <CookieConsentProvider>
+          <Suspense fallback={null}>{children}</Suspense>
+          {/* GTM / Vercel Analytics / Speed Insights / Tawk.to — gated by
+              the visitor's cookie consent (# PRD-20260812-storefront-cookie). */}
+          <GatedScripts />
+        </CookieConsentProvider>
       </body>
     </html>
   );

@@ -146,6 +146,40 @@ Key components:
 - `TawkToWidget` (`components/layout/TawkToWidget.tsx`) — optional Tawk.to live-chat widget, mounted in the root layout `<body>`. Enabled only when BOTH `NEXT_PUBLIC_TAWK_TO_PROPERTY_ID` and `NEXT_PUBLIC_TAWK_TO_WIDGET_ID` are set (public IDs, like publishable keys — safe for `NEXT_PUBLIC_`); loads via `next/script` `afterInteractive` so it never blocks first paint. Renders `null` (no third-party script) when either var is missing.
 - `TurnstileWidget` (`components/auth/TurnstileWidget.tsx`) — optional Cloudflare Turnstile human-verification widget, used on the registration form (`account/register/page.tsx`). Enabled only when `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is set (the site key is PUBLIC — it is not a secret); loads the script from the **exact official URL** `https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit` (explicit rendering — the path MUST include `/v0/`, omitting it returns 404 + `Cross-Origin-Resource-Policy: same-origin` which blocks loading) and reports the `cf-turnstile-response` token through `onTokenChange`. **The component ALWAYS renders a visible wrapper** (border + status area) with loading → ready/error states; if the script fails to load (network/region blocking) it shows an error message + retry button (retry reloads the script with a native `<script>` tag so next/script dedup can't swallow it). Labels are passed via the `labels` prop (i18n lives in the parent). The page must gate submission on the token when the widget is enabled; the backend validates the token server-side via `PallasTrade::Api::Turnstile` (secret key only from `ENV['TURNSTILE_SECRET_KEY']`, never committed).
 
+### Cookie consent (2026-08, PRD-20260812)
+
+The storefront has a GDPR/CCPA-style cookie consent system. Consent is stored in a
+plain-JS-readable cookie `pallastrade_cookie_consent` (JSON: `necessary` + `functional`
+/ `analytics` / `marketing` booleans + `version` + `updatedAt`). Categories and the
+cookie name are defined in `lib/constants/cookies.ts`; pure parse/serialize helpers
+and the `document.cookie` read/write layer live in `lib/cookie-consent.ts`
+(unit-testable without a DOM). Key pieces:
+
+- `CookieConsentProvider` (`contexts/CookieConsentContext.tsx`) — client provider in the
+  **root layout**; reads the consent cookie in an effect. It exposes `acceptAll` /
+  `rejectAll` / `savePreferences`. **Do NOT put "client mounted" state in the provider** —
+  it crosses streaming boundaries and causes React hydration mismatches. Each consumer
+  keeps its own local `useState`+`useEffect` `mounted` flag in the same component that
+  conditionally renders.
+- `CookieBanner` (`components/cookie/CookieBanner.tsx`) — first-visit banner (Accept all /
+  Necessary only / Customize). Renders `null` until mounted AND undecided, so returning
+  visitors never see a flash. Mounted in `app/[country]/[locale]/layout.tsx`.
+- `CookieSettings` (`components/cookie/CookieSettings.tsx`) — the shared category toggle
+  panel (used by the banner's "Customize" and the standalone settings page). Necessary is
+  always enabled and disabled.
+- `Cookie settings page` (`app/[country]/[locale]/(storefront)/cookies/page.tsx`) — server
+  component route with `cookie` i18n metadata; footer links to it (`footer.cookieSettings`).
+- `GatedScripts` (`components/cookie/GatedScripts.tsx`) — client gate in the **root layout**
+  that mounts third-party scripts only after consent: GTM (`NEXT_PUBLIC_GTM_ID`,
+  analytics), Vercel Analytics / Speed Insights (`NEXT_PUBLIC_VERCEL_ANALYTICS` +
+  `NODE_ENV=production`, analytics), Tawk.to (marketing). Loads nothing before consent.
+- Sentry client reporting (`instrumentation-client.ts`) is gated per-event via
+  `beforeSend` / `beforeSendTransaction` checking `readConsentFromDocument()?.analytics`.
+
+Necessary cookies (cart token, auth JWT, locale/country, the consent cookie itself) are
+never gated. All banner/settings copy lives in the `cookie` i18n namespace across all
+5 locale files.
+
 ### Home page sections (2026-08 redesign, PRD-20260810)
 
 The home page (`app/[country]/[locale]/(storefront)/page.tsx`) composes 7 sections in `components/home/`:

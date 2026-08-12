@@ -55,7 +55,30 @@
     "policies": "Politiques",
     "poweredBy": "Propulse par",
     "copyright": "© {year} {storeName}. Propulsé par PallasTrade.",
-    "contact": "Contact"
+    "contact": "Contact",
+    "cookieSettings": "Paramètres des cookies"
+  },
+  "cookie": {
+    "bannerTitle": "Nous respectons votre vie privée",
+    "bannerDescription": "Nous utilisons des cookies pour améliorer votre expérience de navigation, proposer un contenu personnalisé et analyser notre trafic. Vous pouvez choisir les catégories à autoriser.",
+    "acceptAll": "Tout accepter",
+    "necessaryOnly": "Uniquement nécessaires",
+    "customize": "Personnaliser",
+    "back": "Retour",
+    "settingsTitle": "Paramètres des cookies",
+    "settingsDescription": "Gérez l'utilisation des cookies sur ce site. Les cookies strictement nécessaires sont toujours activés : ils sont requis pour le fonctionnement du site.",
+    "savePreferences": "Enregistrer les préférences",
+    "saved": "Préférences enregistrées",
+    "categories": {
+      "necessary": "Strictement nécessaires",
+      "necessaryDescription": "Nécessaires au fonctionnement du site : panier, connexion et sécurité.",
+      "functional": "Fonctionnels",
+      "functionalDescription": "Mémorisent vos préférences, comme le pays et la langue.",
+      "analytics": "Analyse",
+      "analyticsDescription": "Nous aident à comprendre comment les visiteurs utilisent le site (analyse et suivi des erreurs).",
+      "marketing": "Marketing",
+      "marketingDescription": "Utilisés pour afficher des offres pertinentes et le support par chat en direct."
+    }
   },
   "home": {
     "welcome": "{storeName} Storefront",

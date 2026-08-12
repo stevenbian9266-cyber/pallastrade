@@ -265,10 +265,10 @@ Meilisearch index wasn't built. Run `bundle exec rake pallastrade:search:reindex
 本项目（pallastrade 仓库）部署在阿里云 ECS `115.29.185.128`，dev/prod 两个 Docker 栈。**唯一权威说明：`deploy/README.md`**（仓库根）。关键机制：
 
 - **单栈策略**：2C/3.5G 服务器不能双栈并行（OOM），任一时刻只跑一栈；**默认态 dev 运行、prod 停止**。
-- **任务结束标准流程**：本地验证 → 本地构建 storefront 镜像（`NEXT_PUBLIC_*` 构建时内联，必须传 tawk ID build-arg；服务器不跑 next build）→ save/scp/load → 部署 dev → 部署 prod（`deploy.sh prod` 自动停 dev）→ **最终启动 dev、关闭 prod**。
+- **任务结束标准流程**：本地验证 → 本地构建 storefront 镜像（`NEXT_PUBLIC_*` 构建时内联，必须传 tawk ID、GTM ID 等 build-arg（`NEXT_PUBLIC_GTM_ID`，见 PRD-20260812 cookie consent）；服务器不跑 next build）→ save/scp/load → 部署 dev → 部署 prod（`deploy.sh prod` 自动停 dev）→ **最终启动 dev、关闭 prod**。
 - 脚本：`deploy/prod.sh` / `dev.sh`（up/down/status）、`deploy/deploy.sh dev|prod`（全量）。
 - dev/prod **数据库独立**，示例数据需分别创建。
-- CI：`deploy.yml` 监听 `[main, dev]`，runner 构建镜像后由服务器 `deploy.sh` 部署；tawk ID 走仓库 Actions Variables（公开，非 Secrets）。
+- CI：`deploy.yml` 监听 `[main, dev]`，runner 构建镜像后由服务器 `deploy.sh` 部署；tawk/GTM ID 走仓库 Actions Variables（公开，非 Secrets）。
 
 ## Where to read further
 

@@ -242,6 +242,28 @@
       "scoring": { "envGated": 30, "asyncLoad": 20, "rootMount": 15, "tests": 20, "docs": 15 }
     },
     {
+      "id": "GS-025",
+      "name": "Storefront cookie consent: banner + settings page + third-party gating",
+      "description": "When adding cookie consent (GDPR/CCPA) to the storefront, provide a first-visit consent banner (Accept all / Necessary only / Customize), a standalone /cookies settings page, a plain-JS-readable consent cookie (pallastrade_cookie_consent), and gate all third-party scripts (GTM, Vercel Analytics, Speed Insights, Tawk.to, Sentry client) behind the visitor's category choices while never gating necessary cookies (cart/auth/locale)",
+      "mustDo": [
+        "Show the banner only on first visit (no consent cookie) and never flash it for returning visitors",
+        "Persist consent in a plain-JS-readable cookie (categories + version + timestamp); the consent cookie itself is necessary",
+        "Provide a standalone cookie settings page reachable from the footer, with necessary always enabled and non-toggleable",
+        "Gate third-party scripts by category (analytics: GTM/Vercel/Sentry; marketing: Tawk.to) and load nothing before consent is known",
+        "Keep client-mounted state local to the component that conditionally renders (never cross streaming boundaries — avoids React hydration mismatches)",
+        "Add unit tests for parse/serialize, context actions, banner render/buttons, settings toggles, and script gating",
+        "Sync all new i18n keys across every supported locale file"
+      ],
+      "mustNotDo": [
+        "Gate necessary cookies (cart token, auth JWT, locale/country) behind consent",
+        "Load third-party scripts before the visitor decides (SSR/first paint must be script-free)",
+        "Put a provider-level 'mounted' flag that changes the tree across Suspense/streaming segments",
+        "Hardcode the consent cookie name or categories in multiple places (single constants module)",
+        "Store the consent cookie with SameSite=None or without an expiry"
+      ],
+      "scoring": { "bannerFirstVisit": 15, "consentCookie": 15, "settingsPage": 15, "scriptGating": 20, "noHydrationMismatch": 15, "tests": 10, "i18nAll": 10 }
+    },
+    {
       "id": "GS-019",
       "name": "Storefront redesign: persistent category nav + GEO-friendly home",
       "description": "When redesigning the storefront home, add a persistent desktop category nav (mobile drawer stays), compose multi-section home (hero/categories/featured/promo/trust/brand story/FAQ/newsletter), remove all demo-only href='#' links, keep exactly one h1, and strengthen GEO: WebSite+SearchAction JSON-LD, FAQPage JSON-LD matching visible FAQ, and /llms.txt",

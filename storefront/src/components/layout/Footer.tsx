@@ -134,6 +134,15 @@ export async function Footer({
                   </Link>
                 </li>
               ))}
+              {/* Cookie preferences page (# PRD-20260812-storefront-cookie). */}
+              <li>
+                <Link
+                  href={`${basePath}/cookies`}
+                  className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
+                >
+                  {t("cookieSettings")}
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

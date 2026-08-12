@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import { CookieBanner } from "@/components/cookie/CookieBanner";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -100,6 +101,8 @@ export default async function CountryLocaleLayout({
             {children}
             <CartDrawer />
             <Toaster />
+            {/* Cookie consent banner — first-visit only (# PRD-20260812-storefront-cookie). */}
+            <CookieBanner />
           </CartProvider>
         </AuthProvider>
       </StoreProvider>

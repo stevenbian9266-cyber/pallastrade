@@ -42,10 +42,11 @@
      --build-arg PALLASTRADE_PUBLISHABLE_KEY=<本地key> `
      --build-arg NEXT_PUBLIC_TAWK_TO_PROPERTY_ID=6a32b7a845840f1d49424bd9 `
      --build-arg NEXT_PUBLIC_TAWK_TO_WIDGET_ID=1jrb1qrcu `
+     --build-arg NEXT_PUBLIC_GTM_ID=<GTM-ID，可选> `
      -t pallastrade-{dev|prod}-storefront:latest .
    ```
 
-   > `NEXT_PUBLIC_*` 在构建时内联进 bundle，必须作为 build-arg 传入；tawk.to 两个 ID 必须带。
+   > `NEXT_PUBLIC_*` 在构建时内联进 bundle，必须作为 build-arg 传入；tawk.to 两个 ID 必须带。GTM ID（`NEXT_PUBLIC_GTM_ID`）为可选的公开 ID，供 cookie consent 门控加载（PRD-20260812）。
 
 3. **部署 dev**：
    - `docker save` → `tar -czf` → `scp` 到服务器 `/tmp/` → `gunzip | tar -xf` → `docker load`
