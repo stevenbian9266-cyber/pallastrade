@@ -254,6 +254,11 @@ export default function RegisterPage() {
                   setTurnstileToken(token);
                   if (token) setTurnstileError(false);
                 }}
+                labels={{
+                  loading: t("turnstileLoading"),
+                  loadFailed: t("turnstileLoadFailed"),
+                  retry: t("turnstileRetry"),
+                }}
               />
             )}
             {turnstileEnabled && turnstileError && (
