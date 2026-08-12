@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { PolicyConsent } from "@/components/policy/PolicyConsent";
+import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +42,11 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [policyConsent, setPolicyConsent] = useState(false);
   const [policyError, setPolicyError] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileError, setTurnstileError] = useState(false);
+  const turnstileEnabled = Boolean(
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+  );
 
   // Redirect if already authenticated
   // useEffect is needed here to prevent rendering issues.
@@ -77,6 +83,12 @@ export default function RegisterPage() {
       return;
     }
 
+    if (turnstileEnabled && !turnstileToken) {
+      setTurnstileError(true);
+      setError(t("turnstileRequired"));
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -86,6 +98,7 @@ export default function RegisterPage() {
         password_confirmation: passwordConfirmation,
         ...(firstName && { first_name: firstName }),
         ...(lastName && { last_name: lastName }),
+        ...(turnstileToken && { turnstile_token: turnstileToken }),
       });
       if (result.success) {
         router.push(`${basePath}/account`);
@@ -234,6 +247,18 @@ export default function RegisterPage() {
               }}
               error={policyError}
             />
+
+            {turnstileEnabled && (
+              <TurnstileWidget
+                onTokenChange={(token) => {
+                  setTurnstileToken(token);
+                  if (token) setTurnstileError(false);
+                }}
+              />
+            )}
+            {turnstileEnabled && turnstileError && (
+              <p className="text-sm text-destructive">{t("turnstileRequired")}</p>
+            )}
 
             <div className="w-full">
               <Button

@@ -74,7 +74,10 @@ module PallasTrade
 
           # General errors
           processing_error: 'processing_error',
-          invalid_request: 'invalid_request'
+          invalid_request: 'invalid_request',
+
+          # Human verification (Turnstile) errors
+          turnstile_verification_failed: 'turnstile_verification_failed'
         }.freeze
 
         included do

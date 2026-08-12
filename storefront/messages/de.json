@@ -355,6 +355,7 @@
     "passwordsDontMatch": "Passwörter stimmen nicht überein",
     "passwordTooShort": "Das Passwort muss mindestens 6 Zeichen lang sein",
     "registrationFailed": "Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "turnstileRequired": "Bitte schließen Sie die Mensch-zu-Mensch-Verifizierung ab, um fortzufahren.",
     "alreadyHaveAccount": "Haben Sie bereits ein Konto?",
     "signIn": "Anmelden",
     "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",

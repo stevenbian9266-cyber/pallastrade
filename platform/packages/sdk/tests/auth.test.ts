@@ -77,6 +77,29 @@ describe('auth', () => {
       expect(capturedBody.metadata).toEqual({ source: 'storefront' })
     })
 
+    it('sends the turnstile_token for human verification', async () => {
+      let capturedBody: Record<string, unknown> = {}
+      server.use(
+        http.post(`${API_PREFIX}/customers`, async ({ request }) => {
+          capturedBody = (await request.json()) as Record<string, unknown>
+          return HttpResponse.json({
+            token: 'test-jwt-token',
+            user: { id: 'user_1', email: 'new@example.com', first_name: null, last_name: null },
+          })
+        }),
+      )
+
+      const client = createTestClient()
+      await client.customers.create({
+        email: 'new@example.com',
+        password: 'password123',
+        password_confirmation: 'password123',
+        turnstile_token: 'cf-token-123',
+      })
+
+      expect(capturedBody.turnstile_token).toBe('cf-token-123')
+    })
+
     it('throws PallasTradeError on validation failure', async () => {
       server.use(
         http.post(`${API_PREFIX}/customers`, () =>

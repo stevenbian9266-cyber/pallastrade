@@ -151,6 +151,8 @@ export async function register(params: {
   password_confirmation: string;
   first_name?: string;
   last_name?: string;
+  /** Cloudflare Turnstile human-verification token (when the widget is enabled). */
+  turnstile_token?: string;
 }): Promise<{
   success: boolean;
   user?: {

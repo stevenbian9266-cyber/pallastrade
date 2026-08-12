@@ -295,6 +295,25 @@ describe("customer server actions", () => {
       });
       expect(result).toEqual({ success: true, user: mockUser });
     });
+
+    it("passes through the turnstile token", async () => {
+      mockClient.customers.create.mockResolvedValue({
+        token: "jwt",
+        refresh_token: "rt",
+        user: mockUser,
+      });
+
+      await register({
+        email: "test@example.com",
+        password: "pass",
+        password_confirmation: "pass",
+        turnstile_token: "cf-token-123",
+      });
+
+      expect(mockClient.customers.create).toHaveBeenCalledWith(
+        expect.objectContaining({ turnstile_token: "cf-token-123" }),
+      );
+    });
   });
 
   describe("logout", () => {

@@ -137,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password_confirmation: string;
       first_name?: string;
       last_name?: string;
+      turnstile_token?: string;
     }) => {
       const result = await registerAction(params);
       if (result.success && result.user) {

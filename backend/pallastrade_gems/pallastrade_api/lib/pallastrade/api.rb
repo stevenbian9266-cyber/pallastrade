@@ -58,3 +58,4 @@ module PallasTrade
 end
 
 require 'pallastrade/api/engine'
+require 'pallastrade/api/turnstile'

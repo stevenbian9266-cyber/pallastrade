@@ -355,6 +355,7 @@
     "passwordsDontMatch": "Las contrasenas no coinciden",
     "passwordTooShort": "La contrasena debe tener al menos 6 caracteres",
     "registrationFailed": "Error en el registro. Por favor, intenta de nuevo.",
+    "turnstileRequired": "Completa la verificación humana para continuar.",
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
     "signIn": "Iniciar sesion",
     "unexpectedError": "Ocurrio un error inesperado. Por favor, intenta de nuevo.",

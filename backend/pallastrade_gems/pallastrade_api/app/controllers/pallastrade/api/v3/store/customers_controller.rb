@@ -11,6 +11,14 @@ module PallasTrade
 
           # POST /api/v3/store/customers
           def create
+            unless turnstile_verified?
+              return render_error(
+                code: ErrorHandler::ERROR_CODES[:turnstile_verification_failed],
+                message: PallasTrade.t(:turnstile_verification_failed, scope: :api),
+                status: :unprocessable_content
+              )
+            end
+
             user = PallasTrade.user_class.new(permitted_params.except(:current_password))
 
             if user.save
@@ -76,6 +84,19 @@ module PallasTrade
           end
 
           private
+
+          # When TURNSTILE_SECRET_KEY is configured the registration is gated on a
+          # successful Cloudflare Turnstile verification (fail-closed). When it is
+          # not configured (e.g. local development) verification is skipped so the
+          # flow stays usable — the secret never lives in the repo.
+          def turnstile_verified?
+            return true unless PallasTrade::Api::Turnstile.configured?
+
+            PallasTrade::Api::Turnstile.verify(
+              params[:turnstile_token].to_s,
+              remote_ip: request.remote_ip
+            )
+          end
 
           def sensitive_update?
             (params[:email].present? && params[:email] != current_user.email) ||

@@ -355,6 +355,7 @@
     "passwordsDontMatch": "Passwords do not match",
     "passwordTooShort": "Password must be at least 6 characters",
     "registrationFailed": "Registration failed. Please try again.",
+    "turnstileRequired": "Please complete the human verification to continue.",
     "alreadyHaveAccount": "Already have an account?",
     "signIn": "Sign in",
     "unexpectedError": "An unexpected error occurred. Please try again.",

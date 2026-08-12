@@ -355,6 +355,7 @@
     "passwordsDontMatch": "Les mots de passe ne correspondent pas",
     "passwordTooShort": "Le mot de passe doit contenir au moins 6 caracteres",
     "registrationFailed": "Echec de l'inscription. Veuillez reessayer.",
+    "turnstileRequired": "Veuillez terminer la vérification humaine pour continuer.",
     "alreadyHaveAccount": "Vous avez deja un compte ?",
     "signIn": "Se connecter",
     "unexpectedError": "Une erreur inattendue est survenue. Veuillez reessayer.",

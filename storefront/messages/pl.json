@@ -355,6 +355,7 @@
     "passwordsDontMatch": "Hasła nie są takie same",
     "passwordTooShort": "Hasło musi mieć co najmniej 6 znaków",
     "registrationFailed": "Rejestracja nie powiodła się. Spróbuj ponownie.",
+    "turnstileRequired": "Ukończ weryfikację człowieka, aby kontynuować.",
     "alreadyHaveAccount": "Masz już konto?",
     "signIn": "Zaloguj się",
     "unexpectedError": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie.",

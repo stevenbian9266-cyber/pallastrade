@@ -7186,6 +7186,7 @@ paths:
             last_name: 'Doe',
             phone: '+1234567890',
             accepts_email_marketing: true,
+            turnstile_token: '<cf-turnstile-response>',
             metadata: { source: 'storefront' },
           })
       parameters:
@@ -7218,7 +7219,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/AuthResponse"
         '422':
-          description: email already taken
+          description: email already taken or human verification failed
           content:
             application/json:
               example:
@@ -7259,6 +7260,10 @@ paths:
                 accepts_email_marketing:
                   type: boolean
                   example: true
+                turnstile_token:
+                  type: string
+                  description: Cloudflare Turnstile human-verification token (cf-turnstile-response). Optional — when the server has TURNSTILE_SECRET_KEY configured this is validated before the account is created, otherwise verification is skipped.
+                  example: 0.<token>
                 metadata:
                   type: object
                   example:

@@ -105,6 +105,8 @@ export interface RegisterParams {
   last_name?: string
   phone?: string
   accepts_email_marketing?: boolean
+  /** Cloudflare Turnstile human-verification token (`cf-turnstile-response`). */
+  turnstile_token?: string
   /** Arbitrary key-value metadata (stored, not returned in responses) */
   metadata?: Record<string, unknown>
 }
