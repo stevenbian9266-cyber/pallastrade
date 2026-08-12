@@ -10,7 +10,8 @@ interface TurnstileApi {
 
 type WidgetStatus = "loading" | "ready" | "error";
 
-const SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/api.js";
+const SCRIPT_SRC =
+  "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 const LOAD_TIMEOUT_MS = 8000;
 
 /**

@@ -37,7 +37,7 @@ describe("TurnstileWidget", () => {
     const script = container.querySelector('script[id="cf-turnstile"]');
     expect(script).not.toBeNull();
     expect(script?.getAttribute("src")).toBe(
-      "https://challenges.cloudflare.com/turnstile/api.js",
+      "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit",
     );
     expect(
       container.querySelector('[data-testid="turnstile-widget"]'),
