@@ -50,7 +50,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260809-catalog-创建兔狲品牌图片资源套件 | catalog | 2026-08-09 | REQ-20260810-pallas-cat-brand-assets |
 | done | PRD-20260810-storefront-商城前台接入tawk-to作为客服工具 | storefront | 2026-08-10 | REQ-20260810-tawk-to-widget |
 | done | PRD-20260810-storefront-对商城前台进行重新规划 | storefront | 2026-08-10 | REQ-20260810-storefront-redesign |
-| approved | PRD-20260812-storefront-商城前台注册面板接入-turnstile-真人验证 | storefront | 2026-08-12 | （实施时回填） |
+| done | PRD-20260812-storefront-商城前台注册面板接入-turnstile-真人验证 | storefront | 2026-08-12 | REQ-20260812-turnstile-verification |
 
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 

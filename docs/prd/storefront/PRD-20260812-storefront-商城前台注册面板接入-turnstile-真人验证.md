@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved（用户已确认 2026-08-12） |
+| 状态 | done（2026-08-12 实施完成） |
 | 创建日期 | 2026-08-12 |
 | 来源 | 商城前台注册面板接入 Turnstile 真人验证（site key + secret key 已提供） |
 | 分类 | storefront |
@@ -100,11 +100,13 @@
 
 ## 9. 文档同步清单（知识同步门）
 
-- [ ] API 文档：`backend/public/api-docs/store.yaml`（customers create 加 `turnstile_token`）+ `platform/docs/api-reference/*.yaml`
-- [ ] Skill：`pallastrade-storefront`（§Components）、`pallastrade-api-v3`、`pallastrade-security`、`pallastrade-deployment`（env 密钥配置说明）
-- [ ] 部署文档：`deploy/README.md` 或 `.env.example`（`NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` 配置说明，**secret 仅环境变量不入库**）
-- [ ] `docs/prd/README.md` 索引 + 本 PRD 状态更新
-- [ ] 反模式 / 场景库：安全类可补一条验证场景（如涉及）
+- [x] API 文档：`backend/public/api-docs/store.yaml`（customers create 加 `turnstile_token`）+ `platform/docs/api-reference/store.yaml`（两份同步，`generated:check` 无 drift）
+- [x] Skill：`pallastrade-storefront`（§Components 加 TurnstileWidget 条目）；`pallastrade-api-v3` / `pallastrade-security` / `pallastrade-deployment`（已评估：接口为既有端点加可选字段、secret 不入库为既有原则、env 配置已入示例文件——无需更新 skill 正文）
+- [x] 部署文档：`backend/.env.example` + `storefront/.env.example` + `deploy/.env.{dev,prod}.example` × 4（`NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` 配置说明，**secret 仅环境变量不入库**）
+- [x] `docs/prd/README.md` 索引 + 本 PRD 状态更新
+- [x] 反模式 / 场景库：已评估——Turnstile 校验属安全增强，未引入新反模式；secret 处理遵循既有 AP 规则，无需新增场景（后续如加入站验证类 E2E 场景可补）
+
+> **sync-check 结论（2026-08-12）**：`harness sync-check --id PRD-...` 列出的 CLI/SDK/dist/Gemfile 等其余变更属 dev 与 origin/main 的历史差异，非本任务改动；本任务实际涉及资产已全部处理（见上）。
 
 ## 10. 变更记录
 
@@ -112,3 +114,4 @@
 |---|---|---|---|
 | 2026-08-12 | 0.1 | 初稿：跨层搜索 + 方案设计 + 安全约束 | AI |
 | 2026-08-12 | 0.2 | 用户确认实施（approved） | 用户 |
+| 2026-08-12 | 0.3 | 实施完成：5 处链路改动 + Turnstile service + 测试全绿（SDK 159/storefront 161/backend 13）+ 浏览器验证（组件渲染，本地网络阻止 Cloudflare 脚本加载属环境限制）+ 提交 4b185ee + 知识同步门完成 | AI + 用户 |
