@@ -39,9 +39,14 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
   end
 
   # Store API v3 (public, authenticated with publishable key)
+  # 安全收紧（PRD-20260813-storefront 第 3 项）：不再 `origins '*'` 全开。
+  # 改为与 Admin API 相同的 allowed_origins 白名单 —— 仅放行配置过的 storefront
+  # origin（同源 storefront 请求不受 CORS 影响；跨域浏览器仅允许白名单域名）。
+  # 服务端/移动端调用不带 Origin 头，不受 CORS 限制。
   allow do
-    origins '*'
+    origins allowed_origin_check
     resource '/api/v3/store/*', headers: :any,
-                                methods: [:get, :post, :patch, :put, :delete, :options, :head]
+                                methods: [:get, :post, :patch, :put, :delete, :options, :head],
+                                expose: %w[x-pallastrade-api-version]
   end
 end

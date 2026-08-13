@@ -111,5 +111,4 @@
 |---|---|---|---|
 | 2026-08-14 | 0.1 | 初稿（Vercel 集成 UI 裁剪 + origins 展示优化） | AI |
 | 2026-08-14 | 0.2 | 用户确认实施，明确要求相关代码逻辑一并清理干净（helper/controller/i18n 死代码），不影响现有业务 | 用户 + AI |
-| 2026-08-14 | 0.3 | 实施完成：删除 Vercel 部署卡片/View on Vercel 按钮/helper 文件/svg/6 个 i18n keys；新增 storefront_spec.rb（5 用例）；Backend CI 通过（run 31719601822）；gate GATE-2026-08-13T16-06-23 关闭；dev 部署 + 浏览器验证通过（无 Vercel UI，核心配置正常） | AI |
-| YYYY-MM-DD | 0.1 | 初稿 | AI |
+| 2026-08-14 | 0.3 | 实施完成：删除 Vercel 部署卡片/View on Vercel 按钮/helper 文件/svg/6 个 i18n keys；新增 storefront_spec.rb（5 用例）；Backend CI 通过（run 31719601822）；gate GATE-2026-08-13T16-06-23 关闭；dev 部署 + 浏览器验证通过（无 Vercel UI，核心配置正常） | AI || 2026-08-14 | 0.4 | 第 3 项（安全升级）：Store API CORS 从 `origins '*'` 收紧为 `allowed_origins` 白名单（复用 Admin API 校验 lambda，增加 expose x-pallastrade-api-version）；新增 cors_spec.rb（5 用例）；Backend CI 通过（run 31754062766）；gate GATE-2026-08-13T23-28-42 关闭（test/review/approval/knowledge）；dev 部署 + curl 实测（白名单放行 / 非白名单拦截 / 无 Origin 不受影响）+ storefront 同源正常 | AI || YYYY-MM-DD | 0.1 | 初稿 | AI |
