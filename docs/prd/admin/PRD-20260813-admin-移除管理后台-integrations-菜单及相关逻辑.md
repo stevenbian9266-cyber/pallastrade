@@ -112,12 +112,19 @@
 
 ## 9. 文档同步清单（知识同步门）
 
-- [ ] `ai/skills/pallastrade-admin/SKILL.md`（若描述 integrations 资源则更新）
-- [ ] `ai/skills/pallastrade-data-model/SKILL.md`（若描述 Integration/Store 关联则更新）
-- [ ] `ai/skills/pallastrade-ai/SKILL.md`（若存在；新 Provider 模型说明）
-- [ ] `docs/prd/README.md` 索引（新 PRD）
-- [ ] 本 PRD 状态更新
-- [ ] 反模式/任务规则/场景库：如涉及才更新
+评估结论（`harness sync-check` 2026-08-13 执行）：
+
+- [x] `ai/skills/pallastrade-admin/SKILL.md` — 已检查，无 integrations 资源/菜单描述，**无需更新**
+- [x] `ai/skills/pallastrade-data-model/SKILL.md` — 已检查，无 Integration 模型/Store 关联描述（仅通用 marketplace 术语），**无需更新**
+- [x] `ai/skills/pallastrade-ai/SKILL.md` — **不存在**（ai/skills 共 24 个 skill，无 AI 专项 skill），无需新建
+- [x] `ai/skills/pallastrade-api-v3/SKILL.md` — 已检查，"integration" 均为通用 API/第三方集成术语，**无需更新**
+- [x] `backend/public/api-docs/{store,admin}.yaml` — grep 无 integrations 端点引用；`harness generated:check` 通过（no drift），**无需更新**
+- [x] 场景库 `harness/scenarios/scenarios.json` — 仅 "Add payment gateway integration"（支付网关通用场景，与 PallasTrade::Integration 模块无关），**无需更新**
+- [x] 反模式库 / 任务规则 — 未触发新反模式（AP-001/002/006 无违规），**无需更新**
+- [x] `docs/prd/README.md` 索引 — 已更新
+- [x] 本 PRD 状态 — 已更新为 done
+
+> 注：`ai/skills-drafts/*` 为未跟踪的临时草稿目录（不参与 ai-ci 24-skill 检查），与本次变更无关。
 
 ## 10. 变更记录
 
@@ -125,19 +132,4 @@
 |---|---|---|---|
 | 2026-08-13 | 0.1 | 初稿（删菜单，保留 Integration） | AI |
 | 2026-08-13 | 0.2 | 用户确认 AI 解耦方案：扩展为 AI 独立 Provider + 移除通用 integrations | AI |
-- 更新测试文件（路径 + 变更点）
-- 覆盖的 AC 映射（AC-xxx → 测试文件）
-
-## 9. 文档同步清单（知识同步门）
-
-- [ ] API 文档（若涉及接口）：`backend/public/api-docs/*.yaml` + `platform/docs/api-reference/*.yaml`
-- [ ] Skill 文档（doc-impact 规则）
-- [ ] README / Agent 文件 / 样式规范 / 技术规范（按 `sync-check` 矩阵判定）
-- [ ] 反模式库 / 任务规则 / 场景库（如涉及）
-- [ ] 本 PRD 状态更新 + `docs/prd/README.md` 索引
-
-## 10. 变更记录
-
-| 日期 | 版本 | 变更 | 操作者 |
-|---|---|---|---|
-| YYYY-MM-DD | 0.1 | 初稿 | AI |
+| 2026-08-13 | 0.3 | 实施完成：AI 解耦（pallastrade_ai_providers 独立表 + Provider STI + factory + schema.rb 同步）；删除 integrations 控制器/视图/模型/导航/routes；Backend CI 全绿（69 examples, 0 failures, run 31713250098）；修复预存 backend-ci SimpleCov 配置 bug；gate GATE-2026-08-13T12-44-48 已关闭 | AI |
