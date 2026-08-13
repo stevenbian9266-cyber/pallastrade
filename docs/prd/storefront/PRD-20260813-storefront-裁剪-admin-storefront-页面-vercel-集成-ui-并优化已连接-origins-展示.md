@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-08-13 |
 | 来源 | 优化：裁剪 admin storefront 页面 Vercel 集成 UI 并优化已连接 origins 展示 |
 | 分类 | storefront（自动判定） |
@@ -95,11 +95,15 @@
 
 ## 9. 文档同步清单（知识同步门）
 
-- [ ] API 文档：无接口变更，不涉及
-- [x] Skill 文档：`pallastrade-admin` Skill 不描述 storefront 页面细节，**无需更新**
-- [ ] README / Agent 文件 / 样式规范：不涉及
-- [ ] 反模式库 / 任务规则 / 场景库：不涉及（无新反模式）
+评估结论（`harness sync-check` 2026-08-14 执行）：
+
+- [x] API 文档：无接口变更，不涉及
+- [x] Skill 文档：`pallastrade-admin` Skill 不描述 storefront 页面细节，**无需更新**；`pallastrade-prd`/`pallastrade-deployment` 机制未变，**无需更新**
+- [x] README / Agent 文件 / 样式规范：不涉及
+- [x] 反模式库 / 任务规则 / 场景库：不涉及（无新反模式）
 - [x] 本 PRD 状态更新 + `docs/prd/README.md` 索引
+
+> 注：sync-check 触发的 `ai/skills-drafts/*`（未跟踪草稿）、`deploy/diag_*.sh`（旧诊断脚本）、`REQ-20260813-ci-pull-deploy.md`（旧需求）均为历史遗留，与本次变更无关，**无需更新**。
 
 ## 10. 变更记录
 
@@ -107,4 +111,5 @@
 |---|---|---|---|
 | 2026-08-14 | 0.1 | 初稿（Vercel 集成 UI 裁剪 + origins 展示优化） | AI |
 | 2026-08-14 | 0.2 | 用户确认实施，明确要求相关代码逻辑一并清理干净（helper/controller/i18n 死代码），不影响现有业务 | 用户 + AI |
+| 2026-08-14 | 0.3 | 实施完成：删除 Vercel 部署卡片/View on Vercel 按钮/helper 文件/svg/6 个 i18n keys；新增 storefront_spec.rb（5 用例）；Backend CI 通过（run 31719601822）；gate GATE-2026-08-13T16-06-23 关闭；dev 部署 + 浏览器验证通过（无 Vercel UI，核心配置正常） | AI |
 | YYYY-MM-DD | 0.1 | 初稿 | AI |
