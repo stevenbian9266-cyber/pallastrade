@@ -244,7 +244,7 @@
     {
       "id": "GS-025",
       "name": "Storefront cookie consent: banner + settings page + third-party gating",
-      "description": "When adding cookie consent (GDPR/CCPA) to the storefront, provide a first-visit consent banner (Accept all / Necessary only / Customize), a standalone /cookies settings page, a plain-JS-readable consent cookie (pallastrade_cookie_consent), and gate all third-party scripts (GTM, Vercel Analytics, Speed Insights, Tawk.to, Sentry client) behind the visitor's category choices while never gating necessary cookies (cart/auth/locale)",
+      "description": "When adding cookie consent (GDPR/CCPA) to the storefront, provide a first-visit consent banner (Accept all / Necessary only / Customize), a standalone /cookies settings page, a plain-JS-readable consent cookie (pallastrade_cookie_consent), and gate all third-party scripts (GTM, Vercel Analytics, Speed Insights, Tawk.to, Sentry client) behind the visitor's category choices while never gating necessary cookies (cart/auth/locale). All cookie components/tests must stay Biome-formatted (pnpm check passes in CI)",
       "mustDo": [
         "Show the banner only on first visit (no consent cookie) and never flash it for returning visitors",
         "Persist consent in a plain-JS-readable cookie (categories + version + timestamp); the consent cookie itself is necessary",

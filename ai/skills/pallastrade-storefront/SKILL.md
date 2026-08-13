@@ -158,6 +158,8 @@ Key components:
 
 ### Cookie consent (2026-08, PRD-20260812)
 
+> 组件与测试文件统一遵循 Biome 格式（`pnpm format` / `pnpm check`），CI 的 `pnpm check` 强制校验格式与 lint。
+
 The storefront has a GDPR/CCPA-style cookie consent system. Consent is stored in a
 plain-JS-readable cookie `pallastrade_cookie_consent` (JSON: `necessary` + `functional`
 / `analytics` / `marketing` booleans + `version` + `updatedAt`). Categories and the
