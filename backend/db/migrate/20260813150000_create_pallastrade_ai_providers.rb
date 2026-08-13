@@ -3,7 +3,8 @@
 # # PRD-20260813-admin-移除管理后台-integrations-菜单及相关逻辑
 # # AI 模块解耦：创建独立 pallastrade_ai_providers 表，迁移 AI provider 记录，
 # # 关联表外键重指向新表，随后 drop 旧 pallastrade_integrations 表。
-class CreatePallasTradeAiProviders < ActiveRecord::Migration[8.1]
+# 注意：类名必须用 AI 大写以匹配 engine 的 inflect.acronym('AI') 的 camelize 推断。
+class CreatePallasTradeAIProviders < ActiveRecord::Migration[8.1]
   LEGACY_TYPES = %w[
     PallasTrade::AI::Integrations::DeepSeek
     PallasTrade::AI::Integrations::OpenAI
