@@ -264,24 +264,6 @@
       "scoring": { "bannerFirstVisit": 15, "consentCookie": 15, "settingsPage": 15, "scriptGating": 20, "noHydrationMismatch": 15, "tests": 10, "i18nAll": 10 }
     },
     {
-      "id": "GS-026",
-      "name": "Knowledge docs sync after code change (harness-docs)",
-      "description": "When code changes affect knowledge assets (AI skills, API docs, READMEs), draft the impacted doc updates via the harness-docs workflow: read the drafting pack under artifacts/harness-docs-drafts/, update only the affected sections, keep style consistent, and run harness docs:check to validate links before finishing.",
-      "mustDo": [
-        "Run harness doc-impact --base origin/main (or docs generate --asset) to identify impacted knowledge assets",
-        "Update only the sections affected by the change (no full rewrites)",
-        "Sync API docs (backend/public/api-docs + platform/docs/api-reference) for interface changes",
-        "Run harness docs:check (link validation) and fix broken references",
-        "Keep the draft in artifacts/harness-docs-drafts/ until human confirmation"
-      ],
-      "mustNotDo": [
-        "Skip knowledge docs when code changed (docs-required blocks the PR)",
-        "Rewrite the whole document when only a section changed",
-        "Leave broken links after a docs update"
-      ],
-      "scoring": { "impactDetected": 25, "targetedUpdate": 25, "apiDocs": 20, "docsCheck": 20, "draftGate": 10 }
-    },
-    {
       "id": "GS-019",
       "name": "Storefront redesign: persistent category nav + GEO-friendly home",
       "description": "When redesigning the storefront home, add a persistent desktop category nav (mobile drawer stays), compose multi-section home (hero/categories/featured/promo/trust/brand story/FAQ/newsletter), remove all demo-only href='#' links, keep exactly one h1, and strengthen GEO: WebSite+SearchAction JSON-LD, FAQPage JSON-LD matching visible FAQ, and /llms.txt",
