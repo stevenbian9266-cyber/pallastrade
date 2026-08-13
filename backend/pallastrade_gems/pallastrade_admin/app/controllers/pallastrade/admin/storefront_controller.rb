@@ -13,7 +13,6 @@ module PallasTrade
         @publishable_key = find_or_create_publishable_key
         @deployment_origin = normalize_origin(params[:'deployment-url'])
         @deployment_origin_allowed = @deployment_origin.present? && current_store.allowed_origin?(@deployment_origin)
-        @vercel_dashboard_url = vercel_dashboard_url
         @storefront_origins = current_store.allowed_origins.order(:created_at).reject(&:loopback?)
       end
 
@@ -78,7 +77,7 @@ module PallasTrade
           )
       end
 
-      # Normalizes user or Vercel-callback input to a canonical origin string,
+      # Normalizes user or deployment-callback input to a canonical origin string,
       # or nil when it's not a valid http(s) URL — pre-normalized here (rather
       # than leaning on the Store validation) so invalid input gets the
       # dedicated invalid_origin flash.
@@ -86,15 +85,6 @@ module PallasTrade
         PallasTrade::AllowedOrigin.normalize_origin(raw)
       end
 
-      # Only link back to the Vercel dashboard when the callback param actually
-      # points at vercel.com — never reflect an arbitrary URL as a link.
-      def vercel_dashboard_url
-        url = params[:'project-dashboard-url'].to_s
-        parsed = PallasTrade::AllowedOrigin.parse_origin(url)
-        return unless parsed && parsed[:scheme] == 'https'
-
-        url if parsed[:host] == 'vercel.com' || parsed[:host].end_with?('.vercel.com')
-      end
     end
   end
 end

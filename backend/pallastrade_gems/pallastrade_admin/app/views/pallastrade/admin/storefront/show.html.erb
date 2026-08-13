@@ -34,12 +34,6 @@
                   <%= PallasTrade.t('admin.storefront_setup.allow_origin_button') %>
                 </button>
               <% end %>
-              <% if @vercel_dashboard_url.present? %>
-                <%= link_to @vercel_dashboard_url, target: :_blank, rel: 'noopener', class: 'btn btn-light' do %>
-                  <%= icon('external-link') %>
-                  <%= PallasTrade.t('admin.storefront_setup.view_on_vercel') %>
-                <% end %>
-              <% end %>
             </div>
           <% end %>
         </div>
@@ -52,32 +46,6 @@
         <%= link_to current_store.storefront_url, current_store.storefront_url, target: :_blank, rel: 'noopener', class: 'font-medium' %>
       </div>
     <% end %>
-
-    <div class="card mb-6">
-      <div class="card-header">
-        <h5 class="card-title"><%= PallasTrade.t('admin.storefront_setup.deploy_title') %></h5>
-      </div>
-      <div class="card-body">
-        <p class="mb-3"><%= PallasTrade.t('admin.storefront_setup.deploy_copy') %></p>
-        <div class="mb-2">
-          <% if store_url_loopback?(current_store) %>
-            <div class="cursor-not-allowed flex gap-2 items-center">
-              <%= image_tag 'vercel-deploy-button.svg', alt: PallasTrade.t('admin.storefront_setup.deploy_button'), height: 32, class: 'disabled opacity-25' %>
-              <span data-controller="tooltip">
-                <%= icon('alert-circle', class: 'text-yellow-500') %>
-                <%= tooltip(PallasTrade.t('admin.storefront_setup.loopback_warning')) %>
-              </span>
-            </div>
-          <% else %>
-            <%= link_to vercel_deploy_url(current_store, @publishable_key) do %>
-              <%= image_tag 'vercel-deploy-button.svg', alt: PallasTrade.t('admin.storefront_setup.deploy_button'), height: 32 %>
-            <% end %>
-          <% end %>
-        </div>
-        <p class="text-gray-500 text-sm mb-3"><%= PallasTrade.t('admin.storefront_setup.deploy_finish_hint') %></p>
-        <%= external_link_to PallasTrade.t('admin.storefront_setup.local_installation_instructions'), 'https://pallastrade.cn/docs/developer/storefront/nextjs/quickstart' %>
-      </div>
-    </div>
 
     <div class="card mb-6">
       <div class="card-header">
@@ -123,6 +91,9 @@
             <button type="submit" class="btn btn-primary"><%= PallasTrade.t('actions.save') %></button>
           </div>
         <% end %>
+        <p class="mt-4 mb-0">
+          <%= external_link_to PallasTrade.t('admin.storefront_setup.local_installation_instructions'), 'https://pallastrade.cn/docs/developer/storefront/nextjs/quickstart' %>
+        </p>
       </div>
     </div>
 
