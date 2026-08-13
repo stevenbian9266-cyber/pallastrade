@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCookieConsent } from "@/contexts/CookieConsentContext";
 import { CookieSettings } from "./CookieSettings";
@@ -63,12 +63,7 @@ export function CookieBanner() {
           <Button type="button" size="sm" onClick={acceptAll}>
             {t("acceptAll")}
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={rejectAll}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={rejectAll}>
             {t("necessaryOnly")}
           </Button>
           <Button

@@ -2,12 +2,12 @@
 
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
-  type ReactNode,
 } from "react";
 import type { CookieConsent } from "@/lib/constants/cookies";
 import {
@@ -15,8 +15,8 @@ import {
   createConsentFromPreferences,
   createDeniedConsent,
   readConsentFromDocument,
-  writeConsentToDocument,
   type ToggleablePreferences,
+  writeConsentToDocument,
 } from "@/lib/cookie-consent";
 
 interface CookieConsentContextValue {
@@ -32,14 +32,11 @@ interface CookieConsentContextValue {
   savePreferences: (prefs: ToggleablePreferences) => void;
 }
 
-const CookieConsentContext =
-  createContext<CookieConsentContextValue | null>(null);
+const CookieConsentContext = createContext<CookieConsentContextValue | null>(
+  null,
+);
 
-export function CookieConsentProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function CookieConsentProvider({ children }: { children: ReactNode }) {
   const [consent, setConsent] = useState<CookieConsent | null>(null);
 
   // Read the consent cookie only on the client to avoid SSR/hydration
@@ -55,10 +52,17 @@ export function CookieConsentProvider({
     setConsent(next);
   }, []);
 
-  const acceptAll = useCallback(() => persist(createAcceptedConsent()), [persist]);
-  const rejectAll = useCallback(() => persist(createDeniedConsent()), [persist]);
+  const acceptAll = useCallback(
+    () => persist(createAcceptedConsent()),
+    [persist],
+  );
+  const rejectAll = useCallback(
+    () => persist(createDeniedConsent()),
+    [persist],
+  );
   const savePreferences = useCallback(
-    (prefs: ToggleablePreferences) => persist(createConsentFromPreferences(prefs)),
+    (prefs: ToggleablePreferences) =>
+      persist(createConsentFromPreferences(prefs)),
     [persist],
   );
 

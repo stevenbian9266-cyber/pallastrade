@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCookieConsent } from "@/contexts/CookieConsentContext";
-import type { ToggleablePreferences } from "@/lib/cookie-consent";
 import {
   COOKIE_CATEGORIES,
   type CookieCategory,
 } from "@/lib/constants/cookies";
+import type { ToggleablePreferences } from "@/lib/cookie-consent";
 import { cn } from "@/lib/utils";
 
 interface CookieSettingsProps {
@@ -64,9 +64,7 @@ export function CookieSettings({ onSaved }: CookieSettingsProps) {
                 id={`cookie-category-${category.key}`}
                 checked={checked}
                 disabled={disabled}
-                aria-label={t(
-                  `categories.${category.titleKey}`,
-                )}
+                aria-label={t(`categories.${category.titleKey}`)}
                 onCheckedChange={(value) => {
                   if (disabled) return;
                   setPrefs((prev) => ({

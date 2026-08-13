@@ -29,9 +29,7 @@ describe("CookieBanner", () => {
 
   it("shows the banner for first-time visitors after hydration", async () => {
     render(<Harness />);
-    await waitFor(() =>
-      expect(screen.getByRole("dialog")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
 
     expect(
       screen.getByRole("button", { name: "acceptAll" }),
@@ -46,9 +44,7 @@ describe("CookieBanner", () => {
 
   it("hides after accept-all and writes the consent cookie", async () => {
     render(<Harness />);
-    await waitFor(() =>
-      expect(screen.getByRole("dialog")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("button", { name: "acceptAll" }));
 
@@ -60,9 +56,7 @@ describe("CookieBanner", () => {
 
   it("hides after necessary-only and keeps analytics/marketing off", async () => {
     render(<Harness />);
-    await waitFor(() =>
-      expect(screen.getByRole("dialog")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("button", { name: "necessaryOnly" }));
 
@@ -87,9 +81,7 @@ describe("CookieBanner", () => {
 
   it("customize reveals the category panel and saving hides the banner", async () => {
     render(<Harness />);
-    await waitFor(() =>
-      expect(screen.getByRole("dialog")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("button", { name: "customize" }));
 

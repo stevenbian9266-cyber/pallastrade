@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { GoogleTagManager } from "@next/third-parties/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { useEffect, useState } from "react";
 import { TawkToWidget } from "@/components/layout/TawkToWidget";
 import { useCookieConsent } from "@/contexts/CookieConsentContext";
 

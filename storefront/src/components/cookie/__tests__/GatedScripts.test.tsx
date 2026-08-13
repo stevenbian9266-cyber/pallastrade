@@ -76,7 +76,9 @@ describe("GatedScripts", () => {
 
     render(<Harness />);
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "accept-all" })).toBeInTheDocument(),
+      expect(
+        screen.getByRole("button", { name: "accept-all" }),
+      ).toBeInTheDocument(),
     );
 
     expect(screen.queryByTestId("gtm")).toBeNull();
@@ -89,7 +91,9 @@ describe("GatedScripts", () => {
 
     render(<Harness />);
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "accept-all" })).toBeInTheDocument(),
+      expect(
+        screen.getByRole("button", { name: "accept-all" }),
+      ).toBeInTheDocument(),
     );
     fireEvent.click(screen.getByRole("button", { name: "accept-all" }));
 
@@ -117,7 +121,9 @@ describe("GatedScripts", () => {
 
     render(<Harness />);
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "reject-all" })).toBeInTheDocument(),
+      expect(
+        screen.getByRole("button", { name: "reject-all" }),
+      ).toBeInTheDocument(),
     );
     fireEvent.click(screen.getByRole("button", { name: "reject-all" }));
 
@@ -131,7 +137,9 @@ describe("GatedScripts", () => {
 
     render(<Harness />);
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "accept-all" })).toBeInTheDocument(),
+      expect(
+        screen.getByRole("button", { name: "accept-all" }),
+      ).toBeInTheDocument(),
     );
     fireEvent.click(screen.getByRole("button", { name: "accept-all" }));
 

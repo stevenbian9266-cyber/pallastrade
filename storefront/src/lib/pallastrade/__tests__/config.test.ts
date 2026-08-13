@@ -8,9 +8,8 @@ describe("createFetchWithTimeout", () => {
   });
 
   it("attaches an AbortSignal to every request", () => {
-    const innerFetch = vi.fn(
-      (_input: RequestInfo | URL, _init?: RequestInit) =>
-        Promise.resolve(new Response("{}", { status: 200 })),
+    const innerFetch = vi.fn((_input: RequestInfo | URL, _init?: RequestInit) =>
+      Promise.resolve(new Response("{}", { status: 200 })),
     );
     const fetchWithTimeout = createFetchWithTimeout(
       8000,
@@ -42,7 +41,9 @@ describe("createFetchWithTimeout", () => {
             return;
           }
           signal?.addEventListener("abort", () =>
-            reject(new DOMException("The operation was aborted.", "AbortError")),
+            reject(
+              new DOMException("The operation was aborted.", "AbortError"),
+            ),
           );
         }),
     );
@@ -57,9 +58,8 @@ describe("createFetchWithTimeout", () => {
   });
 
   it("still injects a signal when the default timeout is used", () => {
-    const innerFetch = vi.fn(
-      (_input: RequestInfo | URL, _init?: RequestInit) =>
-        Promise.resolve(new Response("{}", { status: 200 })),
+    const innerFetch = vi.fn((_input: RequestInfo | URL, _init?: RequestInit) =>
+      Promise.resolve(new Response("{}", { status: 200 })),
     );
     const fetchWithTimeout = createFetchWithTimeout(
       undefined,

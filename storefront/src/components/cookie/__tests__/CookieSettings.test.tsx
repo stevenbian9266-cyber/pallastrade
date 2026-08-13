@@ -64,7 +64,9 @@ describe("CookieSettings", () => {
     );
 
     // Toggle analytics on, keep functional/marketing off.
-    fireEvent.click(screen.getByRole("checkbox", { name: "categories.analytics" }));
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "categories.analytics" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "savePreferences" }));
 
     const consent = readConsentFromDocument();
