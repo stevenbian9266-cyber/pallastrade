@@ -12,6 +12,8 @@ module PallasTrade
     # # PRD-20260813-admin-移除管理后台-integrations-菜单及相关逻辑
     # # AI 模块解耦：独立 Provider 模型，不再继承 PallasTrade::Integration
     class Provider < PallasTrade.base_class
+      self.table_name = 'pallastrade_ai_providers'
+
       has_prefix_id :aip
 
       include PallasTrade::SingleStoreResource
