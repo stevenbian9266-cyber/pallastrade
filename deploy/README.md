@@ -68,9 +68,26 @@
 | `.env.storefront.dev` / `.env.storefront.prod` | storefront 运行时环境（API URL、STORE_LOGO_URL、tawk ID 等） |
 | `.env.storefront.dev.example` 等 | 模板（复制改名填写） |
 
-## GitHub Actions 自动部署
+## GitHub Actions 自动部署（拉取式 / 方案 A）
 
-`deploy.yml`（监听 `[main, dev]` 推送）：runner 构建 storefront 镜像 → scp → 服务器 `deploy.sh`。
+> ⚠️ 跨境 SSH（GitHub runner 美国 → 阿里云杭州）TCP 22 被阻断，rsync/scp/ssh 推送式部署不可用。
+
+**拉取式机制**：
+1. `deploy.yml`（监听 `[main, dev]` 推送）：runner 构建 storefront 镜像 → **push 到 ghcr.io**（`ghcr.io/stevenbian9266-cyber/pallastrade-storefront:{dev|main}`），不再连接服务器
+2. 服务器 cron 每 5 分钟运行 `deploy/pull-deploy.sh dev`：`git fetch` + `docker pull`，检测到 HEAD 或镜像 digest 变化才执行 `deploy.sh`
+
+**前提（一次性配置）**：
+- GitHub 仓库 Deploy Keys 已添加服务器公钥（`/root/.ssh/id_ed25519.pub`，名称 `pallastrade-deploy`）
+- ghcr.io 包 `pallastrade-storefront` 设为 **Public**（镜像仅含公开信息：`pk_` 公钥、turnstile site key、tawk ID，无 secrets）
+- 服务器 `/opt/pallastrade/repo` 已 `git init` + remote 指向仓库
+
+**常用命令**：
+```bash
+crontab -l                                   # 查看拉取任务
+tail -f /var/log/pallastrade-pull.log        # 查看拉取部署日志
+bash deploy/pull-deploy.sh dev               # 手动触发一次检查
+```
+
 - 需要仓库 **Actions Variables**：`TAWK_TO_PROPERTY_ID` / `TAWK_TO_WIDGET_ID`（公开变量，非 Secrets）。
 - 未配置时挂件禁用，不影响部署。
 

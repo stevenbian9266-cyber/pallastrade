@@ -268,7 +268,7 @@ Meilisearch index wasn't built. Run `bundle exec rake pallastrade:search:reindex
 - **任务结束标准流程**：本地验证 → 本地构建 storefront 镜像（`NEXT_PUBLIC_*` 构建时内联，必须传 tawk ID、GTM ID 等 build-arg（`NEXT_PUBLIC_GTM_ID`，见 PRD-20260812 cookie consent）；服务器不跑 next build）→ save/scp/load → 部署 dev → 部署 prod（`deploy.sh prod` 自动停 dev）→ **最终启动 dev、关闭 prod**。
 - 脚本：`deploy/prod.sh` / `dev.sh`（up/down/status）、`deploy/deploy.sh dev|prod`（全量）。
 - dev/prod **数据库独立**，示例数据需分别创建。
-- CI：`deploy.yml` 监听 `[main, dev]`，runner 构建镜像后由服务器 `deploy.sh` 部署；tawk/GTM ID 走仓库 Actions Variables（公开，非 Secrets）。
+- CI：`deploy.yml` 监听 `[main, dev]`，runner 构建 storefront 镜像并 **push 到 ghcr.io**（跨境 SSH 被 GFW 阻断，推送式已废弃）；服务器 cron 每 5 分钟跑 `deploy/pull-deploy.sh` 主动拉代码 + 镜像，有变化才 `deploy.sh` 部署；tawk/GTM ID 走仓库 Actions Variables（公开，非 Secrets）。
 
 ## Where to read further
 
