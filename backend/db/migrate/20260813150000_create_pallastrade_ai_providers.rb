@@ -27,13 +27,12 @@ class CreatePallasTradeAIProviders < ActiveRecord::Migration[8.1]
     migrate_provider_records if table_exists?(:pallastrade_integrations)
 
     # provider_secrets: integration_id → provider_id（关联数据为 0 条，零风险）
+    # 注意：rename_column 会自动重命名依赖该列的索引（on_integration_id → on_provider_id），
+    # 无需（也不能）再显式 rename_index，否则会因旧索引名不存在而报 PG::UndefinedTable。
     if table_exists?(:pallastrade_ai_provider_secrets)
       remove_foreign_key :pallastrade_ai_provider_secrets, column: :integration_id, to_table: :pallastrade_integrations
       rename_column :pallastrade_ai_provider_secrets, :integration_id, :provider_id
       add_foreign_key :pallastrade_ai_provider_secrets, :pallastrade_ai_providers, column: :provider_id
-      rename_index :pallastrade_ai_provider_secrets,
-                   'index_pallastrade_ai_provider_secrets_on_integration_id',
-                   'index_pallastrade_ai_provider_secrets_on_provider_id'
     end
 
     # ai_models.provider_id / ai_runs.provider_id：外键重指向新表（数据 0 条）
