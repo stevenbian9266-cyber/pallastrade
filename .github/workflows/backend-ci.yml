@@ -49,6 +49,8 @@ jobs:
       DATABASE_URL: postgres://postgres@localhost:5432/pallastrade_test
       REDIS_URL: redis://localhost:6379/0
       RAILS_ENV: test
+      # 覆盖率阈值由 harness-full.yml 的独立 coverage job 管；此处跳过内嵌 SimpleCov 检查（见 spec/rails_helper.rb）
+      DISABLE_SIMPLECOV_MINIMUM: "1"
     steps:
       - uses: actions/checkout@v4
         with:
