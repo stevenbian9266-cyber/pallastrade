@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_24_000006) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_13_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -252,12 +252,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_000006) do
     t.datetime "created_at", null: false
     t.text "credentials", null: false
     t.string "encryption_key_version"
-    t.bigint "integration_id", null: false
     t.string "key_hint", default: "", null: false
+    t.bigint "provider_id", null: false
     t.datetime "rotated_at"
     t.datetime "updated_at", null: false
     t.index ["encryption_key_version"], name: "idx_on_encryption_key_version_5790dbef9a"
-    t.index ["integration_id"], name: "index_pallastrade_ai_provider_secrets_on_integration_id", unique: true
+    t.index ["provider_id"], name: "index_pallastrade_ai_provider_secrets_on_provider_id", unique: true
+  end
+
+  create_table "pallastrade_ai_providers", force: :cascade do |t|
+    t.boolean "active", default: false, null: false
+    t.datetime "created_at", null: false
+    t.text "preferences"
+    t.bigint "store_id", null: false
+    t.string "type", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_pallastrade_ai_providers_on_active"
+    t.index ["store_id"], name: "index_pallastrade_ai_providers_on_store_id"
+    t.index ["type"], name: "index_pallastrade_ai_providers_on_type"
   end
 
   create_table "pallastrade_ai_runs", force: :cascade do |t|
@@ -680,18 +692,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_000006) do
     t.index ["status"], name: "index_pt_imports_on_status"
     t.index ["type"], name: "index_pt_imports_on_type"
     t.index ["user_id"], name: "index_pt_imports_on_user_id"
-  end
-
-  create_table "pallastrade_integrations", force: :cascade do |t|
-    t.boolean "active", default: false, null: false
-    t.datetime "created_at", null: false
-    t.text "preferences"
-    t.bigint "store_id", null: false
-    t.string "type", null: false
-    t.datetime "updated_at", null: false
-    t.index ["active"], name: "index_pt_integrations_on_active"
-    t.index ["store_id"], name: "index_pt_integrations_on_store_id"
-    t.index ["type"], name: "index_pt_integrations_on_type"
   end
 
   create_table "pallastrade_inventory_units", force: :cascade do |t|
@@ -2396,9 +2396,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_000006) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "pallastrade_ai_artifacts", "pallastrade_ai_runs", column: "run_id"
   add_foreign_key "pallastrade_ai_capability_settings", "pallastrade_stores", column: "store_id"
-  add_foreign_key "pallastrade_ai_models", "pallastrade_integrations", column: "provider_id"
+  add_foreign_key "pallastrade_ai_models", "pallastrade_ai_providers", column: "provider_id"
   add_foreign_key "pallastrade_ai_models", "pallastrade_stores", column: "store_id"
-  add_foreign_key "pallastrade_ai_provider_secrets", "pallastrade_integrations", column: "integration_id"
+  add_foreign_key "pallastrade_ai_provider_secrets", "pallastrade_ai_providers", column: "provider_id"
   add_foreign_key "pallastrade_ai_runs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_ai_settings", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_option_type_translations", "pallastrade_option_types"
