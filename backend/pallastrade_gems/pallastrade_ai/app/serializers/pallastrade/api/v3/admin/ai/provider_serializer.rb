@@ -13,7 +13,7 @@ module PallasTrade
             one :store, resource: 'PallasTrade::Api::V3::StoreSerializer'
 
             attribute :credential do |provider|
-              secret = PallasTrade::AI::ProviderSecret.find_by(integration: provider)
+              secret = PallasTrade::AI::ProviderSecret.find_by(provider: provider)
               if secret
                 secret.credential_summary
               else

@@ -11,7 +11,7 @@ module PallasTrade
               provider = find_provider
               authorize! :update, provider
 
-              secret = PallasTrade::AI::ProviderSecret.find_by(integration: provider)
+              secret = PallasTrade::AI::ProviderSecret.find_by(provider: provider)
               if secret
                 secret.destroy!
                 provider.update!(active: false)
@@ -23,9 +23,9 @@ module PallasTrade
             private
 
             def find_provider
-              current_store.integrations.find_by!(
+              current_store.ai_providers.find_by!(
                 id: params[:provider_id],
-                type: %w[PallasTrade::AI::Integrations::DeepSeek PallasTrade::AI::Integrations::OpenAI]
+                type: %w[PallasTrade::AI::Provider::DeepSeek PallasTrade::AI::Provider::OpenAI]
               )
             end
           end

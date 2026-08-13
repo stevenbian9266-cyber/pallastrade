@@ -2,19 +2,22 @@
 
 module PallasTrade
   module AI
-    # Stores encrypted credentials for AI provider integrations.
-    # One-to-one with a PallasTrade::Integration record of an AI provider type.
+    # Stores encrypted credentials for AI provider configurations.
+    # One-to-one with a PallasTrade::AI::Provider record.
     #
     # Credentials are encrypted using Active Record Encryption (non-deterministic).
     # The plaintext API key is NEVER accessible via API, logs, Sentry, or Sidekiq.
     #
     # Fail closed: if Active Record Encryption is not configured, creating/updating
     # secrets will raise an error.
+    #
+    # # PRD-20260813-admin-移除管理后台-integrations-菜单及相关逻辑
+    # # AI 模块解耦：关联从 PallasTrade::Integration 改为 PallasTrade::AI::Provider
     class ProviderSecret < BaseModel
       self.table_name = 'pallastrade_ai_provider_secrets'
-      belongs_to :integration, class_name: 'PallasTrade::Integration'
+      belongs_to :provider, class_name: 'PallasTrade::AI::Provider'
 
-      validates :integration, presence: true, uniqueness: true
+      validates :provider, presence: true, uniqueness: true
       validates :credentials, presence: true
 
       before_save :ensure_encryption_configured!

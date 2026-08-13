@@ -11,8 +11,8 @@ module PallasTrade
               authorize! :show, PallasTrade::AI::Model
 
               # Lazy provisioning: ensure catalog models exist for every provider.
-              current_store.integrations.where(
-                type: %w[PallasTrade::AI::Integrations::DeepSeek PallasTrade::AI::Integrations::OpenAI]
+              current_store.ai_providers.where(
+                type: %w[PallasTrade::AI::Provider::DeepSeek PallasTrade::AI::Provider::OpenAI]
               ).find_each do |provider|
                 PallasTrade::AI::ProvisionModels.call(provider: provider)
               end
@@ -31,7 +31,7 @@ module PallasTrade
             def create
               authorize! :create, PallasTrade::AI::Model
 
-              provider = current_store.integrations.find_by(id: params[:provider_id])
+              provider = current_store.ai_providers.find_by(id: params[:provider_id])
               return render_error(code: 'invalid_provider', message: 'Provider not found', status: :not_found) unless provider
 
               model = PallasTrade::AI::Model.new(model_params.merge(store: current_store, provider: provider))

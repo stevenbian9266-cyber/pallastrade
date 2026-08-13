@@ -3,7 +3,6 @@ class PallasTrade::Base < ApplicationRecord
   include PallasTrade::PreferenceSchema
   include PallasTrade::RansackableAttributes
   include PallasTrade::TranslatableResourceScopes
-  include PallasTrade::IntegrationsConcern
   include PallasTrade::Publishable
   include PallasTrade::PrefixedId
   include PallasTrade::TypedAssociations

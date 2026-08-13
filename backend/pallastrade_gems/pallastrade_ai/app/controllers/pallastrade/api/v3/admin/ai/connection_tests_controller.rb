@@ -19,11 +19,9 @@ module PallasTrade
               adapter = entry.adapter_class.constantize.new
               result = adapter.test_connection(provider)
 
-              # Update verification timestamp
-              provider.update!(
-                last_verified_at: Time.current,
-                verification_status: result[:status]
-              )
+              # Note: verification status persistence is not implemented yet
+              # (no verification_status / last_verified_at columns on
+              # pallastrade_ai_providers); only report the result.
 
               render json: {
                 data: {
@@ -40,9 +38,9 @@ module PallasTrade
             private
 
             def find_provider
-              current_store.integrations.find_by!(
+              current_store.ai_providers.find_by!(
                 id: params[:provider_id],
-                type: %w[PallasTrade::AI::Integrations::DeepSeek PallasTrade::AI::Integrations::OpenAI]
+                type: %w[PallasTrade::AI::Provider::DeepSeek PallasTrade::AI::Provider::OpenAI]
               )
             end
           end

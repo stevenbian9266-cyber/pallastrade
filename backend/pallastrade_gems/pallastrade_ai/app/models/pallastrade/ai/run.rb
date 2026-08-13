@@ -11,7 +11,7 @@ module PallasTrade
 
       belongs_to :store, class_name: 'PallasTrade::Store'
       belongs_to :user, class_name: 'PallasTrade::AdminUser', optional: true
-      belongs_to :provider, class_name: 'PallasTrade::Integration', optional: true
+      belongs_to :provider, class_name: 'PallasTrade::AI::Provider', optional: true
       belongs_to :model, class_name: 'PallasTrade::AI::Model', optional: true
 
       has_many :artifacts, class_name: 'PallasTrade::AI::Artifact', dependent: :destroy

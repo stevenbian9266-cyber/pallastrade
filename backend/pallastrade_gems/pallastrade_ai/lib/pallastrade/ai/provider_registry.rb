@@ -3,13 +3,13 @@
 module PallasTrade
   module AI
     # ProviderRegistry manages code-level registration of AI provider types.
-    # Each registered provider specifies its Integration STI class, Adapter,
-    # catalog, and metadata. This is not a database table 鈥?it's a code registry.
+    # Each registered provider specifies its Provider STI class, Adapter,
+    # catalog, and metadata. This is not a database table — it's a code registry.
     class ProviderRegistry
       Entry = Struct.new(
         :key,
         :display_name,
-        :integration_class,
+        :provider_class,
         :adapter_class,
         :catalog_class,
         :default_base_url,
@@ -32,7 +32,7 @@ module PallasTrade
       # Register a provider type.
       #
       # @param key [Symbol] stable provider key, e.g. :deepseek
-      # @param integration_class [String] STI class name
+      # @param provider_class [String] STI class name
       # @param adapter_class [String] Adapter class name
       # @param catalog_class [String] Catalog class name
       # @param display_name [String] human-readable name
@@ -48,7 +48,7 @@ module PallasTrade
       # @param retryable_errors [Array<Symbol>] e.g. [:timeout, :rate_limited, :server_error]
       def register(
         key,
-        integration_class:,
+        provider_class:,
         adapter_class:,
         catalog_class: nil,
         display_name: key.to_s.titleize,
@@ -68,7 +68,7 @@ module PallasTrade
         @providers[key] = Entry.new(
           key: key,
           display_name: display_name,
-          integration_class: integration_class,
+          provider_class: provider_class,
           adapter_class: adapter_class,
           catalog_class: catalog_class,
           default_base_url: default_base_url,
@@ -108,14 +108,14 @@ module PallasTrade
         @providers.key?(key.to_sym)
       end
 
-      # Resolve the Integration STI class for a registered provider key.
+      # Resolve the Provider STI class for a registered provider key.
       # 反射（constantize）集中在此处，避免 controller 对参数派生值直接反射
       #（Brakeman UnsafeReflection）。调用方必须先 `registered?`/`[]` 校验 key。
       # @param key [Symbol, String] registered provider key
       # @return [Class, nil]
-      def integration_class_for(key)
+      def provider_class_for(key)
         entry = @providers[key.to_sym]
-        entry&.integration_class&.safe_constantize
+        entry&.provider_class&.safe_constantize
       end
 
       # Get the list of allowed provider keys for API validation.

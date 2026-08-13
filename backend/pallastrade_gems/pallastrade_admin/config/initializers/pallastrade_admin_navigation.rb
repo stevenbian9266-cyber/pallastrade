@@ -181,14 +181,6 @@ Rails.application.config.after_initialize do
           position: 60,
           if: -> { can?(:manage, PallasTrade::Report) }
 
-  # Integrations
-  sidebar_nav.add :integrations,
-          label: :integrations,
-          url: :admin_integrations_path,
-          icon: 'plug-connected',
-          position: 80,
-          if: -> { can?(:manage, PallasTrade::Integration) }
-
   # Section divider before settings
   sidebar_nav.add :settings_section,
           section_label: 'Settings',

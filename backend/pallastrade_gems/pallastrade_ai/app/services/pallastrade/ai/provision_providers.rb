@@ -2,11 +2,11 @@
 
 module PallasTrade
   module AI
-    # Lazy provisioning of preset AI provider integrations for a store.
+    # Lazy provisioning of preset AI provider configurations for a store.
     #
     # When an admin first visits the AI providers page, every registered
     # provider type (DeepSeek, OpenAI, etc.) must already have a store-scoped
-    # Integration record — even if inactive and without credentials — so the
+    # Provider record — even if inactive and without credentials — so the
     # UI can show preset cards with "Key not configured" status.
     #
     # This service is idempotent: calling it multiple times only creates
@@ -25,10 +25,10 @@ module PallasTrade
 
       def call
         PallasTrade::AI.providers.all.each do |entry|
-          klass = entry.integration_class.constantize
-          next if @store.integrations.exists?(type: klass.name)
+          klass = entry.provider_class.constantize
+          next if @store.ai_providers.exists?(type: klass.name)
 
-          # Integration has no name column — display_name is derived from
+          # Provider has no name column — display_name is derived from
           # the STI class (integration_name), so only store + active are set.
           klass.create!(
             store: @store,

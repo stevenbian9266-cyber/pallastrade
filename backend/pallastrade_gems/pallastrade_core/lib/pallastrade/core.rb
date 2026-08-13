@@ -357,14 +357,6 @@ module PallasTrade
     Rails.application.config.pallastrade.metafields
   end
 
-  def self.integrations
-    Rails.application.config.pallastrade.integrations
-  end
-
-  def self.integrations=(value)
-    Rails.application.config.pallastrade.integrations = value
-  end
-
   # Event subscribers that handle lifecycle and custom events
   # @example Adding a custom subscriber
   #   PallasTrade.subscribers << MyApp::OrderNotificationSubscriber

@@ -13,7 +13,7 @@ module PallasTrade
     # entries are created.
     #
     # @example
-    #   provider = current_store.integrations.find_by(type: 'PallasTrade::AI::Integrations::DeepSeek')
+    #   provider = current_store.ai_providers.find_by(type: 'PallasTrade::AI::Provider::DeepSeek')
     #   PallasTrade::AI::ProvisionModels.call(provider: provider)
     class ProvisionModels
       def self.call(provider:)

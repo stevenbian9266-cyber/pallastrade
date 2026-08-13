@@ -30,7 +30,6 @@ module PallasTrade
                                :metafields,
                                :analytics_events,
                                :analytics_event_handlers,
-                               :integrations,
                                :subscribers,
                                :store_authentication_strategies,
                                :admin_authentication_strategies)
@@ -366,8 +365,6 @@ module PallasTrade
           order_completed: 'Order Completed',
         }
         Rails.application.config.pallastrade.analytics_event_handlers = []
-
-        Rails.application.config.pallastrade.integrations = []
 
         Rails.application.config.pallastrade.validators.addresses = [
           PallasTrade::Addresses::PhoneValidator

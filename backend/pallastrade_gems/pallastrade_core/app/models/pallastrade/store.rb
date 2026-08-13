@@ -114,7 +114,7 @@ module PallasTrade
     has_many :reports, class_name: 'PallasTrade::Report'
     has_many :exports, class_name: 'PallasTrade::Export'
 
-    has_many :integrations, class_name: 'PallasTrade::Integration'
+    has_many :ai_providers, class_name: 'PallasTrade::AI::Provider'
 
     has_many :gift_cards, class_name: 'PallasTrade::GiftCard', dependent: :destroy
 

@@ -8,21 +8,21 @@ module PallasTrade
       # All adapters are tested against a unified contract spec.
       class Base
         # Validate that the integration configuration is valid.
-        # @param integration [PallasTrade::Integration]
+        # @param integration [PallasTrade::AI::Provider]
         # @raise [PallasTrade::AI::Errors::ConfigurationInvalid]
         def validate_configuration!(integration)
           raise NotImplementedError
         end
 
         # Test connection with a lightweight, non-generative request.
-        # @param integration [PallasTrade::Integration]
+        # @param integration [PallasTrade::AI::Provider]
         # @return [Hash] { success: Boolean, status: String, error: String, latency_ms: Integer }
         def test_connection(integration)
           raise NotImplementedError
         end
 
         # Execute a generation request.
-        # @param integration [PallasTrade::Integration]
+        # @param integration [PallasTrade::AI::Provider]
         # @param request [PallasTrade::AI::Providers::Request]
         # @return [PallasTrade::AI::Providers::Response]
         def generate(integration, request)
@@ -55,7 +55,7 @@ module PallasTrade
         end
 
         # Build a Faraday connection for this provider.
-        # @param integration [PallasTrade::Integration]
+        # @param integration [PallasTrade::AI::Provider]
         # @return [Faraday::Connection]
         def build_connection(integration)
           Faraday.new(url: integration.preferred_base_url) do |conn|

@@ -5,20 +5,23 @@ module PallasTrade
     module V3
       module Admin
         module AI
-          # CRUD for AI provider integrations (DeepSeek, OpenAI, etc.).
-          # Providers are store-scoped PallasTrade::Integration STI records.
+          # CRUD for AI provider configurations (DeepSeek, OpenAI, etc.).
+          # Providers are store-scoped PallasTrade::AI::Provider STI records.
           class ProvidersController < BaseController
+            PROVIDER_TYPES = %w[
+              PallasTrade::AI::Provider::DeepSeek
+              PallasTrade::AI::Provider::OpenAI
+            ].freeze
+
             def index
-              authorize! :show, PallasTrade::Integration
+              authorize! :show, PallasTrade::AI::Provider
 
               # Lazy provisioning: ensure every registered provider type has
-              # a store-scoped Integration record so the UI always shows
+              # a store-scoped Provider record so the UI always shows
               # preset cards (DeepSeek, OpenAI) with "not configured" status.
               PallasTrade::AI::ProvisionProviders.call(store: current_store)
 
-              providers = current_store.integrations.where(
-                type: %w[PallasTrade::AI::Integrations::DeepSeek PallasTrade::AI::Integrations::OpenAI]
-              )
+              providers = current_store.ai_providers.where(type: PROVIDER_TYPES)
               render json: serialize_resources(providers)
             end
 
@@ -29,15 +32,15 @@ module PallasTrade
             end
 
             def create
-              authorize! :create, PallasTrade::Integration
+              authorize! :create, PallasTrade::AI::Provider
 
               provider_type = params[:provider_type]&.to_sym
               entry = PallasTrade::AI.providers[provider_type]
               return render_error(code: 'invalid_provider_type', message: "Unknown provider type: #{provider_type}", status: :unprocessable_entity) unless entry
 
-              # integration_class 来自代码级 ProviderRegistry 白名单（entry 已校验）。
-              # 反射封装在 registry#integration_class_for 内（避免 Brakeman UnsafeReflection）。
-              klass = PallasTrade::AI.providers.integration_class_for(provider_type)
+              # provider_class 来自代码级 ProviderRegistry 白名单（entry 已校验）。
+              # 反射封装在 registry#provider_class_for 内（避免 Brakeman UnsafeReflection）。
+              klass = PallasTrade::AI.providers.provider_class_for(provider_type)
               return render_error(code: 'invalid_provider_type', message: "Unknown provider type: #{provider_type}", status: :unprocessable_entity) unless klass
               provider = klass.new(store: current_store, active: false)
 
@@ -54,7 +57,7 @@ module PallasTrade
 
                 # Store API key if provided
                 if params[:api_key].present?
-                  secret = PallasTrade::AI::ProviderSecret.new(integration: provider)
+                  secret = PallasTrade::AI::ProviderSecret.new(provider: provider)
                   secret.credentials = params[:api_key]
                   secret.save!
                 end
@@ -84,14 +87,14 @@ module PallasTrade
 
                 # Replace API key (if new key provided)
                 if params[:api_key].present? && !params[:api_key].blank?
-                  secret = PallasTrade::AI::ProviderSecret.find_or_initialize_by(integration: provider)
+                  secret = PallasTrade::AI::ProviderSecret.find_or_initialize_by(provider: provider)
                   secret.credentials = params[:api_key]
                   secret.save!
                 end
 
                 # Clear credential (if explicitly requested)
                 if params[:clear_credential].present? && ActiveModel::Type::Boolean.new.cast(params[:clear_credential])
-                  secret = PallasTrade::AI::ProviderSecret.find_by(integration: provider)
+                  secret = PallasTrade::AI::ProviderSecret.find_by(provider: provider)
                   secret&.destroy!
                   provider.update!(active: false)
                 end
@@ -121,7 +124,7 @@ module PallasTrade
               end
 
               ActiveRecord::Base.transaction do
-                PallasTrade::AI::ProviderSecret.where(integration: provider).destroy_all
+                PallasTrade::AI::ProviderSecret.where(provider: provider).destroy_all
                 PallasTrade::AI::Model.where(provider: provider).destroy_all
                 provider.destroy!
               end
@@ -132,9 +135,9 @@ module PallasTrade
             private
 
             def find_provider
-              current_store.integrations.find_by!(
+              current_store.ai_providers.find_by!(
                 id: params[:id],
-                type: %w[PallasTrade::AI::Integrations::DeepSeek PallasTrade::AI::Integrations::OpenAI]
+                type: PROVIDER_TYPES
               )
             end
           end

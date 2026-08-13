@@ -1,7 +1,5 @@
 module PallasTrade
   class ShipmentHandler
-    include PallasTrade::IntegrationsConcern
-
     class << self
       def factory(shipment)
         # Do we have a specialized shipping-method-specific handler? e.g:

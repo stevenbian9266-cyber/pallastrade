@@ -30,8 +30,6 @@ module PallasTrade
         :gift_cards_filters_partials,
         :gift_cards_header_partials,
         :head_partials,
-        :integrations_actions_partials,
-        :integrations_header_partials,
         :invitations_actions_partials,
         :invitations_header_partials,
         :oauth_applications_actions_partials,
