@@ -57,7 +57,7 @@ module PallasTrade
       end
 
       # A storefront counts as set up once the merchant has saved the storefront
-      # URL (entered manually or backfilled by the Vercel callback).
+      # URL (entered manually or backfilled by the deployment callback).
       def storefront_setup?
         preferred_storefront_url.present?
       end
