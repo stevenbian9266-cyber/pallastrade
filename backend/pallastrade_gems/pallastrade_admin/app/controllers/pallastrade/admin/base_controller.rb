@@ -14,7 +14,6 @@ module PallasTrade
       helper 'pallastrade/currency'
       helper 'pallastrade/localized_names'
       helper 'pallastrade/addresses'
-      helper 'pallastrade/integrations'
 
       before_action :authorize_admin
 

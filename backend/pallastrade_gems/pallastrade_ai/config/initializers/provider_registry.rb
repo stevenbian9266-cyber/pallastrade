@@ -9,7 +9,7 @@ Rails.application.reloader.to_prepare do
   # DeepSeek provider
   PallasTrade::AI.providers.register(
     :deepseek,
-    integration_class: 'PallasTrade::AI::Integrations::DeepSeek',
+    provider_class: 'PallasTrade::AI::Provider::DeepSeek',
     adapter_class: 'PallasTrade::AI::Providers::DeepSeek',
     catalog_class: 'PallasTrade::AI::Catalogs::DeepSeek',
     display_name: 'DeepSeek',
@@ -37,7 +37,7 @@ Rails.application.reloader.to_prepare do
   # OpenAI (GPT) provider
   PallasTrade::AI.providers.register(
     :openai,
-    integration_class: 'PallasTrade::AI::Integrations::OpenAI',
+    provider_class: 'PallasTrade::AI::Provider::OpenAI',
     adapter_class: 'PallasTrade::AI::Providers::OpenAI',
     catalog_class: 'PallasTrade::AI::Catalogs::OpenAI',
     display_name: 'OpenAI (GPT)',

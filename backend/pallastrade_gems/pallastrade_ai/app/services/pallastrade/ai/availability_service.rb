@@ -66,7 +66,7 @@ module PallasTrade
         end
 
         # Gate 7: Credentials must be configured
-        provider_secret = PallasTrade::AI::ProviderSecret.find_by(integration: provider)
+        provider_secret = PallasTrade::AI::ProviderSecret.find_by(provider: provider)
         unless provider_secret&.configured?
           return unavailable(:ai_credentials_missing, 'Provider credentials are not configured')
         end

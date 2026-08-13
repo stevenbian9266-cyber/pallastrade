@@ -226,11 +226,6 @@ en:
           map_fields: 1. Map fields
           process_rows: 2. Process rows
         waiting_for_file_to_be_processed: Waiting for file to be processed...
-      integrations:
-        find_more_html: Find more integrations in %{integrations_link}
-        invalid_integration_type: This integration is not allowed
-        none_installed_html: No integrations installed yet. Find integrations in %{integrations_link}
-        page_subtitle: Connect your store to third-party services to enhance customer experience.
       integrations_directory: Integrations Directory
       invitations:
         email_placeholder: eg. steve@apple.com

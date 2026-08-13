@@ -10,33 +10,34 @@ RSpec.describe PallasTrade::AI::ProvisionProviders, type: :service do
   end
 
   describe '.call' do
-    it 'creates one store-scoped Integration per registered provider' do
+    it 'creates one store-scoped Provider per registered provider' do
       expect {
         described_class.call(store: store)
-      }.to change(PallasTrade::Integration, :count).by(PallasTrade::AI.providers.all.size)
+      }.to change(PallasTrade::AI::Provider, :count).by(PallasTrade::AI.providers.all.size)
 
       PallasTrade::AI.providers.all.each do |entry|
-        integration = store.integrations.find_by(type: entry.integration_class)
-        expect(integration).to be_present
-        expect(integration.name).to eq(entry.display_name)
-      end    end
+        provider = store.ai_providers.find_by(type: entry.provider_class)
+        expect(provider).to be_present
+        expect(provider.name).to eq(entry.display_name)
+      end
+    end
 
     it 'creates providers as inactive by default' do
       described_class.call(store: store)
 
-      store.integrations.where(type: PallasTrade::AI.providers.all.map(&:integration_class)).each do |integration|
-        expect(integration.active).to be false
+      store.ai_providers.where(type: PallasTrade::AI.providers.all.map(&:provider_class)).each do |provider|
+        expect(provider.active).to be false
       end
     end
 
     it 'is scoped to the given store' do
       described_class.call(store: store)
 
-      expect(other_store.integrations.where(type: PallasTrade::AI.providers.all.map(&:integration_class)).count).to eq(0)
+      expect(other_store.ai_providers.where(type: PallasTrade::AI.providers.all.map(&:provider_class)).count).to eq(0)
 
       expect {
         described_class.call(store: other_store)
-      }.to change(other_store.integrations, :count).by(PallasTrade::AI.providers.all.size)
+      }.to change(other_store.ai_providers, :count).by(PallasTrade::AI.providers.all.size)
     end
 
     context 'idempotency' do
@@ -45,13 +46,13 @@ RSpec.describe PallasTrade::AI::ProvisionProviders, type: :service do
 
         expect {
           described_class.call(store: store)
-        }.not_to change(store.integrations, :count)
+        }.not_to change(store.ai_providers, :count)
       end
 
       it 'does not overwrite an existing provider (active preserved)' do
         described_class.call(store: store)
 
-        existing = store.integrations.find_by(type: 'PallasTrade::AI::Integrations::DeepSeek')
+        existing = store.ai_providers.find_by(type: 'PallasTrade::AI::Provider::DeepSeek')
         existing.update!(active: true)
 
         described_class.call(store: store)

@@ -15,8 +15,8 @@ RSpec.describe 'Admin AI Models page', type: :request do
     allow_any_instance_of(PallasTrade::Admin::AIController).to receive(:current_store).and_return(store)
 
     # Create providers
-    create(:integration, store: store, type: 'PallasTrade::AI::Integrations::DeepSeek', active: false)
-    create(:integration, store: store, type: 'PallasTrade::AI::Integrations::OpenAI', active: false)
+    create(:ai_provider, store: store, type: 'PallasTrade::AI::Provider::DeepSeek', active: false)
+    create(:ai_provider, store: store, type: 'PallasTrade::AI::Provider::OpenAI', active: false)
   end
 
   describe 'GET /admin/ai/models' do

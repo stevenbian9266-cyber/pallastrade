@@ -11,10 +11,10 @@ module PallasTrade
           PallasTrade::AI::Catalogs::DeepSeek::SUPPORTED_PARAMETERS
         end
 
-        # @param integration [PallasTrade::AI::Integrations::DeepSeek]
+        # @param integration [PallasTrade::AI::Provider::DeepSeek]
         # @raise [PallasTrade::AI::Errors::CredentialsError]
         def validate_configuration!(integration)
-          unless integration.is_a?(PallasTrade::AI::Integrations::DeepSeek)
+          unless integration.is_a?(PallasTrade::AI::Provider::DeepSeek)
             raise PallasTrade::AI::Errors::CredentialsError, 'Integration is not a DeepSeek provider'
           end
 
@@ -23,7 +23,7 @@ module PallasTrade
           end
         end
 
-        # @param integration [PallasTrade::AI::Integrations::DeepSeek]
+        # @param integration [PallasTrade::AI::Provider::DeepSeek]
         # @return [Hash]
         def test_connection(integration)
           validate_configuration!(integration)
@@ -67,7 +67,7 @@ module PallasTrade
           }
         end
 
-        # @param integration [PallasTrade::AI::Integrations::DeepSeek]
+        # @param integration [PallasTrade::AI::Provider::DeepSeek]
         # @param request [PallasTrade::AI::Providers::Request]
         # @return [PallasTrade::AI::Providers::Response]
         def generate(integration, request)

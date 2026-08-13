@@ -10,7 +10,7 @@ module PallasTrade
       include PallasTrade::SingleStoreResource
 
       belongs_to :store, class_name: 'PallasTrade::Store'
-      belongs_to :provider, class_name: 'PallasTrade::Integration'
+      belongs_to :provider, class_name: 'PallasTrade::AI::Provider'
 
       has_many :capability_settings_as_primary,
                class_name: 'PallasTrade::AI::CapabilitySetting',

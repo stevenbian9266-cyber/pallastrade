@@ -7,7 +7,7 @@
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <% @providers.each do |provider| %>
       <%
-        secret = PallasTrade::AI::ProviderSecret.find_by(integration: provider)
+        secret = PallasTrade::AI::ProviderSecret.find_by(provider: provider)
         key_ok = secret&.configured?
         # Connection verification is not yet persisted (no verification_status
         # column); treat as unverified so badges degrade gracefully.

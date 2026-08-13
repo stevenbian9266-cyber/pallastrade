@@ -12,8 +12,8 @@ module PallasTrade
             { action: :manage, subject: 'PallasTrade::AI::ProviderSecret' },
             { action: :manage, subject: 'PallasTrade::AI::Model' },
             { action: :manage, subject: 'PallasTrade::AI::CapabilitySetting' },
-            { action: :manage, subject: 'PallasTrade::AI::Integrations::DeepSeek' },
-            { action: :manage, subject: 'PallasTrade::AI::Integrations::OpenAI' }
+            { action: :manage, subject: 'PallasTrade::AI::Provider::DeepSeek' },
+            { action: :manage, subject: 'PallasTrade::AI::Provider::OpenAI' }
           ]
         end
 

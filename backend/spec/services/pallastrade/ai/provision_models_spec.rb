@@ -3,12 +3,11 @@ require 'rails_helper'
 RSpec.describe PallasTrade::AI::ProvisionModels, type: :service do
   let(:store) { create(:store) }
   let(:deepseek_provider) do
-    # Instantiate the STI subclass directly — the :integration factory returns a
-    # base-class instance whose #key is 'integration', which breaks registry lookup.
-    PallasTrade::AI::Integrations::DeepSeek.create!(store: store, active: false)
+    # Instantiate the STI subclass directly so #key resolves via the registry.
+    PallasTrade::AI::Provider::DeepSeek.create!(store: store, active: false)
   end
   let(:openai_provider) do
-    PallasTrade::AI::Integrations::OpenAI.create!(store: store, active: false)
+    PallasTrade::AI::Provider::OpenAI.create!(store: store, active: false)
   end
 
   before do

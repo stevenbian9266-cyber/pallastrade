@@ -2,11 +2,13 @@
 
 module PallasTrade
   module AI
-    module Integrations
-      # DeepSeek provider integration.
-      # Inherits from PallasTrade::Integration (STI).
-      # One per store maximum (enforced by Integration uniqueness on store+type).
-      class DeepSeek < PallasTrade::Integration
+    class Provider
+      # DeepSeek provider configuration.
+      # One per store maximum (enforced by Provider uniqueness on store+type).
+      #
+      # # PRD-20260813-admin-移除管理后台-integrations-菜单及相关逻辑
+      # # AI 模块解耦：从 PallasTrade::AI::Integrations::DeepSeek 迁移至独立 Provider
+      class DeepSeek < Provider
         # Provider type key used in the registry.
         PROVIDER_KEY = :deepseek
 
@@ -20,10 +22,10 @@ module PallasTrade
         # The provider secret is managed through PallasTrade::AI::ProviderSecret.
         has_one :ai_provider_secret,
                 class_name: 'PallasTrade::AI::ProviderSecret',
-                foreign_key: :integration_id,
+                foreign_key: :provider_id,
                 dependent: :destroy
 
-        validates :store, uniqueness: { scope: :type }, if: -> { type == 'PallasTrade::AI::Integrations::DeepSeek' }
+        validates :store, uniqueness: { scope: :type }, if: -> { type == 'PallasTrade::AI::Provider::DeepSeek' }
 
         def self.integration_name
           'DeepSeek'
@@ -38,7 +40,7 @@ module PallasTrade
         end
 
         # Retrieve the decrypted API key for internal use.
-        # Must only be called within service objects 鈥?never exposed to API.
+        # Must only be called within service objects — never exposed to API.
         def decrypted_api_key
           secret = ai_provider_secret
           raise PallasTrade::AI::Errors::CredentialsError, 'No credentials configured' unless secret&.configured?

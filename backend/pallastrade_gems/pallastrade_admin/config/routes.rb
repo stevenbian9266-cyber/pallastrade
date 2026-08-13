@@ -240,9 +240,6 @@ PallasTrade::Core::Engine.add_routes do
         put :mark_as_default
       end
     end
-    # integrations
-    resources :integrations
-
     # account management
     resources :roles, except: :show
     resources :invitations, except: [:edit, :update] do

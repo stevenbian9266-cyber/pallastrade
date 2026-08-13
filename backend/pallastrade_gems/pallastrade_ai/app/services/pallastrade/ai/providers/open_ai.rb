@@ -11,10 +11,10 @@ module PallasTrade
           PallasTrade::AI::Catalogs::OpenAI::SUPPORTED_PARAMETERS
         end
 
-        # @param integration [PallasTrade::AI::Integrations::OpenAI]
+        # @param integration [PallasTrade::AI::Provider::OpenAI]
         # @raise [PallasTrade::AI::Errors::CredentialsError]
         def validate_configuration!(integration)
-          unless integration.is_a?(PallasTrade::AI::Integrations::OpenAI)
+          unless integration.is_a?(PallasTrade::AI::Provider::OpenAI)
             raise PallasTrade::AI::Errors::CredentialsError, 'Integration is not an OpenAI provider'
           end
 
@@ -23,7 +23,7 @@ module PallasTrade
           end
         end
 
-        # @param integration [PallasTrade::AI::Integrations::OpenAI]
+        # @param integration [PallasTrade::AI::Provider::OpenAI]
         # @return [Hash]
         def test_connection(integration)
           validate_configuration!(integration)
@@ -67,7 +67,7 @@ module PallasTrade
           }
         end
 
-        # @param integration [PallasTrade::AI::Integrations::OpenAI]
+        # @param integration [PallasTrade::AI::Provider::OpenAI]
         # @param request [PallasTrade::AI::Providers::Request]
         # @return [PallasTrade::AI::Providers::Response]
         def generate(integration, request)

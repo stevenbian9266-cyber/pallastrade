@@ -9,6 +9,11 @@ module PallasTrade
       # model_class cannot represent a single resource type.
       skip_before_action :load_resource
 
+      PROVIDER_TYPES = %w[
+        PallasTrade::AI::Provider::DeepSeek
+        PallasTrade::AI::Provider::OpenAI
+      ].freeze
+
       # Breadcrumbs — Pattern B (class-level declaration).
       # Base breadcrumb "AI Tools" is shared across all AI sub-pages;
       # sub-page breadcrumbs are appended via before_action.
@@ -28,11 +33,9 @@ module PallasTrade
         # and providers pages show them even before credentials are added.
         PallasTrade::AI::ProvisionProviders.call(store: current_store)
 
-        # Overview page 鈥?shows summary of AI configuration
+        # Overview page — shows summary of AI configuration
         @setting = PallasTrade::AI::Setting.find_or_initialize_by(store: current_store)
-        @provider_count = current_store.integrations.where(
-          type: %w[PallasTrade::AI::Integrations::DeepSeek PallasTrade::AI::Integrations::OpenAI]
-        ).count
+        @provider_count = current_store.ai_providers.where(type: PROVIDER_TYPES).count
         @model_count = PallasTrade::AI::Model.where(store: current_store).count
         @active_model_count = PallasTrade::AI::Model.where(store: current_store, active: true).count
         @cap_count = PallasTrade::AI::CapabilitySetting.where(store: current_store, active: true).count
@@ -44,15 +47,13 @@ module PallasTrade
         # Lazy-provision preset providers so the page shows DeepSeek/OpenAI
         # cards with "Key not configured" status even on first visit.
         PallasTrade::AI::ProvisionProviders.call(store: current_store)
-        @providers = current_store.integrations.where(
-          type: %w[PallasTrade::AI::Integrations::DeepSeek PallasTrade::AI::Integrations::OpenAI]
-        )
+        @providers = current_store.ai_providers.where(type: PROVIDER_TYPES)
       end
 
       # GET /admin/ai/providers/:id
       def provider
         @provider = find_provider
-        @secret = PallasTrade::AI::ProviderSecret.find_by(integration: @provider)
+        @secret = PallasTrade::AI::ProviderSecret.find_by(provider: @provider)
         @models = PallasTrade::AI::Model.where(provider: @provider).order(:name)
       end
 
@@ -61,7 +62,7 @@ module PallasTrade
         @provider = find_provider
 
         if params[:api_key].present?
-          secret = PallasTrade::AI::ProviderSecret.find_or_initialize_by(integration: @provider)
+          secret = PallasTrade::AI::ProviderSecret.find_or_initialize_by(provider: @provider)
           secret.credentials = params[:api_key]
           secret.save!
         end
@@ -100,7 +101,7 @@ module PallasTrade
       # DELETE /admin/ai/providers/:id/credential
       def clear_credential
         @provider = find_provider
-        secret = PallasTrade::AI::ProviderSecret.find_by(integration: @provider)
+        secret = PallasTrade::AI::ProviderSecret.find_by(provider: @provider)
         secret&.destroy!
         @provider.update!(active: false)
         flash[:success] = 'Credential cleared'
@@ -206,25 +207,21 @@ module PallasTrade
       end
 
       def provision_models_for_all_providers
-        current_store.integrations.where(
-          type: %w[PallasTrade::AI::Integrations::DeepSeek PallasTrade::AI::Integrations::OpenAI]
-        ).find_each do |provider|
+        current_store.ai_providers.where(type: PROVIDER_TYPES).find_each do |provider|
           PallasTrade::AI::ProvisionModels.call(provider: provider)
         end
       end
 
       def find_provider
-        current_store.integrations.find_by_prefix_id!(params[:id]).tap do |provider|
-          unless %w[PallasTrade::AI::Integrations::DeepSeek PallasTrade::AI::Integrations::OpenAI].include?(provider.type)
+        current_store.ai_providers.find_by_prefix_id!(params[:id]).tap do |provider|
+          unless PROVIDER_TYPES.include?(provider.type)
             raise ActiveRecord::RecordNotFound, "Not an AI provider"
           end
         end
       end
 
       def load_providers
-        @providers = current_store.integrations.where(
-          type: %w[PallasTrade::AI::Integrations::DeepSeek PallasTrade::AI::Integrations::OpenAI]
-        )
+        @providers = current_store.ai_providers.where(type: PROVIDER_TYPES)
       end
 
       def load_models

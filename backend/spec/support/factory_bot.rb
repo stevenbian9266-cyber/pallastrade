@@ -18,3 +18,10 @@ begin
 rescue LoadError
   # Stripe gem not available in this test context
 end
+
+# Load AI gem testing factories (AI Provider)
+begin
+  require 'pallastrade_ai/factories'
+rescue LoadError
+  # AI gem not available in this test context
+end
