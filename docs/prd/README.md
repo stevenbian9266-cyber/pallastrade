@@ -54,7 +54,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260812-storefront-商城前台注册面板接入-turnstile-真人验证 | storefront | 2026-08-12 | REQ-20260812-turnstile-verification |
 | done | PRD-20260812-storefront-商城前台新增cookie功能 | storefront | 2026-08-12 | REQ-20260812-storefront-cookie-consent |
 | done | PRD-20260813-storefront-裁剪-admin-storefront-页面-vercel-集成-ui-并优化已连接-origins-展示 | storefront | 2026-08-13 | REQ-20260814-trim-admin-storefront-vercel |
-| reviewing | PRD-20260814-admin-管理后台统一配置中心-集中管理关键参数与-secret-env-从模块取数 | admin | 2026-08-14 | （实施时回填） |
+| done | PRD-20260814-admin-管理后台统一配置中心-集中管理关键参数与-secret-env-从模块取数 | admin | 2026-08-14 | REQ-20260814-admin-config-center |
 
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 
