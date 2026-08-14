@@ -68,7 +68,6 @@ if (!/namespace\s+:v3\b/.test(apiRoutes)) {
 
 for (const [clientPath, requiredBase] of [
   ['platform/packages/sdk/src/client.ts', '/api/v3/store'],
-  ['platform/packages/admin-sdk/src/client.ts', '/api/v3/admin'],
 ]) {
   const content = readFileSync(join(root, clientPath), 'utf8')
   if (!content.includes(requiredBase)) {

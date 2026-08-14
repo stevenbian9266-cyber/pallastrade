@@ -30,7 +30,7 @@ npx skills update
 
 ## What ships
 
-### 24 skills
+### 25 skills
 
 | Skill | When it activates |
 |---|---|
