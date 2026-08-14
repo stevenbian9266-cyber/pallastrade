@@ -37,16 +37,6 @@ If a secret leaks into a commit (even on a private repo): **rotate immediately**
 
 The PallasTrade Agent Skills plugin (installed via `/plugin install pallastrade@pallastrade` in Claude Code) ships a PostToolUse hook that warns when Claude appears to be writing a known-shape secret (Stripe live keys, AWS keys, GitHub PATs, OpenAI/Anthropic keys, plaintext sensitive env names). It's a tripwire, not a substitute for review.
 
-### Config Center secrets (managed params)
-
-Since 2026-08, PallasTrade ships a unified **Config Center** (`PallasTrade::ConfigItem` + `PallasTrade::ConfigCenter`) for managing parameters (incl. secrets) from the admin instead of `.env`:
-
-- `secret` value_type items are encrypted via **Active Record Encryption** (non-deterministic); plaintext is **never** exposed via API, logs, Sentry, or Sidekiq.
-- Secrets are **write-only**: the UI/API only ever shows a masked `key_hint` (prefix 5 + suffix 4) and `rotated_at`. Serializers must use `credential_summary` (or the API serializer's `secret_*` attributes) and never serialize `raw_value`.
-- **Fail-closed**: writing a secret without `ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY` configured raises/returns a validation error.
-- Server-internal reads go through `PallasTrade::ConfigCenter.fetch_secret(key)`; never read `secret_value` directly in views/serializers.
-- Boot sync: `PallasTrade::ConfigCenter.sync_env!` merges managed values into ENV so legacy `ENV[...]` read sites keep working.
-
 ### Strong Parameters
 
 Always whitelist params in controllers; never `params.permit!` or splat user input into mass-assignment:

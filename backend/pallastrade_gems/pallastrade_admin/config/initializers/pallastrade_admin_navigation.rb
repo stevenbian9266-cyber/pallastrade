@@ -488,13 +488,6 @@ Rails.application.config.after_initialize do
           active: -> { controller_name == 'allowed_origins' },
           if: -> { can?(:manage, PallasTrade::AllowedOrigin) }
 
-  developers_tabs_nav.add :config_center,
-          label: 'admin.config_center',
-          url: :admin_config_items_path,
-          position: 40,
-          active: -> { controller_name == 'config_items' },
-          if: -> { can?(:manage, PallasTrade::ConfigItem) }
-
   # Audit Tab Navigation
   audit_tabs_nav = PallasTrade.admin.navigation.audit_tabs
 

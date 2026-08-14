@@ -8,6 +8,7 @@ const skippedDirectories = new Set([
   'node_modules',
   '.pnpm-store',
   '.turbo',
+  '.harness-state',
   '.next',
   'coverage',
   'dist',
@@ -29,7 +30,7 @@ const blockedIdentities = [
 // Internal record directories: historical notes / requirements / research docs
 // legitimately mention third-party names (e.g. "zero legacy brand residue"
 // records or competitive benchmarking), so brand-identity checks are skipped there.
-const excludedRecordDirectories = ['ai/memories/', 'harness/requirements/', 'docs/research/']
+const excludedRecordDirectories = ['ai/memories/', 'harness/requirements/', 'harness/reviews/', 'harness/gates/', 'docs/research/']
 const blockedOriginPhrases = [
   ['adapted', 'from'].join(' '),
   ['inspired', 'by'].join(' '),

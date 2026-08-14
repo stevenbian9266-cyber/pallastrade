@@ -307,19 +307,6 @@ Implementation: `PallasTrade::Api::Turnstile.verify(token, remote_ip:)` returns
 `true` / `false` / `nil`; `PallasTrade::Api::V3::Store::CustomersController#turnstile_verified?`
 maps `nil` → allow + `Rails.logger.warn`.
 
-## Config Center (admin managed parameters)
-
-`/api/v3/admin/config_items` manages the unified Config Center (`PallasTrade::ConfigItem`).
-Scoped to `read_settings` / `write_settings` (plus CanCanCan `manage` for JWT admins).
-
-- `value_type` ∈ `secret | string | boolean | number`. `key` and `value_type` are create-only.
-- **secret items never return plaintext** — the serializer only exposes
-  `secret_configured`, `secret_hint` (masked) and `secret_rotated_at`. Non-secret
-  items expose `value`.
-- `POST /config_items/import` bulk-upserts entries (`{key, group, value_type, value, description}`). **The Config Center is the single source of truth** — regular parameter management uses `POST`/`PATCH` on `/config_items`; `import` is only a batch convenience for first-time migration.
-  and returns per-entry `{key, saved, errors}`.
-- Secret items fail-closed when `ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY` is not configured.
-
 ## Read/write attribute symmetry (a v3 invariant)
 
 For any resource: **whatever a serializer returns, the controller's `permitted_params` accepts on write under the same name.** No `label` exposed but `presentation` accepted. No `customer_note` exposed but `special_instructions` accepted. The client never has to translate.

@@ -1,8 +1,13 @@
 # PRD-20260814-admin-管理后台统一配置中心-集中管理关键参数与-secret-env-从模块取数
 
+> ## ⛔ 已废弃（2026-08-14）
+> 本 PRD 描述的 **Config Center 模块已被彻底移除**（见 `harness/requirements/REQ-20260814-remove-config-center.md`）。
+> 原因：目标客户无研发能力、依赖 AI coding 与 `.env` 文件（对 AI 更透明），Config Center 的 DB 存储对 AI 不透明、且 secret 值在迁移后实际为空壳。
+> 配置管理回归 **`.env` + scan-secrets 防泄露** 模式。本 PRD 仅作历史记录保留，不再实施任何内容。
+
 | 元数据 | 值 |
 |---|---|
-| 状态 | done（已实施部署，dev 验证通过）；v0.4 唯一源语义强化进行中 |
+| 状态 | ⛔ 废弃（2026-08-14 彻底移除 Config Center，回归 .env + scan-secrets） |
 | 创建日期 | 2026-08-14 |
 | 来源 | 管理后台统一配置中心：集中管理关键参数与 Secret，env 从模块取数 |
 | 分类 | admin（自动判定） |
