@@ -23,7 +23,7 @@ RSpec.describe 'Admin Config Center page', type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('Config Center')
       expect(response.body).to include('site.name')
-      expect(response.body).to include('Import from ENV')
+      expect(response.body).to include('Initialize from environment variables')
     end
   end
 

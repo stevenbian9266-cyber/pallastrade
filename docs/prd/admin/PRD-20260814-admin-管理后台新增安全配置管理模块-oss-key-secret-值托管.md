@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | done（已实施部署，dev 验证通过） |
+| 状态 | done（已实施部署，dev 验证通过）；v0.4 唯一源语义强化进行中 |
 | 创建日期 | 2026-08-14 |
 | 来源 | 管理后台统一配置中心：集中管理关键参数与 Secret，env 从模块取数 |
 | 分类 | admin（自动判定） |
@@ -24,7 +24,8 @@
   - 管理后台 Settings 区域新增「**配置中心 / Config Center**」模块，统一管理已有与未来的关键参数；
   - 支持两类值：**敏感（secret，加密存储、只写不读）**与**非敏感（string/boolean/number，明文可读）**；
   - 提供**应用读取层**：`PallasTrade::ConfigCenter.get(key)`（带缓存与默认值），并支持 **boot 时将配置同步进 ENV**，使现有 `ENV[...]` 读取点无需大改即可从模块取数；
-  - 提供迁移/导入：把现有 `.env` 中的关键参数一键导入为配置项；
+  - **配置中心是唯一配置源（single source of truth）**：参数在后台设置保存即生效，应用通过 `ConfigCenter.get(key)` 取「参数名 + 值」，**无需在 .env/配置文件中手填值**；ENV 仅作为启动兜底（配置中心未设置时才回退），不提供「ENV 优先」开关；
+  - 提供**一次性初始化向导**（原「Import from ENV」改名）：仅用于首次把现有 `.env` 中的关键参数迁入配置中心，UI 明确标注「仅首次迁移用，迁移后配置中心为唯一源」；
   - `.env` 最终只保留「加密主密钥 / 数据库连接 / Rails 引导」等基础设施值。
 - **成功指标**：
   - 90% 以上现有业务参数（OSS/Stripe/Turnstile/站点）可从后台配置并立即生效（无需改 .env）；
@@ -50,11 +51,11 @@
 - FR-001：新增配置项模型 `PallasTrade::ConfigItem`（`key`、`group`、`value_type[secret|string|boolean|number]`、`value`、`description`、`default_value`、`store` 作用域、`updated_at`/`rotated_at`）。
 - FR-002：`key` 唯一（scope store），命名规范 `group.name`（如 `oss.access_key_id`）；`secret` 类型 `value` 用 Active Record Encryption 非确定性加密，其他类型明文/JSON 存储。
 - FR-003：`secret` 类型未配置加密主密钥时创建/更新 **fail-closed**（raise，不落明文）；`secret` 保存后仅存 `key_hint`（前缀5+后缀4掩码）与 `rotated_at`。
-- FR-004：Admin UI（Settings 导航新增「配置中心 / Config Center」项）：按**分组**展示列表（key/类型/描述/值摘要/更新时间/操作）、新建、编辑（secret 留空=不改）、删除、**导入向导**（从 `.env` 识别参数批量导入）。
+- FR-004：Admin UI（Settings 导航新增「配置中心 / Config Center」项）：按**分组**展示列表（key/类型/描述/值摘要/更新时间/操作）、新建、编辑（secret 留空=不改）、删除、**一次性初始化向导**（原「Import from ENV」：从 `.env` 识别参数批量导入，UI 标题与文案明确标注「仅首次迁移用，配置中心为唯一源」，迁移后请直接在后台设置并保存参数）。
 - FR-005：Admin API v3：`GET/POST/PATCH/DELETE /api/v3/admin/config_items`（含 `group` 筛选与导入端点）；`secret` 类型序列化仅暴露 `{configured, hint, rotated_at}`，**永不返回明文**；非 secret 类型暴露值。
-- FR-006：**应用读取层**：`PallasTrade::ConfigCenter.get(key, default: nil)`（进程内缓存 + 可强制刷新），统一语义：配置中心 → ENV → 默认值；`PallasTrade::ConfigCenter.fetch_secret(key)` 仅服务端内部读取明文。
-- FR-007：**Boot ENV 同步**：初始化器在启动时把配置中心已配置项 merge 进 `ENV`（key 用规范化映射，如 `oss.access_key_id` → `OSS_ACCESS_KEY_ID`），使存量 `ENV[...]` 读取点（如 `production.rb` 的 OSS 逻辑）**零改动**从模块取数；ENV 显式设置优先或模块优先按配置开关。
-- FR-008：**迁移预填**：首次部署/导入向导将现有 `ENV["OSS_*"]`、`ENV["STRIPE_*"]`、`ENV["TURNSTILE_*"]` 等已识别参数同步为配置项（敏感类型自动归类）。
+- FR-006：**应用读取层**：`PallasTrade::ConfigCenter.get(key, default: nil)`（进程内缓存 + 可强制刷新），统一语义：**配置中心（唯一源） → ENV（兜底） → 默认值**；`PallasTrade::ConfigCenter.fetch_secret(key)` 仅服务端内部读取明文。
+- FR-007：**Boot ENV 同步**：初始化器在启动时把配置中心已配置项 merge 进 `ENV`（key 用规范化映射，如 `oss.access_key_id` → `OSS_ACCESS_KEY_ID`），使存量 `ENV[...]` 读取点（如 `production.rb` 的 OSS 逻辑）**零改动**从模块取数；**配置中心永远优先覆盖 ENV（无 env_precedence 开关）**，ENV 仅在配置中心未设置时兜底。
+- FR-008：**一次性初始化向导**：首次部署时可将现有 `ENV["OSS_*"]`、`ENV["STRIPE_*"]`、`ENV["TURNSTILE_*"]` 等已识别参数同步为配置项（敏感类型自动归类）；该向导仅供**首次迁移**，UI 明确标注「仅首次迁移用，配置中心为唯一源」。
 - FR-009：权限控制：配置项仅 `manage` 权限管理员可写；读取层仅服务端内部；Admin API 遵循现有 scope。
 - FR-010：缓存与生效：配置读取进程内缓存（短 TTL 或事件失效）；后台更新后通过事件广播触发缓存失效，支持不重启生效。
 
@@ -70,12 +71,13 @@
 
 - AC-001 ← FR-001/002：创建 `secret` 类型配置项后 DB 中 `value` 为密文、`key_hint` 正确（前缀5+后缀4掩码）；非 secret 类型明文存储且 API 可读。
 - AC-002 ← FR-003：无 `ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY` 时创建/更新 secret 抛 `EncryptionNotConfigured`，不落库。
-- AC-003 ← FR-004：后台 Settings > 配置中心 按分组展示/新建/编辑/删除；secret 编辑留空不改动值；`rotated_at` 在 secret 新值保存后更新；导入向导可将 `.env` 参数批量导入。
+- AC-003 ← FR-004：后台 Settings > 配置中心 按分组展示/新建/编辑/删除；secret 编辑留空不改动值；`rotated_at` 在 secret 新值保存后更新；**一次性初始化向导**可将 `.env` 参数批量导入，且 UI 明确标注「仅首次迁移用，配置中心为唯一源」。
 - AC-004 ← FR-005：`GET /api/v3/admin/config_items` 中 secret 项无 `value` 明文，仅 summary；非 secret 项返回值；`POST` 后可读回 hint。
-- AC-005 ← FR-006/007：`PallasTrade::ConfigCenter.get('oss.access_key_id')` 返回配置中心值；配置中心未设置时回退 `ENV['OSS_ACCESS_KEY_ID']`；boot 后 `ENV['OSS_ACCESS_KEY_ID']` 已由配置中心注入；删掉 `.env` OSS key（模拟）后上传图片仍成功。
+- AC-005 ← FR-006/007：`PallasTrade::ConfigCenter.get('oss.access_key_id')` 返回配置中心值；配置中心未设置时回退 `ENV['OSS_ACCESS_KEY_ID']`；boot 后 `ENV['OSS_ACCESS_KEY_ID']` 已由配置中心注入且**覆盖原 ENV 值（无 ENV 优先开关）**；删掉 `.env` OSS key（模拟）后上传图片仍成功。
 - AC-006 ← FR-009：无 `manage` 权限的 admin 对 config_items 写请求返回 403。
-- AC-007 ← FR-008：导入/迁移后 `oss_*`、`stripe_*` 等已识别参数成为配置项（若 ENV 存在）。
+- AC-007 ← FR-008：一次性初始化向导迁移后 `oss_*`、`stripe_*` 等已识别参数成为配置项（若 ENV 存在），且向导 UI 含唯一源标注。
 - AC-008 ← FR-010：后台更新配置项后，进程内缓存失效（事件广播），无需重启即生效（验证 `ConfigCenter.get` 返回新值）。
+- AC-009 ← FR-006/007（v0.4）：配置中心已设置的值在 ENV 存在且不同时，`ConfigCenter.get` 返回**配置中心值**（唯一源优先）；`sync_env!` 不再接受 `env_precedence` 参数（已移除）。
 
 ## 6. 跨层搜索记录（6 层，gate 强制）
 
@@ -131,6 +133,7 @@
 | 2026-08-14 | 0.1 | 初稿（骨架 + Secret 管理模块完整扩充） | AI |
 | 2026-08-14 | 0.2 | 按用户澄清**升级为统一配置中心**：支持 secret/普通参数、ConfigCenter 读取层、Boot ENV 同步、导入向导、缓存失效 | AI |
 | 2026-08-14 | 0.3 | 实施完成：ConfigItem/ConfigCenter/Boot ENV/API+Admin 全量实现，35 spec 全绿，dev 部署验证（含 secret 加密），i18n 补充 | AI |
+| 2026-08-14 | 0.4 | **唯一源语义强化**（用户澄清）：Import from ENV 改为「一次性初始化向导」并标注唯一源；移除 `sync_env!` 的 `env_precedence` 开关（配置中心永远优先，ENV 仅兜底）；PRD/FR/AC 同步 | AI |
 
 ## 5. 验收标准（AC，与测试一一映射）
 
@@ -181,3 +184,5 @@
 | 日期 | 来源 | 操作者 |
 |---|---|---|
 | 2026-08-14 | 管理后台统一配置中心：集中管理关键参数与 Secret，env 从模块取数 | AI |
+
+| 2026-08-14 | 优化：配置中心唯一源语义强化——Import from ENV 改为一次性初始化向导，移除 ENV 优先开关 | AI |

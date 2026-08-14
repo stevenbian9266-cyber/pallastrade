@@ -119,7 +119,7 @@ The **Config Center** lives under Settings (`settings_nav.add :config_center`, `
 - `value_type` ∈ `secret | string | boolean | number`; `key` + `value_type` are create-only (immutable after create).
 - **Secret items**: value stored via the encrypted lane; the UI shows only the masked `key_hint_display` + `rotated_at` and a "leave blank to keep current" password field. Never print `raw_value` in views.
 - The index table (`render_table @collection, :config_items`) uses the `_config_item_value` custom column partial — keep it leak-free.
-- **Import wizard** (`POST /admin/config_items/import` with `env_keys[]`) reads ENV server-side and infers `secret` vs `string` from the variable name (`SECRET|KEY|TOKEN|PASSWORD|CREDENTIAL` → secret).
+- **One-time init wizard** (`POST /admin/config_items/import` with `env_keys[]`) reads ENV server-side and infers `secret` vs `string` from the variable name (`SECRET|KEY|TOKEN|PASSWORD|CREDENTIAL` → secret). This is for **first-time migration from a legacy .env only** — the Config Center is the **single source of truth**: set & save parameters in the admin, never hand-edit `.env`.
 - Follow the existing controller pattern: override `create`/`update` to route `value` through `assign_value` (blank value on an existing secret = unchanged).
 
 ## Customizing admin tables

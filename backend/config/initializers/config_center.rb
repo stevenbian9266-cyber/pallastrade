@@ -2,8 +2,9 @@
 
 # Config Center — boot-time integration.
 #
-# 1. Merges managed Config Center values into ENV (Config Center precedence),
-#    so legacy `ENV[...]` read sites pick up the managed value.
+# 1. Merges managed Config Center values into ENV (Config Center ALWAYS wins;
+#    it is the single source of truth — ENV is only a boot fallback), so
+#    legacy `ENV[...]` read sites pick up the managed value.
 # 2. Re-resolves the Active Storage service once the DB is available and ENV is
 #    enriched (the boot-time selection in config/environments/*.rb may have
 #    picked `:local` because the DB wasn't ready yet).

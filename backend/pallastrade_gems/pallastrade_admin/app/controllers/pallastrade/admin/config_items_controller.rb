@@ -55,8 +55,11 @@ module PallasTrade
       end
 
       # POST /admin/config_items/import
-      # Server-side import: reads known ENV vars (e.g. OSS_ACCESS_KEY_ID) into
-      # Config Center items. Never round-trips secret values through the form.
+      # One-time initialization wizard: reads known ENV vars (e.g.
+      # OSS_ACCESS_KEY_ID) into Config Center items for first-time migration
+      # from a legacy .env. After migration the Config Center is the single
+      # source of truth — manage parameters via create/update forms, not ENV.
+      # Never round-trips secret values through the form.
       def import
         env_keys = Array(params[:env_keys])
         imported = []

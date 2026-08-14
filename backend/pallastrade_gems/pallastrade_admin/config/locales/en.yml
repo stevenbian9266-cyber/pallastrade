@@ -56,11 +56,12 @@ en:
         secret_value: Secret value
         secret_help: Stored encrypted and never displayed again. Leave blank to keep the current value.
         current_secret: Current
-        import_title: Import from ENV
-        import_hint: Import recognized server environment variables (e.g. OSS_ACCESS_KEY_ID, STRIPE_SECRET_KEY) into the Config Center. Secrets are read server-side and never shown in the form.
+        import_title: Initialize from environment variables (one-time migration)
+        import_hint: One-time migration only — import recognized server environment variables (e.g. OSS_ACCESS_KEY_ID, STRIPE_SECRET_KEY) into the Config Center. After migration the Config Center is the single source of truth; set and save parameters here instead of editing .env. Secrets are read server-side and never shown in the form.
+        import_warning: This wizard is for first-time migration from an existing .env. After importing, manage all parameters here — the Config Center is the single source of truth; ENV is only a boot fallback.
         import_hint2: Comma-separated. Items that already exist in the Config Center are skipped.
         env_keys: Environment variables
-        import: Import
+        import: Migrate
       api_keys:
         example_request: Example Request
         key_revoked_message: This API key has been revoked and can no longer be used.

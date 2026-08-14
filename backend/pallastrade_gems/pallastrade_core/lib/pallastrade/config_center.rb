@@ -10,8 +10,10 @@ module PallasTrade
   #
   # +sync_env!+ copies configured items into +ENV+ at boot so legacy +ENV[...]+
   # read sites (e.g. `config/environments/production.rb` OSS selection) work
-  # unchanged. The Config Center takes precedence over +.env+ by default;
-  # see +env_precedence:+ for the compatibility switch.
+  # unchanged. The Config Center ALWAYS takes precedence over +.env+ (there is
+  # deliberately no "ENV first" switch); ENV is only a fallback when the Config
+  # Center has no value for a key. Manage parameters from the admin Config
+  # Center — no need to hand-edit .env.
   #
   # Values are cached in-process / Rails.cache with a short TTL plus explicit
   # invalidation on writes, so admin updates take effect without a restart.
@@ -43,21 +45,16 @@ module PallasTrade
       ENV[env_key(key)]
     end
 
-    # Copies all configured items into +ENV+ (Config Center precedence unless
-    # +env_precedence+ is given). Called from the host-app boot initializer.
+    # Copies all configured items into +ENV+ (Config Center ALWAYS wins — there
+    # is no "ENV first" switch). Called from the host-app boot initializer so
+    # legacy +ENV[...]+ read sites pick up managed values.
     # @param store [PallasTrade::Store, nil] restrict to one store when given
-    # @param env_precedence [Boolean] keep existing ENV values when true
-    def sync_env!(store: nil, env_precedence: false)
+    def sync_env!(store: nil)
       items = store ? store.config_items : PallasTrade::ConfigItem.all
       items.find_each do |item|
         next unless item.configured?
 
-        key = item.env_key
-        if env_precedence
-          ENV[key] ||= item.raw_value.to_s
-        else
-          ENV[key] = item.raw_value.to_s
-        end
+        ENV[item.env_key] = item.raw_value.to_s
       end
     end
 
