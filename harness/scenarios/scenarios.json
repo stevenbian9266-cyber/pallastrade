@@ -400,7 +400,7 @@
     {
       "id": "GS-026",
       "name": "Config Center secret write-only + fail-closed",
-      "description": "Config Center secret items must be encrypted, write-only (masked hint), fail-closed without encryption key, and never leak plaintext via API/logs; non-secret items store plaintext.",
+      "description": "Config Center secret items must be encrypted, write-only (masked hint), fail-closed without encryption key, and never leak plaintext via API/logs; non-secret items store plaintext. The Config Center is the single source of truth: values set/saved in the admin win over .env (sync_env! has no ENV-first switch); ENV only falls back when a key is unset.",
       "mustDo": [
         "Use PallasTrade::ConfigCenter.get/fetch_secret for reads (never raw ENV in new code)",
         "Serialize secret items via credential_summary / secret_* fields only",

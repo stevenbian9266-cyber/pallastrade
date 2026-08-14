@@ -316,7 +316,7 @@ Scoped to `read_settings` / `write_settings` (plus CanCanCan `manage` for JWT ad
 - **secret items never return plaintext** — the serializer only exposes
   `secret_configured`, `secret_hint` (masked) and `secret_rotated_at`. Non-secret
   items expose `value`.
-- `POST /config_items/import` bulk-upserts entries (`{key, group, value_type, value, description}`)
+- `POST /config_items/import` bulk-upserts entries (`{key, group, value_type, value, description}`). **The Config Center is the single source of truth** — regular parameter management uses `POST`/`PATCH` on `/config_items`; `import` is only a batch convenience for first-time migration.
   and returns per-entry `{key, saved, errors}`.
 - Secret items fail-closed when `ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY` is not configured.
 

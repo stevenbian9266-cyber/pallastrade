@@ -46,11 +46,16 @@ RSpec.describe PallasTrade::ConfigCenter do
       expect(ENV['OSS_ACCESS_KEY_ID']).to eq('LTAI123')
     end
 
-    it 'respects env_precedence flag' do
+    it 'always overrides ENV — the Config Center is the single source (AC-009)' do
       ENV['OSS_ACCESS_KEY_ID'] = 'from-dotenv'
       create(:config_item, store: store, key: 'oss.access_key_id', value_type: 'string', value: 'from-center')
-      described_class.sync_env!(store: store, env_precedence: true)
-      expect(ENV['OSS_ACCESS_KEY_ID']).to eq('from-dotenv')
+      described_class.sync_env!(store: store)
+      expect(ENV['OSS_ACCESS_KEY_ID']).to eq('from-center')
+    end
+
+    it 'does not accept an env_precedence switch (AC-009)' do
+      expect { described_class.sync_env!(store: store, env_precedence: true) }
+        .to raise_error(ArgumentError)
     end
   end
 
