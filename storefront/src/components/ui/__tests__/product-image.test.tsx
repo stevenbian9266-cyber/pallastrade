@@ -15,9 +15,7 @@ describe("ProductImage", () => {
 
     const img = container.querySelector("img");
     expect(img).not.toBeNull();
-    expect(img?.getAttribute("src")).toBe(
-      "https://cdn.example.com/large.webp",
-    );
+    expect(img?.getAttribute("src")).toBe("https://cdn.example.com/large.webp");
     expect(img?.getAttribute("srcset")).toContain("400w");
     expect(img?.getAttribute("srcset")).toContain("720w");
     expect(img?.getAttribute("class")).toContain("absolute inset-0");
