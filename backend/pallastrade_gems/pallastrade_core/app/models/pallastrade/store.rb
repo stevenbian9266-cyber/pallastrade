@@ -98,8 +98,6 @@ module PallasTrade
     has_many :store_credits, class_name: 'PallasTrade::StoreCredit'
     has_many :store_credit_events, through: :store_credits, class_name: 'PallasTrade::StoreCreditEvent'
 
-    has_many :config_items, class_name: 'PallasTrade::ConfigItem', inverse_of: :store
-
     has_many :taxonomies, class_name: 'PallasTrade::Taxonomy'
     has_many :taxons, class_name: 'PallasTrade::Taxon'
     has_many :categories, class_name: 'PallasTrade::Category'

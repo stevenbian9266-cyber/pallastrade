@@ -398,25 +398,6 @@
       "scoring": { "triState": 30, "degradeOpen": 30, "specCoverage": 25, "noDataChange": 15 }
     },
     {
-      "id": "GS-026",
-      "name": "Config Center secret write-only + fail-closed",
-      "description": "Config Center secret items must be encrypted, write-only (masked hint), fail-closed without encryption key, and never leak plaintext via API/logs; non-secret items store plaintext. The Config Center is the single source of truth: values set/saved in the admin win over .env (sync_env! has no ENV-first switch); ENV only falls back when a key is unset. Entry point is the Developers navigation 4th tab (/admin/config_items), alongside API Keys / Webhook Endpoints / Allowed Origins.",
-      "mustDo": [
-        "Use PallasTrade::ConfigCenter.get/fetch_secret for reads (never raw ENV in new code)",
-        "Serialize secret items via credential_summary / secret_* fields only",
-        "Gate secret writes on ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY (fail-closed)",
-        "Route values through assign_value so secret vs plain lanes are respected",
-        "Add model + API + admin specs for the tri-state (secret/plain/fail-closed)"
-      ],
-      "mustNotDo": [
-        "Serialize secret raw_value to the API or logs",
-        "Store secret plaintext in the value column",
-        "Let value_type change after creation",
-        "Hand-edit generated api-docs YAML"
-      ],
-      "scoring": { "encryptedLane": 25, "writeOnly": 25, "failClosed": 20, "specCoverage": 20, "noLeak": 10 }
-    },
-    {
       "id": "GS-027",
       "name": "harness review: 复盘驱动的规则自升级",
       "description": "任务结束后通过 harness review 沉淀跨项目规则：AI 复盘（harness/reviews/REVIEW-*.md，机器字段 kind/target/priority/rule）→ `harness review propose` 提炼提案 → `harness review apply` 将 standard/anti-pattern 写回通用规则库 rules/base-*.json（ID 自动递增）；engine/docs 提案进入待办清单随版本发布。新规则必须通过 rules schema 校验（npm test）。",

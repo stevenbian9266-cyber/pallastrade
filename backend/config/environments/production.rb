@@ -19,9 +19,16 @@ Rails.application.configure do
   config.public_file_server.headers = { "cache-control" => "public, max-age=#{1.year.to_i}" }
 
   # Store uploaded files on the local file system (see config/storage.yml for options).
-  # Service is re-resolved in config/initializers/config_center.rb after the
-  # Config Center merges managed values into ENV.
-  config.active_storage.service = PallasTrade::Storage::ServiceResolver.resolve
+  # Service auto-detected from ENV: OSS → AWS → Cloudflare → local disk.
+  config.active_storage.service = if ENV["OSS_ACCESS_KEY_ID"].present? && ENV["OSS_SECRET_ACCESS_KEY"].present? && ENV["OSS_ENDPOINT"].present?
+    :aliyun
+  elsif ENV["AWS_ACCESS_KEY_ID"].present? && ENV["AWS_SECRET_ACCESS_KEY"].present?
+    :amazon
+  elsif ENV["CLOUDFLARE_ACCESS_KEY_ID"].present? && ENV["CLOUDFLARE_SECRET_ACCESS_KEY"].present? && ENV["CLOUDFLARE_ENDPOINT"].present?
+    :cloudflare
+  else
+    :local
+  end
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
   config.assume_ssl = ENV["RAILS_ASSUME_SSL"] != "false"

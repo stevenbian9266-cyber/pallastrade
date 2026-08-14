@@ -15,14 +15,6 @@ en:
               has_not_enough_stock_at_desired_location: has not enough stock in desired stock location
   activerecord:
     attributes:
-      pallastrade/config_item:
-        key: Key
-        group: Group
-        value_type: Type
-        value: Value
-        description: Description
-        default_value: Default Value
-        secret_value: Secret value
       pallastrade/address:
         address1: Address
         address2: Address (contd.)
