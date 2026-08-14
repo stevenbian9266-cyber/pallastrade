@@ -1,0 +1,2 @@
+# Shell scripts MUST use LF line endings — CRLF breaks bash (`$'in\r'` errors)
+*.sh text eol=lf
