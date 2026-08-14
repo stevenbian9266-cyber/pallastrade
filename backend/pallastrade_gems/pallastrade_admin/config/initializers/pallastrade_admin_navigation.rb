@@ -333,15 +333,6 @@ Rails.application.config.after_initialize do
           active: -> { controller_name == 'metafield_definitions' },
           if: -> { can?(:manage, PallasTrade::MetafieldDefinition) }
 
-  # Config Center (unified parameters & secrets)
-  settings_nav.add :config_center,
-          label: 'admin.config_center',
-          url: :admin_config_items_path,
-          icon: 'settings-cog',
-          position: 135,
-          active: -> { controller_name == 'config_items' },
-          if: -> { can?(:manage, PallasTrade::ConfigItem) }
-
   # Audit Log
   settings_nav.add :audits,
           label: 'admin.audit_log',
@@ -496,6 +487,13 @@ Rails.application.config.after_initialize do
           position: 30,
           active: -> { controller_name == 'allowed_origins' },
           if: -> { can?(:manage, PallasTrade::AllowedOrigin) }
+
+  developers_tabs_nav.add :config_center,
+          label: 'admin.config_center',
+          url: :admin_config_items_path,
+          position: 40,
+          active: -> { controller_name == 'config_items' },
+          if: -> { can?(:manage, PallasTrade::ConfigItem) }
 
   # Audit Tab Navigation
   audit_tabs_nav = PallasTrade.admin.navigation.audit_tabs

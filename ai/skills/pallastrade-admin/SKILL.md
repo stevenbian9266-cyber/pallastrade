@@ -114,7 +114,7 @@ The full nav API is in `pallastrade/admin/app/models/pallastrade/admin/navigatio
 
 ## Config Center (managed parameters & secrets)
 
-The **Config Center** lives under Settings (`settings_nav.add :config_center`, `ConfigItemsController` with `SettingsConcern`). It manages `PallasTrade::ConfigItem` records (key/group/value_type/value) from the admin:
+The **Config Center** is the **4th tab of the Developers navigation** (`developers_tabs_nav.add :config_center`, `ConfigItemsController` with `SettingsConcern`) — alongside API Keys / Webhook Endpoints / Allowed Origins. It manages `PallasTrade::ConfigItem` records (key/group/value_type/value) from the admin:
 
 - `value_type` ∈ `secret | string | boolean | number`; `key` + `value_type` are create-only (immutable after create).
 - **Secret items**: value stored via the encrypted lane; the UI shows only the masked `key_hint_display` + `rotated_at` and a "leave blank to keep current" password field. Never print `raw_value` in views.
