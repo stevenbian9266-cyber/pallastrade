@@ -438,6 +438,16 @@ module PallasTrade
         end
       end
 
+      # Preload URL helpers (incl. polymorphic routes) at boot so helpers like
+      # `PallasTrade.new_polymorphic_url` are always available — previously they
+      # were only extended lazily after the first concrete `_path`/`_url` call,
+      # which broke admin views whose first URL helper is polymorphic.
+      initializer 'PallasTrade.url_helpers_preload', after: :load_config_initializers do |app|
+        app.config.after_initialize do
+          PallasTrade.ensure_url_helpers_loaded!
+        end
+      end
+
       config.to_prepare do
         # Ensure pallastrade locale paths are present before decorators
         I18n.load_path.unshift(*(Dir.glob(

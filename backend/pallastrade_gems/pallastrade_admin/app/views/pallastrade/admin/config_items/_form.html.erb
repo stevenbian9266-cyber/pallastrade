@@ -1,0 +1,61 @@
+<div class="card mb-6">
+  <div class="card-body">
+    <% if f.object.new_record? %>
+      <%= f.pallastrade_text_field :key, required: true, autofocus: true,
+            placeholder: 'oss.access_key_id',
+            help: PallasTrade.t('admin.config_items.key_help', default: 'Dotted key, e.g. oss.access_key_id → maps to ENV OSS_ACCESS_KEY_ID') %>
+
+      <%= f.pallastrade_select :value_type,
+            [%w[string string], %w[secret secret], %w[boolean boolean], %w[number number]],
+            { prompt: PallasTrade.t('admin.config_items.select_value_type', default: 'Select value type') },
+            { required: true } %>
+    <% else %>
+      <div class="form-group">
+        <label class="form-label"><%= PallasTrade.t(:key) %></label>
+        <div class="form-control-plaintext font-mono"><%= f.object.key %></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><%= PallasTrade.t('admin.config_items.value_type', default: 'Type') %></label>
+        <div class="form-control-plaintext"><%= f.object.value_type %></div>
+      </div>
+    <% end %>
+
+    <%= f.pallastrade_text_field :group, placeholder: 'oss',
+          help: PallasTrade.t('admin.config_items.group_help', default: 'Grouping shown in the Config Center list') %>
+
+    <%= f.pallastrade_text_field :description %>
+
+    <%= f.pallastrade_text_field :default_value,
+          help: PallasTrade.t('admin.config_items.default_help', default: 'Fallback when no value is configured') %>
+  </div>
+</div>
+
+<% if f.object.secret? %>
+  <div class="card mb-6" id="config-item-secret-value">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.config_items.secret_value', default: 'Secret value') %></h5>
+      <p class="text-sm text-gray-500 mt-1">
+        <%= PallasTrade.t('admin.config_items.secret_help', default: 'Stored encrypted and never displayed again. Leave blank to keep the current value.') %>
+      </p>
+    </div>
+    <div class="card-body">
+      <% if f.object.configured? %>
+        <div class="form-group">
+          <label class="form-label"><%= PallasTrade.t('admin.config_items.current_secret', default: 'Current') %></label>
+          <div class="form-control-plaintext font-mono"><%= f.object.key_hint_display %></div>
+        </div>
+      <% end %>
+      <%= f.password_field :value, class: 'form-control', autocomplete: 'new-password',
+            placeholder: f.object.configured? ? '••••••••••••••••' : nil %>
+    </div>
+  </div>
+<% else %>
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t(:value) %></h5>
+    </div>
+    <div class="card-body">
+      <%= f.text_field :value, class: 'form-control' %>
+    </div>
+  </div>
+<% end %>

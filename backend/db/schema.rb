@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_13_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_14_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -424,6 +424,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_150000) do
     t.index ["store_id", "code"], name: "index_pt_channels_on_store_id_and_code", unique: true
     t.index ["store_id"], name: "index_pt_channels_default_per_store", unique: true, where: "(\"default\" = true)"
     t.index ["store_id"], name: "index_pt_channels_on_store_id"
+  end
+
+  create_table "pallastrade_config_items", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "default_value"
+    t.string "description"
+    t.string "group", default: "general", null: false
+    t.string "key", null: false
+    t.string "key_hint", default: "", null: false
+    t.datetime "rotated_at"
+    t.text "secret_value"
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.text "value"
+    t.string "value_type", default: "string", null: false
+    t.index ["group"], name: "index_pallastrade_config_items_on_group"
+    t.index ["store_id", "key"], name: "index_pallastrade_config_items_on_store_id_and_key", unique: true
+    t.index ["store_id"], name: "index_pallastrade_config_items_on_store_id"
   end
 
   create_table "pallastrade_countries", force: :cascade do |t|
@@ -2401,6 +2419,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_150000) do
   add_foreign_key "pallastrade_ai_provider_secrets", "pallastrade_ai_providers", column: "provider_id"
   add_foreign_key "pallastrade_ai_runs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_ai_settings", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_config_items", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_option_type_translations", "pallastrade_option_types"
   add_foreign_key "pallastrade_option_value_translations", "pallastrade_option_values"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_payment_methods", column: "payment_method_id"

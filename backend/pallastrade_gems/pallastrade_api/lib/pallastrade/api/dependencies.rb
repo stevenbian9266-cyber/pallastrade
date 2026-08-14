@@ -131,6 +131,7 @@ module PallasTrade
         admin_store_serializer: 'PallasTrade::Api::V3::Admin::StoreSerializer',
         admin_setup_task_serializer: 'PallasTrade::Api::V3::Admin::SetupTaskSerializer',
         admin_api_key_serializer: 'PallasTrade::Api::V3::Admin::ApiKeySerializer',
+        admin_config_item_serializer: 'PallasTrade::Api::V3::Admin::ConfigItemSerializer',
         admin_allowed_origin_serializer: 'PallasTrade::Api::V3::Admin::AllowedOriginSerializer',
         admin_webhook_endpoint_serializer: 'PallasTrade::Api::V3::Admin::WebhookEndpointSerializer',
         admin_webhook_delivery_serializer: 'PallasTrade::Api::V3::Admin::WebhookDeliverySerializer',

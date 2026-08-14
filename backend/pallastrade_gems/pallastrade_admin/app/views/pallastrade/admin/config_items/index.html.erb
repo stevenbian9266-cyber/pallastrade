@@ -1,0 +1,26 @@
+<%= render 'pallastrade/admin/shared/developers_nav' %>
+
+<%= content_for(:title, PallasTrade.t('admin.config_center')) %>
+
+<% content_for :page_actions do %>
+  <%= link_to_with_icon 'plus', PallasTrade.t('admin.config_items.new'), new_object_url, class: "btn btn-primary" if can? :create, PallasTrade::ConfigItem %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.config_items.import_title', default: 'Import from ENV') %></h5>
+    <p class="text-sm text-gray-500 mt-1">
+      <%= PallasTrade.t('admin.config_items.import_hint', default: 'Import recognized server environment variables (e.g. OSS_ACCESS_KEY_ID, STRIPE_SECRET_KEY) into the Config Center. Secrets are read server-side and never shown in the form.') %>
+    </p>
+  </div>
+  <div class="card-body">
+    <%= form_with url: PallasTrade.import_admin_config_items_path, method: :post, local: true do |f| %>
+      <%= f.label :env_keys, PallasTrade.t('admin.config_items.env_keys', default: 'Environment variables'), class: 'form-label' %>
+      <%= f.text_field :env_keys, name: 'env_keys', value: suggested_env_keys.join(', '), class: 'form-control', placeholder: 'OSS_ACCESS_KEY_ID, OSS_SECRET_ACCESS_KEY, OSS_ENDPOINT' %>
+      <p class="text-sm text-gray-500 mt-2"><%= PallasTrade.t('admin.config_items.import_hint2', default: 'Comma-separated. Items that already exist in the Config Center are skipped.') %></p>
+      <%= f.submit PallasTrade.t('admin.config_items.import', default: 'Import'), class: 'btn btn-secondary mt-3' %>
+    <% end %>
+  </div>
+</div>
+
+<%= render_table @collection, :config_items %>

@@ -1,0 +1,7 @@
+<%# locals: (record:, column:, value:) %>
+<%# Value column for the Config Center table — never leaks secret plaintext. %>
+<% if record.secret? %>
+  <span class="font-mono text-sm"><%= record.configured? ? record.key_hint_display : '—' %></span>
+<% else %>
+  <span class="font-mono text-sm text-gray-600"><%= record.raw_value.to_s.truncate(40) %></span>
+<% end %>

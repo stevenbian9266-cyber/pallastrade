@@ -2160,4 +2160,50 @@ Rails.application.config.after_initialize do
                                          filterable: true,
                                          default: true,
                                          position: 20
+
+  # ==========================================
+  # Config Items Table (Config Center)
+  # ==========================================
+  PallasTrade.admin.tables.register(:config_items, model_class: PallasTrade::ConfigItem, search_param: :key_or_group_cont, row_actions: false)
+
+  PallasTrade.admin.tables.config_items.add :key,
+                                        label: :key,
+                                        type: :link,
+                                        sortable: true,
+                                        filterable: true,
+                                        default: true,
+                                        position: 10
+
+  PallasTrade.admin.tables.config_items.add :group,
+                                        label: :group,
+                                        type: :string,
+                                        sortable: true,
+                                        filterable: true,
+                                        default: true,
+                                        position: 20
+
+  PallasTrade.admin.tables.config_items.add :value_type,
+                                        label: 'admin.config_items.value_type',
+                                        type: :string,
+                                        sortable: true,
+                                        filterable: true,
+                                        default: true,
+                                        position: 30
+
+  PallasTrade.admin.tables.config_items.add :value_preview,
+                                        label: 'admin.config_items.value',
+                                        type: :custom,
+                                        sortable: false,
+                                        filterable: false,
+                                        default: true,
+                                        position: 40,
+                                        partial: 'pallastrade/admin/tables/columns/config_item_value'
+
+  PallasTrade.admin.tables.config_items.add :updated_at,
+                                        label: :updated_at,
+                                        type: :datetime,
+                                        sortable: true,
+                                        filterable: true,
+                                        default: true,
+                                        position: 50
 end
