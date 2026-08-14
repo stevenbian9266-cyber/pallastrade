@@ -53,6 +53,18 @@ fi
 if ! docker image inspect "$SF_IMG" >/dev/null 2>&1; then
   echo "⚠️ 未找到 storefront 镜像 $SF_IMG —— 请先构建并传输镜像" >&2
 fi
+
+# 清理残留/停止的 compose 容器（防 502：compose recreate 冲突会留下 Created 残留容器，
+# 占用容器名导致后续 up 无法启动 → 全栈 502。up 前先清掉本栈的 created/exited 容器）
+echo "--- 清理残留 ${ENV} 容器（防 502 复发）---"
+if [ "$ENV" = "dev" ]; then
+  PROJECT_PREFIX="pallastrade-dev"
+else
+  PROJECT_PREFIX="pallastrade-prod"
+fi
+docker ps -a --filter "name=${PROJECT_PREFIX}-" --filter "status=created" -q | xargs -r docker rm -f
+docker ps -a --filter "name=${PROJECT_PREFIX}-" --filter "status=exited" -q | xargs -r docker rm -f
+
 docker compose -f "$COMPOSE" --env-file "$ENVFILE" up -d
 echo "=== 容器状态 ==="
 docker compose -f "$COMPOSE" ps
