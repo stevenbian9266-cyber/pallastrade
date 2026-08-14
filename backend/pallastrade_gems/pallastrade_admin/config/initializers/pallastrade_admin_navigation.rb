@@ -488,6 +488,13 @@ Rails.application.config.after_initialize do
           active: -> { controller_name == 'allowed_origins' },
           if: -> { can?(:manage, PallasTrade::AllowedOrigin) }
 
+  developers_tabs_nav.add :redirects,
+          label: :redirects,
+          url: :admin_redirects_path,
+          position: 40,
+          active: -> { controller_name == 'redirects' },
+          if: -> { can?(:manage, PallasTrade::Redirect) }
+
   # Audit Tab Navigation
   audit_tabs_nav = PallasTrade.admin.navigation.audit_tabs
 

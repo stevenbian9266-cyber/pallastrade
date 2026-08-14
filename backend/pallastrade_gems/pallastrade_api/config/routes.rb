@@ -92,6 +92,9 @@ PallasTrade::Core::Engine.add_routes do
         # Access via token in URL
         get 'digitals/:token', to: 'digitals#show', as: :digital_download
 
+        # SEO 301 redirects — resolve a path to its target
+        get 'redirects/resolve', to: 'redirects#resolve'
+
         # Data Feeds (public, no auth required)
         resources :feeds, only: [:show], controller: 'data_feeds', param: :slug
       end
@@ -169,6 +172,7 @@ PallasTrade::Core::Engine.add_routes do
           end
         end
         resources :allowed_origins
+        resources :redirects
         resources :webhook_endpoints do
           member do
             post :send_test

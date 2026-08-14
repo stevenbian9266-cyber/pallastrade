@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { memo } from "react";
 import { ProductImage } from "@/components/ui/product-image";
 import { trackSelectItem } from "@/lib/analytics/gtm";
+import { buildImageSrcSet } from "@/lib/image-srcset";
 
 interface ProductCardProps {
   product: Product;
@@ -34,6 +35,10 @@ export const ProductCard = memo(function ProductCard({
   // SEO: prefer CMS-managed alt text from media, fall back to product name
   const imageAlt =
     product.primary_media?.alt || product.media?.[0]?.alt || product.name;
+  // Responsive image: feed the multi-size webp srcset when media is available.
+  const imageSrcSet = buildImageSrcSet(
+    product.primary_media || product.media?.[0],
+  );
 
   // Current display price
   const displayPrice = product.price?.display_amount;
@@ -72,6 +77,7 @@ export const ProductCard = memo(function ProductCard({
       <div className="relative aspect-square bg-gray-100 rounded-md overflow-hidden">
         <ProductImage
           src={imageUrl}
+          srcSet={imageSrcSet}
           alt={imageAlt}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"

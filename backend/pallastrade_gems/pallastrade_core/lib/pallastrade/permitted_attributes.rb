@@ -47,6 +47,7 @@ module PallasTrade
       :promotion_action_attributes,
       :refund_attributes,
       :refund_reason_attributes,
+      :redirect_attributes,
       :reimbursement_attributes,
       :reimbursement_type_attributes,
       :report_attributes,
@@ -207,6 +208,8 @@ module PallasTrade
     @@refund_attributes = [:amount, :refund_reason_id]
 
     @@refund_reason_attributes = [:name, :active, :mutable]
+
+    @@redirect_attributes = [:from_path, :to_path, :status_code, :active]
 
     @@reimbursement_attributes = [return_items_attributes: [:id, :override_reimbursement_type_id, :pre_tax_amount, :exchange_variant_id]]
 

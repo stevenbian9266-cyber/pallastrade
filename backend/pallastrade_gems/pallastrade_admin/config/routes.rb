@@ -276,6 +276,7 @@ PallasTrade::Core::Engine.add_routes do
       end
     end
     resources :allowed_origins, except: :show
+    resources :redirects
 
     # storefront setup
     get '/storefront', to: 'storefront#show', as: :storefront

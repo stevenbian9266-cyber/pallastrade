@@ -9562,6 +9562,49 @@ paths:
                   description: Verification token from the confirmation email
               required:
               - token
+  "/api/v3/store/redirects/resolve":
+    get:
+      summary: Resolve a path against SEO 301 redirects
+      tags:
+      - Redirects
+      security:
+      - api_key: []
+      description: |-
+        Resolves a storefront path against the store's active SEO 301/302 redirects.
+        Returns the target path and status code on a hit, or `null` when no
+        redirect matches. Used by the storefront middleware to issue 301s.
+      x-codeSamples:
+      - lang: bash
+        label: PallasTrade CLI
+        source: pallastrade api get '/redirects/resolve?path=/old-product'
+      parameters:
+      - name: path
+        in: query
+        required: true
+        description: The pathname to resolve (e.g. /old-product)
+        schema:
+          type: string
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: resolution result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    nullable: true
+                    type: object
+                    properties:
+                      path:
+                        type: string
+                      status_code:
+                        type: integer
   "/api/v3/store/policies":
     get:
       summary: List store policies

@@ -1,0 +1,9 @@
+<%= render 'pallastrade/admin/shared/developers_nav' %>
+
+<%= content_for(:title, PallasTrade.t(:redirects)) %>
+
+<% content_for :page_actions do %>
+  <%= link_to_with_icon 'plus', PallasTrade.t(:new_redirect), new_object_url, class: "btn btn-primary" if can? :create, PallasTrade::Redirect %>
+<% end %>
+
+<%= render_table @collection, :redirects %>

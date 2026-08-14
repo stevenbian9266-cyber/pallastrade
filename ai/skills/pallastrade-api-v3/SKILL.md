@@ -307,6 +307,20 @@ Implementation: `PallasTrade::Api::Turnstile.verify(token, remote_ip:)` returns
 `true` / `false` / `nil`; `PallasTrade::Api::V3::Store::CustomersController#turnstile_verified?`
 maps `nil` → allow + `Rails.logger.warn`.
 
+## SEO 301 redirects
+
+Storefronts issue 301/302 redirects for retired/renamed URLs via `PallasTrade::Redirect`
+(per-store `from_path` → `to_path`, paths are normalized: leading slash added, trailing
+slash stripped, leading origin stripped from `from_path`; `to_path` must stay internal).
+
+- **Store API** (used by the storefront middleware):
+  `GET /api/v3/store/redirects/resolve?path=/old-product` → `{ data: { path, status_code } | null }`.
+- **Admin API**: `/api/v3/admin/redirects` full CRUD (scoped to `read_settings` / `write_settings`,
+  plus CanCanCan `manage`). `active: false` entries are ignored by resolve.
+- Storefront: `storefront/src/middleware.ts` resolves every storefront pathname with a 60s
+  revalidate cache; on a hit it issues `NextResponse.redirect(target, status)`, guarded against
+  A→A loops and degrading open when the API is unreachable (Turnstile-style).
+
 ## Read/write attribute symmetry (a v3 invariant)
 
 For any resource: **whatever a serializer returns, the controller's `permitted_params` accepts on write under the same name.** No `label` exposed but `presentation` accepted. No `customer_note` exposed but `special_instructions` accepted. The client never has to translate.

@@ -130,6 +130,7 @@ module PallasTrade
 
     has_many :api_keys, class_name: 'PallasTrade::ApiKey', dependent: :destroy
     has_many :allowed_origins, class_name: 'PallasTrade::AllowedOrigin', dependent: :destroy
+    has_many :redirects, class_name: 'PallasTrade::Redirect', dependent: :destroy, inverse_of: :store
 
     #
     # Validations

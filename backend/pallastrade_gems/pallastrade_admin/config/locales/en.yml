@@ -43,6 +43,12 @@ en:
       allowed_origins:
         origin_help: Enter the full origin URL of your storefront (e.g. https://myshop.com). Do not include paths or query strings.
         origin_settings: Origin Settings
+      redirects:
+        redirect_settings: Redirect Settings
+        from_help: Old path to redirect from (e.g. /old-product). Leading slash required.
+        to_help: Target path to redirect to (e.g. /new-product). Must be an internal path.
+        status_help: 301 = permanent (recommended for SEO), 302 = temporary.
+        active_label: Active
       amount_spent: Amount spent
       api_keys:
         example_request: Example Request
@@ -469,6 +475,7 @@ en:
         status_scheduled: Scheduled
         title: Publishing
         unpublished_at_label: Unpublish on
+      redirects: Redirects
       recommended_size: Recommended size
       report_created: Your report is being generated. You will receive an email with a download link when it is ready!
       reset_digital_link_download_limits: Reset download limits
@@ -840,6 +847,7 @@ en:
     new_adjustment: New Adjustment
     new_allowed_origin: New Allowed Origin
     new_api_key: New API Key
+    new_redirect: New Redirect
     new_balance: New balance
     new_billing_address: New Billing Address
     new_channel: New sales channel

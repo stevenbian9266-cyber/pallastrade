@@ -413,6 +413,25 @@
         "Block review docs behind a product gate (reviews live in harness/reviews/, engine-driven)"
       ],
       "scoring": { "scaffold": 20, "machineFields": 25, "applyWritesBack": 30, "schemaValid": 25 }
+    },
+    {
+      "id": "GS-028",
+      "name": "SEO 301 redirects: resolve + middleware degrade-open",
+      "description": "PallasTrade::Redirect maps per-store from_path → to_path (normalized: leading slash, strip trailing slash; from_path strips pasted origin; to_path must be internal). Store API resolve returns {path, status_code} or null; storefront middleware issues NextResponse.redirect guarded against A→A loops and degrades OPEN on API failure (Turnstile-style). Admin API /api/v3/admin/redirects is full CRUD behind read/write_settings.",
+      "mustDo": [
+        "Normalize paths on save (leading slash, no trailing slash; from_path origin-strip; to_path internal-only)",
+        "Enforce unique from_path per store; active scope ignored in resolve",
+        "Resolve endpoint returns target + status on hit, data:null on miss",
+        "Storefront middleware 301s on hit with loop guard and 60s revalidate cache",
+        "Degrade open (continue rendering) when the resolve API is unreachable"
+      ],
+      "mustNotDo": [
+        "Allow external URLs as to_path (open-redirect)",
+        "Redirect A → A (loop)",
+        "Fail the storefront when the redirect service is down",
+        "Run CDN webp variants through the Next.js optimizer again (double encoding)"
+      ],
+      "scoring": { "normalization": 25, "resolveContract": 20, "loopGuard": 15, "degradeOpen": 25, "internalOnly": 15 }
     }
   ]
 }
