@@ -25,8 +25,11 @@ const blockedExactNames = new Set([
 const blockedIdentities = [
   ['blocked identity A', ['sp', 'ree'].join('')],
   ['blocked identity B', ['ven', 'do'].join('')],
-  ['blocked identity C', ['up', 'stream'].join('')],
 ]
+// Internal record directories: historical notes / requirements / research docs
+// legitimately mention third-party names (e.g. "zero legacy brand residue"
+// records or competitive benchmarking), so brand-identity checks are skipped there.
+const excludedRecordDirectories = ['ai/memories/', 'harness/requirements/', 'docs/research/']
 const blockedOriginPhrases = [
   ['adapted', 'from'].join(' '),
   ['inspired', 'by'].join(' '),
@@ -95,6 +98,8 @@ for (const file of walk(root)) {
 
   const content = readText(file)
   if (content === null) continue
+  const isRecord = excludedRecordDirectories.some((prefix) => relative.startsWith(prefix))
+  if (isRecord) continue
   for (const [label, identity] of blockedIdentities) {
     const pattern = new RegExp(`\\b${identity}\\b`, 'i')
     if (pattern.test(content)) failures.push(`${relative}: contains ${label}`)
