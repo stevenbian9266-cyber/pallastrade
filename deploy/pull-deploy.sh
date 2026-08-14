@@ -42,17 +42,19 @@ fi
 
 echo "=== pull-deploy ($ENV) $(date '+%F %T') ==="
 
-# 1. 拉取代码
-if ! git fetch origin "$BRANCH" --quiet 2>/dev/null; then
-  echo "❌ git fetch 失败（检查 deploy key 与网络），跳过部署" >&2
+# 1. 拉取代码（60s 超时，防 git fetch 挂起）
+if ! timeout 60 git fetch origin "$BRANCH" --quiet 2>/dev/null; then
+  echo "❌ git fetch 失败/超时（检查 deploy key 与网络），跳过部署" >&2
   exit 1
 fi
 NEW_HEAD="$(git rev-parse "origin/$BRANCH")"
 
-# 2. 拉取 storefront 镜像（失败不致命：可能 CI 尚未推送过）
+# 2. 拉取 storefront 镜像（失败/超时不致命：可能 CI 尚未推送过）
 NEW_IMG_ID="none"
-if docker pull "$GHCR_IMG" >/dev/null 2>&1; then
+if timeout 180 docker pull "$GHCR_IMG" >/dev/null 2>&1; then
   NEW_IMG_ID="$(docker image inspect "$GHCR_IMG" --format '{{.Id}}' 2>/dev/null || echo none)"
+else
+  echo "⚠️ docker pull $GHCR_IMG 失败/超时，使用本地已有镜像" >&2
 fi
 
 # 3. 变化检测
@@ -69,12 +71,12 @@ fi
 
 echo "🔔 检测到变化: head ${OLD_HEAD:0:8}→${NEW_HEAD:0:8}, img ${OLD_IMG_ID:0:12}→${NEW_IMG_ID:0:12}"
 
-# 4. 部署
+# 4. 部署（整体 15 分钟超时，防 deploy.sh 内部卡死）
 git reset --hard "origin/$BRANCH"
 if [ "$NEW_IMG_ID" != "none" ]; then
   docker tag "$GHCR_IMG" "$SF_IMG"
 fi
-bash deploy/deploy.sh "$ENV"
+timeout 900 bash deploy/deploy.sh "$ENV" || echo "⚠️ deploy.sh 超时/失败（exit=$?），状态可能未完成" >&2
 
 # 5. 记录状态
 mkdir -p "$(dirname "$STATE_FILE")"
