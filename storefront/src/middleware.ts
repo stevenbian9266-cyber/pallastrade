@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 const API_URL = process.env.PALLASTRADE_API_URL || "http://localhost:3000";
 const PUBLISHABLE_KEY = process.env.PALLASTRADE_PUBLISHABLE_KEY || "";

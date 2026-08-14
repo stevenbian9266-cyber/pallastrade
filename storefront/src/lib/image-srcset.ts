@@ -11,14 +11,10 @@ import type { Media } from "@pallastrade/sdk";
  * `PallasTrade::Config.product_image_variant_sizes`.
  */
 export function buildImageSrcSet(
-  media: Pick<
-    Media,
-    | "small_url"
-    | "medium_url"
-    | "large_url"
-    | "xlarge_url"
-  > | null
-  | undefined,
+  media:
+    | Pick<Media, "small_url" | "medium_url" | "large_url" | "xlarge_url">
+    | null
+    | undefined,
 ): string | undefined {
   if (!media) return undefined;
 
