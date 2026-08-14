@@ -85,17 +85,34 @@ module PallasTrade
 
           private
 
-          # When TURNSTILE_SECRET_KEY is configured the registration is gated on a
-          # successful Cloudflare Turnstile verification (fail-closed). When it is
-          # not configured (e.g. local development) verification is skipped so the
-          # flow stays usable — the secret never lives in the repo.
+          # Turnstile gates registration only when the secret is configured. The
+          # verification outcome is tri-state:
+          #   true  → Cloudflare confirmed the token (pass)
+          #   false → Cloudflare explicitly rejected the token (block)
+          #   nil   → unable to verify (secret missing / network unreachable /
+          #           upstream anomaly). In this case we degrade OPEN with a
+          #           warning log: on CN-hosted servers challenges.cloudflare.com
+          #           is frequently unreachable, and fail-closed there would make
+          #           registration permanently impossible. An explicit rejection
+          #           (false) is still respected.
           def turnstile_verified?
             return true unless PallasTrade::Api::Turnstile.configured?
 
-            PallasTrade::Api::Turnstile.verify(
+            case PallasTrade::Api::Turnstile.verify(
               params[:turnstile_token].to_s,
               remote_ip: request.remote_ip
             )
+            when true
+              true
+            when nil
+              Rails.logger.warn(
+                "[Turnstile] verification unreachable (network/timeout), " \
+                "falling back open — ip=#{request.remote_ip}"
+              )
+              true
+            else
+              false
+            end
           end
 
           def sensitive_update?
