@@ -51,7 +51,7 @@
 - FR-001：新增配置项模型 `PallasTrade::ConfigItem`（`key`、`group`、`value_type[secret|string|boolean|number]`、`value`、`description`、`default_value`、`store` 作用域、`updated_at`/`rotated_at`）。
 - FR-002：`key` 唯一（scope store），命名规范 `group.name`（如 `oss.access_key_id`）；`secret` 类型 `value` 用 Active Record Encryption 非确定性加密，其他类型明文/JSON 存储。
 - FR-003：`secret` 类型未配置加密主密钥时创建/更新 **fail-closed**（raise，不落明文）；`secret` 保存后仅存 `key_hint`（前缀5+后缀4掩码）与 `rotated_at`。
-- FR-004：Admin UI（Settings 导航新增「配置中心 / Config Center」项）：按**分组**展示列表（key/类型/描述/值摘要/更新时间/操作）、新建、编辑（secret 留空=不改）、删除、**一次性初始化向导**（原「Import from ENV」：从 `.env` 识别参数批量导入，UI 标题与文案明确标注「仅首次迁移用，配置中心为唯一源」，迁移后请直接在后台设置并保存参数）。
+- FR-004：Admin UI：配置中心入口为 **Developers 选项卡第 4 项**（与 API Keys / Webhook Endpoints / Allowed Origins 并列），页面复用 `developers_nav` 导航条，顶部标题与选项卡一致；**不再占用 Settings 侧边栏独立菜单项**（移除 `settings_nav.add :config_center`）。列表按**分组**展示（key/类型/描述/值摘要/更新时间/操作）、新建、编辑（secret 留空=不改）、删除、**一次性初始化向导**（原「Import from ENV」：从 `.env` 识别参数批量导入，UI 标题与文案明确标注「仅首次迁移用，配置中心为唯一源」，迁移后请直接在后台设置并保存参数）。
 - FR-005：Admin API v3：`GET/POST/PATCH/DELETE /api/v3/admin/config_items`（含 `group` 筛选与导入端点）；`secret` 类型序列化仅暴露 `{configured, hint, rotated_at}`，**永不返回明文**；非 secret 类型暴露值。
 - FR-006：**应用读取层**：`PallasTrade::ConfigCenter.get(key, default: nil)`（进程内缓存 + 可强制刷新），统一语义：**配置中心（唯一源） → ENV（兜底） → 默认值**；`PallasTrade::ConfigCenter.fetch_secret(key)` 仅服务端内部读取明文。
 - FR-007：**Boot ENV 同步**：初始化器在启动时把配置中心已配置项 merge 进 `ENV`（key 用规范化映射，如 `oss.access_key_id` → `OSS_ACCESS_KEY_ID`），使存量 `ENV[...]` 读取点（如 `production.rb` 的 OSS 逻辑）**零改动**从模块取数；**配置中心永远优先覆盖 ENV（无 env_precedence 开关）**，ENV 仅在配置中心未设置时兜底。
@@ -134,6 +134,7 @@
 | 2026-08-14 | 0.2 | 按用户澄清**升级为统一配置中心**：支持 secret/普通参数、ConfigCenter 读取层、Boot ENV 同步、导入向导、缓存失效 | AI |
 | 2026-08-14 | 0.3 | 实施完成：ConfigItem/ConfigCenter/Boot ENV/API+Admin 全量实现，35 spec 全绿，dev 部署验证（含 secret 加密），i18n 补充 | AI |
 | 2026-08-14 | 0.4 | **唯一源语义强化**（用户澄清）：Import from ENV 改为「一次性初始化向导」并标注唯一源；移除 `sync_env!` 的 `env_precedence` 开关（配置中心永远优先，ENV 仅兜底）；PRD/FR/AC 同步 | AI |
+| 2026-08-14 | 0.5 | **入口调整**（用户澄清）：配置中心从 Settings 侧边栏独立项改为 **Developers 选项卡第 4 项**（消除顶部标题不一致，精简侧边栏）；移除 `settings_nav.add :config_center` | AI |
 
 ## 5. 验收标准（AC，与测试一一映射）
 
@@ -186,3 +187,5 @@
 | 2026-08-14 | 管理后台统一配置中心：集中管理关键参数与 Secret，env 从模块取数 | AI |
 
 | 2026-08-14 | 优化：配置中心唯一源语义强化——Import from ENV 改为一次性初始化向导，移除 ENV 优先开关 | AI |
+
+| 2026-08-14 | 优化：配置中心入口从侧边栏独立项改为 Developers 第 4 选项卡 | AI |
