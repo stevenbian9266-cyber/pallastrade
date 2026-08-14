@@ -16,15 +16,15 @@ cd /opt/pallastrade/repo
 
 case "$ENV" in
   main|prod)
-    BRANCH="main"
-    SF_IMG="pallastrade-prod-storefront:latest"
+    echo "❌ prod 部署已禁用（2026-08-15 部署规则调整：仅部署 dev）。" >&2
+    exit 1
     ;;
   dev)
     BRANCH="dev"
     SF_IMG="pallastrade-dev-storefront:latest"
     ;;
   *)
-    echo "用法: pull-deploy.sh [dev|main]" >&2
+    echo "用法: pull-deploy.sh dev   （prod 已禁用）" >&2
     exit 1
     ;;
 esac

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# PallasTrade prod 栈启停脚本
-#   用法: bash deploy/prod.sh up      # 启动 prod 栈（pallastrade.cn）
-#         bash deploy/prod.sh down    # 停止 prod 栈（保留数据卷，下次 up 即恢复）
+# PallasTrade prod 栈启停脚本（2026-08-15 起 prod 部署已禁用）
+#   用法: bash deploy/prod.sh down    # 停止 prod 栈（保留数据卷）
 #         bash deploy/prod.sh status  # 查看 prod 栈状态
+# ⚠️ up 已禁用：仅部署 dev；prod 配置保留可恢复，未来恢复需人工解除禁用
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -13,12 +13,9 @@ ENVFILE=".env.prod"
 
 case "$ACTION" in
   up)
-    echo "=== 启动 prod 栈 ==="
-    docker compose -f "$COMPOSE" --env-file "$ENVFILE" up -d
-    echo "=== 健康检查（等 30s）==="
-    sleep 30
-    curl -sf http://127.0.0.1:3100/up && echo "✅ prod backend OK" || echo "⚠️ prod backend 未就绪"
-    curl -sf http://127.0.0.1:3101/us/zh && echo "✅ prod storefront OK" || echo "⚠️ prod storefront 未就绪"
+    echo "❌ prod 部署已禁用（2026-08-15 部署规则调整：仅部署 dev）。" >&2
+    echo "   prod 配置/镜像/数据保留，未来如需恢复请人工解除 prod.sh 禁用逻辑。" >&2
+    exit 1
     ;;
   down)
     echo "=== 停止 prod 栈（保留数据卷）==="

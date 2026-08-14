@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PallasTrade 服务器部署脚本（在 /opt/pallastrade/repo 内执行）
 #   用法: bash deploy/deploy.sh dev    # 部署 dev 栈（dev.pallastrade.cn）
-#         bash deploy/deploy.sh main   # 部署 prod 栈（pallastrade.cn）
+# ⚠️ 2026-08-15 起仅部署 dev；prod 部署已禁用（见 README）
 set -euo pipefail
 
 ENV="${1:-dev}"
@@ -9,9 +9,9 @@ cd "$(dirname "$0")"
 
 case "$ENV" in
   main|prod)
-    COMPOSE="docker-compose.prod.yml"
-    ENVFILE=".env.prod"
-    SFENV=".env.storefront.prod"
+    echo "❌ prod 部署已禁用（2026-08-15 部署规则调整：仅部署 dev）。" >&2
+    echo "   prod 配置/镜像/数据保留，未来如需恢复请人工解除 deploy.sh 禁用逻辑。" >&2
+    exit 1
     ;;
   dev)
     COMPOSE="docker-compose.dev.yml"
@@ -19,7 +19,7 @@ case "$ENV" in
     SFENV=".env.storefront.dev"
     ;;
   *)
-    echo "用法: deploy.sh [dev|main]" >&2
+    echo "用法: deploy.sh dev   （prod 已禁用）" >&2
     exit 1
     ;;
 esac
