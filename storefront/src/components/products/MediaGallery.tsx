@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState } from "react";
 import { ProductImage } from "@/components/ui/product-image";
+import { buildImageSrcSet } from "@/lib/image-srcset";
 
 const SWIPE_THRESHOLD_PX = 50;
 const SWIPE_MAX_VERTICAL_PX = 75;
@@ -150,6 +151,7 @@ function MediaGalleryInner({
         <ProductImage
           key={safeIndex}
           src={mainImageUrl}
+          srcSet={buildImageSrcSet(selectedImage)}
           alt={selectedImage?.alt || productName}
           fill
           className="object-cover"

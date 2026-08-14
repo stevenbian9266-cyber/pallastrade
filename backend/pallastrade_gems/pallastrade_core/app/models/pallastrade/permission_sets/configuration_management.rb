@@ -36,6 +36,9 @@ module PallasTrade
         # docs/plans/5.5-admin-auth-cookie-refresh.md).
         can :manage, PallasTrade::AllowedOrigin
 
+        # SEO 301 redirects
+        can :manage, PallasTrade::Redirect
+
         # Webhooks
         can :manage, PallasTrade::WebhookEndpoint
         can :manage, PallasTrade::WebhookDelivery

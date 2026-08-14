@@ -75,6 +75,19 @@ Restart Rails to pick up the new initializers and routes:
 pallastrade restart
 ```
 
+### Developers tools resources (API Keys / Webhooks / Allowed Origins / Redirects)
+
+Developer-tool resources are registered on the **Developers navigation tabs**
+(`developers_tabs_nav`, `pallastrade_admin_navigation.rb`) with a `SettingsConcern`
+controller, a table in `pallastrade_admin_tables.rb`, and a v3 Admin API controller +
+serializer + `PallasTrade::PermittedAttributes` entry.
+
+- **SEO 301 redirects** (`PallasTrade::Redirect`, `/admin/redirects`, Developers tab):
+  `from_path` → `to_path`, status 301/302, `active` toggle. Paths are normalized on save
+  (leading slash, strip trailing slash; `from_path` also strips a pasted origin;
+  `to_path` must be internal). Consumed by the storefront `middleware.ts` via the Store
+  API `redirects/resolve` endpoint.
+
 ## Customizing the sidebar
 
 > Note (2026-08): The sidebar **Enterprise Edition upgrade notice was removed** — the admin sidebar renders navigation + user menu only, with no upgrade/Community-Edition prompt. Do not reintroduce upgrade marketing blocks.

@@ -15,6 +15,11 @@ en:
               has_not_enough_stock_at_desired_location: has not enough stock in desired stock location
   activerecord:
     attributes:
+      pallastrade/redirect:
+        from_path: From Path
+        to_path: To Path
+        status_code: Status
+        active: Active
       pallastrade/address:
         address1: Address
         address2: Address (contd.)
@@ -250,6 +255,14 @@ en:
           attributes:
             origin:
               must_be_origin_only: must be an origin (scheme and host) without path, query, or fragment
+        pallastrade/redirect:
+          attributes:
+            from_path:
+              must_start_with_slash: must start with /
+              taken: has already been taken
+            to_path:
+              must_start_with_slash: must start with /
+              must_be_internal: must be an internal path (no external URLs)
         pallastrade/calculator/tiered_flat_rate:
           attributes:
             base:

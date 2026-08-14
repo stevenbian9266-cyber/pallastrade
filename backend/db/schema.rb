@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_14_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_15_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1520,6 +1520,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_14_000002) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "pallastrade_redirects", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.string "from_path", null: false
+    t.integer "status_code", default: 301, null: false
+    t.bigint "store_id", null: false
+    t.string "to_path", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "from_path"], name: "index_pallastrade_redirects_on_store_id_and_from_path", unique: true
+    t.index ["store_id"], name: "index_pallastrade_redirects_on_store_id"
+  end
+
   create_table "pallastrade_refresh_tokens", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "expires_at", null: false
@@ -2406,6 +2418,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_14_000002) do
   add_foreign_key "pallastrade_payment_sources", "pallastrade_payment_methods", column: "payment_method_id"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_users", column: "user_id"
   add_foreign_key "pallastrade_product_translations", "pallastrade_products"
+  add_foreign_key "pallastrade_redirects", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_store_translations", "pallastrade_stores"
   add_foreign_key "pallastrade_taxon_translations", "pallastrade_taxons"
   add_foreign_key "pallastrade_taxonomy_translations", "pallastrade_taxonomies"

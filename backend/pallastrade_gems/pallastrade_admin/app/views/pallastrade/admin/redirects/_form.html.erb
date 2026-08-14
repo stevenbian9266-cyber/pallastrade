@@ -1,0 +1,18 @@
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.redirects.redirect_settings') %></h5>
+  </div>
+  <div class="card-body">
+    <%= f.pallastrade_text_field :from_path, required: true, autofocus: f.object.new_record?, placeholder: '/old-product' %>
+    <p class="text-sm text-gray-500 mt-1"><%= PallasTrade.t('admin.redirects.from_help') %></p>
+
+    <%= f.pallastrade_text_field :to_path, required: true, placeholder: '/new-product' %>
+    <p class="text-sm text-gray-500 mt-1"><%= PallasTrade.t('admin.redirects.to_help') %></p>
+
+    <%= f.pallastrade_select :status_code, [['301', 301], ['302', 302]], {}, class: 'form-control' %>
+    <p class="text-sm text-gray-500 mt-1"><%= PallasTrade.t('admin.redirects.status_help') %></p>
+
+    <%= f.pallastrade_check_box :active, {}, true, false %>
+    <%= f.label :active, PallasTrade.t('admin.redirects.active_label'), class: 'ml-2' %>
+  </div>
+</div>
