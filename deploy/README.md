@@ -1,14 +1,19 @@
 # PallasTrade 阿里云部署运维手册
 
-> 本手册定义本项目服务器部署与栈切换的**标准机制**，是 dev/prod 双环境部署的唯一权威说明。
+> 本手册定义本项目服务器部署与栈切换的**标准机制**，是 dev 部署的唯一权威说明。
 > 服务器：阿里云 ECS `115.29.185.128`（cn-hangzhou-j，2C/3.5G，8G swap），代码目录 `/opt/pallastrade/repo`。
+
+> ## ⛔ 部署规则（2026-08-15 起）
+> **仅部署 dev（dev.pallastrade.cn），不再部署 prod（pallastrade.cn）。**
+> `deploy.sh` / `pull-deploy.sh` / `prod.sh up` 已**硬禁用 prod**（脚本拒绝并提示）。
+> prod 的 compose/镜像/数据库**保留可恢复**，未来恢复需人工解除脚本禁用逻辑。
 
 ## 环境与域名
 
-| 环境 | 域名 | backend 端口 | storefront 端口 | 数据库 |
-|---|---|---|---|---|
-| dev | `dev.pallastrade.cn` | 3102 | 3103 | 独立 PostgreSQL（dev 栈） |
-| prod | `pallastrade.cn` | 3100 | 3101 | 独立 PostgreSQL（prod 栈） |
+| 环境 | 域名 | backend 端口 | storefront 端口 | 数据库 | 状态 |
+|---|---|---|---|---|---|
+| dev | `dev.pallastrade.cn` | 3102 | 3103 | 独立 PostgreSQL（dev 栈） | ✅ 常驻部署 |
+| prod | `pallastrade.cn` | 3100 | 3101 | 独立 PostgreSQL（prod 栈） | ⛔ 已禁用（保留可恢复） |
 
 > ⚠️ **dev 与 prod 使用相互独立的数据库**。示例数据（如三级分类）必须分别在两个环境创建。
 
@@ -16,17 +21,16 @@
 
 | 脚本 | 用法 | 说明 |
 |---|---|---|
-| `prod.sh` | `bash prod.sh up\|down\|status` | prod 栈启停（down 保留数据卷） |
+| `prod.sh` | `bash prod.sh down\|status` | prod 栈停/查（**up 已禁用**，仅 dev 部署） |
 | `dev.sh` | `bash dev.sh up\|down\|status` | dev 栈启停（down 保留数据卷） |
-| `deploy.sh` | `bash deploy.sh dev\|prod` | 全量部署（backend 服务器构建 + storefront 镜像检查 + 启动 + 健康检查；自动停另一栈） |
+| `deploy.sh` | `bash deploy.sh dev` | 全量部署 dev（backend 服务器构建 + storefront 镜像检查 + 启动 + 健康检查；**prod 参数已禁用**） |
 
 ## 单栈策略（强制）
 
 服务器 2C/3.5G 无法承受双栈并行（会 OOM），**任一时刻只允许一个栈运行**：
 
 - **默认态（常驻）：dev 栈运行，prod 栈停止**
-- prod 按需启动：先 `bash dev.sh down` 再 `bash prod.sh up`
-- 切栈用 `deploy.sh prod`（自动 `down` dev）或手动 `prod.sh down` + `dev.sh up`
+- **prod 已禁用部署（2026-08-15 起）**：不再通过脚本启动 prod 栈
 
 ## 标准部署流程（任务结束后机制）
 
@@ -53,12 +57,9 @@
    - `docker save` → `tar -czf` → `scp` 到服务器 `/tmp/` → `gunzip | tar -xf` → `docker load`
    - `docker compose -f docker-compose.dev.yml --env-file .env.dev up -d storefront`（recreate 用新镜像）
    - 验证 `https://dev.pallastrade.cn/us/zh`（首页板块 / nav 面板 / 三级分类 / llms.txt / tawk 挂件）
-4. **部署 prod**：
-   - 构建 prod 镜像 → save/scp/load（同上）
-   - `bash deploy.sh prod`（自动停 dev 栈，启动 prod + 健康检查）
-   - 验证 `https://pallastrade.cn/us/zh`
-   - **数据改动需同步 prod 独立库**（如新建三级分类：`docker exec pallastrade-prod-web-1 bundle exec rails runner <脚本>`）
-5. **最终状态（本机制默认态）**：`bash prod.sh down` → `bash dev.sh up`，**启动 dev，关闭 prod**。
+4. ~~**部署 prod**~~（⛔ 已禁用 2026-08-15：不再部署 prod，配置保留可恢复）
+   - **数据改动无需同步 prod 独立库**（prod 已停用）
+5. **最终状态（本机制默认态）**：dev 栈常驻运行。
 
 ## 环境配置（服务器 `/opt/pallastrade/repo/deploy/`）
 

@@ -100,6 +100,28 @@ bash dev.sh  up|down|status   # dev 栈（3102/3103）
 - APT 用 tuna（aliyun 缺 libcgif0 404）；Bundler 用 aliyun rubygems；APK aliyun；npm npmmirror
 - `next/image` remotePatterns 需显式加入根域（`**.pallastrade.cn` 通配不匹配根域）
 
+## 8.6 部署规则调整（2026-08-15）——仅部署 dev，禁用 prod 部署
+
+> 回写来源：`优化：部署规则调整——仅部署 dev，禁用 prod 部署`（2026-08-15）
+
+### 决策
+- **后续部署只部署 dev（dev.pallastrade.cn），不再部署 prod（pallastrade.cn）**
+- 部署脚本层**硬禁用** prod：`deploy.sh` / `pull-deploy.sh` 拒绝 `main|prod` 参数；`prod.sh up` 拒绝（down/status 保留用于清理与查看）
+- prod 配置/镜像/数据库**保留不删**（未来可恢复），仅禁止通过脚本部署上线
+- 服务器 cron 维持仅 `pull-deploy.sh dev`（本就无 main cron）
+
+### 改动
+- `deploy/deploy.sh`：`main|prod` → 打印禁用提示并 exit 1
+- `deploy/pull-deploy.sh`：`main|prod` → 打印禁用提示并 exit 1
+- `deploy/prod.sh`：`up` 拒绝；`down`/`status` 保留
+- `deploy/README.md`：更新部署规则（仅 dev，prod 已禁用）
+
+### 验收
+- `bash deploy.sh prod` / `bash deploy.sh main` → 拒绝并提示
+- `bash pull-deploy.sh main` → 拒绝
+- `bash prod.sh up` → 拒绝；`prod.sh down/status` 可用
+- `bash deploy.sh dev` 正常部署
+
 ## 9. 文档同步清单
 
 - [x] README（部署章节）
@@ -112,3 +134,10 @@ bash dev.sh  up|down|status   # dev 栈（3102/3103）
 | 2026-08-09 | 0.1 | 初稿（用户已确认决策） | AI |
 | 2026-08-09 | 0.2 | 记录最终实施结果：单栈策略、prod.sh/dev.sh 快捷脚本、storefront 镜像传输构建、演示数据、服务器资源清理 | AI |
 | 2026-08-09 | 0.3 | 状态修正 done（全部实施完成：双环境部署 + CI + 单栈策略 + 快捷脚本） | AI |
+| 2026-08-15 | 0.4 | 部署规则调整：仅部署 dev，禁用 prod 部署（脚本硬禁用，prod 配置保留） | AI |
+
+## 回写记录（harness prd update）
+
+| 日期 | 来源 | 操作者 |
+|---|---|---|
+| 2026-08-14 | 部署规则调整——仅部署 dev，禁用 prod 部署 | AI |
