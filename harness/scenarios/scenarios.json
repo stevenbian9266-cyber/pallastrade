@@ -415,6 +415,23 @@
         "Hand-edit generated api-docs YAML"
       ],
       "scoring": { "encryptedLane": 25, "writeOnly": 25, "failClosed": 20, "specCoverage": 20, "noLeak": 10 }
+    },
+    {
+      "id": "GS-027",
+      "name": "harness review: 复盘驱动的规则自升级",
+      "description": "任务结束后通过 harness review 沉淀跨项目规则：AI 复盘（harness/reviews/REVIEW-*.md，机器字段 kind/target/priority/rule）→ `harness review propose` 提炼提案 → `harness review apply` 将 standard/anti-pattern 写回通用规则库 rules/base-*.json（ID 自动递增）；engine/docs 提案进入待办清单随版本发布。新规则必须通过 rules schema 校验（npm test）。",
+      "mustDo": [
+        "Run `harness review new` to scaffold a review doc after meaningful tasks",
+        "Tag reusable lessons with machine fields (kind/target/priority/rule)",
+        "Use `harness review apply` to write standards/anti-patterns back to rules/base-*.json",
+        "Run `npm test` after apply to verify standards schema (category enum, ID format)"
+      ],
+      "mustNotDo": [
+        "Hand-edit rules/base-standards.json outside review apply",
+        "Use an invalid Standard category (must be one of: architecture, technology-selection, code-quality, database, api, security, ui-style, interaction, accessibility, testing, documentation, knowledge, deployment)",
+        "Block review docs behind a product gate (reviews live in harness/reviews/, engine-driven)"
+      ],
+      "scoring": { "scaffold": 20, "machineFields": 25, "applyWritesBack": 30, "schemaValid": 25 }
     }
   ]
 }

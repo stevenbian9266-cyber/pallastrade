@@ -97,6 +97,7 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 - preparation checks 清除后即可进入 implementation；task-bound `verify-test` 禁止手工 clear，必须在知识评估完成后运行 `harness evidence verify --task <TASK-ID> --gate <GATE-ID>`
 - Standard/Critical 任务需满足 review/knowledge 等证据；Critical 任务还必须有 `harness recovery create|verify` 的人工恢复计划
 - 最后运行 `harness task finish --task <TASK-ID>`；PRD 状态 `verifying` → `done`
+- **复盘沉淀（可选）**：任务结束后可运行 `harness review new|propose|apply`（复盘 → 规则提案 → 写回通用规则库 `rules/base-*.json`），把本次踩坑/经验沉淀为跨项目可复用规则；engine/docs 类提案进入待办清单随版本发布
 
 ## 8. 阶段 4：知识同步门（收尾）
 
