@@ -45,8 +45,8 @@ const hookNames = readdirSync(join(root, 'hooks'))
   .filter((name) => name.endsWith('.sh'))
   .sort()
 
-if (skillNames.length !== 24) {
-  failures.push(`plugin must ship exactly 24 skills; found ${skillNames.length}`)
+if (skillNames.length !== 25) {
+  failures.push(`plugin must ship exactly 25 skills; found ${skillNames.length}`)
 }
 if (skillNames.includes('pallastrade-upgrade')) {
   failures.push('removed pallastrade-upgrade skill is still present')
@@ -67,8 +67,8 @@ for (const [location, content] of [
   ['.claude-plugin/plugin.json', JSON.stringify(plugin)],
   ['.claude-plugin/marketplace.json', JSON.stringify(marketplace)],
 ]) {
-  if (!content.includes('24 skills')) {
-    failures.push(`${location} does not declare the actual 24-skill count`)
+  if (!content.includes('25 skills')) {
+    failures.push(`${location} does not declare the actual 25-skill count`)
   }
   if (content.includes('pallastrade-upgrade')) {
     failures.push(`${location} advertises the removed pallastrade-upgrade skill`)
