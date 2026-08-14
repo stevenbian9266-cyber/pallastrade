@@ -16,8 +16,8 @@ importers:
         specifier: ^1.11.0
         version: 1.13.6
       pallastrade-harness:
-        specifier: ^0.2.0
-        version: 0.2.0
+        specifier: ^1.1.2
+        version: 1.1.2
       promptfoo:
         specifier: ^0.122.0
         version: 0.122.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(@types/json-schema@7.0.15)(@types/node@26.2.0)(pg@8.23.0)(playwright-core@1.62.1)(socks@2.8.9)
@@ -2970,8 +2970,8 @@ packages:
   package-json-from-dist@1.0.1:
     resolution: {integrity: sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==}
 
-  pallastrade-harness@0.2.0:
-    resolution: {integrity: sha512-lkd5W+GCALPgQjIRH0z2XQdHT4slxue67p4g+DJqdkte3eu2Z3oSqw6DMrJ7rcW7sZcg17WIZuvq4/3QpcAXUA==}
+  pallastrade-harness@1.1.2:
+    resolution: {integrity: sha512-PrdKWgNcyJOlqKnTcMIXEg0W5VmoVn4kdYN7es4TzviR/aLTBUdWmGo+wQUygmltKmL3O2VQCaZsLiczOO4phA==}
     engines: {node: '>=22.0.0'}
     hasBin: true
 
@@ -6790,9 +6790,10 @@ snapshots:
 
   package-json-from-dist@1.0.1: {}
 
-  pallastrade-harness@0.2.0:
+  pallastrade-harness@1.1.2:
     dependencies:
       glob: 11.1.0
+      minimatch: 10.2.6
 
   parse-ms@4.0.0: {}
 

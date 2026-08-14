@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "lefthook": "^1.11.0",
-    "pallastrade-harness": "^1.1.1",
+    "pallastrade-harness": "^1.1.2",
     "promptfoo": "^0.122.0"
   }
 }
