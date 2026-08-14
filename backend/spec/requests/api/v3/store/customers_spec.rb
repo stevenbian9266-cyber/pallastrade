@@ -48,6 +48,16 @@ RSpec.describe 'POST /api/v3/store/customers (Turnstile human verification)', ty
       expect(json_response[:error][:code]).to eq('turnstile_verification_failed')
     end
 
+    it 'creates the customer when verification is unreachable (degrade open with warning)' do
+      allow(PallasTrade::Api::Turnstile).to receive(:verify).and_return(nil)
+      allow(Rails.logger).to receive(:warn)
+
+      post '/api/v3/store/customers', params: valid_params, headers: headers
+
+      expect(response).to have_http_status(:created)
+      expect(Rails.logger).to have_received(:warn).with(/Turnstile.*unreachable/)
+    end
+
     it 'passes the turnstile token and client IP to the verifier' do
       allow(PallasTrade::Api::Turnstile).to receive(:verify).and_return(true)
 

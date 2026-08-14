@@ -378,6 +378,24 @@
         "Let an Agent adapter overwrite user-maintained content outside its managed block"
       ],
       "scoring": { "privacy": 25, "minimalContext": 20, "decisions": 15, "threeState": 25, "adapterSafety": 15 }
+    },
+    {
+      "id": "GS-025",
+      "name": "Turnstile unreachable degrade-open (CN hosting)",
+      "description": "When Cloudflare Turnstile siteverify is unreachable (CN-hosted servers), AI must return nil (unable to verify) and degrade OPEN with a warning log instead of fail-closed, while still rejecting an explicit Cloudflare rejection.",
+      "mustDo": [
+        "Return nil for network error/timeout/non-2xx/JSON parse failure in Turnstile.verify",
+        "Return false only for explicit Cloudflare rejection or blank token",
+        "In the controller map nil to allow + Rails.logger.warn (degrade open)",
+        "Keep false -> 422 turnstile_verification_failed",
+        "Update turnstile_spec + customers_spec for the tri-state contract"
+      ],
+      "mustNotDo": [
+        "Fail-closed on network unreachability (would permanently block CN registration)",
+        "Treat an explicit Cloudflare rejection (false) as nil/allow",
+        "Hand-edit schema or migrate (no data change)"
+      ],
+      "scoring": { "triState": 30, "degradeOpen": 30, "specCoverage": 25, "noDataChange": 15 }
     }
   ]
 }

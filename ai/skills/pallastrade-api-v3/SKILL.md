@@ -284,6 +284,29 @@ Hit limits → `429 Too Many Requests` with `Retry-After` header. The `@pallastr
 
 Tune via `PallasTrade::Api::Config[:rate_limit_per_key]` etc. in `config/initializers/pallastrade.rb`. For tougher global throttling (per-IP at the proxy edge), layer Rack::Attack or your CDN's WAF on top.
 
+## Turnstile human verification (customer registration)
+
+`POST /api/v3/store/customers` (and newsletter subscribe) gates registration on a
+Cloudflare Turnstile token **only when `TURNSTILE_SECRET_KEY` is configured**. The
+client renders a Turnstile widget and submits the response as `turnstile_token`.
+
+The verification outcome is tri-state:
+
+| Verifier result | Meaning | API behavior |
+|---|---|---|
+| `true` | Cloudflare confirmed the token | Registration proceeds |
+| `false` | Cloudflare explicitly rejected the token | `422 turnstile_verification_failed` |
+| `nil` | Unable to verify (secret missing / network unreachable / upstream anomaly) | Degrade **open** with a `[Turnstile]` warning log; registration proceeds |
+
+**Why degrade open on `nil`:** on CN-hosted servers `challenges.cloudflare.com` is
+frequently unreachable (TCP/TLS connects but the HTTPS siteverify request times
+out). Fail-closed there would make registration permanently impossible. An
+explicit Cloudflare rejection (`false`) is still always respected.
+
+Implementation: `PallasTrade::Api::Turnstile.verify(token, remote_ip:)` returns
+`true` / `false` / `nil`; `PallasTrade::Api::V3::Store::CustomersController#turnstile_verified?`
+maps `nil` → allow + `Rails.logger.warn`.
+
 ## Read/write attribute symmetry (a v3 invariant)
 
 For any resource: **whatever a serializer returns, the controller's `permitted_params` accepts on write under the same name.** No `label` exposed but `presentation` accepted. No `customer_note` exposed but `special_instructions` accepted. The client never has to translate.

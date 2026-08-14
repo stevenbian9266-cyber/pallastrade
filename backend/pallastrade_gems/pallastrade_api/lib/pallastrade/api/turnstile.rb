@@ -39,7 +39,11 @@ module PallasTrade
         #
         # @param response_token [String] the `cf-turnstile-response` value from the widget
         # @param remote_ip [String, nil] optional client IP for enhanced validation
-        # @return [Boolean] true only when Cloudflare reports success
+        # @return [Boolean, nil] +true+ when Cloudflare reports success; +false+ when
+        #   Cloudflare explicitly rejects the token; +nil+ when verification is
+        #   *unable to run* (not configured, network error, timeout, or an upstream
+        #   anomaly) — callers may decide how to degrade (e.g. fall back open with
+        #   logging for regions where Cloudflare is unreachable).
         def verify(response_token, remote_ip: nil)
           new(response_token, remote_ip: remote_ip).verify
         end
@@ -53,7 +57,10 @@ module PallasTrade
       end
 
       def verify
-        return false unless self.class.configured? && response_token.present?
+        # 未配置 secret → 无法验证（nil，调用方按未启用处理）
+        return nil unless self.class.configured?
+        # token 缺失 → 明确视为未通过
+        return false if response_token.blank?
 
         uri = URI(VERIFY_URL)
         http = Net::HTTP.new(uri.host, uri.port)
@@ -65,12 +72,16 @@ module PallasTrade
         request.set_form_data(verification_params)
 
         response = http.request(request)
-        return false unless response.is_a?(Net::HTTPSuccess)
+        # 非 2xx（网关错误/上游异常）→ 无法验证（nil），区别于 Cloudflare 明确拒绝
+        return nil unless response.is_a?(Net::HTTPSuccess)
 
         body = JSON.parse(response.body)
         body['success'] == true
       rescue StandardError
-        false
+        # 网络错误 / 超时 / 响应解析失败 → 无法验证（nil）
+        # 注：国内服务器访问 challenges.cloudflare.com 常被网络干扰（TCP/TLS 通但
+        # HTTPS 请求无响应），此处返回 nil 让调用方决定降级策略。
+        nil
       end
 
       private
