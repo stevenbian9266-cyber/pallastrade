@@ -112,6 +112,16 @@ PallasTrade.admin.navigation.sidebar.update :products, position: 5
 
 The full nav API is in `pallastrade/admin/app/models/pallastrade/admin/navigation.rb` if you need to read the source.
 
+## Config Center (managed parameters & secrets)
+
+The **Config Center** lives under Settings (`settings_nav.add :config_center`, `ConfigItemsController` with `SettingsConcern`). It manages `PallasTrade::ConfigItem` records (key/group/value_type/value) from the admin:
+
+- `value_type` ∈ `secret | string | boolean | number`; `key` + `value_type` are create-only (immutable after create).
+- **Secret items**: value stored via the encrypted lane; the UI shows only the masked `key_hint_display` + `rotated_at` and a "leave blank to keep current" password field. Never print `raw_value` in views.
+- The index table (`render_table @collection, :config_items`) uses the `_config_item_value` custom column partial — keep it leak-free.
+- **Import wizard** (`POST /admin/config_items/import` with `env_keys[]`) reads ENV server-side and infers `secret` vs `string` from the variable name (`SECRET|KEY|TOKEN|PASSWORD|CREDENTIAL` → secret).
+- Follow the existing controller pattern: override `create`/`update` to route `value` through `assign_value` (blank value on an existing secret = unchanged).
+
 ## Customizing admin tables
 
 Most admin listing pages (Products, Orders, Promotions, etc.) use a registered table definition — see the gem's `config/initializers/pallastrade_admin_tables.rb` for the registered keys (note: the Customers page is registered as `:users`; a few pages like Payment Methods don't use the table registry). Add, remove, or reorder columns from an initializer:

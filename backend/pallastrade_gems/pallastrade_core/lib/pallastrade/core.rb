@@ -555,6 +555,8 @@ end
 
 require 'pallastrade/core/version'
 
+require 'pallastrade/config_center'
+require 'pallastrade/storage/service_resolver'
 require 'pallastrade/core/number_generator'
 require 'pallastrade/migrations'
 require 'pallastrade/translation_migrations'

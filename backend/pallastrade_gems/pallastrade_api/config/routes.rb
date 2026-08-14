@@ -168,6 +168,11 @@ PallasTrade::Core::Engine.add_routes do
             patch :revoke
           end
         end
+        resources :config_items, only: [:index, :show, :create, :update, :destroy] do
+          collection do
+            post :import
+          end
+        end
         resources :allowed_origins
         resources :webhook_endpoints do
           member do

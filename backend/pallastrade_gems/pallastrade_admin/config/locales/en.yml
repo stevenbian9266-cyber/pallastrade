@@ -44,6 +44,23 @@ en:
         origin_help: Enter the full origin URL of your storefront (e.g. https://myshop.com). Do not include paths or query strings.
         origin_settings: Origin Settings
       amount_spent: Amount spent
+      config_center: Config Center
+      config_items:
+        value_type: Type
+        value: Value
+        new: New Config Item
+        select_value_type: Select value type
+        key_help: Dotted key, e.g. oss.access_key_id → maps to ENV OSS_ACCESS_KEY_ID
+        group_help: Grouping shown in the Config Center list
+        default_help: Fallback when no value is configured
+        secret_value: Secret value
+        secret_help: Stored encrypted and never displayed again. Leave blank to keep the current value.
+        current_secret: Current
+        import_title: Import from ENV
+        import_hint: Import recognized server environment variables (e.g. OSS_ACCESS_KEY_ID, STRIPE_SECRET_KEY) into the Config Center. Secrets are read server-side and never shown in the form.
+        import_hint2: Comma-separated. Items that already exist in the Config Center are skipped.
+        env_keys: Environment variables
+        import: Import
       api_keys:
         example_request: Example Request
         key_revoked_message: This API key has been revoked and can no longer be used.

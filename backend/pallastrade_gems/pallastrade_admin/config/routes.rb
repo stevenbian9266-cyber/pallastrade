@@ -265,6 +265,11 @@ PallasTrade::Core::Engine.add_routes do
         put :revoke
       end
     end
+    resources :config_items do
+      collection do
+        post :import
+      end
+    end
     resources :webhook_endpoints do
       member do
         post :test
