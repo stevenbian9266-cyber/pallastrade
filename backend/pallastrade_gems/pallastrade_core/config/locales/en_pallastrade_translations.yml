@@ -1,0 +1,1418 @@
+# Auto-generated additions: complete activerecord translations for PallasTrade models.
+#
+# Missing model names + attribute labels discovered on 2026-08-15. This file is
+# deep-merged by Rails I18n on top of en.yml — keep it separate so the main
+# locale file stays clean (no duplicated YAML keys).
+en:
+  activerecord:
+    models:
+      pallastrade/admin_user:
+        one: Admin user
+        other: Admin user
+      pallastrade/allowed_origin:
+        one: Allowed origin
+        other: Allowed origin
+      pallastrade/api_key:
+        one: Api key
+        other: Api key
+      pallastrade/asset:
+        one: Asset
+        other: Asset
+      pallastrade/back_in_stock_subscription:
+        one: Back in stock subscription
+        other: Back in stock subscription
+      pallastrade/calculator:
+        one: Calculator
+        other: Calculator
+      pallastrade/calculator/default_tax:
+        one: Default tax
+        other: Default tax
+      pallastrade/calculator/flat_percent_item_total:
+        one: Flat percent item total
+        other: Flat percent item total
+      pallastrade/calculator/flat_rate:
+        one: Flat rate
+        other: Flat rate
+      pallastrade/calculator/flexi_rate:
+        one: Flexi rate
+        other: Flexi rate
+      pallastrade/calculator/percent_on_line_item:
+        one: Percent on line item
+        other: Percent on line item
+      pallastrade/calculator/shipping/digital_delivery:
+        one: Digital delivery
+        other: Digital delivery
+      pallastrade/calculator/shipping/flat_percent_item_total:
+        one: Flat percent item total
+        other: Flat percent item total
+      pallastrade/calculator/shipping/flat_rate:
+        one: Flat rate
+        other: Flat rate
+      pallastrade/calculator/shipping/flexi_rate:
+        one: Flexi rate
+        other: Flexi rate
+      pallastrade/calculator/shipping/per_item:
+        one: Per item
+        other: Per item
+      pallastrade/calculator/shipping/price_sack:
+        one: Price sack
+        other: Price sack
+      pallastrade/calculator/tiered_flat_rate:
+        one: Tiered flat rate
+        other: Tiered flat rate
+      pallastrade/calculator/tiered_percent:
+        one: Tiered percent
+        other: Tiered percent
+      pallastrade/channel:
+        one: Channel
+        other: Channel
+      pallastrade/coupon_code:
+        one: Coupon code
+        other: Coupon code
+      pallastrade/data_feed:
+        one: Data feed
+        other: Data feed
+      pallastrade/data_feed/google:
+        one: Google
+        other: Google
+      pallastrade/exports/coupon_codes:
+        one: Export
+        other: Exports
+      pallastrade/exports/customers:
+        one: Export
+        other: Exports
+      pallastrade/exports/gift_cards:
+        one: Export
+        other: Exports
+      pallastrade/exports/newsletter_subscribers:
+        one: Export
+        other: Exports
+      pallastrade/exports/orders:
+        one: Export
+        other: Exports
+      pallastrade/exports/product_translations:
+        one: Export
+        other: Exports
+      pallastrade/exports/products:
+        one: Export
+        other: Exports
+      pallastrade/gateway:
+        one: Payment Method
+        other: Payment Methods
+      pallastrade/gateway/bogus:
+        one: Payment Method
+        other: Payment Methods
+      pallastrade/gateway/custom_payment_source_method:
+        one: Payment Method
+        other: Payment Methods
+      pallastrade/gateway_customer:
+        one: Gateway customer
+        other: Gateway customer
+      pallastrade/gift_card:
+        one: Gift card
+        other: Gift card
+      pallastrade/image:
+        one: Image
+        other: Image
+      pallastrade/import:
+        one: Import
+        other: Import
+      pallastrade/imports/customers:
+        one: Customers
+        other: Customers
+      pallastrade/imports/product_translations:
+        one: Product translations
+        other: Product translations
+      pallastrade/imports/products:
+        one: Products
+        other: Products
+      pallastrade/market:
+        one: Market
+        other: Market
+      pallastrade/metafield:
+        one: Metafield
+        other: Metafield
+      pallastrade/metafield_definition:
+        one: Metafield definition
+        other: Metafield definition
+      pallastrade/metafields/boolean:
+        one: Boolean
+        other: Boolean
+      pallastrade/metafields/json:
+        one: Json
+        other: Json
+      pallastrade/metafields/long_text:
+        one: Long text
+        other: Long text
+      pallastrade/metafields/number:
+        one: Number
+        other: Number
+      pallastrade/metafields/rich_text:
+        one: Rich text
+        other: Rich text
+      pallastrade/metafields/short_text:
+        one: Short text
+        other: Short text
+      pallastrade/newsletter_subscriber:
+        one: Newsletter subscriber
+        other: Newsletter subscriber
+      pallastrade/option_type/translation:
+        one: Translation
+        other: Translation
+      pallastrade/option_value/translation:
+        one: Translation
+        other: Translation
+      pallastrade/order_routing/rules/default_location:
+        one: Default location
+        other: Default location
+      pallastrade/order_routing/rules/minimize_splits:
+        one: Minimize splits
+        other: Minimize splits
+      pallastrade/order_routing/rules/preferred_location:
+        one: Preferred location
+        other: Preferred location
+      pallastrade/order_routing_rule:
+        one: Order routing rule
+        other: Order routing rule
+      pallastrade/payment_method/check:
+        one: Payment Method
+        other: Payment Methods
+      pallastrade/payment_method/store_credit:
+        one: Payment Method
+        other: Payment Methods
+      pallastrade/payment_source:
+        one: Payment source
+        other: Payment source
+      pallastrade/policy:
+        one: Policy
+        other: Policy
+      pallastrade/policy/translation:
+        one: Translation
+        other: Translation
+      pallastrade/price_rules/channel_rule:
+        one: Price Rule
+        other: Price Rules
+      pallastrade/price_rules/customer_group_rule:
+        one: Price Rule
+        other: Price Rules
+      pallastrade/price_rules/market_rule:
+        one: Price Rule
+        other: Price Rules
+      pallastrade/price_rules/user_rule:
+        one: Price Rule
+        other: Price Rules
+      pallastrade/price_rules/volume_rule:
+        one: Price Rule
+        other: Price Rules
+      pallastrade/product/translation:
+        one: Translation
+        other: Translation
+      pallastrade/promotion/actions/create_adjustment:
+        one: Create adjustment
+        other: Create adjustment
+      pallastrade/promotion/actions/create_item_adjustments:
+        one: Create item adjustments
+        other: Create item adjustments
+      pallastrade/promotion/actions/create_line_items:
+        one: Create line items
+        other: Create line items
+      pallastrade/promotion/actions/free_shipping:
+        one: Free shipping
+        other: Free shipping
+      pallastrade/promotion/rules/channel:
+        one: Channel
+        other: Channel
+      pallastrade/promotion/rules/country:
+        one: Country
+        other: Country
+      pallastrade/promotion/rules/currency:
+        one: Currency
+        other: Currency
+      pallastrade/promotion/rules/customer_group:
+        one: Customer group
+        other: Customer group
+      pallastrade/promotion/rules/first_order:
+        one: First order
+        other: First order
+      pallastrade/promotion/rules/item_total:
+        one: Item total
+        other: Item total
+      pallastrade/promotion/rules/market:
+        one: Market
+        other: Market
+      pallastrade/promotion/rules/one_use_per_user:
+        one: One use per user
+        other: One use per user
+      pallastrade/promotion/rules/option_value:
+        one: Option value
+        other: Option value
+      pallastrade/promotion/rules/product:
+        one: Product
+        other: Product
+      pallastrade/promotion/rules/taxon:
+        one: Taxon
+        other: Taxon
+      pallastrade/promotion/rules/user:
+        one: User
+        other: User
+      pallastrade/promotion/rules/user_logged_in:
+        one: User logged in
+        other: User logged in
+      pallastrade/promotion_action:
+        one: Promotion action
+        other: Promotion action
+      pallastrade/promotion_rule:
+        one: Promotion rule
+        other: Promotion rule
+      pallastrade/redirect:
+        one: Redirect
+        other: Redirect
+      pallastrade/refund:
+        one: Refund
+        other: Refund
+      pallastrade/report:
+        one: Report
+        other: Report
+      pallastrade/reports/products_performance:
+        one: Products performance
+        other: Products performance
+      pallastrade/reports/sales_total:
+        one: Sales total
+        other: Sales total
+      pallastrade/shipping_calculator:
+        one: Shipping calculator
+        other: Shipping calculator
+      pallastrade/shipping_rate:
+        one: Shipping rate
+        other: Shipping rate
+      pallastrade/store/translation:
+        one: Translation
+        other: Translation
+      pallastrade/taxon/translation:
+        one: Translation
+        other: Translation
+      pallastrade/taxon_rule:
+        one: Taxon rule
+        other: Taxon rule
+      pallastrade/taxon_rules/available_on:
+        one: Available on
+        other: Available on
+      pallastrade/taxon_rules/sale:
+        one: Sale
+        other: Sale
+      pallastrade/taxon_rules/tag:
+        one: Tag
+        other: Tag
+      pallastrade/taxonomy/translation:
+        one: Translation
+        other: Translation
+      pallastrade/webhook_delivery:
+        one: Webhook delivery
+        other: Webhook delivery
+      pallastrade/webhook_endpoint:
+        one: Webhook endpoint
+        other: Webhook endpoint
+    attributes:
+      pallastrade/address:
+        alternative_phone: Alternative phone
+        country_id: Country
+        latitude: Latitude
+        longitude: Longitude
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        quick_checkout: Quick checkout
+        state_id: State
+        state_name: State name
+        user_id: User
+      pallastrade/admin_user:
+        confirmation_sent_at: Confirmation sent at
+        confirmation_token: Confirmation token
+        confirmed_at: Confirmed at
+        current_sign_in_at: Current sign in at
+        current_sign_in_ip: Current sign in ip
+        email: Email
+        encrypted_password: Encrypted password
+        failed_attempts: Failed attempts
+        first_name: First name
+        last_name: Last name
+        last_sign_in_at: Last sign in at
+        last_sign_in_ip: Last sign in ip
+        locked_at: Locked at
+        login: Login
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        remember_created_at: Remember created at
+        reset_password_sent_at: Reset password sent at
+        reset_password_token: Reset password token
+        selected_locale: Selected locale
+        sign_in_count: Sign in count
+        unconfirmed_email: Unconfirmed email
+        unlock_token: Unlock token
+      pallastrade/allowed_origin:
+        origin: Origin
+        store_id: Store
+      pallastrade/api_key:
+        created_by_id: Created by
+        created_by_type: Created by type
+        key_type: Key type
+        last_used_at: Last used at
+        name: Name
+        revoked_at: Revoked at
+        revoked_by_id: Revoked by
+        revoked_by_type: Revoked by type
+        scopes: Scopes
+        store_id: Store
+        token: Token
+        token_digest: Token digest
+        token_prefix: Token prefix
+      pallastrade/asset:
+        alt: Alt
+        attachment_content_type: Attachment content type
+        attachment_file_name: Attachment file name
+        attachment_file_size: Attachment file size
+        attachment_height: Attachment height
+        attachment_updated_at: Attachment updated at
+        attachment_width: Attachment width
+        external_video_url: External video url
+        focal_point_x: Focal point x
+        focal_point_y: Focal point y
+        media_type: Media type
+        position: Position
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        session_id: Session
+        type: Type
+        viewable_id: Viewable
+        viewable_type: Viewable type
+      pallastrade/back_in_stock_subscription:
+        email: Email
+        product_id: Product
+        status: Status
+        store_id: Store
+      pallastrade/calculator:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/calculator/default_tax:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/calculator/flat_percent_item_total:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/calculator/flat_rate:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/calculator/flexi_rate:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/calculator/percent_on_line_item:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/calculator/shipping/digital_delivery:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/calculator/shipping/flat_percent_item_total:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/calculator/shipping/flat_rate:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/calculator/shipping/flexi_rate:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/calculator/shipping/per_item:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/calculator/shipping/price_sack:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/calculator/tiered_flat_rate:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/calculator/tiered_percent:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/channel:
+        active: Active
+        code: Code
+        default: Default
+        name: Name
+        preferences: Preferences
+        store_id: Store
+      pallastrade/coupon_code:
+        code: Code
+        order_id: Order
+        promotion_id: Promotion
+        state: State
+      pallastrade/credit_card:
+        address_id: Address
+        default: Default
+        fingerprint: Fingerprint
+        gateway_customer_id: Gateway customer
+        gateway_customer_profile_id: Gateway customer profile
+        gateway_payment_profile_id: Gateway payment profile
+        last_digits: Last digits
+        payment_method_id: Payment method
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        user_id: User
+      pallastrade/customer_group:
+        store_id: Store
+      pallastrade/customer_return:
+        number: Number
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        store_id: Store
+      pallastrade/data_feed:
+        active: Active
+        name: Name
+        slug: Slug
+        store_id: Store
+        type: Type
+      pallastrade/data_feed/google:
+        active: Active
+        name: Name
+        slug: Slug
+        store_id: Store
+        type: Type
+      pallastrade/export:
+        format: Format
+        number: Number
+        preferences: Preferences
+        search_params: Search params
+        store_id: Store
+        type: Type
+        user_id: User
+      pallastrade/exports/coupon_codes:
+        format: Format
+        number: Number
+        preferences: Preferences
+        search_params: Search params
+        store_id: Store
+        type: Type
+        user_id: User
+      pallastrade/exports/customers:
+        format: Format
+        number: Number
+        preferences: Preferences
+        search_params: Search params
+        store_id: Store
+        type: Type
+        user_id: User
+      pallastrade/exports/gift_cards:
+        format: Format
+        number: Number
+        preferences: Preferences
+        search_params: Search params
+        store_id: Store
+        type: Type
+        user_id: User
+      pallastrade/exports/newsletter_subscribers:
+        format: Format
+        number: Number
+        preferences: Preferences
+        search_params: Search params
+        store_id: Store
+        type: Type
+        user_id: User
+      pallastrade/exports/orders:
+        format: Format
+        number: Number
+        preferences: Preferences
+        search_params: Search params
+        store_id: Store
+        type: Type
+        user_id: User
+      pallastrade/exports/product_translations:
+        format: Format
+        number: Number
+        preferences: Preferences
+        search_params: Search params
+        store_id: Store
+        type: Type
+        user_id: User
+      pallastrade/exports/products:
+        format: Format
+        number: Number
+        preferences: Preferences
+        search_params: Search params
+        store_id: Store
+        type: Type
+        user_id: User
+      pallastrade/gateway:
+        active: Active
+        auto_capture: Auto capture
+        description: Description
+        display_on: Display on
+        name: Name
+        position: Position
+        preferences: Preferences
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        settings: Settings
+        store_id: Store
+        type: Type
+      pallastrade/gateway/bogus:
+        active: Active
+        auto_capture: Auto capture
+        description: Description
+        display_on: Display on
+        name: Name
+        position: Position
+        preferences: Preferences
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        settings: Settings
+        store_id: Store
+        type: Type
+      pallastrade/gateway/custom_payment_source_method:
+        active: Active
+        auto_capture: Auto capture
+        description: Description
+        display_on: Display on
+        name: Name
+        position: Position
+        preferences: Preferences
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        settings: Settings
+        store_id: Store
+        type: Type
+      pallastrade/gateway_customer:
+        payment_method_id: Payment method
+        profile_id: Profile
+        user_id: User
+      pallastrade/gift_card:
+        amount: Amount
+        amount_authorized: Amount authorized
+        code: Code
+        created_by_id: Created by
+        currency: Currency
+        gift_card_batch_id: Gift card batch
+        redeemed_at: Redeemed at
+        state: State
+        store_id: Store
+        user_id: User
+      pallastrade/image:
+        alt: Alt
+        attachment_content_type: Attachment content type
+        attachment_file_name: Attachment file name
+        attachment_file_size: Attachment file size
+        attachment_height: Attachment height
+        attachment_updated_at: Attachment updated at
+        attachment_width: Attachment width
+        external_video_url: External video url
+        focal_point_x: Focal point x
+        focal_point_y: Focal point y
+        media_type: Media type
+        position: Position
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        session_id: Session
+        type: Type
+        viewable_id: Viewable
+        viewable_type: Viewable type
+      pallastrade/import:
+        completed_groups_count: Completed groups count
+        number: Number
+        owner_id: Owner
+        owner_type: Owner type
+        preferences: Preferences
+        processing_errors: Processing errors
+        processing_groups_count: Processing groups count
+        rows_count: Rows count
+        status: Status
+        type: Type
+        user_id: User
+      pallastrade/imports/customers:
+        completed_groups_count: Completed groups count
+        number: Number
+        owner_id: Owner
+        owner_type: Owner type
+        preferences: Preferences
+        processing_errors: Processing errors
+        processing_groups_count: Processing groups count
+        rows_count: Rows count
+        status: Status
+        type: Type
+        user_id: User
+      pallastrade/imports/product_translations:
+        completed_groups_count: Completed groups count
+        number: Number
+        owner_id: Owner
+        owner_type: Owner type
+        preferences: Preferences
+        processing_errors: Processing errors
+        processing_groups_count: Processing groups count
+        rows_count: Rows count
+        status: Status
+        type: Type
+        user_id: User
+      pallastrade/imports/products:
+        completed_groups_count: Completed groups count
+        number: Number
+        owner_id: Owner
+        owner_type: Owner type
+        preferences: Preferences
+        processing_errors: Processing errors
+        processing_groups_count: Processing groups count
+        rows_count: Rows count
+        status: Status
+        type: Type
+        user_id: User
+      pallastrade/line_item:
+        additional_tax_total: Additional tax total
+        adjustment_total: Adjustment total
+        cost_price: Cost price
+        currency: Currency
+        included_tax_total: Included tax total
+        non_taxable_adjustment_total: Non taxable adjustment total
+        order_id: Order
+        pre_tax_amount: Pre tax amount
+        price_list_id: Price list
+        private_metadata: Private metadata
+        promo_total: Promo total
+        public_metadata: Public metadata
+        tax_category_id: Tax category
+        taxable_adjustment_total: Taxable adjustment total
+        variant_id: Variant
+      pallastrade/market:
+        currency: Currency
+        default: Default
+        default_locale: Default locale
+        name: Name
+        position: Position
+        store_id: Store
+        supported_locales: Supported locales
+        tax_inclusive: Tax inclusive
+      pallastrade/metafield:
+        metafield_definition_id: Metafield definition
+        resource_id: Resource
+        resource_type: Resource type
+        type: Type
+        value: Value
+      pallastrade/metafield_definition:
+        display_on: Display on
+        key: Key
+        metafield_type: Metafield type
+        name: Name
+        resource_type: Resource type
+      pallastrade/metafields/boolean:
+        metafield_definition_id: Metafield definition
+        resource_id: Resource
+        resource_type: Resource type
+        type: Type
+        value: Value
+      pallastrade/metafields/json:
+        metafield_definition_id: Metafield definition
+        resource_id: Resource
+        resource_type: Resource type
+        type: Type
+        value: Value
+      pallastrade/metafields/long_text:
+        metafield_definition_id: Metafield definition
+        resource_id: Resource
+        resource_type: Resource type
+        type: Type
+        value: Value
+      pallastrade/metafields/number:
+        metafield_definition_id: Metafield definition
+        resource_id: Resource
+        resource_type: Resource type
+        type: Type
+        value: Value
+      pallastrade/metafields/rich_text:
+        metafield_definition_id: Metafield definition
+        resource_id: Resource
+        resource_type: Resource type
+        type: Type
+      pallastrade/metafields/short_text:
+        metafield_definition_id: Metafield definition
+        resource_id: Resource
+        resource_type: Resource type
+        type: Type
+        value: Value
+      pallastrade/newsletter_subscriber:
+        email: Email
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        store_id: Store
+        user_id: User
+        verification_token: Verification token
+        verified_at: Verified at
+      pallastrade/option_type:
+        position: Position
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+      pallastrade/option_type/translation:
+        locale: Locale
+        pallastrade_option_type_id: PallasTrade option type
+        presentation: Presentation
+      pallastrade/option_value:
+        name: Name
+        option_type_id: Option type
+        position: Position
+        presentation: Presentation
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+      pallastrade/option_value/translation:
+        locale: Locale
+        pallastrade_option_value_id: PallasTrade option value
+        presentation: Presentation
+      pallastrade/order:
+        accept_marketing: Accept marketing
+        additional_tax_total: Additional tax total
+        adjustment_total: Adjustment total
+        approved_at: Approved at
+        approver_id: Approver
+        bill_address_id: Bill address
+        canceled_at: Canceled at
+        canceler_id: Canceler
+        channel_id: Channel
+        confirmation_delivered: Confirmation delivered
+        created_by_id: Created by
+        currency: Currency
+        gift_card_id: Gift card
+        included_tax_total: Included tax total
+        last_ip_address: Last ip address
+        locale: Locale
+        market_id: Market
+        non_taxable_adjustment_total: Non taxable adjustment total
+        payment_total: Payment total
+        preferred_stock_location_id: Preferred stock location
+        private_metadata: Private metadata
+        promo_total: Promo total
+        public_metadata: Public metadata
+        ship_address_id: Ship address
+        shipment_total: Shipment total
+        signup_for_an_account: Signup for an account
+        state_lock_version: State lock version
+        status: Status
+        store_id: Store
+        store_owner_notification_delivered: Store owner notification delivered
+        taxable_adjustment_total: Taxable adjustment total
+        token: Token
+        user_id: User
+      pallastrade/order_routing/rules/default_location:
+        active: Active
+        channel_id: Channel
+        position: Position
+        preferences: Preferences
+        store_id: Store
+        type: Type
+      pallastrade/order_routing/rules/minimize_splits:
+        active: Active
+        channel_id: Channel
+        position: Position
+        preferences: Preferences
+        store_id: Store
+        type: Type
+      pallastrade/order_routing/rules/preferred_location:
+        active: Active
+        channel_id: Channel
+        position: Position
+        preferences: Preferences
+        store_id: Store
+        type: Type
+      pallastrade/order_routing_rule:
+        active: Active
+        channel_id: Channel
+        position: Position
+        preferences: Preferences
+        store_id: Store
+        type: Type
+      pallastrade/payment:
+        avs_response: Avs response
+        cvv_response_code: Cvv response code
+        cvv_response_message: Cvv response message
+        order_id: Order
+        payment_method_id: Payment method
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        response_code: Response code
+        source_id: Source
+        source_type: Source type
+        state: State
+      pallastrade/payment_method:
+        active: Active
+        auto_capture: Auto capture
+        description: Description
+        display_on: Display on
+        position: Position
+        preferences: Preferences
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        settings: Settings
+        store_id: Store
+        type: Type
+      pallastrade/payment_method/check:
+        active: Active
+        auto_capture: Auto capture
+        description: Description
+        display_on: Display on
+        name: Name
+        position: Position
+        preferences: Preferences
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        settings: Settings
+        store_id: Store
+        type: Type
+      pallastrade/payment_method/store_credit:
+        active: Active
+        auto_capture: Auto capture
+        description: Description
+        display_on: Display on
+        name: Name
+        position: Position
+        preferences: Preferences
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        settings: Settings
+        store_id: Store
+        type: Type
+      pallastrade/payment_source:
+        gateway_customer_profile_id: Gateway customer profile
+        gateway_payment_profile_id: Gateway payment profile
+        payment_method_id: Payment method
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        type: Type
+        user_id: User
+      pallastrade/policy:
+        name: Name
+        owner_id: Owner
+        owner_type: Owner type
+        slug: Slug
+      pallastrade/policy/translation:
+        locale: Locale
+        name: Name
+        pallastrade_policy_id: PallasTrade policy
+      pallastrade/price_list:
+        position: Position
+        store_id: Store
+      pallastrade/price_rule:
+        preferences: Preferences
+        price_list_id: Price list
+      pallastrade/price_rules/channel_rule:
+        preferences: Preferences
+        price_list_id: Price list
+        type: Type
+      pallastrade/price_rules/customer_group_rule:
+        preferences: Preferences
+        price_list_id: Price list
+        type: Type
+      pallastrade/price_rules/market_rule:
+        preferences: Preferences
+        price_list_id: Price list
+        type: Type
+      pallastrade/price_rules/user_rule:
+        preferences: Preferences
+        price_list_id: Price list
+        type: Type
+      pallastrade/price_rules/volume_rule:
+        preferences: Preferences
+        price_list_id: Price list
+        type: Type
+      pallastrade/product:
+        classification_count: Classification count
+        media_count: Media count
+        primary_media_id: Primary media
+        private_metadata: Private metadata
+        promotionable: Promotionable
+        public_metadata: Public metadata
+        revenue: Revenue
+        shipping_category_id: Shipping category
+        store_id: Store
+        tax_category_id: Tax category
+        units_sold_count: Units sold count
+        variant_count: Variant count
+      pallastrade/product/translation:
+        description: Description
+        locale: Locale
+        meta_description: Meta description
+        meta_keywords: Meta keywords
+        meta_title: Meta title
+        name: Name
+        pallastrade_product_id: PallasTrade product
+        slug: Slug
+      pallastrade/promotion:
+        code_prefix: Code prefix
+        kind: Kind
+        match_policy: Match policy
+        multi_codes: Multi codes
+        number_of_codes: Number of codes
+        private_metadata: Private metadata
+        promotion_category_id: Promotion category
+        public_metadata: Public metadata
+        store_id: Store
+        type: Type
+      pallastrade/promotion/actions/create_adjustment:
+        position: Position
+        promotion_id: Promotion
+        type: Type
+      pallastrade/promotion/actions/create_item_adjustments:
+        position: Position
+        promotion_id: Promotion
+        type: Type
+      pallastrade/promotion/actions/create_line_items:
+        position: Position
+        promotion_id: Promotion
+        type: Type
+      pallastrade/promotion/actions/free_shipping:
+        position: Position
+        promotion_id: Promotion
+        type: Type
+      pallastrade/promotion/rules/channel:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/promotion/rules/country:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/promotion/rules/currency:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/promotion/rules/customer_group:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/promotion/rules/first_order:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/promotion/rules/item_total:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/promotion/rules/market:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/promotion/rules/one_use_per_user:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/promotion/rules/option_value:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/promotion/rules/product:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/promotion/rules/taxon:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/promotion/rules/user:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/promotion/rules/user_logged_in:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/promotion_action:
+        position: Position
+        promotion_id: Promotion
+        type: Type
+      pallastrade/promotion_rule:
+        code: Code
+        preferences: Preferences
+        product_group_id: Product group
+        promotion_id: Promotion
+        type: Type
+        user_id: User
+      pallastrade/redirect:
+        description: Description
+        store_id: Store
+        title: Title
+      pallastrade/refund:
+        amount: Amount
+        payment_id: Payment
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        refund_reason_id: Refund reason
+        refunder_id: Refunder
+        reimbursement_id: Reimbursement
+        transaction_id: Transaction
+      pallastrade/refund_reason:
+        active: Active
+        mutable: Mutable
+        name: Name
+      pallastrade/reimbursement_type:
+        active: Active
+        mutable: Mutable
+        name: Name
+        type: Type
+      pallastrade/report:
+        currency: Currency
+        date_from: Date from
+        date_to: Date to
+        store_id: Store
+        type: Type
+        user_id: User
+      pallastrade/reports/products_performance:
+        currency: Currency
+        date_from: Date from
+        date_to: Date to
+        store_id: Store
+        type: Type
+        user_id: User
+      pallastrade/reports/sales_total:
+        currency: Currency
+        date_from: Date from
+        date_to: Date to
+        store_id: Store
+        type: Type
+        user_id: User
+      pallastrade/return_authorization:
+        memo: Memo
+        number: Number
+        order_id: Order
+        return_authorization_reason_id: Return authorization reason
+        state: State
+        stock_location_id: Stock location
+      pallastrade/return_authorization_reason:
+        active: Active
+        mutable: Mutable
+        name: Name
+      pallastrade/shipment:
+        additional_tax_total: Additional tax total
+        address_id: Address
+        adjustment_total: Adjustment total
+        cost: Cost
+        included_tax_total: Included tax total
+        non_taxable_adjustment_total: Non taxable adjustment total
+        order_id: Order
+        pre_tax_amount: Pre tax amount
+        private_metadata: Private metadata
+        promo_total: Promo total
+        public_metadata: Public metadata
+        shipped_at: Shipped at
+        state: State
+        stock_location_id: Stock location
+        taxable_adjustment_total: Taxable adjustment total
+        tracking: Tracking
+      pallastrade/shipping_calculator:
+        calculable_id: Calculable
+        calculable_type: Calculable type
+        preferences: Preferences
+        type: Type
+      pallastrade/shipping_category:
+        name: Name
+      pallastrade/shipping_method:
+        admin_name: Admin name
+        code: Code
+        display_on: Display on
+        estimated_transit_business_days_max: Estimated transit business days max
+        estimated_transit_business_days_min: Estimated transit business days min
+        name: Name
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        tax_category_id: Tax category
+        tracking_url: Tracking url
+      pallastrade/shipping_rate:
+        cost: Cost
+        selected: Selected
+        shipment_id: Shipment
+        shipping_method_id: Shipping method
+        tax_rate_id: Tax rate
+      pallastrade/stock_item:
+        backorderable: Backorderable
+        count_on_hand: Count on hand
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        stock_location_id: Stock location
+        variant_id: Variant
+      pallastrade/stock_location:
+        active: Active
+        address1: Address1
+        address2: Address2
+        admin_name: Admin name
+        backorderable_default: Backorderable default
+        city: City
+        company: Company
+        country_id: Country
+        default: Default
+        kind: Kind
+        name: Name
+        phone: Phone
+        pickup_enabled: Pickup enabled
+        pickup_instructions: Pickup instructions
+        pickup_ready_in_minutes: Pickup ready in minutes
+        pickup_stock_policy: Pickup stock policy
+        propagate_all_variants: Propagate all variants
+        state_id: State
+        state_name: State name
+        zipcode: Zipcode
+      pallastrade/stock_movement:
+        action: Action
+        originator_id: Originator
+        originator_type: Originator type
+        quantity: Quantity
+        stock_item_id: Stock item
+      pallastrade/stock_transfer:
+        destination_location_id: Destination location
+        number: Number
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        reference: Reference
+        source_location_id: Source location
+        type: Type
+      pallastrade/store:
+        checkout_zone_id: Checkout zone
+        code: Code
+        customer_support_email: Customer support email
+        default: Default
+        default_country_id: Default country
+        default_currency: Default currency
+        default_locale: Default locale
+        description: Description
+        facebook: Facebook
+        instagram: Instagram
+        new_order_notifications_email: New order notifications email
+        preferences: Preferences
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        settings: Settings
+        supported_currencies: Supported currencies
+        supported_locales: Supported locales
+        twitter: Twitter
+      pallastrade/store/translation:
+        address: Address
+        contact_phone: Contact phone
+        customer_support_email: Customer support email
+        description: Description
+        facebook: Facebook
+        instagram: Instagram
+        locale: Locale
+        meta_description: Meta description
+        meta_keywords: Meta keywords
+        name: Name
+        new_order_notifications_email: New order notifications email
+        pallastrade_store_id: PallasTrade store
+        seo_title: Seo title
+        twitter: Twitter
+      pallastrade/store_credit:
+        amount: Amount
+        amount_authorized: Amount authorized
+        category_id: Category
+        created_by_id: Created by
+        currency: Currency
+        memo: Memo
+        originator_id: Originator
+        originator_type: Originator type
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        store_id: Store
+        type_id: Type
+        user_id: User
+      pallastrade/tax_category:
+        is_default: Is default
+        tax_code: Tax code
+      pallastrade/tax_rate:
+        name: Name
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        tax_category_id: Tax category
+        zone_id: Zone
+      pallastrade/taxon:
+        automatic: Automatic
+        children_count: Children count
+        classification_count: Classification count
+        depth: Depth
+        description: Description
+        hide_from_nav: Hide from nav
+        lft: Lft
+        meta_description: Meta description
+        meta_keywords: Meta keywords
+        meta_title: Meta title
+        parent_id: Parent
+        pretty_name: Pretty name
+        private_metadata: Private metadata
+        products_count: Products count
+        public_metadata: Public metadata
+        rgt: Rgt
+        rules_match_policy: Rules match policy
+        store_id: Store
+        taxonomy_id: Taxonomy
+      pallastrade/taxon/translation:
+        description: Description
+        locale: Locale
+        meta_description: Meta description
+        meta_keywords: Meta keywords
+        meta_title: Meta title
+        name: Name
+        pallastrade_taxon_id: PallasTrade taxon
+        permalink: Permalink
+        pretty_name: Pretty name
+      pallastrade/taxon_rule:
+        match_policy: Match policy
+        taxon_id: Taxon
+        type: Type
+        value: Value
+      pallastrade/taxon_rules/available_on:
+        match_policy: Match policy
+        taxon_id: Taxon
+        type: Type
+        value: Value
+      pallastrade/taxon_rules/sale:
+        match_policy: Match policy
+        taxon_id: Taxon
+        type: Type
+        value: Value
+      pallastrade/taxon_rules/tag:
+        match_policy: Match policy
+        taxon_id: Taxon
+        type: Type
+        value: Value
+      pallastrade/taxonomy:
+        position: Position
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        store_id: Store
+      pallastrade/taxonomy/translation:
+        locale: Locale
+        name: Name
+        pallastrade_taxonomy_id: PallasTrade taxonomy
+      pallastrade/user:
+        accepts_email_marketing: Accepts email marketing
+        authentication_token: Authentication token
+        bill_address_id: Bill address
+        current_sign_in_at: Current sign in at
+        current_sign_in_ip: Current sign in ip
+        encrypted_password: Encrypted password
+        failed_attempts: Failed attempts
+        first_name: First name
+        last_name: Last name
+        last_request_at: Last request at
+        last_sign_in_at: Last sign in at
+        last_sign_in_ip: Last sign in ip
+        locked_at: Locked at
+        login: Login
+        password_salt: Password salt
+        perishable_token: Perishable token
+        persistence_token: Persistence token
+        phone: Phone
+        private_metadata: Private metadata
+        public_metadata: Public metadata
+        remember_created_at: Remember created at
+        remember_token: Remember token
+        reset_password_sent_at: Reset password sent at
+        reset_password_token: Reset password token
+        selected_locale: Selected locale
+        ship_address_id: Ship address
+        sign_in_count: Sign in count
+        unlock_token: Unlock token
+      pallastrade/variant:
+        backorder_limit: Backorder limit
+        barcode: Barcode
+        dimensions_unit: Dimensions unit
+        discontinue_on: Discontinue on
+        is_master: Is master
+        media_count: Media count
+        position: Position
+        preorder_ships_at: Preorder ships at
+        preorderable: Preorderable
+        primary_media_id: Primary media
+        private_metadata: Private metadata
+        product_id: Product
+        public_metadata: Public metadata
+        tax_category_id: Tax category
+        track_inventory: Track inventory
+        weight_unit: Weight unit
+      pallastrade/webhook_delivery:
+        delivered_at: Delivered at
+        error_type: Error type
+        event_id: Event
+        event_name: Event name
+        execution_time: Execution time
+        payload: Payload
+        request_errors: Request errors
+        response_body: Response body
+        response_code: Response code
+        success: Success
+        webhook_endpoint_id: Webhook endpoint
+      pallastrade/webhook_endpoint:
+        active: Active
+        disabled_at: Disabled at
+        disabled_reason: Disabled reason
+        name: Name
+        secret_key: Secret key
+        store_id: Store
+        subscriptions: Subscriptions
+        url: Url
+      pallastrade/zone:
+        default_tax: Default tax
+        kind: Kind
+        zone_members_count: Zone members count

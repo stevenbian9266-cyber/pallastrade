@@ -42,6 +42,7 @@ en:
       admin_users:
         audit_log_enterprise_notice: Audit log is part of the PallasTrade Enterprise offering.
         upgrade_to_enterprise: Upgrade to PallasTrade Enterprise
+      back_in_stock_subscriptions: Back in Stock Subscriptions
       allowed_origins:
         origin_help: Enter the full origin URL of your storefront (e.g. https://myshop.com). Do not include paths or query strings.
         origin_settings: Origin Settings
