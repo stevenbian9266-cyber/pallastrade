@@ -13,7 +13,7 @@ module PallasTrade
       with_store_locale(store) do
         mail(
           to: subscription.email,
-          subject: PallasTrade.t('back_in_stock_mailer.subject', product_name: @product.name, scope: 'pallastrade'),
+          subject: PallasTrade.t('back_in_stock_mailer.back_in_stock.subject', product_name: @product.name),
         )
       end
     end

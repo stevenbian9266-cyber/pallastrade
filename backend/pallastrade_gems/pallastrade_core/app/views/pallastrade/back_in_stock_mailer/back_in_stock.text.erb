@@ -1,7 +1,7 @@
-<%= PallasTrade.t('back_in_stock_mailer.subject', product_name: @product.name) %>
+<%= PallasTrade.t('back_in_stock_mailer.back_in_stock.subject', product_name: @product.name) %>
 
-<%= PallasTrade.t('back_in_stock_mailer.greeting') %>
-<%= PallasTrade.t('back_in_stock_mailer.body', product_name: @product.name) %>
+<%= PallasTrade.t('back_in_stock_mailer.back_in_stock.greeting') %>
+<%= PallasTrade.t('back_in_stock_mailer.back_in_stock.body', product_name: @product.name) %>
 
 <% country = @product.store.default_country&.iso.to_s.downcase.presence || 'us' %>
 <% locale = @product.store.default_locale.to_s.presence || 'en' %>
