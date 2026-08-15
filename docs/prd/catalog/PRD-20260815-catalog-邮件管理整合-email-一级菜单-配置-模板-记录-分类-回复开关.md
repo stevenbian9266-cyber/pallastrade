@@ -138,3 +138,4 @@
 |---|---|---|---|
 | 2026-08-15 | 0.1 | 初稿（依据用户功能升级需求，含跨层搜索） | AI |
 | 2026-08-15 | 0.2 | approved（用户确认方案 A + A）；实施完成进入 verifying | AI |
+| 2026-08-16 | 0.3 | 优化迭代：移除 `设置 → Emails` 旧入口（`store/edit?section=emails` 重定向到 `/admin/emails`）；二级菜单命名调整为 邮件配置/通知场景/邮件模板/发件箱(Outbox)/收件箱(Inbox)；新增重定向回归测试（10 examples 0 failures） | AI |

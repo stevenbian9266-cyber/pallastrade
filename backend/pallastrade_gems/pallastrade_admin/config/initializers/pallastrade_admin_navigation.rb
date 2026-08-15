@@ -181,7 +181,7 @@ Rails.application.config.after_initialize do
           position: 60,
           if: -> { can?(:manage, PallasTrade::Report) }
 
-  # Emails — top-level menu with submenu (config / scenarios / templates / send log / inbox)
+  # Emails — top-level menu with submenu (config / scenarios / templates / outbox / inbox)
   sidebar_nav.add :emails,
           label: :emails,
           url: -> { PallasTrade.admin_emails_path },
@@ -209,14 +209,14 @@ Rails.application.config.after_initialize do
                position: 30,
                active: -> { %w[email_templates].include?(controller_name) }
 
-    # Send log (outgoing records)
-    emails.add :send_log,
-               label: 'admin.emails.send_log',
+    # Outbox (outgoing send log)
+    emails.add :outbox,
+               label: 'admin.emails.outbox',
                url: :admin_email_logs_path,
                position: 40,
                active: -> { %w[email_logs].include?(controller_name) }
 
-    # Inbox & feedback (complaints, feedback, inbound replies)
+    # Inbox (complaints, feedback, inbound replies)
     emails.add :inbox,
                label: 'admin.emails.inbox',
                url: :admin_contact_messages_path,
@@ -267,15 +267,6 @@ Rails.application.config.after_initialize do
           position: 20,
           active: -> { %w[admin_users invitations roles].include?(controller_name) },
           if: -> { can?(:manage, PallasTrade.admin_user_class) }
-
-  # Emails
-  settings_nav.add :emails,
-          label: :emails,
-          url: -> { PallasTrade.edit_admin_store_path(section: 'emails') },
-          icon: 'send',
-          position: 30,
-          active: -> { controller_name == 'stores' && params[:section] == 'emails' },
-          if: -> { can?(:manage, current_store) }
 
   # Policies
   settings_nav.add :policies,

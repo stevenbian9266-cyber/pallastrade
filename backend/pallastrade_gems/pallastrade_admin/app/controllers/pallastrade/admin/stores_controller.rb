@@ -9,16 +9,23 @@ module PallasTrade
       before_action :load_all_countries, only: [:edit, :update]
 
       def edit
+        # Email settings moved to the top-level Email menu (Email → Settings).
+        # Redirect legacy /admin/store/edit?section=emails so there is a single
+        # entry point. See pallastrade_admin_navigation.rb (Email submenu).
         if params[:section] == 'emails'
-          add_breadcrumb PallasTrade.t(:emails), PallasTrade.edit_admin_store_path(section: params[:section])
-        elsif params[:section] == 'checkout'
+          return redirect_to PallasTrade.admin_emails_path
+        end
+
+        if params[:section] == 'checkout'
           add_breadcrumb PallasTrade.t(:checkout), PallasTrade.edit_admin_store_path(section: params[:section])
         else
           add_breadcrumb PallasTrade.t(:store_details), PallasTrade.edit_admin_store_path(section: params[:section])
         end
       end
 
-      def edit_emails; end
+      def edit_emails
+        redirect_to PallasTrade.admin_emails_path
+      end
 
       def update
         @store.assign_attributes(permitted_store_params)
@@ -35,6 +42,9 @@ module PallasTrade
 
         if @store.saved_changes? && permitted_store_params[:code].present? && PallasTrade.respond_to?(:admin_custom_domains_url)
           redirect_to PallasTrade.admin_custom_domains_url(host: @store.url), allow_other_host: true
+        elsif params[:section] == 'emails'
+          # Email settings now live under the top-level Email menu.
+          redirect_to PallasTrade.admin_emails_path
         else
           respond_to do |format|
             format.turbo_stream

@@ -93,6 +93,7 @@ en:
         test_sent: Test email sent to %{email}.
         test_send_failed: Test email failed to send. Check the SMTP configuration and logs.
         send_log: Send Log
+        outbox: Outbox
         send_log_help: Every email sent by the store is recorded here — recipient, subject, status and time. Failed sends are marked so you can investigate.
         mailer: Mailer
         action: Action
