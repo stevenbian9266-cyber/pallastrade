@@ -214,12 +214,14 @@ The home page (`app/[country]/[locale]/(storefront)/page.tsx`) composes 7 sectio
 
 ### SEO 301 redirects (2026-08, phase-1)
 
-`src/middleware.ts` resolves every storefront pathname against the store's SEO redirects via
+`src/lib/pallastrade/middleware.ts` (`createPallasTradeMiddleware`, wired via Next.js 16
+`src/proxy.ts`) resolves every storefront pathname against the store's SEO redirects via
 `GET /api/v3/store/redirects/resolve?path=...` (60s `revalidate` cache, 3s timeout). On a hit it
 issues `NextResponse.redirect(target, status)` (guarded against A→A loops); on API failure it
 **degrades open** (continues normal rendering — Turnstile-style). Redirects are managed in the
 admin (Developers → Redirects) as `PallasTrade::Redirect` records. Static assets, `_next/*`
-and `api/*` are excluded by the middleware matcher.
+and `api/*` are excluded by the proxy matcher. Do NOT add a separate `src/middleware.ts` —
+Next.js 16 errors when both a middleware and a proxy file are present.
 
 ### Client-side cart
 
