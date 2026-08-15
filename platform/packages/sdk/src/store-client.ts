@@ -646,17 +646,16 @@ export class StoreClient {
       params: { email: string },
       options?: RequestOptions,
     ): Promise<{
-      id: string;
-      email: string;
-      status: string;
-      product_id: string | null;
-      created_at: string;
+      id: string
+      email: string
+      status: string
+      product_id: string | null
+      created_at: string
     }> =>
-      this.request(
-        'POST',
-        `/products/${productId}/back_in_stock_subscriptions`,
-        { ...options, body: params },
-      ),
+      this.request('POST', `/products/${productId}/back_in_stock_subscriptions`, {
+        ...options,
+        body: params,
+      }),
   }
 
   readonly customer = {

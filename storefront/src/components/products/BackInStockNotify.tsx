@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getClient } from "@/lib/pallastrade";
+import { getClient } from "@/lib/pallastrade/config";
 
 interface BackInStockNotifyProps {
   productId: string;
