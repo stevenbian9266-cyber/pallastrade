@@ -28,6 +28,13 @@ RSpec.describe 'Admin Email management pages', type: :request do
       expect(response.body).to include('Email Settings')
       expect(response.body).to include('mail_from_address')
     end
+
+    it 'renders with the full admin layout (not the settings submenu layout)' do
+      get '/admin/emails'
+      # The Email menu lives in the top-level sidebar; the page must NOT use
+      # the admin_settings layout (body class would contain "admin-settings").
+      expect(response.body).not_to include('admin-settings')
+    end
   end
 
   describe 'PATCH /admin/emails' do

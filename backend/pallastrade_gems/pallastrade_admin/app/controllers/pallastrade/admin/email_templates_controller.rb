@@ -5,7 +5,6 @@ module PallasTrade
     # Email templates CRUD (Email → Templates). Content editing with
     # {placeholder} substitution and a live preview.
     class EmailTemplatesController < ResourceController
-      include PallasTrade::Admin::SettingsConcern
       include PallasTrade::Admin::TableConcern
 
       def preview

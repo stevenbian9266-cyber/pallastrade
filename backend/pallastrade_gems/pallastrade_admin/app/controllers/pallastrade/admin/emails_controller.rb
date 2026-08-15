@@ -6,8 +6,6 @@ module PallasTrade
     # from/reply addresses, logo, transactional toggle and reply switch.
     # Reuses the store's email preferences so existing fields keep working.
     class EmailsController < PallasTrade::Admin::BaseController
-      include PallasTrade::Admin::SettingsConcern
-
       before_action :load_store, only: [:show, :update]
 
       def show

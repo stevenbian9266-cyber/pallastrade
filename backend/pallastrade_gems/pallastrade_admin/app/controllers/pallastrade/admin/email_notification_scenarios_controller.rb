@@ -7,8 +7,6 @@ module PallasTrade
     # toggled on/off per store, plus a test-send button. Toggle state is
     # persisted in store preferences (preferred_email_scenario_<key>).
     class EmailNotificationScenariosController < PallasTrade::Admin::BaseController
-      include PallasTrade::Admin::SettingsConcern
-
       before_action :load_store
 
       # The canonical scenario registry. `key` matches the EmailTemplate key and

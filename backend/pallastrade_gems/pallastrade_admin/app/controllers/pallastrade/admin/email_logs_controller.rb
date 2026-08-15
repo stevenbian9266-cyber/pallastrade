@@ -5,7 +5,6 @@ module PallasTrade
     # Read-only send log (Email → Send log). Records written by
     # PallasTrade::EmailLogRecorder whenever a mail is delivered/fails.
     class EmailLogsController < ResourceController
-      include PallasTrade::Admin::SettingsConcern
       include PallasTrade::Admin::TableConcern
 
       private

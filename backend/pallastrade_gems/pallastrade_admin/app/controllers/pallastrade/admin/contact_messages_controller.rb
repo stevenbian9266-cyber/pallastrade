@@ -5,7 +5,6 @@ module PallasTrade
     # Inbox & feedback (Email → Inbox): complaints, feedback, inquiries and
     # inbound replies, with status flow (pending → in_progress → resolved).
     class ContactMessagesController < ResourceController
-      include PallasTrade::Admin::SettingsConcern
       include PallasTrade::Admin::TableConcern
 
       def resolve
