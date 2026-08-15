@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getClient } from "@/lib/pallastrade/config";
+import { createBackInStockSubscription } from "@/lib/data/backInStock";
 
 interface BackInStockNotifyProps {
   productId: string;
@@ -35,12 +35,10 @@ export function BackInStockNotify({ productId }: BackInStockNotifyProps) {
     }
     setError(null);
     setState("loading");
-    try {
-      await getClient().backInStockSubscriptions.create(productId, {
-        email: value,
-      });
+    const result = await createBackInStockSubscription(productId, value);
+    if (result.success) {
       setState("done");
-    } catch {
+    } else {
       setError(t("backInStockError"));
       setState("idle");
     }

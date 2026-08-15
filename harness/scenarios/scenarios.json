@@ -450,7 +450,9 @@
         "Expose raw integer primary keys in API responses",
         "Send duplicate emails to an already-notified subscription",
         "Publish product.back_in_stock without a real out-of-stock → in-stock transition",
-        "Commit Resend/SMTP secrets to source"
+        "Commit Resend/SMTP secrets to source",
+        "Import getClient (or anything) from the @/lib/pallastrade barrel in a 'use client' component — the barrel re-exports next/headers cookie helpers and breaks next build; import from @/lib/pallastrade/config instead",
+        "Call the SDK directly in a client component — PALLASTRADE_API_URL / PALLASTRADE_PUBLISHABLE_KEY are server-only env and getClient() throws in the browser; go through a 'use server' action (src/lib/data/backInStock.ts)"
       ],
       "scoring": { "subscribeContract": 20, "idempotent": 20, "eventEmail": 25, "adminList": 15, "secretHygiene": 20 }
     }

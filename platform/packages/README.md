@@ -27,6 +27,8 @@ For monorepo-wide conventions (type generation pipeline, code style, testing) se
 
 The customer-facing SDK. Powers storefronts (Next.js or otherwise) and any client that needs read access to the catalog plus write access to carts, customers, addresses, checkout, and back-in-stock subscriptions (`backInStockSubscriptions.create(productId, { email })` — guest-accessible). Auth modes: publishable key (guest) or JWT (logged-in customer).
 
+> **Build artifacts are committed.** `sdk/dist/` is gitignored, so run `pnpm build` (tsup) and commit the freshly built `dist/` outputs explicitly (`git add -f`), including the content-hashed type files (`index-<hash>.d.ts`/`.d.cts`) that `index.d.ts` references — committing `index.d.ts` without its hash sibling leaves the published types broken (downstream `next build` / `tsc` type resolution fails).
+
 Includes auto-generated TypeScript types and Zod schemas derived from the Rails Alba serializers — see the [type generation pipeline](../CLAUDE.md#type-generation-pipeline) in the root docs.
 
 ### `@pallastrade/sdk-core` — Shared internals
