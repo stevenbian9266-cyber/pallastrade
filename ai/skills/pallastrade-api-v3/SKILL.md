@@ -324,6 +324,14 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
   `NextResponse.redirect(target, status)`, guarded against A→A loops and degrading open when the
   API is unreachable (Turnstile-style).
 
+### Back-in-stock subscriptions (Store API)
+
+- **Store API**: `POST /api/v3/store/products/:product_id/back_in_stock_subscriptions`
+  (guest-accessible, rate-limited). Body `{ email }`. Idempotent per (product, email); re-activates
+  a previously-notified subscription. Serializer returns `{ id, email, status, product_id, created_at }`.
+- Notifications are sent by `PallasTrade::BackInStockSubscriber` on the `product.back_in_stock`
+  event; see the events skill.
+
 ## Read/write attribute symmetry (a v3 invariant)
 
 For any resource: **whatever a serializer returns, the controller's `permitted_params` accepts on write under the same name.** No `label` exposed but `presentation` accepted. No `customer_note` exposed but `special_instructions` accepted. The client never has to translate.

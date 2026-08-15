@@ -596,6 +596,19 @@ var StoreClient = class {
       body: params
     })
   };
+  // ============================================
+  // Back-in-stock subscriptions
+  // ============================================
+  backInStockSubscriptions = {
+    /**
+     * Subscribe an email to be notified when an out-of-stock product is back in stock.
+     */
+    create: (productId, params, options) => this.request(
+      "POST",
+      `/products/${productId}/back_in_stock_subscriptions`,
+      { ...options, body: params }
+    )
+  };
   customer = {
     /**
      * Get current customer profile

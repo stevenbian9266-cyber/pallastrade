@@ -2204,6 +2204,41 @@ Rails.application.config.after_initialize do
                                          default: true,
                                          position: 50
 
+  # Register Back-in-stock subscriptions table (customer notifications)
+  PallasTrade.admin.tables.register(:back_in_stock_subscriptions, model_class: PallasTrade::BackInStockSubscription, search_param: :email_or_product_name_cont, row_actions: true, row_actions_edit: false, row_actions_delete: true)
+
+  PallasTrade.admin.tables.back_in_stock_subscriptions.add :product,
+                                         label: :product,
+                                         type: :association,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 10,
+                                         method: ->(subscription) { subscription.product&.name }
+
+  PallasTrade.admin.tables.back_in_stock_subscriptions.add :email,
+                                         label: :email,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 20
+
+  PallasTrade.admin.tables.back_in_stock_subscriptions.add :status,
+                                         label: :status,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 30
+
+  PallasTrade.admin.tables.back_in_stock_subscriptions.add :created_at,
+                                         label: :created_at,
+                                         type: :datetime,
+                                         sortable: true,
+                                         default: true,
+                                         position: 40
+
   # ==========================================
   # (Config Items table removed — Config Center module was retired 2026-08-14)
 end

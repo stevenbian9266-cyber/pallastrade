@@ -25,7 +25,7 @@ For monorepo-wide conventions (type generation pipeline, code style, testing) se
 
 ### `@pallastrade/sdk` — Store API client
 
-The customer-facing SDK. Powers storefronts (Next.js or otherwise) and any client that needs read access to the catalog plus write access to carts, customers, addresses, and checkout. Auth modes: publishable key (guest) or JWT (logged-in customer).
+The customer-facing SDK. Powers storefronts (Next.js or otherwise) and any client that needs read access to the catalog plus write access to carts, customers, addresses, checkout, and back-in-stock subscriptions (`backInStockSubscriptions.create(productId, { email })` — guest-accessible). Auth modes: publishable key (guest) or JWT (logged-in customer).
 
 Includes auto-generated TypeScript types and Zod schemas derived from the Rails Alba serializers — see the [type generation pipeline](../CLAUDE.md#type-generation-pipeline) in the root docs.
 

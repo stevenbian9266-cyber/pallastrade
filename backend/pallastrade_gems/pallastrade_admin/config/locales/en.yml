@@ -4,6 +4,7 @@ en:
       not_found: Can't embed a video using the provided URL
   pallastrade:
     redirects: Redirects
+    back_in_stock_subscriptions: Back in Stock Subscriptions
     acceptance_errors: Acceptance errors
     actions:
       cancel: Cancel

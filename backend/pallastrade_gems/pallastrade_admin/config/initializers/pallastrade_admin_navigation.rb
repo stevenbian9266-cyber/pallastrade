@@ -355,6 +355,15 @@ Rails.application.config.after_initialize do
           active: -> { %w[oauth_applications api_keys webhooks_subscribers webhook_endpoints webhook_deliveries allowed_origins].include?(controller_name) },
           if: -> { can?(:manage, PallasTrade::ApiKey) }
 
+  # Back-in-stock subscriptions (customer notifications)
+  settings_nav.add :back_in_stock_subscriptions,
+          label: 'admin.back_in_stock_subscriptions',
+          url: :admin_back_in_stock_subscriptions_path,
+          icon: 'bell',
+          position: 145,
+          active: -> { controller_name == 'back_in_stock_subscriptions' },
+          if: -> { can?(:manage, PallasTrade::BackInStockSubscription) }
+
   # Edit Profile
   settings_nav.add :edit_profile,
           label: 'admin.edit_profile',

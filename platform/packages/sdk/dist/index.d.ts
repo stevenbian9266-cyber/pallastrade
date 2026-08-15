@@ -1,5 +1,5 @@
-import { R as RequestFn, L as LoginCredentials, A as AuthTokens, a as RequestOptions, P as ProductListParams, b as PaginatedResponse, c as Product, d as ProductFiltersParams, e as ProductFiltersResponse, C as CategoryListParams, f as Category, g as ListResponse, h as Country, i as Currency, j as Locale, k as Policy, M as Market, l as Cart, m as CreateCartParams, U as UpdateCartParams, O as Order, n as AddLineItemParams, o as UpdateLineItemParams, p as CreatePaymentParams, q as Payment, r as CreatePaymentSessionParams, s as PaymentSession, t as UpdatePaymentSessionParams, u as CompletePaymentSessionParams, v as RegisterParams, N as NewsletterSubscriber, w as Customer, x as ListParams, y as Address, z as AddressParams, B as CreditCard, G as GiftCard, S as StoreCredit, D as OrderListParams, E as CreatePaymentSetupSessionParams, F as PaymentSetupSession, H as CompletePaymentSetupSessionParams, I as RequestPasswordResetParams, J as ResetPasswordParams, W as Wishlist, K as WishlistItem, Q as RetryConfig } from './index-DEBEUjhy.js';
-export { T as AvailabilityFilter, V as Base, X as CartWarning, Y as CategoryFilter, Z as CategoryFilterOption, _ as CheckoutRequirement, $ as CustomField, a0 as DeliveryMethod, a1 as DeliveryRate, a2 as Digital, a3 as DigitalLink, a4 as Discount, a5 as EmailPasswordLogin, a6 as ErrorResponse, a7 as FilterOption, a8 as Fulfillment, a9 as GiftCardBatch, aa as Invitation, ab as LineItem, ac as LineItemInput, ad as LocaleDefaults, ae as Media, af as OptionFilter, ag as OptionFilterOption, ah as OptionType, ai as OptionValue, aj as PaginationMeta, ak as PallasTradeError, al as PaymentMethod, am as PaymentSource, an as Price, ao as PriceRangeFilter, ap as ProductFilter, aq as Promotion, ar as ProviderLogin, as as Refund, at as ReturnAuthorization, au as ReturnItem, av as SortOption, aw as State, ax as StockLocation, ay as Variant } from './index-DEBEUjhy.js';
+import { R as RequestFn, L as LoginCredentials, A as AuthTokens, a as RequestOptions, P as ProductListParams, b as PaginatedResponse, c as Product, d as ProductFiltersParams, e as ProductFiltersResponse, C as CategoryListParams, f as Category, g as ListResponse, h as Country, i as Currency, j as Locale, k as Policy, M as Market, l as Cart, m as CreateCartParams, U as UpdateCartParams, O as Order, n as AddLineItemParams, o as UpdateLineItemParams, p as CreatePaymentParams, q as Payment, r as CreatePaymentSessionParams, s as PaymentSession, t as UpdatePaymentSessionParams, u as CompletePaymentSessionParams, v as RegisterParams, N as NewsletterSubscriber, w as Customer, x as ListParams, y as Address, z as AddressParams, B as CreditCard, G as GiftCard, S as StoreCredit, D as OrderListParams, E as CreatePaymentSetupSessionParams, F as PaymentSetupSession, H as CompletePaymentSetupSessionParams, I as RequestPasswordResetParams, J as ResetPasswordParams, W as Wishlist, K as WishlistItem, Q as RetryConfig } from './index-DAP5wIIU.js';
+export { T as AvailabilityFilter, V as Base, X as CartWarning, Y as CategoryFilter, Z as CategoryFilterOption, _ as CheckoutRequirement, $ as CustomField, a0 as DeliveryMethod, a1 as DeliveryRate, a2 as Digital, a3 as DigitalLink, a4 as Discount, a5 as EmailPasswordLogin, a6 as ErrorResponse, a7 as FilterOption, a8 as Fulfillment, a9 as GiftCardBatch, aa as Invitation, ab as LineItem, ac as LineItemInput, ad as LocaleDefaults, ae as Media, af as OptionFilter, ag as OptionFilterOption, ah as OptionType, ai as OptionValue, aj as PaginationMeta, ak as PallasTradeError, al as PaymentMethod, am as PaymentSource, an as Price, ao as PriceRangeFilter, ap as ProductFilter, aq as Promotion, ar as ProviderLogin, as as Refund, at as ReturnAuthorization, au as ReturnItem, av as SortOption, aw as State, ax as StockLocation, ay as Variant } from './index-DAP5wIIU.js';
 
 declare class StoreClient {
     /**
@@ -339,6 +339,20 @@ declare class StoreClient {
         verify: (params: {
             token: string;
         }, options?: RequestOptions) => Promise<NewsletterSubscriber>;
+    };
+    readonly backInStockSubscriptions: {
+        /**
+         * Subscribe an email to be notified when an out-of-stock product is back in stock.
+         */
+        create: (productId: string, params: {
+            email: string;
+        }, options?: RequestOptions) => Promise<{
+            id: string;
+            email: string;
+            status: string;
+            product_id: string | null;
+            created_at: string;
+        }>;
     };
     readonly customer: {
         /**

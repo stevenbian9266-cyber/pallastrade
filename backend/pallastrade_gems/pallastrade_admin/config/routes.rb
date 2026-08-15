@@ -277,6 +277,7 @@ PallasTrade::Core::Engine.add_routes do
     end
     resources :allowed_origins, except: :show
     resources :redirects
+    resources :back_in_stock_subscriptions, only: [:index, :destroy]
 
     # storefront setup
     get '/storefront', to: 'storefront#show', as: :storefront

@@ -39,6 +39,9 @@ module PallasTrade
         # SEO 301 redirects
         can :manage, PallasTrade::Redirect
 
+        # Back-in-stock subscriptions (review + delete)
+        can :manage, PallasTrade::BackInStockSubscription
+
         # Webhooks
         can :manage, PallasTrade::WebhookEndpoint
         can :manage, PallasTrade::WebhookDelivery

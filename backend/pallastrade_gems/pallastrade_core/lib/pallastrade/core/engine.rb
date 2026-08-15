@@ -379,7 +379,8 @@ module PallasTrade
           PallasTrade::ReportSubscriber,
           PallasTrade::InvitationEmailSubscriber,
           PallasTrade::AdminUserEmailSubscriber,
-          PallasTrade::ProductMetricsSubscriber
+          PallasTrade::ProductMetricsSubscriber,
+          PallasTrade::BackInStockSubscriber
         ]
 
         # Pre-load authentication strategy classes to avoid reflection at request time

@@ -433,6 +433,26 @@
         "Run CDN webp variants through the Next.js optimizer again (double encoding)"
       ],
       "scoring": { "normalization": 25, "resolveContract": 20, "loopGuard": 15, "degradeOpen": 25, "internalOnly": 15 }
+    },
+    {
+      "id": "GS-029",
+      "name": "Back-in-stock notifications: guest subscribe + event-driven email",
+      "description": "PallasTrade::BackInStockSubscription (core model, table pallastrade_back_in_stock_subscriptions, store+product+email+status default 'active', unique [product_id,email]) is the single source of truth. Customers subscribe on an out-of-stock product through the Store API POST /api/v3/store/products/:product_id/back_in_stock_subscriptions (guest-accessible, rate-limited; body {email}, normalized/downcased; find_or_initialize_by(product,email) re-activates a previously-notified subscription; 404 when product missing). Storefront renders BackInStockNotify on ProductDetails when the variant is out of stock (sdk.backInStockSubscriptions.create, success/error states). PallasTrade::BackInStockSubscriber (registered in core engine subscribers) listens to product.back_in_stock (published by StockMovement::CustomEvents) and emails each active BackInStockSubscription via PallasTrade::BackInStockMailer (BaseMailer + with_store_locale, HTML+text, product URL from store.url/default_country), then marks each notified (idempotent). Email delivery uses the store's configured SMTP (Resend: smtp.resend.com / SMTP_USERNAME=resend / SMTP_PASSWORD=re_... in server .env only). Admin lists/deletes subscriptions at /admin/back_in_stock_subscriptions (settings nav, table with product/email/status/created_at).",
+      "mustDo": [
+        "Guest can subscribe with just an email on an out-of-stock product (Store API, no auth)",
+        "Idempotent per (product, email); re-subscribing a notified subscription reactivates it",
+        "product.back_in_stock event emails every active subscription then marks them notified (no duplicate emails)",
+        "Emails render in store locale with correct product URL; use BaseMailer + with_store_locale",
+        "Admin can list and delete subscriptions",
+        "SMTP credentials (Resend API key) live only in the server .env, never committed"
+      ],
+      "mustNotDo": [
+        "Expose raw integer primary keys in API responses",
+        "Send duplicate emails to an already-notified subscription",
+        "Publish product.back_in_stock without a real out-of-stock → in-stock transition",
+        "Commit Resend/SMTP secrets to source"
+      ],
+      "scoring": { "subscribeContract": 20, "idempotent": 20, "eventEmail": 25, "adminList": 15, "secretHygiene": 20 }
     }
   ]
 }

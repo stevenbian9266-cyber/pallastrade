@@ -62,7 +62,7 @@ client.<resource>.update(id, body, options?)           // PATCH update
 client.<resource>.delete(id, options?)                 // DELETE
 ```
 
-Full five-method CRUD is an **Admin SDK** property. On the **Store SDK** most resources are read-only or partial — `products` exposes only `list`/`get`/`filters`; `categories`, `countries`, `orders`, `policies`, `markets`, `currencies`, `locales` are read-only; `customers` exposes only `create`. Store writes are limited to carts, wishlists, and the customer's own account/addresses; catalog writes require the Admin SDK. If a method doesn't typecheck, it doesn't exist on that surface — don't force it.
+Full five-method CRUD is an **Admin SDK** property. On the **Store SDK** most resources are read-only or partial — `products` exposes only `list`/`get`/`filters`; `categories`, `countries`, `orders`, `policies`, `markets`, `currencies`, `locales` are read-only; `customers` exposes only `create`. Store writes are limited to carts, wishlists, the customer's own account/addresses, and back-in-stock subscriptions — `client.backInStockSubscriptions.create(productId, { email })` (guest-accessible, `POST /products/:id/back_in_stock_subscriptions`); catalog writes require the Admin SDK. If a method doesn't typecheck, it doesn't exist on that surface — don't force it.
 
 Method name is always `get`, never `show`. The delete method is `delete`, not `destroy`. Nested resources (e.g. `client.carts.items.create(cartId, params, options)`) take the parent prefixed ID as the first positional argument.
 

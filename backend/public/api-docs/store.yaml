@@ -9562,6 +9562,81 @@ paths:
                   description: Verification token from the confirmation email
               required:
               - token
+  "/api/v3/store/products/{product_id}/back_in_stock_subscriptions":
+    post:
+      summary: Subscribe to back-in-stock notifications for a product
+      tags:
+      - Back-in-stock subscriptions
+      security:
+      - api_key: []
+      description: |
+        Subscribes an email address to be notified when an out-of-stock product
+        is back in stock. Idempotent: subscribing the same email to the same
+        product again returns the existing subscription (and re-activates it if
+        it had already been notified). The notification email is sent via the
+        store's configured SMTP when the `product.back_in_stock` event fires.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const subscription = await client.backInStockSubscriptions.create('prod_abc123', {
+            email: 'customer@example.com',
+          })
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: product_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: subscription created
+          content:
+            application/json:
+              example:
+                id: bis_abc123
+                email: customer@example.com
+                status: active
+                product_id: prod_abc123
+                created_at: '2026-08-15T10:00:00.000Z'
+              schema:
+                "$ref": "#/components/schemas/BackInStockSubscription"
+        '404':
+          description: product not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '422':
+          description: invalid email
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: customer@example.com
   "/api/v3/store/redirects/resolve":
     get:
       summary: Resolve a path against SEO 301 redirects
@@ -11364,6 +11439,29 @@ components:
       - verified
       - verified_at
       - customer_id
+      x-typelizer: true
+    BackInStockSubscription:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        status:
+          type: string
+          enum:
+          - active
+          - notified
+        product_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+      required:
+      - id
+      - email
+      - status
+      - created_at
       x-typelizer: true
     OptionType:
       type: object

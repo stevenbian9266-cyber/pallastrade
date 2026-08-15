@@ -1,0 +1,9 @@
+<%= render layout: 'pallastrade/shared/mailer_hero' do %>
+  <h1><%= PallasTrade.t('back_in_stock_mailer.subject', product_name: @product.name) %></h1>
+  <p class="greeting"><%= PallasTrade.t('back_in_stock_mailer.greeting') %></p>
+  <p><%= PallasTrade.t('back_in_stock_mailer.body', product_name: @product.name) %></p>
+  <% country = @product.store.default_country&.iso.to_s.downcase.presence || 'us' %>
+  <% locale = @product.store.default_locale.to_s.presence || 'en' %>
+  <% product_url = "https://#{@product.store.url}/#{country}/#{locale}/products/#{@product.slug}" %>
+  <%= render 'pallastrade/shared/mailer_button', url: product_url, label: PallasTrade.t('back_in_stock_mailer.view_product') %>
+<% end %>

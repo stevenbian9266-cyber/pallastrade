@@ -24,6 +24,15 @@ Variants relate to stock via `StockItem` (one per Variant per StockLocation) and
 
 A Product has a `master` variant (legacy concept, `is_master: true`) and a computed `default_variant` method: when `PallasTrade::Config[:track_inventory_levels]` is on, the first purchasable variant; otherwise the first non-master variant by `position`; master is only the fallback when the product has no other variants. `product.default_variant_id` just returns that computed variant's id. Neither is a database column in 5.5 — don't query or migrate against `default_variant_id` (a `default_variant_id` FK on `pallastrade_products` is planned for 6.0, implementation not started; see `docs/plans/6.0-remove-master-variant.md`). Use `product.variants` for the non-master sellable variants and `product.variants_including_master` only when you genuinely need the master row included.
 
+## Back-in-stock subscriptions
+
+`PallasTrade::BackInStockSubscription` (table `pallastrade_back_in_stock_subscriptions`)
+captures a guest email for one product: `store_id`, `product_id`, `email`, `status`
+(`active` → `notified`). Unique per `[product_id, email]`; the Store API
+`POST /api/v3/store/products/:id/back_in_stock_subscriptions` is idempotent and
+re-activates a notified row. `PallasTrade::BackInStockSubscriber` emails active rows on
+`product.back_in_stock` and marks them `notified`. A `Store has_many back_in_stock_subscriptions`.
+
 ## The multi-channel / multi-store axis
 
 ```

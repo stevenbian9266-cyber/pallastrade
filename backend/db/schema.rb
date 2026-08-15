@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_15_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_15_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -397,6 +397,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_000001) do
     t.index ["position"], name: "index_pt_assets_on_position"
     t.index ["viewable_id"], name: "index_assets_on_viewable_id"
     t.index ["viewable_type", "type"], name: "index_assets_on_viewable_type_and_type"
+  end
+
+  create_table "pallastrade_back_in_stock_subscriptions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "email", null: false
+    t.bigint "product_id", null: false
+    t.string "status", default: "active", null: false
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["product_id", "email"], name: "index_bis_subscriptions_on_product_and_email", unique: true
+    t.index ["product_id"], name: "index_pallastrade_back_in_stock_subscriptions_on_product_id"
+    t.index ["store_id"], name: "index_pallastrade_back_in_stock_subscriptions_on_store_id"
   end
 
   create_table "pallastrade_calculators", force: :cascade do |t|
@@ -1523,9 +1535,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_000001) do
   create_table "pallastrade_redirects", force: :cascade do |t|
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
+    t.text "description"
     t.string "from_path", null: false
     t.integer "status_code", default: 301, null: false
     t.bigint "store_id", null: false
+    t.string "title"
     t.string "to_path", null: false
     t.datetime "updated_at", null: false
     t.index ["store_id", "from_path"], name: "index_pallastrade_redirects_on_store_id_and_from_path", unique: true
@@ -2413,6 +2427,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_000001) do
   add_foreign_key "pallastrade_ai_provider_secrets", "pallastrade_ai_providers", column: "provider_id"
   add_foreign_key "pallastrade_ai_runs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_ai_settings", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_back_in_stock_subscriptions", "pallastrade_products", column: "product_id"
+  add_foreign_key "pallastrade_back_in_stock_subscriptions", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_option_type_translations", "pallastrade_option_types"
   add_foreign_key "pallastrade_option_value_translations", "pallastrade_option_values"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_payment_methods", column: "payment_method_id"

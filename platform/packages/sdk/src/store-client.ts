@@ -633,6 +633,32 @@ export class StoreClient {
       }),
   }
 
+  // ============================================
+  // Back-in-stock subscriptions
+  // ============================================
+
+  readonly backInStockSubscriptions = {
+    /**
+     * Subscribe an email to be notified when an out-of-stock product is back in stock.
+     */
+    create: (
+      productId: string,
+      params: { email: string },
+      options?: RequestOptions,
+    ): Promise<{
+      id: string;
+      email: string;
+      status: string;
+      product_id: string | null;
+      created_at: string;
+    }> =>
+      this.request(
+        'POST',
+        `/products/${productId}/back_in_stock_subscriptions`,
+        { ...options, body: params },
+      ),
+  }
+
   readonly customer = {
     /**
      * Get current customer profile

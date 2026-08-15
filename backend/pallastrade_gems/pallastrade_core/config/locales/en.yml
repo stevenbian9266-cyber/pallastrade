@@ -693,6 +693,12 @@ en:
         ignore_notice: If you did not request a password reset, you can safely ignore this email. Your password will not be changed.
         instructions: We received a request to reset the password for your %{store_name} admin account. Click the button below to choose a new password.
         subject: Password Reset Instructions
+    back_in_stock_mailer:
+      back_in_stock:
+        subject: "%{product_name} is back in stock!"
+        greeting: Good news!
+        body: "The product you were waiting for — %{product_name} — is back in stock. Head over to the store to grab it before it sells out again."
+        view_product: View Product
     administration: Administration
     advertise: Advertise
     all: All

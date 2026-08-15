@@ -44,6 +44,11 @@ Authentication is hardcoded to `plain` (with STARTTLS) in pallastrade-starter's 
 
 If `SMTP_HOST` is unset, dev uses the `letter_opener` gem (emails open in the browser instead of being sent). In production there is no fallback: no delivery method is configured, so ActionMailer stays on Rails' default `:smtp` pointing at localhost:25 and deliveries fail unless a local MTA is running — always set the SMTP vars in production. (The official env-var docs state this correctly; the *emails* doc claims unsent emails are "printed to the Rails log", which the pallastrade-starter code does not do.) Many merchants use Postmark / SendGrid / Resend — set the SMTP vars and you're done.
 
+**Resend** (used for back-in-stock notifications and customer emails):
+`SMTP_HOST=smtp.resend.com`, `SMTP_PORT=587`, `SMTP_USERNAME=resend`,
+`SMTP_PASSWORD=<Resend API key re_...>`. The key is a secret — set it only in the
+server `.env` (e.g. `deploy/.env.dev`), never commit it.
+
 ### File storage (ActiveStorage)
 
 PallasTrade's product images, customer uploads, and admin assets go through ActiveStorage. Configure one of:

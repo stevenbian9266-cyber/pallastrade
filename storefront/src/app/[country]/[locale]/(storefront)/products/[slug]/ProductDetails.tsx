@@ -4,6 +4,7 @@ import type { Media, Product, Variant } from "@pallastrade/sdk";
 import { CircleCheckBig, CircleX, Loader2, ShoppingBag } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { BackInStockNotify } from "@/components/products/BackInStockNotify";
 import { MediaGallery } from "@/components/products/MediaGallery";
 import { ProductCustomFields } from "@/components/products/ProductCustomFields";
 import { VariantPicker } from "@/components/products/VariantPicker";
@@ -159,6 +160,9 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
               </span>
             )}
           </div>
+
+          {/* Back-in-stock notification (only when out of stock) */}
+          {!inStock && <BackInStockNotify productId={product.id} />}
 
           {/* Variant Picker */}
           {hasVariants && optionTypes.length > 0 && (

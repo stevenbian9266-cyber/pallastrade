@@ -25,6 +25,8 @@ PallasTrade::Core::Engine.add_routes do
           collection do
             get :filters, to: 'products/filters#index'
           end
+          # Back-in-stock notifications (guest-accessible: subscribe with an email)
+          resources :back_in_stock_subscriptions, only: [:create]
         end
         resources :categories, only: [:index, :show], id: /.+/
 

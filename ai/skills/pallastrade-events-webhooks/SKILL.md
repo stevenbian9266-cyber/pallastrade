@@ -470,6 +470,15 @@ class InventorySyncSubscriber < PallasTrade::Subscriber
 end
 ```
 
+### Back-in-stock notifications (subscriber, `product.back_in_stock`)
+
+`product.back_in_stock` fires (from `StockMovement::CustomEvents`) when a product
+moves from out-of-stock → in-stock. The bundled `PallasTrade::BackInStockSubscriber`
+emails every active `PallasTrade::BackInStockSubscription` for that product and
+marks each `notified` (idempotent). Customers subscribe via
+`POST /api/v3/store/products/:id/back_in_stock_subscriptions`; emails go through the
+store's configured SMTP (e.g. Resend — see the deployment skill).
+
 ## Debugging
 
 ### "My subscriber doesn't fire"
