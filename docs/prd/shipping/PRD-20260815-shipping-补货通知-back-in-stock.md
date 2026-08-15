@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved（2026-08-15 用户确认） |
+| 状态 | done（2026-08-15 部署验证通过） |
 | 创建日期 | 2026-08-15 |
 | 来源 | 需求：实施阶段二 B4 P1-6 补货通知（RESEARCH §4.11） |
 | 分类 | shipping（自动判定） |
@@ -97,3 +97,14 @@
 ## 10. 变更记录
 
 - 2026-08-15：创建 PRD（reviewing），待用户确认
+- 2026-08-15：用户确认（approved）
+- 2026-08-15：实施完成（be4eb6c 主提交 + 7479a73/6d66b98/c1aeb21 修复），17 specs + vitest 201 + generated:check 全绿
+- 2026-08-15：**端到端验证通过**——缺货商品页订阅（server action）→ 补货触发 `product.back_in_stock` → 订阅标记 `notified` → Resend 邮件 `delivered`（subject 正确，发件 `no-reply@dev.pallastrade.cn`，域名已验证）
+
+## 11. 知识同步结论（sync-check）
+
+- events-webhooks/api-v3/deployment/data-model/storefront/typescript-sdk skill：已更新（订阅者示例/端点/Resend 说明/模型/组件/资源/import 规则）
+- scenarios.json：GS-029 已注册（含 build/import 反模式补充）
+- api-docs store.yaml：端点 + schema 已更新；generated:check 无 drift
+- platform/packages/README.md + .env.example：已更新（dist 提交约定 / Resend SMTP）
+- 服务器：Resend SMTP 已配置，域名已验证，`store.mail_from_address=no-reply@dev.pallastrade.cn`

@@ -60,7 +60,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260815-storefront-redirects-管理页面增加功能说明文案 | storefront | 2026-08-15 | REQ-20260815-redirects-intro-copy |
 | done | PRD-20260815-catalog-redirect-页面展示商品-url-变更清单并引导创建重定向 | catalog | 2026-08-15 | REQ-20260815-redirects-url-change-list |
 | done | PRD-20260815-other-redirect-增加标题与描述字段 | other | 2026-08-15 | REQ-20260815-redirect-title-description |
-| reviewing | PRD-20260815-shipping-补货通知-back-in-stock | shipping | 2026-08-15 | （实施时回填） |
+| done | PRD-20260815-shipping-补货通知-back-in-stock | shipping | 2026-08-15 | 订阅→补货事件→Resend 邮件 delivered 验证通过 |
 
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 
