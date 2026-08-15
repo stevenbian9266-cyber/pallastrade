@@ -12,7 +12,6 @@
     <%= f.pallastrade_select :status_code, [['301', 301], ['302', 302]], {}, class: 'form-control' %>
     <p class="text-sm text-gray-500 mt-1"><%= PallasTrade.t('admin.redirects.status_help') %></p>
 
-    <%= f.pallastrade_check_box :active, {}, true, false %>
-    <%= f.label :active, PallasTrade.t('admin.redirects.active_label'), class: 'ml-2' %>
+    <%= f.pallastrade_check_box :active, label: PallasTrade.t('admin.redirects.active_label') %>
   </div>
 </div>
