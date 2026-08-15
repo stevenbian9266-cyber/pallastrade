@@ -46,6 +46,8 @@ en:
         origin_settings: Origin Settings
       redirects:
         redirect_settings: Redirect Settings
+        intro_help: 'Redirects let old links automatically jump to new ones. When a product is renamed, its URL changes, or it goes out of stock, visitors clicking an old link see "Page not found" (404). Create a redirect and the old link will automatically go to the new page — visitors won''t get lost, and search engines like Google can pass the original ranking weight to the new link.'
+        form_intro: 'Create one rule: old path (From Path) → new path (To Path). For example, if a product changes from /old-shaver to /new-shaver, fill in From Path = /old-shaver and To Path = /new-shaver — visitors to the old address will automatically go to the new one. Choose 301 (permanent move, recommended) or 302 (temporary redirect) for the status code.'
         from_help: Old path to redirect from (e.g. /old-product). Leading slash required.
         to_help: Target path to redirect to (e.g. /new-product). Must be an internal path.
         status_help: 301 = permanent (recommended for SEO), 302 = temporary.

@@ -57,6 +57,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | ⛔废弃 | PRD-20260814-admin-管理后台统一配置中心-集中管理关键参数与-secret-env-从模块取数 | admin | 2026-08-14 | REQ-20260814-admin-config-center |
 | done | PRD-20260814-catalog-seo-深度增强-商品-分类级元数据-json-ld-301-重定向 | catalog | 2026-08-14 | REQ-20260815-seo-301-redirects |
 | done | PRD-20260814-catalog-图片-cdn-动态变换-resize-format-webp-响应式图片 | catalog | 2026-08-14 | REQ-20260815-image-cdn-transform |
+| reviewing | PRD-20260815-storefront-redirects-管理页面增加功能说明文案 | storefront | 2026-08-15 | （实施时回填） |
 
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 

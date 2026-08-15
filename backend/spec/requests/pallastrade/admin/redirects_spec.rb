@@ -27,6 +27,12 @@ RSpec.describe 'Admin redirects pages', type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('New Redirect')
     end
+
+    it 'shows a plain-language intro explaining what redirects do' do
+      get '/admin/redirects'
+
+      expect(response.body).to include('Redirects let old links automatically jump to new ones')
+    end
   end
 
   describe 'GET /admin/redirects/new' do
@@ -37,6 +43,12 @@ RSpec.describe 'Admin redirects pages', type: :request do
       expect(response.body).to include('from_path')
       expect(response.body).to include('to_path')
       expect(response.body).to include('active')
+    end
+
+    it 'shows a plain-language fill-in guide on the form' do
+      get '/admin/redirects/new'
+
+      expect(response.body).to include('Create one rule: old path (From Path)')
     end
   end
 end

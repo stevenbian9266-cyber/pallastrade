@@ -6,4 +6,10 @@
   <%= link_to_with_icon 'plus', PallasTrade.t(:new_redirect), new_object_url, class: "btn btn-primary" if can? :create, PallasTrade::Redirect %>
 <% end %>
 
+<%= content_for(:page_alerts) do %>
+  <div class="alert alert-info">
+    <%= PallasTrade.t('admin.redirects.intro_help') %>
+  </div>
+<% end %>
+
 <%= render_table @collection, :redirects %>

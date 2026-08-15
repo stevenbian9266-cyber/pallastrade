@@ -87,6 +87,11 @@ serializer + `PallasTrade::PermittedAttributes` entry.
   (leading slash, strip trailing slash; `from_path` also strips a pasted origin;
   `to_path` must be internal). Consumed by the storefront `middleware.ts` via the Store
   API `redirects/resolve` endpoint.
+  - **页面级功能说明**（2026-08）：index 页用 `content_for(:page_alerts)` + `alert-info`
+    显示通俗易懂的功能介绍（`admin.redirects.intro_help`）；new/edit 共用 `_form.html.erb`，
+    顶部同样放 `alert-info` 说明（`admin.redirects.form_intro`）。文案必须通俗（旧链接→新链接、
+    防 404、保 SEO 排名），并走 `PallasTrade.t` locale（含 `: `/`→`/`"` 等特殊字符的值须用单引号包裹）。
+    该模式同样适用于其他 settings 列表页（参照 `option_types` 的 `intro_help` 先例）。
 
 ## Customizing the sidebar
 
