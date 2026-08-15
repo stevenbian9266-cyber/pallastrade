@@ -1322,6 +1322,15 @@ en:
         storefront_custom_code_body_start: Storefront custom code body start
         storefront_custom_code_head: Storefront custom code head
         url: Url
+        preferred_allow_email_replies: Allow customers to reply to emails
+        preferred_smtp_host: SMTP host
+        preferred_smtp_port: SMTP port
+        preferred_smtp_user: SMTP user
+        preferred_smtp_password: SMTP password
+        preferred_smtp_authentication: SMTP authentication
+        preferred_send_consumer_transactional_emails: Send customer transactional emails
+        preferred_storefront_url: Storefront URL
+        preferred_guest_checkout: Guest checkout
       pallastrade/store/translation:
         address: Address
         contact_phone: Contact phone
