@@ -25,7 +25,7 @@ For monorepo-wide conventions (type generation pipeline, code style, testing) se
 
 ### `@pallastrade/sdk` — Store API client
 
-The customer-facing SDK. Powers storefronts (Next.js or otherwise) and any client that needs read access to the catalog plus write access to carts, customers, addresses, checkout, and back-in-stock subscriptions (`backInStockSubscriptions.create(productId, { email })` — guest-accessible). Auth modes: publishable key (guest) or JWT (logged-in customer).
+The customer-facing SDK. Powers storefronts (Next.js or otherwise) and any client that needs read access to the catalog plus write access to carts, customers, addresses, checkout, back-in-stock subscriptions (`backInStockSubscriptions.create(productId, { email })` — guest-accessible), and contact messages (`contactMessages.create(...)` — complaint/feedback/inquiry submission that lands in the admin Email → Inbox & Feedback page). Auth modes: publishable key (guest) or JWT (logged-in customer).
 
 > **Build artifacts are committed.** `sdk/dist/` is gitignored, so run `pnpm build` (tsup) and commit the freshly built `dist/` outputs explicitly (`git add -f`), including the content-hashed type files (`index-<hash>.d.ts`/`.d.cts`) that `index.d.ts` references — committing `index.d.ts` without its hash sibling leaves the published types broken (downstream `next build` / `tsc` type resolution fails).
 

@@ -608,6 +608,19 @@ var StoreClient = class {
       body: params
     })
   };
+  // ============================================
+  // Contact messages (complaints / feedback)
+  // ============================================
+  contactMessages = {
+    /**
+     * Submit a complaint, feedback or inquiry from the storefront. Guest-accessible.
+     * Classified by `kind` and surfaced in the admin Email → Inbox & Feedback page.
+     */
+    create: (params, options) => this.request("POST", "/contact_messages", {
+      ...options,
+      body: params
+    })
+  };
   customer = {
     /**
      * Get current customer profile

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BrandStory } from "@/components/home/BrandStory";
+import { ContactForm } from "@/components/home/ContactForm";
 import { FaqSection } from "@/components/home/FaqSection";
 import { FeaturedProductsSection } from "@/components/home/FeaturedProductsSection";
 import { HeroSection } from "@/components/home/HeroSection";
@@ -95,6 +96,7 @@ export default async function HomePage({ params }: HomePageProps) {
       <ValueProps locale={locale} />
       <BrandStory basePath={basePath} locale={locale} />
       <FaqSection locale={locale} />
+      <ContactForm />
       <NewsletterSignup />
     </div>
   );

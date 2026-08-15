@@ -342,6 +342,29 @@
       "scoring": { "taskBound": 25, "contextBuilt": 20, "identitySafe": 20, "handoffUsable": 15, "verifiedFinish": 20 }
     },
     {
+      "id": "GS-021b",
+      "name": "Email management: unified admin Email menu (config/templates/logs/inbox/reply switch)",
+      "description": "When adding email management to the admin, consolidate it under a top-level Email menu with sub-items (configuration / notification scenarios / templates / send log / inbox), keep mailer content editable via DB templates with {placeholder} substitution falling back to code templates, record every outgoing mail to a send log, classify inbound complaints/feedback, and gate the Reply-To header behind a per-store reply switch.",
+      "mustDo": [
+        "Add a top-level Email sidebar menu with sub-items for configuration, scenarios, templates, send log and inbox",
+        "Provide per-store email configuration (from/reply addresses, SMTP, transactional toggle, reply switch)",
+        "Expose notification scenarios (payment success, payment link/reminder, order status, back-in-stock, refund, password reset, newsletter) that can be toggled and test-sent",
+        "Allow admin-edited EmailTemplate rows to override code templates via {placeholder} substitution, falling back to built-in mailers when absent",
+        "Record every outgoing mail into an EmailLog (recipient, subject, status, time) via an ActionMailer observer",
+        "Classify storefront contact messages (complaint/feedback/inquiry) into an admin inbox with a pending/in_progress/resolved flow",
+        "Only add a Reply-To header when the store's reply switch is enabled",
+        "Expose store + admin v3 API endpoints and sync store.yaml/admin.yaml + SDK types"
+      ],
+      "mustNotDo": [
+        "Send a Reply-To header when the reply switch is disabled",
+        "Duplicate existing mailers (OrderMailer/ShipmentMailer/...) instead of layering management on top",
+        "Require editing .erb views for admin-customizable email content when DB templates exist",
+        "Record secrets (SMTP password) in plaintext source files",
+        "Skip test coverage for the new models, endpoints and storefront form"
+      ],
+      "scoring": { "emailMenu": 15, "config": 15, "scenarios": 15, "templates": 15, "sendLog": 10, "inbox": 10, "replySwitch": 10, "apiDocs": 10 }
+    },
+    {
       "id": "GS-023",
       "name": "Typed evidence freshness and critical recovery",
       "description": "AI must use evidence bound to the current HEAD, worktree and changed file hashes; Critical tasks also need an explicit manual-only recovery plan before Gate completion.",

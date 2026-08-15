@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_15_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_15_100003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -438,6 +438,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_000003) do
     t.index ["store_id"], name: "index_pt_channels_on_store_id"
   end
 
+  create_table "pallastrade_contact_messages", force: :cascade do |t|
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.string "email", null: false
+    t.string "kind", default: "feedback", null: false
+    t.string "name"
+    t.string "reference_email"
+    t.string "status", default: "pending", null: false
+    t.bigint "store_id", null: false
+    t.string "subject"
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "kind"], name: "index_pallastrade_contact_messages_on_store_id_and_kind"
+    t.index ["store_id", "status"], name: "index_pallastrade_contact_messages_on_store_id_and_status"
+    t.index ["store_id"], name: "index_pallastrade_contact_messages_on_store_id"
+  end
+
   create_table "pallastrade_countries", force: :cascade do |t|
     t.datetime "created_at", precision: nil
     t.string "iso", null: false
@@ -574,6 +590,38 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_000003) do
     t.datetime "updated_at", precision: nil, null: false
     t.bigint "variant_id"
     t.index ["variant_id"], name: "index_pt_digitals_on_variant_id"
+  end
+
+  create_table "pallastrade_email_logs", force: :cascade do |t|
+    t.string "action", null: false
+    t.datetime "created_at", null: false
+    t.text "error"
+    t.string "from"
+    t.string "mailer", null: false
+    t.datetime "sent_at"
+    t.string "status", default: "sent", null: false
+    t.bigint "store_id", null: false
+    t.string "subject"
+    t.string "to", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "sent_at"], name: "index_pallastrade_email_logs_on_store_id_and_sent_at"
+    t.index ["store_id", "status"], name: "index_pallastrade_email_logs_on_store_id_and_status"
+    t.index ["store_id"], name: "index_pallastrade_email_logs_on_store_id"
+  end
+
+  create_table "pallastrade_email_templates", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.text "body_html"
+    t.text "body_text"
+    t.datetime "created_at", null: false
+    t.string "key", null: false
+    t.string "name", null: false
+    t.text "placeholders"
+    t.bigint "store_id", null: false
+    t.string "subject", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "key"], name: "index_pallastrade_email_templates_on_store_id_and_key", unique: true
+    t.index ["store_id"], name: "index_pallastrade_email_templates_on_store_id"
   end
 
   create_table "pallastrade_exports", force: :cascade do |t|
@@ -2429,6 +2477,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_000003) do
   add_foreign_key "pallastrade_ai_settings", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_back_in_stock_subscriptions", "pallastrade_products", column: "product_id"
   add_foreign_key "pallastrade_back_in_stock_subscriptions", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_contact_messages", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_email_logs", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_email_templates", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_option_type_translations", "pallastrade_option_types"
   add_foreign_key "pallastrade_option_value_translations", "pallastrade_option_values"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_payment_methods", column: "payment_method_id"

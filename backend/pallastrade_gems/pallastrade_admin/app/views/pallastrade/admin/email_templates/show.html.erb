@@ -1,0 +1,51 @@
+<%= content_for(:title, @object.name) %>
+<%= content_for(:page_actions) do %>
+  <%= link_to PallasTrade.t('actions.edit'), PallasTrade.edit_admin_email_template_path(@object), class: 'btn btn-primary' %>
+  <%= link_to PallasTrade.t('actions.back'), PallasTrade.admin_email_templates_path, class: 'btn btn-outline' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= @object.name %></h5>
+    <span class="badge <%= @object.active ? 'badge-success' : 'badge-secondary' %>"><%= @object.active ? PallasTrade.t(:active) : PallasTrade.t(:inactive) %></span>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div>
+        <dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.emails.key') %></dt>
+        <dd><code><%= @object.key %></code></dd>
+      </div>
+      <div>
+        <dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.emails.subject') %></dt>
+        <dd><%= @object.subject %></dd>
+      </div>
+      <div class="col-span-2">
+        <dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.emails.placeholders') %></dt>
+        <dd><%= @object.placeholders_list.join(', ') %></dd>
+      </div>
+    </dl>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.emails.preview') %></h5>
+  </div>
+  <div class="card-body">
+    <%= render partial: 'preview', locals: { object: @object, context: { order_number: 'R123456789', store_name: current_store.name, product_name: 'Example Product', customer_name: 'Test Customer' } } %>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.emails.test_send') %></h5>
+  </div>
+  <div class="card-body">
+    <%= form_with url: PallasTrade.test_send_admin_email_template_path(@object), method: :post do |f| %>
+      <div class="flex items-center gap-2">
+        <input type="email" name="to_email" class="form-input" placeholder="<%= PallasTrade.t('admin.emails.test_send_placeholder') %>" value="<%= current_admin_user.email %>">
+        <%= f.submit PallasTrade.t('admin.emails.send_test'), class: 'btn btn-primary' %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,41 @@
+<%= form_with model: object, url: object.persisted? ? PallasTrade.admin_email_template_path(object) : PallasTrade.admin_email_templates_path, method: object.persisted? ? :patch : :post do |f| %>
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.emails.template_content') %></h5>
+    </div>
+    <div class="card-body">
+      <%= f.pallastrade_text_field :key, required: true, help: PallasTrade.t('admin.emails.template_key_help') %>
+      <%= f.pallastrade_text_field :name, required: true %>
+      <%= f.pallastrade_text_field :subject, required: true %>
+      <%= f.pallastrade_text_area :body_html, rows: 12, label: PallasTrade.t('admin.emails.body_html') %>
+      <%= f.pallastrade_text_area :body_text, rows: 6, label: PallasTrade.t('admin.emails.body_text') %>
+      <%= f.pallastrade_text_field :placeholders, help: PallasTrade.t('admin.emails.placeholders_help') %>
+      <%= f.pallastrade_check_box :active, label: PallasTrade.t('admin.emails.active_label') %>
+    </div>
+  </div>
+
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.emails.preview') %></h5>
+    </div>
+    <div class="card-body">
+      <div id="email_template_preview" data-controller="email-template-preview" data-email-template-preview-subject-outlet="#preview_subject" data-email-template-preview-html-outlet="#preview_html">
+        <p class="text-gray-500"><%= PallasTrade.t('admin.emails.preview_hint') %></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.emails.test_send') %></h5>
+    </div>
+    <div class="card-body">
+      <div class="flex items-center gap-2">
+        <input type="email" name="to_email" id="test_send_email" class="form-input" placeholder="<%= PallasTrade.t('admin.emails.test_send_placeholder') %>" value="<%= current_admin_user.email %>">
+        <button type="submit" name="commit" value="test_send" class="btn btn-outline" formaction="<%= object.persisted? ? PallasTrade.test_send_admin_email_template_path(object) : '#' %>" formmethod="post">
+          <%= PallasTrade.t('admin.emails.send_test') %>
+        </button>
+      </div>
+    </div>
+  </div>
+<% end %>

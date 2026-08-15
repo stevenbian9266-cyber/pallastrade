@@ -2,7 +2,7 @@ module PallasTrade
   class BaseMailer < ActionMailer::Base
     helper PallasTrade::ImagesHelper
 
-    default from: -> { from_address }, reply_to: -> { reply_to_address }
+    default from: -> { from_address }
 
     def current_store
       @current_store ||= @order&.store.presence || PallasTrade::Store.current || PallasTrade::Store.default
@@ -59,15 +59,60 @@ module PallasTrade
       ensure_default_action_mailer_url_host(headers[:store_url])
       return unless PallasTrade::Config[:send_core_emails]
 
-      if @_store_locale_active
-        super
-      else
-        # Subclasses that call `mail` without wrapping their action in
-        # `with_store_locale` (e.g. Devise mailers, extensions) still get the
-        # store default locale, as `mail` applied before PallasTrade 5.6.
-        with_store_locale(current_store) { super }
+      store = current_store
+      # Reply switch — only add a Reply-To header when the store allows replies.
+      headers[:reply_to] ||= reply_to_address if store&.prefers_allow_email_replies?
+
+      # DB template override — if the store has an active EmailTemplate for
+      # this mailer.action, render it (with {placeholder} substitution) instead
+      # of the code template. `render html:/plain:` bypasses template lookup so
+      # the shared partial files are not needed here.
+      render_block = block
+      template = db_template_for
+      if template
+        @_pallastrade_email_template = template
+        context = email_template_context
+        render_block = proc do |format|
+          format.html { render html: template.render_body(:html, context).html_safe }
+          format.text { render plain: template.render_body(:text, context) }
+        end
       end
+
+      message = if @_store_locale_active
+                  super(headers, &render_block)
+                else
+                  # Subclasses that call `mail` without wrapping their action in
+                  # `with_store_locale` (e.g. Devise mailers, extensions) still get the
+                  # store default locale, as `mail` applied before PallasTrade 5.6.
+                  with_store_locale(current_store) { super(headers, &render_block) }
+                end
+
+      # Attach metadata so PallasTrade::EmailLogRecorder can resolve store/mailer/action.
+      message.instance_variable_set(:@_pallastrade_store, store) if message
+      message.instance_variable_set(:@_pallastrade_mailer, self.class.name) if message
+      message.instance_variable_set(:@_pallastrade_action, action_name) if message
+      message
     end
+
+    # Look up an active admin-edited EmailTemplate for the current mailer action
+    # (key = "order.confirm_email", "shipment.shipped_email", ...).
+    # @return [PallasTrade::EmailTemplate, nil]
+    def db_template_for
+      store = current_store
+      return nil if store.nil?
+      return nil if action_name.blank?
+
+      mailer_name = self.class.name.demodulize.sub(/Mailer\z/, '').underscore
+      key = "#{mailer_name}.#{action_name}"
+      store.email_templates.active.find_by(key: key)
+    end
+
+    # Placeholder substitution context for DB templates. Subclasses override to
+    # expose @order/@shipment/... values as {placeholder_name} → value pairs.
+    def email_template_context
+      {}
+    end
+    helper_method :email_template_context
 
     # @deprecated Each mailer action now wraps its body in {#with_store_locale},
     #   which also activates the store's translation fallbacks and restores the

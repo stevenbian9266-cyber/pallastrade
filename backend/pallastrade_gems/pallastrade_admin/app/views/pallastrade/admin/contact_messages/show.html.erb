@@ -1,0 +1,32 @@
+<%= content_for(:title, @object.subject.presence || @object.email) %>
+<%= content_for(:page_actions) do %>
+  <% unless @object.resolved? %>
+    <%= button_to PallasTrade.t('admin.emails.mark_resolved'), PallasTrade.resolve_admin_contact_message_path(@object), method: :post, class: 'btn btn-success' %>
+  <% end %>
+  <%= link_to PallasTrade.t('actions.back'), PallasTrade.admin_contact_messages_path, class: 'btn btn-outline' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= @object.subject.presence || PallasTrade.t('admin.emails.message') %></h5>
+    <div class="flex gap-2">
+      <span class="badge badge-primary"><%= @object.kind %></span>
+      <span class="badge <%= @object.status == 'resolved' ? 'badge-success' : 'badge-secondary' %>"><%= @object.status %></span>
+    </div>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.emails.from_name') %></dt>
+        <dd><%= @object.name %></dd>
+      </div>
+      <div>
+        <dt class="text-gray-500 text-sm"><%= PallasTrade.t(:email) %></dt>
+        <dd><%= mail_to @object.email %></dd>
+      </div>
+    </dl>
+    <div class="border rounded-lg p-4 bg-gray-50 whitespace-pre-wrap">
+      <%= @object.body %>
+    </div>
+  </div>
+</div>

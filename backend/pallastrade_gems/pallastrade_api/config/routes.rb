@@ -68,6 +68,9 @@ PallasTrade::Core::Engine.add_routes do
           end
         end
 
+        # Contact messages (guest-accessible: complaints / feedback / inquiries)
+        resources :contact_messages, only: [:create]
+
         # Current customer profile and nested resources (/customers/me/...)
         namespace :customer, path: 'customers/me' do
           get '/', action: :show, controller: '/pallastrade/api/v3/store/customers'
@@ -175,6 +178,9 @@ PallasTrade::Core::Engine.add_routes do
         end
         resources :allowed_origins
         resources :redirects
+        resources :email_templates
+        resources :email_logs, only: [:index, :show]
+        resources :contact_messages, only: [:index, :show, :update]
         resources :webhook_endpoints do
           member do
             post :send_test

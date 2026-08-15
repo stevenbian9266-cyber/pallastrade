@@ -127,6 +127,23 @@
     "faqSupportQ": "Comment contacter le support ?",
     "faqSupportA": "Contactez-nous via le chat en direct ou par e-mail ; réponse sous 24 h."
   },
+  "contact": {
+    "title": "Contactez-nous",
+    "description": "Une question, une réclamation ou un retour ? Écrivez-nous — nous répondons généralement sous 24 h.",
+    "kindLabel": "Type de message",
+    "kindComplaint": "Réclamation",
+    "kindFeedback": "Retour",
+    "kindInquiry": "Demande générale",
+    "nameLabel": "Nom",
+    "emailLabel": "E-mail",
+    "subjectLabel": "Objet",
+    "bodyLabel": "Message",
+    "submit": "Envoyer le message",
+    "submitting": "Envoi…",
+    "success": "Merci pour votre message ! Nous reviendrons vers vous rapidement.",
+    "invalidEmail": "Veuillez saisir une adresse e-mail valide.",
+    "emptyBody": "Veuillez saisir un message."
+  },
   "cart": {
     "cart": "Panier",
     "closeCart": "Fermer le panier",

@@ -127,6 +127,23 @@
     "faqSupportQ": "Jak skontaktować się z obsługą?",
     "faqSupportA": "Skontaktuj się z nami przez czat na żywo lub e-mail – odpowiadamy w ciągu 24 godzin."
   },
+  "contact": {
+    "title": "Skontaktuj się z nami",
+    "description": "Masz pytanie, reklamację lub opinię? Napisz do nas — zwykle odpowiadamy w ciągu 24 godzin.",
+    "kindLabel": "Typ wiadomości",
+    "kindComplaint": "Reklamacja",
+    "kindFeedback": "Opinia",
+    "kindInquiry": "Ogólne zapytanie",
+    "nameLabel": "Imię i nazwisko",
+    "emailLabel": "E-mail",
+    "subjectLabel": "Temat",
+    "bodyLabel": "Wiadomość",
+    "submit": "Wyślij wiadomość",
+    "submitting": "Wysyłanie…",
+    "success": "Dziękujemy za wiadomość! Odezwiemy się wkrótce.",
+    "invalidEmail": "Podaj prawidłowy adres e-mail.",
+    "emptyBody": "Wpisz wiadomość."
+  },
   "cart": {
     "cart": "Koszyk",
     "closeCart": "Zamknij koszyk",

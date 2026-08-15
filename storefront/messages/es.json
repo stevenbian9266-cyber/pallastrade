@@ -127,6 +127,23 @@
     "faqSupportQ": "¿Cómo contacto con atención al cliente?",
     "faqSupportA": "Contáctanos por el chat en vivo o correo; respondemos en 24 horas."
   },
+  "contact": {
+    "title": "Contáctanos",
+    "description": "¿Tienes una pregunta, una queja o comentarios? Escríbenos: normalmente respondemos en 24 horas.",
+    "kindLabel": "Tipo de mensaje",
+    "kindComplaint": "Queja",
+    "kindFeedback": "Comentarios",
+    "kindInquiry": "Consulta general",
+    "nameLabel": "Nombre",
+    "emailLabel": "Correo electrónico",
+    "subjectLabel": "Asunto",
+    "bodyLabel": "Mensaje",
+    "submit": "Enviar mensaje",
+    "submitting": "Enviando…",
+    "success": "¡Gracias por tu mensaje! Te responderemos pronto.",
+    "invalidEmail": "Introduce un correo electrónico válido.",
+    "emptyBody": "Introduce un mensaje."
+  },
   "cart": {
     "cart": "Carrito",
     "closeCart": "Cerrar carrito",

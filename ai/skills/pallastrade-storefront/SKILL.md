@@ -199,7 +199,7 @@ never gated. All banner/settings copy lives in the `cookie` i18n namespace acros
 
 ### Home page sections (2026-08 redesign, PRD-20260810)
 
-The home page (`app/[country]/[locale]/(storefront)/page.tsx`) composes 7 sections in `components/home/`:
+The home page (`app/[country]/(storefront)/page.tsx`) composes 8 sections in `components/home/`:
 
 - `HeroSection` — brand tagline + value prop + primary/secondary CTAs (no demo links).
 - `FeaturedProductsSection` — product grid + "view all".
@@ -207,6 +207,7 @@ The home page (`app/[country]/[locale]/(storefront)/page.tsx`) composes 7 sectio
 - `ValueProps` — 4 trust props (shipping / authenticity / returns / support).
 - `BrandStory` — GEO-friendly "answer-ready" brand paragraph.
 - `FaqSection` — visible Q&A + matching `FAQPage` JSON-LD (structured data always mirrors visible content).
+- `ContactForm` (`components/home/ContactForm.tsx`, **client component**) — complaint / feedback / inquiry form behind the footer `#contact` anchor. Classifies by `kind` (complaint / feedback / inquiry), validates email + body, and submits via `createContactMessage` server action (Store API `POST /api/v3/store/contact_messages`, guest-accessible). Messages surface in the admin **Email → Inbox & Feedback** page. Client-safe import: the action lives in `lib/data/contact.ts` (`"use server"`), so the component never imports the server-only barrel. i18n under the `contact` namespace in all 5 locale files.
 - `NewsletterSignup` — client component, front-end validation + success state (no backend yet).
 
 `CategoryNav` (`components/layout/CategoryNav.tsx`) is a **persistent desktop category bar** — a **client component** (receives categories as props from the server layout). **Hovering a root category opens its sub-category mega panel** (grid of all level-2 children, each column listing level-3 grandchildren inline, plus a "View all" footer link); **clicking locks the panel open** (click again / click outside closes). `hidden md:block`, `overflow-x-auto` for many categories. The mobile drawer `MobileMenu` (`md:hidden` trigger) remains the small-screen entry point. There is deliberately **no separate home "shop by category" section** and **no sr-only category nav** — the visible nav bar already covers category browsing.

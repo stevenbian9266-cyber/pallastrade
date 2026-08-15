@@ -39,5 +39,15 @@ module PallasTrade
              store_url: @current_store.storefront_url)
       end
     end
+
+    # Placeholder values available to admin-edited DB templates for this mailer.
+    def email_template_context
+      {
+        order_number: @order&.number,
+        store_name: current_store&.name,
+        customer_name: @order&.name,
+        total: @order&.display_total&.to_s
+      }.compact
+    end
   end
 end

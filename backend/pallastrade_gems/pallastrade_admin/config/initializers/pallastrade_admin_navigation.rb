@@ -181,6 +181,49 @@ Rails.application.config.after_initialize do
           position: 60,
           if: -> { can?(:manage, PallasTrade::Report) }
 
+  # Emails — top-level menu with submenu (config / scenarios / templates / send log / inbox)
+  sidebar_nav.add :emails,
+          label: :emails,
+          url: -> { PallasTrade.admin_emails_path },
+          icon: 'send',
+          position: 70,
+          if: -> { can?(:manage, current_store) } do |emails|
+    # Email configuration (SMTP, from address, reply switch)
+    emails.add :email_settings,
+               label: 'admin.emails.settings',
+               url: -> { PallasTrade.admin_emails_path },
+               position: 10,
+               active: -> { controller_name == 'emails' }
+
+    # Notification scenarios (payment success, payment reminder, order status, back in stock, ...)
+    emails.add :notification_scenarios,
+               label: 'admin.emails.notification_scenarios',
+               url: :admin_email_notification_scenarios_path,
+               position: 20,
+               active: -> { controller_name == 'email_notification_scenarios' }
+
+    # Email templates (content editing)
+    emails.add :templates,
+               label: 'admin.emails.templates',
+               url: :admin_email_templates_path,
+               position: 30,
+               active: -> { %w[email_templates].include?(controller_name) }
+
+    # Send log (outgoing records)
+    emails.add :send_log,
+               label: 'admin.emails.send_log',
+               url: :admin_email_logs_path,
+               position: 40,
+               active: -> { %w[email_logs].include?(controller_name) }
+
+    # Inbox & feedback (complaints, feedback, inbound replies)
+    emails.add :inbox,
+               label: 'admin.emails.inbox',
+               url: :admin_contact_messages_path,
+               position: 50,
+               active: -> { %w[contact_messages].include?(controller_name) }
+  end
+
   # Section divider before settings
   sidebar_nav.add :settings_section,
           section_label: 'Settings',

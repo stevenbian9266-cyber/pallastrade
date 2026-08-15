@@ -279,6 +279,25 @@ PallasTrade::Core::Engine.add_routes do
     resources :redirects
     resources :back_in_stock_subscriptions, only: [:index, :destroy]
 
+    # Email management (Email top-level menu)
+    resources :email_templates do
+      member do
+        get :preview
+        post :test_send
+      end
+    end
+    resources :email_logs, only: [:index, :show]
+    resources :contact_messages, only: [:index, :show, :update] do
+      member do
+        post :resolve
+      end
+    end
+    get '/emails', to: 'emails#show', as: :emails
+    patch '/emails', to: 'emails#update'
+    get '/email_notification_scenarios', to: 'email_notification_scenarios#index', as: :email_notification_scenarios
+    patch '/email_notification_scenarios', to: 'email_notification_scenarios#update', as: :email_notification_scenarios_update
+    post '/email_notification_scenarios/test', to: 'email_notification_scenarios#test_send', as: :email_notification_scenarios_test
+
     # storefront setup
     get '/storefront', to: 'storefront#show', as: :storefront
     patch '/storefront', to: 'storefront#update'

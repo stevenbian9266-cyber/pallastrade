@@ -1,0 +1,52 @@
+<%= content_for(:title, PallasTrade.t('admin.emails.notification_scenarios')) %>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.emails.notification_scenarios') %></h5>
+  </div>
+  <div class="card-body">
+    <p class="text-gray-600 mb-4">
+      <%= PallasTrade.t('admin.emails.scenarios_help') %>
+    </p>
+
+    <%= form_with url: PallasTrade.admin_email_notification_scenarios_update_path, method: :patch do |f| %>
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col"><%= PallasTrade.t('admin.emails.scenario') %></th>
+            <th scope="col"><%= PallasTrade.t('admin.emails.scenario_template') %></th>
+            <th scope="col" class="text-center"><%= PallasTrade.t('admin.emails.scenario_enabled') %></th>
+            <th scope="col" class="text-center"><%= PallasTrade.t('admin.emails.scenario_test') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @scenarios.each do |scenario| %>
+            <tr>
+              <td>
+                <strong><%= PallasTrade.t(scenario[:name]) %></strong>
+                <div class="text-gray-500 text-sm"><%= scenario[:key] %></div>
+              </td>
+              <td>
+                <% if scenario[:template] %>
+                  <%= link_to scenario[:template].name, PallasTrade.admin_email_template_path(scenario[:template]) %>
+                <% else %>
+                  <span class="text-gray-500"><%= PallasTrade.t('admin.emails.scenario_default_template') %></span>
+                <% end %>
+              </td>
+              <td class="text-center">
+                <%= check_box_tag "enabled[]", scenario[:key], scenario[:enabled], id: "enabled_#{scenario[:key].gsub('.', '_')}" %>
+              </td>
+              <td class="text-center">
+                <%= button_to PallasTrade.t('admin.emails.scenario_test'), PallasTrade.admin_email_notification_scenarios_test_path, params: { key: scenario[:key] }, method: :post, class: 'btn btn-outline btn-sm', form_class: 'inline-block' %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+
+      <div class="mt-4">
+        <%= submit_tag PallasTrade.t('actions.save'), class: 'btn btn-primary' %>
+      </div>
+    <% end %>
+  </div>
+</div>

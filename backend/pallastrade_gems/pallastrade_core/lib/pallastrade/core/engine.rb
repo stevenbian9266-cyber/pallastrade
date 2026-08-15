@@ -390,6 +390,9 @@ module PallasTrade
         Rails.application.config.pallastrade.admin_authentication_strategies = PallasTrade::Authentication::StrategyRegistry.new(
           email: PallasTrade::Authentication::Strategies::EmailPasswordStrategy
         )
+
+        # Record every outgoing PallasTrade mail as an EmailLog row (Email → Send log).
+        ActionMailer::Base.register_observer(PallasTrade::EmailLogRecorder)
       end
 
       initializer 'PallasTrade.promo.register.promotions.actions' do |app|

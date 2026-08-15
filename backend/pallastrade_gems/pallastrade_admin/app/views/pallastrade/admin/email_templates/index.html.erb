@@ -1,0 +1,10 @@
+<%= content_for(:title, PallasTrade.t('admin.emails.templates')) %>
+<%= content_for(:page_actions) do %>
+  <%= link_to PallasTrade.t('admin.emails.new_template'), PallasTrade.new_admin_email_template_path, class: 'btn btn-primary' %>
+<% end %>
+
+<div class="alert alert-info mb-6">
+  <%= PallasTrade.t('admin.emails.templates_help') %>
+</div>
+
+<%= render_table @collection, :email_templates %>

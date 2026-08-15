@@ -127,6 +127,23 @@
     "faqSupportQ": "Wie kann ich den Support kontaktieren?",
     "faqSupportA": "Erreichen Sie uns jederzeit über den Live-Chat oder per E-Mail – Antwort innerhalb von 24 Stunden."
   },
+  "contact": {
+    "title": "Kontaktieren Sie uns",
+    "description": "Haben Sie eine Frage, eine Beschwerde oder Feedback? Schreiben Sie uns – wir antworten in der Regel innerhalb von 24 Stunden.",
+    "kindLabel": "Nachrichtentyp",
+    "kindComplaint": "Beschwerde",
+    "kindFeedback": "Feedback",
+    "kindInquiry": "Allgemeine Anfrage",
+    "nameLabel": "Name",
+    "emailLabel": "E-Mail",
+    "subjectLabel": "Betreff",
+    "bodyLabel": "Nachricht",
+    "submit": "Nachricht senden",
+    "submitting": "Wird gesendet…",
+    "success": "Danke für Ihre Nachricht! Wir melden uns bald.",
+    "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+    "emptyBody": "Bitte geben Sie eine Nachricht ein."
+  },
   "cart": {
     "cart": "Warenkorb",
     "closeCart": "Warenkorb schließen",

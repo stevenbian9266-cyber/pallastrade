@@ -127,6 +127,23 @@
     "faqSupportQ": "How can I contact customer support?",
     "faqSupportA": "Reach us any time through the live chat widget or email — our team responds within 24 hours."
   },
+  "contact": {
+    "title": "Contact Us",
+    "description": "Have a question, a complaint, or some feedback? Send us a message — we usually reply within 24 hours.",
+    "kindLabel": "Message type",
+    "kindComplaint": "Complaint",
+    "kindFeedback": "Feedback",
+    "kindInquiry": "General inquiry",
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "subjectLabel": "Subject",
+    "bodyLabel": "Message",
+    "submit": "Send message",
+    "submitting": "Sending…",
+    "success": "Thanks for your message! We'll get back to you soon.",
+    "invalidEmail": "Please enter a valid email address.",
+    "emptyBody": "Please enter a message."
+  },
   "cart": {
     "cart": "Cart",
     "closeCart": "Close cart",

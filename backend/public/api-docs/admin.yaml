@@ -1057,6 +1057,301 @@ paths:
       responses:
         '204':
           description: allowed origin deleted
+  "/api/v3/admin/email_templates":
+    get:
+      summary: List email templates
+      tags:
+      - Email Templates
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |
+        Returns the store's admin-editable email templates.
+
+        **Required scope:** `read_settings` (for API-key authentication).
+      x-codeSamples:
+      - lang: bash
+        label: PallasTrade CLI
+        source: pallastrade api get /email_templates
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      responses:
+        '200':
+          description: list of email templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmailTemplate'
+    post:
+      summary: Create an email template
+      tags:
+      - Email Templates
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |
+        Creates an email template (key must be unique per store).
+
+        **Required scope:** `write_settings` (for API-key authentication).
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailTemplateInput'
+      responses:
+        '201':
+          description: template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailTemplate'
+        '422':
+          description: validation error
+  "/api/v3/admin/email_templates/{id}":
+    get:
+      summary: Get an email template
+      tags:
+      - Email Templates
+      security:
+      - api_key: []
+        bearer_auth: []
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      responses:
+        '200':
+          description: the email template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailTemplate'
+    patch:
+      summary: Update an email template
+      tags:
+      - Email Templates
+      security:
+      - api_key: []
+        bearer_auth: []
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailTemplateInput'
+      responses:
+        '200':
+          description: template updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailTemplate'
+    delete:
+      summary: Delete an email template
+      tags:
+      - Email Templates
+      security:
+      - api_key: []
+        bearer_auth: []
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      responses:
+        '204':
+          description: template deleted
+  "/api/v3/admin/email_logs":
+    get:
+      summary: List email send log
+      tags:
+      - Email Logs
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |
+        Returns the store's outgoing email records (read-only).
+
+        **Required scope:** `read_settings` (for API-key authentication).
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      responses:
+        '200':
+          description: list of email logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmailLog'
+  "/api/v3/admin/contact_messages":
+    get:
+      summary: List contact messages (inbox & feedback)
+      tags:
+      - Contact Messages
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |
+        Returns complaints / feedback / inquiries submitted from the storefront.
+
+        **Required scope:** `read_settings` (for API-key authentication).
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      responses:
+        '200':
+          description: list of contact messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContactMessage'
+  "/api/v3/admin/contact_messages/{id}":
+    get:
+      summary: Get a contact message
+      tags:
+      - Contact Messages
+      security:
+      - api_key: []
+        bearer_auth: []
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      responses:
+        '200':
+          description: the contact message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactMessage'
+    patch:
+      summary: Update a contact message status / kind
+      tags:
+      - Contact Messages
+      security:
+      - api_key: []
+        bearer_auth: []
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - pending
+                  - in_progress
+                  - resolved
+                kind:
+                  type: string
+                  enum:
+                  - complaint
+                  - feedback
+                  - inquiry
+                  - reply
+      responses:
+        '200':
+          description: message updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactMessage'
   "/api/v3/admin/redirects":
     get:
       summary: List SEO 301 redirects
@@ -22107,6 +22402,144 @@ components:
         description:
           type: string
           nullable: true
+    EmailTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        subject:
+          type: string
+        body_html:
+          type: string
+          nullable: true
+        body_text:
+          type: string
+          nullable: true
+        placeholders:
+          type: string
+          nullable: true
+        active:
+          type: boolean
+        created_at:
+          type: string
+        updated_at:
+          type: string
+      required:
+      - id
+      - key
+      - name
+      - subject
+      - active
+      - created_at
+      - updated_at
+      x-typelizer: true
+    EmailTemplateInput:
+      type: object
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        subject:
+          type: string
+        body_html:
+          type: string
+          nullable: true
+        body_text:
+          type: string
+          nullable: true
+        placeholders:
+          type: string
+          nullable: true
+        active:
+          type: boolean
+      required:
+      - key
+      - name
+      - subject
+    EmailLog:
+      type: object
+      properties:
+        id:
+          type: string
+        mailer:
+          type: string
+        action:
+          type: string
+        to:
+          type: string
+        from:
+          type: string
+          nullable: true
+        subject:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+          - sent
+          - failed
+        error:
+          type: string
+          nullable: true
+        sent_at:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+      required:
+      - id
+      - mailer
+      - action
+      - to
+      - status
+      - created_at
+      x-typelizer: true
+    ContactMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+          - complaint
+          - feedback
+          - inquiry
+          - reply
+        name:
+          type: string
+          nullable: true
+        email:
+          type: string
+        subject:
+          type: string
+          nullable: true
+        body:
+          type: string
+        status:
+          type: string
+          enum:
+          - pending
+          - in_progress
+          - resolved
+        created_at:
+          type: string
+        updated_at:
+          type: string
+      required:
+      - id
+      - kind
+      - email
+      - body
+      - status
+      - created_at
+      - updated_at
+      x-typelizer: true
     ApiKey:
       type: object
       properties:

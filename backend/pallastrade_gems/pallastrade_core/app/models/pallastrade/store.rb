@@ -45,6 +45,17 @@ module PallasTrade
     preference :unit_system, :string, default: 'imperial'
     # email preferences
     preference :send_consumer_transactional_emails, :boolean, default: true
+    # SMTP delivery channel (overrides app-wide ActionMailer config when set).
+    preference :smtp_host, :string
+    preference :smtp_port, :integer, default: 587
+    preference :smtp_user, :string
+    preference :smtp_password, :string
+    preference :smtp_authentication, :string, default: 'plain'
+    # Reply switch — when enabled, transactional emails carry a Reply-To header
+    # pointing at customer_support_email and inbound replies are captured as
+    # ContactMessage records; when disabled, no Reply-To is added and inbound
+    # processing is skipped.
+    preference :allow_email_replies, :boolean, default: false
     # Checkout preferences
     # Store-level fallback for the channel-owned `guest_checkout` preference
     # (see PallasTrade::Channel::Gating). Retained so existing accessors keep working.
@@ -132,6 +143,9 @@ module PallasTrade
     has_many :allowed_origins, class_name: 'PallasTrade::AllowedOrigin', dependent: :destroy
     has_many :redirects, class_name: 'PallasTrade::Redirect', dependent: :destroy, inverse_of: :store
     has_many :back_in_stock_subscriptions, class_name: 'PallasTrade::BackInStockSubscription', dependent: :destroy, inverse_of: :store
+    has_many :email_templates, class_name: 'PallasTrade::EmailTemplate', dependent: :destroy, inverse_of: :store
+    has_many :email_logs, class_name: 'PallasTrade::EmailLog', dependent: :destroy, inverse_of: :store
+    has_many :contact_messages, class_name: 'PallasTrade::ContactMessage', dependent: :destroy, inverse_of: :store
 
     #
     # Validations

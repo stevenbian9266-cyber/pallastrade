@@ -9491,6 +9491,104 @@ paths:
                     them, or when no allowed origins are configured at all.
               required:
               - email
+  "/api/v3/store/contact_messages":
+    post:
+      summary: Submit a complaint / feedback / inquiry
+      tags:
+      - Contact Messages
+      security:
+      - api_key: []
+      description: |
+        Submits a contact message (complaint, feedback or general inquiry) from the
+        storefront. Guest-accessible. The message is classified by `kind` and surfaced
+        in the admin **Email → Inbox & Feedback** page with a status flow
+        (pending → in_progress → resolved).
+
+        Available `kind` values: `complaint`, `feedback`, `inquiry`.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const message = await client.contactMessages.create({
+            kind: 'feedback',
+            name: 'Jane Doe',
+            email: 'jane@example.com',
+            subject: 'Loved my order',
+            body: 'Fast shipping and great quality!',
+          })
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: message created
+          content:
+            application/json:
+              example:
+                id: ctct_UkLWZg9DAJ
+                kind: feedback
+                name: Jane Doe
+                email: jane@example.com
+                subject: Loved my order
+                body: Fast shipping and great quality!
+                status: pending
+                created_at: '2026-08-15T10:00:00.000Z'
+              schema:
+                "$ref": "#/components/schemas/ContactMessage"
+        '422':
+          description: invalid email / missing body / unknown kind
+          content:
+            application/json:
+              example:
+                error:
+                  code: validation_error
+                  message: Email is invalid
+                  details:
+                    email:
+                    - is invalid
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                kind:
+                  type: string
+                  enum:
+                  - complaint
+                  - feedback
+                  - inquiry
+                  example: feedback
+                  description: Message classification (complaint / feedback / inquiry)
+                name:
+                  type: string
+                  example: Jane Doe
+                email:
+                  type: string
+                  format: email
+                  example: jane@example.com
+                subject:
+                  type: string
+                  example: Loved my order
+                body:
+                  type: string
+                  example: Fast shipping and great quality!
+              required:
+              - kind
+              - email
+              - body
   "/api/v3/store/newsletter_subscribers/verify":
     post:
       summary: Verify a newsletter subscription
@@ -11460,6 +11558,43 @@ components:
       required:
       - id
       - email
+      - status
+      - created_at
+      x-typelizer: true
+    ContactMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+          - complaint
+          - feedback
+          - inquiry
+        name:
+          type: string
+          nullable: true
+        email:
+          type: string
+        subject:
+          type: string
+          nullable: true
+        body:
+          type: string
+        status:
+          type: string
+          enum:
+          - pending
+          - in_progress
+          - resolved
+        created_at:
+          type: string
+      required:
+      - id
+      - kind
+      - email
+      - body
       - status
       - created_at
       x-typelizer: true

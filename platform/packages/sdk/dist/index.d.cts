@@ -354,6 +354,28 @@ declare class StoreClient {
             created_at: string;
         }>;
     };
+    readonly contactMessages: {
+        /**
+         * Submit a complaint, feedback or inquiry from the storefront. Guest-accessible.
+         * Classified by `kind` and surfaced in the admin Email → Inbox & Feedback page.
+         */
+        create: (params: {
+            kind: "complaint" | "feedback" | "inquiry";
+            name?: string;
+            email: string;
+            subject?: string;
+            body: string;
+        }, options?: RequestOptions) => Promise<{
+            id: string;
+            kind: string;
+            name: string | null;
+            email: string;
+            subject: string | null;
+            body: string;
+            status: string;
+            created_at: string;
+        }>;
+    };
     readonly customer: {
         /**
          * Get current customer profile

@@ -1,0 +1,72 @@
+<%= content_for(:title, PallasTrade.t(:emails)) %>
+<%= content_for(:page_actions) do %>
+  <%= turbo_save_button_tag PallasTrade.t('actions.update'), class: 'btn btn-primary', form: "edit_store_#{current_store.id}", data: { admin_target: 'save' } %>
+<% end %>
+
+<%= form_with model: @store, url: PallasTrade.admin_emails_path, method: :patch, id: "edit_store_#{current_store.id}", data: { controller: 'admin', admin_target: 'form' } do |f| %>
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.emails.settings') %></h5>
+    </div>
+    <div class="card-body">
+      <p class="text-gray-600 mb-4">
+        <%= PallasTrade.t('admin.emails.settings_help') %>
+      </p>
+
+      <div class="mb-4">
+        <%= f.pallastrade_check_box :preferred_send_consumer_transactional_emails, help: PallasTrade.t('admin.store_form.send_consumer_transactional_emails_help'), label: PallasTrade.t(:send_consumer_transactional_emails) %>
+      </div>
+
+      <div class="mb-4">
+        <%= f.pallastrade_check_box :preferred_allow_email_replies, help: PallasTrade.t('admin.emails.reply_switch_help'), label: PallasTrade.t('admin.emails.reply_switch') %>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.store_form.email_addresses') %></h5>
+    </div>
+    <div class="card-body">
+      <p class="text-gray-600">
+        <%= PallasTrade.t('admin.store_form.mail_from_address_help') %>
+      </p>
+
+      <%= f.pallastrade_email_field :mail_from_address, required: true %>
+      <%= f.pallastrade_email_field :customer_support_email, help: PallasTrade.t('admin.store_form.customer_support_email_help') %>
+      <%= f.pallastrade_email_field :new_order_notifications_email, help: PallasTrade.t('admin.store_form.new_order_notifications_email_help') %>
+    </div>
+  </div>
+
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.emails.smtp_settings') %></h5>
+    </div>
+    <div class="card-body">
+      <p class="text-gray-600 mb-4">
+        <%= PallasTrade.t('admin.emails.smtp_help') %>
+      </p>
+
+      <div class="grid grid-cols-2 gap-4">
+        <%= f.pallastrade_text_field :preferred_smtp_host, help: PallasTrade.t('admin.emails.smtp_host_help') %>
+        <%= f.pallastrade_number_field :preferred_smtp_port %>
+        <%= f.pallastrade_text_field :preferred_smtp_user %>
+        <%= f.pallastrade_text_field :preferred_smtp_password, help: PallasTrade.t('admin.emails.smtp_password_help') %>
+      </div>
+      <%= f.pallastrade_select :preferred_smtp_authentication, [['Plain', 'plain'], ['Login', 'login'], ['CRAM-MD5', 'cram_md5'], ['None', 'none']], include_blank: false %>
+    </div>
+  </div>
+
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t(:logo) %></h5>
+    </div>
+    <div class="card-body">
+      <p class="text-gray-600"><%= PallasTrade.t('admin.store_form.mailer_logo_help') %></p>
+      <%= f.pallastrade_file_field :mailer_logo, width: 204, height: 104 %>
+      <p class="form-text mb-0 mt-2">
+        <%= PallasTrade.t('admin.store_form.mailer_logo_format_hint') %>
+      </p>
+    </div>
+  </div>
+<% end %>

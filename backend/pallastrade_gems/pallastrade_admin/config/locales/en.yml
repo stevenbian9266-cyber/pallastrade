@@ -4,6 +4,7 @@ en:
       not_found: Can't embed a video using the provided URL
   pallastrade:
     redirects: Redirects
+    emails: Emails
     back_in_stock_subscriptions: Back in Stock Subscriptions
     acceptance_errors: Acceptance errors
     actions:
@@ -43,6 +44,68 @@ en:
         audit_log_enterprise_notice: Audit log is part of the PallasTrade Enterprise offering.
         upgrade_to_enterprise: Upgrade to PallasTrade Enterprise
       back_in_stock_subscriptions: Back in Stock Subscriptions
+      emails:
+        settings: Email Settings
+        settings_help: Configure how this store sends email. The reply switch controls whether customers can reply to transactional emails (adds a Reply-To header and captures inbound replies in the inbox).
+        reply_switch: Allow customers to reply to emails
+        reply_switch_help: When enabled, outgoing emails include a Reply-To address (customer support email) and replies are captured under Email → Inbox & Feedback. When disabled, no Reply-To is added.
+        smtp_settings: SMTP Delivery
+        smtp_help: Optionally override the app-wide SMTP settings for this store. Leave blank to use the platform default.
+        smtp_host_help: e.g. smtp.resend.com
+        smtp_password_help: SMTP password or API key for the delivery host.
+        saved: Email settings saved.
+        notification_scenarios: Notification Scenarios
+        scenarios_help: Toggle which transactional emails are sent. Each scenario maps to a mailer and can be linked to a custom template.
+        scenario: Scenario
+        scenario_template: Template
+        scenario_enabled: Enabled
+        scenario_test: Test
+        scenario_default_template: Default (code template)
+        scenarios_saved: Notification scenario settings saved.
+        scenario_not_found: Scenario not found.
+        scenarios:
+          order_confirmation: Order confirmation (payment success)
+          payment_link: Payment link (pending payment reminder)
+          order_canceled: Order canceled (order status)
+          shipment_shipped: Shipment shipped (order status)
+          reimbursement: Refund / reimbursement
+          back_in_stock: Back in stock
+          password_reset: Password reset
+          newsletter_confirmation: Newsletter subscription confirmation
+        templates: Email Templates
+        templates_help: 'Edit transactional email content. Use {placeholders} like {order_number} or {store_name} — they are replaced with real values when the email is sent. Templates with an Active row override the built-in code template for the same key.'
+        new_template: New Template
+        edit_template: Edit Template
+        template_content: Template Content
+        template_key_help: Stable identifier matching a mailer (e.g. order.confirm_email). See the notification scenarios page for available keys.
+        key: Key
+        subject: Subject
+        body_html: HTML Body
+        body_text: Text Body
+        placeholders: Placeholders
+        placeholders_help: Comma-separated list of supported placeholders, e.g. order_number, store_name
+        active_label: Active
+        preview: Preview
+        preview_hint: Preview is rendered after saving with sample placeholder values.
+        test_send: Test Send
+        test_send_placeholder: Recipient email
+        send_test: Send Test Email
+        test_sent: Test email sent to %{email}.
+        test_send_failed: Test email failed to send. Check the SMTP configuration and logs.
+        send_log: Send Log
+        send_log_help: Every email sent by the store is recorded here — recipient, subject, status and time. Failed sends are marked so you can investigate.
+        mailer: Mailer
+        action: Action
+        to: To
+        from: From
+        sent_at: Sent at
+        error: Error
+        inbox: Inbox & Feedback
+        inbox_help: Complaints, feedback and customer inquiries land here. Classify each message (complaint / feedback / inquiry / reply) and move it through pending → in_progress → resolved.
+        mark_resolved: Mark Resolved
+        message_resolved: Message marked as resolved.
+        message: Message
+        from_name: From
       allowed_origins:
         origin_help: Enter the full origin URL of your storefront (e.g. https://myshop.com). Do not include paths or query strings.
         origin_settings: Origin Settings

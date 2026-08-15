@@ -2241,4 +2241,138 @@ Rails.application.config.after_initialize do
 
   # ==========================================
   # (Config Items table removed — Config Center module was retired 2026-08-14)
+
+
+  # ==========================================
+  # Email management tables
+  # ==========================================
+
+  # Email templates
+  PallasTrade.admin.tables.register(:email_templates, model_class: PallasTrade::EmailTemplate, search_param: :name_or_key_cont, row_actions: true)
+
+  PallasTrade.admin.tables.email_templates.add :key,
+                                         label: :key,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 10
+
+  PallasTrade.admin.tables.email_templates.add :name,
+                                         label: :name,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 20
+
+  PallasTrade.admin.tables.email_templates.add :subject,
+                                         label: :subject,
+                                         type: :string,
+                                         sortable: false,
+                                         filterable: true,
+                                         default: true,
+                                         position: 30
+
+  PallasTrade.admin.tables.email_templates.add :active,
+                                         label: :active,
+                                         type: :boolean,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 40
+
+  # Email send log
+  PallasTrade.admin.tables.register(:email_logs, model_class: PallasTrade::EmailLog, search_param: :to_or_subject_or_mailer_cont, row_actions: true, row_actions_edit: false, row_actions_delete: false, new_resource: false)
+
+  PallasTrade.admin.tables.email_logs.add :mailer,
+                                         label: :mailer,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 10
+
+  PallasTrade.admin.tables.email_logs.add :action,
+                                         label: :action,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 20
+
+  PallasTrade.admin.tables.email_logs.add :to,
+                                         label: :to,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 30
+
+  PallasTrade.admin.tables.email_logs.add :subject,
+                                         label: :subject,
+                                         type: :string,
+                                         sortable: false,
+                                         filterable: false,
+                                         default: true,
+                                         position: 40
+
+  PallasTrade.admin.tables.email_logs.add :status,
+                                         label: :status,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 50
+
+  PallasTrade.admin.tables.email_logs.add :sent_at,
+                                         label: :sent_at,
+                                         type: :datetime,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 60
+
+  # Contact messages (inbox & feedback)
+  PallasTrade.admin.tables.register(:contact_messages, model_class: PallasTrade::ContactMessage, search_param: :email_or_subject_or_body_cont, row_actions: true, row_actions_edit: false, new_resource: false)
+
+  PallasTrade.admin.tables.contact_messages.add :kind,
+                                         label: :kind,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 10
+
+  PallasTrade.admin.tables.contact_messages.add :email,
+                                         label: :email,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 20
+
+  PallasTrade.admin.tables.contact_messages.add :subject,
+                                         label: :subject,
+                                         type: :string,
+                                         sortable: false,
+                                         filterable: false,
+                                         default: true,
+                                         position: 30
+
+  PallasTrade.admin.tables.contact_messages.add :status,
+                                         label: :status,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 40
+
+  PallasTrade.admin.tables.contact_messages.add :created_at,
+                                         label: :created_at,
+                                         type: :datetime,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 50
 end

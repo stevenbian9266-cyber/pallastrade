@@ -17,5 +17,14 @@ module PallasTrade
         )
       end
     end
+
+    # Placeholder values available to admin-edited DB templates for this mailer.
+    def email_template_context
+      {
+        product_name: @product&.name,
+        store_name: current_store&.name,
+        product_url: @product.present? ? PallasTrade.product_url(@product, host: current_store&.storefront_url) : nil
+      }.compact
+    end
   end
 end
