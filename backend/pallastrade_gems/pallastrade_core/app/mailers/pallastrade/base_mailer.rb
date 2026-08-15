@@ -91,6 +91,12 @@ module PallasTrade
       message.instance_variable_set(:@_pallastrade_store, store) if message
       message.instance_variable_set(:@_pallastrade_mailer, self.class.name) if message
       message.instance_variable_set(:@_pallastrade_action, action_name) if message
+
+      # Per-store SMTP override — when the store configured its own SMTP channel
+      # (Email → Settings), deliver through it instead of the platform default.
+      # This is applied per-message so other stores/jobs are unaffected.
+      apply_store_smtp_settings(message, store) if message
+
       message
     end
 
@@ -160,6 +166,35 @@ module PallasTrade
 
       ActionMailer::Base.default_url_options ||= {}
       ActionMailer::Base.default_url_options[:host] = host_url
+    end
+
+    # Route this message through the store's own SMTP channel when one is
+    # configured (Email → Settings → SMTP). Per-message delivery method keeps
+    # the override scoped to this message only.
+    def apply_store_smtp_settings(message, store)
+      settings = store_smtp_settings(store)
+      return if settings.blank?
+
+      message.delivery_method(:smtp, settings)
+    rescue StandardError => e
+      Rails.logger.warn("[mailer] store SMTP override failed, using default: #{e.message}")
+    end
+
+    # Build SMTP settings from the store's email preferences. Returns nil when
+    # the store did not opt into its own SMTP channel (host blank = disabled).
+    def store_smtp_settings(store)
+      return nil unless store
+      return nil if store.preferred_smtp_host.blank?
+
+      settings = {
+        address: store.preferred_smtp_host,
+        port: store.preferred_smtp_port.to_i,
+        authentication: store.preferred_smtp_authentication.presence&.to_sym,
+        enable_starttls_auto: true
+      }
+      settings[:user_name] = store.preferred_smtp_user if store.preferred_smtp_user.present?
+      settings[:password] = store.preferred_smtp_password if store.preferred_smtp_password.present?
+      settings
     end
   end
 end

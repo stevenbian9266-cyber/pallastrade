@@ -66,24 +66,43 @@ module PallasTrade
       end
 
       def send_test_email(scenario)
-        mailer_class, action = scenario[:key].split('.')
-        klass = "PallasTrade::#{mailer_class.camelize}Mailer".constantize
-        return false unless klass.respond_to?(action)
+        to = current_admin_user.email
+        context = test_context
 
-        # Only mailers whose action accepts a single record can be tested here.
-        # Pass a lightweight dummy via a test payload where possible.
-        case scenario[:key]
-        when 'back_in_stock.back_in_stock'
-          sub = current_store.back_in_stock_subscriptions.first
-          return false if sub.nil?
-          klass.public_send(action, sub).deliver_now
+        template = current_store.email_templates.find_by(key: scenario[:key])
+        if template
+          subject = template.render_subject(context)
+          body_html = template.render_body(:html, context)
+          body_text = template.render_body(:text, context)
         else
-          return false
+          subject = "#{PallasTrade.t('admin.emails.test_subject', store_name: current_store.name)} — #{PallasTrade.t(scenario[:name])}"
+          body = PallasTrade.t('admin.emails.test_body')
+          body_html = "<p>#{body}</p><p>#{PallasTrade.t(scenario[:name])}</p>"
+          body_text = "#{body}\n#{PallasTrade.t(scenario[:name])}"
         end
+
+        PallasTrade::TestMailer.test_email(
+          to: to,
+          subject: subject,
+          body_html: body_html,
+          body_text: body_text,
+          store: current_store
+        ).deliver_now
         true
       rescue StandardError => e
         Rails.logger.warn("[email_scenarios] test send failed for #{scenario[:key]}: #{e.message}")
         false
+      end
+
+      # Sample placeholder values for scenario test sends.
+      def test_context
+        {
+          order_number: 'R123456789',
+          store_name: current_store.name,
+          product_name: 'Example Product',
+          customer_name: 'Test Customer',
+          email: current_admin_user.email
+        }
       end
     end
   end

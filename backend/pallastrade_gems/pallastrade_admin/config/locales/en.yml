@@ -92,6 +92,10 @@ en:
         send_test: Send Test Email
         test_sent: Test email sent to %{email}.
         test_send_failed: Test email failed to send. Check the SMTP configuration and logs.
+        test_send_button: Send Test Email
+        test_send_hint: Send a test email through the current SMTP configuration to verify delivery works.
+        test_subject: Test email from %{store_name}
+        test_body: This is a test email from your PallasTrade store. If you can read this, your SMTP delivery is working.
         send_log: Send Log
         outbox: Outbox
         send_log_help: Every email sent by the store is recorded here — recipient, subject, status and time. Failed sends are marked so you can investigate.

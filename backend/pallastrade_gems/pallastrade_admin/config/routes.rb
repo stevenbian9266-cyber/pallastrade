@@ -294,6 +294,7 @@ PallasTrade::Core::Engine.add_routes do
     end
     get '/emails', to: 'emails#show', as: :emails
     patch '/emails', to: 'emails#update'
+    post '/emails/test_send', to: 'emails#test_send', as: :emails_test_send
     get '/email_notification_scenarios', to: 'email_notification_scenarios#index', as: :email_notification_scenarios
     patch '/email_notification_scenarios', to: 'email_notification_scenarios#update', as: :email_notification_scenarios_update
     post '/email_notification_scenarios/test', to: 'email_notification_scenarios#test_send', as: :email_notification_scenarios_test

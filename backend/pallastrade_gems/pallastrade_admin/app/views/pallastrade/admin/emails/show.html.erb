@@ -59,6 +59,19 @@
 
   <div class="card mb-6">
     <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.emails.test_send_button') %></h5>
+    </div>
+    <div class="card-body">
+      <p class="text-gray-600"><%= PallasTrade.t('admin.emails.test_send_hint') %></p>
+      <%= form_with url: PallasTrade.admin_emails_test_send_path, method: :post, class: 'd-flex align-items-center gap-2' do |tf| %>
+        <%= tf.email_field :to_email, value: current_admin_user.email, class: 'form-control', placeholder: PallasTrade.t('admin.emails.test_send_placeholder') %>
+        <%= tf.submit PallasTrade.t('admin.emails.send_test'), class: 'btn btn-primary' %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="card mb-6">
+    <div class="card-header">
       <h5 class="card-title"><%= PallasTrade.t(:logo) %></h5>
     </div>
     <div class="card-body">
