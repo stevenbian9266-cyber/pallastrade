@@ -18,7 +18,7 @@ module PallasTrade
           end
 
           def permitted_params
-            params.permit(:from_path, :to_path, :status_code, :active)
+            params.permit(:from_path, :to_path, :status_code, :active, :title, :description)
           end
         end
       end

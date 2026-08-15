@@ -316,10 +316,13 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
 - **Store API** (used by the storefront middleware):
   `GET /api/v3/store/redirects/resolve?path=/old-product` → `{ data: { path, status_code } | null }`.
 - **Admin API**: `/api/v3/admin/redirects` full CRUD (scoped to `read_settings` / `write_settings`,
-  plus CanCanCan `manage`). `active: false` entries are ignored by resolve.
-- Storefront: `storefront/src/middleware.ts` resolves every storefront pathname with a 60s
-  revalidate cache; on a hit it issues `NextResponse.redirect(target, status)`, guarded against
-  A→A loops and degrading open when the API is unreachable (Turnstile-style).
+  plus CanCanCan `manage`). Records carry optional business-facing `title`/`description`
+  (serializer + `permitted_params` both expose them) so the admin list is readable.
+  `active: false` entries are ignored by resolve.
+- Storefront: `storefront/src/lib/pallastrade/middleware.ts` (wired via `src/proxy.ts`) resolves
+  every storefront pathname with a 60s revalidate cache; on a hit it issues
+  `NextResponse.redirect(target, status)`, guarded against A→A loops and degrading open when the
+  API is unreachable (Turnstile-style).
 
 ## Read/write attribute symmetry (a v3 invariant)
 

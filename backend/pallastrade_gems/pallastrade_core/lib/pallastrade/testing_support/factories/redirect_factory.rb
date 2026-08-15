@@ -7,5 +7,7 @@ FactoryBot.define do
     to_path { '/new-product' }
     status_code { 301 }
     active { true }
+    title { 'Example redirect' }
+    description { 'Old link automatically jumps to the new page.' }
   end
 end

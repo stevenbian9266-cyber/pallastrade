@@ -97,6 +97,11 @@ serializer + `PallasTrade::PermittedAttributes` entry.
     `friendly_id_slugs` 历史，无新表）。每行「Create redirect」链接用
     `new_object_url(from_path: ..., to_path: ...)` 预填 new 页；`RedirectsController#new` 从
     `params[:from_path]/[:to_path]` 预填 @object。已存在 from_path 重定向的商品标 `handled`。
+  - **业务标题/描述**（2026-08）：`PallasTrade::Redirect` 有可选 `title`（string）与 `description`
+    （text）列（迁移 `20260815000002_add_title_description_to_pallastrade_redirects`）。列表
+    `pallastrade_admin_tables.rb` 的 `:title` 列 `position: 5`（默认显示、可排序/筛选），让用户
+    一眼看出「这条重定向对应什么业务」；`_form.html.erb` 顶部提供 Title/Description 输入（可选）。
+    Admin API 的 `permitted_params` 与 admin `redirect_serializer` 均含 title/description。
 
 ## Customizing the sidebar
 

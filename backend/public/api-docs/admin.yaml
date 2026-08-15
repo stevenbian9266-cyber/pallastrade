@@ -22068,6 +22068,12 @@ components:
           type: integer
         active:
           type: boolean
+        title:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
         created_at:
           type: string
         updated_at:
@@ -22095,6 +22101,12 @@ components:
           - 302
         active:
           type: boolean
+        title:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
     ApiKey:
       type: object
       properties:

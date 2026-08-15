@@ -30,6 +30,16 @@ RSpec.describe '/api/v3/admin/redirects (SEO 301 CRUD)', type: :request do
       expect(json_response[:to_path]).to eq('/new')
     end
 
+    it 'creates a redirect with a business title and description' do
+      post '/api/v3/admin/redirects',
+           params: { from_path: '/old', to_path: '/new', title: 'Espresso rename redirect', description: 'Old link jumps to the renamed product.' },
+           headers: headers
+
+      expect(response).to have_http_status(:created)
+      expect(json_response[:title]).to eq('Espresso rename redirect')
+      expect(json_response[:description]).to eq('Old link jumps to the renamed product.')
+    end
+
     it 'rejects invalid redirects' do
       post '/api/v3/admin/redirects',
            params: { from_path: 'bad', to_path: 'https://evil.example.com/x' },

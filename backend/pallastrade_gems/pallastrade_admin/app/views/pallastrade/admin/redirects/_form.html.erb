@@ -7,6 +7,10 @@
     <h5 class="card-title"><%= PallasTrade.t('admin.redirects.redirect_settings') %></h5>
   </div>
   <div class="card-body">
+    <%= f.pallastrade_text_field :title, label: PallasTrade.t('admin.redirects.title_label'), placeholder: PallasTrade.t('admin.redirects.title_placeholder') %>
+
+    <%= f.pallastrade_text_area :description, label: PallasTrade.t('admin.redirects.description_label'), rows: 3, placeholder: PallasTrade.t('admin.redirects.description_placeholder') %>
+
     <%= f.pallastrade_text_field :from_path, required: true, autofocus: f.object.new_record?, placeholder: '/old-product' %>
     <p class="text-sm text-gray-500 mt-1"><%= PallasTrade.t('admin.redirects.from_help') %></p>
 

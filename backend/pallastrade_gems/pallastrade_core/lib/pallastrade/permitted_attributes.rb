@@ -209,7 +209,7 @@ module PallasTrade
 
     @@refund_reason_attributes = [:name, :active, :mutable]
 
-    @@redirect_attributes = [:from_path, :to_path, :status_code, :active]
+    @@redirect_attributes = [:from_path, :to_path, :status_code, :active, :title, :description]
 
     @@reimbursement_attributes = [return_items_attributes: [:id, :override_reimbursement_type_id, :pre_tax_amount, :exchange_variant_id]]
 

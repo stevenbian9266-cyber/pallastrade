@@ -2164,13 +2164,21 @@ Rails.application.config.after_initialize do
   # Register Redirects table (SEO 301 redirects)
   PallasTrade.admin.tables.register(:redirects, model_class: PallasTrade::Redirect, search_param: :from_path_or_to_path_cont, row_actions: true)
 
+  PallasTrade.admin.tables.redirects.add :title,
+                                         label: :title,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 5
+
   PallasTrade.admin.tables.redirects.add :from_path,
                                          label: :from_path,
                                          type: :string,
                                          sortable: true,
                                          filterable: true,
                                          default: true,
-                                         position: 10
+                                         position: 20
 
   PallasTrade.admin.tables.redirects.add :to_path,
                                          label: :to_path,
@@ -2178,7 +2186,7 @@ Rails.application.config.after_initialize do
                                          sortable: true,
                                          filterable: true,
                                          default: true,
-                                         position: 20
+                                         position: 30
 
   PallasTrade.admin.tables.redirects.add :status_code,
                                          label: :status_code,
@@ -2186,7 +2194,7 @@ Rails.application.config.after_initialize do
                                          sortable: true,
                                          filterable: true,
                                          default: true,
-                                         position: 30
+                                         position: 40
 
   PallasTrade.admin.tables.redirects.add :active,
                                          label: :active,
@@ -2194,7 +2202,7 @@ Rails.application.config.after_initialize do
                                          sortable: true,
                                          filterable: true,
                                          default: true,
-                                         position: 40
+                                         position: 50
 
   # ==========================================
   # (Config Items table removed — Config Center module was retired 2026-08-14)

@@ -45,6 +45,15 @@ RSpec.describe 'Admin redirects pages', type: :request do
       expect(response.body).to include('/products/old-shaver')
       expect(response.body).to include('/products/new-shaver')
     end
+
+    it 'shows the Title column and a redirect title in the list' do
+      create(:redirect, store: store, from_path: '/a', to_path: '/b', title: 'Espresso rename redirect')
+
+      get '/admin/redirects'
+
+      expect(response.body).to include('>Title<') # column header
+      expect(response.body).to include('Espresso rename redirect')
+    end
   end
 
   describe 'GET /admin/redirects/new' do
@@ -69,6 +78,13 @@ RSpec.describe 'Admin redirects pages', type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('value="/products/old-shaver"')
       expect(response.body).to include('value="/products/new-shaver"')
+    end
+
+    it 'renders Title and Description inputs on the form' do
+      get '/admin/redirects/new'
+
+      expect(response.body).to include('name="redirect[title]"')
+      expect(response.body).to include('name="redirect[description]"')
     end
   end
 end
