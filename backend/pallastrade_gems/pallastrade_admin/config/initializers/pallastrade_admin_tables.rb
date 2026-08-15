@@ -250,7 +250,7 @@ Rails.application.config.after_initialize do
                                       position: 50,
                                       partial: 'pallastrade/admin/tables/columns/order_payment_state',
                                       operators: %i[eq not_eq in not_in],
-                                      value_options: -> { PallasTrade::Order::PAYMENT_STATES.map { |s| { value: s, label: I18n.t("PallasTrade.payment_states.#{s}", default: s.humanize) } } }
+                                      value_options: -> { PallasTrade::Order::PAYMENT_STATES.map { |s| { value: s, label: I18n.t("pallastrade.payment_states.#{s}", default: s.humanize) } } }
 
   PallasTrade.admin.tables.orders.add :shipment_state,
                                       label: :shipment_state,
@@ -262,7 +262,7 @@ Rails.application.config.after_initialize do
                                       position: 60,
                                       partial: 'pallastrade/admin/tables/columns/order_shipment_state',
                                       operators: %i[eq not_eq in not_in],
-                                      value_options: -> { PallasTrade::Order::SHIPMENT_STATES.map { |s| { value: s, label: I18n.t("PallasTrade.shipment_states.#{s}", default: s.humanize) } } }
+                                      value_options: -> { PallasTrade::Order::SHIPMENT_STATES.map { |s| { value: s, label: I18n.t("pallastrade.shipment_states.#{s}", default: s.humanize) } } }
 
   PallasTrade.admin.tables.orders.add :item_count,
                                       label: :item_count,
@@ -1316,7 +1316,7 @@ Rails.application.config.after_initialize do
                                                  filterable: false,
                                                  default: true,
                                                  position: 30,
-                                                 method: ->(endpoint) { "#{endpoint.subscriptions.size} #{I18n.t('PallasTrade.admin.webhook_endpoints.events')}" }
+                                                 method: ->(endpoint) { "#{endpoint.subscriptions.size} #{I18n.t('pallastrade.admin.webhook_endpoints.events')}" }
 
   PallasTrade.admin.tables.webhook_endpoints.add :deliveries_stats,
                                                  label: :deliveries,

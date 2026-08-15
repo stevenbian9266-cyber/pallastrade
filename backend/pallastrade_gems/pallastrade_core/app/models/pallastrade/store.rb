@@ -409,10 +409,10 @@ module PallasTrade
     def create_default_policies
       PallasTrade::Events.disable do
         [
-          translate_with_store_locale_fallback('PallasTrade.terms_of_service'),
-          translate_with_store_locale_fallback('PallasTrade.privacy_policy'),
-          translate_with_store_locale_fallback('PallasTrade.returns_policy'),
-          translate_with_store_locale_fallback('PallasTrade.shipping_policy')
+          translate_with_store_locale_fallback('pallastrade.terms_of_service'),
+          translate_with_store_locale_fallback('pallastrade.privacy_policy'),
+          translate_with_store_locale_fallback('pallastrade.returns_policy'),
+          translate_with_store_locale_fallback('pallastrade.shipping_policy')
         ].each do |policy_name|
           # Manual exists?/create to work around Mobility bug with find_or_create_by
           next if policies.with_matching_name(policy_name).exists?

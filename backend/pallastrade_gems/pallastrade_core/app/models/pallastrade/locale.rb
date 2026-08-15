@@ -20,7 +20,7 @@ module PallasTrade
     def name
       code = self.code.to_s
 
-      if I18n.exists?('PallasTrade.i18n.this_file_language', locale: code, fallback: false)
+      if I18n.exists?('pallastrade.i18n.this_file_language', locale: code, fallback: false)
         return normalize_name(PallasTrade.t('i18n.this_file_language', locale: code))
       end
 

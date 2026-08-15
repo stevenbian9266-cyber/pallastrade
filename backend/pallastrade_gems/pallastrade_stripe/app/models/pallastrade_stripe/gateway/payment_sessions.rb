@@ -15,7 +15,7 @@ module PallasTradeStripe
         total = amount.presence || order.total_minus_store_credits
         amount_in_cents = PallasTrade::Money.new(total, currency: order.currency).cents
 
-        raise PallasTrade::Core::GatewayError, I18n.t('PallasTrade.stripe.payment_session_errors.zero_amount') if amount_in_cents.zero?
+        raise PallasTrade::Core::GatewayError, I18n.t('pallastrade.stripe.payment_session_errors.zero_amount') if amount_in_cents.zero?
 
         customer = fetch_or_create_customer(order: order)
         stripe_pm_id = external_data[:stripe_payment_method_id] || external_data['stripe_payment_method_id']

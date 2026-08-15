@@ -353,8 +353,8 @@ module PallasTrade
       def get_label(method, options)
         translated_label = if options[:label]
                               options[:label]
-                            elsif I18n.exists?("PallasTrade.#{method}")
-                              I18n.t("PallasTrade.#{method}")
+                            elsif I18n.exists?("pallastrade.#{method}")
+                              I18n.t("pallastrade.#{method}")
                             else
                               I18n.t("activerecord.attributes.pallastrade/#{@object_name.to_s.underscore}.#{method}")
                             end

@@ -4,8 +4,8 @@ module PallasTrade
       prepend PallasTrade::ServiceModule::Base
 
       def call
-        PallasTrade::ShippingCategory.find_or_create_by!(name: I18n.t('PallasTrade.seed.shipping.categories.default'))
-        PallasTrade::ShippingCategory.find_or_create_by!(name: I18n.t('PallasTrade.seed.shipping.categories.digital'))
+        PallasTrade::ShippingCategory.find_or_create_by!(name: I18n.t('pallastrade.seed.shipping.categories.default'))
+        PallasTrade::ShippingCategory.find_or_create_by!(name: I18n.t('pallastrade.seed.shipping.categories.digital'))
       end
     end
   end

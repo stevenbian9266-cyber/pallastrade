@@ -46,8 +46,8 @@ Rails.application.config.after_initialize do
                   combinator: 'and',
                   filters: [
                     { id: 'f1', field: 'shipment_state', operator: 'not_in', value: [
-                      { id: 'shipped', name: I18n.t('PallasTrade.shipment_states.shipped', default: 'Shipped') },
-                      { id: 'canceled', name: I18n.t('PallasTrade.shipment_states.canceled', default: 'Canceled') }
+                      { id: 'shipped', name: I18n.t('pallastrade.shipment_states.shipped', default: 'Shipped') },
+                      { id: 'canceled', name: I18n.t('pallastrade.shipment_states.canceled', default: 'Canceled') }
                     ] }
                   ],
                   groups: []

@@ -945,7 +945,7 @@ module PallasTrade
       return if shipping_category.present?
 
       if new_record?
-        name = I18n.t('PallasTrade.seed.shipping.categories.default')
+        name = I18n.t('pallastrade.seed.shipping.categories.default')
         self.shipping_category = PallasTrade::ShippingCategory.find_or_create_by!(name: name)
       end
     end
