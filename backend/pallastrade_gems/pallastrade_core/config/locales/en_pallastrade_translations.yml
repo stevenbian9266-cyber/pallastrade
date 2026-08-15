@@ -1313,6 +1313,7 @@ en:
         address: Address
         contact_phone: Contact phone
         mail_from_address: Mail from address
+        mailer_logo: Mailer logo
         meta_description: Meta description
         meta_keywords: Meta keywords
         name: Name
