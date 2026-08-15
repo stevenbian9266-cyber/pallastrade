@@ -52,6 +52,15 @@ en:
         to_help: Target path to redirect to (e.g. /new-product). Must be an internal path.
         status_help: 301 = permanent (recommended for SEO), 302 = temporary.
         active_label: Active
+        url_changes_heading: Products with changed URLs
+        url_changes_intro: These products changed URL at some point. Old links (for example from search engines or shared posts) now return 404 — create a redirect so old links automatically jump to the new URL.
+        url_changes_product: Product
+        url_changes_old_url: Old URL
+        url_changes_new_url: New URL
+        url_changes_status: Status
+        url_changes_pending: Needs redirect
+        url_changes_handled: Redirect created
+        url_changes_action: Create redirect
       amount_spent: Amount spent
       api_keys:
         example_request: Example Request

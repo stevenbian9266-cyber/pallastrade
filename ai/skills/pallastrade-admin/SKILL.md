@@ -92,6 +92,11 @@ serializer + `PallasTrade::PermittedAttributes` entry.
     顶部同样放 `alert-info` 说明（`admin.redirects.form_intro`）。文案必须通俗（旧链接→新链接、
     防 404、保 SEO 排名），并走 `PallasTrade.t` locale（含 `: `/`→`/`"` 等特殊字符的值须用单引号包裹）。
     该模式同样适用于其他 settings 列表页（参照 `option_types` 的 `intro_help` 先例）。
+  - **URL 变更商品清单**（2026-08）：index 页在 intro 下方展示「Products with changed URLs」
+    表格（`@url_changes = PallasTrade::ProductUrlChange.call(current_store)`，数据源为 friendly_id
+    `friendly_id_slugs` 历史，无新表）。每行「Create redirect」链接用
+    `new_object_url(from_path: ..., to_path: ...)` 预填 new 页；`RedirectsController#new` 从
+    `params[:from_path]/[:to_path]` 预填 @object。已存在 from_path 重定向的商品标 `handled`。
 
 ## Customizing the sidebar
 

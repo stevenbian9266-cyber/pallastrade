@@ -28,6 +28,13 @@ Product
 
 The **Product** is the storefront concept — name, slug, description, category. It rarely changes once published.
 
+> **Slug 与 URL 变更（2026-08）**：商品 slug 由 friendly_id 管理（`Product::Slugs`，
+> `use: [:history, :slugged, :scoped, :mobility]`）。**改名不会自动改 slug**（slug 固定，
+> 仅手动改 slug 才会变）；手动改 slug 时 friendly_id `:history` 会把旧 slug 记入
+> `friendly_id_slugs` 表（sluggable_type=`PallasTrade::Product`，按 locale）。因此
+> 「商品 URL 变更清单」可直接查 `friendly_id_slugs`（服务见 `PallasTrade::ProductUrlChange`），
+> 用于引导创建 SEO 301 重定向（Admin Redirects 页）。
+
 The **Variant** is the SKU — what gets added to a cart, what has a price, what has inventory. A Product has at least one Variant.
 
 ### Master variant and default variant

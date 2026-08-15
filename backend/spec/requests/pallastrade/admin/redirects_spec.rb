@@ -33,6 +33,18 @@ RSpec.describe 'Admin redirects pages', type: :request do
 
       expect(response.body).to include('Redirects let old links automatically jump to new ones')
     end
+
+    it 'shows the URL-change list for products whose slug changed' do
+      product = create(:product, store: store, name: 'Old Shaver')
+      product.update!(slug: 'new-shaver')
+
+      get '/admin/redirects'
+
+      expect(response.body).to include('Products with changed URLs')
+      expect(response.body).to include('Old Shaver')
+      expect(response.body).to include('/products/old-shaver')
+      expect(response.body).to include('/products/new-shaver')
+    end
   end
 
   describe 'GET /admin/redirects/new' do
@@ -49,6 +61,14 @@ RSpec.describe 'Admin redirects pages', type: :request do
       get '/admin/redirects/new'
 
       expect(response.body).to include('Create one rule: old path (From Path)')
+    end
+
+    it 'pre-fills from_path/to_path from query params (URL-change quick action)' do
+      get '/admin/redirects/new', params: { from_path: '/products/old-shaver', to_path: '/products/new-shaver' }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('value="/products/old-shaver"')
+      expect(response.body).to include('value="/products/new-shaver"')
     end
   end
 end

@@ -12,4 +12,49 @@
   </div>
 <% end %>
 
+<% if @url_changes.present? %>
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.redirects.url_changes_heading') %></h5>
+      <p class="text-sm text-gray-500 mt-1"><%= PallasTrade.t('admin.redirects.url_changes_intro') %></p>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th><%= PallasTrade.t('admin.redirects.url_changes_product') %></th>
+              <th><%= PallasTrade.t('admin.redirects.url_changes_old_url') %></th>
+              <th><%= PallasTrade.t('admin.redirects.url_changes_new_url') %></th>
+              <th><%= PallasTrade.t('admin.redirects.url_changes_status') %></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @url_changes.each do |change| %>
+              <tr>
+                <td><%= change[:product].name %></td>
+                <td><code><%= change[:from_path] %></code></td>
+                <td><code><%= change[:to_path] %></code></td>
+                <td>
+                  <% if change[:handled] %>
+                    <span class="badge badge-success"><%= PallasTrade.t('admin.redirects.url_changes_handled') %></span>
+                  <% else %>
+                    <span class="badge badge-warning"><%= PallasTrade.t('admin.redirects.url_changes_pending') %></span>
+                  <% end %>
+                </td>
+                <td>
+                  <% unless change[:handled] %>
+                    <%= link_to_with_icon 'plus', PallasTrade.t('admin.redirects.url_changes_action'), new_object_url(from_path: change[:from_path], to_path: change[:to_path]), class: 'btn btn-sm btn-primary' if can? :create, PallasTrade::Redirect %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<% end %>
+
 <%= render_table @collection, :redirects %>
