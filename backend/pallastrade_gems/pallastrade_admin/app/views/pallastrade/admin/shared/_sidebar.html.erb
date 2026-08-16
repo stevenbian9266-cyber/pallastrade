@@ -1,13 +1,9 @@
 <%# Desktop Sidebar %>
 <aside id="main-sidebar" class="overflow-y-auto scrollbar-thin" data-sidebar-target="desktop">
-  <% if settings_area? %>
-    <%= render 'pallastrade/admin/shared/back_to_dashboard' %>
+  <% if defined?(current_vendor) && current_vendor.present? %>
+    <%= render 'pallastrade/admin/shared/sidebar/vendor_dropdown' %>
   <% else %>
-    <% if defined?(current_vendor) && current_vendor.present? %>
-      <%= render 'pallastrade/admin/shared/sidebar/vendor_dropdown' %>
-    <% else %>
-      <%= render 'pallastrade/admin/shared/sidebar/store_dropdown' %>
-    <% end %>
+    <%= render 'pallastrade/admin/shared/sidebar/store_dropdown' %>
   <% end %>
 
   <div class="sidebar-content">
@@ -26,12 +22,10 @@
   <div class="sidebar-backdrop" data-action="click->sidebar#closeMobile"></div>
   <div class="sidebar-panel">
     <div class="sidebar-mobile-header">
-      <% unless settings_area? %>
-        <% if defined?(current_vendor) && current_vendor.present? %>
-          <%= render 'pallastrade/admin/shared/sidebar/vendor_dropdown' %>
-        <% else %>
-          <%= render 'pallastrade/admin/shared/sidebar/store_dropdown' %>
-        <% end %>
+      <% if defined?(current_vendor) && current_vendor.present? %>
+        <%= render 'pallastrade/admin/shared/sidebar/vendor_dropdown' %>
+      <% else %>
+        <%= render 'pallastrade/admin/shared/sidebar/store_dropdown' %>
       <% end %>
       <button type="button" class="btn btn-sm ms-auto" data-action="click->sidebar#closeMobile" aria-label="<%= PallasTrade.t('admin.close_sidebar') %>">
         <%= icon('x') %>

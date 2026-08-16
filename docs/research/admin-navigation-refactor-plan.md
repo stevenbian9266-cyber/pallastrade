@@ -17,9 +17,10 @@
 
 | # | 决策 | 结论 |
 |---|---|---|
-| 1 | **顶级落地语义** | 统一为「**顶级 = 模块主页面**」（Email 模式）。每个模块顶级点击 → 自己的主页面（Email=设置页、Orders=列表页均可，取决于模块）；次级菜单恒显并高亮当前项 |
+| 1 | **顶级落地语义** | P6 起统一为「**顶级点击落地 = landing 子项（缺省 = 第一个子项）**」。每个带子菜单的一级项点击 → 落地子项页，默认高亮第一个次级菜单，面包屑 `一级 > 二级`（Orders → All Orders、Developers → API Keys） |
 | 2 | **getting_started** | **保留 wizard 完成后隐藏**（`!setup_completed?` 例外豁免） |
 | 3 | **单语言店铺 translations** | **常显 + 空态引导**（删 `locales>1` 的 `if:`；单语言店铺进入页面显示引导文案） |
+| 4 | **主区/设置区融合**（P6） | **取消主区/设置区之分**：设置模块融入主区，整个后台一棵统一可收拉侧边栏树，一套渲染/落地/面包屑/tab/i18n/校验管线 |
 
 ## 2. 问题清单（现状 vs 目标）
 
@@ -78,11 +79,14 @@ end
 ```
 
 **校验器强制约束**：
-- [ ] 顶级 icon 必填；URL 必须可解析
-- [ ] 有子项的顶级必须含 ≥1 个无条件可见主子项
-- [ ] 子项 `if:` 只接受 permission；出现 count/size/state 业务条件 → 校验失败
-- [ ] 业务计数走 badge；配置类差异（单语言）→ 常显+空态，不隐藏
-- [ ] active 由 URL 推导（手写仅覆盖钩子）
+- [x] 顶级 icon 必填；URL 必须可解析
+- [x] 有子项的顶级必须含 ≥1 个无条件可见主子项
+- [x] 子项 `if:` 只接受 permission；出现 count/size/state 业务条件 → 校验失败
+- [x] 业务计数走 badge；配置类差异（单语言）→ 常显+空态，不隐藏
+- [x] active 由 URL 推导（手写仅覆盖钩子）
+- [x] 有子项的顶级必须声明 `landing` 且指向存在的子项（P6）
+- [x] `tabs:` 必须指向已注册的 tab 上下文（P6，如 :stock_tabs）
+- [x] String 型 label（i18n key）必须 en + zh-CN 双语存在（P6 FR-012）
 
 ## 5. 现有菜单改造清单
 
@@ -105,6 +109,7 @@ end
 | **P3** | 面包屑自动推导：path 索引 + BreadcrumbConcern 重构；删手写 concern/crumb（B4） | Navigation::Item + BaseController + 各控制器 | 中（query/嵌套/对象页边界） |
 | **P4** | page_title fallback + 单一布局 + section/tabs 统一（B5） | 布局 + _content_header + 设置区 partial | 中 |
 | **P5** | schema 校验器 `nav:validate` + 全量迁移 + SKILL/GS 沉淀（B6） | harness + SKILL.md + scenarios.json | 中 |
+| **P6** | 统一单一侧边栏：设置区融入主区、landing 落地、tab 面包屑、全配置化 + 双语、nav:validate 升级（landing/tabs/i18n） | 导航配置 + Item/Navigation + BreadcrumbConcern + helper + i18n + rake | 高 |
 
 ## 7. 验证与自进化
 
@@ -121,4 +126,5 @@ end
 | 2026-08-16 | v1.1 | **P1+P2 完成**（提交 24220a6）：设置区头部溢出修复 + 常显原则 | AI |
 | 2026-08-16 | v1.2 | **P3 完成**（提交 5c09baf + 修复 f64f78e/e58beca）：面包屑自动推导引擎 + 删除 5 concern + 清理 27 控制器 | AI |
 | 2026-08-16 | v1.3 | **P4 完成**（提交 63781d1）：单一布局（删 admin_settings）+ SETTINGS_SECTIONS/_section_nav + page_title fallback | AI |
-| 2026-08-16 | v1.4 | **P5 完成**（提交中）：nav:validate 校验器（rake + harness 插件 + quick check + pre-commit）+ 设置区 crumb 自动推导（SETTINGS_TAB_MAP + skip_breadcrumb_derivation）+ SKILL Schema 章节 + GS-032 更新 | AI |
+| 2026-08-16 | v1.4 | **P5 完成**（提交 bc621cd）：nav:validate 校验器（rake + harness 插件 + quick check + pre-commit）+ 设置区 crumb 自动推导（SETTINGS_TAB_MAP + skip_breadcrumb_derivation）+ SKILL Schema 章节 + GS-032 更新 | AI |
+| 2026-08-16 | v1.5 | **P6 完成**（提交中）：统一单一侧边栏（设置区融入主区）+ landing 落地（顶级点击→第一个子项）+ tab 面包屑（Products>Stock>三 tab）+ 设置模块三段式面包屑（无 Settings 前缀）+ 全配置化双语（en/zh-CN）+ nav:validate 升级（landing/tabs/i18n）+ Stock 控制器手写 crumb 清理 | AI |

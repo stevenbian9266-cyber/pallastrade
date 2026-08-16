@@ -14,12 +14,12 @@ module PallasTrade
         PallasTrade::AI::Provider::OpenAI
       ].freeze
 
-      # Breadcrumbs — Pattern B (P3 起：模块级 base crumb 由导航自动推导，
-      # 即 sidebar 的 ai_tools 项；这里只保留图标 + 子页 crumb)。
-      # Sub-page breadcrumbs are appended via before_action.
+      # Breadcrumbs — Pattern B（P6 起：AI Tools 子菜单已配置化，
+      # Overview/Providers/Models/Capabilities/Runs 均由导航自动推导；
+      # 这里只保留图标 + provider 详情页的对象 crumb）。
       add_breadcrumb_icon 'sparkles'
 
-      before_action :add_ai_sub_breadcrumb, only: %i[providers provider models capabilities runs]
+      before_action :add_ai_sub_breadcrumb, only: %i[provider]
 
       before_action :load_providers, only: %i[index providers]
       before_action :load_models, only: %i[models]
@@ -189,20 +189,10 @@ module PallasTrade
       private
 
       def add_ai_sub_breadcrumb
-        case action_name
-        when 'providers'
-          add_breadcrumb PallasTrade.t(:providers), PallasTrade.admin_ai_providers_path
-        when 'provider'
-          add_breadcrumb PallasTrade.t(:providers), PallasTrade.admin_ai_providers_path
-          provider = find_provider
-          add_breadcrumb provider.name, PallasTrade.admin_ai_provider_path(provider)
-        when 'models'
-          add_breadcrumb PallasTrade.t(:models), PallasTrade.admin_ai_models_path
-        when 'capabilities'
-          add_breadcrumb PallasTrade.t(:capabilities), PallasTrade.admin_ai_capabilities_path
-        when 'runs'
-          add_breadcrumb PallasTrade.t(:runs), PallasTrade.admin_ai_runs_path
-        end
+        # provider 详情页：导航已推导 AI Tools > Providers，这里追加提供商名
+        add_breadcrumb PallasTrade.t(:providers), PallasTrade.admin_ai_providers_path
+        provider = find_provider
+        add_breadcrumb provider.name, PallasTrade.admin_ai_provider_path(provider)
       end
 
       def provision_models_for_all_providers

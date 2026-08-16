@@ -3,7 +3,8 @@ module PallasTrade
     class Navigation
       class Item
         attr_accessor :key, :label, :url, :icon, :position, :parent_key,
-                      :condition, :badge, :badge_class, :tooltip, :target, :data_attributes, :children, :section_label, :active_condition
+                      :condition, :badge, :badge_class, :tooltip, :target, :data_attributes, :children, :section_label, :active_condition,
+                      :landing, :tabs
 
         def initialize(key, **options)
           @key = key.to_sym
@@ -20,7 +21,23 @@ module PallasTrade
           @target = options[:target]
           @data_attributes = options[:data_attributes] || {}
           @section_label = options[:section_label]
+          @landing = options[:landing]&.to_sym
+          @tabs = options[:tabs]&.to_sym
           @children = []
+        end
+
+        # PALLAS-CUSTOM: 顶级落地子项（P6 导航架构重构）
+        # 点击带子菜单的一级项时，落到该子项（默认 = 第一个可见子项）。
+        # @return [Item, nil] the landing child item, or nil when no children
+        def landing_item(context = nil)
+          return nil if children.empty?
+
+          if landing
+            target = children.find { |child| child.key == landing }
+            return target if target
+          end
+
+          children.find { |child| child.visible?(context) } || children.first
         end
 
         # Check if this item should be visible for the given user/context
@@ -109,16 +126,41 @@ module PallasTrade
         # Shallow URLs (a single admin segment like `/admin`) only exact-match,
         # so the Dashboard item never hijacks unrelated `/admin/*` pages
         # (settings pages, AI module, imports wizard, etc.).
+        # P6 起 query 感知：带 query 的项（如 Orders to Fulfill 的
+        # q[shipment_state_not_in]=...）仅在 path+query 都相等时命中，绝不落入
+        # path-only 兜底（否则会与同路径的 All Orders 混淆）。
         # @param path [String] the current request path (no query string)
         # @param context [Object] controller/view context for URL resolution
+        # @param query [String, nil] raw query string (no leading ?)
         # @return [Boolean]
-        def match_path?(path, context = nil)
+        def match_path?(path, context = nil, query: nil)
           item_url = safe_resolve_url(context)
           return false if item_url.blank?
 
-          return path == item_url if shallow_url?(item_url)
+          item_path, item_query = item_url.to_s.split('?', 2)
 
-          path == item_url || path.start_with?("#{item_url}/")
+          return path == item_path if shallow_url?(item_path)
+
+          # 带 query 的项：path + query 均相等才命中（Orders to Fulfill 专用）
+          if item_query.present?
+            return path == item_path && query == item_query
+          end
+
+          path == item_path || path.start_with?("#{item_path}/")
+        end
+
+        # PALLAS-CUSTOM: query 命中判断（P6 导航架构重构）
+        # 该 item 的 URL 是否携带与给定 query 完全一致的 query 串。
+        # 用于 find_breadcrumb_chain 中同深度项的排序（query 命中优先）。
+        # @param query [String] raw query string (no leading ?)
+        # @param context [Object] controller/view context for URL resolution
+        # @return [Boolean]
+        def query_match?(query, context = nil)
+          return false if query.blank?
+
+          item_url = safe_resolve_url(context).to_s
+          _item_path, item_query = item_url.split('?', 2)
+          item_query.present? && item_query == query
         end
 
         # Resolve label (handles i18n keys)
@@ -190,7 +232,9 @@ module PallasTrade
             tooltip: tooltip,
             target: target,
             data_attributes: data_attributes,
-            section_label: section_label
+            section_label: section_label,
+            landing: landing,
+            tabs: tabs
           }
         end
 

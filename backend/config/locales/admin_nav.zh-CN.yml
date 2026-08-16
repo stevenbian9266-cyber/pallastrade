@@ -1,0 +1,66 @@
+# Host-app zh-CN translations for the unified admin sidebar navigation (P6).
+# New nav labels are bilingual (en in pallastrade_admin/config/locales/en.yml
+# or admin_nav.en.yml, zh-CN here), satisfying FR-012's i18n requirement.
+# Keys are namespaced under `pallastrade:` because nav labels resolve via
+# PallasTrade.t (which prepends the :pallastrade scope).
+zh-CN:
+  pallastrade:
+    admin:
+      orders:
+        all_orders: 全部订单
+        orders_to_fulfill: 待发货订单
+      products:
+        products_list: 商品列表
+        categories: 分类
+        stock: 库存
+        translations: 翻译
+        options: 选项
+        price_lists: 价格表
+      customers:
+        customers_list: 客户列表
+        customer_groups: 客户分组
+        newsletter_subscribers: 订阅用户
+      promotions:
+        promotions_list: 促销列表
+        gift_cards: 礼品卡
+      reports:
+        reports_list: 报表列表
+      blog:
+        blog_list: 博客列表
+      returns:
+        customer_returns: 客户退货
+        return_authorizations: 退货授权
+      users:
+        admin_users: 管理员
+        invitations: 邀请
+        roles: 角色
+      developers:
+        api_keys: API 密钥
+        webhook_endpoints: Webhook 端点
+        allowed_origins: 允许的来源
+        redirects: 重定向
+      audit_log: 审计日志
+      exports: 导出
+      imports: 导入
+      tax_rates: 税率
+      tax_categories: 税种
+      shipping_methods: 配送方式
+      shipping_categories: 配送类别
+      return_authorization_reasons: 退货授权原因
+      refund_reasons: 退款原因
+      reimbursement_types: 退款类型
+      stock_items: 库存项
+      stock_movements: 库存变动
+      stock_transfers: 库存调拨
+      ai:
+        overview: 概览
+      emails:
+        settings: 邮件设置
+        notification_scenarios: 通知场景
+        templates: 邮件模板
+        outbox: 发件箱
+        inbox: 收件箱
+      getting_started: 快速上手
+      storefront: 店铺前台
+      edit_profile: 编辑个人资料
+      back_in_stock_subscriptions: 到货通知订阅

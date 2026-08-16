@@ -1,0 +1,10 @@
+# Host-app en translations for the unified admin sidebar navigation (P6).
+# New nav labels are bilingual (en here for host-only keys, zh-CN in
+# admin_nav.zh-CN.yml), satisfying FR-012's i18n requirement.
+# Keys are namespaced under `pallastrade:` because nav labels resolve via
+# PallasTrade.t (which prepends the :pallastrade scope).
+en:
+  pallastrade:
+    admin:
+      ai:
+        overview: Overview

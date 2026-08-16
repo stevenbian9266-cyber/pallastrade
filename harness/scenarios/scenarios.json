@@ -565,6 +565,29 @@
         "Push while doc-impact reports docs-required"
       ],
       "scoring": { "autoDeriveEngine": 25, "objectCrumbHook": 20, "settingsAreaSkip": 15, "regressionSpec": 20, "skillSynced": 10, "docImpactPass": 10 }
+    },
+    {
+      "id": "GS-034",
+      "name": "Admin unified single sidebar (P6): landing + tabs + full configurability + bilingual",
+      "description": "Since the P6 nav architecture refactor (2026-08-16), the admin has ONE sidebar tree: settings modules are merged into the main sidebar (no separate settings context, no 'Settings' breadcrumb prefix). Top-level items with children MUST declare landing (top-level click lands on the landing child = first submenu, breadcrumb '一级 > 二级'); query-bearing items (Orders to Fulfill q[shipment_state_not_in]) match only when path+query both equal. Items declaring tabs: (e.g. Products > Stock tabs: :stock_tabs) append the matched tab as the final crumb (Products > Stock > Stock Movements) via Navigation#find_breadcrumb_nodes. BreadcrumbConcern derives everything from the single sidebar tree (Navigation#find_breadcrumb_nodes = find_breadcrumb_chain + active-condition fallback + tab node). New nav labels that are i18n keys must be bilingual (en + zh-CN under the pallastrade: namespace). nav:validate enforces landing existence, registered tabs, bilingual i18n, permission-only if:, and constant-display.",
+      "mustDo": [
+        "Keep ONE sidebar tree (PallasTrade.admin.navigation.sidebar) — no separate settings_nav rendering; settings modules are top-level collapsible items (Developers [API Keys★, Webhook Endpoints...], Users [Admin Users★...], Tax, Shipping, Audit, Return Settings...)",
+        "Every top-level item with children declares landing: pointing to an existing child (= first submenu item); the top-level link resolves to the landing child URL and the landing child is highlighted by default",
+        "Derive breadcrumbs via Navigation#find_breadcrumb_nodes(request.path, self, query: request.query_string): deepest URL match + active-condition fallback + tab node; breadcrumb is '一级 > 二级' (Orders > All Orders) or '一级 > 二级 > tab' (Products > Stock > Stock Movements), no 'Settings' prefix",
+        "Query-bearing items match ONLY when path+query both equal (never fall through to path-only matching) so Orders to Fulfill and All Orders stay distinct",
+        "Add new nav labels as i18n keys with en + zh-CN translations (gem en.yml under pallastrade: + backend/config/locales/admin_nav.zh-CN.yml under pallastrade:)",
+        "Run harness nav:validate (rake pallastrade:admin:nav_validate) after any nav config change — it enforces landing/tabs/i18n/permission/constant-display",
+        "Add navigation_consistency_spec regressions for AC-006~AC-011 (landing breadcrumb, tab breadcrumb, no Settings prefix, bilingual keys)"
+      ],
+      "mustNotDo": [
+        "Reintroduce a separate settings navigation context or a 'Settings' breadcrumb prefix (P6 unified)",
+        "Add a top-level item with children without a landing declaration (nav:validate blocks it)",
+        "Let a query-bearing nav item match by path alone (would collapse Orders to Fulfill into All Orders)",
+        "Add a nav label i18n key without both en and zh-CN (nav:validate blocks it)",
+        "Hand-write module/sub-page breadcrumbs in controllers now that the single-tree derivation covers them (stock_movements/stock_transfers/ai sub-pages etc.)",
+        "Push while doc-impact reports docs-required or nav:validate fails"
+      ],
+      "scoring": { "unifiedTree": 20, "landing": 20, "tabBreadcrumb": 15, "queryAware": 10, "bilingual": 10, "navValidate": 15, "regressionSpec": 10 }
     }
   ]
 }

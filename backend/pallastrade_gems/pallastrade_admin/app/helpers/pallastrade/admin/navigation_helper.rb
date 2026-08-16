@@ -305,12 +305,10 @@ module PallasTrade
         end
       end
 
+      # PALLAS-CUSTOM: P6 起主区/设置区统一（不再区分 settings_area），
+      # 图标一律取导航项图标或控制器声明的 @breadcrumb_icon。
       def render_breadcrumb_icon
-        if settings_area?
-          icon('settings')
-        elsif @breadcrumb_icon
-          icon(@breadcrumb_icon)
-        end
+        icon(@breadcrumb_icon) if @breadcrumb_icon
       end
 
       # Renders the navigation for the given context
@@ -357,6 +355,14 @@ module PallasTrade
         is_active = item.active?(request.path, self)
         has_children = item.children.present?
         tooltip_text = item.tooltip
+
+        # PALLAS-CUSTOM: 顶级落地（P6 导航架构重构）
+        # 带子菜单的一级项点击时落到 landing 子项（缺省 = 第一个可见子项），
+        # 与 Email 菜单行为一致（Orders → All Orders、Developers → API Keys）。
+        if has_children
+          landing_item = item.landing_item(self)
+          item_url = landing_item.resolve_url(self) if landing_item&.resolve_url(self)
+        end
 
         # Build data attributes
         data_attrs = item.data_attributes.dup

@@ -38,8 +38,8 @@ module PallasTrade
       end
 
       def add_breadcrumbs
-        add_breadcrumb PallasTrade.t(:stock_transfers), PallasTrade.admin_stock_transfers_path
-
+        # Products → Stock → Stock Transfers 由导航自动推导（P6，stock_tabs 节点）；
+        # 详情页追加调拨单号
         if @stock_transfer.present? && @stock_transfer.persisted?
           add_breadcrumb @stock_transfer.number, PallasTrade.admin_stock_transfer_path(@stock_transfer)
         end

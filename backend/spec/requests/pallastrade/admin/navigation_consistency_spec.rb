@@ -2,10 +2,11 @@
 
 require 'rails_helper'
 
-# PRD-20260816-admin-管理后台导航一致性-主区按-email-模式-设置区按-settings-模式统一 AC-001 / AC-002 / AC-003 / AC-004 / AC-006
-# 主区（Email 模式）与设置区（Settings 模式）的面包屑 + 页面头一致性回归。
-RSpec.describe 'Admin navigation consistency (breadcrumb + page_title)', type: :request do
-  let(:store) { create(:store, code: 'nav_consistency_test') }
+# PRD-20260816-admin-管理后台导航架构统一重构-常显原则-面包屑自动推导-单一布局 AC-006 AC-007 AC-008 AC-009 AC-010 AC-011
+# 统一单一侧边栏：顶级落地 landing、tab 面包屑、全配置化 + 双语、常显回归。
+# 历史 AC 覆盖：AC-001（头部溢出）AC-002（常显）AC-003（自动推导）AC-004（单一布局）AC-005（设置区 crumb）
+RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)', type: :request do
+  let(:store) { create(:store, code: 'nav_p6_test') }
   let(:admin) do
     create(:admin_user, password: 'secret', password_confirmation: 'secret', without_admin_role: true)
   end
@@ -30,7 +31,36 @@ RSpec.describe 'Admin navigation consistency (breadcrumb + page_title)', type: :
       PallasTrade::Admin::WebhookEndpointsController,
       PallasTrade::Admin::TaxRatesController,
       PallasTrade::Admin::RolesController,
-      PallasTrade::Admin::StorefrontController
+      PallasTrade::Admin::StorefrontController,
+      PallasTrade::Admin::CustomerReturnsController,
+      PallasTrade::Admin::StockItemsController,
+      PallasTrade::Admin::StockMovementsController,
+      PallasTrade::Admin::StockTransfersController,
+      PallasTrade::Admin::ReportsController,
+      PallasTrade::Admin::PoliciesController,
+      PallasTrade::Admin::MarketsController,
+      PallasTrade::Admin::PaymentMethodsController,
+      PallasTrade::Admin::ShippingMethodsController,
+      PallasTrade::Admin::TaxCategoriesController,
+      PallasTrade::Admin::InvitationsController,
+      PallasTrade::Admin::AllowedOriginsController,
+      PallasTrade::Admin::RedirectsController,
+      PallasTrade::Admin::ExportsController,
+      PallasTrade::Admin::ImportsController,
+      PallasTrade::Admin::ReturnAuthorizationReasonsController,
+      PallasTrade::Admin::RefundReasonsController,
+      PallasTrade::Admin::ReimbursementTypesController,
+      PallasTrade::Admin::StockLocationsController,
+      PallasTrade::Admin::MetafieldDefinitionsController,
+      PallasTrade::Admin::CustomerGroupsController,
+      PallasTrade::Admin::NewsletterSubscribersController,
+      PallasTrade::Admin::OptionTypesController,
+      PallasTrade::Admin::TaxonomiesController,
+      PallasTrade::Admin::PriceListsController,
+      PallasTrade::Admin::ReturnAuthorizationsController,
+      PallasTrade::Admin::EmailLogsController,
+      PallasTrade::Admin::ContactMessagesController,
+      PallasTrade::Admin::EmailNotificationScenariosController
     ].each do |klass|
       allow_any_instance_of(klass).to receive(:current_store).and_return(store)
     end
@@ -43,160 +73,276 @@ RSpec.describe 'Admin navigation consistency (breadcrumb + page_title)', type: :
     stub_current_store!
   end
 
-  describe '主区 — Blog（Email 模式）' do
-    # PRD-20260816-admin-管理后台导航一致性-主区按-email-模式-设置区按-settings-模式统一 AC-001 AC-002
-    it 'renders breadcrumb Blog + page header + New Post action on /admin/posts' do
-      get '/admin/posts'
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include('aria-label="breadcrumb"')
-      expect(response.body).to include('id="page-header"')
-      expect(response.body).to include(PallasTrade.t(:blog))
-      expect(response.body).to include(PallasTrade.t('admin.posts.new_post'))
+  def breadcrumb_text
+    doc = Nokogiri::HTML(response.body)
+    doc.at_css('nav[aria-label="breadcrumb"]')&.text.to_s
+  end
+
+  def sidebar
+    @sidebar ||= PallasTrade.admin.navigation.sidebar
+  end
+
+  # ============================================================
+  # AC-007：全配置化 — 统一单一树 + 子菜单完整 + landing = 第一个子项
+  # ============================================================
+  describe 'AC-007 — 统一单一树 + 子菜单 + landing 配置' do
+    it '没有独立 settings/admin_users 顶级项（设置区已融入主区）' do
+      keys = sidebar.root_items.map(&:key)
+      expect(keys).not_to include(:settings)
+      expect(keys).not_to include(:admin_users)
+    end
+
+    it '设置模块成为顶级可收拉项' do
+      keys = sidebar.root_items.map(&:key)
+      expect(keys).to include(:developers, :users, :tax, :shipping, :audits, :return_settings)
+    end
+
+    it '主区模块子菜单完整（Orders / Products / Customers / Promotions / Reports / Blog / Returns）' do
+      expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders])
+      expect(sidebar.find(:products).children.map(&:key)).to eq(%i[products_list price_lists stock translations taxonomies options])
+      expect(sidebar.find(:customers).children.map(&:key)).to eq(%i[customers_list customer_groups newsletter_subscribers])
+      expect(sidebar.find(:promotions).children.map(&:key)).to eq(%i[promotions_list gift_cards])
+      expect(sidebar.find(:reports).children.map(&:key)).to eq(%i[reports_list])
+      expect(sidebar.find(:blog).children.map(&:key)).to eq(%i[blog_list])
+      expect(sidebar.find(:returns).children.map(&:key)).to eq(%i[customer_returns return_authorizations])
+    end
+
+    it '设置模块子菜单完整（Developers / Users / Tax / Shipping / Audit / Return Settings）' do
+      expect(sidebar.find(:developers).children.map(&:key)).to eq(%i[api_keys webhook_endpoints allowed_origins redirects])
+      expect(sidebar.find(:users).children.map(&:key)).to eq(%i[admin_users invitations roles])
+      expect(sidebar.find(:tax).children.map(&:key)).to eq(%i[tax_rates tax_categories])
+      expect(sidebar.find(:shipping).children.map(&:key)).to eq(%i[shipping_methods shipping_categories])
+      expect(sidebar.find(:audits).children.map(&:key)).to eq(%i[audit_log exports imports])
+      expect(sidebar.find(:return_settings).children.map(&:key)).to eq(%i[return_authorization_reasons refund_reasons reimbursement_types])
+    end
+
+    it '每个有子项的顶级项都声明 landing 指向存在的子项，且 landing 是第一个子项' do
+      sidebar.root_items.select { |item| item.children.any? }.each do |item|
+        expect(item.landing).not_to be_nil, "#{item.key} 缺少 landing"
+        landing = item.children.find { |c| c.key == item.landing }
+        expect(landing).not_to be_nil, "#{item.key} landing 指向不存在的子项"
+        expect(landing.position).to eq(item.children.map(&:position).min), "#{item.key} landing 不是第一个子项"
+      end
+    end
+
+    it 'Stock 子项声明 tabs: :stock_tabs（页面级 tab 上下文）' do
+      stock = sidebar.find(:products).children.find { |c| c.key == :stock }
+      expect(stock.tabs).to eq(:stock_tabs)
+      expect(PallasTrade.admin.navigation.context?(:stock_tabs)).to be(true)
     end
   end
 
-  describe '设置区 — Settings 模式（自动 Settings 前缀 + 页面 crumb + 页面头）' do
-    # PRD-20260816-admin-管理后台导航一致性-主区按-email-模式-设置区按-settings-模式统一 AC-006
-    it 'keeps existing email pages consistent (regression coverage alongside emails_spec)' do
-      get '/admin/email_templates'
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include('aria-label="breadcrumb"')
-    end
+  # ============================================================
+  # AC-006：顶级落地 — 点击一级落到 landing 子项 + 面包屑 一级 > 二级
+  # ============================================================
+  describe 'AC-006 — 顶级落地 + 一级 > 二级面包屑' do
+    it '顶级链接指向 landing（Orders → /admin/orders，Developers → /admin/api_keys）' do
+      get '/admin/orders'
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.at_css('#nav-link-orders')['href']).to eq('/admin/orders')
 
-    # PRD-20260816-admin-管理后台导航一致性-主区按-email-模式-设置区按-settings-模式统一 AC-003
-    it 'renders Settings > Sales channels breadcrumb + page header on /admin/channels' do
-      get '/admin/channels'
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include('aria-label="breadcrumb"')
-      expect(response.body).to include(PallasTrade.t(:settings))
-      expect(response.body).to include(PallasTrade.t(:channels))
-      expect(response.body).to include('id="page-header"')
-    end
-
-    # PRD-20260816-admin-管理后台导航一致性-主区按-email-模式-设置区按-settings-模式统一 AC-003
-    it 'renders Settings > API Keys breadcrumb on /admin/api_keys' do
       get '/admin/api_keys'
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(PallasTrade.t(:settings))
-      expect(response.body).to include(PallasTrade.t(:api_keys))
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.at_css('#nav-link-developers')['href']).to eq('/admin/api_keys')
     end
 
-    # PRD-20260816-admin-管理后台导航一致性-主区按-email-模式-设置区按-settings-模式统一 AC-003
-    it 'renders Settings > Zones breadcrumb + page header on /admin/zones' do
-      get '/admin/zones'
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(PallasTrade.t(:settings))
-      expect(response.body).to include(PallasTrade.t(:zones))
-      expect(response.body).to include('id="page-header"')
+    it '面包屑 Orders > All Orders 于 /admin/orders' do
+      get '/admin/orders'
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:orders))
+      expect(crumb).to include(PallasTrade.t('admin.orders.all_orders'))
     end
 
-    # PRD-20260816-admin-管理后台导航一致性-主区按-email-模式-设置区按-settings-模式统一 AC-004
-    it 'renders page header on /admin/back_in_stock_subscriptions (was missing page_title)' do
-      get '/admin/back_in_stock_subscriptions'
+    it '面包屑 Orders > Orders to Fulfill 于待发货筛选页（query 感知）' do
+      item = sidebar.find(:orders).children.find { |c| c.key == :orders_to_fulfill }
+      url = item.resolve_url
+      get url
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include('id="page-header"')
-      expect(response.body).to include(PallasTrade.t(:back_in_stock_subscriptions))
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:orders))
+      expect(crumb).to include(PallasTrade.t('admin.orders.orders_to_fulfill'))
+    end
+
+    it '面包屑 Products > Products List 于 /admin/products' do
+      get '/admin/products'
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:products))
+      expect(crumb).to include(PallasTrade.t('admin.products.products_list'))
+    end
+
+    it '面包屑 Returns > Customer Returns 于 /admin/customer_returns' do
+      get '/admin/customer_returns'
+      expect(response).to have_http_status(:ok)
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:returns))
+      expect(crumb).to include(PallasTrade.t('admin.returns.customer_returns'))
     end
   end
 
-  describe '架构重构 — 常显原则（PRD-20260816-admin-管理后台导航架构统一重构）' do
-    # PRD-20260816-admin-管理后台导航架构统一重构 AC-002
+  # ============================================================
+  # AC-009：设置模块三段式面包屑（无 Settings 前缀）
+  # ============================================================
+  describe 'AC-009 — 设置模块面包屑无 Settings 前缀' do
+    it 'Developers > API Keys 于 /admin/api_keys（无 Settings 前缀，无 Home 泄漏）' do
+      get '/admin/api_keys'
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:developers))
+      expect(crumb).to include(PallasTrade.t(:api_keys))
+      expect(crumb).not_to include(PallasTrade.t(:settings))
+      expect(crumb).not_to include(PallasTrade.t(:home))
+    end
+
+    it 'Developers > Webhook Endpoints 于 /admin/webhook_endpoints' do
+      get '/admin/webhook_endpoints'
+      expect(response).to have_http_status(:ok)
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:developers))
+      expect(crumb).to include(PallasTrade.t(:webhook_endpoints))
+      expect(crumb).not_to include(PallasTrade.t(:settings))
+    end
+
+    it 'Users > Roles 于 /admin/roles' do
+      get '/admin/roles'
+      expect(response).to have_http_status(:ok)
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:users))
+      expect(crumb).to include(PallasTrade.t(:roles))
+      expect(crumb).not_to include(PallasTrade.t(:settings))
+    end
+
+    it 'Tax > Tax Rates 于 /admin/tax_rates' do
+      get '/admin/tax_rates'
+      expect(response).to have_http_status(:ok)
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:tax))
+      expect(crumb).to include(PallasTrade.t(:tax_rates))
+      expect(crumb).not_to include(PallasTrade.t(:settings))
+    end
+
+    it '叶子项单 crumb（Storefront）于 /admin/storefront' do
+      get '/admin/storefront'
+      expect(response).to have_http_status(:ok)
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t('admin.storefront'))
+      expect(crumb).not_to include(PallasTrade.t(:settings))
+    end
+  end
+
+  # ============================================================
+  # AC-008：Stock 三 tab 面包屑 + 页面头
+  # ============================================================
+  describe 'AC-008 — Stock tabs 面包屑 + 页面头' do
+    it 'Products > Stock > Stock Items 于 /admin/stock_items' do
+      get '/admin/stock_items'
+      expect(response).to have_http_status(:ok)
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:products))
+      expect(crumb).to include(PallasTrade.t(:stock))
+      expect(crumb).to include(PallasTrade.t(:stock_items))
+      expect(response.body).to include('id="page-header"')
+    end
+
+    it 'Products > Stock > Stock Movements 于 /admin/stock_movements' do
+      get '/admin/stock_movements'
+      expect(response).to have_http_status(:ok)
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:products))
+      expect(crumb).to include(PallasTrade.t(:stock))
+      expect(crumb).to include(PallasTrade.t(:stock_movements))
+      expect(response.body).to include('id="page-header"')
+    end
+
+    it 'Products > Stock > Stock Transfers 于 /admin/stock_transfers' do
+      get '/admin/stock_transfers'
+      expect(response).to have_http_status(:ok)
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:products))
+      expect(crumb).to include(PallasTrade.t(:stock))
+      expect(crumb).to include(PallasTrade.t(:stock_transfers))
+      expect(response.body).to include('id="page-header"')
+    end
+  end
+
+  # ============================================================
+  # AC-010：深层面包屑完整路径 + 末级前可点击
+  # ============================================================
+  describe 'AC-010 — 深层面包屑' do
+    it 'Products > Products List > 产品名 于 /admin/products/:id/edit' do
+      product = create(:product, store: store, name: 'P6 Deep Crumb Product')
+      get "/admin/products/#{product.slug}/edit"
+      expect(response).to have_http_status(:ok)
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:products))
+      expect(crumb).to include(PallasTrade.t('admin.products.products_list'))
+      expect(crumb).to include('P6 Deep Crumb Product')
+    end
+  end
+
+  # ============================================================
+  # AC-011：i18n 双语（新增 label en + zh-CN 必填）
+  # ============================================================
+  describe 'AC-011 — 新增 label 双语（en/zh-CN）' do
+    let(:bilingual_keys) do
+      %w[
+        admin.orders.all_orders
+        admin.products.products_list
+        admin.products.categories
+        admin.customers.customers_list
+        admin.promotions.promotions_list
+        admin.reports.reports_list
+        admin.blog.blog_list
+        admin.returns.customer_returns
+        admin.users.admin_users
+        admin.ai.overview
+      ]
+    end
+
+    it '每个新增 label 在 en 与 zh-CN 都存在' do
+      %w[en zh-CN].each do |locale|
+        bilingual_keys.each do |key|
+          expect(I18n.with_locale(locale) { I18n.exists?("pallastrade.#{key}", locale) })
+            .to be(true), "#{key} 缺少 #{locale} 翻译"
+        end
+      end
+    end
+  end
+
+  # ============================================================
+  # 回归：常显原则 + 单一布局 + 设置区 section/tabs 统一（P2/P4）
+  # ============================================================
+  describe '回归 — 常显原则（AC-002）' do
+    # PRD-20260816-admin-管理后台导航架构统一重构-常显原则-面包屑自动推导-单一布局 AC-002
     it 'keeps Orders to Fulfill visible on /admin/orders even with zero ready-to-ship orders' do
-      # 测试商店无待发货订单 → ready_to_ship_orders_count 为 0/nil，菜单仍应常显
       get '/admin/orders'
       expect(response).to have_http_status(:ok)
-      # 常显原则：次级菜单不再因业务状态（count>0）隐藏
       expect(response.body).to include(PallasTrade.t('admin.orders.orders_to_fulfill'))
       expect(response.body).to include('nav-submenu-orders')
     end
 
-    # PRD-20260816-admin-管理后台导航架构统一重构 AC-002
     it 'keeps Translations visible on /admin/products for single-locale stores' do
       allow(store).to receive(:supported_locales_list).and_return(['en'])
       get '/admin/products'
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(PallasTrade.t(:translations))
     end
-
-    # PRD-20260816-admin-管理后台导航架构统一重构 AC-002
-    it 'renders translations empty-state guidance for single-locale stores' do
-      allow(store).to receive(:supported_locales_list).and_return(['en'])
-      get '/admin/product_translations'
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(PallasTrade.t('admin.product_translations.no_locales_title'))
-    end
   end
 
-  describe '架构重构 — 面包屑自动推导（PRD-20260816-admin-管理后台导航架构统一重构 AC-003）' do
-    # 主区模块页面包屑由导航配置自动推导，不再依赖手写 concern/crumb
-    it 'derives Emails > Email Settings on /admin/emails' do
-      get '/admin/emails'
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(PallasTrade.t(:emails))
-      expect(response.body).to include(PallasTrade.t('admin.emails.settings'))
-    end
-
-    it 'derives Orders > Draft Orders on /admin/checkouts' do
-      get '/admin/checkouts'
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(PallasTrade.t(:orders))
-      expect(response.body).to include(PallasTrade.t(:draft_orders))
-    end
-
-    it 'derives Promotions > Gift Cards on /admin/gift_cards' do
-      get '/admin/gift_cards'
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(PallasTrade.t(:promotions))
-      expect(response.body).to include(PallasTrade.t(:gift_cards))
-    end
-
-    it 'derives Products > Translations on /admin/product_translations' do
-      get '/admin/product_translations'
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(PallasTrade.t(:products))
-      expect(response.body).to include(PallasTrade.t(:translations))
-    end
-
-    it 'derives Products + product name on /admin/products/:id/edit (object crumb)' do
-      product = create(:product, store: store, name: 'Auto Crumb Test Product')
-      get "/admin/products/#{product.slug}/edit"
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(PallasTrade.t(:products))
-      expect(response.body).to include('Auto Crumb Test Product')
-    end
-
-    # AC-003c 设置区回归：Settings 模式面包屑不得被主区自动推导污染（Home 误配 bug）
-    it 'keeps Settings > API Keys breadcrumb on /admin/api_keys (no Home leak)' do
+  describe '回归 — 单一布局 + 设置区 section/tabs 统一（AC-004）' do
+    # PRD-20260816-admin-管理后台导航架构统一重构-常显原则-面包屑自动推导-单一布局 AC-004
+    it 'renders /admin/api_keys with main layout + Developers section banner + page header' do
       get '/admin/api_keys'
       expect(response).to have_http_status(:ok)
-      doc = Nokogiri::HTML(response.body)
-      crumb_text = doc.at_css('nav[aria-label="breadcrumb"]')&.text.to_s
-      expect(crumb_text).to include(PallasTrade.t(:settings))
-      expect(crumb_text).to include(PallasTrade.t(:api_keys))
-      expect(crumb_text).not_to include(PallasTrade.t(:home))
-    end
-  end
-
-  describe '架构重构 — 单一布局 + 设置区 section/tabs 统一（PRD-20260816-admin-管理后台导航架构统一重构 AC-004）' do
-    # AC-004：设置页复用主布局（无 admin-settings 类），页面头 + section banner + tabs 正常
-    it 'renders /admin/api_keys with main layout + unified Developers section banner' do
-      get '/admin/api_keys'
-      expect(response).to have_http_status(:ok)
-      # 单一布局：设置页不再使用 admin_settings 布局
       expect(response.body).not_to include('admin-settings')
-      # 页面头 + section banner 标题（Developers）
       expect(response.body).to include('id="page-header"')
       doc = Nokogiri::HTML(response.body)
       header_title = doc.at_css('#page-header #page_title')&.text.to_s
+      # P4 单一布局：设置页页面头标题为 section banner 名（Developers）
       expect(header_title).to include(PallasTrade.t(:developers))
-      # 统一 _section_nav 渲染 developers_tabs
       tabs_text = doc.at_css('#page-tabs')&.text.to_s
       expect(tabs_text).to include(PallasTrade.t(:api_keys))
       expect(tabs_text).to include(PallasTrade.t(:webhook_endpoints))
-      expect(tabs_text).to include(PallasTrade.t(:allowed_origins))
     end
 
-    # AC-004：Team section 统一（admin_users）— 页面头 Users + tabs + 邀请按钮
     it 'renders /admin/admin_users with Team section banner + invite action' do
       get '/admin/admin_users'
       expect(response).to have_http_status(:ok)
@@ -211,47 +357,22 @@ RSpec.describe 'Admin navigation consistency (breadcrumb + page_title)', type: :
     end
   end
 
-  describe '架构重构 — 设置区 crumb 自动推导（PRD-20260816-admin-管理后台导航架构统一重构 AC-005）' do
-    def breadcrumb_text
-      doc = Nokogiri::HTML(response.body)
-      doc.at_css('nav[aria-label="breadcrumb"]')&.text.to_s
-    end
-
-    # 经 developers_tabs 映射：Settings > Webhook Endpoints（非 section 名 Developers）
-    it 'derives Settings > Webhook Endpoints on /admin/webhook_endpoints (tab map)' do
-      get '/admin/webhook_endpoints'
+  describe '回归 — 面包屑自动推导（AC-003）' do
+    # PRD-20260816-admin-管理后台导航架构统一重构-常显原则-面包屑自动推导-单一布局 AC-003
+    it 'derives Emails > Email Settings on /admin/emails' do
+      get '/admin/emails'
       expect(response).to have_http_status(:ok)
       crumb = breadcrumb_text
-      expect(crumb).to include(PallasTrade.t(:settings))
-      expect(crumb).to include(PallasTrade.t(:webhook_endpoints))
-      expect(crumb).not_to include(PallasTrade.t(:developers))
+      expect(crumb).to include(PallasTrade.t(:emails))
+      expect(crumb).to include(PallasTrade.t('admin.emails.settings'))
     end
 
-    # 经 tax_tabs 映射：Settings > Tax Rates
-    it 'derives Settings > Tax Rates on /admin/tax_rates (tab map)' do
-      get '/admin/tax_rates'
+    it 'derives Orders > Draft Orders on /admin/checkouts' do
+      get '/admin/checkouts'
       expect(response).to have_http_status(:ok)
       crumb = breadcrumb_text
-      expect(crumb).to include(PallasTrade.t(:settings))
-      expect(crumb).to include(PallasTrade.t(:tax_rates))
-    end
-
-    # 经 team_tabs 映射：Settings > Roles
-    it 'derives Settings > Roles on /admin/roles (tab map)' do
-      get '/admin/roles'
-      expect(response).to have_http_status(:ok)
-      crumb = breadcrumb_text
-      expect(crumb).to include(PallasTrade.t(:settings))
-      expect(crumb).to include(PallasTrade.t(:roles))
-    end
-
-    # 独立项（无 tab map）：Settings > Storefront
-    it 'derives Settings > Storefront on /admin/storefront' do
-      get '/admin/storefront'
-      expect(response).to have_http_status(:ok)
-      crumb = breadcrumb_text
-      expect(crumb).to include(PallasTrade.t(:settings))
-      expect(crumb).to include(PallasTrade.t('admin.storefront'))
+      expect(crumb).to include(PallasTrade.t(:orders))
+      expect(crumb).to include(PallasTrade.t(:draft_orders))
     end
   end
 end

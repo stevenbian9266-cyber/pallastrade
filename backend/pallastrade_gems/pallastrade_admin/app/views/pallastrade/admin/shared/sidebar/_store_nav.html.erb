@@ -1,5 +1,2 @@
-<% if settings_area? %>
-  <%= render_navigation(:settings) %>
-<% else %>
-  <%= render_navigation(:sidebar) %>
-<% end %>
+<%# PALLAS-CUSTOM: P6 起设置区融入主区，统一渲染单一 sidebar 导航树 %>
+<%= render_navigation(:sidebar) %>

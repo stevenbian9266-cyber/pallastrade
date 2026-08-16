@@ -26,17 +26,26 @@ Rails.application.config.after_initialize do
           position: 10,
           active: -> { controller_name == 'dashboard' && action_name == 'show' }
 
-  # Orders with submenu
+  # Orders with submenu — P6：顶级落地 = All Orders（landing），
+  # 点击 Orders 落到全部订单页，子菜单第一个次级菜单默认高亮。
   sidebar_nav.add :orders,
           label: :orders,
           url: :admin_orders_path,
           icon: 'inbox',
           position: 20,
+          landing: :all_orders,
           if: -> { can?(:manage, PallasTrade::Order) },
           badge: -> {
             # Evaluated in view context with access to helper methods
             ready_to_ship_orders_count if ready_to_ship_orders_count&.positive?
           } do |orders|
+    # All Orders（次级菜单第一项，顶级落地）
+    orders.add :all_orders,
+              label: 'admin.orders.all_orders',
+              url: :admin_orders_path,
+              position: 5,
+              active: -> { controller_name == 'orders' && params.dig(:q, :shipment_state_not_in).blank? }
+
     # Orders to Fulfill submenu
     orders.add :orders_to_fulfill,
               label: 'admin.orders.orders_to_fulfill',
@@ -70,13 +79,20 @@ Rails.application.config.after_initialize do
               if: -> { can?(:manage, :checkouts) }
   end
 
-  # Returns with submenu
+  # Returns with submenu — P6：顶级落地 = Customer Returns
   sidebar_nav.add :returns,
           label: :returns,
           url: :admin_customer_returns_path,
           icon: 'receipt-refund',
           position: 25,
+          landing: :customer_returns,
           if: -> { can?(:manage, PallasTrade::CustomerReturn) || can?(:manage, PallasTrade::ReturnAuthorization) } do |returns|
+    # Customer Returns（次级菜单第一项，顶级落地）
+    returns.add :customer_returns,
+                label: 'admin.returns.customer_returns',
+                url: :admin_customer_returns_path,
+                position: 5,
+                active: -> { controller_name == 'customer_returns' }
     # Return Authorizations
     returns.add :return_authorizations,
                 label: :return_authorizations,
@@ -85,13 +101,21 @@ Rails.application.config.after_initialize do
                 if: -> { can?(:manage, PallasTrade::ReturnAuthorization) }
   end
 
-  # Products with submenu
+  # Products with submenu — P6：顶级落地 = Products List
   sidebar_nav.add :products,
           label: :products,
           url: :admin_products_path,
           icon: 'package',
           position: 30,
+          landing: :products_list,
           if: -> { can?(:manage, PallasTrade::Product) } do |products|
+
+    # Products List（次级菜单第一项，顶级落地）
+    products.add :products_list,
+                label: 'admin.products.products_list',
+                url: :admin_products_path,
+                position: 5,
+                active: -> { controller_name == 'products' && action_name == 'index' }
 
     # Price Lists
     products.add :price_lists,
@@ -100,11 +124,12 @@ Rails.application.config.after_initialize do
                 position: 10,
                 active: -> { %w[price_lists price_rules].include?(controller_name) },
                 if: -> { can?(:manage, PallasTrade::PriceList) }
-    # Stock
+    # Stock（页面级 tabs：Stock Items / Stock Movements / Stock Transfers）
     products.add :stock,
                 label: :stock,
                 url: :admin_stock_items_path,
                 position: 20,
+                tabs: :stock_tabs,
                 active: -> { %w[stock_items stock_movements stock_transfers].include?(controller_name) },
                 if: -> { can?(:manage, PallasTrade::StockItem) || can?(:manage, PallasTrade::StockMovement) || can?(:manage, PallasTrade::StockTransfer) }
 
@@ -117,9 +142,9 @@ Rails.application.config.after_initialize do
                 # 常显原则：单语言店铺也显示，页面内做空态引导
                 if: -> { can?(:manage, PallasTrade::Product) }
 
-    # Taxonomies
+    # Taxonomies / Categories（P6 统一命名 Categories）
     products.add :taxonomies,
-                label: :taxonomies,
+                label: 'admin.products.categories',
                 url: :admin_taxonomies_path,
                 position: 30,
                 active: -> { %w[taxonomies taxons].include?(controller_name) },
@@ -135,18 +160,25 @@ Rails.application.config.after_initialize do
 
   end
 
-  # Customers with submenu
+  # Customers with submenu — P6：顶级落地 = Customers List
   sidebar_nav.add :customers,
           label: :customers,
           url: :admin_users_path,
           icon: 'users',
           position: 40,
+          landing: :customers_list,
           if: -> { can?(:manage, PallasTrade.user_class) } do |customers|
+    # Customers List（次级菜单第一项，顶级落地）
+    customers.add :customers_list,
+                  label: 'admin.customers.customers_list',
+                  url: :admin_users_path,
+                  position: 5,
+                  active: -> { controller_name == 'users' && action_name == 'index' }
     # Customer Groups
     customers.add :customer_groups,
                   label: :customer_groups,
                   url: :admin_customer_groups_path,
-                  position: 5,
+                  position: 10,
                   active: -> { %w[customer_groups customer_group_users].include?(controller_name) },
                   if: -> { can?(:manage, PallasTrade::CustomerGroup) }
 
@@ -154,16 +186,23 @@ Rails.application.config.after_initialize do
     customers.add :newsletter_subscribers,
                   label: :newsletter_subscribers,
                   url: :admin_newsletter_subscribers_path,
-                  position: 10
+                  position: 20
   end
 
-  # Promotions with submenu
+  # Promotions with submenu — P6：顶级落地 = Promotions List
   sidebar_nav.add :promotions,
           label: :promotions,
           url: :admin_promotions_path,
           icon: 'discount',
           position: 50,
+          landing: :promotions_list,
           if: -> { can?(:manage, PallasTrade::Promotion) } do |promotions|
+    # Promotions List（次级菜单第一项，顶级落地）
+    promotions.add :promotions_list,
+                  label: 'admin.promotions.promotions_list',
+                  url: :admin_promotions_path,
+                  position: 5,
+                  active: -> { controller_name == 'promotions' && action_name == 'index' }
     # Gift Cards
     promotions.add :gift_cards,
                   label: :gift_cards,
@@ -172,22 +211,30 @@ Rails.application.config.after_initialize do
                   active: -> { %w[gift_cards gift_card_batches].include?(controller_name) }
   end
 
-  # Reports
+  # Reports — P6：顶级落地 = Reports List
   sidebar_nav.add :reports,
           label: :reports,
           url: :admin_reports_path,
           icon: 'chart-bar',
           position: 60,
-          if: -> { can?(:manage, PallasTrade::Report) }
+          landing: :reports_list,
+          if: -> { can?(:manage, PallasTrade::Report) } do |reports|
+    reports.add :reports_list,
+                label: 'admin.reports.reports_list',
+                url: :admin_reports_path,
+                position: 5,
+                active: -> { controller_name == 'reports' && action_name == 'index' }
+  end
 
-  # Emails — top-level menu with submenu (config / scenarios / templates / outbox / inbox)
+  # Emails — top-level menu with submenu（config / scenarios / templates / outbox / inbox）
   sidebar_nav.add :emails,
           label: :emails,
           url: :admin_emails_path,
           icon: 'send',
           position: 70,
+          landing: :email_settings,
           if: -> { can?(:manage, current_store) } do |emails|
-    # Email configuration (SMTP, from address, reply switch)
+    # Email configuration（SMTP, from address, reply switch）— 顶级落地
     emails.add :email_settings,
                label: 'admin.emails.settings',
                url: :admin_emails_path,
@@ -223,190 +270,287 @@ Rails.application.config.after_initialize do
                active: -> { %w[contact_messages].include?(controller_name) }
   end
 
-  # Blog — CMS content management (posts list / editor)
+  # Blog — CMS content management（posts list / editor）— P6：顶级落地 = Blog List
   sidebar_nav.add :blog,
           label: :blog,
           url: :admin_posts_path,
           icon: 'news',
           position: 75,
-          if: -> { can?(:manage, PallasTrade::Post) }
+          landing: :blog_list,
+          if: -> { can?(:manage, PallasTrade::Post) } do |blog|
+    blog.add :blog_list,
+             label: 'admin.blog.blog_list',
+             url: :admin_posts_path,
+             position: 5,
+             active: -> { controller_name == 'posts' && action_name == 'index' }
+  end
 
-  # Section divider before settings
+  # ===============================================
+  # P6：设置区融入主区 —— 以下均为统一 sidebar 树的一级可收拉菜单，
+  # 多页面模块带子菜单（landing = 第一个子项），单页面模块保持叶子项。
+  # ===============================================
+
+  # Section divider（仅视觉分隔）
   sidebar_nav.add :settings_section,
           section_label: 'Settings',
           position: 90
 
-  # Settings (bottom of sidebar)
-  sidebar_nav.add :settings,
-          label: :settings,
-          url: -> { PallasTrade.edit_admin_store_path(section: 'general-settings') },
-          icon: 'settings',
-          position: 100,
-          if: -> { can?(:manage, current_store) }
-
-  # Admin Users (bottom of sidebar)
-  sidebar_nav.add :admin_users,
-          label: :users,
-          url: :admin_admin_users_path,
-          icon: 'users',
-          position: 110,
-          if: -> { can?(:manage, PallasTrade.admin_user_class) }
-
-  # ===============================================
-  # Settings Navigation
-  # ===============================================
-  settings_nav = PallasTrade.admin.navigation.settings
-
-  # Store Details
-  settings_nav.add :general_settings,
+  # Store Details（单页，叶子项）
+  sidebar_nav.add :general_settings,
           label: :store_details,
           url: -> { PallasTrade.edit_admin_store_path(section: 'general-settings') },
           icon: 'building-store',
-          position: 10,
+          position: 95,
           active: -> { controller_name == 'stores' && params[:section] == 'general-settings' },
           if: -> { can?(:manage, current_store) }
 
-  # Admin Users
-  settings_nav.add :users,
+  # Users — P6 顶级落地 = Admin Users
+  sidebar_nav.add :users,
           label: :users,
           url: :admin_admin_users_path,
           icon: 'users',
-          position: 20,
-          active: -> { %w[admin_users invitations roles].include?(controller_name) },
-          if: -> { can?(:manage, PallasTrade.admin_user_class) }
+          position: 100,
+          landing: :admin_users,
+          if: -> { can?(:manage, PallasTrade.admin_user_class) } do |users|
+    users.add :admin_users,
+              label: 'admin.users.admin_users',
+              url: :admin_admin_users_path,
+              position: 5,
+              active: -> { controller_name == 'admin_users' }
+    users.add :invitations,
+              label: :invitations,
+              url: :admin_invitations_path,
+              position: 10,
+              active: -> { controller_name == 'invitations' },
+              if: -> { can?(:manage, PallasTrade::Invitation) }
+    users.add :roles,
+              label: :roles,
+              url: :admin_roles_path,
+              position: 20,
+              active: -> { controller_name == 'roles' },
+              if: -> { can?(:manage, PallasTrade::Role) }
+  end
 
-  # Policies
-  settings_nav.add :policies,
+  # Policies（单页，叶子项）
+  sidebar_nav.add :policies,
           label: :policies,
           url: :admin_policies_path,
           icon: 'list-check',
-          position: 40,
+          position: 105,
           active: -> { controller_name == 'policies' },
           if: -> { can?(:manage, PallasTrade::Policy) }
 
-  # Storefront setup
-  settings_nav.add :storefront,
+  # Storefront setup（单页，叶子项）
+  sidebar_nav.add :storefront,
           label: 'admin.storefront',
           url: :admin_storefront_path,
           icon: 'building-store',
-          position: 60,
+          position: 110,
           active: -> { controller_name == 'storefront' },
           if: -> { can?(:update, current_store) }
 
-  # Channels
-  settings_nav.add :channels,
+  # Channels（单页，叶子项）
+  sidebar_nav.add :channels,
           label: :channels,
           url: :admin_channels_path,
           icon: 'broadcast',
-          position: 65,
+          position: 115,
           active: -> { controller_name == 'channels' },
           if: -> { can?(:manage, PallasTrade::Channel) }
 
-  # Payment Methods
-  settings_nav.add :payment_methods,
+  # Payment Methods（单页，叶子项）
+  sidebar_nav.add :payment_methods,
           label: :payments,
           url: :admin_payment_methods_path,
           icon: 'credit-card',
-          position: 70,
+          position: 120,
           active: -> { controller_name == 'payment_methods' },
           if: -> { can?(:manage, PallasTrade::PaymentMethod) }
 
-  # Markets
-  settings_nav.add :markets,
+  # Markets（单页，叶子项）
+  sidebar_nav.add :markets,
           label: :markets,
           url: :admin_markets_path,
           icon: 'world',
-          position: 78,
+          position: 125,
           active: -> { controller_name == 'markets' },
           if: -> { can?(:manage, PallasTrade::Market) }
 
-  # Zones
-  settings_nav.add :zones,
+  # Zones（单页，叶子项）
+  sidebar_nav.add :zones,
           label: :zones,
           url: :admin_zones_path,
           icon: 'map-2',
-          position: 80,
+          position: 130,
           active: -> { %w[zones countries states].include?(controller_name) },
           if: -> { can?(:manage, PallasTrade::Zone) }
 
-  # Shipping Methods
-  settings_nav.add :shipping_methods,
+  # Shipping — P6 顶级落地 = Shipping Methods
+  sidebar_nav.add :shipping,
           label: :shipping,
           url: :admin_shipping_methods_path,
           icon: 'truck',
-          position: 90,
-          active: -> { %w[shipping_methods shipping_categories].include?(controller_name) },
-          if: -> { can?(:manage, PallasTrade::ShippingMethod) }
+          position: 135,
+          landing: :shipping_methods,
+          if: -> { can?(:manage, PallasTrade::ShippingMethod) } do |shipping|
+    shipping.add :shipping_methods,
+                 label: :shipping_methods,
+                 url: :admin_shipping_methods_path,
+                 position: 5,
+                 active: -> { controller_name == 'shipping_methods' && action_name == 'index' },
+                 if: -> { can?(:manage, PallasTrade::ShippingMethod) }
+    shipping.add :shipping_categories,
+                 label: :shipping_categories,
+                 url: :admin_shipping_categories_path,
+                 position: 10,
+                 active: -> { controller_name == 'shipping_categories' },
+                 if: -> { can?(:manage, PallasTrade::ShippingCategory) }
+  end
 
-  # Tax Settings
-  settings_nav.add :tax_rates,
+  # Tax — P6 顶级落地 = Tax Rates
+  sidebar_nav.add :tax,
           label: :tax,
           url: :admin_tax_rates_path,
           icon: 'receipt-tax',
-          position: 100,
-          active: -> { %w[tax_rates tax_categories stripe_tax_registrations].include?(controller_name) },
-          if: -> { can?(:manage, PallasTrade::TaxRate) }
+          position: 140,
+          landing: :tax_rates,
+          if: -> { can?(:manage, PallasTrade::TaxRate) } do |tax|
+    tax.add :tax_rates,
+            label: :tax_rates,
+            url: :admin_tax_rates_path,
+            position: 5,
+            active: -> { controller_name == 'tax_rates' && action_name == 'index' },
+            if: -> { can?(:manage, PallasTrade::TaxRate) }
+    tax.add :tax_categories,
+            label: :tax_categories,
+            url: :admin_tax_categories_path,
+            position: 10,
+            active: -> { controller_name == 'tax_categories' },
+            if: -> { can?(:manage, PallasTrade::TaxCategory) }
+  end
 
-  # Returns
-  settings_nav.add :return_settings,
+  # Return Settings — P6 顶级落地 = Return Authorization Reasons
+  sidebar_nav.add :return_settings,
           label: :returns,
           url: :admin_return_authorization_reasons_path,
           icon: 'receipt-refund',
-          position: 110,
-          active: -> { %w[refund_reasons reimbursement_types return_authorization_reasons].include?(controller_name) },
-          if: -> { can?(:manage, PallasTrade::ReturnAuthorizationReason) }
+          position: 145,
+          landing: :return_authorization_reasons,
+          if: -> { can?(:manage, PallasTrade::ReturnAuthorizationReason) } do |return_settings|
+    return_settings.add :return_authorization_reasons,
+                        label: :return_authorization_reasons,
+                        url: :admin_return_authorization_reasons_path,
+                        position: 5,
+                        active: -> { controller_name == 'return_authorization_reasons' },
+                        if: -> { can?(:manage, PallasTrade::ReturnAuthorizationReason) }
+    return_settings.add :refund_reasons,
+                        label: :refund_reasons,
+                        url: :admin_refund_reasons_path,
+                        position: 10,
+                        active: -> { controller_name == 'refund_reasons' },
+                        if: -> { can?(:manage, PallasTrade::RefundReason) }
+    return_settings.add :reimbursement_types,
+                        label: :reimbursement_types,
+                        url: :admin_reimbursement_types_path,
+                        position: 20,
+                        active: -> { controller_name == 'reimbursement_types' },
+                        if: -> { can?(:manage, PallasTrade::ReimbursementType) }
+  end
 
-  # Stock Locations
-  settings_nav.add :stock_locations,
+  # Stock Locations（单页，叶子项）
+  sidebar_nav.add :stock_locations,
           label: :stock_locations,
           url: :admin_stock_locations_path,
           icon: 'map-pin',
-          position: 120,
+          position: 150,
           active: -> { controller_name == 'stock_locations' },
           if: -> { can?(:manage, PallasTrade::StockLocation) }
 
-  # Metafield Definitions
-  settings_nav.add :metafield_definitions,
+  # Metafield Definitions（单页，叶子项）
+  sidebar_nav.add :metafield_definitions,
           label: :metafield_definitions,
           url: :admin_metafield_definitions_path,
           icon: 'list-details',
-          position: 130,
+          position: 155,
           active: -> { controller_name == 'metafield_definitions' },
           if: -> { can?(:manage, PallasTrade::MetafieldDefinition) }
 
-  # Audit Log
-  settings_nav.add :audits,
+  # Audit Log — P6 顶级落地 = Audit Log
+  sidebar_nav.add :audits,
           label: 'admin.audit_log',
           url: :admin_audits_path,
           icon: 'history',
-          position: 140,
-          active: -> { %w[audits exports imports].include?(controller_name) },
+          position: 160,
+          landing: :audit_log,
           if: -> {
             # Only show if audits feature exists
             can?(:manage, current_store) &&
             PallasTrade::Core::Engine.routes.url_helpers.respond_to?(:admin_audits_path)
-          }
+          } do |audits|
+    audits.add :audit_log,
+               label: 'admin.audit_log',
+               url: :admin_audits_path,
+               position: 5,
+               active: -> { controller_name == 'audits' }
+    audits.add :exports,
+               label: :exports,
+               url: :admin_exports_path,
+               position: 10,
+               active: -> { controller_name == 'exports' },
+               if: -> { can?(:manage, PallasTrade::Export) }
+    audits.add :imports,
+               label: :imports,
+               url: :admin_imports_path,
+               position: 20,
+               active: -> { controller_name == 'imports' },
+               if: -> { can?(:manage, PallasTrade::Import) }
+  end
 
-  # Developers
-  settings_nav.add :developers,
+  # Developers — P6 顶级落地 = API Keys
+  sidebar_nav.add :developers,
           label: :developers,
           url: :admin_api_keys_path,
           icon: 'terminal',
-          position: 150,
-          active: -> { %w[oauth_applications api_keys webhooks_subscribers webhook_endpoints webhook_deliveries allowed_origins].include?(controller_name) },
-          if: -> { can?(:manage, PallasTrade::ApiKey) }
+          position: 165,
+          landing: :api_keys,
+          if: -> { can?(:manage, PallasTrade::ApiKey) } do |developers|
+    developers.add :api_keys,
+                   label: :api_keys,
+                   url: :admin_api_keys_path,
+                   position: 5,
+                   active: -> { controller_name == 'api_keys' },
+                   if: -> { can?(:manage, PallasTrade::ApiKey) }
+    developers.add :webhook_endpoints,
+                   label: :webhook_endpoints,
+                   url: :admin_webhook_endpoints_path,
+                   position: 10,
+                   active: -> { %w[webhook_endpoints webhook_deliveries].include?(controller_name) },
+                   if: -> { can?(:manage, PallasTrade::WebhookEndpoint) }
+    developers.add :allowed_origins,
+                   label: :allowed_origins,
+                   url: :admin_allowed_origins_path,
+                   position: 20,
+                   active: -> { controller_name == 'allowed_origins' },
+                   if: -> { can?(:manage, PallasTrade::AllowedOrigin) }
+    developers.add :redirects,
+                   label: :redirects,
+                   url: :admin_redirects_path,
+                   position: 30,
+                   active: -> { controller_name == 'redirects' },
+                   if: -> { can?(:manage, PallasTrade::Redirect) }
+  end
 
-  # Back-in-stock subscriptions (customer notifications)
-  settings_nav.add :back_in_stock_subscriptions,
+  # Back-in-stock subscriptions（customer notifications，单页叶子项）
+  sidebar_nav.add :back_in_stock_subscriptions,
           label: 'admin.back_in_stock_subscriptions',
           url: :admin_back_in_stock_subscriptions_path,
           icon: 'bell',
-          position: 145,
+          position: 170,
           active: -> { controller_name == 'back_in_stock_subscriptions' },
           if: -> { can?(:manage, PallasTrade::BackInStockSubscription) }
 
-  # Edit Profile
-  settings_nav.add :edit_profile,
+  # Edit Profile（单页叶子项）
+  sidebar_nav.add :edit_profile,
           label: 'admin.edit_profile',
           url: :edit_admin_profile_path,
           icon: 'user-scan',

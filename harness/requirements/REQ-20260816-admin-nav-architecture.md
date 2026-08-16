@@ -54,6 +54,25 @@
   1. **`nav:validate` 校验器**：`pallastrade:admin:nav_validate` rake task（顶级 icon/URL、子项常显、业务 if: 关键字检测）+ harness 插件 `harness/plugins/nav-validate.mjs`（docker-rake，降级静态扫描 `scripts/nav-validate-static.mjs`）+ 接入 quick profile + lefthook pre-commit。
   2. **设置区 crumb 自动推导**：`Navigation::SETTINGS_TAB_MAP`（developers→developers_tabs 等 6 组）→ `derive_settings_breadcrumb` 按 active 命中 section + tab map 取页面级 label（Settings > 页面）；移除 27 个设置控制器手写 page crumb；`skip_breadcrumb_derivation` 例外（stores section crumb、webhook_deliveries 父级 crumb）。
   3. **知识沉淀**：SKILL.md 设置区自动推导章节 + GS-032 更新 + 方案文档 v1.4。
+- **P6**（本次）：统一单一侧边栏（设置区融入主区 + landing + tab 面包屑 + 全配置化）——
+  1. **模型层**：`Item` 加 `landing`/`tabs` 属性 + `landing_item`；`Item#match_path?` query 感知（带 query 项仅 path+query 都相等才命中，绝不落入 path-only 兜底）；`Navigation` 加 `find_breadcrumb_nodes`（chain + active 兜底 `find_active_breadcrumb_chain` + tab 节点去重）、`find_landing`、`self.tab_context`；删除 `SETTINGS_TAB_MAP`。
+  2. **推导层**：`BreadcrumbConcern` 统一为单一推导 `derive_sidebar_breadcrumb`（`find_breadcrumb_nodes(request.path, self, query: request.query_string)`），删除 settings 分支。
+  3. **渲染层**：`render_navigation_item` 顶级链接落地到 landing 子项 URL；`_store_nav` 恒渲染 `:sidebar`；`_sidebar/_header/_breadcrumbs/render_breadcrumb_icon` 删除 `settings_area?` 分支（无 Settings 前缀）。
+  4. **配置迁移**：settings_nav 全部并入 sidebar_nav（Developers/Users/Tax/Shipping/Audit/Return Settings 等为顶级可收拉项，带子菜单 + landing）；主区模块补次级菜单（All Orders★/Products List★/Customers List★/Promotions List★/Reports List★/Blog List★/Customer Returns★/AI 子菜单）；Stock 声明 `tabs: :stock_tabs`；Taxonomies 改 label Categories。
+  5. **i18n**：新增 label 双语 —— gem en.yml + 宿主 `admin_nav.en.yml`/`admin_nav.zh-CN.yml`（`pallastrade:` 命名空间）。
+  6. **控制器清理**：Stock 三个控制器删手写 index crumb（tab 推导覆盖，保留对象 crumb）；`ai_controller` 删子页手写 crumb（子菜单推导覆盖，保留 provider 名 crumb）。
+  7. **校验器升级**：`nav:validate` 加 landing 存在性、tabs 已注册、String label 双语 en/zh-CN；tab 上下文轻量校验。
+  8. **测试**：`navigation_consistency_spec` 重写为 AC-006~011（landing 面包屑、tab 面包屑、无 Settings 前缀、双语、子菜单完整）。
+  9. **知识沉淀**：SKILL.md 统一单一侧边栏章节 + GS-034 + 方案文档 v1.5。
+
+### 验收标准（P6 部分）
+
+- AC-006：顶级落地 —— /admin/orders 面包屑 Orders > All Orders；Orders to Fulfill query 页面包屑 Orders > Orders to Fulfill；顶级链接 href 指向 landing。
+- AC-007：全模块子菜单完整 + 每个有子项顶级声明 landing 且为第一个子项。
+- AC-008：Stock 三 tab 页面包屑 Products > Stock > {Stock Items|Stock Movements|Stock Transfers} + 页面头。
+- AC-009：设置模块三段式面包屑无 Settings 前缀（Developers > API Keys / Users > Roles / Tax > Tax Rates）。
+- AC-010：深层页面包屑完整路径（Products > Products List > 产品名）。
+- AC-011：新增 label en + zh-CN 双语存在；nav:validate 通过（landing/tabs/i18n）。
 
 ### 验收标准（P5 部分）
 
