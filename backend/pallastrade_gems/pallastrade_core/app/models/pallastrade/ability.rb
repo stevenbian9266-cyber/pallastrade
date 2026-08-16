@@ -2,11 +2,11 @@
 # permission sets — see PallasTrade::PermissionSets::Base for details on creating
 # custom ones.
 #
-# @example Configuring role permissions
-#   PallasTrade.permissions.assign(:customer_service, [
-#     PallasTrade::PermissionSets::OrderDisplay,
-#     PallasTrade::PermissionSets::UserManagement
-#   ])
+# PALLAS-CUSTOM (2026-08-16 权限体系重构): 后台角色权限由 DB 驱动
+# （PallasTrade::RolePermission），取代代码级 `PallasTrade.permissions.assign`
+# 的 admin 角色配置。优先级：
+#   1. 用户角色存在任何 DB role_permissions → 完全由 DB 驱动（set/function/menu/data）
+#   2. 否则回退代码权限集（storefront default 客户等未 DB 配置的场景）
 #
 # See https://github.com/CanCanCommunity/cancancan for more details.
 require 'cancan'
@@ -21,13 +21,26 @@ module PallasTrade
     # @return [PallasTrade::Store, nil] the current store
     attr_reader :store
 
+    # PALLAS-CUSTOM: 角色菜单权限（nav_key 集合，或 :all = 全部可见）
+    attr_reader :menu_permissions
+
+    # PALLAS-CUSTOM: 角色数据权限（{ resource_sym => { scope:, scope_value:, custom_condition: } }）
+    attr_reader :data_permissions
+
     def initialize(user, options = {})
       alias_cancan_delete_action
 
       @user = user || PallasTrade.user_class.new
       @store = options[:store] || PallasTrade::Current.store
+      @menu_permissions = nil
+      @data_permissions = {}
 
       apply_permissions_from_sets
+    end
+
+    # PALLAS-CUSTOM: 是否由 DB 权限驱动（2026-08-16）
+    def db_driven?
+      @db_driven == true
     end
 
     protected
@@ -38,10 +51,77 @@ module PallasTrade
     end
 
     # Applies permissions based on the user's roles and the configured permission sets.
+    # DB role_permissions 存在时完全由 DB 驱动；否则回退代码权限集。
     def apply_permissions_from_sets
       role_names = determine_role_names
+      return if apply_permissions_from_db(role_names)
+
       permission_sets = PallasTrade.permissions.permission_sets_for_roles(role_names)
       activate_permission_sets(permission_sets)
+    end
+
+    # PALLAS-CUSTOM: 从 DB role_permissions 应用权限（2026-08-16）
+    # @return [Boolean] true = DB 驱动（该用户任一角色有权限配置）
+    def apply_permissions_from_db(role_names)
+      role_permissions = PallasTrade::RolePermission.joins(:role).
+                         where(PallasTrade::Role.arel_table[:name].in(role_names.map(&:to_s))).to_a
+      return false if role_permissions.empty?
+
+      @db_driven = true
+
+      # set 类型：激活权限集类（保留复杂块逻辑，如 SuperUser）
+      role_permissions.select { |rp| rp.permission_type == 'set' && rp.allowed? }.each do |rp|
+        klass = safe_permission_set_class(rp.permission_set)
+        activate_permission_sets([klass]) if klass
+      end
+
+      # function 类型：resource × action
+      role_permissions.select { |rp| rp.permission_type == 'function' }.each do |rp|
+        apply_function_permission(rp)
+      end
+
+      # menu 类型：记录角色菜单权限
+      menu_rows = role_permissions.select { |rp| rp.permission_type == 'menu' }
+      if menu_rows.any?
+        if menu_rows.any? { |rp| rp.allowed? && rp.nav_key == 'all' }
+          @menu_permissions = :all
+        else
+          @menu_permissions = menu_rows.filter_map { |rp| rp.allowed? ? rp.nav_key : nil }
+        end
+      end
+
+      # data 类型：记录角色数据权限
+      role_permissions.select { |rp| rp.permission_type == 'data' && rp.allowed? }.each do |rp|
+        @data_permissions[rp.resource.to_sym] = {
+          scope: rp.scope,
+          scope_value: rp.scope_value,
+          custom_condition: rp.custom_condition
+        }
+      end
+
+      true
+    end
+
+    # PALLAS-CUSTOM: function 权限 → can/cannot（2026-08-16）
+    def apply_function_permission(rp)
+      target = rp.resource == 'all' ? :all : rp.resource.to_sym
+      action = rp.action.to_sym
+      action = :manage if action == :manage
+
+      if rp.allowed?
+        can action, target
+      else
+        cannot action, target
+      end
+    end
+
+    def safe_permission_set_class(name)
+      return nil if name.blank?
+
+      klass = name.constantize
+      klass if klass.is_a?(Class) && klass < PallasTrade::PermissionSets::Base
+    rescue NameError
+      nil
     end
 
     # Determines the role names for the current user, scoped to the current

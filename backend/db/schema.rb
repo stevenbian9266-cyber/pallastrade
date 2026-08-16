@@ -863,6 +863,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_16_100001) do
     t.index ["store_id"], name: "index_pt_markets_on_store_id"
   end
 
+  create_table "pallastrade_menu_configs", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "icon"
+    t.string "item_type", default: "default", null: false
+    t.string "label"
+    t.string "nav_key", null: false
+    t.boolean "open_in_new_tab", default: false, null: false
+    t.string "parent_key"
+    t.integer "position"
+    t.bigint "store_id"
+    t.datetime "updated_at", null: false
+    t.string "url"
+    t.boolean "visible"
+    t.index ["nav_key"], name: "index_pallastrade_menu_configs_on_key_global", unique: true, where: "(store_id IS NULL)"
+    t.index ["store_id", "nav_key"], name: "index_pallastrade_menu_configs_on_store_and_key", unique: true, where: "(store_id IS NOT NULL)"
+    t.index ["store_id"], name: "index_pallastrade_menu_configs_on_store_id"
+  end
+
   create_table "pallastrade_metafield_definitions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "display_on", default: "both", null: false
@@ -1764,6 +1782,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_16_100001) do
     t.index ["return_authorization_id"], name: "index_pt_return_items_on_return_authorization_id"
   end
 
+  create_table "pallastrade_role_permissions", force: :cascade do |t|
+    t.string "action"
+    t.boolean "allowed", default: true, null: false
+    t.datetime "created_at", null: false
+    t.jsonb "custom_condition"
+    t.string "nav_key"
+    t.string "permission_set"
+    t.string "permission_type", default: "function", null: false
+    t.string "resource"
+    t.bigint "role_id", null: false
+    t.string "scope"
+    t.string "scope_value"
+    t.datetime "updated_at", null: false
+    t.index ["role_id", "permission_type"], name: "index_pallastrade_role_permissions_on_role_and_type"
+    t.index ["role_id", "resource", "action"], name: "index_pallastrade_role_permissions_on_role_res_action"
+    t.index ["role_id"], name: "index_pallastrade_role_permissions_on_role_id"
+  end
+
   create_table "pallastrade_role_users", force: :cascade do |t|
     t.datetime "created_at", precision: nil
     t.bigint "invitation_id"
@@ -2509,12 +2545,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_16_100001) do
   add_foreign_key "pallastrade_contact_messages", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_email_logs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_email_templates", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_menu_configs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_option_type_translations", "pallastrade_option_types"
   add_foreign_key "pallastrade_option_value_translations", "pallastrade_option_values"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_payment_methods", column: "payment_method_id"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_users", column: "user_id"
   add_foreign_key "pallastrade_product_translations", "pallastrade_products"
   add_foreign_key "pallastrade_redirects", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_role_permissions", "pallastrade_roles", column: "role_id"
   add_foreign_key "pallastrade_store_translations", "pallastrade_stores"
   add_foreign_key "pallastrade_taxon_translations", "pallastrade_taxons"
   add_foreign_key "pallastrade_taxonomy_translations", "pallastrade_taxonomies"

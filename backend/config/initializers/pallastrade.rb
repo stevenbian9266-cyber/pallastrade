@@ -62,8 +62,10 @@ Rails.application.config.after_initialize do
   # PallasTrade.taxon_rules << PallasTrade::TaxonRules::ProductsWithColor
 
   # Required authorization baseline for the storefront and admin panel.
+  # PALLAS-CUSTOM (2026-08-16 权限体系重构): admin 角色权限已由 DB 驱动
+  # （PallasTrade::RolePermission，见 Seeds::Roles 的 SuperUser seed），
+  # 不再在代码中 assign；此处仅保留 storefront default 客户基线。
   PallasTrade.permissions.assign(:default, [PallasTrade::PermissionSets::DefaultCustomer])
-  PallasTrade.permissions.assign(:admin, [PallasTrade::PermissionSets::SuperUser])
 end
 
 # Serve Active Storage URLs from the configured CDN host when present.
