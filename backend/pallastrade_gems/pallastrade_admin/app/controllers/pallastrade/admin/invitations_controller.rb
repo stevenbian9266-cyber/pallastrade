@@ -115,7 +115,8 @@ module PallasTrade
       end
 
       def choose_layout
-        action_name == 'show' ? 'pallastrade/minimal' : 'pallastrade/admin_settings'
+        # P4 单一布局：设置区复用主布局；仅邀请接受页用 minimal
+        action_name == 'show' ? 'pallastrade/minimal' : 'pallastrade/admin'
       end
 
       def model_class

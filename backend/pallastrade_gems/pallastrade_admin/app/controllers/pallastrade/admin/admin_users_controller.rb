@@ -116,7 +116,8 @@ module PallasTrade
 
       # for self signup flow, we use the minimal layout
       def choose_layout
-        @invitation.present? ? 'pallastrade/minimal' : 'pallastrade/admin_settings'
+        # P4 单一布局：设置区复用主布局；仅邀请自助注册用 minimal
+        @invitation.present? ? 'pallastrade/minimal' : 'pallastrade/admin'
       end
 
       def load_roles

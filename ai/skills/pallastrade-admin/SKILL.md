@@ -202,12 +202,17 @@ breadcrumb concern。** 请求路径 → 导航项（`Navigation#find_breadcrumb
 | 页面头 | 每个列表/详情/表单视图写 `content_for :page_title` + `page_actions` |
 | 图标 | 自动取顶级导航项 `icon`（emails=`send` / orders=`inbox` / products=`package` / customers=`users` / promotions=`discount` / reports=`chart-bar` / returns=`receipt-refund` / blog=`news` / home=`home`） |
 
-**② 设置/Developers 区（`admin_settings` 布局，`SettingsConcern` 已 include）—— Settings 模式**
+**② 设置/Developers 区（`SettingsConcern` 已 include，P4 起复用主布局）—— Settings 模式**
+
+> P4（2026-08-16）单一布局：设置区不再使用 `admin_settings` 布局（已删除），统一复用
+> `admin` 主布局。面包屑渲染在顶部 header（`_header` → `shared/_breadcrumbs`，`settings_area?`
+> 时自动加「Settings」前缀 + back-to-dashboard 链接）；页面头/tabs 渲染在 main 内。
 
 | 要素 | 要求 |
 |---|---|
-| 面包屑 | `admin_settings` 布局在 `#settings-header` 渲染 `shared/_breadcrumbs`；`_breadcrumbs` 在 `settings_area?` 时自动加「Settings」前缀；每个设置控制器须类级 `add_breadcrumb PallasTrade.t(:页面), :admin_xxx_path`（面包屑 = `Settings > 页面`） |
-| 页面头 | `content_for :page_title`（或共享 partial：Developers 分区用 `shared/_developers_nav` 渲染「Developers」banner + tabs） |
+| 面包屑 | 顶部 header 自动加「Settings」前缀（`_breadcrumbs` 的 `settings_area?` 分支）；每个设置控制器须类级 `add_breadcrumb PallasTrade.t(:页面), :admin_xxx_path`（面包屑 = `Settings > 页面`；自动推导归 P5 schema 迁移） |
+| 页面头 + section/tabs | **统一机制**：index 页渲染 `shared/_section_nav`，传 `section:` key（`developers`/`team`/`audit`/`returns`）；标题与 tabs 来自 `PallasTrade::Admin::Navigation::SETTINGS_SECTIONS` 注册表；**禁止再手写 `_developers_nav`/`_team_nav`/`_audit_nav`/`_returns_and_refunds_nav` 4 个 banner partial（P4 已删除）** |
+| 页面头 | 无 `content_for :page_title` 时自动 fallback 到导航项 label（P4 `@navigation_page_title`） |
 | 注意 | 设置控制器**不要**设置 `add_breadcrumb_icon`（Settings 模式无图标）；嵌套资源（如 `webhook_deliveries`）用 `before_action` 加父级 + 本页 crumb |
 
 ```ruby
@@ -217,6 +222,19 @@ class ChannelsController < ResourceController
   add_breadcrumb PallasTrade.t(:channels), :admin_channels_path   # 面包屑 = Settings > Sales channels
   # ...
 end
+```
+
+```erb
+<%# 设置区 section banner（统一 partial）—— api_keys/webhook_endpoints/... index 页 %>
+<%= render 'pallastrade/admin/shared/section_nav', section: :developers %>
+```
+
+```ruby
+# 注册表：PallasTrade::Admin::Navigation::SETTINGS_SECTIONS
+# developers: { title: :developers, tabs: :developers_tabs }
+# team: { title: :users, tabs: :team_tabs, page_actions: '.../team_nav_actions', nav_partials: :team_nav_partials }
+# audit: { title: 'admin.audit_log', tabs: :audit_tabs }
+# returns: { title: -> { "... & ..." }, tabs: :returns_tabs, nav_partials: :returns_and_refunds_nav_partials }
 ```
 
 ⚠️ 通用禁忌：不要在 action 方法内手写 `add_breadcrumb` 拼模块 crumb（主区已自动推导）；

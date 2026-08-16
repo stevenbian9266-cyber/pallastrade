@@ -41,12 +41,17 @@ module PallasTrade
       # request path. Skips the settings area (its nav items are section-level
       # and will be unified in P4). Object pages append their own crumb via
       # controller before_action (e.g. add_breadcrumb_for_product).
+      # Also records @navigation_page_title (deepest matched item label) so
+      # views without content_for :page_title get an automatic page header.
       def derive_breadcrumbs_from_navigation
         return unless respond_to?(:add_breadcrumb, true)
         return if settings_controller?
 
         chain = PallasTrade.admin.navigation.sidebar&.find_breadcrumb_chain(request.path, self)
         return if chain.blank?
+
+        # P4 page_title fallback：最深匹配项 label 作为页面头默认标题
+        @navigation_page_title ||= chain.last.resolve_label
 
         @breadcrumb_icon ||= chain.first.icon
         chain.each do |item|

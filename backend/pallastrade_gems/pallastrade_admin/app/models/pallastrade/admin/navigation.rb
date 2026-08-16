@@ -1,6 +1,26 @@
 module PallasTrade
   module Admin
     class Navigation
+      # PALLAS-CUSTOM: 设置区 section/tabs 统一注册表（P4 导航架构重构）
+      # 每个 section 声明 banner 标题、tabs 上下文与可选附加内容，由
+      # `shared/_section_nav` 统一渲染（替代 _developers_nav/_team_nav/
+      # _audit_nav/_returns_and_refunds_nav 4 个手写 banner partial）。
+      SETTINGS_SECTIONS = {
+        developers: { title: :developers, tabs: :developers_tabs },
+        team: {
+          title: :users,
+          tabs: :team_tabs,
+          page_actions: 'pallastrade/admin/shared/team_nav_actions',
+          nav_partials: :team_nav_partials
+        },
+        audit: { title: 'admin.audit_log', tabs: :audit_tabs },
+        returns: {
+          title: -> { "#{PallasTrade.t(:returns)} & #{PallasTrade.t(:refunds)}" },
+          tabs: :returns_tabs,
+          nav_partials: :returns_and_refunds_nav_partials
+        }
+      }.freeze
+
       attr_reader :items, :context
 
       def initialize(context)

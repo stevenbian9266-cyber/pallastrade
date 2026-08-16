@@ -25,7 +25,8 @@ RSpec.describe 'Admin navigation consistency (breadcrumb + page_title)', type: :
       PallasTrade::Admin::StoresController,
       PallasTrade::Admin::EmailsController,
       PallasTrade::Admin::CheckoutsController,
-      PallasTrade::Admin::GiftCardsController
+      PallasTrade::Admin::GiftCardsController,
+      PallasTrade::Admin::AdminUsersController
     ].each do |klass|
       allow_any_instance_of(klass).to receive(:current_store).and_return(store)
     end
@@ -169,6 +170,40 @@ RSpec.describe 'Admin navigation consistency (breadcrumb + page_title)', type: :
       expect(crumb_text).to include(PallasTrade.t(:settings))
       expect(crumb_text).to include(PallasTrade.t(:api_keys))
       expect(crumb_text).not_to include(PallasTrade.t(:home))
+    end
+  end
+
+  describe '架构重构 — 单一布局 + 设置区 section/tabs 统一（PRD-20260816-admin-管理后台导航架构统一重构 AC-004）' do
+    # AC-004：设置页复用主布局（无 admin-settings 类），页面头 + section banner + tabs 正常
+    it 'renders /admin/api_keys with main layout + unified Developers section banner' do
+      get '/admin/api_keys'
+      expect(response).to have_http_status(:ok)
+      # 单一布局：设置页不再使用 admin_settings 布局
+      expect(response.body).not_to include('admin-settings')
+      # 页面头 + section banner 标题（Developers）
+      expect(response.body).to include('id="page-header"')
+      doc = Nokogiri::HTML(response.body)
+      header_title = doc.at_css('#page-header #page_title')&.text.to_s
+      expect(header_title).to include(PallasTrade.t(:developers))
+      # 统一 _section_nav 渲染 developers_tabs
+      tabs_text = doc.at_css('#page-tabs')&.text.to_s
+      expect(tabs_text).to include(PallasTrade.t(:api_keys))
+      expect(tabs_text).to include(PallasTrade.t(:webhook_endpoints))
+      expect(tabs_text).to include(PallasTrade.t(:allowed_origins))
+    end
+
+    # AC-004：Team section 统一（admin_users）— 页面头 Users + tabs + 邀请按钮
+    it 'renders /admin/admin_users with Team section banner + invite action' do
+      get '/admin/admin_users'
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include('admin-settings')
+      expect(response.body).to include('id="page-header"')
+      doc = Nokogiri::HTML(response.body)
+      header_title = doc.at_css('#page-header #page_title')&.text.to_s
+      expect(header_title).to include(PallasTrade.t(:users))
+      tabs_text = doc.at_css('#page-tabs')&.text.to_s
+      expect(tabs_text).to include(PallasTrade.t(:invitations))
+      expect(tabs_text).to include(PallasTrade.t(:roles))
     end
   end
 end

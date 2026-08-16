@@ -8,10 +8,13 @@
   </span>
 <% end if show_record_subtitle && !content_for(:page_subtitle) %>
 
-<% if content_for?(:page_title) %>
+<%# P4 page_title fallback：视图未写 content_for :page_title 时，回退到导航推导的项 label %>
+<% navigation_title = @navigation_page_title if !content_for?(:page_title) && @navigation_page_title.present? %>
+
+<% if content_for?(:page_title) || navigation_title %>
   <header id="page-header" class="container mx-auto px-4 max-w-screen-xl" data-controller="sticky">
     <h3 class="page-header-title mb-0 flex items-center gap-4" id="page_title">
-      <%= yield :page_title %>
+      <%= navigation_title || yield(:page_title) %>
     </h3>
     <div id="page_actions" class="ms-auto page-actions flex items-center gap-2">
       <%= yield :page_actions if content_for?(:page_actions) %>

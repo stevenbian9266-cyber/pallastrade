@@ -118,3 +118,5 @@ end
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-08-16 | v1.0 | 方案初版；用户确认决策 1/2/3 | AI |
+| 2026-08-16 | v1.1 | **P1+P2 完成**（提交 24220a6）：设置区头部溢出修复 + 常显原则 | AI |
+| 2026-08-16 | v1.2 | **P3 完成**（提交 5c09baf）：面包屑自动推导引擎（`Navigation#find_breadcrumb_chain` + `Item#match_path?`）+ `BreadcrumbConcern` 自动推导；删除 5 个手写 concern；清理 27 个主区控制器手写 crumb；对象页 crumb 保留；设置区保留（归 P4）；SKILL.md 章节重写 + GS-033 | AI |

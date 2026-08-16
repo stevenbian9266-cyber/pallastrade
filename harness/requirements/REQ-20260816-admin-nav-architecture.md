@@ -1,7 +1,7 @@
-# REQ-20260816-admin-nav-architecture — 管理后台导航架构统一重构（P3 面包屑自动推导）
+# REQ-20260816-admin-nav-architecture — 管理后台导航架构统一重构（P4 单一布局 + 设置区统一）
 
-> 任务类型：feature | 任务：`TASK-20260816093819-84a08105` | Gate：`GATE-2026-08-16T09-38-33`
-> 分支：dev | 基线：`24220a6` | 方案文档：`docs/research/admin-navigation-refactor-plan.md`
+> 任务类型：feature | 任务：`TASK-20260816105616-d4fa3758` | Gate：`GATE-2026-08-16T10-56-33`
+> 分支：dev | 基线：`e58beca` | 方案文档：`docs/research/admin-navigation-refactor-plan.md`
 > 关联 PRD：`docs/prd/admin/PRD-20260816-admin-管理后台导航架构统一重构-常显原则-面包屑自动推导-单一布局.md`（approved）
 
 ---
@@ -45,15 +45,19 @@
   3. 新增对象页 hook：`breadcrumb_object` / `breadcrumb_object_name` / `breadcrumb_object_url`（控制器可覆盖，products/promotions 迁移）。
   4. 删除 5 个手写 concern：`emails/posts/order/products/promotions_breadcrumb_concern`；清理主区控制器 `include` + `add_breadcrumb` + `add_breadcrumb_icon`（设置区控制器保留，归 P4）。
   5. 保留宿主应用 `ai_controller.rb` 手写面包屑（AI 模块不在导航配置，属宿主自定义）。
-- **P4**：单一布局收敛 + page_title fallback + 设置区 section/tabs 统一（删 4 个 banner partial）。
+- **P4**（本次）：单一布局 + 设置区统一 ——
+  1. **单一布局**：`SettingsConcern`/`admin_users`/`invitations` 的 `choose_layout` 改为 `admin`；删除 `admin_settings` 布局文件。设置页复用主布局渲染管线（顶部 header 面包屑 + main 内 content_header + tabs）。
+  2. **page_title fallback**：`derive_breadcrumbs_from_navigation` 记录 `@navigation_page_title`（最深匹配项 label）；`_content_header` 无 `content_for :page_title` 时回退到它，保证每个主区页面有页面头。
+  3. **设置区 section/tabs 统一**：`Navigation::SETTINGS_SECTIONS` 注册表（developers/team/audit/returns → title + tabs + 可选 page_actions/nav_partials）；新建 `shared/_section_nav` 统一 partial；11 个设置 index 视图改渲染 `_section_nav`；删除 `_developers_nav/_team_nav/_audit_nav/_returns_and_refunds_nav` 4 个 banner partial（team 邀请按钮拆 `_team_nav_actions`）。
+  4. **设置区 crumb 保留**：settings nav 为 section 级（developers 覆盖 api_keys 等），每页 crumb label ≠ section label，自动推导归 P5 schema 迁移。
 - **P5**：`harness nav:validate` + 全量迁移 + SKILL/GS 沉淀。
 
-### 验收标准（P3 部分）
+### 验收标准（P4 部分）
 
-- AC-003：面包屑自动推导 —— 主区抽查 /admin/posts、/admin/emails、/admin/orders、/admin/checkouts、/admin/product_translations、/admin/gift_cards 无手写 crumb 仍正确（模块→子页）。
-- AC-003b：对象页 —— /admin/products/:id/edit 显示 Products > 产品名；/admin/promotions/:id 显示 Promotions > 促销名。
-- AC-003c：设置区回归 —— /admin/channels、/admin/api_keys 等仍为 Settings > 页面（不回归）。
-- AC-003d：`navigation_consistency_spec` + `emails_spec` 全绿。
+- AC-004：设置页使用主布局（body 无 `admin-settings` 类），面包屑仍在顶部 header（Settings > 页面），页面头 + tabs 正常渲染。
+- AC-004b：/admin/api_keys 等设置页渲染「Developers」section banner（标题 + API Keys/Webhook/Allowed Origins/Redirects tabs）。
+- AC-004c：主区无 page_title 的页面（如 orders show）自动 fallback 页面头（导航项 label）。
+- AC-004d：`navigation_consistency_spec` + `emails_spec` 全绿（43+ examples）。
 
 ### 测试计划
 

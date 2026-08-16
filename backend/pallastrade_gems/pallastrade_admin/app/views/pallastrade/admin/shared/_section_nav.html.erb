@@ -1,0 +1,32 @@
+<%# PALLAS-CUSTOM: 设置区 section banner 统一渲染（P4 导航架构重构） %>
+<%# 用法：render 'pallastrade/admin/shared/section_nav', section: :developers %>
+<%#
+  section 配置来自 PallasTrade::Admin::Navigation::SETTINGS_SECTIONS：
+  - title: 翻译 key 或 Proc（返回标题文本）
+  - tabs:  tab navigation 上下文（render_tab_navigation）
+  - page_actions: 可选 partial，渲染进 page_actions
+  - nav_partials: 可选，追加渲染进 page_tabs
+%>
+<%
+  section_key = local_assigns[:section]&.to_sym
+  section = PallasTrade::Admin::Navigation::SETTINGS_SECTIONS[section_key]
+  raise ArgumentError, "unknown settings section: #{section_key}" if section.nil?
+  section_title = section[:title].respond_to?(:call) ? section[:title].call : PallasTrade.t(section[:title])
+%>
+<% content_for :page_title do %>
+  <%= section_title %>
+<% end %>
+
+<%= render_tab_navigation(section[:tabs]) %>
+
+<% if section[:page_actions] %>
+  <% content_for :page_actions do %>
+    <%= render section[:page_actions] %>
+  <% end %>
+<% end %>
+
+<% if section[:nav_partials] %>
+  <% content_for :page_tabs do %>
+    <%= render_admin_partials(section[:nav_partials]) %>
+  <% end %>
+<% end %>
