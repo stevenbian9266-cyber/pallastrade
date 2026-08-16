@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| approved | PRD-20260816-admin-管理后台导航架构统一重构-常显原则-面包屑自动推导-单一布局 | admin | 2026-08-16 | REQ-20260816-admin-nav-architecture |
 | done | PRD-20260816-admin-管理后台导航一致性-主区按-email-模式-设置区按-settings-模式统一 | admin | 2026-08-16 | REQ-20260816-admin-nav-consistency |
 | draft | PRD-20260813-admin-移除管理后台-integrations-菜单及相关逻辑 | admin | 2026-08-13 | （实施时回填） |
 | done | PRD-20260808-admin-去掉管理后台左侧菜单的升级逻辑-community-edition-升级提示 | admin | 2026-08-08 | REQ-20260808-remove-enterprise-notice |

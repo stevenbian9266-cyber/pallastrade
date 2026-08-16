@@ -19,6 +19,9 @@ RSpec.describe 'Admin navigation consistency (breadcrumb + page_title)', type: :
       PallasTrade::Admin::ZonesController,
       PallasTrade::Admin::BackInStockSubscriptionsController,
       PallasTrade::Admin::EmailTemplatesController,
+      PallasTrade::Admin::OrdersController,
+      PallasTrade::Admin::ProductsController,
+      PallasTrade::Admin::ProductTranslationsController,
       PallasTrade::Admin::StoresController
     ].each do |klass|
       allow_any_instance_of(klass).to receive(:current_store).and_return(store)
@@ -85,6 +88,34 @@ RSpec.describe 'Admin navigation consistency (breadcrumb + page_title)', type: :
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('id="page-header"')
       expect(response.body).to include(PallasTrade.t(:back_in_stock_subscriptions))
+    end
+  end
+
+  describe '架构重构 — 常显原则（PRD-20260816-admin-管理后台导航架构统一重构）' do
+    # PRD-20260816-admin-管理后台导航架构统一重构 AC-002
+    it 'keeps Orders to Fulfill visible on /admin/orders even with zero ready-to-ship orders' do
+      # 测试商店无待发货订单 → ready_to_ship_orders_count 为 0/nil，菜单仍应常显
+      get '/admin/orders'
+      expect(response).to have_http_status(:ok)
+      # 常显原则：次级菜单不再因业务状态（count>0）隐藏
+      expect(response.body).to include(PallasTrade.t('admin.orders.orders_to_fulfill'))
+      expect(response.body).to include('nav-submenu-orders')
+    end
+
+    # PRD-20260816-admin-管理后台导航架构统一重构 AC-002
+    it 'keeps Translations visible on /admin/products for single-locale stores' do
+      allow(store).to receive(:supported_locales_list).and_return(['en'])
+      get '/admin/products'
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(PallasTrade.t(:translations))
+    end
+
+    # PRD-20260816-admin-管理后台导航架构统一重构 AC-002
+    it 'renders translations empty-state guidance for single-locale stores' do
+      allow(store).to receive(:supported_locales_list).and_return(['en'])
+      get '/admin/product_translations'
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(PallasTrade.t('admin.product_translations.no_locales_title'))
     end
   end
 end

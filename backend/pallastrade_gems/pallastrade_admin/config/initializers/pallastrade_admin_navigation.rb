@@ -56,9 +56,7 @@ Rails.application.config.after_initialize do
               },
               position: 10,
               active: -> { controller_name == 'orders' && params.dig(:q, :shipment_state_not_in).present? },
-              if: -> {
-                ready_to_ship_orders_count&.positive?
-              },
+              # 常显原则：菜单不因业务状态（count>0）隐藏；数量用 badge 表达
               badge: -> {
                 ready_to_ship_orders_count if ready_to_ship_orders_count&.positive?
               }
@@ -116,7 +114,8 @@ Rails.application.config.after_initialize do
                 url: :admin_product_translations_path,
                 position: 25,
                 active: -> { controller_name == 'product_translations' },
-                if: -> { can?(:manage, PallasTrade::Product) && current_store.supported_locales_list.size > 1 }
+                # 常显原则：单语言店铺也显示，页面内做空态引导
+                if: -> { can?(:manage, PallasTrade::Product) }
 
     # Taxonomies
     products.add :taxonomies,
