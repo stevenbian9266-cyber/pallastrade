@@ -1,4 +1,7 @@
 <%= content_for(:title, PallasTrade.t(:emails)) %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t(:emails) %>
+<% end %>
 <%= content_for(:page_actions) do %>
   <%= turbo_save_button_tag PallasTrade.t('actions.update'), class: 'btn btn-primary', form: "edit_store_#{current_store.id}", data: { admin_target: 'save' } %>
 <% end %>

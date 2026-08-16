@@ -6,6 +6,8 @@ module PallasTrade
     # PallasTrade::EmailLogRecorder whenever a mail is delivered/fails.
     class EmailLogsController < ResourceController
       include PallasTrade::Admin::TableConcern
+      include PallasTrade::Admin::EmailsBreadcrumbConcern
+      add_breadcrumb PallasTrade.t('admin.emails.outbox'), :admin_email_logs_path
 
       private
 

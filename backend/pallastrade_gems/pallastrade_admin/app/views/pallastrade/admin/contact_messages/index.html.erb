@@ -1,4 +1,7 @@
 <%= content_for(:title, PallasTrade.t('admin.emails.inbox')) %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.emails.inbox') %>
+<% end %>
 
 <div class="alert alert-info mb-6">
   <%= PallasTrade.t('admin.emails.inbox_help') %>

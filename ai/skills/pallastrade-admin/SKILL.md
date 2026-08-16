@@ -140,6 +140,55 @@ PallasTrade.admin.navigation.sidebar.update :products, position: 5
 
 The full nav API is in `pallastrade/admin/app/models/pallastrade/admin/navigation.rb` if you need to read the source.
 
+## Breadcrumbs & page headers（子菜单统一规范，2026-08）
+
+**每个带子菜单的模块必须有专属 breadcrumb concern，且每个页面必须渲染页面头（page_title）。**
+参考 `ProductsBreadcrumbConcern` / `OrderBreadcrumbConcern` / `PromotionsBreadcrumbConcern` /
+`EmailsBreadcrumbConcern`（都在 `pallastrade_admin/app/controllers/concerns/pallastrade/admin/`）。
+
+1. **面包屑 concern**：父级 crumb + 图标在 concern 里用类级声明，各子页控制器 include 后再加自己的子页 crumb：
+
+   ```ruby
+   # concerns/pallastrade/admin/emails_breadcrumb_concern.rb
+   module PallasTrade::Admin::EmailsBreadcrumbConcern
+     extend ActiveSupport::Concern
+     included do
+       add_breadcrumb_icon 'send'                                   # Tabler 图标名
+       add_breadcrumb PallasTrade.t(:emails), :admin_emails_path    # 父级 crumb（symbol URL）
+     end
+   end
+
+   # 子页控制器：include + 类级子页 crumb（+ 需要时对象 crumb）
+   class EmailTemplatesController < ResourceController
+     include PallasTrade::Admin::EmailsBreadcrumbConcern
+     add_breadcrumb PallasTrade.t('admin.emails.templates'), :admin_email_templates_path
+     before_action :add_breadcrumb_for_template, only: [:show, :edit, :update]
+     # ...
+   end
+   ```
+
+   ⚠️ **不要在 action 方法内手工 `add_breadcrumb`**（Email 菜单曾经的坑）——用类级
+   `add_breadcrumb` + `before_action`，保证所有子页面包屑结构一致、带图标。
+
+2. **页面头（page_title）**：列表/详情/表单页必须写 `content_for :page_title`（渲染页面
+   头部 h3 标题）；否则 `shared/_content_header` 不渲染 header，且 `page_actions`
+   （操作按钮：新建/返回/标记解决等）会被**整体丢弃**：
+
+   ```erb
+   <%= content_for(:title, PallasTrade.t('admin.emails.templates')) %>   <%# 浏览器标签页标题 %>
+   <% content_for :page_title do %>                                     <%# 页面头（必须） %>
+     <%= PallasTrade.t('admin.emails.templates') %>
+   <% end %>
+   <% content_for :page_actions do %>                                    <%# 操作按钮区 %>
+     <%= link_to PallasTrade.t('admin.emails.new_template'), ..., class: 'btn btn-primary' %>
+   <% end %>
+   ```
+
+   ⚠️ 只写 `content_for(:title)` 不写 `:page_title` → 页面头消失 + 操作按钮不显示
+   （2026-08 Email 菜单统一化修复前的状态；回归断言见 `emails_spec.rb` 的
+   `unified email menu structure` describe：校验 `id="page-header"`、`aria-label="breadcrumb"`
+   与 `page_actions` 内容）。
+
 ## Customizing admin tables
 
 Most admin listing pages (Products, Orders, Promotions, etc.) use a registered table definition — see the gem's `config/initializers/pallastrade_admin_tables.rb` for the registered keys (note: the Customers page is registered as `:users`; a few pages like Payment Methods don't use the table registry). Add, remove, or reorder columns from an initializer:

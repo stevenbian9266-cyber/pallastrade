@@ -1,4 +1,7 @@
 <%= content_for(:title, PallasTrade.t('admin.emails.outbox')) %>
+<% content_for :page_title do %>
+  <%= @object.subject.presence || @object.action %>
+<% end %>
 <%= content_for(:page_actions) do %>
   <%= link_to PallasTrade.t('actions.back'), PallasTrade.admin_email_logs_path, class: 'btn btn-outline' %>
 <% end %>

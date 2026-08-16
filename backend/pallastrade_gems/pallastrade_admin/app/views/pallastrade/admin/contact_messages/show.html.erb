@@ -1,4 +1,7 @@
 <%= content_for(:title, @object.subject.presence || @object.email) %>
+<% content_for :page_title do %>
+  <%= @object.subject.presence || @object.email %>
+<% end %>
 <%= content_for(:page_actions) do %>
   <% unless @object.resolved? %>
     <%= button_to PallasTrade.t('admin.emails.mark_resolved'), PallasTrade.resolve_admin_contact_message_path(@object), method: :post, class: 'btn btn-success' %>

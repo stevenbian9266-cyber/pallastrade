@@ -6,11 +6,12 @@ module PallasTrade
     # from/reply addresses, logo, transactional toggle and reply switch.
     # Reuses the store's email preferences so existing fields keep working.
     class EmailsController < PallasTrade::Admin::BaseController
+      include PallasTrade::Admin::EmailsBreadcrumbConcern
+      add_breadcrumb PallasTrade.t('admin.emails.settings'), :admin_emails_path
+
       before_action :load_store, only: [:show, :update]
 
-      def show
-        add_breadcrumb PallasTrade.t(:emails), PallasTrade.admin_emails_path
-      end
+      def show; end
 
       # POST /admin/emails/test_send — send a test email using the store's
       # current SMTP settings (or the platform default when no per-store SMTP

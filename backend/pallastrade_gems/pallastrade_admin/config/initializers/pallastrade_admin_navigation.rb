@@ -184,14 +184,14 @@ Rails.application.config.after_initialize do
   # Emails — top-level menu with submenu (config / scenarios / templates / outbox / inbox)
   sidebar_nav.add :emails,
           label: :emails,
-          url: -> { PallasTrade.admin_emails_path },
+          url: :admin_emails_path,
           icon: 'send',
           position: 70,
           if: -> { can?(:manage, current_store) } do |emails|
     # Email configuration (SMTP, from address, reply switch)
     emails.add :email_settings,
                label: 'admin.emails.settings',
-               url: -> { PallasTrade.admin_emails_path },
+               url: :admin_emails_path,
                position: 10,
                active: -> { controller_name == 'emails' }
 

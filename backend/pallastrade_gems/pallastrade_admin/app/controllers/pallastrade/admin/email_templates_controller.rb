@@ -6,6 +6,10 @@ module PallasTrade
     # {placeholder} substitution and a live preview.
     class EmailTemplatesController < ResourceController
       include PallasTrade::Admin::TableConcern
+      include PallasTrade::Admin::EmailsBreadcrumbConcern
+      add_breadcrumb PallasTrade.t('admin.emails.templates'), :admin_email_templates_path
+
+      before_action :add_breadcrumb_for_template, only: [:show, :edit, :update]
 
       def preview
         @object = find_object
@@ -55,6 +59,11 @@ module PallasTrade
 
       def find_object
         scope.find_by_prefix_id(params[:id]) || scope.find(params[:id])
+      end
+
+      def add_breadcrumb_for_template
+        return unless @object.present? && @object.persisted?
+        add_breadcrumb @object.name, PallasTrade.admin_email_template_path(@object)
       end
 
       # Sample context used for preview / test send. Real values are supplied

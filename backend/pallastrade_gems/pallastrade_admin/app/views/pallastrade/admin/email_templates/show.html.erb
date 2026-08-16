@@ -1,4 +1,7 @@
 <%= content_for(:title, @object.name) %>
+<% content_for :page_title do %>
+  <%= @object.name %>
+<% end %>
 <%= content_for(:page_actions) do %>
   <%= link_to PallasTrade.t('actions.edit'), PallasTrade.edit_admin_email_template_path(@object), class: 'btn btn-primary' %>
   <%= link_to PallasTrade.t('actions.back'), PallasTrade.admin_email_templates_path, class: 'btn btn-outline' %>

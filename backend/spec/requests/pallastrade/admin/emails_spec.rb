@@ -178,4 +178,40 @@ RSpec.describe 'Admin Email management pages', type: :request do
       expect(response).to have_http_status(:found)
     end
   end
+
+  # 修复：Email 菜单统一化（参考 Products）— 页面头 + 面包屑 + 操作按钮
+  # REQ-20260816-admin-email-menu-unify AC-1 / AC-2
+  describe 'unified email menu structure (reference: products)' do
+    it 'renders the page header (page_title) on every email sub-page' do
+      { '/admin/emails' => 'Emails',
+        '/admin/email_notification_scenarios' => 'Notification scenarios',
+        '/admin/email_templates' => 'Email Templates',
+        '/admin/email_logs' => 'Send log',
+        '/admin/contact_messages' => 'Inbox & feedback' }.each do |path, _label|
+        get path
+        expect(response).to have_http_status(:ok), "expected #{path} to respond 200"
+        expect(response.body).to include('id="page-header"'), "expected #{path} to render the page header"
+      end
+    end
+
+    it 'renders the breadcrumb trail with the send icon on every email sub-page' do
+      {
+        '/admin/emails' => 'admin.emails.settings',
+        '/admin/email_notification_scenarios' => 'admin.emails.notification_scenarios',
+        '/admin/email_templates' => 'admin.emails.templates',
+        '/admin/email_logs' => 'admin.emails.outbox',
+        '/admin/contact_messages' => 'admin.emails.inbox'
+      }.each do |path, label_key|
+        get path
+        expect(response).to have_http_status(:ok), "expected #{path} to respond 200"
+        expect(response.body).to include('aria-label="breadcrumb"'), "expected #{path} to render breadcrumbs"
+        expect(response.body).to include(PallasTrade.t(label_key)), "expected #{path} to include its sub-page crumb"
+      end
+    end
+
+    it 'keeps page_actions visible on the templates list (was dropped without page_title)' do
+      get '/admin/email_templates'
+      expect(response.body).to include(PallasTrade.t('admin.emails.new_template'))
+    end
+  end
 end

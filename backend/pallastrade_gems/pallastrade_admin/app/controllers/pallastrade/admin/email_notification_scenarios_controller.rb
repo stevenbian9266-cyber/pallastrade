@@ -7,6 +7,9 @@ module PallasTrade
     # toggled on/off per store, plus a test-send button. Toggle state is
     # persisted in store preferences (preferred_email_scenario_<key>).
     class EmailNotificationScenariosController < PallasTrade::Admin::BaseController
+      include PallasTrade::Admin::EmailsBreadcrumbConcern
+      add_breadcrumb PallasTrade.t('admin.emails.notification_scenarios'), :admin_email_notification_scenarios_path
+
       before_action :load_store
 
       # The canonical scenario registry. `key` matches the EmailTemplate key and
@@ -23,13 +26,13 @@ module PallasTrade
       ].freeze
 
       def index
+        templates_by_key = current_store.email_templates.where(key: SCENARIOS.map { |s| s[:key] }).index_by(&:key)
         @scenarios = SCENARIOS.map do |scenario|
           scenario.merge(
             enabled: scenario_enabled?(scenario[:key]),
-            template: current_store.email_templates.find_by(key: scenario[:key])
+            template: templates_by_key[scenario[:key]]
           )
         end
-        add_breadcrumb PallasTrade.t(:emails), PallasTrade.admin_emails_path
       end
 
       def update

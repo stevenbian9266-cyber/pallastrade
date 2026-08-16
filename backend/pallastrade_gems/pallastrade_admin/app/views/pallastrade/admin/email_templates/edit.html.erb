@@ -1,3 +1,6 @@
 <%= content_for(:title, PallasTrade.t('admin.emails.edit_template')) %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.emails.edit_template') %>
+<% end %>
 
 <%= render partial: 'form', locals: { object: @object } %>

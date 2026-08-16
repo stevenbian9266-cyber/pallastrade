@@ -403,7 +403,7 @@
       "scoring": { "privacy": 25, "minimalContext": 20, "decisions": 15, "threeState": 25, "adapterSafety": 15 }
     },
     {
-      "id": "GS-025",
+      "id": "GS-026",
       "name": "Turnstile unreachable degrade-open (CN hosting)",
       "description": "When Cloudflare Turnstile siteverify is unreachable (CN-hosted servers), AI must return nil (unable to verify) and degrade OPEN with a warning log instead of fail-closed, while still rejecting an explicit Cloudflare rejection.",
       "mustDo": [
@@ -500,6 +500,27 @@
         "Push while harness doc-impact reports docs-required (scenarios.json must change when Skills change)"
       ],
       "scoring": { "storeScope": 20, "publishedOnly": 20, "reuseInfra": 15, "adminUi": 15, "storefrontSeo": 15, "sdkSync": 15 }
+    },
+    {
+      "id": "GS-031",
+      "name": "Admin submenu breadcrumb + page_title unification",
+      "description": "When building/customizing a top-level admin menu with submenu items, AI must create a dedicated breadcrumb concern (like ProductsBreadcrumbConcern/EmailsBreadcrumbConcern), add class-level breadcrumbs per sub-page, and render the page header via content_for :page_title — never only content_for(:title), which drops the header and page_actions",
+      "mustDo": [
+        "Create a breadcrumb concern per submenu module (add_breadcrumb_icon + parent add_breadcrumb at class level)",
+        "Include the concern and add a sub-page crumb (class-level add_breadcrumb) in every sub-page controller",
+        "Add content_for :page_title to every list/show/form view (page header), alongside content_for(:title) for the browser tab",
+        "Keep page_actions inside the page_title flow so action buttons render",
+        "Update ai/skills/pallastrade-admin/SKILL.md when the rendered admin UI/behavior changes (GS-015)",
+        "Run harness doc-impact --base origin/main before pushing"
+      ],
+      "mustNotDo": [
+        "Hand-add add_breadcrumb inside action methods instead of a shared concern",
+        "Leave sub-pages without a breadcrumb trail or with an inconsistent one",
+        "Set only content_for(:title) and skip content_for :page_title (drops page header + page_actions)",
+        "Use lambda URLs in nav registration when a symbol route helper exists (url: :admin_xxx_path)",
+        "Push while doc-impact reports docs-required"
+      ],
+      "scoring": { "breadcrumbConcern": 30, "pageTitle": 25, "pageActionsVisible": 15, "skillSynced": 15, "docImpactPass": 15 }
     }
   ]
 }
