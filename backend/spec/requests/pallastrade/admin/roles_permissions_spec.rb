@@ -71,8 +71,36 @@ RSpec.describe 'Admin roles permissions matrix', type: :request do
     create(:role_user, user: viewer, role: role, resource: store, store: store)
 
     ability = PallasTrade::Ability.new(viewer, store: store)
-    expect(ability).to be_can(:read, :orders)
-    expect(ability).not_to be_can(:create, :orders)
-    expect(ability).not_to be_can(:manage, :products)
+    expect(ability).to be_can(:read, PallasTrade::Order)
+    expect(ability).not_to be_can(:create, PallasTrade::Order)
+    expect(ability).not_to be_can(:manage, PallasTrade::Product)
+  end
+
+  # PRD-... AC-005 / AC-010
+  it 'renders only menu-granted items in the sidebar for a restricted role' do
+    viewer = create(:admin_user, email: 'menus@example.com', password: 'secret', password_confirmation: 'secret', without_admin_role: true)
+    role = create(:role, name: 'orders_only')
+    role.rebuild_role_permissions(
+      menu: ['orders', 'orders_to_fulfill', 'draft_orders'],
+      function: { orders: ['read'] }
+    )
+    create(:role_user, user: viewer, role: role, resource: store, store: store)
+    viewer_ability = PallasTrade::Ability.new(viewer, store: store)
+    allow_any_instance_of(PallasTrade::Admin::OrdersController).to receive(:current_ability).and_return(viewer_ability)
+    allow_any_instance_of(PallasTrade::Admin::OrdersController).to receive(:current_store).and_return(store)
+
+    get '/admin/orders'
+    warn "DEBUG LOCATION: #{response.location.inspect}" if response.status == 302
+    expect(response).to have_http_status(:ok)
+    sidebar = Nokogiri::HTML(response.body).at_css('#main-sidebar')&.text.to_s
+
+    # 授权菜单显示
+    expect(sidebar).to include(PallasTrade.t(:orders))
+    expect(sidebar).to include(PallasTrade.t('admin.orders.orders_to_fulfill'))
+    # 未授权子项（All Orders）与未授权菜单隐藏
+    expect(sidebar).not_to include(PallasTrade.t('admin.orders.all_orders'))
+    expect(sidebar).not_to include(PallasTrade.t(:products))
+    expect(sidebar).not_to include(PallasTrade.t(:customers))
+    expect(sidebar).not_to include(PallasTrade.t(:developers))
   end
 end

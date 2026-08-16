@@ -326,8 +326,37 @@ module PallasTrade
       # @param context [Symbol] the navigation context
       # @return [Array<PallasTrade::Admin::Navigation::Item>] the visible navigation items
       def navigation_items(context = :sidebar)
-        # Pass the view context (self) so that can? and other helpers are available
-        PallasTrade.admin.navigation.send(context)&.visible_items(self) || []
+        nav = PallasTrade.admin.navigation.send(context)
+        # PALLAS-CUSTOM: 菜单权限过滤（P3 权限体系重构）
+        # DB 驱动角色（menu_permissions 已配置）：菜单树完全由菜单权限决定（跳过代码 if:）；
+        # 否则按代码 if: 条件（向后兼容）。
+        items = menu_driven? ? (nav&.root_items || []) : (nav&.visible_items(self) || [])
+        items.select { |item| menu_granted?(item) }
+      end
+
+      # PALLAS-CUSTOM: 当前角色是否由 DB 菜单权限驱动（P3 权限体系重构）
+      def menu_driven?
+        !menu_permissions_for_ability.nil?
+      end
+
+      # PALLAS-CUSTOM: 当前 Ability 的菜单权限（P3 权限体系重构）
+      def menu_permissions_for_ability
+        ability = respond_to?(:current_ability) ? current_ability : nil
+        ability.respond_to?(:menu_permissions) ? ability.menu_permissions : nil
+      end
+
+      # PALLAS-CUSTOM: 角色菜单权限过滤（P3 权限体系重构）
+      # 当当前用户的 Ability 配置了 menu_permissions（DB 驱动角色）时：
+      #   - :all        → 全部可见
+      #   - Array       → 仅授权的项（顶级项因其任一子项被授权而保留）
+      # 未配置菜单权限（menu_permissions 为 nil）→ 不过滤（默认全量，向后兼容）。
+      # @param item [PallasTrade::Admin::Navigation::Item]
+      # @return [Boolean]
+      def menu_granted?(item)
+        perms = menu_permissions_for_ability
+        return true if perms.nil? || perms == :all
+
+        perms.include?(item.key.to_s) || item.children.any? { |child| perms.include?(child.key.to_s) }
       end
 
       # Renders navigation items as an unordered list
@@ -429,7 +458,12 @@ module PallasTrade
       # Renders a nav item that has children (with submenu)
       # @return [SafeBuffer] the nav item with submenu HTML
       def render_nav_item_with_children(item, complete_label, item_url, item_label, is_active, data_attrs, html_options, context)
-        visible_children = item.children.select { |child| child.visible?(self) }
+        # PALLAS-CUSTOM: 菜单权限过滤（P3 权限体系重构）
+        # DB 驱动角色按菜单权限过滤子项；否则按代码 if: 条件。
+        visible_children = item.children.select do |child|
+          menu_driven? ? menu_granted?(child) : (child.visible?(self) && menu_granted?(child))
+        end
+        return '' if visible_children.empty? && !menu_granted?(item)
 
         # Main nav item
         main_item = nav_item(complete_label, item_url, icon: item.icon, active: is_active, data: data_attrs, **html_options)

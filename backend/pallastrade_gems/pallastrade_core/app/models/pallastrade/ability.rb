@@ -103,16 +103,30 @@ module PallasTrade
     end
 
     # PALLAS-CUSTOM: function 权限 → can/cannot（2026-08-16）
+    # 资源经 PermissionRegistry 解析为模型类（如 orders → PallasTrade::Order），
+    # 使 `can?(:read, PallasTrade::Order)` 生效（导航 if: 与控制器 authorize 都用模型类）。
+    # 授予任一功能权限时同时授予 `:admin`（admin 面板入口 gate，BaseController#authorize_admin）。
     def apply_function_permission(rp)
-      target = rp.resource == 'all' ? :all : rp.resource.to_sym
+      target = resolve_permission_target(rp.resource)
       action = rp.action.to_sym
       action = :manage if action == :manage
 
       if rp.allowed?
         can action, target
+        can :admin, target unless action == :admin
       else
         cannot action, target
+        cannot :admin, target
       end
+    end
+
+    # PALLAS-CUSTOM: 资源名 → 授权主体（2026-08-16）
+    # 'all' → :all；注册表有模型类 → 模型类；否则保持资源符号。
+    def resolve_permission_target(resource)
+      return :all if resource.to_s == 'all'
+
+      entry = PallasTrade::PermissionRegistry[resource]
+      entry&.model_class || resource.to_sym
     end
 
     def safe_permission_set_class(name)
