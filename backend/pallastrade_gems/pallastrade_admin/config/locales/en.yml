@@ -368,6 +368,23 @@ en:
           destroy: Delete
           export: Export
           manage: Manage
+      menu_configs:
+        title: Menu Configuration
+        global_scope: Global
+        store_scope: This Store
+        scope_help: Global applies to every store; store scope overrides for the current store only.
+        items_help: Show/hide menu items, rename them or reorder. Empty = inherit default.
+        label_placeholder: Rename (optional)
+        position_placeholder: Order
+        custom_items: Custom Menu Items
+        custom_items_help: Add links to external sites or internal admin pages. Tick the checkbox to delete an existing custom item.
+        custom_label_placeholder: Label
+        custom_url_placeholder: URL
+        custom_icon_placeholder: Icon
+        new_tab: New tab
+        delete_item: Delete
+        save: Save Menu Configuration
+        saved: Menu configuration saved and applied immediately.
       manage_markets: Manage Markets
       manage_properties: Manage Properties
       manage_stock_locations: Manage Stock Locations

@@ -311,6 +311,14 @@ module PallasTrade
         cloned
       end
 
+      # PALLAS-CUSTOM: 公开排序（P4 菜单配置模块合并覆盖层使用）
+      # Sort items by position, then rebuild tree
+      def sort_items!
+        # Sort items by position, then rebuild tree
+        @items = @items.sort_by { |_key, item| [item.position, item.key.to_s] }.to_h
+        build_tree
+      end
+
       private
 
       # Depth of an item in the tree (root = 0)
@@ -322,12 +330,6 @@ module PallasTrade
           current = parent
         end
         depth
-      end
-
-      def sort_items!
-        # Sort items by position, then rebuild tree
-        @items = @items.sort_by { |_key, item| [item.position, item.key.to_s] }.to_h
-        build_tree
       end
     end
   end

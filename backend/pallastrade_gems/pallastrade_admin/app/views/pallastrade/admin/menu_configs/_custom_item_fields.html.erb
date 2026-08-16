@@ -1,0 +1,29 @@
+<%# PALLAS-CUSTOM: 自定义菜单项字段行（P4 菜单配置模块） %>
+<div class="grid grid-cols-12 gap-2 items-center mb-2 border rounded-md p-2">
+  <div class="col-span-2">
+    <% if cfg&.id %>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-light"><%= cfg.nav_key %></span>
+        <%= check_box_tag "custom_items[#{idx}][_destroy]", '1', false, class: 'form-check-input', title: PallasTrade.t('admin.menu_configs.delete_item') %>
+      </div>
+    <% end %>
+  </div>
+  <div class="col-span-3">
+    <%= text_field_tag "custom_items[#{idx}][label]", cfg&.label, placeholder: PallasTrade.t('admin.menu_configs.custom_label_placeholder'), class: 'form-control form-control-sm' %>
+  </div>
+  <div class="col-span-4">
+    <%= text_field_tag "custom_items[#{idx}][url]", cfg&.url, placeholder: PallasTrade.t('admin.menu_configs.custom_url_placeholder'), class: 'form-control form-control-sm' %>
+  </div>
+  <div class="col-span-1">
+    <%= text_field_tag "custom_items[#{idx}][icon]", cfg&.icon, placeholder: PallasTrade.t('admin.menu_configs.custom_icon_placeholder'), class: 'form-control form-control-sm' %>
+  </div>
+  <div class="col-span-1">
+    <%= number_field_tag "custom_items[#{idx}][position]", cfg&.position, placeholder: PallasTrade.t('admin.menu_configs.position_placeholder'), class: 'form-control form-control-sm', min: 0 %>
+  </div>
+  <div class="col-span-1 flex items-center gap-2">
+    <label class="flex items-center gap-1 text-sm">
+      <%= check_box_tag "custom_items[#{idx}][open_in_new_tab]", '1', cfg&.open_in_new_tab, class: 'form-check-input' %>
+      <%= PallasTrade.t('admin.menu_configs.new_tab') %>
+    </label>
+  </div>
+</div>

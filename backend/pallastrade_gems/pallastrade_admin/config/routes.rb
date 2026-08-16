@@ -242,6 +242,9 @@ PallasTrade::Core::Engine.add_routes do
     end
     # account management
     resources :roles, except: :show
+    # PALLAS-CUSTOM: 可视化菜单配置模块（P4 权限体系重构）
+    resources :menu_configs, only: [:index], controller: 'menu_configs'
+    post 'menu_configs', to: 'menu_configs#update'
     resources :invitations, except: [:edit, :update] do
       member do
         put :accept

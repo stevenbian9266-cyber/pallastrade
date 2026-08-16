@@ -164,11 +164,17 @@ module PallasTrade
         end
 
         # Resolve label (handles i18n keys)
+        # PALLAS-CUSTOM: 普通字符串 label 原样返回（不做 humanize），
+        # 只有 i18n key（含点）才翻译——修复自定义菜单项/中文 label 被 humanize 的问题。
         def resolve_label
-          return label unless label.is_a?(String) || label.is_a?(Symbol)
-
-          # Use PallasTrade.t for translation which handles the pallastrade namespace
-          PallasTrade.t(label, default: label.to_s.humanize)
+          case label
+          when String
+            label.include?('.') ? PallasTrade.t(label, default: label.humanize) : label
+          when Symbol
+            PallasTrade.t(label, default: label.to_s.humanize)
+          else
+            label
+          end
         end
 
         # Compute badge value
@@ -212,7 +218,7 @@ module PallasTrade
 
         # Deep clone for modifications
         def deep_clone
-          cloned = self.class.new(key, to_h)
+          cloned = self.class.new(key, **to_h)
           cloned.children = children.map(&:deep_clone)
           cloned
         end

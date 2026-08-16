@@ -39,7 +39,7 @@ RSpec.describe 'Admin AI Models page', type: :request do
       doc = Nokogiri::HTML(response.body)
       crumb_text = doc.at_css('nav[aria-label="breadcrumb"]')&.text.to_s
       expect(crumb_text).to include('Models')
-      expect(crumb_text).to include('AI tools')
+      expect(crumb_text).to include('AI Tools')
       # P3 自动推导接管 base crumb 后不得出现重复的 AI Tools 项
       expect(crumb_text.scan(/AI tools|AI Tools/).size).to eq(1)
     end

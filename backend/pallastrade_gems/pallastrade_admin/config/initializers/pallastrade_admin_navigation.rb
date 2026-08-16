@@ -557,6 +557,15 @@ Rails.application.config.after_initialize do
           position: 200,
           active: -> { controller_name == 'profile' && action_name == 'edit' }
 
+  # PALLAS-CUSTOM: 可视化菜单配置模块（P4 权限体系重构）
+  sidebar_nav.add :menu_configs,
+          label: 'admin.menu_configs.title',
+          url: :admin_menu_configs_path,
+          icon: 'layout-navbar',
+          position: 175,
+          active: -> { controller_name == 'menu_configs' },
+          if: -> { can?(:manage, current_store) }
+
   # ===============================================
   # Page Tab Navigations
   # ===============================================
