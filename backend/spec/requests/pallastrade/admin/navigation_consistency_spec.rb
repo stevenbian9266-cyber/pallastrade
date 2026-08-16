@@ -159,5 +159,16 @@ RSpec.describe 'Admin navigation consistency (breadcrumb + page_title)', type: :
       expect(response.body).to include(PallasTrade.t(:products))
       expect(response.body).to include('Auto Crumb Test Product')
     end
+
+    # AC-003c 设置区回归：Settings 模式面包屑不得被主区自动推导污染（Home 误配 bug）
+    it 'keeps Settings > API Keys breadcrumb on /admin/api_keys (no Home leak)' do
+      get '/admin/api_keys'
+      expect(response).to have_http_status(:ok)
+      doc = Nokogiri::HTML(response.body)
+      crumb_text = doc.at_css('nav[aria-label="breadcrumb"]')&.text.to_s
+      expect(crumb_text).to include(PallasTrade.t(:settings))
+      expect(crumb_text).to include(PallasTrade.t(:api_keys))
+      expect(crumb_text).not_to include(PallasTrade.t(:home))
+    end
   end
 end

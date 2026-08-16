@@ -27,13 +27,23 @@ module PallasTrade
 
       private
 
+      # PALLAS-CUSTOM: settings-area detection that is safe at derive time.
+      # `SettingsConcern#set_settings_area_flag` runs as a subclass before_action
+      # AFTER this concern's derive, so `@settings_area` alone is unreliable —
+      # use the class-level include (immune to callback ordering) as the primary
+      # signal, falling back to the flag for edge cases.
+      def settings_controller?
+        @settings_area.present? ||
+          self.class.include?(PallasTrade::Admin::SettingsConcern)
+      end
+
       # Derive breadcrumbs from the sidebar navigation config for the current
       # request path. Skips the settings area (its nav items are section-level
       # and will be unified in P4). Object pages append their own crumb via
       # controller before_action (e.g. add_breadcrumb_for_product).
       def derive_breadcrumbs_from_navigation
         return unless respond_to?(:add_breadcrumb, true)
-        return if @settings_area.present?
+        return if settings_controller?
 
         chain = PallasTrade.admin.navigation.sidebar&.find_breadcrumb_chain(request.path, self)
         return if chain.blank?

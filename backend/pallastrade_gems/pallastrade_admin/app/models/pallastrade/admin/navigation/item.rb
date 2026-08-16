@@ -106,12 +106,17 @@ module PallasTrade
         # PALLAS-CUSTOM: 面包屑自动推导（P3 导航架构重构）
         # Whether this item's URL matches the given request path (exact match
         # or as a path prefix — e.g. /admin/orders matches /admin/orders/123).
+        # Shallow URLs (a single admin segment like `/admin`) only exact-match,
+        # so the Dashboard item never hijacks unrelated `/admin/*` pages
+        # (settings pages, AI module, imports wizard, etc.).
         # @param path [String] the current request path (no query string)
         # @param context [Object] controller/view context for URL resolution
         # @return [Boolean]
         def match_path?(path, context = nil)
           item_url = safe_resolve_url(context)
           return false if item_url.blank?
+
+          return path == item_url if shallow_url?(item_url)
 
           path == item_url || path.start_with?("#{item_url}/")
         end
@@ -191,6 +196,13 @@ module PallasTrade
 
         def inspect
           "#<PallasTrade::Admin::Navigation::Item key=#{key} label=#{label} children=#{children.size}>"
+        end
+
+        private
+
+        # A "shallow" URL has at most one path segment (e.g. `/admin`).
+        def shallow_url?(url)
+          url.split('/').reject(&:empty?).length <= 1
         end
       end
     end
