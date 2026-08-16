@@ -2,9 +2,10 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing |
+| 状态 | done |
 | 创建日期 | 2026-08-16 |
 | 来源 | 需求：新增CMS博客（用户 2026-08-16 明确回复"实施"确认） |
+| 关联 REQ | REQ-20260816-cms-blog |
 | 分类 | other（自动判定） |
 | 关联 Skill | pallastrade-resource / pallastrade-data-model / pallastrade-api-v3 / pallastrade-admin / pallastrade-storefront / pallastrade-i18n |
 | 关联 REQ | 实施时回填 |
