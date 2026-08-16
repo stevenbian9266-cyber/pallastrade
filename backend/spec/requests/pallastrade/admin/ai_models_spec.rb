@@ -32,11 +32,16 @@ RSpec.describe 'Admin AI Models page', type: :request do
       expect(response.body).to include('gpt-5.6-luna')
     end
 
-    it 'shows breadcrumb with AI Tools > Models' do
+    it 'shows breadcrumb with AI Tools > Models (no duplicate base crumb, P3 auto-derive)' do
       get '/admin/ai/models'
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include('Models')
+      doc = Nokogiri::HTML(response.body)
+      crumb_text = doc.at_css('nav[aria-label="breadcrumb"]')&.text.to_s
+      expect(crumb_text).to include('Models')
+      expect(crumb_text).to include('AI tools')
+      # P3 自动推导接管 base crumb 后不得出现重复的 AI Tools 项
+      expect(crumb_text.scan(/AI tools|AI Tools/).size).to eq(1)
     end
   end
 

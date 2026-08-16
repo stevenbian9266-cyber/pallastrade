@@ -14,11 +14,10 @@ module PallasTrade
         PallasTrade::AI::Provider::OpenAI
       ].freeze
 
-      # Breadcrumbs — Pattern B (class-level declaration).
-      # Base breadcrumb "AI Tools" is shared across all AI sub-pages;
-      # sub-page breadcrumbs are appended via before_action.
+      # Breadcrumbs — Pattern B (P3 起：模块级 base crumb 由导航自动推导，
+      # 即 sidebar 的 ai_tools 项；这里只保留图标 + 子页 crumb)。
+      # Sub-page breadcrumbs are appended via before_action.
       add_breadcrumb_icon 'sparkles'
-      add_breadcrumb PallasTrade.t(:ai_tools), :admin_ai_path
 
       before_action :add_ai_sub_breadcrumb, only: %i[providers provider models capabilities runs]
 
