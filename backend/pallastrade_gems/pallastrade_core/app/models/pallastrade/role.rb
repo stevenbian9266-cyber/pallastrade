@@ -39,5 +39,41 @@ module PallasTrade
 
       role_permissions.set.where(permission_set: 'PallasTrade::PermissionSets::SuperUser', allowed: true).first_or_create!
     end
+
+    # PALLAS-CUSTOM: 重建菜单/功能/数据权限（2026-08-16 权限体系重构）
+    # 由 Roles 编辑页提交的勾选/选择重建；set 类型（如 admin SuperUser）不受影响。
+    # @param menu [Array<String>] 授权的导航项 key（菜单权限）
+    # @param function [Hash<String, Array<String>>] resource => actions（功能权限）
+    # @param data [Hash<String, Hash>] resource => { scope:, scope_value:, custom_condition: }（数据权限）
+    def rebuild_role_permissions(menu: nil, function: nil, data: nil)
+      role_permissions.transaction do
+        role_permissions.where(permission_type: %w[menu function data]).delete_all
+
+        Array(menu).uniq.compact.each do |nav_key|
+          role_permissions.create!(permission_type: 'menu', nav_key: nav_key.to_s, allowed: true)
+        end
+
+        (function || {}).each do |resource, actions|
+          Array(actions).compact.uniq.each do |action|
+            role_permissions.create!(permission_type: 'function', resource: resource.to_s, action: action.to_s, allowed: true)
+          end
+        end
+
+        (data || {}).each do |resource, cfg|
+          cfg = cfg.to_h.symbolize_keys
+          next if cfg[:scope].blank?
+
+          role_permissions.create!(
+            permission_type: 'data',
+            resource: resource.to_s,
+            scope: cfg[:scope].to_s,
+            scope_value: cfg[:scope_value].presence,
+            custom_condition: cfg[:custom_condition].presence,
+            allowed: true
+          )
+        end
+      end
+      true
+    end
   end
 end

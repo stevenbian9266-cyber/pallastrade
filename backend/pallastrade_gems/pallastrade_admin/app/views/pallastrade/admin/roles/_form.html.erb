@@ -3,3 +3,121 @@
     <%= f.pallastrade_text_field :name, required: true %>
   </div>
 </div>
+
+<%# PALLAS-CUSTOM: 角色权限矩阵（P2 权限体系重构）——菜单权限 / 功能权限 / 数据权限 %>
+<div class="card mb-6" data-controller="tabs" data-tabs-active-tab-class-value="active">
+  <div class="card-header flex flex-wrap items-center gap-2">
+    <button type="button" class="btn btn-light btn-sm tab-btn active" data-tabs-target="tab" data-action="click->tabs#select">
+      <%= PallasTrade.t('admin.roles.menu_permissions') %>
+    </button>
+    <button type="button" class="btn btn-light btn-sm tab-btn" data-tabs-target="tab" data-action="click->tabs#select">
+      <%= PallasTrade.t('admin.roles.function_permissions') %>
+    </button>
+    <button type="button" class="btn btn-light btn-sm tab-btn" data-tabs-target="tab" data-action="click->tabs#select">
+      <%= PallasTrade.t('admin.roles.data_permissions') %>
+    </button>
+  </div>
+
+  <div class="card-body">
+    <%# ---- 菜单权限：导航树勾选 ---- %>
+    <div class="tab-panel">
+      <p class="text-sm text-gray-500 mb-3"><%= PallasTrade.t('admin.roles.menu_permissions_help') %></p>
+      <label class="flex items-center gap-2 mb-2">
+        <%= check_box_tag 'role[menu_grants][]', 'all', role_menu_grant?('all'), class: 'form-check-input', id: 'role_menu_all' %>
+        <span class="font-medium"><%= PallasTrade.t('admin.roles.all_menus') %></span>
+      </label>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
+        <% @nav_root_items.each do |item| %>
+          <% next if item.section? %>
+          <div class="border rounded-md p-2">
+            <label class="flex items-center gap-2">
+              <%= check_box_tag 'role[menu_grants][]', item.key, role_menu_grant?(item.key), class: 'form-check-input' %>
+              <%= item.resolve_label %>
+            </label>
+            <% if item.children.any? %>
+              <div class="ml-6 mt-1 flex flex-col gap-1">
+                <% item.children.each do |child| %>
+                  <label class="flex items-center gap-2">
+                    <%= check_box_tag 'role[menu_grants][]', child.key, role_menu_grant?(child.key), class: 'form-check-input' %>
+                    <span class="text-sm"><%= child.resolve_label %></span>
+                  </label>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <%# ---- 功能权限：资源 × 操作矩阵 ---- %>
+    <div class="tab-panel hidden">
+      <p class="text-sm text-gray-500 mb-3"><%= PallasTrade.t('admin.roles.function_permissions_help') %></p>
+      <div class="overflow-x-auto">
+        <table class="table table-sm table-bordered">
+          <thead>
+            <tr>
+              <th><%= PallasTrade.t('admin.roles.resource') %></th>
+              <% %w[read create update destroy export manage].each do |action| %>
+                <th class="text-center"><%= PallasTrade.t("admin.roles.actions.#{action}") %></th>
+              <% end %>
+            </tr>
+          </thead>
+          <tbody>
+            <% @permission_resources.each do |resource, entry| %>
+              <tr>
+                <td><%= entry.label %></td>
+                <% %w[read create update destroy export manage].each do |action| %>
+                  <td class="text-center">
+                    <% if entry.actions.include?(action) %>
+                      <%= check_box_tag "role[function_grants][#{resource}][]", action, role_function_grant?(resource, action), class: 'form-check-input' %>
+                    <% end %>
+                  </td>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <%# ---- 数据权限：资源 × 数据范围 ---- %>
+    <div class="tab-panel hidden">
+      <p class="text-sm text-gray-500 mb-3"><%= PallasTrade.t('admin.roles.data_permissions_help') %></p>
+      <div class="overflow-x-auto">
+        <table class="table table-sm table-bordered">
+          <thead>
+            <tr>
+              <th><%= PallasTrade.t('admin.roles.resource') %></th>
+              <th><%= PallasTrade.t('admin.roles.data_scope') %></th>
+              <th><%= PallasTrade.t('admin.roles.data_scope_value') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @permission_resources.each do |resource, entry| %>
+              <% current_data = role_data_permission(resource) %>
+              <tr>
+                <td><%= entry.label %></td>
+                <td>
+                  <%= select_tag "role[data_grants][#{resource}][scope]",
+                        options_for_select(
+                          [[PallasTrade.t('admin.roles.data_scope_none'), ''],
+                           [PallasTrade.t('admin.roles.data_scope_all'), 'all'],
+                           [PallasTrade.t('admin.roles.data_scope_self'), 'self'],
+                           [PallasTrade.t('admin.roles.data_scope_store'), 'store'],
+                           [PallasTrade.t('admin.roles.data_scope_channel'), 'channel'],
+                           [PallasTrade.t('admin.roles.data_scope_custom'), 'custom']],
+                          current_data&.dig(:scope).to_s),
+                        class: 'form-select form-select-sm' %>
+                </td>
+                <td>
+                  <%= text_field_tag "role[data_grants][#{resource}][scope_value]", current_data&.dig(:scope_value),
+                        class: 'form-control form-control-sm', placeholder: PallasTrade.t('admin.roles.data_scope_value_placeholder') %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

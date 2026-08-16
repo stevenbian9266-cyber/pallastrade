@@ -343,6 +343,31 @@ en:
         invited_you_to_join_html: "%{inviter} has invited you to join %{resource}"
       json_preview:
         no_api_response: No API response found for this resource
+      roles:
+        resource: Resource
+        menu_permissions: Menu Permissions
+        function_permissions: Function Permissions
+        data_permissions: Data Permissions
+        menu_permissions_help: Grant which menu items this role can see. Leave unchecked to hide the menu item from this role. "All Menus" grants every menu item.
+        all_menus: All Menus
+        function_permissions_help: Grant which resource operations this role can perform. Manage = all operations.
+        data_permissions_help: Scope which records this role can access per resource. Self = records created by the user; Store/Channel = records of a specific store/channel; Custom = custom condition.
+        data_scope: Data Scope
+        data_scope_value: Value
+        data_scope_value_placeholder: e.g. store id / channel id / JSON condition
+        data_scope_none: None
+        data_scope_all: All
+        data_scope_self: Self
+        data_scope_store: Store
+        data_scope_channel: Channel
+        data_scope_custom: Custom
+        actions:
+          read: Read
+          create: Create
+          update: Update
+          destroy: Delete
+          export: Export
+          manage: Manage
       manage_markets: Manage Markets
       manage_properties: Manage Properties
       manage_stock_locations: Manage Stock Locations

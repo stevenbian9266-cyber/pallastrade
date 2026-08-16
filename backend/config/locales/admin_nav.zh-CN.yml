@@ -64,3 +64,28 @@ zh-CN:
       storefront: 店铺前台
       edit_profile: 编辑个人资料
       back_in_stock_subscriptions: 到货通知订阅
+      roles:
+        resource: 资源
+        menu_permissions: 菜单权限
+        function_permissions: 功能权限
+        data_permissions: 数据权限
+        menu_permissions_help: 授予该角色可见的菜单项；未勾选则对该角色隐藏。勾选"全部菜单"则显示所有菜单。
+        all_menus: 全部菜单
+        function_permissions_help: 授予该角色可执行的操作；Manage（管理）= 全部操作。
+        data_permissions_help: 按资源限定该角色可访问的数据范围。本人=仅本人创建的记录；店铺/渠道=指定店铺/渠道的记录；自定义=自定义条件。
+        data_scope: 数据范围
+        data_scope_value: 值
+        data_scope_value_placeholder: 如店铺 ID / 渠道 ID / JSON 条件
+        data_scope_none: 无
+        data_scope_all: 全部
+        data_scope_self: 仅本人
+        data_scope_store: 按店铺
+        data_scope_channel: 按渠道
+        data_scope_custom: 自定义
+        actions:
+          read: 查看
+          create: 新建
+          update: 编辑
+          destroy: 删除
+          export: 导出
+          manage: 管理
