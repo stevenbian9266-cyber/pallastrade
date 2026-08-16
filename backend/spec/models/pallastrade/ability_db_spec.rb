@@ -32,9 +32,9 @@ RSpec.describe PallasTrade::Ability do
 
       ability = PallasTrade::Ability.new(user, store: store)
       expect(ability.db_driven?).to be(true)
-      expect(ability).to be_can(:read, :orders)
-      expect(ability).not_to be_can(:create, :orders)
-      expect(ability).not_to be_can(:manage, :products)
+      expect(ability).to be_can(:read, PallasTrade::Order)
+      expect(ability).not_to be_can(:create, PallasTrade::Order)
+      expect(ability).not_to be_can(:manage, PallasTrade::Product)
     end
 
     it 'explicit deny (allowed=false) removes a grant' do
@@ -45,8 +45,8 @@ RSpec.describe PallasTrade::Ability do
       create(:role_user, user: user, role: role, resource: store, store: store)
 
       ability = PallasTrade::Ability.new(user, store: store)
-      expect(ability).to be_can(:read, :orders)
-      expect(ability).not_to be_can(:destroy, :orders)
+      expect(ability).to be_can(:read, PallasTrade::Order)
+      expect(ability).not_to be_can(:destroy, PallasTrade::Order)
     end
   end
 
@@ -82,6 +82,41 @@ RSpec.describe PallasTrade::Ability do
 
       ability = PallasTrade::Ability.new(user, store: store)
       expect(ability.data_permissions[:orders]).to eq({ scope: 'self', scope_value: nil, custom_condition: nil })
+    end
+
+    it 'applies self scope to accessible_by for read (AC-007)' do
+      owner = create(:user, email: 'owner@example.com')
+      viewer = create(:user, email: 'viewer2@example.com')
+      order_mine = create(:order, store: store, user: owner)
+      order_other = create(:order, store: store, user: create(:user, email: 'other@example.com'))
+
+      viewer_admin = create(:admin_user, email: 'viewer_admin@example.com', password: 'secret', password_confirmation: 'secret', without_admin_role: true)
+      role = create(:role, name: 'self_orders_read')
+      role.rebuild_role_permissions(
+        function: { orders: ['read'] },
+        data: { orders: { scope: 'self' } }
+      )
+      create(:role_user, user: viewer_admin, role: role, resource: store, store: store)
+      # data scope self 用当前 admin 用户 id 过滤（admin 无订单）
+      ability = PallasTrade::Ability.new(viewer_admin, store: store)
+
+      visible = PallasTrade::Order.accessible_by(ability, :read)
+      expect(visible).not_to include(order_mine)
+      expect(visible).not_to include(order_other)
+    end
+
+    it 'applies custom condition to accessible_by for read (AC-007)' do
+      viewer_admin = create(:admin_user, email: 'custom_admin@example.com', password: 'secret', password_confirmation: 'secret', without_admin_role: true)
+      role = create(:role, name: 'custom_orders')
+      role.rebuild_role_permissions(
+        function: { orders: ['read'] },
+        data: { orders: { scope: 'custom', custom_condition: { 'store_id' => store.id } } }
+      )
+      create(:role_user, user: viewer_admin, role: role, resource: store, store: store)
+      ability = PallasTrade::Ability.new(viewer_admin, store: store)
+
+      visible = PallasTrade::Order.accessible_by(ability, :read)
+      expect(visible.to_sql).to include('store_id')
     end
   end
 

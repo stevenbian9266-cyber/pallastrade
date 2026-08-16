@@ -197,6 +197,18 @@ end
 
 Defaults are restrictive — users with no roles get only `PallasTrade::PermissionSets::DefaultCustomer`. Build up explicit grants per role by composing built-in sets (`OrderManagement`, `ProductDisplay`, `StockManagement`, …) with custom ones; don't hand every role `SuperUser`.
 
+### DB-driven role permissions (2026-08-16, admin)
+
+Since the permission-system refactor, **admin roles are authorized from the DB** (`PallasTrade::RolePermission`), not only code permission sets:
+
+- `PallasTrade::Ability#apply_permissions_from_db` reads the user's role permissions; if any exist for the user's roles, DB fully drives (set/function/menu/data). The `admin` role is seeded with `set: SuperUser` via `Role.default_admin_role`. Users with no DB-configured roles fall back to code permission sets (`DefaultCustomer` etc.).
+- **function** grants are `resource × action` (read/create/update/destroy/export/manage). `manage` = all actions. Each grant also implies `:admin` on that resource (admin-panel entry gate).
+- **data** grants scope reads via CanCanCan conditions so `accessible_by` filters lists (scope: `self` → `user_id = current user`, `store`/`channel` → the configured value, `custom` → admin-supplied simple hash). Resources must be registered in `PallasTrade::PermissionRegistry` (`backend/config/initializers/pallastrade_permission_registry.rb`).
+- **menu** grants control sidebar visibility (`ability.menu_permissions`); a DB-driven role's menu tree is decided entirely by menu grants.
+- Admin role-permission editing happens in the Roles edit page (three tabs: menu/function/data) — see the `pallastrade-admin` skill. `nav:validate` enforces that permission resources are registered.
+
+Keep `set`-type permissions (SuperUser) out of the rebuild path — the UI never edits them.
+
 ### Payment method preferences
 
 Payment methods (Stripe, Adyen, PayPal, etc.) store their gateway credentials as PallasTrade preferences on the `PallasTrade::PaymentMethod` record. These end up in `pallastrade_payment_methods.preferences` as a serialized column.

@@ -233,6 +233,26 @@ end
 所有页面都必须有页面头（否则 `page_actions` 丢失）。回归断言见
 `navigation_consistency_spec.rb`（AC-006~AC-011 用例）。
 
+## 权限体系 + 可视化菜单配置（2026-08-16，P1-P6 权限体系重构）
+
+后台权限由 DB 驱动（取代代码级 `PallasTrade.permissions.assign`），核心模型：
+
+- **`PallasTrade::RolePermission`**：角色权限行，`permission_type` ∈ `set`（引用权限集类，保留复杂块逻辑，如 admin SuperUser）/ `function`（resource × action: read/create/update/destroy/export/manage）/ `menu`（nav_key 可见性）/ `data`（resource × scope: all/self/store/channel/custom）。
+- **`PallasTrade::MenuConfig`**：可视化菜单配置覆盖层（store_id 空=全局，非空=店铺覆盖）：显隐/改名/排序/自定义菜单项（item_type=custom）。基于导航配置文件默认树叠加。
+- **`PallasTrade::PermissionRegistry`**：功能/数据权限矩阵可配置资源的注册表（resource → model_class + actions + data_fields）。新增可授权资源须在 `backend/config/initializers/pallastrade_permission_registry.rb` 登记。
+
+关键行为：
+
+1. **Ability 由 DB 驱动**：`PallasTrade::Ability#apply_permissions_from_db` 读取用户角色的 role_permissions；`admin` 角色由 `Role.default_admin_role` 确保 `set: SuperUser`；无 DB 配置的角色回退代码权限集（storefront default）。
+2. **功能权限 → 授权主体**：resource 经 PermissionRegistry 解析为模型类（`orders` → `PallasTrade::Order`），授予时自动附带 `:admin`（面板入口 gate）。read/index/show 授予时叠加数据范围条件（`accessible_by` 自动生效）。
+3. **菜单权限过滤**：DB 驱动角色（`ability.menu_permissions` 非 nil）的侧边栏完全由菜单权限决定（跳过代码 `if:`）；未配置角色按代码 `if:` 向后兼容。
+4. **菜单配置即时生效**：`navigation_helper#build_effective_nav` 深克隆导航 + 合并 MenuConfig 覆盖层 + 自定义项。
+5. **角色权限 UI**：Roles 编辑页三 tab（菜单/功能/数据）；`Role#rebuild_role_permissions` 重建（set 类型保护）。
+6. **校验**：`nav:validate` 校验 role_permissions 的 resource 必须注册于 PermissionRegistry；MenuConfig default 覆盖 key 必须存在于默认树。
+
+⚠️ 角色权限编辑只影响 menu/function/data；`set`（admin SuperUser）不受 UI 重建影响。
+新增受控资源 = 注册 PermissionRegistry + 权限矩阵自动出现（零表单改动）。
+
 ## Customizing admin tables
 
 Most admin listing pages (Products, Orders, Promotions, etc.) use a registered table definition — see the gem's `config/initializers/pallastrade_admin_tables.rb` for the registered keys (note: the Customers page is registered as `:users`; a few pages like Payment Methods don't use the table registry). Add, remove, or reorder columns from an initializer:

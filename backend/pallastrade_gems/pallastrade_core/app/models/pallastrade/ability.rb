@@ -75,7 +75,16 @@ module PallasTrade
         activate_permission_sets([klass]) if klass
       end
 
-      # function 类型：resource × action
+      # data 类型：先记录角色数据权限（function 授予时应用范围条件）
+      role_permissions.select { |rp| rp.permission_type == 'data' && rp.allowed? }.each do |rp|
+        @data_permissions[rp.resource.to_sym] = {
+          scope: rp.scope,
+          scope_value: rp.scope_value,
+          custom_condition: rp.custom_condition
+        }
+      end
+
+      # function 类型：resource × action（read/index/show 应用数据范围条件）
       role_permissions.select { |rp| rp.permission_type == 'function' }.each do |rp|
         apply_function_permission(rp)
       end
@@ -90,15 +99,6 @@ module PallasTrade
         end
       end
 
-      # data 类型：记录角色数据权限
-      role_permissions.select { |rp| rp.permission_type == 'data' && rp.allowed? }.each do |rp|
-        @data_permissions[rp.resource.to_sym] = {
-          scope: rp.scope,
-          scope_value: rp.scope_value,
-          custom_condition: rp.custom_condition
-        }
-      end
-
       true
     end
 
@@ -106,13 +106,18 @@ module PallasTrade
     # 资源经 PermissionRegistry 解析为模型类（如 orders → PallasTrade::Order），
     # 使 `can?(:read, PallasTrade::Order)` 生效（导航 if: 与控制器 authorize 都用模型类）。
     # 授予任一功能权限时同时授予 `:admin`（admin 面板入口 gate，BaseController#authorize_admin）。
+    # read/index/show 授予时叠加数据范围条件（P5：accessible_by 自动生效）。
     def apply_function_permission(rp)
       target = resolve_permission_target(rp.resource)
       action = rp.action.to_sym
       action = :manage if action == :manage
 
       if rp.allowed?
-        can action, target
+        if read_action?(action) && (condition = data_condition_for(rp.resource))
+          can action, target, condition
+        else
+          can action, target
+        end
         can :admin, target unless action == :admin
       else
         cannot action, target
@@ -127,6 +132,45 @@ module PallasTrade
 
       entry = PallasTrade::PermissionRegistry[resource]
       entry&.model_class || resource.to_sym
+    end
+
+    # PALLAS-CUSTOM: read 系 action（P5 数据权限）
+    def read_action?(action)
+      %i[read index show].include?(action)
+    end
+
+    # PALLAS-CUSTOM: 数据权限条件（P5）
+    # 按资源的数据范围生成 CanCanCan 条件哈希，作用于 accessible_by 列表查询：
+    #   self    → user_id = 当前用户（仅当注册表声明 user_id 字段）
+    #   store   → store_id = scope_value
+    #   channel → channel_id = scope_value
+    #   custom  → 白名单自定义条件（管理员配置的简单 Hash，如 {"store_id"=>"xxx"}）
+    # @param resource [String] 资源名
+    # @return [Hash, nil]
+    def data_condition_for(resource)
+      dp = @data_permissions[resource.to_sym]
+      return nil unless dp
+
+      entry = PallasTrade::PermissionRegistry[resource]
+      fields = entry&.data_fields || []
+
+      case dp[:scope]
+      when 'self'
+        return nil unless fields.include?('user_id')
+
+        { user_id: @user&.id }
+      when 'store'
+        return nil if dp[:scope_value].blank?
+
+        { store_id: dp[:scope_value] }
+      when 'channel'
+        return nil if dp[:scope_value].blank?
+
+        { channel_id: dp[:scope_value] }
+      when 'custom'
+        cond = dp[:custom_condition]
+        cond if cond.is_a?(Hash) && cond.any?
+      end
     end
 
     def safe_permission_set_class(name)

@@ -47,6 +47,9 @@ namespace :pallastrade do
         end
       end
 
+      # PALLAS-CUSTOM: 权限体系（P6）——DB 角色权限 resource 必须注册于 PermissionRegistry
+      validate_role_permissions(violations, warnings)
+
       if violations.empty?
         puts "✅ nav:validate OK — #{warnings.size} warning(s)"
         warnings.each { |w| puts "⚠️  #{w}" }
@@ -55,6 +58,19 @@ namespace :pallastrade do
         violations.each { |v| puts "   🚫 #{v}" }
         exit 1
       end
+    end
+
+    # PALLAS-CUSTOM: DB 角色权限校验（P6 权限体系重构）
+    def validate_role_permissions(violations, warnings)
+      PallasTrade::RolePermission.distinct.pluck(:resource, :permission_type).each do |resource, type|
+        next if type == 'set' || type == 'menu' || resource.blank? || resource == 'all'
+
+        unless PallasTrade::PermissionRegistry[resource]
+          violations << "role_permissions: 资源 #{resource.inspect} 未在 PermissionRegistry 注册（P6：须在 pallastrade_permission_registry.rb 登记）"
+        end
+      end
+    rescue StandardError => e
+      warnings << "role_permissions 校验跳过（#{e.class}）"
     end
 
     def validate_item(item, context, violations, warnings)
