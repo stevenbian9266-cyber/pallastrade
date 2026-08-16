@@ -309,6 +309,23 @@ var StoreClient = class {
     get: (id, options) => this.request("GET", `/policies/${id}`, options)
   };
   // ============================================
+  // Posts (blog)
+  // ============================================
+  posts = {
+    /**
+     * List published blog posts (newest first, paginated)
+     */
+    list: (params, options) => this.request("GET", "/posts", {
+      ...options,
+      params: transformListParams({ ...params })
+    }),
+    /**
+     * Get a published blog post by slug or prefixed ID
+     * @param id - Post slug (e.g., 'welcome-to-our-store') or prefixed ID (e.g., 'post_abc123')
+     */
+    get: (id, options) => this.request("GET", `/posts/${id}`, options)
+  };
+  // ============================================
   // Markets
   // ============================================
   markets = {

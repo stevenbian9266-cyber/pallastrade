@@ -228,7 +228,21 @@ issues `NextResponse.redirect(target, status)` (guarded against A→A loops); on
 admin (Developers → Redirects) as `PallasTrade::Redirect` records. Static assets, `_next/*`
 and `api/*` are excluded by the proxy matcher. Do NOT add a separate `src/middleware.ts` —
 Next.js 16 errors when both a middleware and a proxy file are present.
+### Blog posts — CMS (2026-08, PRD-20260816-other-新增cms博客)
 
+Blog is rendered from the PallasTrade CMS `Post` model (published only):
+
+- Routes: `/blog` (list) and `/blog/[slug]` (detail) under
+  `app/[country]/[locale]/(storefront)/blog/`.
+- Data layer: `src/lib/data/posts.ts` (`listPosts` / `getPost`) uses `client.posts.list`
+  / `client.posts.get` from `@pallastrade/sdk`.
+- Components: `src/components/blog/PostCard.tsx` (server component; cover image, title,
+  excerpt, author, publish date).
+- SEO: detail page `generateMetadata` uses `seo_title`/`seo_description` (fall back to
+  title/excerpt) + JSON-LD `Article`; published posts are added to `src/app/sitemap.ts`
+  via `client.posts.list` (`Post` type from SDK).
+- Locale messages: `blog` namespace in all 5 `messages/*.json` files.
+- Do NOT use inline `style={{}}` — Tailwind classes only (AP-001).
 ### Client-side cart
 
 Carts are server-state, so use SWR or React Query. The cart ID + token persist in a cookie:

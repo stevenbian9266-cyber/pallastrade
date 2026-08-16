@@ -493,6 +493,19 @@ var PolicySchema = z.object({
   body: z.string().nullable(),
   body_html: z.string().nullable()
 });
+var PostSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  slug: z.string(),
+  excerpt: z.string().nullable(),
+  author: z.string().nullable(),
+  published_at: z.string().nullable(),
+  cover_image_url: z.string().nullable(),
+  body: z.string().nullable(),
+  body_html: z.string().nullable(),
+  seo_title: z.string().nullable(),
+  seo_description: z.string().nullable()
+});
 var PriceSchema = z.object({
   id: z.string(),
   amount: z.string().nullable(),
@@ -706,6 +719,6 @@ var WishlistSchema = z.object({
   items: z.array(WishlistItemSchema).optional()
 });
 
-export { AddressSchema, BaseSchema, CartSchema, CategorySchema, ChannelSchema, CountrySchema, CreditCardSchema, CurrencySchema, CustomFieldSchema, CustomerSchema, DeliveryMethodSchema, DeliveryRateSchema, DigitalLinkSchema, DigitalSchema, DiscountSchema, FulfillmentSchema, GiftCardBatchSchema, GiftCardSchema, InvitationSchema, LineItemSchema, LocaleSchema, MarketSchema, MediaSchema, NewsletterSubscriberSchema, OptionTypeSchema, OptionValueSchema, OrderSchema, PaymentMethodSchema, PaymentSchema, PaymentSessionSchema, PaymentSetupSessionSchema, PaymentSourceSchema, PolicySchema, PriceHistorySchema, PriceSchema, ProductFilterAvailabilityOptionSchema, ProductFilterAvailabilitySchema, ProductFilterCategoryOptionSchema, ProductFilterCategorySchema, ProductFilterOptionSchema, ProductFilterOptionValueSchema, ProductFilterPriceRangeSchema, ProductFilterSortOptionSchema, ProductFiltersSchema, ProductPublicationSchema, ProductSchema, PromotionSchema, RefundSchema, ReturnAuthorizationSchema, ReturnItemSchema, StateSchema, StockLocationSchema, StockReservationSchema, StoreCreditSchema, VariantSchema, WishlistItemSchema, WishlistSchema };
+export { AddressSchema, BaseSchema, CartSchema, CategorySchema, ChannelSchema, CountrySchema, CreditCardSchema, CurrencySchema, CustomFieldSchema, CustomerSchema, DeliveryMethodSchema, DeliveryRateSchema, DigitalLinkSchema, DigitalSchema, DiscountSchema, FulfillmentSchema, GiftCardBatchSchema, GiftCardSchema, InvitationSchema, LineItemSchema, LocaleSchema, MarketSchema, MediaSchema, NewsletterSubscriberSchema, OptionTypeSchema, OptionValueSchema, OrderSchema, PaymentMethodSchema, PaymentSchema, PaymentSessionSchema, PaymentSetupSessionSchema, PaymentSourceSchema, PolicySchema, PostSchema, PriceHistorySchema, PriceSchema, ProductFilterAvailabilityOptionSchema, ProductFilterAvailabilitySchema, ProductFilterCategoryOptionSchema, ProductFilterCategorySchema, ProductFilterOptionSchema, ProductFilterOptionValueSchema, ProductFilterPriceRangeSchema, ProductFilterSortOptionSchema, ProductFiltersSchema, ProductPublicationSchema, ProductSchema, PromotionSchema, RefundSchema, ReturnAuthorizationSchema, ReturnItemSchema, StateSchema, StockLocationSchema, StockReservationSchema, StoreCreditSchema, VariantSchema, WishlistItemSchema, WishlistSchema };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

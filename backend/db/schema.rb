@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_15_100003) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_16_100001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1263,6 +1263,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_100003) do
     t.datetime "updated_at", null: false
     t.index ["pallastrade_policy_id", "locale"], name: "index_pt_policy_translations_on_pt_policy_id_and_locale", unique: true
     t.index ["pallastrade_policy_id"], name: "index_pt_policy_translations_on_pt_policy_id"
+  end
+
+  create_table "pallastrade_post_translations", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "excerpt"
+    t.string "locale", null: false
+    t.bigint "pallastrade_post_id", null: false
+    t.text "seo_description"
+    t.string "seo_title"
+    t.string "title"
+    t.datetime "updated_at", null: false
+    t.index ["pallastrade_post_id", "locale"], name: "idx_on_pallastrade_post_id_locale_2097efc708", unique: true
+    t.index ["pallastrade_post_id"], name: "index_pallastrade_post_translations_on_pallastrade_post_id"
+  end
+
+  create_table "pallastrade_posts", force: :cascade do |t|
+    t.string "author"
+    t.datetime "created_at", null: false
+    t.text "excerpt"
+    t.datetime "published_at"
+    t.text "seo_description"
+    t.string "seo_title"
+    t.string "slug", null: false
+    t.bigint "store_id", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "published_at"], name: "index_pallastrade_posts_on_store_id_and_published_at"
+    t.index ["store_id", "slug"], name: "index_pallastrade_posts_on_store_id_and_slug", unique: true
+    t.index ["store_id"], name: "index_pallastrade_posts_on_store_id"
   end
 
   create_table "pallastrade_preferences", force: :cascade do |t|

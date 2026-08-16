@@ -332,6 +332,19 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
 - Notifications are sent by `PallasTrade::BackInStockSubscriber` on the `product.back_in_stock`
   event; see the events skill.
 
+### Blog posts — CMS (Store + Admin API)
+
+- **Store API (read-only, published only)**:
+  - `GET /api/v3/store/posts` — paginated list of published posts, newest first (`{ data, meta }`).
+  - `GET /api/v3/store/posts/:slug` (or `post_xxx` prefixed ID) — single post; drafts/scheduled → 404.
+- **Admin API (full CRUD, scoped `read_settings`/`write_settings`)**:
+  `GET/POST/PATCH/DELETE /api/v3/admin/posts`. Includes drafts and scheduled posts; the serializer
+  exposes a `status` attribute (`draft` / `scheduled` / `published`). `published_at` blank = draft,
+  future = scheduled.
+- Model: `PallasTrade::Post` (store-scoped, `TranslatableResource` + ActionText body + FriendlyId slug).
+- Serializer output: `id, title, slug, excerpt, author, published_at, cover_image_url, body, body_html,
+  seo_title, seo_description` (Admin also `status`, timestamps).
+
 ## Read/write attribute symmetry (a v3 invariant)
 
 For any resource: **whatever a serializer returns, the controller's `permitted_params` accepts on write under the same name.** No `label` exposed but `presentation` accepted. No `customer_note` exposed but `special_instructions` accepted. The client never has to translate.

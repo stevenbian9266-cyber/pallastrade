@@ -55,6 +55,9 @@ PallasTrade::Core::Engine.add_routes do
         # Policies (return policy, privacy policy, terms of service, etc.)
         resources :policies, only: [:index, :show]
 
+        # Blog posts (read-only, published only)
+        resources :posts, only: [:index, :show], id: /.+/
+
         # Password Resets (top-level, no auth required)
         resources :password_resets, only: [:create, :update], controller: 'customer/password_resets'
 
@@ -178,6 +181,7 @@ PallasTrade::Core::Engine.add_routes do
         end
         resources :allowed_origins
         resources :redirects
+        resources :posts
         resources :email_templates
         resources :email_logs, only: [:index, :show]
         resources :contact_messages, only: [:index, :show, :update]

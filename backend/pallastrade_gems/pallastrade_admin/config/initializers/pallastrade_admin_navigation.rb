@@ -224,6 +224,14 @@ Rails.application.config.after_initialize do
                active: -> { %w[contact_messages].include?(controller_name) }
   end
 
+  # Blog — CMS content management (posts list / editor)
+  sidebar_nav.add :blog,
+          label: :blog,
+          url: :admin_posts_path,
+          icon: 'news',
+          position: 75,
+          if: -> { can?(:manage, PallasTrade::Post) }
+
   # Section divider before settings
   sidebar_nav.add :settings_section,
           section_label: 'Settings',

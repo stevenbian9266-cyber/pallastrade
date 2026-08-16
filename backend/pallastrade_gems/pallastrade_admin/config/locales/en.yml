@@ -5,6 +5,7 @@ en:
   pallastrade:
     redirects: Redirects
     emails: Emails
+    blog: Blog
     back_in_stock_subscriptions: Back in Stock Subscriptions
     acceptance_errors: Acceptance errors
     actions:
@@ -44,6 +45,18 @@ en:
         audit_log_enterprise_notice: Audit log is part of the PallasTrade Enterprise offering.
         upgrade_to_enterprise: Upgrade to PallasTrade Enterprise
       back_in_stock_subscriptions: Back in Stock Subscriptions
+      posts:
+        title: Blog
+        help: 'Publish blog posts to build content marketing and SEO. Posts with an empty publish date are drafts; a future date schedules them.'
+        new_post: New Post
+        edit_post: Edit Post
+        content: Content
+        publishing: Publishing
+        published_at_help: Leave blank for a draft, or set a future date to schedule.
+        cover_image_help: Optional cover image shown in the blog list and article header.
+        seo: SEO
+        seo_title_help: Optional. Overrides the page <title> for search engines.
+        seo_description_help: Optional. Overrides the meta description.
       emails:
         settings: Email Settings
         settings_help: Configure how this store sends email. The reply switch controls whether customers can reply to transactional emails (adds a Reply-To header and captures inbound replies in the inbox).

@@ -495,6 +495,19 @@ var PolicySchema = zod.z.object({
   body: zod.z.string().nullable(),
   body_html: zod.z.string().nullable()
 });
+var PostSchema = zod.z.object({
+  id: zod.z.string(),
+  title: zod.z.string(),
+  slug: zod.z.string(),
+  excerpt: zod.z.string().nullable(),
+  author: zod.z.string().nullable(),
+  published_at: zod.z.string().nullable(),
+  cover_image_url: zod.z.string().nullable(),
+  body: zod.z.string().nullable(),
+  body_html: zod.z.string().nullable(),
+  seo_title: zod.z.string().nullable(),
+  seo_description: zod.z.string().nullable()
+});
 var PriceSchema = zod.z.object({
   id: zod.z.string(),
   amount: zod.z.string().nullable(),
@@ -741,6 +754,7 @@ exports.PaymentSessionSchema = PaymentSessionSchema;
 exports.PaymentSetupSessionSchema = PaymentSetupSessionSchema;
 exports.PaymentSourceSchema = PaymentSourceSchema;
 exports.PolicySchema = PolicySchema;
+exports.PostSchema = PostSchema;
 exports.PriceHistorySchema = PriceHistorySchema;
 exports.PriceSchema = PriceSchema;
 exports.ProductFilterAvailabilityOptionSchema = ProductFilterAvailabilityOptionSchema;

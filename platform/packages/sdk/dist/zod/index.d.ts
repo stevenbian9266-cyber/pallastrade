@@ -1044,6 +1044,21 @@ declare const PolicySchema: z.ZodObject<{
 }, z.core.$strip>;
 type Policy = z.infer<typeof PolicySchema>;
 
+declare const PostSchema: z.ZodObject<{
+    id: z.ZodString;
+    title: z.ZodString;
+    slug: z.ZodString;
+    excerpt: z.ZodNullable<z.ZodString>;
+    author: z.ZodNullable<z.ZodString>;
+    published_at: z.ZodNullable<z.ZodString>;
+    cover_image_url: z.ZodNullable<z.ZodString>;
+    body: z.ZodNullable<z.ZodString>;
+    body_html: z.ZodNullable<z.ZodString>;
+    seo_title: z.ZodNullable<z.ZodString>;
+    seo_description: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type Post = z.infer<typeof PostSchema>;
+
 declare const PriceSchema: z.ZodObject<{
     id: z.ZodString;
     amount: z.ZodNullable<z.ZodString>;
@@ -1903,4 +1918,4 @@ declare const WishlistItemSchema: z.ZodObject<{
 }, z.core.$strip>;
 type WishlistItem = z.infer<typeof WishlistItemSchema>;
 
-export { type Address, AddressSchema, type Base, BaseSchema, type Cart, CartSchema, type Category, CategorySchema, type Channel, ChannelSchema, type Country, CountrySchema, type CreditCard, CreditCardSchema, type Currency, CurrencySchema, type CustomField, CustomFieldSchema, type Customer, CustomerSchema, type DeliveryMethod, DeliveryMethodSchema, type DeliveryRate, DeliveryRateSchema, type Digital, type DigitalLink, DigitalLinkSchema, DigitalSchema, type Discount, DiscountSchema, type Fulfillment, FulfillmentSchema, type GiftCard, type GiftCardBatch, GiftCardBatchSchema, GiftCardSchema, type Invitation, InvitationSchema, type LineItem, LineItemSchema, type Locale, LocaleSchema, type Market, MarketSchema, type Media, MediaSchema, type NewsletterSubscriber, NewsletterSubscriberSchema, type OptionType, OptionTypeSchema, type OptionValue, OptionValueSchema, type Order, OrderSchema, type Payment, type PaymentMethod, PaymentMethodSchema, PaymentSchema, type PaymentSession, PaymentSessionSchema, type PaymentSetupSession, PaymentSetupSessionSchema, type PaymentSource, PaymentSourceSchema, type Policy, PolicySchema, type Price, type PriceHistory, PriceHistorySchema, PriceSchema, type Product, type ProductFilterAvailability, type ProductFilterAvailabilityOption, ProductFilterAvailabilityOptionSchema, ProductFilterAvailabilitySchema, type ProductFilterCategory, type ProductFilterCategoryOption, ProductFilterCategoryOptionSchema, ProductFilterCategorySchema, type ProductFilterOption, ProductFilterOptionSchema, type ProductFilterOptionValue, ProductFilterOptionValueSchema, type ProductFilterPriceRange, ProductFilterPriceRangeSchema, type ProductFilterSortOption, ProductFilterSortOptionSchema, type ProductFilters, ProductFiltersSchema, type ProductPublication, ProductPublicationSchema, ProductSchema, type Promotion, PromotionSchema, type Refund, RefundSchema, type ReturnAuthorization, ReturnAuthorizationSchema, type ReturnItem, ReturnItemSchema, type State, StateSchema, type StockLocation, StockLocationSchema, type StockReservation, StockReservationSchema, type StoreCredit, StoreCreditSchema, type Variant, VariantSchema, type Wishlist, type WishlistItem, WishlistItemSchema, WishlistSchema };
+export { type Address, AddressSchema, type Base, BaseSchema, type Cart, CartSchema, type Category, CategorySchema, type Channel, ChannelSchema, type Country, CountrySchema, type CreditCard, CreditCardSchema, type Currency, CurrencySchema, type CustomField, CustomFieldSchema, type Customer, CustomerSchema, type DeliveryMethod, DeliveryMethodSchema, type DeliveryRate, DeliveryRateSchema, type Digital, type DigitalLink, DigitalLinkSchema, DigitalSchema, type Discount, DiscountSchema, type Fulfillment, FulfillmentSchema, type GiftCard, type GiftCardBatch, GiftCardBatchSchema, GiftCardSchema, type Invitation, InvitationSchema, type LineItem, LineItemSchema, type Locale, LocaleSchema, type Market, MarketSchema, type Media, MediaSchema, type NewsletterSubscriber, NewsletterSubscriberSchema, type OptionType, OptionTypeSchema, type OptionValue, OptionValueSchema, type Order, OrderSchema, type Payment, type PaymentMethod, PaymentMethodSchema, PaymentSchema, type PaymentSession, PaymentSessionSchema, type PaymentSetupSession, PaymentSetupSessionSchema, type PaymentSource, PaymentSourceSchema, type Policy, PolicySchema, type Post, PostSchema, type Price, type PriceHistory, PriceHistorySchema, PriceSchema, type Product, type ProductFilterAvailability, type ProductFilterAvailabilityOption, ProductFilterAvailabilityOptionSchema, ProductFilterAvailabilitySchema, type ProductFilterCategory, type ProductFilterCategoryOption, ProductFilterCategoryOptionSchema, ProductFilterCategorySchema, type ProductFilterOption, ProductFilterOptionSchema, type ProductFilterOptionValue, ProductFilterOptionValueSchema, type ProductFilterPriceRange, ProductFilterPriceRangeSchema, type ProductFilterSortOption, ProductFilterSortOptionSchema, type ProductFilters, ProductFiltersSchema, type ProductPublication, ProductPublicationSchema, ProductSchema, type Promotion, PromotionSchema, type Refund, RefundSchema, type ReturnAuthorization, ReturnAuthorizationSchema, type ReturnItem, ReturnItemSchema, type State, StateSchema, type StockLocation, StockLocationSchema, type StockReservation, StockReservationSchema, type StoreCredit, StoreCreditSchema, type Variant, VariantSchema, type Wishlist, type WishlistItem, WishlistItemSchema, WishlistSchema };

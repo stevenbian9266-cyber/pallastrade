@@ -606,6 +606,13 @@
     "returnsPolicy": "Polityka zwrotów",
     "termsOfService": "Regulamin"
   },
+  "blog": {
+    "title": "Blog",
+    "description": "Wiadomości, poradniki i historie z naszego sklepu.",
+    "empty": "Brak wpisów. Zajrzyj wkrótce.",
+    "notFound": "Nie znaleziono wpisu",
+    "noContent": "Brak treści dla tego wpisu."
+  },
   "expressCheckout": {
     "shipping": "Dostawa",
     "finalizingPayment": "Finalizowanie płatności...",

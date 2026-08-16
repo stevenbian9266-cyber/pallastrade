@@ -1,0 +1,10 @@
+<%= content_for(:title, PallasTrade.t('admin.posts.title')) %>
+<%= content_for(:page_actions) do %>
+  <%= link_to PallasTrade.t('admin.posts.new_post'), PallasTrade.new_admin_post_path, class: 'btn btn-primary' %>
+<% end %>
+
+<div class="alert alert-info mb-6">
+  <%= PallasTrade.t('admin.posts.help') %>
+</div>
+
+<%= render_table @collection, :posts %>

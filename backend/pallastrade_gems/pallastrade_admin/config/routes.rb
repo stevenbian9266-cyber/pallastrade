@@ -279,6 +279,9 @@ PallasTrade::Core::Engine.add_routes do
     resources :redirects
     resources :back_in_stock_subscriptions, only: [:index, :destroy]
 
+    # CMS blog posts
+    resources :posts
+
     # Email management (Email top-level menu)
     resources :email_templates do
       member do

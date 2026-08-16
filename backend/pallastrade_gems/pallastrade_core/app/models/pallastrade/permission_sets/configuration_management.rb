@@ -63,6 +63,9 @@ module PallasTrade
 
         # Policies
         can :manage, PallasTrade::Policy
+
+        # Blog posts (CMS)
+        can :manage, PallasTrade::Post
       end
     end
   end

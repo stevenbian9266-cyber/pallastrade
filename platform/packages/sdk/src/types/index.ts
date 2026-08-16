@@ -35,6 +35,7 @@ export type {
   PaymentSetupSession,
   PaymentSource,
   Policy,
+  Post,
   Price,
   Product,
   Promotion,

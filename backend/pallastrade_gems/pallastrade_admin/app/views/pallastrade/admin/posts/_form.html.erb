@@ -1,0 +1,34 @@
+<%= form_with model: object, url: object.persisted? ? PallasTrade.admin_post_path(object) : PallasTrade.admin_posts_path, method: object.persisted? ? :patch : :post do |f| %>
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.posts.content') %></h5>
+    </div>
+    <div class="card-body" data-controller="slug-form">
+      <%= f.pallastrade_text_field :title, required: true, autofocus: f.object.new_record?, data: { slug_form_target: 'name', action: 'slug-form#updateUrlFromName' } %>
+      <%= f.pallastrade_text_field :slug, required: true, data: { slug_form_target: 'url' } %>
+      <%= f.pallastrade_text_area :excerpt, rows: 3 %>
+      <%= f.pallastrade_rich_text_area :body %>
+      <%= f.pallastrade_text_field :author %>
+    </div>
+  </div>
+
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.posts.publishing') %></h5>
+    </div>
+    <div class="card-body">
+      <%= f.pallastrade_datetime_field :published_at, help: PallasTrade.t('admin.posts.published_at_help') %>
+      <%= f.pallastrade_file_field :cover_image, help: PallasTrade.t('admin.posts.cover_image_help') %>
+    </div>
+  </div>
+
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.posts.seo') %></h5>
+    </div>
+    <div class="card-body">
+      <%= f.pallastrade_text_field :seo_title, help: PallasTrade.t('admin.posts.seo_title_help') %>
+      <%= f.pallastrade_text_area :seo_description, rows: 3, help: PallasTrade.t('admin.posts.seo_description_help') %>
+    </div>
+  </div>
+<% end %>

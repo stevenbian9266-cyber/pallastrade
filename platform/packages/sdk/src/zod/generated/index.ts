@@ -32,6 +32,7 @@ export { PaymentSessionSchema, type PaymentSession } from './PaymentSession';
 export { PaymentSetupSessionSchema, type PaymentSetupSession } from './PaymentSetupSession';
 export { PaymentSourceSchema, type PaymentSource } from './PaymentSource';
 export { PolicySchema, type Policy } from './Policy';
+export { PostSchema, type Post } from './Post';
 export { PriceSchema, type Price } from './Price';
 export { PriceHistorySchema, type PriceHistory } from './PriceHistory';
 export { ProductSchema, type Product } from './Product';

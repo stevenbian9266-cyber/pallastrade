@@ -1542,6 +1542,193 @@ paths:
       responses:
         '204':
           description: redirect deleted
+  "/api/v3/admin/posts":
+    get:
+      summary: List blog posts
+      tags:
+      - Blog Posts
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |
+        Returns the store's blog posts including drafts and scheduled posts.
+
+        **Required scope:** `read_settings` (for API-key authentication).
+      x-codeSamples:
+      - lang: bash
+        label: PallasTrade CLI
+        source: pallastrade api get /posts
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      responses:
+        '200':
+          description: list of blog posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminPost'
+    post:
+      summary: Create a blog post
+      tags:
+      - Blog Posts
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |
+        Creates a blog post. Leave `published_at` blank for a draft or set a
+        future date to schedule.
+
+        **Required scope:** `write_settings` (for API-key authentication).
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminPostInput'
+      responses:
+        '201':
+          description: post created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPost'
+        '422':
+          description: validation error
+  "/api/v3/admin/posts/{id}":
+    get:
+      summary: Get a blog post
+      tags:
+      - Blog Posts
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |
+        Returns a single blog post including drafts and scheduled.
+
+        **Required scope:** `read_settings` (for API-key authentication).
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Prefixed post ID (e.g. post_xxx) or slug
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      responses:
+        '200':
+          description: post
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPost'
+    patch:
+      summary: Update a blog post
+      tags:
+      - Blog Posts
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |
+        Updates a blog post (title, slug, excerpt, body, author, publish date, SEO).
+
+        **Required scope:** `write_settings` (for API-key authentication).
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Prefixed post ID (e.g. post_xxx) or slug
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminPostInput'
+      responses:
+        '200':
+          description: post updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPost'
+    delete:
+      summary: Delete a blog post
+      tags:
+      - Blog Posts
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |
+        Deletes a blog post.
+
+        **Required scope:** `write_settings` (for API-key authentication).
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Prefixed post ID (e.g. post_xxx) or slug
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      responses:
+        '204':
+          description: post deleted
   "/api/v3/admin/api_keys":
     get:
       summary: List API keys
@@ -22461,6 +22648,87 @@ components:
       - key
       - name
       - subject
+    AdminPost:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        excerpt:
+          type: string
+          nullable: true
+        author:
+          type: string
+          nullable: true
+        published_at:
+          type: string
+          nullable: true
+        cover_image_url:
+          type: string
+          nullable: true
+        body:
+          type: string
+          nullable: true
+        body_html:
+          type: string
+          nullable: true
+        seo_title:
+          type: string
+          nullable: true
+        seo_description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+          - draft
+          - scheduled
+          - published
+        created_at:
+          type: string
+        updated_at:
+          type: string
+      required:
+      - id
+      - title
+      - slug
+      - status
+      - created_at
+      - updated_at
+      x-typelizer: true
+    AdminPostInput:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        excerpt:
+          type: string
+          nullable: true
+        author:
+          type: string
+          nullable: true
+        published_at:
+          type: string
+          nullable: true
+        body:
+          type: string
+          nullable: true
+        cover_image:
+          type: string
+          nullable: true
+        seo_title:
+          type: string
+          nullable: true
+        seo_description:
+          type: string
+          nullable: true
+      required:
+      - title
     EmailLog:
       type: object
       properties:

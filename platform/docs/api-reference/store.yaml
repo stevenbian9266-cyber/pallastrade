@@ -9491,6 +9491,104 @@ paths:
                     them, or when no allowed origins are configured at all.
               required:
               - email
+  "/api/v3/store/contact_messages":
+    post:
+      summary: Submit a complaint / feedback / inquiry
+      tags:
+      - Contact Messages
+      security:
+      - api_key: []
+      description: |
+        Submits a contact message (complaint, feedback or general inquiry) from the
+        storefront. Guest-accessible. The message is classified by `kind` and surfaced
+        in the admin **Email → Inbox & Feedback** page with a status flow
+        (pending → in_progress → resolved).
+
+        Available `kind` values: `complaint`, `feedback`, `inquiry`.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const message = await client.contactMessages.create({
+            kind: 'feedback',
+            name: 'Jane Doe',
+            email: 'jane@example.com',
+            subject: 'Loved my order',
+            body: 'Fast shipping and great quality!',
+          })
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: message created
+          content:
+            application/json:
+              example:
+                id: ctct_UkLWZg9DAJ
+                kind: feedback
+                name: Jane Doe
+                email: jane@example.com
+                subject: Loved my order
+                body: Fast shipping and great quality!
+                status: pending
+                created_at: '2026-08-15T10:00:00.000Z'
+              schema:
+                "$ref": "#/components/schemas/ContactMessage"
+        '422':
+          description: invalid email / missing body / unknown kind
+          content:
+            application/json:
+              example:
+                error:
+                  code: validation_error
+                  message: Email is invalid
+                  details:
+                    email:
+                    - is invalid
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                kind:
+                  type: string
+                  enum:
+                  - complaint
+                  - feedback
+                  - inquiry
+                  example: feedback
+                  description: Message classification (complaint / feedback / inquiry)
+                name:
+                  type: string
+                  example: Jane Doe
+                email:
+                  type: string
+                  format: email
+                  example: jane@example.com
+                subject:
+                  type: string
+                  example: Loved my order
+                body:
+                  type: string
+                  example: Fast shipping and great quality!
+              required:
+              - kind
+              - email
+              - body
   "/api/v3/store/newsletter_subscribers/verify":
     post:
       summary: Verify a newsletter subscription
@@ -9562,6 +9660,124 @@ paths:
                   description: Verification token from the confirmation email
               required:
               - token
+  "/api/v3/store/products/{product_id}/back_in_stock_subscriptions":
+    post:
+      summary: Subscribe to back-in-stock notifications for a product
+      tags:
+      - Back-in-stock subscriptions
+      security:
+      - api_key: []
+      description: |
+        Subscribes an email address to be notified when an out-of-stock product
+        is back in stock. Idempotent: subscribing the same email to the same
+        product again returns the existing subscription (and re-activates it if
+        it had already been notified). The notification email is sent via the
+        store's configured SMTP when the `product.back_in_stock` event fires.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const subscription = await client.backInStockSubscriptions.create('prod_abc123', {
+            email: 'customer@example.com',
+          })
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: product_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: subscription created
+          content:
+            application/json:
+              example:
+                id: bis_abc123
+                email: customer@example.com
+                status: active
+                product_id: prod_abc123
+                created_at: '2026-08-15T10:00:00.000Z'
+              schema:
+                "$ref": "#/components/schemas/BackInStockSubscription"
+        '404':
+          description: product not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '422':
+          description: invalid email
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: customer@example.com
+  "/api/v3/store/redirects/resolve":
+    get:
+      summary: Resolve a path against SEO 301 redirects
+      tags:
+      - Redirects
+      security:
+      - api_key: []
+      description: |-
+        Resolves a storefront path against the store's active SEO 301/302 redirects.
+        Returns the target path and status code on a hit, or `null` when no
+        redirect matches. Used by the storefront middleware to issue 301s.
+      x-codeSamples:
+      - lang: bash
+        label: PallasTrade CLI
+        source: pallastrade api get '/redirects/resolve?path=/old-product'
+      parameters:
+      - name: path
+        in: query
+        required: true
+        description: The pathname to resolve (e.g. /old-product)
+        schema:
+          type: string
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: resolution result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    nullable: true
+                    type: object
+                    properties:
+                      path:
+                        type: string
+                      status_code:
+                        type: integer
   "/api/v3/store/policies":
     get:
       summary: List store policies
@@ -9732,6 +9948,174 @@ paths:
                 error:
                   code: record_not_found
                   message: Policy not found
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/posts":
+    get:
+      summary: List published blog posts
+      tags:
+      - Blog Posts
+      security:
+      - api_key: []
+      description: |
+        Returns a paginated list of published blog posts for the current store,
+        newest first. Drafts and scheduled posts are never exposed.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const posts = await client.posts.list({
+            page: 1,
+            limit: 12,
+          })
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: fields
+        in: query
+        required: false
+        description: Comma-separated list of fields to include (e.g., title,slug,excerpt).
+          id is always included.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: posts listed
+          content:
+            application/json:
+              example:
+                data:
+                - id: post_UkLWZg9DAJ
+                  title: Welcome to our store
+                  slug: welcome-to-our-store
+                  excerpt: A short introduction to our brand.
+                  author: PallasTrade Team
+                  published_at: '2026-08-15T10:00:00.000Z'
+                  cover_image_url: https://cdn.example.com/cover.jpg
+                  body: A short introduction to our brand.
+                  body_html: "<p>A short introduction to our brand.</p>"
+                  seo_title: Welcome | Acme Store
+                  seo_description: Learn more about our store and what we offer.
+                meta:
+                  page: 1
+                  limit: 12
+                  count: 1
+                  pages: 1
+                  from: 1
+                  to: 1
+                  in: 1
+                  previous:
+                  next:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/Post"
+                  meta:
+                    "$ref": "#/components/schemas/PaginationMeta"
+                required:
+                - data
+                - meta
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              example:
+                error:
+                  code: invalid_token
+                  message: Valid API key required
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/posts/{id}":
+    get:
+      summary: Get a blog post
+      tags:
+      - Blog Posts
+      security:
+      - api_key: []
+      description: |
+        Returns a single published blog post by slug or prefixed ID. Drafts and
+        scheduled posts return 404.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const post = await client.posts.get('welcome-to-our-store')
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        description: Post slug (e.g., welcome-to-our-store) or prefixed ID (e.g.,
+          post_abc123)
+        schema:
+          type: string
+      - name: fields
+        in: query
+        required: false
+        description: Comma-separated list of fields to include. id is always included.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: post found
+          content:
+            application/json:
+              example:
+                id: post_UkLWZg9DAJ
+                title: Welcome to our store
+                slug: welcome-to-our-store
+                excerpt: A short introduction to our brand.
+                author: PallasTrade Team
+                published_at: '2026-08-15T10:00:00.000Z'
+                cover_image_url: https://cdn.example.com/cover.jpg
+                body: A short introduction to our brand.
+                body_html: "<p>A short introduction to our brand.</p>"
+                seo_title: Welcome | Acme Store
+                seo_description: Learn more about our store and what we offer.
+              schema:
+                "$ref": "#/components/schemas/Post"
+        '404':
+          description: draft or unknown post
+          content:
+            application/json:
+              example:
+                error:
+                  code: record_not_found
+                  message: Post not found
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
   "/api/v3/store/digitals/{token}":
@@ -11322,6 +11706,66 @@ components:
       - verified_at
       - customer_id
       x-typelizer: true
+    BackInStockSubscription:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        status:
+          type: string
+          enum:
+          - active
+          - notified
+        product_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+      required:
+      - id
+      - email
+      - status
+      - created_at
+      x-typelizer: true
+    ContactMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+          - complaint
+          - feedback
+          - inquiry
+        name:
+          type: string
+          nullable: true
+        email:
+          type: string
+        subject:
+          type: string
+          nullable: true
+        body:
+          type: string
+        status:
+          type: string
+          enum:
+          - pending
+          - in_progress
+          - resolved
+        created_at:
+          type: string
+      required:
+      - id
+      - kind
+      - email
+      - body
+      - status
+      - created_at
+      x-typelizer: true
     OptionType:
       type: object
       properties:
@@ -11746,6 +12190,44 @@ components:
       - slug
       - body
       - body_html
+      x-typelizer: true
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        excerpt:
+          type: string
+          nullable: true
+        author:
+          type: string
+          nullable: true
+        published_at:
+          type: string
+          nullable: true
+        cover_image_url:
+          type: string
+          nullable: true
+        body:
+          type: string
+          nullable: true
+        body_html:
+          type: string
+          nullable: true
+        seo_title:
+          type: string
+          nullable: true
+        seo_description:
+          type: string
+          nullable: true
+      required:
+      - id
+      - title
+      - slug
       x-typelizer: true
     PriceHistory:
       type: object

@@ -606,6 +606,13 @@
     "returnsPolicy": "Politique de retour",
     "termsOfService": "Conditions generales"
   },
+  "blog": {
+    "title": "Blog",
+    "description": "Actualités, guides et histoires de notre boutique.",
+    "empty": "Aucun article pour l'instant. Revenez bientôt.",
+    "notFound": "Article introuvable",
+    "noContent": "Aucun contenu disponible pour cet article."
+  },
   "expressCheckout": {
     "shipping": "Livraison",
     "finalizingPayment": "Finalisation du paiement...",

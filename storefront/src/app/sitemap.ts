@@ -1,4 +1,4 @@
-import type { Category, Media, Product } from "@pallastrade/sdk";
+import type { Category, Media, Post, Product } from "@pallastrade/sdk";
 import { getClient } from "@/lib/pallastrade";
 import { getDefaultCountry, getDefaultLocale, getStoreUrl } from "@/lib/store";
 
@@ -8,6 +8,10 @@ type ProductWithMedia = Product & {
 };
 
 type CategoryWithTimestamp = Category & {
+  updated_at?: string;
+};
+
+type PostWithTimestamp = Post & {
   updated_at?: string;
 };
 
@@ -58,6 +62,7 @@ const cachedCategoriesByLocale = new Map<
   string,
   Promise<CategoryWithTimestamp[]>
 >();
+const cachedPostsByLocale = new Map<string, Promise<PostWithTimestamp[]>>();
 let cachedCountryLocales: Promise<CountryLocale[]> | null = null;
 
 function localeCacheKey(locale: string, country: string): string {
@@ -94,6 +99,21 @@ function getCachedCategories(
   return cached;
 }
 
+function getCachedPosts(
+  localeOpts: LocaleOptions,
+): Promise<PostWithTimestamp[]> {
+  const key = localeCacheKey(localeOpts.locale, localeOpts.country);
+  let cached = cachedPostsByLocale.get(key);
+  if (!cached) {
+    cached = fetchAllPosts(localeOpts).catch((err) => {
+      cachedPostsByLocale.delete(key);
+      throw err;
+    });
+    cachedPostsByLocale.set(key, cached);
+  }
+  return cached;
+}
+
 function getCachedCountryLocales(): Promise<CountryLocale[]> {
   if (!cachedCountryLocales) {
     cachedCountryLocales = resolveCountryLocales().catch((err) => {
@@ -120,15 +140,17 @@ export async function generateSitemaps(): Promise<Array<{ id: number }>> {
     // Lightweight count — fetch only 1 record per request to read meta.count.
     // Category count is approximate (includes root categories filtered out during generation),
     // so we may produce one extra sitemap file at most — harmless for SEO.
-    const [productCount, categoryCount] = await Promise.all([
+    const [productCount, categoryCount, postCount] = await Promise.all([
       fetchTotalCount("products"),
       fetchTotalCount("categories"),
+      fetchTotalCount("posts"),
     ]);
 
     const urlsPerLocale =
       STATIC_PAGES_PER_LOCALE +
       Math.min(productCount, MAX_FETCHABLE_ITEMS) +
-      Math.min(categoryCount, MAX_FETCHABLE_ITEMS);
+      Math.min(categoryCount, MAX_FETCHABLE_ITEMS) +
+      Math.min(postCount, MAX_FETCHABLE_ITEMS);
     const totalUrls = urlsPerLocale * countryLocales.length;
     const sitemapCount = Math.max(1, Math.ceil(totalUrls / URLS_PER_SITEMAP));
 
@@ -182,11 +204,13 @@ export default async function sitemap(props: {
 
     let products: ProductWithMedia[];
     let categories: CategoryWithTimestamp[];
+    let posts: PostWithTimestamp[];
 
     try {
-      [products, categories] = await Promise.all([
+      [products, categories, posts] = await Promise.all([
         getCachedProducts(localeOpts),
         getCachedCategories(localeOpts),
+        getCachedPosts(localeOpts),
       ]);
     } catch (err) {
       console.error(`Sitemap: skipping ${country}/${locale} — API error.`, err);
@@ -244,6 +268,16 @@ export default async function sitemap(props: {
         priority: 0.5,
       });
     }
+
+    // Blog post pages (published posts only, locale-aware slugs)
+    for (const post of posts) {
+      entries.push({
+        url: `${basePath}/blog/${post.slug}`,
+        ...(post.updated_at ? { lastModified: new Date(post.updated_at) } : {}),
+        changeFrequency: "monthly",
+        priority: 0.5,
+      });
+    }
   }
 
   // Return only the slice for this sitemap chunk
@@ -284,18 +318,20 @@ async function resolveCountryLocales(): Promise<CountryLocale[]> {
 }
 
 /**
- * Fetches only the total count for products or categories without loading all data.
+ * Fetches only the total count for products, categories or posts without loading all data.
  * Used by generateSitemaps() to calculate the number of sitemap files needed.
  */
 async function fetchTotalCount(
-  resource: "products" | "categories",
+  resource: "products" | "categories" | "posts",
 ): Promise<number> {
   const localeOptions = getDefaultLocaleOptions();
   const client = getClient();
   const response =
     resource === "products"
       ? await client.products.list({ page: 1, limit: 1 }, localeOptions)
-      : await client.categories.list({ page: 1, limit: 1 }, localeOptions);
+      : resource === "categories"
+        ? await client.categories.list({ page: 1, limit: 1 }, localeOptions)
+        : await client.posts.list({ page: 1, limit: 1 }, localeOptions);
   return response.meta.count;
 }
 
@@ -337,4 +373,24 @@ async function fetchAllCategories(
   } while (page <= totalPages && page <= MAX_PAGES);
 
   return allCategories;
+}
+
+async function fetchAllPosts(
+  localeOptions: LocaleOptions,
+): Promise<PostWithTimestamp[]> {
+  const allPosts: PostWithTimestamp[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await getClient().posts.list(
+      { page, limit: ITEMS_PER_PAGE },
+      localeOptions,
+    );
+    allPosts.push(...(response.data as PostWithTimestamp[]));
+    totalPages = response.meta.pages;
+    page++;
+  } while (page <= totalPages && page <= MAX_PAGES);
+
+  return allPosts;
 }

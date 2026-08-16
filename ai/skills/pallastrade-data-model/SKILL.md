@@ -33,6 +33,23 @@ captures a guest email for one product: `store_id`, `product_id`, `email`, `stat
 re-activates a notified row. `PallasTrade::BackInStockSubscriber` emails active rows on
 `product.back_in_stock` and marks them `notified`. A `Store has_many back_in_stock_subscriptions`.
 
+## Blog posts (CMS)
+
+`PallasTrade::Post` (table `pallastrade_posts`) is the CMS blog article model.
+A `Store has_many :posts`. Key fields: `store_id`, `title`, `slug` (FriendlyId,
+unique per store), `excerpt`, `author`, `published_at`, `seo_title`, `seo_description`.
+`published_at` nil = **draft**, a future value = **scheduled**, past/now = **published**
+(`post.published?` / `post.scheduled?`).
+
+It reuses the same infrastructure as `PallasTrade::Policy`:
+- `PallasTrade::TranslatableResource` — `title`/`excerpt`/`seo_title`/`seo_description`
+  are translatable (Mobility, `pallastrade_post_translations` table).
+- ActionText rich body — `body` is a per-locale rich text field (RICH_TEXT_TRANSLATABLE_FIELDS).
+- `has_one_attached :cover_image` (ActiveStorage).
+
+Scopes: `published` / `drafts` / `scheduled` / `newest_first`
+(`published_at DESC NULLS LAST`). The Store API only ever exposes published posts.
+
 ## The multi-channel / multi-store axis
 
 ```

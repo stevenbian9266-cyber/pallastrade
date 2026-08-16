@@ -2333,6 +2333,49 @@ Rails.application.config.after_initialize do
                                          default: true,
                                          position: 60
 
+  # Blog posts (CMS)
+  PallasTrade.admin.tables.register(:posts, model_class: PallasTrade::Post, search_param: :title_or_slug_or_author_cont, row_actions: true)
+
+  PallasTrade.admin.tables.posts.add :title,
+                                     label: :title,
+                                     type: :string,
+                                     sortable: true,
+                                     filterable: true,
+                                     default: true,
+                                     position: 10
+
+  PallasTrade.admin.tables.posts.add :slug,
+                                     label: :slug,
+                                     type: :string,
+                                     sortable: true,
+                                     filterable: true,
+                                     default: true,
+                                     position: 20
+
+  PallasTrade.admin.tables.posts.add :author,
+                                     label: :author,
+                                     type: :string,
+                                     sortable: true,
+                                     filterable: true,
+                                     default: true,
+                                     position: 30
+
+  PallasTrade.admin.tables.posts.add :published_at,
+                                     label: :published_at,
+                                     type: :datetime,
+                                     sortable: true,
+                                     filterable: true,
+                                     default: true,
+                                     position: 40
+
+  PallasTrade.admin.tables.posts.add :status,
+                                     label: :status,
+                                     type: :string,
+                                     sortable: false,
+                                     filterable: false,
+                                     default: true,
+                                     position: 50
+
   # Contact messages (inbox & feedback)
   PallasTrade.admin.tables.register(:contact_messages, model_class: PallasTrade::ContactMessage, search_param: :email_or_subject_or_body_cont, row_actions: true, row_actions_edit: false, new_resource: false)
 

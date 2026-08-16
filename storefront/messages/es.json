@@ -606,6 +606,13 @@
     "returnsPolicy": "Politica de devoluciones",
     "termsOfService": "Terminos de servicio"
   },
+  "blog": {
+    "title": "Blog",
+    "description": "Noticias, guías e historias de nuestra tienda.",
+    "empty": "Aún no hay publicaciones. Vuelva pronto.",
+    "notFound": "Publicación no encontrada",
+    "noContent": "No hay contenido disponible para esta publicación."
+  },
   "expressCheckout": {
     "shipping": "Envio",
     "finalizingPayment": "Finalizando tu pago...",

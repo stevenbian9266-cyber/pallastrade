@@ -25,6 +25,9 @@ module PallasTrade
         # Content pages
         can :read, PallasTrade::Policy
 
+        # Blog posts (CMS)
+        can :read, PallasTrade::Post
+
         # Order management for the user's own orders
         can :create, PallasTrade::Order
         can :show, PallasTrade::Order do |order, token|

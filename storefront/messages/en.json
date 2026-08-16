@@ -606,6 +606,13 @@
     "returnsPolicy": "Returns Policy",
     "termsOfService": "Terms of Service"
   },
+  "blog": {
+    "title": "Blog",
+    "description": "News, guides and stories from our store.",
+    "empty": "No posts yet. Check back soon.",
+    "notFound": "Post Not Found",
+    "noContent": "No content available for this post."
+  },
   "expressCheckout": {
     "shipping": "Shipping",
     "finalizingPayment": "Finalizing your payment...",

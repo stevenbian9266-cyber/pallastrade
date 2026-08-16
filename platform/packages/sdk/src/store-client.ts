@@ -35,6 +35,7 @@ import type {
   PaymentSession,
   PaymentSetupSession,
   Policy,
+  Post,
   Product,
   ProductFiltersParams,
   ProductFiltersResponse,
@@ -230,6 +231,28 @@ export class StoreClient {
      */
     get: (id: string, options?: RequestOptions): Promise<Policy> =>
       this.request<Policy>('GET', `/policies/${id}`, options),
+  }
+
+  // ============================================
+  // Posts (blog)
+  // ============================================
+
+  readonly posts = {
+    /**
+     * List published blog posts (newest first, paginated)
+     */
+    list: (params?: ListParams, options?: RequestOptions): Promise<PaginatedResponse<Post>> =>
+      this.request<PaginatedResponse<Post>>('GET', '/posts', {
+        ...options,
+        params: transformListParams({ ...params }),
+      }),
+
+    /**
+     * Get a published blog post by slug or prefixed ID
+     * @param id - Post slug (e.g., 'welcome-to-our-store') or prefixed ID (e.g., 'post_abc123')
+     */
+    get: (id: string, options?: RequestOptions): Promise<Post> =>
+      this.request<Post>('GET', `/posts/${id}`, options),
   }
 
   // ============================================

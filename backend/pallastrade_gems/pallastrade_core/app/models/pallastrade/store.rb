@@ -131,6 +131,8 @@ module PallasTrade
 
     has_many :policies, class_name: 'PallasTrade::Policy', dependent: :destroy, as: :owner
 
+    has_many :posts, class_name: 'PallasTrade::Post', dependent: :destroy, inverse_of: :store
+
     has_many :webhook_endpoints, class_name: 'PallasTrade::WebhookEndpoint', dependent: :destroy, inverse_of: :store
     has_many :webhook_deliveries, through: :webhook_endpoints, class_name: 'PallasTrade::WebhookDelivery'
 

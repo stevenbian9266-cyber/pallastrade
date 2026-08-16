@@ -606,6 +606,13 @@
     "returnsPolicy": "Rückgaberichtlinie",
     "termsOfService": "Nutzungsbedingungen"
   },
+  "blog": {
+    "title": "Blog",
+    "description": "Neuigkeiten, Ratgeber und Geschichten aus unserem Shop.",
+    "empty": "Noch keine Beiträge. Schauen Sie bald wieder vorbei.",
+    "notFound": "Beitrag nicht gefunden",
+    "noContent": "Für diesen Beitrag sind keine Inhalte verfügbar."
+  },
   "expressCheckout": {
     "shipping": "Versand",
     "finalizingPayment": "Zahlung wird abgeschlossen...",
