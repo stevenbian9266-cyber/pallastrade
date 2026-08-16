@@ -4,7 +4,6 @@ module PallasTrade
       include PallasTrade::Admin::StockLocationsHelper
       include PallasTrade::Admin::BulkOperationsConcern
       include PallasTrade::Admin::AssetsHelper
-      include PallasTrade::Admin::ProductsBreadcrumbConcern
 
       helper 'pallastrade/admin/products'
       helper 'pallastrade/admin/taxons'
@@ -12,6 +11,8 @@ module PallasTrade
       before_action :load_data, except: :index
       before_action :load_variants_data, only: %i[edit update]
       before_action :set_product_defaults, only: :new
+      # 面包屑由导航自动推导（P3）：Products；编辑页追加产品名
+      before_action :add_breadcrumb_for_product, only: [:edit, :update]
 
       before_action :prepare_product_params, only: [:create, :update]
       before_action :strip_stock_items_param, only: [:create, :update]
@@ -239,6 +240,13 @@ module PallasTrade
 
       def clone_object_url(resource)
         clone_admin_product_url resource
+      end
+
+      # 对象页面包屑：Products > 产品名（P3，原 ProductsBreadcrumbConcern）
+      def add_breadcrumb_for_product
+        return unless @product.present?
+        return if @product.new_record?
+        add_breadcrumb @product.name, PallasTrade.edit_admin_product_path(@product)
       end
 
       private

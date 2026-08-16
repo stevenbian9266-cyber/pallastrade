@@ -6,8 +6,7 @@ module PallasTrade
     # inbound replies, with status flow (pending → in_progress → resolved).
     class ContactMessagesController < ResourceController
       include PallasTrade::Admin::TableConcern
-      include PallasTrade::Admin::EmailsBreadcrumbConcern
-      add_breadcrumb PallasTrade.t('admin.emails.inbox'), :admin_contact_messages_path
+      # 面包屑由导航自动推导（P3）：Emails → Inbox
 
       def resolve
         @object = find_object

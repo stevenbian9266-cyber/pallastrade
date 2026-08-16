@@ -3,8 +3,7 @@ module PallasTrade
     class ReportsController < ResourceController
       include ActiveStorage::SetCurrent
 
-      add_breadcrumb_icon 'chart-bar'
-      add_breadcrumb PallasTrade.t(:reports), :admin_reports_path
+      # 面包屑由导航自动推导（P3）：Reports
 
       before_action :set_user, only: [:new, :create]
       before_action :load_report_line_items, only: :new

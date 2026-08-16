@@ -1,8 +1,7 @@
 module PallasTrade
   module Admin
     class CustomerGroupsController < ResourceController
-      add_breadcrumb_icon 'users'
-      add_breadcrumb PallasTrade.t(:customer_groups), :admin_customer_groups_path
+      # 面包屑由导航自动推导（P3）：Customers → Customer Groups；show 追加名称
 
       def select_options
         q = params[:q]

@@ -10,8 +10,7 @@ module PallasTrade
       before_action :load_last_order_data, only: :show
       before_action :remove_empty_params, only: :update
 
-      add_breadcrumb_icon 'users'
-      add_breadcrumb PallasTrade.t(:customers), :admin_users_path
+      # 面包屑由导航自动推导（P3）：Customers；对象页追加用户名
 
       def select_options
         q = params[:q]

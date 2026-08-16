@@ -527,7 +527,7 @@
       "name": "Admin two-layout navigation consistency (main Email mode + settings Settings mode)",
       "description": "The admin backend has two layouts with distinct breadcrumb/page-header standards. Main-sidebar pages (admin layout, no SettingsConcern) follow the Email mode: one breadcrumb concern per module (add_breadcrumb_icon + parent crumb) + class-level sub-page crumb + content_for :page_title in every view. Settings/Developers pages (admin_settings layout, SettingsConcern included) follow the Settings mode: the layout renders shared/_breadcrumbs in #settings-header (auto 'Settings' prefix), each settings controller adds a class-level crumb (Settings > page), page headers come from content_for :page_title or the section banner partial (_developers_nav), and no breadcrumb icon is set. Every admin page must render a page header; missing page_title drops page_actions.",
       "mustDo": [
-        "Main area: create a breadcrumb concern per module (icon + parent crumb) and include it with a sub-page crumb in each sub-page controller",
+        "Main area (P3+): breadcrumbs are auto-derived from the sidebar nav config (Navigation#find_breadcrumb_chain by deepest URL match) — do NOT create hand-written breadcrumb concerns; only append object crumbs via controller before_action (e.g. add_breadcrumb_for_product)",
         "Settings area: add a class-level add_breadcrumb (PallasTrade.t(:page), :admin_xxx_path) to every SettingsConcern controller so the breadcrumb reads 'Settings > page'",
         "Keep admin_settings layout rendering shared/_breadcrumbs in #settings-header so settings crumbs are visible",
         "Add content_for :page_title to every list/show/form view (or use a shared section banner partial for Developers) so page headers and page_actions render",
@@ -536,13 +536,35 @@
         "Add a navigation_consistency_spec regression asserting breadcrumb + page_header on main-area and settings-area pages"
       ],
       "mustNotDo": [
-        "Add breadcrumbs by hand inside action methods instead of class-level declarations / concerns",
+        "Add hand-written module breadcrumb concerns (emails/orders/products/promotions/posts concerns were removed in P3) — the sidebar nav config auto-derives module crumbs",
+        "Add breadcrumbs by hand inside action methods to build the module trail (auto-derived); only object/special-context crumbs belong in controllers",
         "Add a new admin page without a page header (content_for :page_title) - page_actions are dropped",
         "Assume a breadcrumb concern in one area implies the other area has one (settings pages have no icon and rely on the Settings prefix)",
         "Break the SettingsConcern auto 'Settings' prefix when adding settings crumbs",
         "Push while doc-impact reports docs-required"
       ],
-      "scoring": { "mainAreaConcern": 25, "settingsCrumb": 20, "settingsLayoutBreadcrumb": 15, "pageTitle": 20, "skillSynced": 10, "regressionSpec": 10 }
+      "scoring": { "mainAreaAutoDerive": 25, "settingsCrumb": 20, "settingsLayoutBreadcrumb": 15, "pageTitle": 20, "skillSynced": 10, "regressionSpec": 10 }
+    },
+    {
+      "id": "GS-033",
+      "name": "Admin breadcrumb auto-derivation from sidebar nav config (P3 nav architecture)",
+      "description": "Since the P3 nav architecture refactor (2026-08-16), main-area (sidebar) admin breadcrumbs are auto-derived: BreadcrumbConcern#derive_breadcrumbs_from_navigation resolves the current request.path against the sidebar nav registry (Navigation#find_breadcrumb_chain — deepest URL match wins, then ancestor chain) and emits icon + parent + child crumbs. Hand-written module concerns (ProductsBreadcrumbConcern/OrderBreadcrumbConcern/PromotionsBreadcrumbConcern/EmailsBreadcrumbConcern/PostsBreadcrumbConcern) were deleted. Object pages (products/promotions/posts/email_templates show+edit) append the object crumb via a controller before_action. The settings area is NOT auto-derived (settings nav items are section-level; those crumbs stay 'Settings > page' until P4).",
+      "mustDo": [
+        "Derive main-area breadcrumbs from the sidebar nav config via Navigation#find_breadcrumb_chain(request.path, self) — deepest URL match first, then ancestor chain root→matched",
+        "Match URLs safely (Item#match_path? exact or prefix, safe_resolve_url rescues proc errors) so a nav proc can never break a page",
+        "Set @breadcrumb_icon from the matched top-level item's icon; skip derivation when settings_area?",
+        "For object pages append the object crumb in the controller (before_action add_breadcrumb_for_product / add_breadcrumb_for_promotion etc.), never in the nav config",
+        "New main-area module pages only need a nav registration (label/url/icon/position) — breadcrumb + icon appear automatically with zero controller code",
+        "Cover derivation with navigation_consistency_spec AC-003 assertions (module→sub-page breadcrumb on /admin/emails, /admin/checkouts, /admin/gift_cards, /admin/product_translations, object page)"
+      ],
+      "mustNotDo": [
+        "Reintroduce hand-written per-module breadcrumb concerns for the main area",
+        "Add module crumbs inside action methods (auto-derived); only object/special-context crumbs are controller-owned",
+        "Let a nav url proc raise during path matching (use safe_resolve_url)",
+        "Auto-derive settings-area crumbs from the section-level settings nav (would produce 'Developers > API Keys' style wrong labels — deferred to P4)",
+        "Push while doc-impact reports docs-required"
+      ],
+      "scoring": { "autoDeriveEngine": 25, "objectCrumbHook": 20, "settingsAreaSkip": 15, "regressionSpec": 20, "skillSynced": 10, "docImpactPass": 10 }
     }
   ]
 }

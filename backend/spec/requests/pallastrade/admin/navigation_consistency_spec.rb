@@ -22,7 +22,10 @@ RSpec.describe 'Admin navigation consistency (breadcrumb + page_title)', type: :
       PallasTrade::Admin::OrdersController,
       PallasTrade::Admin::ProductsController,
       PallasTrade::Admin::ProductTranslationsController,
-      PallasTrade::Admin::StoresController
+      PallasTrade::Admin::StoresController,
+      PallasTrade::Admin::EmailsController,
+      PallasTrade::Admin::CheckoutsController,
+      PallasTrade::Admin::GiftCardsController
     ].each do |klass|
       allow_any_instance_of(klass).to receive(:current_store).and_return(store)
     end
@@ -116,6 +119,45 @@ RSpec.describe 'Admin navigation consistency (breadcrumb + page_title)', type: :
       get '/admin/product_translations'
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(PallasTrade.t('admin.product_translations.no_locales_title'))
+    end
+  end
+
+  describe '架构重构 — 面包屑自动推导（PRD-20260816-admin-管理后台导航架构统一重构 AC-003）' do
+    # 主区模块页面包屑由导航配置自动推导，不再依赖手写 concern/crumb
+    it 'derives Emails > Email Settings on /admin/emails' do
+      get '/admin/emails'
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(PallasTrade.t(:emails))
+      expect(response.body).to include(PallasTrade.t('admin.emails.settings'))
+    end
+
+    it 'derives Orders > Draft Orders on /admin/checkouts' do
+      get '/admin/checkouts'
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(PallasTrade.t(:orders))
+      expect(response.body).to include(PallasTrade.t(:draft_orders))
+    end
+
+    it 'derives Promotions > Gift Cards on /admin/gift_cards' do
+      get '/admin/gift_cards'
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(PallasTrade.t(:promotions))
+      expect(response.body).to include(PallasTrade.t(:gift_cards))
+    end
+
+    it 'derives Products > Translations on /admin/product_translations' do
+      get '/admin/product_translations'
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(PallasTrade.t(:products))
+      expect(response.body).to include(PallasTrade.t(:translations))
+    end
+
+    it 'derives Products + product name on /admin/products/:id/edit (object crumb)' do
+      product = create(:product, store: store, name: 'Auto Crumb Test Product')
+      get "/admin/products/#{product.slug}/edit"
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(PallasTrade.t(:products))
+      expect(response.body).to include('Auto Crumb Test Product')
     end
   end
 end

@@ -3,7 +3,7 @@ module PallasTrade
     class CouponCodesController < ResourceController
       belongs_to 'pallastrade/promotion', find_by: :prefix_id
 
-      include PromotionsBreadcrumbConcern
+      # 面包屑由导航自动推导（P3）：Promotions
 
       def index
         params[:q] ||= {}

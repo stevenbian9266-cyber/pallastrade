@@ -3,7 +3,7 @@ module PallasTrade
     module Orders
       class ReturnAuthorizationsController < ResourceController
         include PallasTrade::Admin::OrderConcern
-        include PallasTrade::Admin::OrderBreadcrumbConcern
+        # 面包屑由导航自动推导（P3）：Orders；对象页追加订单号
 
         before_action :load_order
         before_action :add_breadcrumb_for_order

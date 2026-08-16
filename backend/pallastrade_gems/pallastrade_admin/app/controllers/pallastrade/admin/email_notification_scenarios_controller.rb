@@ -7,8 +7,7 @@ module PallasTrade
     # toggled on/off per store, plus a test-send button. Toggle state is
     # persisted in store preferences (preferred_email_scenario_<key>).
     class EmailNotificationScenariosController < PallasTrade::Admin::BaseController
-      include PallasTrade::Admin::EmailsBreadcrumbConcern
-      add_breadcrumb PallasTrade.t('admin.emails.notification_scenarios'), :admin_email_notification_scenarios_path
+      # 面包屑由导航自动推导（P3）：Emails → Notification Scenarios
 
       before_action :load_store
 

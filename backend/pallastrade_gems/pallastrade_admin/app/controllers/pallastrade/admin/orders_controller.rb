@@ -3,7 +3,6 @@ module PallasTrade
     class OrdersController < PallasTrade::Admin::ResourceController
       include PallasTrade::Admin::OrderConcern
       include PallasTrade::Admin::OrdersFiltersHelper
-      include PallasTrade::Admin::OrderBreadcrumbConcern
       include PallasTrade::Admin::TableConcern
 
       before_action :initialize_order_events

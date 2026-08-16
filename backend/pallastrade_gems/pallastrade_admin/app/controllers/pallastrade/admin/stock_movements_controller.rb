@@ -1,8 +1,8 @@
 module PallasTrade
   module Admin
     class StockMovementsController < ResourceController
-      include ProductsBreadcrumbConcern
       include TableConcern
+      # 面包屑由导航自动推导（P3）：Products → Stock；本方法追加 Stock Movements
 
       before_action :add_breadcrumbs
 
@@ -29,7 +29,6 @@ module PallasTrade
       end
 
       def add_breadcrumbs
-        add_breadcrumb PallasTrade.t(:stock), PallasTrade.admin_stock_items_path
         add_breadcrumb PallasTrade.t(:stock_movements), PallasTrade.admin_stock_movements_path
       end
     end

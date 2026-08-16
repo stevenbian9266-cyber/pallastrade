@@ -1,8 +1,7 @@
 module PallasTrade
   module Admin
     class ReturnAuthorizationsController < ResourceController
-      add_breadcrumb_icon 'receipt-refund'
-      add_breadcrumb PallasTrade.t(:returns), :admin_customer_returns_path
+      # 面包屑由导航自动推导（P3）：Returns → Return Authorizations
 
       def index; end
 

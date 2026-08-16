@@ -95,6 +95,27 @@ module PallasTrade
           end
         end
 
+        # Safe URL resolution that never raises (used for path indexing).
+        # @return [String, nil] the resolved URL or nil on any error
+        def safe_resolve_url(context = nil)
+          resolve_url(context)
+        rescue StandardError
+          nil
+        end
+
+        # PALLAS-CUSTOM: 面包屑自动推导（P3 导航架构重构）
+        # Whether this item's URL matches the given request path (exact match
+        # or as a path prefix — e.g. /admin/orders matches /admin/orders/123).
+        # @param path [String] the current request path (no query string)
+        # @param context [Object] controller/view context for URL resolution
+        # @return [Boolean]
+        def match_path?(path, context = nil)
+          item_url = safe_resolve_url(context)
+          return false if item_url.blank?
+
+          path == item_url || path.start_with?("#{item_url}/")
+        end
+
         # Resolve label (handles i18n keys)
         def resolve_label
           return label unless label.is_a?(String) || label.is_a?(Symbol)

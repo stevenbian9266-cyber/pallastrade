@@ -15,10 +15,7 @@ module PallasTrade
 
       before_action :load_form_data, only: [:new, :create, :edit, :update]
 
-      add_breadcrumb PallasTrade.t(:products), :admin_products_path
-      add_breadcrumb PallasTrade.t(:taxonomies), :admin_taxonomies_path
-
-      add_breadcrumb_icon 'package'
+      # 面包屑由导航自动推导（P3）：Products → Taxonomies；add_breadcrumb_taxonomy 追加层级
       before_action :add_breadcrumb_taxonomy
 
       def show

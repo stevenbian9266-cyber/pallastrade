@@ -1,7 +1,7 @@
 module PallasTrade
   module Admin
     class PriceListsController < ResourceController
-      include ProductsBreadcrumbConcern
+      # 面包屑由导航自动推导（P3）：Products → Price Lists
 
       # GET /admin/price_lists/:price_list_id/edit_prices
       def edit_prices

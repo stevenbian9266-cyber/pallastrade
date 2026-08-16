@@ -1,9 +1,7 @@
 module PallasTrade
   module Admin
     class GiftCardBatchesController < ResourceController
-      add_breadcrumb_icon 'discount'
-      add_breadcrumb PallasTrade.t(:promotions), :admin_promotions_path
-      add_breadcrumb PallasTrade.t(:gift_cards), :admin_gift_cards_path
+      # 面包屑由导航自动推导（P3）：Promotions → Gift Cards
 
       private
 

@@ -158,6 +158,29 @@ module PallasTrade
         @items.values.map { |item| item.resolve_url(context) }.compact
       end
 
+      # PALLAS-CUSTOM: 面包屑自动推导（P3 导航架构重构）
+      # Find the navigation item (and its ancestor chain) that best matches a
+      # request path — the deepest matching item wins, so /admin/emails
+      # resolves to email_settings (child) → chain [emails, email_settings]
+      # while /admin/orders resolves to orders → chain [orders].
+      # @param path [String] the current request path (no query string)
+      # @param context [Object] controller/view context for URL resolution
+      # @return [Array<Item>, nil] ancestor chain root→matched, or nil
+      def find_breadcrumb_chain(path, context = nil)
+        matched = @items.values.select { |item| item.match_path?(path, context) }
+        return nil if matched.empty?
+
+        best = matched.max_by { |item| [depth_of(item), item.safe_resolve_url(context).to_s.length] }
+
+        chain = []
+        current = best
+        while current
+          chain.unshift(current)
+          current = current.parent_key ? @items[current.parent_key] : nil
+        end
+        chain
+      end
+
       # Add a section
       def section(key, label: nil, &block)
         # Create a section header item
@@ -182,6 +205,17 @@ module PallasTrade
       end
 
       private
+
+      # Depth of an item in the tree (root = 0)
+      def depth_of(item)
+        depth = 0
+        current = item
+        while current&.parent_key && (parent = @items[current.parent_key])
+          depth += 1
+          current = parent
+        end
+        depth
+      end
 
       def sort_items!
         # Sort items by position, then rebuild tree

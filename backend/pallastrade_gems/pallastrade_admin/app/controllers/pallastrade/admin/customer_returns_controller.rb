@@ -1,9 +1,7 @@
 module PallasTrade
   module Admin
     class CustomerReturnsController < ResourceController
-      add_breadcrumb_icon 'receipt-refund'
-      add_breadcrumb PallasTrade.t(:returns), :admin_customer_returns_path
-      add_breadcrumb PallasTrade.t(:customer_returns), :admin_customer_returns_path
+      # 面包屑由导航自动推导（P3）：Returns（顶级落地=模块主页面）
 
       def index; end
     end

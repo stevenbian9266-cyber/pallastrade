@@ -3,8 +3,7 @@ module PallasTrade
     class OptionTypesController < ResourceController
       before_action :setup_option_values, only: [:edit, :new]
 
-      include ProductsBreadcrumbConcern
-      add_breadcrumb PallasTrade.t(:options), :admin_option_types_path
+      # 面包屑由导航自动推导（P3）：Products → Options；add_breadcrumbs 追加选项名
 
       before_action :add_breadcrumbs
 

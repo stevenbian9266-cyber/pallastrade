@@ -83,8 +83,7 @@ module PallasTrade
       end
 
       def set_breadcrumbs
-        @breadcrumb_icon = 'users'
-        add_breadcrumb PallasTrade.t(:customers), :admin_users_path
+        # 默认面包屑（Customers）由导航自动推导（P3）；这里追加用户名
         add_breadcrumb parent.name, PallasTrade.admin_user_path(parent)
       end
 

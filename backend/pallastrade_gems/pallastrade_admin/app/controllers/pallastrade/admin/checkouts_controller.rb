@@ -4,11 +4,8 @@ module PallasTrade
       include PallasTrade::Admin::OrdersFiltersHelper
       include PallasTrade::Admin::TableConcern
 
+      # 面包屑由导航自动推导（P3）：Orders → Draft Orders
       before_action :load_user, only: [:index]
-
-      add_breadcrumb PallasTrade.t(:orders), :admin_orders_path
-      add_breadcrumb PallasTrade.t(:draft_orders), :admin_checkouts_path
-      add_breadcrumb_icon 'inbox'
 
       def index
         @orders = @collection

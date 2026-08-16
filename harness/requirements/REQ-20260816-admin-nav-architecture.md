@@ -1,8 +1,8 @@
-# REQ-20260816-admin-nav-architecture — 管理后台导航架构统一重构
+# REQ-20260816-admin-nav-architecture — 管理后台导航架构统一重构（P3 面包屑自动推导）
 
-> 任务类型：feature | 任务：`TASK-20260816091432-b943ec84` | Gate：`GATE-2026-08-16T09-14-53`
-> 分支：dev | 方案文档：`docs/research/admin-navigation-refactor-plan.md`
-> 关联 PRD：`docs/prd/admin/PRD-20260816-admin-管理后台导航架构统一重构-常显原则-面包屑自动推导-单一布局.md`
+> 任务类型：feature | 任务：`TASK-20260816093819-84a08105` | Gate：`GATE-2026-08-16T09-38-33`
+> 分支：dev | 基线：`24220a6` | 方案文档：`docs/research/admin-navigation-refactor-plan.md`
+> 关联 PRD：`docs/prd/admin/PRD-20260816-admin-管理后台导航架构统一重构-常显原则-面包屑自动推导-单一布局.md`（approved）
 
 ---
 
@@ -37,19 +37,23 @@
 
 ### 改动清单（按阶段）
 
-- **P1**：`_layout.css` 的 `#settings-header` 高度自适应（`height:auto`+`min-height`+`flex-col`），修复面包屑溢出。
-- **P2**：导航配置 `orders_to_fulfill` 删 `if: count>0`（保留 badge）；`translations` 删 `if: locales>1`；`navigation_helper` 渲染层"子项恒显"规则（子项仅权限过滤）。
-- **P3**：`Navigation::Item` 加 path→item 索引；`BreadcrumbConcern` 自动推导面包屑；删手写 concern/crumb（渐进）。
+- **P1** ✅（已提交 24220a6）：`_layout.css` 的 `#settings-header` 高度自适应，修复面包屑溢出。
+- **P2** ✅（已提交 24220a6）：`orders_to_fulfill`/`translations` 常显 + badge/空态。
+- **P3**（本次）：面包屑自动推导 ——
+  1. `Navigation::Item` 加 `match_path?`（URL 精确/前缀匹配）；`Navigation` 加 `find_breadcrumb_chain(path, context)`（最深匹配 + 祖先链）。
+  2. `BreadcrumbConcern` 加 `before_action :derive_breadcrumbs_from_navigation`：**主区(sidebar)** 自动按 请求路径→导航项→ 图标 + 父+子面包屑；设置区保留现有机制（settings nav 为 section 级，crumb 移除归 P4）。
+  3. 新增对象页 hook：`breadcrumb_object` / `breadcrumb_object_name` / `breadcrumb_object_url`（控制器可覆盖，products/promotions 迁移）。
+  4. 删除 5 个手写 concern：`emails/posts/order/products/promotions_breadcrumb_concern`；清理主区控制器 `include` + `add_breadcrumb` + `add_breadcrumb_icon`（设置区控制器保留，归 P4）。
+  5. 保留宿主应用 `ai_controller.rb` 手写面包屑（AI 模块不在导航配置，属宿主自定义）。
 - **P4**：单一布局收敛 + page_title fallback + 设置区 section/tabs 统一（删 4 个 banner partial）。
 - **P5**：`harness nav:validate` + 全量迁移 + SKILL/GS 沉淀。
 
-### 验收标准
+### 验收标准（P3 部分）
 
-- AC-001：设置页面包屑 top>=0（不溢出）。
-- AC-002：orders_to_fulfill/translations 常显（count=0/单语言仍显示）。
-- AC-003：面包屑自动推导（抽查 5 页无手写 crumb 正确）。
-- AC-004：主区/设置区页面头一致；section/tabs 统一。
-- AC-005：nav:validate 通过 + SKILL/GS 沉淀。
+- AC-003：面包屑自动推导 —— 主区抽查 /admin/posts、/admin/emails、/admin/orders、/admin/checkouts、/admin/product_translations、/admin/gift_cards 无手写 crumb 仍正确（模块→子页）。
+- AC-003b：对象页 —— /admin/products/:id/edit 显示 Products > 产品名；/admin/promotions/:id 显示 Promotions > 促销名。
+- AC-003c：设置区回归 —— /admin/channels、/admin/api_keys 等仍为 Settings > 页面（不回归）。
+- AC-003d：`navigation_consistency_spec` + `emails_spec` 全绿。
 
 ### 测试计划
 

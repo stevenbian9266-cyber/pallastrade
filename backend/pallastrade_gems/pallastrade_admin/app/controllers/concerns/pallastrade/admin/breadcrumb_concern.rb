@@ -1,11 +1,18 @@
 module PallasTrade
   module Admin
+    # PALLAS-CUSTOM: 面包屑自动推导（P3 导航架构重构）
+    #
+    # 主区(sidebar)页面不再需要手写 breadcrumb concern / add_breadcrumb：
+    # 请求路径 → 导航配置 → 自动 图标 + 父级 + 子级 面包屑。
+    # 设置区(settings)保留现有控制器手写 crumb（settings nav 为 section 级，
+    # 归 P4 section/tabs 统一阶段再移除）。
     module BreadcrumbConcern
       extend ActiveSupport::Concern
 
       included do
         class_attribute :breadcrumb_icon
         before_action :add_breadcrumb_icon_instance_var
+        before_action :derive_breadcrumbs_from_navigation
       end
 
       class_methods do
@@ -16,6 +23,27 @@ module PallasTrade
 
       def add_breadcrumb_icon_instance_var
         @breadcrumb_icon = self.class.breadcrumb_icon
+      end
+
+      private
+
+      # Derive breadcrumbs from the sidebar navigation config for the current
+      # request path. Skips the settings area (its nav items are section-level
+      # and will be unified in P4). Object pages append their own crumb via
+      # controller before_action (e.g. add_breadcrumb_for_product).
+      def derive_breadcrumbs_from_navigation
+        return unless respond_to?(:add_breadcrumb, true)
+        return if @settings_area.present?
+
+        chain = PallasTrade.admin.navigation.sidebar&.find_breadcrumb_chain(request.path, self)
+        return if chain.blank?
+
+        @breadcrumb_icon ||= chain.first.icon
+        chain.each do |item|
+          label = item.resolve_label
+          url = item.safe_resolve_url(self)
+          add_breadcrumb(label, url) if url.present?
+        end
       end
     end
   end

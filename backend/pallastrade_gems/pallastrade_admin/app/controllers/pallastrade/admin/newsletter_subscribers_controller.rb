@@ -1,8 +1,7 @@
 module PallasTrade
   module Admin
     class NewsletterSubscribersController < ResourceController
-      add_breadcrumb_icon 'users'
-      add_breadcrumb PallasTrade.t(:customers), :admin_users_path
+      # 面包屑由导航自动推导（P3）：Customers → Newsletter Subscribers
     end
   end
 end

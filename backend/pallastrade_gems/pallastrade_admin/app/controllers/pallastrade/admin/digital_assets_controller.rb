@@ -3,7 +3,7 @@ module PallasTrade
     class DigitalAssetsController < ResourceController
       belongs_to 'pallastrade/product', find_by: :slug
 
-      include ProductsBreadcrumbConcern
+      # 面包屑由导航自动推导（P3）：Products；add_breadcrumbs 追加产品名 + Digital Assets
 
       before_action :add_breadcrumbs
 

@@ -8,13 +8,11 @@ module PallasTrade
       before_action :clear_return_to, only: %i[show]
 
       def show
-        @breadcrumb_icon = 'home'
-        add_breadcrumb PallasTrade.t(:home), PallasTrade.admin_dashboard_path
+        # 面包屑由导航自动推导（P3）：Home
       end
 
       def getting_started
-        @breadcrumb_icon = 'map'
-        add_breadcrumb PallasTrade.t('admin.getting_started'), PallasTrade.admin_getting_started_path
+        # 面包屑由导航自动推导（P3）：Getting Started（wizard 完成前）
       end
 
       def analytics

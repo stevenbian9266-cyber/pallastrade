@@ -3,7 +3,7 @@ module PallasTrade
     class StockTransfersController < ResourceController
       before_action :prepare_params, only: :create
 
-      include ProductsBreadcrumbConcern
+      # 面包屑由导航自动推导（P3）：Products → Stock；本方法追加 Stock Transfers + 单号
 
       create.fails :load_variant_omit_ids
 
@@ -38,7 +38,6 @@ module PallasTrade
       end
 
       def add_breadcrumbs
-        add_breadcrumb PallasTrade.t(:stock), PallasTrade.admin_stock_items_path
         add_breadcrumb PallasTrade.t(:stock_transfers), PallasTrade.admin_stock_transfers_path
 
         if @stock_transfer.present? && @stock_transfer.persisted?

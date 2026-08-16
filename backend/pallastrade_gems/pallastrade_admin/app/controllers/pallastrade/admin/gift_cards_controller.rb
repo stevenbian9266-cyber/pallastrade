@@ -48,15 +48,13 @@ module PallasTrade
       end
 
       def add_breadcrumbs
-        if @user.present?
-          @breadcrumb_icon = 'users'
-          add_breadcrumb PallasTrade.t(:customers), :admin_users_path
-          add_breadcrumb @user.name, PallasTrade.admin_user_path(@user)
-        else
-          @breadcrumb_icon = 'discount'
-          add_breadcrumb PallasTrade.t(:promotions), :admin_promotions_path
-          add_breadcrumb PallasTrade.t(:gift_cards), :admin_gift_cards_path
-        end
+        # 默认面包屑（Promotions > Gift Cards）由导航自动推导（P3）；
+        # 仅用户上下文需要追加：Customers > 用户名
+        return unless @user.present?
+
+        @breadcrumb_icon = 'users'
+        add_breadcrumb PallasTrade.t(:customers), :admin_users_path
+        add_breadcrumb @user.name, PallasTrade.admin_user_path(@user)
       end
 
       def load_orders

@@ -6,7 +6,7 @@ module PallasTrade
     # published states and multi-language content (ActionText body).
     class PostsController < ResourceController
       include PallasTrade::Admin::TableConcern
-      include PallasTrade::Admin::PostsBreadcrumbConcern
+      # 面包屑由导航自动推导（P3）：Blog；对象页追加标题
 
       before_action :add_breadcrumb_for_post, only: [:edit, :update]
 

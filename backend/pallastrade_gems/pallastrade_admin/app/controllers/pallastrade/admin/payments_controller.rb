@@ -1,7 +1,7 @@
 module PallasTrade
   module Admin
     class PaymentsController < PallasTrade::Admin::ResourceController
-      include PallasTrade::Admin::OrderBreadcrumbConcern
+      # 面包屑由导航自动推导（P3）：Orders；对象页追加订单号
 
       belongs_to 'pallastrade/order', find_by: :prefix_id
 

@@ -1,7 +1,7 @@
 module PallasTrade
   module Admin
     class PropertiesController < ResourceController
-      include ProductsBreadcrumbConcern
+      # 面包屑由导航自动推导（P3）：Products（properties 页面归 products 模块）
       add_breadcrumb PallasTrade.t(:properties), :admin_properties_path
 
       before_action :add_breadcrumbs

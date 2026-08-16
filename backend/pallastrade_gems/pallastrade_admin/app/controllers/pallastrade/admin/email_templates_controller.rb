@@ -6,9 +6,7 @@ module PallasTrade
     # {placeholder} substitution and a live preview.
     class EmailTemplatesController < ResourceController
       include PallasTrade::Admin::TableConcern
-      include PallasTrade::Admin::EmailsBreadcrumbConcern
-      add_breadcrumb PallasTrade.t('admin.emails.templates'), :admin_email_templates_path
-
+      # 面包屑由导航自动推导（P3）：Emails → Templates；对象页追加模板名
       before_action :add_breadcrumb_for_template, only: [:show, :edit, :update]
 
       def preview

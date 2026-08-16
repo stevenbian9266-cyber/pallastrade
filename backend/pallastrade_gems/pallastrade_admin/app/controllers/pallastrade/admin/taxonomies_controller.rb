@@ -1,8 +1,7 @@
 module PallasTrade
   module Admin
     class TaxonomiesController < ResourceController
-      include ProductsBreadcrumbConcern
-      add_breadcrumb PallasTrade.t(:taxonomies), :admin_taxonomies_path
+      # 面包屑由导航自动推导（P3）：Products → Taxonomies；add_breadcrumbs 追加名称
 
       before_action :add_breadcrumbs
 

@@ -1,8 +1,8 @@
 module PallasTrade
   module Admin
     class PromotionsController < ResourceController
-      include PromotionsBreadcrumbConcern
-
+      # 面包屑由导航自动推导（P3）：Promotions；对象页追加促销名
+      before_action :add_breadcrumb_for_promotion
       before_action :load_form_data, except: :index
 
       # GET /admin/promotions/select_options
@@ -28,6 +28,16 @@ module PallasTrade
           flash[:error] = PallasTrade.t('promotion_not_cloned', error: @new_promo.errors.full_messages.to_sentence)
           redirect_to PallasTrade.admin_promotions_path
         end
+      end
+
+      private
+
+      # 对象页面包屑：Promotions > 促销名（P3，原 PromotionsBreadcrumbConcern）
+      def add_breadcrumb_for_promotion
+        return unless @promotion.present?
+        return if @promotion.new_record?
+
+        add_breadcrumb @promotion.name, PallasTrade.admin_promotion_path(@promotion)
       end
 
       protected

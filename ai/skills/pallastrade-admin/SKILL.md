@@ -140,37 +140,38 @@ PallasTrade.admin.navigation.sidebar.update :products, position: 5
 
 The full nav API is in `pallastrade/admin/app/models/pallastrade/admin/navigation.rb` if you need to read the source.
 
-## Breadcrumbs & page headers（子菜单统一规范，2026-08）
+## Breadcrumbs & page headers（子菜单统一规范，2026-08，P3 起自动推导）
 
-**每个带子菜单的模块必须有专属 breadcrumb concern，且每个页面必须渲染页面头（page_title）。**
-参考 `ProductsBreadcrumbConcern` / `OrderBreadcrumbConcern` / `PromotionsBreadcrumbConcern` /
-`EmailsBreadcrumbConcern`（都在 `pallastrade_admin/app/controllers/concerns/pallastrade/admin/`）。
+**2026-08（P3 导航架构重构）起，主区（sidebar）面包屑由导航配置自动推导，不再需要手写
+breadcrumb concern。** 请求路径 → 导航项（`Navigation#find_breadcrumb_chain`）→ 自动
+`图标 + 父级 + 子级` 面包屑。手写 concern 已删除（`ProductsBreadcrumbConcern` /
+`OrderBreadcrumbConcern` / `PromotionsBreadcrumbConcern` / `EmailsBreadcrumbConcern` /
+`PostsBreadcrumbConcern` 均已移除）。
 
-1. **面包屑 concern**：父级 crumb + 图标在 concern 里用类级声明，各子页控制器 include 后再加自己的子页 crumb：
+**自动推导规则（P3）：**
+
+1. **主区页面**：`BreadcrumbConcern#derive_breadcrumbs_from_navigation` 用当前
+   `request.path` 在 `PallasTrade.admin.navigation.sidebar` 中做**最深 URL 匹配**，
+   命中项沿父链生成面包屑（如 `/admin/emails` → `emails > email_settings` →
+   `Emails > Email Settings`；`/admin/orders` → `Orders`）。图标取顶级导航项 `icon`。
+2. **设置区页面**：`settings_area?` 时跳过自动推导（settings nav 为 section 级），
+   仍按「Settings 前缀 + 控制器类级 `add_breadcrumb`」——设置区 crumb 归 P4 统一。
+3. **对象页**：控制器用 `before_action` 追加对象 crumb（如 products_controller 的
+   `add_breadcrumb_for_product` → `Products > 产品名`；promotions 的
+   `add_breadcrumb_for_promotion`；orders show 追加订单号）。
+4. **新增主区模块页面**：只需在 `pallastrade_admin_navigation.rb` 声明导航项
+   （`label`/`url`/`icon`/`position`），面包屑 + 图标自动出现，**零控制器导航代码**。
 
    ```ruby
-   # concerns/pallastrade/admin/emails_breadcrumb_concern.rb
-   module PallasTrade::Admin::EmailsBreadcrumbConcern
-     extend ActiveSupport::Concern
-     included do
-       add_breadcrumb_icon 'send'                                   # Tabler 图标名
-       add_breadcrumb PallasTrade.t(:emails), :admin_emails_path    # 父级 crumb（symbol URL）
-     end
-   end
-
-   # 子页控制器：include + 类级子页 crumb（+ 需要时对象 crumb）
-   class EmailTemplatesController < ResourceController
-     include PallasTrade::Admin::EmailsBreadcrumbConcern
-     add_breadcrumb PallasTrade.t('admin.emails.templates'), :admin_email_templates_path
-     before_action :add_breadcrumb_for_template, only: [:show, :edit, :update]
-     # ...
+   sidebar_nav.add :emails, label: :emails, url: :admin_emails_path, icon: 'send', position: 70 do |emails|
+     emails.add :email_settings, label: 'admin.emails.settings', url: :admin_emails_path, position: 10
    end
    ```
 
-   ⚠️ **不要在 action 方法内手工 `add_breadcrumb`**（Email 菜单曾经的坑）——用类级
-   `add_breadcrumb` + `before_action`，保证所有子页面包屑结构一致、带图标。
+   ⚠️ **不要在 action 方法内手工 `add_breadcrumb` 拼模块 crumb**——模块 crumb 已自动推导；
+   只有对象/特殊上下文（如 gift_cards 的用户上下文）才需要控制器追加。
 
-2. **页面头（page_title）**：列表/详情/表单页必须写 `content_for :page_title`（渲染页面
+5. **页面头（page_title）**：列表/详情/表单页必须写 `content_for :page_title`（渲染页面
    头部 h3 标题）；否则 `shared/_content_header` 不渲染 header，且 `page_actions`
    （操作按钮：新建/返回/标记解决等）会被**整体丢弃**：
 
@@ -197,9 +198,9 @@ The full nav API is in `pallastrade/admin/app/models/pallastrade/admin/navigatio
 
 | 要素 | 要求 |
 |---|---|
-| 面包屑 | 每个顶级模块一个专属 concern（`add_breadcrumb_icon` + 父 `add_breadcrumb`）；每子页控制器 include + 类级子页 crumb；对象页加对象 crumb |
+| 面包屑 | **导航配置自动推导**（P3）：`Navigation#find_breadcrumb_chain` 按 URL 最深匹配 → 图标 + 父 + 子；对象页用控制器 `before_action` 追加对象 crumb；**禁止手写模块 concern / 类级模块 crumb** |
 | 页面头 | 每个列表/详情/表单视图写 `content_for :page_title` + `page_actions` |
-| 现有 concern | `ProductsBreadcrumbConcern`(box) / `OrderBreadcrumbConcern`(inbox) / `PromotionsBreadcrumbConcern`(discount) / `EmailsBreadcrumbConcern`(send) / `PostsBreadcrumbConcern`(news)；host app 的 `ai_controller.rb` 也用同模式 |
+| 图标 | 自动取顶级导航项 `icon`（emails=`send` / orders=`inbox` / products=`package` / customers=`users` / promotions=`discount` / reports=`chart-bar` / returns=`receipt-refund` / blog=`news` / home=`home`） |
 
 **② 设置/Developers 区（`admin_settings` 布局，`SettingsConcern` 已 include）—— Settings 模式**
 
@@ -218,8 +219,9 @@ class ChannelsController < ResourceController
 end
 ```
 
-⚠️ 通用禁忌：不要在 action 方法内手写 `add_breadcrumb`；主区/设置区页面都必须有页面头
-（否则 `page_actions` 丢失）。回归断言见 `navigation_consistency_spec.rb`。
+⚠️ 通用禁忌：不要在 action 方法内手写 `add_breadcrumb` 拼模块 crumb（主区已自动推导）；
+主区/设置区页面都必须有页面头（否则 `page_actions` 丢失）。回归断言见
+`navigation_consistency_spec.rb`（AC-003 自动推导用例）。
 
 ## Customizing admin tables
 

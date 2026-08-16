@@ -3,7 +3,7 @@ module PallasTrade
     class VariantsController < ResourceController
       include StockLocationsHelper
 
-      include ProductsBreadcrumbConcern
+      # 面包屑由导航自动推导（P3）：Products；add_breadcrumbs 追加变体名
 
       belongs_to 'pallastrade/product', find_by: :slug
       before_action :load_data, only: [:edit, :update]
