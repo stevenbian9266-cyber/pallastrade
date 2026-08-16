@@ -5,6 +5,7 @@ module PallasTrade
     class WebhookEndpointsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
       include PallasTrade::Admin::TableConcern
+      add_breadcrumb PallasTrade.t(:webhook_endpoints), :admin_webhook_endpoints_path
 
       helper 'pallastrade/admin/webhook_endpoints'
 

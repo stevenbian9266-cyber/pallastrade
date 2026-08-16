@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class AdminUsersController < BaseController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:users), :admin_admin_users_path
 
       skip_before_action :authorize_admin, only: [:new, :create]
       before_action :load_parent, except: [:new, :create, :select_options]

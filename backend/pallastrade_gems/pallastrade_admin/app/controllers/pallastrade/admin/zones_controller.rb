@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class ZonesController < ResourceController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:zones), :admin_zones_path
       before_action :load_data, except: :index
 
       def new

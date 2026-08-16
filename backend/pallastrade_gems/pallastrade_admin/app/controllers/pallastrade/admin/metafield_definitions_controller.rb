@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class MetafieldDefinitionsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:metafield_definitions), :admin_metafield_definitions_path
 
       new_action.before :set_resource_type_from_params
 

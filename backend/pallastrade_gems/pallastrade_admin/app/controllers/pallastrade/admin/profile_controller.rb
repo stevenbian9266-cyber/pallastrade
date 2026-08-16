@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class ProfileController < BaseController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:profile), :admin_profile_path
 
       def edit
         @user = try_pallastrade_current_user

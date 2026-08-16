@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class InvitationsController < BaseController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:invitations), :admin_invitations_path
 
       skip_before_action :authorize_admin, only: [:show, :accept]
 

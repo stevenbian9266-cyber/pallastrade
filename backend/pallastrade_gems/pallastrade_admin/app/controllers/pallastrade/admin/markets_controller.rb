@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class MarketsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:markets), :admin_markets_path
 
       before_action :load_data, except: :index
       before_action :normalize_supported_locales, only: [:create, :update]

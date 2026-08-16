@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class StockLocationsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:stock_locations), :admin_stock_locations_path
 
       before_action :set_country, only: :new
 

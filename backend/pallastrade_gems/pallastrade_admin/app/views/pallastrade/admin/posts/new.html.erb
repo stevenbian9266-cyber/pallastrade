@@ -1,3 +1,6 @@
 <%= content_for(:title, PallasTrade.t('admin.posts.new_post')) %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.posts.new_post') %>
+<% end %>
 
 <%= render partial: 'form', locals: { object: @object } %>

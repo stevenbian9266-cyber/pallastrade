@@ -10,6 +10,8 @@ module PallasTrade
 
       belongs_to 'pallastrade/webhook_endpoint'
 
+      before_action :add_breadcrumbs
+
       def redeliver
         load_resource
         authorize! :update, @object.webhook_endpoint
@@ -19,6 +21,16 @@ module PallasTrade
       end
 
       private
+
+      def add_breadcrumbs
+        if @webhook_endpoint.present?
+          add_breadcrumb PallasTrade.t(:webhook_endpoints), PallasTrade.admin_webhook_endpoint_path(@webhook_endpoint)
+          add_breadcrumb PallasTrade.t(:webhook_deliveries), PallasTrade.admin_webhook_endpoint_webhook_deliveries_path(@webhook_endpoint)
+        else
+          add_breadcrumb PallasTrade.t(:webhook_endpoints), :admin_webhook_endpoints_path
+          add_breadcrumb PallasTrade.t(:webhook_deliveries)
+        end
+      end
 
       def collection_default_sort
         'created_at desc'

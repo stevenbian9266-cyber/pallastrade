@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class PoliciesController < ResourceController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:policies), :admin_policies_path
 
       before_action :set_policy_owner, only: %i[create update]
 

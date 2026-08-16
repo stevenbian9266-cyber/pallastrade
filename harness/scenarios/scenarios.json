@@ -521,6 +521,28 @@
         "Push while doc-impact reports docs-required"
       ],
       "scoring": { "breadcrumbConcern": 30, "pageTitle": 25, "pageActionsVisible": 15, "skillSynced": 15, "docImpactPass": 15 }
+    },
+    {
+      "id": "GS-032",
+      "name": "Admin two-layout navigation consistency (main Email mode + settings Settings mode)",
+      "description": "The admin backend has two layouts with distinct breadcrumb/page-header standards. Main-sidebar pages (admin layout, no SettingsConcern) follow the Email mode: one breadcrumb concern per module (add_breadcrumb_icon + parent crumb) + class-level sub-page crumb + content_for :page_title in every view. Settings/Developers pages (admin_settings layout, SettingsConcern included) follow the Settings mode: the layout renders shared/_breadcrumbs in #settings-header (auto 'Settings' prefix), each settings controller adds a class-level crumb (Settings > page), page headers come from content_for :page_title or the section banner partial (_developers_nav), and no breadcrumb icon is set. Every admin page must render a page header; missing page_title drops page_actions.",
+      "mustDo": [
+        "Main area: create a breadcrumb concern per module (icon + parent crumb) and include it with a sub-page crumb in each sub-page controller",
+        "Settings area: add a class-level add_breadcrumb (PallasTrade.t(:page), :admin_xxx_path) to every SettingsConcern controller so the breadcrumb reads 'Settings > page'",
+        "Keep admin_settings layout rendering shared/_breadcrumbs in #settings-header so settings crumbs are visible",
+        "Add content_for :page_title to every list/show/form view (or use a shared section banner partial for Developers) so page headers and page_actions render",
+        "Do not set add_breadcrumb_icon on settings controllers (Settings mode has no icon); nested resources (e.g. webhook_deliveries) add parent + page crumbs via before_action",
+        "Update ai/skills/pallastrade-admin/SKILL.md (two-layout spec) and run harness doc-impact --base origin/main before pushing",
+        "Add a navigation_consistency_spec regression asserting breadcrumb + page_header on main-area and settings-area pages"
+      ],
+      "mustNotDo": [
+        "Add breadcrumbs by hand inside action methods instead of class-level declarations / concerns",
+        "Add a new admin page without a page header (content_for :page_title) - page_actions are dropped",
+        "Assume a breadcrumb concern in one area implies the other area has one (settings pages have no icon and rely on the Settings prefix)",
+        "Break the SettingsConcern auto 'Settings' prefix when adding settings crumbs",
+        "Push while doc-impact reports docs-required"
+      ],
+      "scoring": { "mainAreaConcern": 25, "settingsCrumb": 20, "settingsLayoutBreadcrumb": 15, "pageTitle": 20, "skillSynced": 10, "regressionSpec": 10 }
     }
   ]
 }

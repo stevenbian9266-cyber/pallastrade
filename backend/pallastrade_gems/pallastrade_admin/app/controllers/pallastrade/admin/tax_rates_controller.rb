@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class TaxRatesController < ResourceController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:tax_rates), :admin_tax_rates_path
 
       before_action :load_data
       before_action :set_defaults, only: :new

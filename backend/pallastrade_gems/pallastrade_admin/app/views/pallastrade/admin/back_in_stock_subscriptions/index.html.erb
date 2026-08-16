@@ -1,3 +1,6 @@
 <%= content_for(:title, PallasTrade.t(:back_in_stock_subscriptions)) %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t(:back_in_stock_subscriptions) %>
+<% end %>
 
 <%= render_table @collection, :back_in_stock_subscriptions %>

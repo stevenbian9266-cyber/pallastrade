@@ -7,6 +7,9 @@ en:
     emails: Emails
     blog: Blog
     back_in_stock_subscriptions: Back in Stock Subscriptions
+    profile: Profile
+    exports: Exports
+    webhook_deliveries: Webhook Deliveries
     acceptance_errors: Acceptance errors
     actions:
       cancel: Cancel

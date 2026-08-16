@@ -5,6 +5,7 @@ module PallasTrade
     class ApiKeysController < ResourceController
       include PallasTrade::Admin::SettingsConcern
       include PallasTrade::Admin::TableConcern
+      add_breadcrumb PallasTrade.t(:api_keys), :admin_api_keys_path
 
       helper 'pallastrade/admin/api_keys'
 

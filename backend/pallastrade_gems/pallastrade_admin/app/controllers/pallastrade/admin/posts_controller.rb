@@ -6,6 +6,9 @@ module PallasTrade
     # published states and multi-language content (ActionText body).
     class PostsController < ResourceController
       include PallasTrade::Admin::TableConcern
+      include PallasTrade::Admin::PostsBreadcrumbConcern
+
+      before_action :add_breadcrumb_for_post, only: [:edit, :update]
 
       private
 
@@ -19,6 +22,11 @@ module PallasTrade
 
       def object_name
         'post'
+      end
+
+      def add_breadcrumb_for_post
+        return unless @object.present? && @object.persisted?
+        add_breadcrumb @object.title, PallasTrade.edit_admin_post_path(@object)
       end
 
       def permitted_resource_params

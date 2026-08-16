@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class ShippingMethodsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:shipping_methods), :admin_shipping_methods_path
 
       before_action :load_data, except: :index
       before_action :set_default_values, only: :new

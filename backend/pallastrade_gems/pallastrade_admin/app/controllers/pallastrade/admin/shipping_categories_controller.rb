@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class ShippingCategoriesController < ResourceController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:shipping_categories), :admin_shipping_categories_path
 
       private
 

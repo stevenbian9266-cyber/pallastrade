@@ -4,6 +4,7 @@ module PallasTrade
       include ActiveStorage::SetCurrent # Needed for ActiveStorage to work on development env
 
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:exports), :admin_exports_path
 
       new_action.before :assign_params
       create.before :set_user

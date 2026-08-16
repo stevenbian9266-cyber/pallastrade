@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class TaxCategoriesController < ResourceController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:tax_categories), :admin_tax_categories_path
 
       private
 

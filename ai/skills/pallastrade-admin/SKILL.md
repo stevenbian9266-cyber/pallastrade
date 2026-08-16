@@ -189,6 +189,38 @@ The full nav API is in `pallastrade/admin/app/models/pallastrade/admin/navigatio
    `unified email menu structure` describe：校验 `id="page-header"`、`aria-label="breadcrumb"`
    与 `page_actions` 内容）。
 
+### 两套布局的统一规范（2026-08 导航一致性）
+
+后台有两种布局，各自有独立的统一规范（新增/修改 admin 页面时必须遵守）：
+
+**① 主侧边栏区（`admin` 布局，`SettingsConcern` 未 include）—— Email 模式**
+
+| 要素 | 要求 |
+|---|---|
+| 面包屑 | 每个顶级模块一个专属 concern（`add_breadcrumb_icon` + 父 `add_breadcrumb`）；每子页控制器 include + 类级子页 crumb；对象页加对象 crumb |
+| 页面头 | 每个列表/详情/表单视图写 `content_for :page_title` + `page_actions` |
+| 现有 concern | `ProductsBreadcrumbConcern`(box) / `OrderBreadcrumbConcern`(inbox) / `PromotionsBreadcrumbConcern`(discount) / `EmailsBreadcrumbConcern`(send) / `PostsBreadcrumbConcern`(news)；host app 的 `ai_controller.rb` 也用同模式 |
+
+**② 设置/Developers 区（`admin_settings` 布局，`SettingsConcern` 已 include）—— Settings 模式**
+
+| 要素 | 要求 |
+|---|---|
+| 面包屑 | `admin_settings` 布局在 `#settings-header` 渲染 `shared/_breadcrumbs`；`_breadcrumbs` 在 `settings_area?` 时自动加「Settings」前缀；每个设置控制器须类级 `add_breadcrumb PallasTrade.t(:页面), :admin_xxx_path`（面包屑 = `Settings > 页面`） |
+| 页面头 | `content_for :page_title`（或共享 partial：Developers 分区用 `shared/_developers_nav` 渲染「Developers」banner + tabs） |
+| 注意 | 设置控制器**不要**设置 `add_breadcrumb_icon`（Settings 模式无图标）；嵌套资源（如 `webhook_deliveries`）用 `before_action` 加父级 + 本页 crumb |
+
+```ruby
+# 设置区示例（channels）
+class ChannelsController < ResourceController
+  include PallasTrade::Admin::SettingsConcern
+  add_breadcrumb PallasTrade.t(:channels), :admin_channels_path   # 面包屑 = Settings > Sales channels
+  # ...
+end
+```
+
+⚠️ 通用禁忌：不要在 action 方法内手写 `add_breadcrumb`；主区/设置区页面都必须有页面头
+（否则 `page_actions` 丢失）。回归断言见 `navigation_consistency_spec.rb`。
+
 ## Customizing admin tables
 
 Most admin listing pages (Products, Orders, Promotions, etc.) use a registered table definition — see the gem's `config/initializers/pallastrade_admin_tables.rb` for the registered keys (note: the Customers page is registered as `:users`; a few pages like Payment Methods don't use the table registry). Add, remove, or reorder columns from an initializer:

@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class ReimbursementTypesController < ResourceController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:reimbursement_types), :admin_reimbursement_types_path
 
       private
 

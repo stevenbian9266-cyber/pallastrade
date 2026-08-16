@@ -1,3 +1,6 @@
 <%= content_for(:title, PallasTrade.t('admin.posts.edit_post')) %>
+<% content_for :page_title do %>
+  <%= @object.title.presence || PallasTrade.t('admin.posts.edit_post') %>
+<% end %>
 
 <%= render partial: 'form', locals: { object: @object } %>

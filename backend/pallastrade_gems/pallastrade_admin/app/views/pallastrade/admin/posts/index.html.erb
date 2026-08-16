@@ -1,4 +1,7 @@
 <%= content_for(:title, PallasTrade.t('admin.posts.title')) %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.posts.title') %>
+<% end %>
 <%= content_for(:page_actions) do %>
   <%= link_to PallasTrade.t('admin.posts.new_post'), PallasTrade.new_admin_post_path, class: 'btn btn-primary' %>
 <% end %>

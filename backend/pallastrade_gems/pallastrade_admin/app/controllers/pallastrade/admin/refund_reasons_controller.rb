@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class RefundReasonsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:refund_reasons), :admin_refund_reasons_path
 
       private
 

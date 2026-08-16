@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class ChannelsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:channels), :admin_channels_path
 
       private
 

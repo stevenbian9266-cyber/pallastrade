@@ -3,6 +3,7 @@ module PallasTrade
     class PaymentMethodsController < ResourceController
       include PallasTrade::Admin::PreferencesConcern
       include PallasTrade::Admin::SettingsConcern
+      add_breadcrumb PallasTrade.t(:payment_methods), :admin_payment_methods_path
 
       prepend_before_action :require_payment_type, only: [:new, :create]
       before_action -> { clear_empty_password_preferences(:payment_method) }, only: :update
