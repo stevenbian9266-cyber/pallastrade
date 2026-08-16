@@ -20,7 +20,7 @@
 
   <div class="card-body">
     <%# ---- 菜单权限：导航树勾选 ---- %>
-    <div class="tab-panel">
+    <div class="tab-panel" data-tabs-target="panel">
       <p class="text-sm text-gray-500 mb-3"><%= PallasTrade.t('admin.roles.menu_permissions_help') %></p>
       <label class="flex items-center gap-2 mb-2">
         <%= check_box_tag 'role[menu_grants][]', 'all', role_menu_grant?('all'), class: 'form-check-input', id: 'role_menu_all' %>
@@ -50,7 +50,7 @@
     </div>
 
     <%# ---- 功能权限：资源 × 操作矩阵 ---- %>
-    <div class="tab-panel hidden">
+    <div class="tab-panel hidden" data-tabs-target="panel">
       <p class="text-sm text-gray-500 mb-3"><%= PallasTrade.t('admin.roles.function_permissions_help') %></p>
       <div class="overflow-x-auto">
         <table class="table table-sm table-bordered">
@@ -81,7 +81,7 @@
     </div>
 
     <%# ---- 数据权限：资源 × 数据范围 ---- %>
-    <div class="tab-panel hidden">
+    <div class="tab-panel hidden" data-tabs-target="panel">
       <p class="text-sm text-gray-500 mb-3"><%= PallasTrade.t('admin.roles.data_permissions_help') %></p>
       <div class="overflow-x-auto">
         <table class="table table-sm table-bordered">
