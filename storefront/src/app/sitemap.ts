@@ -17,7 +17,14 @@ type PostWithTimestamp = Post & {
 
 import type { MetadataRoute } from "next";
 
-export const dynamic = "force-dynamic";
+/**
+ * ISR: regenerate the sitemap at most once per hour. Sitemaps are crawled by
+ * search engines repeatedly; the previous `force-dynamic` regenerated the
+ * full 10k+ URL XML (hundreds of API calls) on EVERY request, which timed
+ * out for Google. With revalidate the first request after expiry rebuilds
+ * it, and all subsequent requests within the hour serve cached XML instantly.
+ */
+export const revalidate = 3600;
 
 interface CountryLocale {
   country: string;
@@ -54,8 +61,9 @@ function getDefaultLocaleOptions(): LocaleOptions {
  * `next build` process reuse already-fetched data instead of hitting the
  * API O(chunks) times.
  *
- * Products and categories are cached per locale:country because PallasTrade
- * returns locale-dependent slugs/permalinks.
+ * Products, categories and posts are cached per LOCALE (see localeCacheKey):
+ * PallasTrade returns the same slugs/permalinks for every country within a
+ * locale, so keying by country would multiply API calls ~176x for nothing.
  */
 const cachedProductsByLocale = new Map<string, Promise<ProductWithMedia[]>>();
 const cachedCategoriesByLocale = new Map<
@@ -65,8 +73,16 @@ const cachedCategoriesByLocale = new Map<
 const cachedPostsByLocale = new Map<string, Promise<PostWithTimestamp[]>>();
 let cachedCountryLocales: Promise<CountryLocale[]> | null = null;
 
-function localeCacheKey(locale: string, country: string): string {
-  return `${locale}:${country}`;
+/**
+ * Cache key for catalog data. Products/categories/posts are keyed by LOCALE
+ * ONLY (not locale:country): PallasTrade returns the same slugs/permalinks
+ * for every country within a locale, because country only drives market
+ * validation while catalog content is translated per locale. Deduping by
+ * locale collapses 176 country/locale combos into ~5 API calls — without
+ * this, /sitemap/N.xml issues hundreds of requests and times out.
+ */
+function localeCacheKey(locale: string, _country: string): string {
+  return locale;
 }
 
 function getCachedProducts(
