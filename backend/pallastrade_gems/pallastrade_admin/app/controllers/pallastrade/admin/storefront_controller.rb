@@ -5,11 +5,10 @@ module PallasTrade
     class StorefrontController < BaseController
       include PallasTrade::Admin::SettingsConcern
 
+      # 面包屑由导航配置自动推导（P5）：Settings > Storefront
+
       # GET /admin/storefront
       def show
-        @breadcrumb_icon = 'building-store'
-        add_breadcrumb PallasTrade.t('admin.storefront_setup.title'), PallasTrade.admin_storefront_path
-
         @publishable_key = find_or_create_publishable_key
         @deployment_origin = normalize_origin(params[:'deployment-url'])
         @deployment_origin_allowed = @deployment_origin.present? && current_store.allowed_origin?(@deployment_origin)

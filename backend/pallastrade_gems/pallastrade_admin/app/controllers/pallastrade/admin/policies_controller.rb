@@ -2,7 +2,7 @@ module PallasTrade
   module Admin
     class PoliciesController < ResourceController
       include PallasTrade::Admin::SettingsConcern
-      add_breadcrumb PallasTrade.t(:policies), :admin_policies_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Policies
 
       before_action :set_policy_owner, only: %i[create update]
 

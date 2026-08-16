@@ -3,7 +3,7 @@ module PallasTrade
     class PaymentMethodsController < ResourceController
       include PallasTrade::Admin::PreferencesConcern
       include PallasTrade::Admin::SettingsConcern
-      add_breadcrumb PallasTrade.t(:payment_methods), :admin_payment_methods_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Payment Methods；编辑页 set_breadcrumb 追加名称
 
       prepend_before_action :require_payment_type, only: [:new, :create]
       before_action -> { clear_empty_password_preferences(:payment_method) }, only: :update

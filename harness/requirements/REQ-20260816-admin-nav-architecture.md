@@ -50,14 +50,16 @@
   2. **page_title fallback**：`derive_breadcrumbs_from_navigation` 记录 `@navigation_page_title`（最深匹配项 label）；`_content_header` 无 `content_for :page_title` 时回退到它，保证每个主区页面有页面头。
   3. **设置区 section/tabs 统一**：`Navigation::SETTINGS_SECTIONS` 注册表（developers/team/audit/returns → title + tabs + 可选 page_actions/nav_partials）；新建 `shared/_section_nav` 统一 partial；11 个设置 index 视图改渲染 `_section_nav`；删除 `_developers_nav/_team_nav/_audit_nav/_returns_and_refunds_nav` 4 个 banner partial（team 邀请按钮拆 `_team_nav_actions`）。
   4. **设置区 crumb 保留**：settings nav 为 section 级（developers 覆盖 api_keys 等），每页 crumb label ≠ section label，自动推导归 P5 schema 迁移。
-- **P5**：`harness nav:validate` + 全量迁移 + SKILL/GS 沉淀。
+- **P5**（本次）：schema 校验器 + 设置区 crumb 自动推导 + 知识沉淀 ——
+  1. **`nav:validate` 校验器**：`pallastrade:admin:nav_validate` rake task（顶级 icon/URL、子项常显、业务 if: 关键字检测）+ harness 插件 `harness/plugins/nav-validate.mjs`（docker-rake，降级静态扫描 `scripts/nav-validate-static.mjs`）+ 接入 quick profile + lefthook pre-commit。
+  2. **设置区 crumb 自动推导**：`Navigation::SETTINGS_TAB_MAP`（developers→developers_tabs 等 6 组）→ `derive_settings_breadcrumb` 按 active 命中 section + tab map 取页面级 label（Settings > 页面）；移除 27 个设置控制器手写 page crumb；`skip_breadcrumb_derivation` 例外（stores section crumb、webhook_deliveries 父级 crumb）。
+  3. **知识沉淀**：SKILL.md 设置区自动推导章节 + GS-032 更新 + 方案文档 v1.4。
 
-### 验收标准（P4 部分）
+### 验收标准（P5 部分）
 
-- AC-004：设置页使用主布局（body 无 `admin-settings` 类），面包屑仍在顶部 header（Settings > 页面），页面头 + tabs 正常渲染。
-- AC-004b：/admin/api_keys 等设置页渲染「Developers」section banner（标题 + API Keys/Webhook/Allowed Origins/Redirects tabs）。
-- AC-004c：主区无 page_title 的页面（如 orders show）自动 fallback 页面头（导航项 label）。
-- AC-004d：`navigation_consistency_spec` + `emails_spec` 全绿（43+ examples）。
+- AC-005：设置区 crumb 自动推导 —— /admin/webhook_endpoints → Settings > Webhook Endpoints（非 Developers）；/admin/tax_rates → Settings > Tax Rates；/admin/roles → Settings > Roles；/admin/storefront → Settings > Storefront。
+- AC-006：`nav:validate` 通过（rake + harness 插件 + 静态扫描）；引入业务 `if:` 会被阻断（负向用例）。
+- AC-007：`navigation_consistency_spec`（21 examples）+ 全量 admin（74 examples）全绿。
 
 ### 测试计划
 

@@ -2,7 +2,7 @@ module PallasTrade
   module Admin
     class StockLocationsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
-      add_breadcrumb PallasTrade.t(:stock_locations), :admin_stock_locations_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Stock Locations
 
       before_action :set_country, only: :new
 

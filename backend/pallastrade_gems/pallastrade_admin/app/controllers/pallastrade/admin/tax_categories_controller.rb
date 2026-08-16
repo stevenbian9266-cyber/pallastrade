@@ -2,7 +2,7 @@ module PallasTrade
   module Admin
     class TaxCategoriesController < ResourceController
       include PallasTrade::Admin::SettingsConcern
-      add_breadcrumb PallasTrade.t(:tax_categories), :admin_tax_categories_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Tax Categories
 
       private
 

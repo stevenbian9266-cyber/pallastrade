@@ -5,7 +5,7 @@ module PallasTrade
     class RedirectsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
       include PallasTrade::Admin::TableConcern
-      add_breadcrumb PallasTrade.t(:redirects), :admin_redirects_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Redirects
 
       # Load products whose URL (slug) changed, so the redirects page can prompt
       # the user to create a 301 for each old URL. See PallasTrade::ProductUrlChange.

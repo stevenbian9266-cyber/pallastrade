@@ -5,7 +5,7 @@ module PallasTrade
     class AllowedOriginsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
       include PallasTrade::Admin::TableConcern
-      add_breadcrumb PallasTrade.t(:allowed_origins), :admin_allowed_origins_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Allowed Origins
 
       private
 

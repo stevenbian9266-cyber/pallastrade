@@ -7,7 +7,7 @@ module PallasTrade
     class BackInStockSubscriptionsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
       include PallasTrade::Admin::TableConcern
-      add_breadcrumb PallasTrade.t(:back_in_stock_subscriptions), :admin_back_in_stock_subscriptions_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Back in Stock Subscriptions
 
       private
 

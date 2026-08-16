@@ -2,7 +2,7 @@ module PallasTrade
   module Admin
     class ReturnAuthorizationReasonsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
-      add_breadcrumb PallasTrade.t(:return_authorization_reasons), :admin_return_authorization_reasons_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Return Authorization Reasons
 
       private
 

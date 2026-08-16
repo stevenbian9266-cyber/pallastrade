@@ -11,6 +11,7 @@ module PallasTrade
 
       included do
         class_attribute :breadcrumb_icon
+        class_attribute :skip_breadcrumb_derivation, default: false
         before_action :add_breadcrumb_icon_instance_var
         before_action :derive_breadcrumbs_from_navigation
       end
@@ -37,28 +38,59 @@ module PallasTrade
           self.class.include?(PallasTrade::Admin::SettingsConcern)
       end
 
-      # Derive breadcrumbs from the sidebar navigation config for the current
-      # request path. Skips the settings area (its nav items are section-level
-      # and will be unified in P4). Object pages append their own crumb via
-      # controller before_action (e.g. add_breadcrumb_for_product).
-      # Also records @navigation_page_title (deepest matched item label) so
-      # views without content_for :page_title get an automatic page header.
+      # P5 起：设置区也用导航配置自动推导面包屑（Settings > 页面），
+      # 不再需要每个设置控制器手写 `add_breadcrumb`。
+      # 特殊控制器（如 stores 的 section 级自定义 crumb）可声明
+      # `self.skip_breadcrumb_derivation = true` 保留手写逻辑。
       def derive_breadcrumbs_from_navigation
         return unless respond_to?(:add_breadcrumb, true)
-        return if settings_controller?
+        return if self.class.skip_breadcrumb_derivation
 
+        if settings_controller?
+          derive_settings_breadcrumb
+        else
+          derive_sidebar_breadcrumb
+        end
+      end
+
+      # 主区（sidebar）：请求路径 → 导航项（最深 URL 匹配）→ 图标 + 父 + 子 面包屑。
+      # 同时记录 @navigation_page_title（最深匹配项 label）供 page_title fallback。
+      def derive_sidebar_breadcrumb
         chain = PallasTrade.admin.navigation.sidebar&.find_breadcrumb_chain(request.path, self)
         return if chain.blank?
 
-        # P4 page_title fallback：最深匹配项 label 作为页面头默认标题
         @navigation_page_title ||= chain.last.resolve_label
-
         @breadcrumb_icon ||= chain.first.icon
         chain.each do |item|
           label = item.resolve_label
           url = item.safe_resolve_url(self)
           add_breadcrumb(label, url) if url.present?
         end
+      end
+
+      # 设置区（settings）：settings nav 是 section 级，先按 active 条件命中 section 项，
+      # 再经 SETTINGS_TAB_MAP 找到页面级 tab 项取 label（Settings 前缀由 _breadcrumbs
+      # partial 的 settings_area? 分支自动加）。
+      def derive_settings_breadcrumb
+        nav = PallasTrade.admin.navigation.settings
+        return unless nav
+
+        item = nav.items.values.find { |i| i.active?(request.path, self) }
+        return unless item
+
+        page = settings_page_item(item) || item
+        label = page.resolve_label
+        url = page.safe_resolve_url(self) || item.safe_resolve_url(self)
+        add_breadcrumb(label, url) if label.present? && url.present?
+      end
+
+      # 若 section 项关联页面级 tab 注册表，返回匹配当前路径的 tab 项（页面级 label）。
+      def settings_page_item(item)
+        tab_context = PallasTrade::Admin::Navigation::SETTINGS_TAB_MAP[item.key]
+        return nil unless tab_context
+
+        tab_nav = PallasTrade.admin.navigation.public_send(tab_context)
+        tab_nav&.items&.values&.find { |tab| tab.active?(request.path, self) || tab.match_path?(request.path, self) }
       end
     end
   end

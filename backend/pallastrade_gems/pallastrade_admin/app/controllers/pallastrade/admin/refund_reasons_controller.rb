@@ -2,7 +2,7 @@ module PallasTrade
   module Admin
     class RefundReasonsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
-      add_breadcrumb PallasTrade.t(:refund_reasons), :admin_refund_reasons_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Refund Reasons
 
       private
 

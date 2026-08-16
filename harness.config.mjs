@@ -167,7 +167,7 @@ export default {
   profiles: {
     quick: {
       timeout: 300,
-      checks: ['lint', 'typecheck', 'monorepo-contract', 'api-contract', 'affected-tests', 'anti-patterns', 'degraded-loop'],
+      checks: ['lint', 'typecheck', 'monorepo-contract', 'api-contract', 'affected-tests', 'anti-patterns', 'degraded-loop', 'nav-validate'],
     },
     full: {
       timeout: 2700,

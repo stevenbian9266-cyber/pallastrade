@@ -2,7 +2,7 @@ module PallasTrade
   module Admin
     class ShippingCategoriesController < ResourceController
       include PallasTrade::Admin::SettingsConcern
-      add_breadcrumb PallasTrade.t(:shipping_categories), :admin_shipping_categories_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Shipping Categories
 
       private
 

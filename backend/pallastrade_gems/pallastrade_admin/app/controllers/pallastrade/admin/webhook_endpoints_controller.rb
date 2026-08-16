@@ -5,7 +5,7 @@ module PallasTrade
     class WebhookEndpointsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
       include PallasTrade::Admin::TableConcern
-      add_breadcrumb PallasTrade.t(:webhook_endpoints), :admin_webhook_endpoints_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Webhook Endpoints
 
       helper 'pallastrade/admin/webhook_endpoints'
 

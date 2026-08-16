@@ -2,7 +2,7 @@ module PallasTrade
   module Admin
     class InvitationsController < BaseController
       include PallasTrade::Admin::SettingsConcern
-      add_breadcrumb PallasTrade.t(:invitations), :admin_invitations_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Invitations
 
       skip_before_action :authorize_admin, only: [:show, :accept]
 

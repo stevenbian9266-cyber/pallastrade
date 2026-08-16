@@ -6,6 +6,9 @@ module PallasTrade
       include PallasTrade::Admin::SettingsConcern
       include PallasTrade::Admin::TableConcern
 
+      # 嵌套资源：add_breadcrumbs 手写 父级(Webhook Endpoint) + 本页 crumb，跳过自动推导（P5）
+      self.skip_breadcrumb_derivation = true
+
       helper 'pallastrade/admin/webhook_endpoints'
 
       belongs_to 'pallastrade/webhook_endpoint'

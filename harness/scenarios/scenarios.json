@@ -528,11 +528,11 @@
       "description": "Since the P4 nav architecture refactor (2026-08-16) the admin uses ONE layout (pallastrade/admin); the admin_settings layout and the 4 hand-written section banner partials (_developers_nav/_team_nav/_audit_nav/_returns_and_refunds_nav) were deleted. Main-sidebar pages follow the Email mode: breadcrumbs auto-derived from the sidebar nav (Navigation#find_breadcrumb_chain), page headers from content_for :page_title (fallback to nav label via @navigation_page_title). Settings/Developers pages (SettingsConcern included) render breadcrumbs in the top header (auto 'Settings' prefix + back-to-dashboard), each settings controller adds a class-level crumb (Settings > page), index pages render the unified shared/_section_nav partial (section key from Navigation::SETTINGS_SECTIONS) for the section banner title + tabs, and no breadcrumb icon is set. Every admin page must render a page header; missing page_title drops page_actions.",
       "mustDo": [
         "Main area (P3+): breadcrumbs are auto-derived from the sidebar nav config (Navigation#find_breadcrumb_chain by deepest URL match) — do NOT create hand-written breadcrumb concerns; only append object crumbs via controller before_action",
-        "Settings area: single admin layout; add a class-level add_breadcrumb (PallasTrade.t(:page), :admin_xxx_path) to every SettingsConcern controller so the breadcrumb reads 'Settings > page' in the top header",
+        "Settings area: single admin layout; breadcrumbs are auto-derived (P5) as 'Settings > page' via BreadcrumbConcern#derive_settings_breadcrumb + Navigation::SETTINGS_TAB_MAP — do NOT hand-write page crumbs in settings controllers (object crumbs via before_action are fine)",
         "Settings index pages: render shared/_section_nav with the section key (developers/team/audit/returns) instead of hand-written banner partials; section title + tabs come from Navigation::SETTINGS_SECTIONS",
         "Add content_for :page_title to every list/show/form view so page headers and page_actions render (fallback to nav label is automatic via @navigation_page_title)",
-        "Do not set add_breadcrumb_icon on settings controllers (Settings mode has no icon); nested resources (e.g. webhook_deliveries) add parent + page crumbs via before_action",
-        "Update ai/skills/pallastrade-admin/SKILL.md (single-layout spec) and run harness doc-impact --base origin/main before pushing",
+        "Do not set add_breadcrumb_icon on settings controllers (Settings mode has no icon); special-crumb controllers declare skip_breadcrumb_derivation = true (stores section crumbs, webhook_deliveries parent crumbs)",
+        "Update ai/skills/pallastrade-admin/SKILL.md (single-layout + auto-derive spec) and run harness doc-impact --base origin/main before pushing",
         "Add a navigation_consistency_spec regression asserting breadcrumb + page_header on main-area and settings-area pages"
       ],
       "mustNotDo": [

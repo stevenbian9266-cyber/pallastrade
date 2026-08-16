@@ -2,7 +2,7 @@ module PallasTrade
   module Admin
     class ShippingMethodsController < ResourceController
       include PallasTrade::Admin::SettingsConcern
-      add_breadcrumb PallasTrade.t(:shipping_methods), :admin_shipping_methods_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Shipping Methods
 
       before_action :load_data, except: :index
       before_action :set_default_values, only: :new

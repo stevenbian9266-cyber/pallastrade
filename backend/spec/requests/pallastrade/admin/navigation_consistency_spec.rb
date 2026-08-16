@@ -26,7 +26,11 @@ RSpec.describe 'Admin navigation consistency (breadcrumb + page_title)', type: :
       PallasTrade::Admin::EmailsController,
       PallasTrade::Admin::CheckoutsController,
       PallasTrade::Admin::GiftCardsController,
-      PallasTrade::Admin::AdminUsersController
+      PallasTrade::Admin::AdminUsersController,
+      PallasTrade::Admin::WebhookEndpointsController,
+      PallasTrade::Admin::TaxRatesController,
+      PallasTrade::Admin::RolesController,
+      PallasTrade::Admin::StorefrontController
     ].each do |klass|
       allow_any_instance_of(klass).to receive(:current_store).and_return(store)
     end
@@ -204,6 +208,50 @@ RSpec.describe 'Admin navigation consistency (breadcrumb + page_title)', type: :
       tabs_text = doc.at_css('#page-tabs')&.text.to_s
       expect(tabs_text).to include(PallasTrade.t(:invitations))
       expect(tabs_text).to include(PallasTrade.t(:roles))
+    end
+  end
+
+  describe '架构重构 — 设置区 crumb 自动推导（PRD-20260816-admin-管理后台导航架构统一重构 AC-005）' do
+    def breadcrumb_text
+      doc = Nokogiri::HTML(response.body)
+      doc.at_css('nav[aria-label="breadcrumb"]')&.text.to_s
+    end
+
+    # 经 developers_tabs 映射：Settings > Webhook Endpoints（非 section 名 Developers）
+    it 'derives Settings > Webhook Endpoints on /admin/webhook_endpoints (tab map)' do
+      get '/admin/webhook_endpoints'
+      expect(response).to have_http_status(:ok)
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:settings))
+      expect(crumb).to include(PallasTrade.t(:webhook_endpoints))
+      expect(crumb).not_to include(PallasTrade.t(:developers))
+    end
+
+    # 经 tax_tabs 映射：Settings > Tax Rates
+    it 'derives Settings > Tax Rates on /admin/tax_rates (tab map)' do
+      get '/admin/tax_rates'
+      expect(response).to have_http_status(:ok)
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:settings))
+      expect(crumb).to include(PallasTrade.t(:tax_rates))
+    end
+
+    # 经 team_tabs 映射：Settings > Roles
+    it 'derives Settings > Roles on /admin/roles (tab map)' do
+      get '/admin/roles'
+      expect(response).to have_http_status(:ok)
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:settings))
+      expect(crumb).to include(PallasTrade.t(:roles))
+    end
+
+    # 独立项（无 tab map）：Settings > Storefront
+    it 'derives Settings > Storefront on /admin/storefront' do
+      get '/admin/storefront'
+      expect(response).to have_http_status(:ok)
+      crumb = breadcrumb_text
+      expect(crumb).to include(PallasTrade.t(:settings))
+      expect(crumb).to include(PallasTrade.t('admin.storefront'))
     end
   end
 end

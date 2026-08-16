@@ -2,7 +2,7 @@ module PallasTrade
   module Admin
     class ReimbursementTypesController < ResourceController
       include PallasTrade::Admin::SettingsConcern
-      add_breadcrumb PallasTrade.t(:reimbursement_types), :admin_reimbursement_types_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Reimbursement Types
 
       private
 

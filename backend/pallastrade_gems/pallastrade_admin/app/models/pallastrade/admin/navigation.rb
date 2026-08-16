@@ -21,6 +21,19 @@ module PallasTrade
         }
       }.freeze
 
+      # PALLAS-CUSTOM: 设置区 crumb 自动推导（P5 导航架构重构）
+      # settings nav 项是 section 级（developers 覆盖 api_keys/webhooks/...），
+      # 每页 crumb label ≠ section label。此映射把 section 项关联到页面级 tab
+      # 注册表，crumb 推导时取「Settings > 页面」而非「Settings > section」。
+      SETTINGS_TAB_MAP = {
+        developers: :developers_tabs,
+        users: :team_tabs,
+        audits: :audit_tabs,
+        return_settings: :returns_tabs,
+        tax_rates: :tax_tabs,
+        shipping_methods: :shipping_tabs
+      }.freeze
+
       attr_reader :items, :context
 
       def initialize(context)

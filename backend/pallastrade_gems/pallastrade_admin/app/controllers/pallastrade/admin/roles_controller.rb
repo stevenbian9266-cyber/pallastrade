@@ -2,7 +2,7 @@ module PallasTrade
   module Admin
     class RolesController < ResourceController
       include PallasTrade::Admin::SettingsConcern
-      add_breadcrumb PallasTrade.t(:roles), :admin_roles_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Roles
 
       private
 

@@ -119,4 +119,6 @@ end
 |---|---|---|---|
 | 2026-08-16 | v1.0 | 方案初版；用户确认决策 1/2/3 | AI |
 | 2026-08-16 | v1.1 | **P1+P2 完成**（提交 24220a6）：设置区头部溢出修复 + 常显原则 | AI |
-| 2026-08-16 | v1.2 | **P3 完成**（提交 5c09baf）：面包屑自动推导引擎（`Navigation#find_breadcrumb_chain` + `Item#match_path?`）+ `BreadcrumbConcern` 自动推导；删除 5 个手写 concern；清理 27 个主区控制器手写 crumb；对象页 crumb 保留；设置区保留（归 P4）；SKILL.md 章节重写 + GS-033 | AI |
+| 2026-08-16 | v1.2 | **P3 完成**（提交 5c09baf + 修复 f64f78e/e58beca）：面包屑自动推导引擎 + 删除 5 concern + 清理 27 控制器 | AI |
+| 2026-08-16 | v1.3 | **P4 完成**（提交 63781d1）：单一布局（删 admin_settings）+ SETTINGS_SECTIONS/_section_nav + page_title fallback | AI |
+| 2026-08-16 | v1.4 | **P5 完成**（提交中）：nav:validate 校验器（rake + harness 插件 + quick check + pre-commit）+ 设置区 crumb 自动推导（SETTINGS_TAB_MAP + skip_breadcrumb_derivation）+ SKILL Schema 章节 + GS-032 更新 | AI |

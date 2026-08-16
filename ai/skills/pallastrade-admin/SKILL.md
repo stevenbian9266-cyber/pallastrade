@@ -210,10 +210,11 @@ breadcrumb concern。** 请求路径 → 导航项（`Navigation#find_breadcrumb
 
 | 要素 | 要求 |
 |---|---|
-| 面包屑 | 顶部 header 自动加「Settings」前缀（`_breadcrumbs` 的 `settings_area?` 分支）；每个设置控制器须类级 `add_breadcrumb PallasTrade.t(:页面), :admin_xxx_path`（面包屑 = `Settings > 页面`；自动推导归 P5 schema 迁移） |
+| 面包屑 | **导航配置自动推导（P5）**：`Settings > 页面`——`BreadcrumbConcern#derive_settings_breadcrumb` 按 settings nav 项 active 条件命中 section，再经 `Navigation::SETTINGS_TAB_MAP`（developers→developers_tabs、users→team_tabs、audits→audit_tabs、return_settings→returns_tabs、tax_rates→tax_tabs、shipping_methods→shipping_tabs）取页面级 tab 项 label；「Settings」前缀由 `_breadcrumbs` partial 自动加。**设置控制器禁止手写页面 crumb**（已全部移除） |
+| 例外 | 特殊 crumb 控制器声明 `self.skip_breadcrumb_derivation = true` 保留手写（stores 的 section 级 Checkout/Store Details、webhook_deliveries 的父级+本页）；对象 crumb 仍用 before_action 追加（admin_users email、payment_methods name 等） |
 | 页面头 + section/tabs | **统一机制**：index 页渲染 `shared/_section_nav`，传 `section:` key（`developers`/`team`/`audit`/`returns`）；标题与 tabs 来自 `PallasTrade::Admin::Navigation::SETTINGS_SECTIONS` 注册表；**禁止再手写 `_developers_nav`/`_team_nav`/`_audit_nav`/`_returns_and_refunds_nav` 4 个 banner partial（P4 已删除）** |
 | 页面头 | 无 `content_for :page_title` 时自动 fallback 到导航项 label（P4 `@navigation_page_title`） |
-| 注意 | 设置控制器**不要**设置 `add_breadcrumb_icon`（Settings 模式无图标）；嵌套资源（如 `webhook_deliveries`）用 `before_action` 加父级 + 本页 crumb |
+| 注意 | 设置控制器**不要**设置 `add_breadcrumb_icon`（Settings 模式无图标） |
 
 ```ruby
 # 设置区示例（channels）

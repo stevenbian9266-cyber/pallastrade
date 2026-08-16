@@ -3,6 +3,9 @@ module PallasTrade
     class StoresController < PallasTrade::Admin::BaseController
       include PallasTrade::Admin::SettingsConcern
 
+      # 面包屑按 section 自定义（Checkout / Store Details），保留手写；跳过自动推导（P5）
+      self.skip_breadcrumb_derivation = true
+
       before_action :load_store, only: [:edit, :update]
       before_action :normalize_supported_currencies, only: [:update]
       before_action :normalize_supported_locales, only: [:update]

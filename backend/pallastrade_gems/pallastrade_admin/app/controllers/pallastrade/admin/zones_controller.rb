@@ -2,7 +2,7 @@ module PallasTrade
   module Admin
     class ZonesController < ResourceController
       include PallasTrade::Admin::SettingsConcern
-      add_breadcrumb PallasTrade.t(:zones), :admin_zones_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Zones
       before_action :load_data, except: :index
 
       def new

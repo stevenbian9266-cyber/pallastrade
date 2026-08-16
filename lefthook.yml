@@ -25,6 +25,9 @@ pre-commit:
       glob: "**/*.{rb,ts,tsx,js,jsx,yml,yaml,env,sh}"
       exclude: "**/node_modules/**|**/dist/**|**/.next/**|**/vendor/**|**/build/**|**/coverage/**"
       run: npx harness scan-secrets --files {staged_files}
+    harness-nav-validate:
+      glob: "**/pallastrade_admin_navigation.rb"
+      run: node scripts/nav-validate-static.mjs
 
 pre-push:
   commands:

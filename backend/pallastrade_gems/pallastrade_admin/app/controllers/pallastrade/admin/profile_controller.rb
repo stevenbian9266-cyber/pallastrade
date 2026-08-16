@@ -2,7 +2,7 @@ module PallasTrade
   module Admin
     class ProfileController < BaseController
       include PallasTrade::Admin::SettingsConcern
-      add_breadcrumb PallasTrade.t(:profile), :admin_profile_path
+      # 面包屑由导航配置自动推导（P5）：Settings > Edit Profile
 
       def edit
         @user = try_pallastrade_current_user
