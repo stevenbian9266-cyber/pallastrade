@@ -6,10 +6,17 @@ module PallasTrade
     # @return [String] the options for a select field
     def currency_options(selected_value = nil)
       selected_value ||= PallasTrade::Store.default.default_currency
-      currencies = ::Money::Currency.table.map do |_code, details|
+      options_from_collection_for_select(all_currency_options, :last, :first, selected_value)
+    end
+
+    # Returns [label, iso_code] pairs for every ISO 4217 currency — the single
+    # source for both single and multi currency selects (markets form, store
+    # create form, …). Label format: "USD — United States Dollar".
+    # @return [Array<Array(String, String)>]
+    def all_currency_options
+      @all_currency_options ||= ::Money::Currency.table.map do |_code, details|
         currency_presentation(details[:iso_code])
       end
-      options_from_collection_for_select(currencies, :last, :first, selected_value)
     end
 
     # Returns the list of supported currencies for the current store as options for a select field.

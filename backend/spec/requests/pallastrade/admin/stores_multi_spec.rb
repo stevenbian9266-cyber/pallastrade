@@ -53,7 +53,8 @@ RSpec.describe 'Admin multi-store management', type: :request do
     expect(new_crumb).to include(PallasTrade.t('admin.stores.new_title'))
   end
 
-  # PRD-... AC-001/AC-003：货币/语言改选择器，默认值选中
+  # PRD-... AC-001/AC-003 + 迭代2 AC-007/008/009：货币/语言选择器与 markets 统一
+  # （复用 currency_options + display_names_type 本地化显示，选项「代码 — 名称」）
   it 'renders currency and locale selectors on the new store form' do
     sign_in_as_superuser
     get '/admin/stores/new'
@@ -62,13 +63,19 @@ RSpec.describe 'Admin multi-store management', type: :request do
 
     currency_select = doc.at_css('select#store_default_currency')
     expect(currency_select).to be_present
+    expect(currency_select['data-display-names-type']).to eq('currency')
     expect(currency_select.at_css('option[value="USD"][selected="selected"]')).to be_present
+    # 选项格式与 markets 一致：「代码 — 名称」
+    expect(currency_select.at_css('option[value="USD"]').text).to eq('USD — United States Dollar')
+
+    supported_select = doc.at_css('select#store_supported_currencies')
+    expect(supported_select).to be_present
+    expect(supported_select['data-display-names-type']).to eq('currency')
 
     locale_select = doc.at_css('select#store_default_locale')
     expect(locale_select).to be_present
+    expect(locale_select['data-display-names-type']).to eq('language')
     expect(locale_select.at_css('option[value="en"][selected="selected"]')).to be_present
-
-    expect(doc.at_css('select#store_supported_currencies')).to be_present
   end
 
   # PRD-... AC-002：多选货币提交数组 → 落库逗号分隔

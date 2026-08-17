@@ -128,12 +128,6 @@ module PallasTrade
         p
       end
 
-      # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——全部 ISO 货币（新建表单选择器）
-      def all_currencies
-        @all_currencies ||= ::Money::Currency.all.sort_by(&:iso_code)
-      end
-      helper_method :all_currencies
-
       private
 
       # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——客服/通知邮箱预设当前登录用户邮箱
