@@ -40,6 +40,7 @@ module PallasTrade
         add_breadcrumb PallasTrade.t('admin.stores.title'), PallasTrade.admin_stores_path
         add_breadcrumb PallasTrade.t('admin.stores.new_title'), PallasTrade.new_admin_store_path
         @store = PallasTrade::Store.new
+        preset_email_fields(@store)
       end
 
       # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——创建店铺：初始化默认策略 → 授予当前用户管理角色 → 自动切换
@@ -115,13 +116,34 @@ module PallasTrade
 
       # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——新建店铺白名单（参照 store 工厂字段）
       def permitted_create_params
-        params.require(:store).permit(
+        p = params.require(:store).permit(
           :code, :name, :url, :mail_from_address, :customer_support_email,
-          :new_order_notifications_email, :default_currency, :supported_currencies, :default_locale
+          :new_order_notifications_email, :default_currency, :default_locale,
+          supported_currencies: []
         )
+        # supported_currencies 支持数组（多选）与逗号分隔字符串，落库统一逗号分隔
+        codes = Array(p[:supported_currencies]).flat_map { |v| v.to_s.split(',') }.compact.reject(&:blank?).map(&:strip).uniq
+        default = p[:default_currency].presence || 'USD'
+        p[:supported_currencies] = ([default] + codes).uniq.join(',')
+        p
       end
 
+      # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——全部 ISO 货币（新建表单选择器）
+      def all_currencies
+        @all_currencies ||= ::Money::Currency.all.sort_by(&:iso_code)
+      end
+      helper_method :all_currencies
+
       private
+
+      # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——客服/通知邮箱预设当前登录用户邮箱
+      def preset_email_fields(store)
+        email = try_pallastrade_current_user&.email
+        return if email.blank?
+
+        store.customer_support_email ||= email
+        store.new_order_notifications_email ||= email
+      end
 
       # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——创建后授予当前用户该店铺的 admin 角色
       def grant_creator_admin_access(store)

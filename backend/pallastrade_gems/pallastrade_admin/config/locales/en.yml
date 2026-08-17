@@ -383,6 +383,10 @@ en:
         created: Store created and switched.
         create_error: Unable to create store
         basic_info: Basic information
+        contact: Contact details
+        locale_currency: Currency & language
+        mail_from_help: Leave blank to use no-reply@<url> automatically.
+        email_preset_help: Pre-filled with your email; you can change it.
         code_help: Unique code, e.g. myshop-a.
         url_help: Domain or subdomain, e.g. shop-a.example.com.
       manage_markets: Manage Markets

@@ -53,6 +53,45 @@ RSpec.describe 'Admin multi-store management', type: :request do
     expect(new_crumb).to include(PallasTrade.t('admin.stores.new_title'))
   end
 
+  # PRD-... AC-001/AC-003：货币/语言改选择器，默认值选中
+  it 'renders currency and locale selectors on the new store form' do
+    sign_in_as_superuser
+    get '/admin/stores/new'
+    expect(response).to have_http_status(:ok)
+    doc = Nokogiri::HTML(response.body)
+
+    currency_select = doc.at_css('select#store_default_currency')
+    expect(currency_select).to be_present
+    expect(currency_select.at_css('option[value="USD"][selected="selected"]')).to be_present
+
+    locale_select = doc.at_css('select#store_default_locale')
+    expect(locale_select).to be_present
+    expect(locale_select.at_css('option[value="en"][selected="selected"]')).to be_present
+
+    expect(doc.at_css('select#store_supported_currencies')).to be_present
+  end
+
+  # PRD-... AC-002：多选货币提交数组 → 落库逗号分隔
+  it 'persists multiple supported currencies submitted as an array' do
+    sign_in_as_superuser
+    post '/admin/stores', params: {
+      store: { name: 'Store D', code: 'multi_store_d', url: 'd.example.com',
+               default_currency: 'USD', supported_currencies: %w[USD EUR GBP], default_locale: 'en' }
+    }
+    expect(response).to have_http_status(:redirect)
+    store_d = PallasTrade::Store.find_by(code: 'multi_store_d')
+    expect(store_d).to be_present
+    expect(store_d.supported_currencies).to eq('USD,EUR,GBP')
+  end
+
+  # PRD-... AC-004：客服/通知邮箱预设当前登录用户邮箱
+  it 'pre-fills support and notification emails with the current user email' do
+    sign_in_as_superuser
+    get '/admin/stores/new'
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(admin.email)
+  end
+
   # PRD-... AC-002
   it 'creates a store, grants the creator admin role and auto-switches to it' do
     sign_in_as_superuser

@@ -104,5 +104,9 @@ zh-CN:
         created: 店铺已创建并切换。
         create_error: 无法创建店铺
         basic_info: 基本信息
+        contact: 联系方式
+        locale_currency: 货币与语言
+        mail_from_help: 留空将自动使用 no-reply@<url>。
+        email_preset_help: 已预填你的邮箱，可修改。
         code_help: 唯一代码，例如 myshop-a。
         url_help: 域名或子域名，例如 shop-a.example.com。

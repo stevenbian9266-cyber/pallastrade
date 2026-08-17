@@ -266,7 +266,7 @@ end
 数据/权限/API 层多店铺早已就绪（`PallasTrade::Store` 一等模型、`Current.store` 每请求上下文、`RoleUser` 用户→角色→店铺、`for_store(current_store)` 作用域、Store API `pk_` key 识别店铺）。2026-08-17 在 Rails 后台补齐管理 UI：
 
 - **店铺列表**（`admin/stores` index）：Ransack 表格 + Pagy 分页，展示全部店铺（name/code/url/default/created_at）。导航项 `:stores`（Settings 区，`admin.stores.title`）。
-- **新建店铺**（`admin/stores/new` + POST）：name/code/url 必填（code 空自动 `set_default_code`）；`mail_from_address` 为空自动按 url 生成 `no-reply@<host>`；创建后 `grant_store_access` 授予当前用户该店铺 admin RoleUser 并 `session[:admin_store_id]` 自动切换。
+- **新建店铺**（`admin/stores/new` + POST）：name/code/url 必填（code 空自动 `set_default_code`）；`mail_from_address` 为空自动按 url 生成 `no-reply@<host>`；`customer_support_email`/`new_order_notifications_email` 预填当前登录用户邮箱（可改）；`default_currency`/`default_locale` 为下拉选择（`::Money::Currency.all` / `PallasTrade::Locales::ALL`）、`supported_currencies` 多选（提交数组 → 控制器 join 逗号分隔，并自动并入 default_currency）；创建后 `grant_store_access` 授予当前用户该店铺 admin RoleUser 并 `session[:admin_store_id]` 自动切换。
 - **店铺切换器**（`sidebar/_store_dropdown`）：下拉列出 `admin_accessible_stores`（超管=全部，否则 RoleUser 店铺），当前高亮；POST `admin/switch_store` → 校验授权 → 超管对无 RoleUser 店铺自动授权 → 写 session。
 - **current_store 解析**（`Admin::BaseController` 覆盖）：session 选中店铺（授权校验）→ 用户有 RoleUser 的店铺 → `Store.default`；并写入 `PallasTrade::Current.store`。⚠️ 判定超管用 `superuser?`（RolePermission set:SuperUser），**不要**在 current_store 解析里用 `can?`/`current_ability`（其构建回调 current_store → 无限递归）。
 - **权限**：店铺管理入口 = `can?(:manage, PallasTrade::Store)`（超管）；切换 = `admin_accessible_stores.include?(store)`。

@@ -18,12 +18,31 @@
           <%= f.pallastrade_text_field :name, required: true, autofocus: true %>
           <%= f.pallastrade_text_field :code, required: true, help: PallasTrade.t('admin.stores.code_help') %>
           <%= f.pallastrade_text_field :url, required: true, help: PallasTrade.t('admin.stores.url_help') %>
-          <%= f.pallastrade_text_field :mail_from_address %>
-          <%= f.pallastrade_text_field :customer_support_email %>
-          <%= f.pallastrade_text_field :new_order_notifications_email %>
-          <%= f.pallastrade_text_field :default_currency, value: (@store.default_currency.presence || 'USD') %>
-          <%= f.pallastrade_text_field :supported_currencies, value: (@store.supported_currencies.presence || 'USD') %>
-          <%= f.pallastrade_text_field :default_locale, value: (@store.default_locale.presence || 'en') %>
+        </div>
+      </div>
+
+      <div class="card mb-6">
+        <div class="card-body">
+          <h5 class="card-title mb-3"><%= PallasTrade.t('admin.stores.contact') %></h5>
+          <%= f.pallastrade_text_field :mail_from_address, help: PallasTrade.t('admin.stores.mail_from_help') %>
+          <%= f.pallastrade_text_field :customer_support_email, help: PallasTrade.t('admin.stores.email_preset_help') %>
+          <%= f.pallastrade_text_field :new_order_notifications_email, help: PallasTrade.t('admin.stores.email_preset_help') %>
+        </div>
+      </div>
+
+      <div class="card mb-6">
+        <div class="card-body">
+          <h5 class="card-title mb-3"><%= PallasTrade.t('admin.stores.locale_currency') %></h5>
+          <%= f.pallastrade_select :default_currency,
+                options_from_collection_for_select(all_currencies, :iso_code, :name, @store.default_currency.presence || 'USD'),
+                { required: true, autocomplete: true } %>
+          <%= f.pallastrade_select :supported_currencies,
+                options_from_collection_for_select(all_currencies, :iso_code, :name, @store.supported_currencies_list.presence || ['USD']),
+                { required: true, multiple: true, autocomplete: true },
+                { multiple: true } %>
+          <%= f.pallastrade_select :default_locale,
+                options_from_collection_for_select(translation_locales_options, :last, :first, @store.default_locale.presence || 'en'),
+                { required: true, autocomplete: true } %>
         </div>
       </div>
     <% end %>
