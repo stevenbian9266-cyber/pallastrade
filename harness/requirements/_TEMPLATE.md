@@ -98,6 +98,20 @@
 | | | 其他：_____ | | ⬜ |
 | | | 声明无需验证 → 原因：_____ | | ⬜ |
 
+### 新增 admin 页面三要素检查（固定检查项，凡新增/改动 admin 页面必填）
+
+> ⚠️ 2026-08-17 教训（stores 列表/新建页面包屑缺失、Switch 链接 data-method 空白页）：
+> **功能正确 ≠ 页面完整**。每次新增/改动 admin 页面，除功能验证外，必须逐项核对以下三要素
+> 并填写结果；同时检查目标控制器是否声明 `skip_breadcrumb_derivation = true`
+> （若声明，新增 action 必须手写 `add_breadcrumb` + `add_breadcrumb_icon`）。
+
+| 检查项 | 页面（路径） | 是否符合 | 备注 |
+|---|---|---|---|
+| ① 页面标题（page_title / 页面头 h3） | | ⬜ | |
+| ② 面包屑（含图标；`skip_breadcrumb_derivation` 控制器需手写） | | ⬜ | |
+| ③ 页面操作按钮（page_actions）与返回路径正常 | | ⬜ | |
+| ④ POST/PATCH/DELETE 链接/按钮用 `data: { turbo_method: ... }`（Turbo 约定），**勿用 `method:`** | | ⬜ | |
+
 ### 验证结论
 
 <!-- 例：pnpm lint 通过 ✅ / pnpm build 失败 ❌，原因：缺少闭合反引号，已修复 → 通过 ✅ -->

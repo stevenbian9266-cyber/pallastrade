@@ -34,7 +34,7 @@
               </td>
               <td class="w-24"><%= pallastrade_time store.created_at %></td>
               <td class="actions">
-                <%= link_to_with_icon 'switch', PallasTrade.t('admin.stores.switch'), PallasTrade.admin_switch_store_path(store_id: store.id), method: :post, class: 'btn btn-light btn-sm', data: { turbo_frame: '_top' } %>
+                <%= link_to_with_icon 'switch', PallasTrade.t('admin.stores.switch'), PallasTrade.admin_switch_store_path(store_id: store.id), class: 'btn btn-light btn-sm', data: { turbo_method: :post, turbo_frame: '_top' } %>
               </td>
             </tr>
           <% end %>

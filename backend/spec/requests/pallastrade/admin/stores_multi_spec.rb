@@ -35,6 +35,9 @@ RSpec.describe 'Admin multi-store management', type: :request do
     expect(body).to include('Store A')
     expect(body).to include('Store B')
     expect(body).to include(PallasTrade.t(:default))
+    # bug 2026-08-17：Switch 链接必须用 turbo_method（Turbo 约定），否则点击变 GET 404 空白页
+    expect(body).to include('data-turbo-method="post"')
+    expect(body).not_to include('data-method="post"')
   end
 
   # bugfix 2026-08-17：stores_controller skip_breadcrumb_derivation=true，列表/新建需手写面包屑
