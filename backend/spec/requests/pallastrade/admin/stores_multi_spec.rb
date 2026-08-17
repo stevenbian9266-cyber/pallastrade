@@ -37,6 +37,19 @@ RSpec.describe 'Admin multi-store management', type: :request do
     expect(body).to include(PallasTrade.t(:default))
   end
 
+  # bugfix 2026-08-17：stores_controller skip_breadcrumb_derivation=true，列表/新建需手写面包屑
+  it 'renders breadcrumbs on the stores list and new pages' do
+    sign_in_as_superuser
+    get '/admin/stores'
+    list_crumb = Nokogiri::HTML(response.body).at_css('nav[aria-label="breadcrumb"]')&.text.to_s
+    expect(list_crumb).to include(PallasTrade.t('admin.stores.title'))
+
+    get '/admin/stores/new'
+    new_crumb = Nokogiri::HTML(response.body).at_css('nav[aria-label="breadcrumb"]')&.text.to_s
+    expect(new_crumb).to include(PallasTrade.t('admin.stores.title'))
+    expect(new_crumb).to include(PallasTrade.t('admin.stores.new_title'))
+  end
+
   # PRD-... AC-002
   it 'creates a store, grants the creator admin role and auto-switches to it' do
     sign_in_as_superuser

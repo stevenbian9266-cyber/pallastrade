@@ -6,6 +6,7 @@ module PallasTrade
 
       # 面包屑按 section 自定义（Checkout / Store Details），保留手写；跳过自动推导（P5）
       self.skip_breadcrumb_derivation = true
+      add_breadcrumb_icon 'building-store'
 
       before_action :load_store, only: [:edit, :update]
       before_action :normalize_supported_currencies, only: [:update]
@@ -29,12 +30,15 @@ module PallasTrade
 
       # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——店铺列表
       def index
+        add_breadcrumb PallasTrade.t('admin.stores.title'), PallasTrade.admin_stores_path
         @search = PallasTrade::Store.ransack(params[:q])
         @pagy, @collection = pagy(@search.result.order(:created_at), limit: params[:per_page] || 25)
       end
 
       # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——新建店铺
       def new
+        add_breadcrumb PallasTrade.t('admin.stores.title'), PallasTrade.admin_stores_path
+        add_breadcrumb PallasTrade.t('admin.stores.new_title'), PallasTrade.new_admin_store_path
         @store = PallasTrade::Store.new
       end
 
