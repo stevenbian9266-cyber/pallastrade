@@ -1,0 +1,31 @@
+<% content_for(:page_title) do %>
+  <%= PallasTrade.t('admin.stores.new_title') %>
+<% end %>
+
+<%# PALLAS-CUSTOM: 多店铺管理（2026-08-17）——新建店铺页 %>
+<% content_for :page_actions do %>
+  <%= turbo_save_button_tag PallasTrade.t('actions.create'), class: 'btn btn-primary', form: 'new_store', data: { admin_target: 'save' } %>
+<% end %>
+
+<%= render partial: 'pallastrade/admin/shared/error_messages', locals: { target: @store }, class: 'mb-12 pb-12' %>
+
+<div class="grid grid-cols-12 gap-16">
+  <div class="col-span-12 lg:col-span-6 lg:col-start-4">
+    <%= form_for @store, url: PallasTrade.admin_stores_path, method: :post, html: { id: 'new_store' } do |f| %>
+      <div class="card mb-6">
+        <div class="card-body">
+          <h5 class="card-title mb-3"><%= PallasTrade.t('admin.stores.basic_info') %></h5>
+          <%= f.pallastrade_text_field :name, required: true, autofocus: true %>
+          <%= f.pallastrade_text_field :code, required: true, help: PallasTrade.t('admin.stores.code_help') %>
+          <%= f.pallastrade_text_field :url, required: true, help: PallasTrade.t('admin.stores.url_help') %>
+          <%= f.pallastrade_text_field :mail_from_address %>
+          <%= f.pallastrade_text_field :customer_support_email %>
+          <%= f.pallastrade_text_field :new_order_notifications_email %>
+          <%= f.pallastrade_text_field :default_currency, value: (@store.default_currency.presence || 'USD') %>
+          <%= f.pallastrade_text_field :supported_currencies, value: (@store.supported_currencies.presence || 'USD') %>
+          <%= f.pallastrade_text_field :default_locale, value: (@store.default_locale.presence || 'en') %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

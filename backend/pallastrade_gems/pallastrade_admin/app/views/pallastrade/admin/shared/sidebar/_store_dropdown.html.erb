@@ -7,6 +7,15 @@
       </span>
     <% end %>
     <%= dropdown_menu do %>
+      <%# PALLAS-CUSTOM: 多店铺管理（2026-08-17）——店铺切换器：列出用户可访问店铺，当前高亮 %>
+      <div class="dropdown-header text-xs text-gray-500"><%= PallasTrade.t('admin.stores.switch_store') %></div>
+      <% admin_accessible_stores.each do |store| %>
+        <%= link_to store.name, PallasTrade.admin_switch_store_path(store_id: store.id),
+              method: :post,
+              class: "dropdown-item #{'active' if store == current_store}",
+              data: { turbo_frame: '_top' } %>
+      <% end %>
+      <div class="dropdown-divider"></div>
       <%= link_to current_store.storefront_url, class: 'dropdown-item', target: '_blank' do %>
         <%= icon 'eye' %>
         <%= PallasTrade.t(:view_store) %>

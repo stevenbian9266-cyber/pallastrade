@@ -372,6 +372,18 @@ en:
         title: Menu Configuration
         readonly_help: The menu structure is defined by application code. This page shows the current menu tree for reference. To control which menus a role can see, open Roles and check Menu Permissions.
         landing: Landing
+      stores:
+        title: Stores
+        new_title: New Store
+        new: New Store
+        switch: Switch
+        switch_store: Switch store
+        switched: Switched to %{name}.
+        cannot_switch: You don't have access to that store.
+        created: Store created and switched.
+        basic_info: Basic information
+        code_help: Unique code, e.g. myshop-a.
+        url_help: Domain or subdomain, e.g. shop-a.example.com.
       manage_markets: Manage Markets
       manage_properties: Manage Properties
       manage_stock_locations: Manage Stock Locations

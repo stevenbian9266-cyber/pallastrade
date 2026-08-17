@@ -213,6 +213,10 @@ PallasTrade::Core::Engine.add_routes do
     # profile settings
     resource :profile, controller: 'profile', only: %i[edit update]
 
+    # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——店铺列表/新建 + 切换
+    resources :stores, only: [:index, :new, :create], controller: 'stores'
+    post 'switch_store', to: 'stores#switch_store', as: :switch_store
+
     # store settings
     resource :store, only: [:edit, :update], controller: 'stores' do
       # needed for the getting started set customer support email step

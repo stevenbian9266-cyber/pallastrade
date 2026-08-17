@@ -295,6 +295,15 @@ Rails.application.config.after_initialize do
           section_label: 'Settings',
           position: 90
 
+  # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——店铺列表
+  sidebar_nav.add :stores,
+          label: 'admin.stores.title',
+          url: :admin_stores_path,
+          icon: 'building-store',
+          position: 94,
+          active: -> { controller_name == 'stores' && action_name == 'index' },
+          if: -> { can?(:manage, PallasTrade::Store) }
+
   # Store Details（单页，叶子项）
   sidebar_nav.add :general_settings,
           label: :store_details,

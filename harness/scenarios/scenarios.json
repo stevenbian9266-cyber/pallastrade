@@ -611,6 +611,26 @@
         "Push while doc-impact reports docs-required or nav:validate fails"
       ],
       "scoring": { "dbDrivenAbility": 20, "functionGrants": 15, "dataScope": 15, "menuFilter": 15, "menuConfigUI": 15, "registry": 10, "navValidate": 10 }
+    },
+    {
+      "id": "GS-036",
+      "name": "Admin multi-store management (store list / create / switch)",
+      "description": "Since 2026-08-17 the Rails admin supports multi-store management on top of the already multi-store-ready data layer (PallasTrade::Store, Current.store per-request context, RoleUser user->role->store binding, for_store(current_store) scoping, Store API pk_ keys). Admin::BaseController#current_store resolves: session-selected store (authorized) -> the user's first RoleUser-bound store -> Store.default, writing PallasTrade::Current.store. admin_accessible_stores = all stores for superusers (RolePermission set:SuperUser via #superuser? — never can?/current_ability inside current_store resolution, that recurses) else RoleUser-bound stores. StoresController provides index (Ransack + Pagy), new/create (auto mail_from_address, grant creator admin RoleUser, auto-switch via session[:admin_store_id]) and switch_store (authorize, auto-grant admin RoleUser for superusers on stores without one so role resolution works — determine_role_names is store-scoped).",
+      "mustDo": [
+        "Resolve admin current_store as session store (authorized) -> first RoleUser-bound store -> Store.default, writing PallasTrade::Current.store",
+        "Provide a store switcher in sidebar/_store_dropdown listing admin_accessible_stores (all for superuser, RoleUser-bound otherwise) with the current store highlighted",
+        "POST /admin/switch_store authorizes via admin_accessible_stores, auto-grants an admin RoleUser for superusers on stores without one (so store-scoped role resolution hits), then persists session[:admin_store_id]",
+        "StoresController index uses Ransack + Pagy; create grants the creator an admin RoleUser and auto-switches; new store requires name/code/url with mail_from_address defaulted from the url",
+        "Detect superusers via #superuser? (RolePermission set:SuperUser) — do NOT call can?/current_ability inside current_store resolution (current_ability calls current_store -> infinite recursion)",
+        "Keep single-store deployments working (switcher shows only the current store) and run the admin/roles/menu-config specs"
+      ],
+      "mustNotDo": [
+        "Use can?/current_ability to decide admin_accessible_stores during current_store resolution (SystemStackError recursion)",
+        "Let a user switch to a store outside admin_accessible_stores (cross-store access)",
+        "Re-introduce per-store menu overrides (Menu Configuration stays read-only, code-defined)",
+        "Push while doc-impact reports docs-required or nav:validate fails"
+      ],
+      "scoring": { "storeList": 15, "storeCreate": 20, "storeSwitch": 25, "storeAuthz": 20, "singleStoreCompat": 10, "regressionSpec": 10 }
     }
   ]
 }

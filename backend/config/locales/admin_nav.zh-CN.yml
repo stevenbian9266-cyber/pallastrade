@@ -93,3 +93,15 @@ zh-CN:
         title: 菜单配置
         readonly_help: 菜单结构由应用代码定义。本页仅展示当前菜单树供参考。要控制某个角色可见的菜单，请到「角色 > 菜单权限」勾选。
         landing: 落地页
+      stores:
+        title: 店铺
+        new_title: 新建店铺
+        new: 新建店铺
+        switch: 切换
+        switch_store: 切换店铺
+        switched: 已切换到「%{name}」。
+        cannot_switch: 你没有访问该店铺的权限。
+        created: 店铺已创建并切换。
+        basic_info: 基本信息
+        code_help: 唯一代码，例如 myshop-a。
+        url_help: 域名或子域名，例如 shop-a.example.com。

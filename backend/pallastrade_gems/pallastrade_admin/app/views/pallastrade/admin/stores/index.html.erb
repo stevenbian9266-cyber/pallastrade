@@ -1,0 +1,48 @@
+<% content_for(:page_title) do %>
+  <%= PallasTrade.t('admin.stores.title') %>
+<% end %>
+
+<%# PALLAS-CUSTOM: 多店铺管理（2026-08-17）——店铺列表页 %>
+<% content_for :page_actions do %>
+  <%= link_to_with_icon 'plus', PallasTrade.t('admin.stores.new'), PallasTrade.new_admin_store_path, class: 'btn btn-primary' if can?(:create, PallasTrade::Store) %>
+<% end %>
+
+<div class="card-lg">
+  <% if @collection.any? %>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col"><%= sort_link @search, :name, PallasTrade.t(:name) %></th>
+            <th scope="col"><%= sort_link @search, :code, 'Code' %></th>
+            <th scope="col"><%= sort_link @search, :url, 'URL' %></th>
+            <th scope="col"><%= PallasTrade.t(:default) %></th>
+            <th scope="col"><%= sort_link @search, :created_at, PallasTrade.t(:created_at) %></th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @collection.each do |store| %>
+            <tr id="<%= pallastrade_dom_id store %>">
+              <td class="w-40"><%= store.name %></td>
+              <td class="w-20"><code><%= store.code %></code></td>
+              <td class="w-40"><%= store.url %></td>
+              <td class="w-16">
+                <% if store.default %>
+                  <span class="badge badge-info"><%= PallasTrade.t(:default) %></span>
+                <% end %>
+              </td>
+              <td class="w-24"><%= pallastrade_time store.created_at %></td>
+              <td class="actions">
+                <%= link_to_with_icon 'switch', PallasTrade.t('admin.stores.switch'), PallasTrade.admin_switch_store_path(store_id: store.id), method: :post, class: 'btn btn-light btn-sm', data: { turbo_frame: '_top' } %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <%= render 'pallastrade/admin/shared/index_table_options', collection: @collection %>
+  <% else %>
+    <%= render 'pallastrade/admin/shared/no_resource_found' %>
+  <% end %>
+</div>

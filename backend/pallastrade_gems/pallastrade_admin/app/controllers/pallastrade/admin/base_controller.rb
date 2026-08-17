@@ -17,6 +17,27 @@ module PallasTrade
 
       before_action :authorize_admin
 
+      # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——current_store 解析：session 选中店铺（RoleUser 授权校验）
+      # → 用户首个可访问店铺 → 默认解析（current_store_finder）。切换器见 sidebar/_store_dropdown。
+      helper_method :admin_accessible_stores
+
+      def current_store
+        return @current_store if defined?(@current_store) && @current_store
+
+        @current_store = resolve_admin_current_store
+      end
+
+      # 当前用户可访问的店铺：超管（admin 角色 + SuperUser 权限集）= 全部；否则 = RoleUser 绑定的店铺。
+      # 注意：不用 can?/current_ability（其构建会回调 current_store → 无限递归），
+      # 直接按 RolePermission set:SuperUser 判定超管。
+      def admin_accessible_stores
+        @admin_accessible_stores ||= if superuser?
+                                       PallasTrade::Store.all
+                                     else
+                                       accessible_stores_via_role_users
+                                     end
+      end
+
       protected
 
       def action
@@ -199,6 +220,45 @@ module PallasTrade
         return if date_string.blank?
 
         date_string.to_date&.in_time_zone(current_timezone)
+      end
+
+      # PALLAS-CUSTOM: 多店铺管理（2026-08-17）
+      # 优先 session 选中店铺（授权校验）→ 用户有 RoleUser 的店铺（保证角色按店解析命中）→ 默认店铺。
+      def resolve_admin_current_store
+        store = admin_store_from_session
+        store ||= accessible_stores_via_role_users.first
+        store ||= PallasTrade::Store.default
+        PallasTrade::Current.store = store if store
+        store
+      end
+
+      def admin_store_from_session
+        id = session[:admin_store_id].presence
+        return nil unless id
+
+        store = PallasTrade::Store.find_by(id: id)
+        store if store && admin_accessible_stores.include?(store)
+      end
+
+      def accessible_stores_via_role_users
+        user = try_pallastrade_current_user
+        return PallasTrade::Store.none unless user
+
+        ids = PallasTrade::RoleUser.where(user: user, resource_type: 'PallasTrade::Store')
+                                   .pluck(:resource_id).compact.uniq
+        PallasTrade::Store.where(id: ids)
+      end
+
+      # 超管判定：用户任一角色携带 set: SuperUser 权限（不依赖 current_ability，防递归）
+      def superuser?
+        user = try_pallastrade_current_user
+        return false unless user
+
+        role_ids = PallasTrade::RoleUser.where(user: user).pluck(:role_id).uniq
+        PallasTrade::RolePermission.set
+                                   .where(role_id: role_ids)
+                                   .where(permission_set: 'PallasTrade::PermissionSets::SuperUser')
+                                   .exists?
       end
     end
   end

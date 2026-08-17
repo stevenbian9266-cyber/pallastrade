@@ -2,6 +2,7 @@ module PallasTrade
   module Admin
     class StoresController < PallasTrade::Admin::BaseController
       include PallasTrade::Admin::SettingsConcern
+      include Pagy::Method
 
       # 面包屑按 section 自定义（Checkout / Store Details），保留手写；跳过自动推导（P5）
       self.skip_breadcrumb_derivation = true
@@ -24,6 +25,52 @@ module PallasTrade
         else
           add_breadcrumb PallasTrade.t(:store_details), PallasTrade.edit_admin_store_path(section: params[:section])
         end
+      end
+
+      # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——店铺列表
+      def index
+        @search = PallasTrade::Store.ransack(params[:q])
+        @pagy, @collection = pagy(@search.result.order(:created_at), limit: params[:per_page] || 25)
+      end
+
+      # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——新建店铺
+      def new
+        @store = PallasTrade::Store.new
+      end
+
+      # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——创建店铺：初始化默认策略 → 授予当前用户管理角色 → 自动切换
+      def create
+        params[:store][:mail_from_address] ||= default_mail_from_address if params[:store].present?
+        @store = PallasTrade::Store.new(permitted_create_params)
+        if @store.save
+          grant_creator_admin_access(@store)
+          session[:admin_store_id] = @store.id
+          flash[:success] = PallasTrade.t('admin.stores.created')
+          redirect_to PallasTrade.edit_admin_store_path, status: :see_other
+        else
+          flash[:error] = "#{PallasTrade.t('store_errors.unable_to_create')}: #{@store.errors.full_messages.join(', ')}"
+          render :new, status: :unprocessable_content
+        end
+      end
+
+      # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——按 url 生成默认发件邮箱（Store 必填）
+      def default_mail_from_address
+        host = params[:store][:url].to_s.sub(%r{^https?://}, '').split('/').first.presence
+        host ? "no-reply@#{host}" : nil
+      end
+
+      # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——切换店铺（POST /admin/switch_store）
+      # 超管切换到无 RoleUser 的店铺时自动授予 admin 角色（保证该店角色按店解析命中）。
+      def switch_store
+        store = PallasTrade::Store.find_by(id: params[:store_id])
+        if store && admin_accessible_stores.include?(store)
+          grant_store_access(store)
+          session[:admin_store_id] = store.id
+          flash[:success] = PallasTrade.t('admin.stores.switched', name: store.name)
+        else
+          flash[:error] = PallasTrade.t('admin.stores.cannot_switch')
+        end
+        redirect_back fallback_location: PallasTrade.admin_path, status: :see_other
       end
 
       def edit_emails
@@ -62,7 +109,32 @@ module PallasTrade
         params.require(:store).permit(permitted_store_attributes + current_store.preferences.keys.map { |key| "preferred_#{key}" })
       end
 
+      # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——新建店铺白名单（参照 store 工厂字段）
+      def permitted_create_params
+        params.require(:store).permit(
+          :code, :name, :url, :mail_from_address, :customer_support_email,
+          :new_order_notifications_email, :default_currency, :supported_currencies, :default_locale
+        )
+      end
+
       private
+
+      # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——创建后授予当前用户该店铺的 admin 角色
+      def grant_creator_admin_access(store)
+        grant_store_access(store)
+      end
+
+      # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——确保当前用户对该店铺有 admin RoleUser
+      def grant_store_access(store)
+        user = try_pallastrade_current_user
+        return unless user
+        return if PallasTrade::RoleUser.where(user: user, resource: store, resource_type: 'PallasTrade::Store').exists?
+
+        role = PallasTrade::Role.default_admin_role
+        PallasTrade::RoleUser.create!(user: user, role: role, resource: store, store: store)
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+        nil
+      end
 
       def load_store
         @store = current_store
