@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| approved | PRD-20260817-other-移除根-package-json-无用的-glob-弃用依赖 | other | 2026-08-17 | （实施时回填） |
 | approved | PRD-20260817-admin-新建店铺表单-货币语言选择器与邮箱预设 | admin | 2026-08-17 | （实施时回填） |
 | draft | PRD-20260817-admin-多店铺管理-店铺列表-新建-切换 | admin | 2026-08-17 | （实施时回填） |
 | draft | PRD-20260817-admin-菜单配置收敛-结构代码化-可视化只读展示-权限配置依据 | admin | 2026-08-17 | （实施时回填） |

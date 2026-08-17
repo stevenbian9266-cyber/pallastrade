@@ -11,9 +11,6 @@
     "eval:llm:generate": "harness eval-llm --generate",
     "eval:llm:check": "harness eval-llm --check"
   },
-  "dependencies": {
-    "glob": "^11.0.0"
-  },
   "devDependencies": {
     "lefthook": "^1.11.0",
     "pallastrade-harness": "^1.1.2",

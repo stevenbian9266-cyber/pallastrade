@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      glob:
-        specifier: ^11.0.0
-        version: 11.1.0
     devDependencies:
       lefthook:
         specifier: ^1.11.0
