@@ -102,6 +102,7 @@ zh-CN:
         switched: 已切换到「%{name}」。
         cannot_switch: 你没有访问该店铺的权限。
         created: 店铺已创建并切换。
+        create_error: 无法创建店铺
         basic_info: 基本信息
         code_help: 唯一代码，例如 myshop-a。
         url_help: 域名或子域名，例如 shop-a.example.com。

@@ -40,7 +40,7 @@ module PallasTrade
 
       # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——创建店铺：初始化默认策略 → 授予当前用户管理角色 → 自动切换
       def create
-        params[:store][:mail_from_address] ||= default_mail_from_address if params[:store].present?
+        params[:store][:mail_from_address] = default_mail_from_address if params[:store][:mail_from_address].blank?
         @store = PallasTrade::Store.new(permitted_create_params)
         if @store.save
           grant_creator_admin_access(@store)
@@ -48,7 +48,7 @@ module PallasTrade
           flash[:success] = PallasTrade.t('admin.stores.created')
           redirect_to PallasTrade.edit_admin_store_path, status: :see_other
         else
-          flash[:error] = "#{PallasTrade.t('store_errors.unable_to_create')}: #{@store.errors.full_messages.join(', ')}"
+          flash[:error] = "#{PallasTrade.t('admin.stores.create_error')}: #{@store.errors.full_messages.join(', ')}"
           render :new, status: :unprocessable_content
         end
       end

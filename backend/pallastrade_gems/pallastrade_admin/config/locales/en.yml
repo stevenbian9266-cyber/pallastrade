@@ -381,6 +381,7 @@ en:
         switched: Switched to %{name}.
         cannot_switch: You don't have access to that store.
         created: Store created and switched.
+        create_error: Unable to create store
         basic_info: Basic information
         code_help: Unique code, e.g. myshop-a.
         url_help: Domain or subdomain, e.g. shop-a.example.com.
