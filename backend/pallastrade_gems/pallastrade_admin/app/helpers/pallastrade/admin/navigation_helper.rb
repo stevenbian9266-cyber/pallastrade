@@ -326,62 +326,13 @@ module PallasTrade
       # @param context [Symbol] the navigation context
       # @return [Array<PallasTrade::Admin::Navigation::Item>] the visible navigation items
       def navigation_items(context = :sidebar)
-        nav = build_effective_nav(PallasTrade.admin.navigation.send(context))
+        nav = PallasTrade.admin.navigation.send(context)
         # PALLAS-CUSTOM: 菜单权限过滤（P3 权限体系重构）
         # DB 驱动角色（menu_permissions 已配置）：菜单树完全由菜单权限决定（跳过代码 if:）；
         # 否则按代码 if: 条件（向后兼容）。
+        # 2026-08-17 方向收敛：移除 MenuConfig 覆盖层合并，侧边栏严格按代码导航配置渲染。
         items = menu_driven? ? (nav&.root_items || []) : (nav&.visible_items(self) || [])
         items.select { |item| menu_granted?(item) }
-      end
-
-      # PALLAS-CUSTOM: 合并菜单配置覆盖层（P4 菜单配置模块）
-      # 基于导航配置文件默认树 + MenuConfig 覆盖层（全局 + 当前店铺）：
-      #   显隐（visible=false → 隐藏）/ 改名（label）/ 排序（position）/ 自定义菜单项。
-      # 深度克隆避免污染全局导航注册表；无覆盖时直接返回原 nav。
-      def build_effective_nav(nav)
-        return nil unless nav
-
-        store = respond_to?(:current_store) ? current_store : nil
-        overrides = PallasTrade::MenuConfig.global + PallasTrade::MenuConfig.for_store(store)
-        return nav if overrides.empty?
-
-        effective = nav.deep_clone
-        apply_menu_config_overrides(effective, overrides)
-        effective
-      end
-
-      # PALLAS-CUSTOM: 应用覆盖层到克隆导航（P4）
-      def apply_menu_config_overrides(nav, overrides)
-        overrides.each do |cfg|
-          if cfg.item_type == 'custom'
-            # 自定义菜单项：无需存在于默认树，直接添加
-            nav.add(cfg.nav_key.to_sym,
-                    label: cfg.label,
-                    url: cfg.url,
-                    icon: cfg.icon,
-                    position: cfg.position,
-                    parent: cfg.parent_key.presence,
-                    target: (cfg.open_in_new_tab ? '_blank' : nil))
-            next
-          end
-
-          target = find_nav_item(nav, cfg.nav_key)
-          next unless target
-
-          target.condition = -> { false } if cfg.visible == false
-          target.label = cfg.label if cfg.label.present?
-          target.position = cfg.position if cfg.position.present?
-        end
-        nav.sort_items!
-        nav
-      end
-
-      # PALLAS-CUSTOM: 在导航树中查找项（含子项）（P4）
-      def find_nav_item(nav, nav_key)
-        key = nav_key.to_sym
-        return nav.find(key) if nav.exists?(key)
-
-        nav.items.values.find { |item| item.children.any? { |child| child.key == key } }&.children&.find { |child| child.key == key }
       end
 
       # PALLAS-CUSTOM: 当前角色是否由 DB 菜单权限驱动（P3 权限体系重构）

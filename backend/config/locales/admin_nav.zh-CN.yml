@@ -91,18 +91,5 @@ zh-CN:
           manage: 管理
       menu_configs:
         title: 菜单配置
-        global_scope: 全局
-        store_scope: 本店铺
-        scope_help: 全局对所有店铺生效；店铺作用域仅覆盖当前店铺。
-        items_help: 显示/隐藏菜单项、改名或排序。留空 = 继承默认。
-        label_placeholder: 改名（可选）
-        position_placeholder: 排序
-        custom_items: 自定义菜单项
-        custom_items_help: 添加外链或站内管理页链接。勾选复选框可删除已有自定义项。
-        custom_label_placeholder: 名称
-        custom_url_placeholder: URL
-        custom_icon_placeholder: 图标
-        new_tab: 新窗口
-        delete_item: 删除
-        save: 保存菜单配置
-        saved: 菜单配置已保存并即时生效。
+        readonly_help: 菜单结构由应用代码定义。本页仅展示当前菜单树供参考。要控制某个角色可见的菜单，请到「角色 > 菜单权限」勾选。
+        landing: 落地页

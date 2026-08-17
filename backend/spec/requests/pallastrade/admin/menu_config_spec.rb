@@ -2,10 +2,11 @@
 
 require 'rails_helper'
 
-# PRD-20260816-admin-后台可视化菜单配置模块-角色权限体系-菜单-数据-功能权限 AC-001 AC-002 AC-003
-# 可视化菜单配置模块（P4）：全局/店铺作用域、显隐/改名/排序、自定义菜单项、即时生效。
-RSpec.describe 'Admin menu configuration module', type: :request do
-  let(:store) { create(:store, code: 'menu_config_test') }
+# PRD-20260817-admin-菜单配置收敛-结构代码化-可视化只读展示-权限配置依据
+# AC-001~004 / AC-006：菜单配置页只读可视化；移除写能力与自定义项；
+# 历史 MenuConfig 覆盖不再影响渲染；侧边栏 = 代码默认树。
+RSpec.describe 'Admin menu configuration module (read-only)', type: :request do
+  let(:store) { create(:store, code: 'menu_config_readonly_test') }
   let(:admin) do
     create(:admin_user, password: 'secret', password_confirmation: 'secret', without_admin_role: true)
   end
@@ -18,56 +19,52 @@ RSpec.describe 'Admin menu configuration module', type: :request do
     allow_any_instance_of(PallasTrade::Admin::MenuConfigsController).to receive(:current_store).and_return(store)
   end
 
-  # PRD-... AC-001
-  it 'renders the menu config page with tree + scope toggle' do
+  # PRD-... AC-001 / AC-002
+  it 'renders the menu config page as a read-only tree with no edit controls' do
     get '/admin/menu_configs'
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include(PallasTrade.t('admin.menu_configs.title'))
-    expect(response.body).to include(PallasTrade.t('admin.menu_configs.global_scope'))
-    expect(response.body).to include(PallasTrade.t('admin.menu_configs.store_scope'))
-    expect(response.body).to include(PallasTrade.t(:orders))
-    expect(response.body).to include(PallasTrade.t(:products))
+
+    body = response.body
+    # 只读说明 + 完整菜单树（一级 + 二级）
+    expect(body).to include(PallasTrade.t('admin.menu_configs.title'))
+    expect(body).to include(PallasTrade.t('admin.menu_configs.readonly_help'))
+    expect(body).to include(PallasTrade.t(:orders))
+    expect(body).to include(PallasTrade.t('admin.orders.all_orders'))
+    expect(body).to include(PallasTrade.t(:products))
+    expect(body).to include(PallasTrade.t('admin.products.products_list'))
+
+    # 无任何编辑控件：无提交表单 / checkbox / 文本输入 / 数字输入 / 自定义菜单区块
+    expect(body).not_to include('action="/admin/menu_configs"')
+    expect(body).not_to include('type="checkbox"')
+    expect(body).not_to include('type="text"')
+    expect(body).not_to include('type="number"')
+    expect(body).not_to include('custom_items')
   end
 
-  # PRD-... AC-002 / AC-003
-  it 'hides a menu + adds a custom item (global) and applies immediately to the sidebar' do
-    post '/admin/menu_configs', params: {
-      scope: 'global',
-      items: { blog: { visible: '0' }, home: { visible: '1' } },
-      custom_items: { '0' => { label: 'My Ext Link', url: 'https://example.com', icon: 'external-link', open_in_new_tab: '1' } }
-    }
-    expect(response).to have_http_status(:redirect)
-    follow_redirect! if response.status == 302
+  # PRD-... AC-004：写路由已移除（无删除/添加二级菜单/保存入口）
+  it 'removes the write route (POST /admin/menu_configs is not routed)' do
+    post '/admin/menu_configs', params: { scope: 'global' }
+    expect([404, 405]).to include(response.status)
+  end
 
-    # 保存后侧边栏即时生效：Blog 隐藏，自定义项显示
+  # PRD-... AC-003：历史 MenuConfig 覆盖（隐藏/自定义项）不再影响侧边栏渲染
+  it 'ignores historical MenuConfig overrides and renders the code-defined sidebar' do
+    # 历史覆盖：隐藏 blog + 一条自定义外链
+    PallasTrade::MenuConfig.create!(store: nil, item_type: 'default', nav_key: 'blog', visible: false)
+    PallasTrade::MenuConfig.create!(
+      store: nil, item_type: 'custom', nav_key: 'custom_legacy',
+      label: 'Legacy Custom Link', url: 'https://example.com/legacy'
+    )
+
     get '/admin/orders'
     expect(response).to have_http_status(:ok)
+
     sidebar_el = Nokogiri::HTML(response.body).at_css('#main-sidebar')
     sidebar = sidebar_el ? sidebar_el.text.to_s : ''
-    expect(sidebar).to include('My Ext Link')
-    expect(sidebar).not_to include(PallasTrade.t(:blog))
 
-    # 全局配置持久化
-    cfg = PallasTrade::MenuConfig.global.find_by(nav_key: 'blog')
-    expect(cfg.visible).to be(false)
-    expect(PallasTrade::MenuConfig.global.custom.exists?(label: 'My Ext Link')).to be(true)
-  end
-
-  # PRD-... AC-002（店铺覆盖）
-  it 'persists store-scoped overrides separately from global' do
-    PallasTrade::MenuConfig.create!(store: nil, item_type: 'default', nav_key: 'blog', visible: false)
-
-    post '/admin/menu_configs', params: {
-      scope: 'store',
-      items: { blog: { visible: '1' }, home: { visible: '1' } },
-      custom_items: { '0' => { label: '', url: '' } }
-    }
-    expect(response).to have_http_status(:redirect)
-
-    store_cfg = PallasTrade::MenuConfig.for_store(store).find_by(nav_key: 'blog')
-    expect(store_cfg.visible).to be(true)
-    # 全局未被覆盖为 show（店铺覆盖独立）
-    global_cfg = PallasTrade::MenuConfig.global.find_by(nav_key: 'blog')
-    expect(global_cfg.visible).to be(false)
+    # blog 按代码默认树显示（覆盖失效）
+    expect(sidebar).to include(PallasTrade.t(:blog))
+    # 历史自定义项不再渲染
+    expect(sidebar).not_to include('Legacy Custom Link')
   end
 end

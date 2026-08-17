@@ -2,76 +2,44 @@
   <%= PallasTrade.t('admin.menu_configs.title') %>
 <% end %>
 
-<%# PALLAS-CUSTOM: 可视化菜单配置模块（P4）—— 全局/店铺覆盖层 %>
+<%# PALLAS-CUSTOM: 菜单配置只读可视化（2026-08-17 方向收敛）
+    —— 菜单结构由代码导航配置定义，本页仅只读展示导航树，让用户直观感受；
+    权限配置依据在 Roles 页「菜单权限」树状勾选（与本站同一导航树）。 %>
 <div class="card mb-6">
-  <div class="card-header flex flex-wrap items-center justify-between gap-2">
-    <div class="flex items-center gap-2">
-      <%= link_to PallasTrade.t('admin.menu_configs.global_scope'), PallasTrade.admin_menu_configs_path(scope: 'global'), class: "btn btn-sm #{@store_scope ? 'btn-light' : 'btn-primary'}" %>
-      <%= link_to PallasTrade.t('admin.menu_configs.store_scope'), PallasTrade.admin_menu_configs_path(scope: 'store'), class: "btn btn-sm #{@store_scope ? 'btn-primary' : 'btn-light'}" %>
-    </div>
-    <p class="text-sm text-gray-500 m-0"><%= PallasTrade.t('admin.menu_configs.scope_help') %></p>
+  <div class="card-header">
+    <h5 class="mb-0"><%= PallasTrade.t('admin.menu_configs.title') %></h5>
   </div>
+  <div class="card-body">
+    <p class="text-sm text-gray-500 mb-4"><%= PallasTrade.t('admin.menu_configs.readonly_help') %></p>
 
-  <%= form_with url: PallasTrade.admin_menu_configs_path, method: :post, data: { turbo: false } do |f| %>
-    <%= hidden_field_tag :scope, @store_scope ? 'store' : 'global' %>
-
-    <div class="card-body">
-      <p class="text-sm text-gray-500 mb-3"><%= PallasTrade.t('admin.menu_configs.items_help') %></p>
-
+    <ul class="space-y-3">
       <% @nav_root_items.each do |item| %>
         <% next if item.section? %>
-        <% cfg = config_for(item.key) %>
-        <div class="border rounded-md p-3 mb-3">
-          <div class="grid grid-cols-12 gap-2 items-center">
-            <div class="col-span-5 flex items-center gap-2">
-              <%= hidden_field_tag "items[#{item.key}][visible]", '0' %>
-              <%= check_box_tag "items[#{item.key}][visible]", '1', cfg&.visible != false, class: 'form-check-input' %>
-              <span class="font-medium"><%= item.resolve_label %></span>
-            </div>
-            <div class="col-span-4">
-              <%= text_field_tag "items[#{item.key}][label]", cfg&.label, placeholder: PallasTrade.t('admin.menu_configs.label_placeholder'), class: 'form-control form-control-sm' %>
-            </div>
-            <div class="col-span-3">
-              <%= number_field_tag "items[#{item.key}][position]", cfg&.position, placeholder: PallasTrade.t('admin.menu_configs.position_placeholder'), class: 'form-control form-control-sm', min: 0 %>
-            </div>
+        <li class="border rounded-md p-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            <%= icon(item.icon, class: 'icon text-gray-400') if item.icon %>
+            <span class="font-medium"><%= item.resolve_label %></span>
+            <% if item.landing && item.landing_item %>
+              <span class="badge badge-info text-xs"><%= PallasTrade.t('admin.menu_configs.landing') %>: <%= item.landing_item.resolve_label %></span>
+            <% end %>
+            <% url = item.safe_resolve_url(self) %>
+            <code class="text-xs text-gray-500"><%= url %></code>
           </div>
 
           <% if item.children.any? %>
-            <div class="ml-6 mt-2 flex flex-col gap-1">
+            <ul class="ml-6 mt-2 flex flex-col gap-1">
               <% item.children.each do |child| %>
-                <% child_cfg = config_for(child.key) %>
-                <div class="grid grid-cols-12 gap-2 items-center">
-                  <div class="col-span-5 flex items-center gap-2">
-                    <%= hidden_field_tag "items[#{child.key}][visible]", '0' %>
-                    <%= check_box_tag "items[#{child.key}][visible]", '1', child_cfg&.visible != false, class: 'form-check-input' %>
-                    <span class="text-sm"><%= child.resolve_label %></span>
-                  </div>
-                  <div class="col-span-4">
-                    <%= text_field_tag "items[#{child.key}][label]", child_cfg&.label, placeholder: PallasTrade.t('admin.menu_configs.label_placeholder'), class: 'form-control form-control-sm' %>
-                  </div>
-                  <div class="col-span-3">
-                    <%= number_field_tag "items[#{child.key}][position]", child_cfg&.position, placeholder: PallasTrade.t('admin.menu_configs.position_placeholder'), class: 'form-control form-control-sm', min: 0 %>
-                  </div>
-                </div>
+                <li class="flex items-center gap-2 text-sm">
+                  <%= icon(child.icon, class: 'icon text-gray-400') if child.icon %>
+                  <span><%= child.resolve_label %></span>
+                  <% child_url = child.safe_resolve_url(self) %>
+                  <code class="text-xs text-gray-500"><%= child_url %></code>
+                </li>
               <% end %>
-            </div>
+            </ul>
           <% end %>
-        </div>
+        </li>
       <% end %>
-    </div>
-
-    <div class="card-body border-t">
-      <h5 class="mb-2"><%= PallasTrade.t('admin.menu_configs.custom_items') %></h5>
-      <p class="text-sm text-gray-500 mb-3"><%= PallasTrade.t('admin.menu_configs.custom_items_help') %></p>
-
-      <% custom_configs.each_with_index do |cfg, idx| %>
-        <%= render partial: 'custom_item_fields', locals: { cfg: cfg, idx: idx } %>
-      <% end %>
-      <%= render partial: 'custom_item_fields', locals: { cfg: nil, idx: custom_configs.size } %>
-    </div>
-
-    <div class="card-footer flex justify-end">
-      <%= f.submit PallasTrade.t('admin.menu_configs.save'), class: 'btn btn-primary' %>
-    </div>
-  <% end %>
+    </ul>
+  </div>
 </div>

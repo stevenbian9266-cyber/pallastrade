@@ -592,12 +592,13 @@
     {
       "id": "GS-035",
       "name": "Admin DB-driven role permissions (menu/function/data) + visual menu configuration",
-      "description": "Since the permission-system refactor (2026-08-16), admin role permissions are DB-driven via PallasTrade::RolePermission (set/function/menu/data) instead of code-only PermissionSets; the admin role is seeded with set:SuperUser. PallasTrade::Ability#apply_permissions_from_db reads role permissions (falling back to code sets for unconfigured roles). Function grants are resource×action (orders:read etc.) resolved via PermissionRegistry to model classes, auto-granting :admin; read/index/show grants apply data-scope conditions (self/store/channel/custom) so accessible_by filters lists. Menu grants drive sidebar visibility for DB-driven roles. RolePermission resources must be registered in PermissionRegistry (nav:validate enforces). PallasTrade::MenuConfig stores visual menu overrides (global store_id NULL + per-store), merged onto the default nav tree at render time (hide/rename/reorder/custom items), managed in the new Menu Configuration admin page.",
+      "description": "Since the permission-system refactor (2026-08-16), admin role permissions are DB-driven via PallasTrade::RolePermission (set/function/menu/data) instead of code-only PermissionSets; the admin role is seeded with set:SuperUser. PallasTrade::Ability#apply_permissions_from_db reads role permissions (falling back to code sets for unconfigured roles). Function grants are resource×action (orders:read etc.) resolved via PermissionRegistry to model classes, auto-granting :admin; read/index/show grants apply data-scope conditions (self/store/channel/custom) so accessible_by filters lists. Menu grants drive sidebar visibility for DB-driven roles. RolePermission resources must be registered in PermissionRegistry (nav:validate enforces). Since 2026-08-17 the menu structure is code-defined (pallastrade_admin_navigation.rb): the Menu Configuration page is a READ-ONLY tree preview and the render layer no longer merges MenuConfig overrides (PallasTrade::MenuConfig model/table retained for compatibility only); the same nav tree is the basis for the Roles > Menu Permissions checkbox tree.",
       "mustDo": [
         "Drive admin role permissions from PallasTrade::RolePermission (DB); keep set:SuperUser for the admin role via Role.default_admin_role",
         "Resolve function-grant resources via PermissionRegistry to model classes; auto-grant :admin per resource; apply data-scope conditions to read/index/show so accessible_by enforces data permissions",
         "Filter the sidebar by role menu permissions for DB-driven roles (menu_permissions); leave code if: behavior for unconfigured roles",
         "Manage menu overrides through PallasTrade::MenuConfig (global + store scope, hide/rename/reorder/custom items) merged over the default tree in navigation_helper#build_effective_nav",
+        "Keep the Menu Configuration page READ-ONLY (no edit controls / write routes) since 2026-08-17: menu structure is defined by code, historical MenuConfig records must not affect sidebar rendering, and the Roles > Menu Permissions tree is the permission basis",
         "Register any new authorizable resource in backend/config/initializers/pallastrade_permission_registry.rb so it appears in the Roles permission matrix",
         "Keep nav:validate green (permission resources registered, menu config keys valid) and run the roles/menu-config specs"
       ],
@@ -606,6 +607,7 @@
         "Let role_permissions reference resources not registered in PermissionRegistry (nav:validate blocks)",
         "Let the roles permission UI rebuild set-type permissions (SuperUser) — only menu/function/data are editable",
         "Add a menu override for a nav key that does not exist in the default tree (except custom items)",
+        "Re-introduce editable menu override management (hide/rename/reorder/custom items) after 2026-08-17 convergence — the Menu Configuration page must stay read-only and the sidebar must render strictly from code nav config",
         "Push while doc-impact reports docs-required or nav:validate fails"
       ],
       "scoring": { "dbDrivenAbility": 20, "functionGrants": 15, "dataScope": 15, "menuFilter": 15, "menuConfigUI": 15, "registry": 10, "navValidate": 10 }
