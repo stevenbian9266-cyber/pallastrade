@@ -178,7 +178,14 @@ The full nav API is in `pallastrade/admin/app/models/pallastrade/admin/navigatio
    end
    ```
 
-7. **页面头（page_title）**：列表/详情/表单页必须写 `content_for :page_title`（渲染页面
+7. **skip_breadcrumb_derivation 例外（2026-08-17 教训）**：若控制器声明了
+   `self.skip_breadcrumb_derivation = true`（如 `stores_controller` 的 section 级、
+   `webhook_deliveries` 的父级+本页），则该控制器**所有 action 都不会自动推导面包屑**。
+   在此类控制器**新增任何 action（index/new/create 等）都必须手写 `add_breadcrumb`
+   （含 `add_breadcrumb_icon`），并加面包屑回归断言**；否则新页面面包屑为空。
+   新增页面验证清单（浏览器）：**页面标题 + 面包屑 + 图标** 三要素必查。
+
+8. **页面头（page_title）**：列表/详情/表单页必须写 `content_for :page_title`（渲染页面
    头部 h3 标题）；否则 `shared/_content_header` 不渲染 header，且 `page_actions`
    （操作按钮：新建/返回/标记解决等）会被**整体丢弃**；无 `:page_title` 时自动 fallback
    到最深导航项 label（P4 `@navigation_page_title`）：
