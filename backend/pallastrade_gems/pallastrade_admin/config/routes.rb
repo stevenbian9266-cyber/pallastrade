@@ -284,6 +284,9 @@ PallasTrade::Core::Engine.add_routes do
     resources :allowed_origins, except: :show
     resources :redirects
     resources :back_in_stock_subscriptions, only: [:index, :destroy]
+        resources :abandoned_cart_notifications, only: [:index, :destroy] do
+          post :run, on: :collection
+        end
 
     # CMS blog posts
     resources :posts

@@ -1,0 +1,13 @@
+<%= render layout: 'pallastrade/shared/mailer_hero' do %>
+  <h1><%= PallasTrade.t('abandoned_cart_mailer.recovery_email.subject', store_name: @cart.store.name) %></h1>
+  <p class="greeting"><%= PallasTrade.t('abandoned_cart_mailer.recovery_email.greeting') %></p>
+  <p><%= PallasTrade.t('abandoned_cart_mailer.recovery_email.body', item_count: @cart.items.size) %></p>
+  <% if @cart.items.any? %>
+    <ul class="items">
+      <% @cart.items.limit(5).each do |item| %>
+        <li><%= item.name.presence || item.variant&.name %> × <%= item.quantity %></li>
+      <% end %>
+    </ul>
+  <% end %>
+  <%= render 'pallastrade/shared/mailer_button', url: recovery_url, label: PallasTrade.t('abandoned_cart_mailer.recovery_email.resume_checkout') %>
+<% end %>

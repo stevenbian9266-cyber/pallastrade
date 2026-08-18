@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { getAddresses } from "@/lib/data/addresses";
 import { getCheckoutOrder } from "@/lib/data/checkout";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
+import { setCartCookies } from "@/lib/pallastrade/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
 
@@ -23,12 +24,25 @@ interface CheckoutPageProps {
     country: string;
     locale: string;
   }>;
+  searchParams: Promise<{
+    token?: string;
+  }>;
 }
 
-async function CheckoutDataLoader({ params }: CheckoutPageProps) {
+async function CheckoutDataLoader({
+  params,
+  searchParams,
+}: CheckoutPageProps) {
   await connection();
 
   const { id: cartId, country: urlCountry } = await params;
+  const { token } = await searchParams;
+
+  // P0-3 (2026-08-18): abandoned-cart recovery emails link here with ?token=…
+  // so a returning visitor on a new device can re-attach to their cart.
+  if (token) {
+    await setCartCookies(cartId, token);
+  }
 
   // Check auth first so we can skip address fetch for guests
   const authStatus = await checkAuth();
@@ -77,10 +91,10 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
   );
 }
 
-export default function CheckoutPage({ params }: CheckoutPageProps) {
+export default function CheckoutPage({ params, searchParams }: CheckoutPageProps) {
   return (
     <Suspense>
-      <CheckoutDataLoader params={params} />
+      <CheckoutDataLoader params={params} searchParams={searchParams} />
     </Suspense>
   );
 }

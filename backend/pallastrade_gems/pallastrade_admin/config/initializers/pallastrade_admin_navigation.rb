@@ -558,6 +558,15 @@ Rails.application.config.after_initialize do
           active: -> { controller_name == 'back_in_stock_subscriptions' },
           if: -> { can?(:manage, PallasTrade::BackInStockSubscription) }
 
+  # Abandoned cart notifications（P0-3 弃单恢复，单页叶子项）
+  sidebar_nav.add :abandoned_cart_notifications,
+          label: 'admin.abandoned_cart_notifications.title',
+          url: :admin_abandoned_cart_notifications_path,
+          icon: 'cart-arrow-down',
+          position: 171,
+          active: -> { controller_name == 'abandoned_cart_notifications' },
+          if: -> { can?(:manage, PallasTrade::AbandonedCartNotification) }
+
   # Edit Profile（单页叶子项）
   sidebar_nav.add :edit_profile,
           label: 'admin.edit_profile',

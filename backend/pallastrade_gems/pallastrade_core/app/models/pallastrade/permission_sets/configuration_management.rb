@@ -42,6 +42,9 @@ module PallasTrade
         # Back-in-stock subscriptions (review + delete)
         can :manage, PallasTrade::BackInStockSubscription
 
+        # Abandoned-cart notifications (P0-3 review + delete + run scan)
+        can :manage, PallasTrade::AbandonedCartNotification
+
         # Webhooks
         can :manage, PallasTrade::WebhookEndpoint
         can :manage, PallasTrade::WebhookDelivery

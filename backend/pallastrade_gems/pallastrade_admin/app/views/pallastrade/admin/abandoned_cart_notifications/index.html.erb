@@ -1,0 +1,14 @@
+<% content_for(:title, PallasTrade.t('admin.abandoned_cart_notifications.title')) %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.abandoned_cart_notifications.title') %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= link_to_with_icon 'send', PallasTrade.t('admin.abandoned_cart_notifications.run_scan'),
+        PallasTrade.run_admin_abandoned_cart_notifications_path,
+        class: 'btn btn-primary', data: { turbo_method: :post, turbo_frame: '_top' } %>
+<% end %>
+
+<%= render partial: 'pallastrade/admin/shared/error_messages', locals: { target: @object }, class: 'mb-12 pb-12' %>
+
+<%= render_table @collection, :abandoned_cart_notifications %>

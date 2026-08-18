@@ -20,6 +20,7 @@ module PallasTrade
         { key: 'shipment.shipped_email',             name: 'admin.emails.scenarios.shipment_shipped' },
         { key: 'reimbursement.reimbursement_email',  name: 'admin.emails.scenarios.reimbursement' },
         { key: 'back_in_stock.back_in_stock',        name: 'admin.emails.scenarios.back_in_stock' },
+        { key: 'abandoned_cart.recovery_email',      name: 'admin.emails.scenarios.abandoned_cart' },
         { key: 'customer.password_reset_email',      name: 'admin.emails.scenarios.password_reset' },
         { key: 'newsletter.email_confirmation',      name: 'admin.emails.scenarios.newsletter_confirmation' }
       ].freeze

@@ -7,6 +7,7 @@ en:
     emails: Emails
     blog: Blog
     back_in_stock_subscriptions: Back in Stock Subscriptions
+    abandoned_cart_notifications: Abandoned Cart Notifications
     profile: Profile
     exports: Exports
     webhook_deliveries: Webhook Deliveries
@@ -48,6 +49,10 @@ en:
         audit_log_enterprise_notice: Audit log is part of the PallasTrade Enterprise offering.
         upgrade_to_enterprise: Upgrade to PallasTrade Enterprise
       back_in_stock_subscriptions: Back in Stock Subscriptions
+      abandoned_cart_notifications:
+        title: Abandoned Cart Notifications
+        run_scan: Run scan now
+        scan_started: Abandoned cart scan started. Recovery emails are being sent.
       posts:
         title: Blog
         help: 'Publish blog posts to build content marketing and SEO. Posts with an empty publish date are drafts; a future date schedules them.'
@@ -86,6 +91,7 @@ en:
           shipment_shipped: Shipment shipped (order status)
           reimbursement: Refund / reimbursement
           back_in_stock: Back in stock
+          abandoned_cart: Abandoned cart recovery
           password_reset: Password reset
           newsletter_confirmation: Newsletter subscription confirmation
         templates: Email Templates

@@ -2240,6 +2240,44 @@ Rails.application.config.after_initialize do
                                          position: 40
 
   # ==========================================
+  # Register Abandoned cart notifications table (P0-3 弃单恢复)
+  # ==========================================
+  PallasTrade.admin.tables.register(:abandoned_cart_notifications, model_class: PallasTrade::AbandonedCartNotification, search_param: :email_cont, row_actions: true, row_actions_edit: false, row_actions_delete: true, new_resource: false)
+
+  PallasTrade.admin.tables.abandoned_cart_notifications.add :email,
+                                         label: :email,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 10
+
+  PallasTrade.admin.tables.abandoned_cart_notifications.add :cart,
+                                         label: :cart,
+                                         type: :string,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 20,
+                                         method: ->(n) { n.cart&.number }
+
+  PallasTrade.admin.tables.abandoned_cart_notifications.add :sent_at,
+                                         label: :sent_at,
+                                         type: :datetime,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 30
+
+  PallasTrade.admin.tables.abandoned_cart_notifications.add :created_at,
+                                         label: :created_at,
+                                         type: :datetime,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 40
+
+  # ==========================================
   # (Config Items table removed — Config Center module was retired 2026-08-14)
 
 

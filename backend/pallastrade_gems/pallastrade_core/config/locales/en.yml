@@ -699,6 +699,13 @@ en:
         greeting: Good news!
         body: "The product you were waiting for — %{product_name} — is back in stock. Head over to the store to grab it before it sells out again."
         view_product: View Product
+    abandoned_cart_mailer:
+      recovery_email:
+        subject: "Complete your order at %{store_name}"
+        greeting: "You left something in your cart"
+        body: "You still have %{item_count} item(s) waiting in your cart. Complete your checkout before they sell out."
+        resume_checkout: Resume Checkout
+        view_cart: View Cart
     administration: Administration
     advertise: Advertise
     all: All

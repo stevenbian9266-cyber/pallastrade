@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_16_100001) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_18_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -76,6 +76,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_16_100001) do
     t.index ["slug", "sluggable_type", "scope", "locale"], name: "index_friendly_id_slugs_unique", unique: true
     t.index ["sluggable_id"], name: "index_friendly_id_slugs_on_sluggable_id"
     t.index ["sluggable_type"], name: "index_friendly_id_slugs_on_sluggable_type"
+  end
+
+  create_table "pallastrade_abandoned_cart_notifications", force: :cascade do |t|
+    t.bigint "cart_id", null: false
+    t.datetime "created_at", null: false
+    t.string "email", null: false
+    t.datetime "sent_at"
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["cart_id", "email"], name: "index_abandoned_cart_notifications_on_cart_and_email", unique: true
+    t.index ["cart_id"], name: "index_pallastrade_abandoned_cart_notifications_on_cart_id"
+    t.index ["store_id"], name: "index_pallastrade_abandoned_cart_notifications_on_store_id"
   end
 
   create_table "pallastrade_addresses", force: :cascade do |t|
@@ -1081,6 +1093,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_16_100001) do
     t.text "internal_note"
     t.integer "item_count", default: 0
     t.decimal "item_total", precision: 10, scale: 2, default: "0.0", null: false
+    t.datetime "last_activity_at"
     t.string "last_ip_address"
     t.string "locale"
     t.bigint "market_id"
@@ -1116,6 +1129,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_16_100001) do
     t.index ["considered_risky"], name: "index_pt_orders_on_considered_risky"
     t.index ["created_by_id"], name: "index_pt_orders_on_created_by_id"
     t.index ["gift_card_id"], name: "index_pt_orders_on_gift_card_id"
+    t.index ["last_activity_at"], name: "index_pallastrade_orders_on_last_activity_at"
     t.index ["market_id"], name: "index_pt_orders_on_market_id"
     t.index ["number"], name: "index_pt_orders_on_number", unique: true
     t.index ["preferred_stock_location_id"], name: "index_pt_orders_on_preferred_stock_location_id"
@@ -2533,6 +2547,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_16_100001) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "pallastrade_abandoned_cart_notifications", "pallastrade_orders", column: "cart_id"
+  add_foreign_key "pallastrade_abandoned_cart_notifications", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_ai_artifacts", "pallastrade_ai_runs", column: "run_id"
   add_foreign_key "pallastrade_ai_capability_settings", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_ai_models", "pallastrade_ai_providers", column: "provider_id"

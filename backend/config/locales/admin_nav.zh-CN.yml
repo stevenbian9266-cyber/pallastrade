@@ -60,6 +60,8 @@ zh-CN:
         templates: 邮件模板
         outbox: 发件箱
         inbox: 收件箱
+      abandoned_cart_notifications:
+        title: 弃单通知
       getting_started: 快速上手
       storefront: 店铺前台
       edit_profile: 编辑个人资料

@@ -271,6 +271,9 @@ module PallasTrade
     scope :completed_between, ->(start_date, end_date) { where(completed_at: start_date..end_date) }
     scope :complete, -> { where.not(completed_at: nil) }
     scope :incomplete, -> { where(completed_at: nil) }
+    # P0-3 (2026-08-18): carts whose last activity is older than +since+ and that
+    # have a contactable email — the abandoned-cart recovery scan target.
+    scope :abandoned, ->(since) { incomplete.where.not(email: nil).where('last_activity_at < ?', since) }
     scope :canceled, -> { where(state: %w[canceled partially_canceled]) }
     scope :not_canceled, -> { where.not(state: %w[canceled partially_canceled]) }
     scope :ready_to_ship, -> { where(shipment_state: %w[ready pending]) }
@@ -491,7 +494,17 @@ module PallasTrade
     end
 
     def update_with_updater!
+      touch_last_activity!
       updater.update
+    end
+
+    # P0-3 (2026-08-18): mark the cart as active right now — drives abandoned-cart
+    # detection. `update_column` avoids re-entrant callbacks/validations and the
+    # timestamp churn that `touch` would cause.
+    def touch_last_activity!
+      return if new_record? || !has_attribute?(:last_activity_at)
+
+      update_column(:last_activity_at, Time.current)
     end
 
     def merger

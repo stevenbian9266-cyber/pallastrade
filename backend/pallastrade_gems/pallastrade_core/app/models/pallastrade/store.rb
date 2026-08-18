@@ -145,6 +145,7 @@ module PallasTrade
     has_many :allowed_origins, class_name: 'PallasTrade::AllowedOrigin', dependent: :destroy
     has_many :redirects, class_name: 'PallasTrade::Redirect', dependent: :destroy, inverse_of: :store
     has_many :back_in_stock_subscriptions, class_name: 'PallasTrade::BackInStockSubscription', dependent: :destroy, inverse_of: :store
+    has_many :abandoned_cart_notifications, class_name: 'PallasTrade::AbandonedCartNotification', dependent: :destroy, inverse_of: :store
     has_many :email_templates, class_name: 'PallasTrade::EmailTemplate', dependent: :destroy, inverse_of: :store
     has_many :email_logs, class_name: 'PallasTrade::EmailLog', dependent: :destroy, inverse_of: :store
     has_many :contact_messages, class_name: 'PallasTrade::ContactMessage', dependent: :destroy, inverse_of: :store

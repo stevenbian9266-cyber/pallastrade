@@ -29,6 +29,7 @@ module PallasTrade
       customer.password_reset_email
       newsletter.email_confirmation
       back_in_stock.back_in_stock
+      abandoned_cart.recovery_email
     ].freeze
 
     # Render subject with {placeholder} substitution.

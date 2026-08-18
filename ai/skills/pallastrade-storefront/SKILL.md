@@ -273,6 +273,23 @@ The Store API exposes payment sessions for the checkout flow — a single, provi
 
 The `pallastrade_stripe` / `pallastrade_adyen` / `pallastrade_paypal_checkout` gems ship reference checkout flows. Don't roll your own unless you're integrating a new provider.
 
+#### Recovering a guest cart from an emailed checkout link (abandoned-cart recovery)
+
+Recovery emails (e.g. `abandoned_cart_mailer.recovery_email`) link back to `/{country}/{locale}/checkout/{cart_id}?token=…`. The checkout page must restore the cart token cookie **before** fetching the cart, otherwise the guest cart is treated as anonymous:
+
+```tsx
+// page.tsx — Server Component
+export default async function CheckoutPage({ params, searchParams }) {
+  const cartId = (await params).id
+  const token = searchParams?.token
+  if (token) await setCartCookies(cartId, token) // writes cart token cookie for this guest cart
+  const cart = await pallastrade.carts.get(cartId, { guestToken: token })
+  // …
+}
+```
+
+Use `setCartCookies(cartId, token)` (shared cookie helper) so subsequent client-side fetches and the payment session calls carry the token.
+
 ### Webhook handling
 
 For Next.js storefronts, `@pallastrade/sdk/webhooks` provides HMAC signature verification with typed event payloads:
