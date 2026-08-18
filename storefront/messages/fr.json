@@ -250,8 +250,25 @@
     "yes": "Oui",
     "no": "Non",
     "optionFilterChip": "{filter} : {value}"
-  },
-  "navigation": {
+  },  "reviews": {
+    "title": "Avis",
+    "count": "avis",
+    "empty": "Aucun avis pour le moment.",
+    "anonymous": "Anonyme",
+    "verifiedPurchase": "Achat vérifié",
+    "writeReview": "Rédiger un avis",
+    "rating": "Note",
+    "stars": "étoiles",
+    "titlePlaceholder": "Titre de l'avis (facultatif)",
+    "bodyPlaceholder": "Partagez votre expérience avec ce produit (facultatif)",
+    "selectRating": "Veuillez sélectionner une note en étoiles.",
+    "submit": "Envoyer l'avis",
+    "submitting": "Envoi en cours...",
+    "success": "Merci ! Votre avis a été envoyé et est en attente de modération.",
+    "submitError": "Une erreur est survenue. Veuillez réessayer.",
+    "signInRequired": "Veuillez vous connecter pour soumettre un avis.",
+    "signInToReview": "Connectez-vous pour rédiger un avis."
+  },  "navigation": {
     "home": "Accueil",
     "categories": "Categories",
     "breadcrumb": "Fil d'Ariane"

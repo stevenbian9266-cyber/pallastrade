@@ -202,7 +202,7 @@ module PallasTrade
         # @param date_range_label [String, nil] Label for date range filter
         # @param link_to_action [Symbol] Action to link to for :link columns (:edit or :show, default: :edit)
         # @return [PallasTrade::Admin::Table] The table instance
-        def register(name, model_class: nil, search_param: :name_cont, search_placeholder: nil, row_actions: false, row_actions_edit: true, row_actions_delete: false, new_resource: true, date_range_param: nil, date_range_label: nil, link_to_action: :edit)
+        def register(name, model_class: nil, search_param: :name_cont, search_placeholder: nil, row_actions: false, row_actions_edit: true, row_actions_delete: false, new_resource: true, date_range_param: nil, date_range_label: nil, link_to_action: :edit, row_actions_partial: nil)
           name = name.to_sym
           @registries[name] ||= PallasTrade::Admin::Table.new(
             name,
@@ -213,6 +213,7 @@ module PallasTrade
             row_actions: row_actions,
             row_actions_edit: row_actions_edit,
             row_actions_delete: row_actions_delete,
+            row_actions_partial: row_actions_partial,
             new_resource: new_resource,
             date_range_param: date_range_param,
             date_range_label: date_range_label,

@@ -172,6 +172,24 @@ const filters = await client.products.filters({
 });
 ```
 
+### Product Reviews
+
+```typescript
+// List approved reviews for a product (public)
+const reviews = await client.products.reviews.list('prod_abc123');
+
+// Submit a review as a signed-in customer (requires a JWT via options.token)
+const review = await client.products.reviews.create(
+  'prod_abc123',
+  { rating: 5, title: 'Love it', body: 'Works great' },
+  { token: '<customer-jwt>' },
+);
+```
+
+Reviews start in `pending` status and become public only after an admin
+approves them. `verified_purchase` is `true` when the customer completed an
+order containing the product.
+
 ### Categories
 
 ```typescript

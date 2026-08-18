@@ -62,6 +62,14 @@ zh-CN:
         inbox: 收件箱
       abandoned_cart_notifications:
         title: 弃单通知
+      reviews:
+        title: 商品评论
+        approved: 评论已通过
+        rejected: 评论已拒绝
+        statuses:
+          pending: 待审核
+          approved: 已通过
+          rejected: 已拒绝
       getting_started: 快速上手
       storefront: 店铺前台
       edit_profile: 编辑个人资料

@@ -53,6 +53,14 @@ en:
         title: Abandoned Cart Notifications
         run_scan: Run scan now
         scan_started: Abandoned cart scan started. Recovery emails are being sent.
+      reviews:
+        title: Reviews
+        approved: Review approved
+        rejected: Review rejected
+        statuses:
+          pending: Pending
+          approved: Approved
+          rejected: Rejected
       posts:
         title: Blog
         help: 'Publish blog posts to build content marketing and SEO. Posts with an empty publish date are drafts; a future date schedules them.'

@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/navigation/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { getCachedProduct, PRODUCT_PAGE_EXPAND } from "@/lib/data/cached";
+import { isAuthenticated } from "@/lib/data/cookies";
+import { getProductReviews } from "@/lib/data/reviews";
 import { generateProductMetadata } from "@/lib/metadata/product";
 import {
   buildBreadcrumbJsonLd,
@@ -71,6 +73,12 @@ export default async function ProductPage({
     category_id,
   );
 
+  // P0-4: approved reviews (public) + auth state for the review form.
+  const [reviews, authenticated] = await Promise.all([
+    getProductReviews(product.id),
+    isAuthenticated(),
+  ]);
+
   return (
     <>
       {canonicalUrl && (
@@ -94,7 +102,14 @@ export default async function ProductPage({
           />
         )}
       </div>
-      <ProductDetails product={product} basePath={basePath} />
+      <ProductDetails
+        product={product}
+        basePath={basePath}
+        reviews={reviews}
+        averageRating={product.average_rating ?? null}
+        reviewCount={product.review_count ?? 0}
+        isAuthenticated={authenticated}
+      />
     </>
   );
 }

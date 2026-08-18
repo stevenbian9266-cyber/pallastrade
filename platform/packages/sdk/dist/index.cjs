@@ -242,7 +242,22 @@ var StoreClient = class {
     filters: (params, options) => this.request("GET", "/products/filters", {
       ...options,
       params
-    })
+    }),
+    /**
+     * Product reviews (P0-4).
+     * `list` returns approved reviews (guest-accessible); `create` submits a
+     * review as the signed-in customer (pass a JWT via `options.token`).
+     */
+    reviews: {
+      list: (productId, params, options) => this.request("GET", `/products/${productId}/reviews`, {
+        ...options,
+        params: getParams(params)
+      }),
+      create: (productId, params, options) => this.request("POST", `/products/${productId}/reviews`, {
+        ...options,
+        body: params
+      })
+    }
   };
   // ============================================
   // Categories

@@ -33,6 +33,7 @@ module PallasTrade
         wishlist_serializer: 'PallasTrade::Api::V3::WishlistSerializer',
         wishlist_item_serializer: 'PallasTrade::Api::V3::WishlistItemSerializer',
         wished_item_serializer: 'PallasTrade::Api::V3::WishlistItemSerializer',
+        review_serializer: 'PallasTrade::Api::V3::ReviewSerializer',
         payment_method_serializer: 'PallasTrade::Api::V3::PaymentMethodSerializer',
         shipping_method_serializer: 'PallasTrade::Api::V3::DeliveryMethodSerializer',
         shipping_rate_serializer: 'PallasTrade::Api::V3::DeliveryRateSerializer',

@@ -137,6 +137,53 @@ export class StoreClient {
         ...options,
         params: params as Record<string, string | number | undefined>,
       }),
+
+    /**
+     * Product reviews (P0-4).
+     * `list` returns approved reviews (guest-accessible); `create` submits a
+     * review as the signed-in customer (pass a JWT via `options.token`).
+     */
+    reviews: {
+      list: (
+        productId: string,
+        params?: { fields?: string[] },
+        options?: RequestOptions,
+      ): Promise<
+        Array<{
+          id: string
+          product_id: string | null
+          user_name: string | null
+          rating: number
+          title: string | null
+          body: string | null
+          verified_purchase: boolean
+          created_at: string | null
+        }>
+      > =>
+        this.request('GET', `/products/${productId}/reviews`, {
+          ...options,
+          params: getParams(params),
+        }),
+
+      create: (
+        productId: string,
+        params: { rating: number; title?: string; body?: string },
+        options?: RequestOptions,
+      ): Promise<{
+        id: string
+        product_id: string | null
+        user_name: string | null
+        rating: number
+        title: string | null
+        body: string | null
+        verified_purchase: boolean
+        created_at: string | null
+      }> =>
+        this.request('POST', `/products/${productId}/reviews`, {
+          ...options,
+          body: params,
+        }),
+    },
   }
 
   // ============================================

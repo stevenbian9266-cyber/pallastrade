@@ -1,0 +1,15 @@
+<%# locals: (record:, table:) %>
+<% if record.pending? && can?(:update, record) %>
+  <%= link_to PallasTrade.t('admin.reviews.statuses.approved'),
+        PallasTrade.approve_admin_review_path(record),
+        class: 'btn btn-sm btn-light text-success',
+        data: { turbo_method: :patch, turbo_frame: '_top' } %>
+  <%= link_to PallasTrade.t('admin.reviews.statuses.rejected'),
+        PallasTrade.reject_admin_review_path(record),
+        class: 'btn btn-sm btn-light text-danger',
+        data: { turbo_method: :patch, turbo_frame: '_top' } %>
+<% elsif record.approved? %>
+  <span class="text-success"><%= icon 'circle-check', class: 'w-4 h-4' %></span>
+<% else %>
+  <span class="text-danger"><%= icon 'circle-x', class: 'w-4 h-4' %></span>
+<% end %>

@@ -250,8 +250,25 @@
     "yes": "Si",
     "no": "No",
     "optionFilterChip": "{filter}: {value}"
-  },
-  "navigation": {
+  },  "reviews": {
+    "title": "Reseñas",
+    "count": "reseñas",
+    "empty": "Aún no hay reseñas.",
+    "anonymous": "Anónimo",
+    "verifiedPurchase": "Compra verificada",
+    "writeReview": "Escribir una reseña",
+    "rating": "Valoración",
+    "stars": "estrellas",
+    "titlePlaceholder": "Título de la reseña (opcional)",
+    "bodyPlaceholder": "Comparte tu experiencia con este producto (opcional)",
+    "selectRating": "Por favor, selecciona una valoración de estrellas.",
+    "submit": "Enviar reseña",
+    "submitting": "Enviando...",
+    "success": "¡Gracias! Tu reseña ha sido enviada y está pendiente de moderación.",
+    "submitError": "Algo salió mal. Inténtalo de nuevo.",
+    "signInRequired": "Inicia sesión para enviar una reseña.",
+    "signInToReview": "Inicia sesión para escribir una reseña."
+  },  "navigation": {
     "home": "Inicio",
     "categories": "Categorias",
     "breadcrumb": "Migas de pan"

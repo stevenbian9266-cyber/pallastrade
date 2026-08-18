@@ -9723,6 +9723,136 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/products/{product_id}/reviews":
+    get:
+      summary: List approved reviews for a product
+      tags:
+      - Reviews
+      security:
+      - api_key: []
+      description: |
+        Returns the approved reviews for a product, newest first. Pending and
+        rejected reviews are never exposed. Review authors are identified by
+        their public display name; `verified_purchase` is true when the author
+        completed an order containing this product.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const reviews = await client.products.reviews.list('prod_abc123')
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: product_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: approved reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Review"
+        '404':
+          description: product not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+    post:
+      summary: Submit a review as a signed-in customer
+      tags:
+      - Reviews
+      security:
+      - api_key: []
+      description: |
+        Creates a review for a product with status `pending`. The customer must
+        authenticate with a JWT (Authorization: Bearer). A customer may review
+        a product once (unique per product + customer). `verified_purchase` is
+        computed automatically from the customer's completed orders.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const review = await client.products.reviews.create('prod_abc123', {
+            rating: 5,
+            title: 'Love it',
+            body: 'Works great',
+          }, { token: '<customer-jwt>' })
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: product_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - rating
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                title:
+                  type: string
+                body:
+                  type: string
+      responses:
+        '201':
+          description: review created (pending moderation)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Review"
+        '401':
+          description: authentication required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '404':
+          description: product not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '422':
+          description: invalid rating or duplicate review
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
       requestBody:
         content:
           application/json:
@@ -10190,6 +10320,8 @@ tags:
   description: Store policies (return policy, privacy policy, terms of service)
 - name: Digitals
   description: Digital product downloads
+- name: Reviews
+  description: Customer product reviews (approved read + authenticated submit)
 x-tagGroups:
 - name: Authentication
   tags:
@@ -12466,6 +12598,41 @@ components:
       - filters
       - sort_options
       x-typelizer: true
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+        product_id:
+          type: string
+          nullable: true
+        user_name:
+          type: string
+          nullable: true
+        rating:
+          type: integer
+        title:
+          type: string
+          nullable: true
+        body:
+          type: string
+          nullable: true
+        verified_purchase:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - product_id
+      - user_name
+      - rating
+      - title
+      - body
+      - verified_purchase
+      - created_at
+      x-typelizer: true
     ProductPublication:
       type: object
       properties:
@@ -12539,6 +12706,11 @@ components:
           type: array
           items:
             type: string
+        average_rating:
+          type: number
+          nullable: true
+        review_count:
+          type: number
         price:
           "$ref": "#/components/schemas/Price"
         original_price:

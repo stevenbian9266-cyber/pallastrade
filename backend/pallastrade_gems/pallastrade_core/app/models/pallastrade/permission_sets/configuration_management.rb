@@ -45,6 +45,9 @@ module PallasTrade
         # Abandoned-cart notifications (P0-3 review + delete + run scan)
         can :manage, PallasTrade::AbandonedCartNotification
 
+        # Product reviews (P0-4 moderate: approve / reject / delete)
+        can :manage, PallasTrade::Review
+
         # Webhooks
         can :manage, PallasTrade::WebhookEndpoint
         can :manage, PallasTrade::WebhookDelivery

@@ -9,6 +9,10 @@
     <% end %>
   <% end %>
 
+  <% if table.row_actions_partial.present? %>
+    <%= render table.row_actions_partial, record: record, table: table %>
+  <% end %>
+
   <% if table.row_actions_delete? && can?(:destroy, record) %>
     <%= link_to_delete(record, no_text: true, class: 'btn btn-sm btn-light text-danger') %>
   <% end %>

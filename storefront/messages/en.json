@@ -251,6 +251,25 @@
     "no": "No",
     "optionFilterChip": "{filter}: {value}"
   },
+  "reviews": {
+    "title": "Reviews",
+    "count": "reviews",
+    "empty": "No reviews yet.",
+    "anonymous": "Anonymous",
+    "verifiedPurchase": "Verified purchase",
+    "writeReview": "Write a review",
+    "rating": "Rating",
+    "stars": "stars",
+    "titlePlaceholder": "Review title (optional)",
+    "bodyPlaceholder": "Share your experience with this product (optional)",
+    "selectRating": "Please select a star rating.",
+    "submit": "Submit review",
+    "submitting": "Submitting...",
+    "success": "Thanks! Your review has been submitted and is awaiting moderation.",
+    "submitError": "Something went wrong. Please try again.",
+    "signInRequired": "Please sign in to submit a review.",
+    "signInToReview": "Sign in to write a review."
+  },
   "navigation": {
     "home": "Home",
     "categories": "Categories",

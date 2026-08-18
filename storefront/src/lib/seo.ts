@@ -69,6 +69,17 @@ export function buildProductJsonLd(
     };
   }
 
+  // P0-4: aggregate rating over approved reviews (only when there is at
+  // least one approved review; rejected/pending reviews are excluded).
+  if (product.average_rating != null && (product.review_count ?? 0) > 0) {
+    schema.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: product.average_rating,
+      reviewCount: product.review_count,
+      bestRating: 5,
+    };
+  }
+
   return schema;
 }
 

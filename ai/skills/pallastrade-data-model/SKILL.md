@@ -33,6 +33,21 @@ captures a guest email for one product: `store_id`, `product_id`, `email`, `stat
 re-activates a notified row. `PallasTrade::BackInStockSubscriber` emails active rows on
 `product.back_in_stock` and marks them `notified`. A `Store has_many back_in_stock_subscriptions`.
 
+## Product reviews (P0-4)
+
+`PallasTrade::Review` (table `pallastrade_reviews`) captures a customer review for one product:
+`store_id`, `product_id`, `user_id`, `rating` (1–5), `title`, `body`, `status`
+(`pending` → `approved` | `rejected`, default `pending`), `verified_purchase` (boolean, auto-set
+from the customer's completed orders). Unique per `[product_id, user_id]` (a customer reviews a
+product once). `has_prefix_id :rev` (URL-safe `rev_…` ids). `SingleStoreResource` (store-scoped).
+A `Store has_many :reviews`; a `Product has_many :reviews` + `has_many :approved_reviews`.
+
+Aggregation: `Product#average_rating` (average over approved, nil when none) and
+`Product#review_count` (approved count) are exposed on `ProductSerializer` and feed the
+storefront JSON-LD `AggregateRating`. Only `approved` reviews are public via the Store API
+`GET /api/v3/store/products/:id/reviews`; moderation happens in the admin
+`PallasTrade::Admin::ReviewsController` (approve / reject / delete).
+
 ## Blog posts (CMS)
 
 `PallasTrade::Post` (table `pallastrade_posts`) is the CMS blog article model.

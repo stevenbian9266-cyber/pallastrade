@@ -23,6 +23,8 @@ interface Product {
   default_variant_id: string;
   thumbnail_url: string | null;
   tags: Array<string>;
+  average_rating: number | null;
+  review_count: number;
   price: Price;
   original_price: Price | null;
   primary_media?: Media;

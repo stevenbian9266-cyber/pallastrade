@@ -251,6 +251,25 @@
     "no": "Nie",
     "optionFilterChip": "{filter}: {value}"
   },
+  "reviews": {
+    "title": "Opinie",
+    "count": "opinii",
+    "empty": "Brak opinii.",
+    "anonymous": "Anonim",
+    "verifiedPurchase": "Zweryfikowany zakup",
+    "writeReview": "Napisz opinię",
+    "rating": "Ocena",
+    "stars": "gwiazdek",
+    "titlePlaceholder": "Tytuł opinii (opcjonalnie)",
+    "bodyPlaceholder": "Podziel się swoim doświadczeniem z tym produktem (opcjonalnie)",
+    "selectRating": "Wybierz ocenę gwiazdkową.",
+    "submit": "Wyślij opinię",
+    "submitting": "Wysyłanie...",
+    "success": "Dziękujemy! Twoja opinia została wysłana i czeka na moderację.",
+    "submitError": "Coś poszło nie tak. Spróbuj ponownie.",
+    "signInRequired": "Zaloguj się, aby dodać opinię.",
+    "signInToReview": "Zaloguj się, aby napisać opinię."
+  },
   "navigation": {
     "home": "Strona główna",
     "categories": "Kategorie",

@@ -2278,6 +2278,70 @@ Rails.application.config.after_initialize do
                                          position: 40
 
   # ==========================================
+  # Register Reviews table (P0-4 产品评论)
+  # ==========================================
+  PallasTrade.admin.tables.register(:reviews, model_class: PallasTrade::Review, search_param: :title_or_body_or_user_email_cont, row_actions: true, row_actions_edit: false, row_actions_delete: true, new_resource: false, row_actions_partial: 'pallastrade/admin/reviews/row_actions')
+
+  PallasTrade.admin.tables.reviews.add :product,
+                                         label: :product,
+                                         type: :association,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 10,
+                                         ransack_attribute: 'product_name',
+                                         method: ->(review) { review.product&.name }
+
+  PallasTrade.admin.tables.reviews.add :customer,
+                                         label: :customer,
+                                         type: :string,
+                                         sortable: false,
+                                         filterable: true,
+                                         default: true,
+                                         position: 20,
+                                         ransack_attribute: 'user_email',
+                                         method: ->(review) { review.user&.email }
+
+  PallasTrade.admin.tables.reviews.add :rating,
+                                         label: :rating,
+                                         type: :number,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 30
+
+  PallasTrade.admin.tables.reviews.add :status,
+                                         label: :status,
+                                         type: :status,
+                                         filter_type: :select,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 40,
+                                         value_options: [
+                                           { value: 'pending', label: 'admin.reviews.statuses.pending' },
+                                           { value: 'approved', label: 'admin.reviews.statuses.approved' },
+                                           { value: 'rejected', label: 'admin.reviews.statuses.rejected' }
+                                         ]
+
+  PallasTrade.admin.tables.reviews.add :verified_purchase,
+                                         label: :verified_purchase,
+                                         type: :boolean,
+                                         sortable: false,
+                                         filterable: true,
+                                         default: true,
+                                         position: 50,
+                                         method: ->(review) { review.verified_purchase? }
+
+  PallasTrade.admin.tables.reviews.add :created_at,
+                                         label: :created_at,
+                                         type: :datetime,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 60
+
+  # ==========================================
   # (Config Items table removed — Config Center module was retired 2026-08-14)
 
 

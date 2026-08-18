@@ -1,0 +1,8 @@
+<% content_for(:title, PallasTrade.t('admin.reviews.title')) %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.reviews.title') %>
+<% end %>
+
+<%= render partial: 'pallastrade/admin/shared/error_messages', locals: { target: @object }, class: 'mb-12 pb-12' %>
+
+<%= render_table @collection, :reviews %>

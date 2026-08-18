@@ -44,6 +44,10 @@ Rails.application.config.after_initialize do
                model_class: PallasTrade::AbandonedCartNotification,
                actions: %w[read update destroy],
                data_fields: %w[store_id])
+  reg.register(:reviews,
+               model_class: PallasTrade::Review,
+               actions: %w[read update destroy],
+               data_fields: %w[store_id])
   reg.register(:developers,
                model_class: nil,
                actions: %w[read create update destroy],

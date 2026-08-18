@@ -567,6 +567,15 @@ Rails.application.config.after_initialize do
           active: -> { controller_name == 'abandoned_cart_notifications' },
           if: -> { can?(:manage, PallasTrade::AbandonedCartNotification) }
 
+  # Reviews（P0-4 产品评论，单页叶子项）
+  sidebar_nav.add :reviews,
+          label: 'admin.reviews.title',
+          url: :admin_reviews_path,
+          icon: 'star',
+          position: 172,
+          active: -> { controller_name == 'reviews' },
+          if: -> { can?(:manage, PallasTrade::Review) }
+
   # Edit Profile（单页叶子项）
   sidebar_nav.add :edit_profile,
           label: 'admin.edit_profile',

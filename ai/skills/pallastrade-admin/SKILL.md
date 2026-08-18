@@ -308,6 +308,38 @@ def brand_name
 end
 ```
 
+Custom row actions: when a table needs member actions beyond the default
+edit/delete (e.g. approve/reject moderation), register the table with a
+`row_actions_partial` — the partial receives `record:` and `table:` locals and
+renders before the delete button. Example (Reviews, P0-4):
+
+```ruby
+# pallastrade_admin_tables.rb
+PallasTrade.admin.tables.register(:reviews, model_class: PallasTrade::Review,
+  search_param: :title_or_body_or_user_email_cont,
+  row_actions: true, row_actions_edit: false, row_actions_delete: true,
+  new_resource: false, row_actions_partial: 'pallastrade/admin/reviews/row_actions')
+```
+
+```erb
+<%# app/views/pallastrade/admin/reviews/_row_actions.html.erb %>
+<% if record.pending? && can?(:update, record) %>
+  <%= link_to PallasTrade.t('admin.reviews.statuses.approved'),
+        PallasTrade.approve_admin_review_path(record),
+        class: 'btn btn-sm btn-light text-success',
+        data: { turbo_method: :patch, turbo_frame: '_top' } %>
+  <%= link_to PallasTrade.t('admin.reviews.statuses.rejected'),
+        PallasTrade.reject_admin_review_path(record),
+        class: 'btn btn-sm btn-light text-danger',
+        data: { turbo_method: :patch, turbo_frame: '_top' } %>
+<% end %>
+```
+
+Member routes (`PATCH /admin/reviews/:id/approve` etc.) live in
+`config/routes.rb`; the helper methods are exposed on `PallasTrade.` (e.g.
+`PallasTrade.approve_admin_review_path(record)`). Turbo links need
+`data: { turbo_method: :patch, turbo_frame: '_top' }`.
+
 ## Overriding views
 
 Drop the same-pathed file in the host app and Rails uses it. The gem ships `pallastrade/admin/app/views/pallastrade/admin/products/index.html.erb`; you override it at `backend/app/views/pallastrade/admin/products/index.html.erb`.

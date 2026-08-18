@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_18_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1796,6 +1796,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_000001) do
     t.index ["return_authorization_id"], name: "index_pt_return_items_on_return_authorization_id"
   end
 
+  create_table "pallastrade_reviews", force: :cascade do |t|
+    t.text "body"
+    t.datetime "created_at", null: false
+    t.bigint "product_id", null: false
+    t.integer "rating", default: 0, null: false
+    t.string "status", default: "pending", null: false
+    t.bigint "store_id", null: false
+    t.string "title"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.boolean "verified_purchase", default: false, null: false
+    t.index ["product_id", "user_id"], name: "index_pallastrade_reviews_on_product_and_user", unique: true
+    t.index ["product_id"], name: "index_pallastrade_reviews_on_product_id"
+    t.index ["store_id", "status"], name: "index_pallastrade_reviews_on_store_id_and_status"
+    t.index ["store_id"], name: "index_pallastrade_reviews_on_store_id"
+    t.index ["user_id"], name: "index_pallastrade_reviews_on_user_id"
+  end
+
   create_table "pallastrade_role_permissions", force: :cascade do |t|
     t.string "action"
     t.boolean "allowed", default: true, null: false
@@ -2568,6 +2586,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_000001) do
   add_foreign_key "pallastrade_payment_sources", "pallastrade_users", column: "user_id"
   add_foreign_key "pallastrade_product_translations", "pallastrade_products"
   add_foreign_key "pallastrade_redirects", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_reviews", "pallastrade_products", column: "product_id"
+  add_foreign_key "pallastrade_reviews", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_reviews", "pallastrade_users", column: "user_id"
   add_foreign_key "pallastrade_role_permissions", "pallastrade_roles", column: "role_id"
   add_foreign_key "pallastrade_store_translations", "pallastrade_stores"
   add_foreign_key "pallastrade_taxon_translations", "pallastrade_taxons"

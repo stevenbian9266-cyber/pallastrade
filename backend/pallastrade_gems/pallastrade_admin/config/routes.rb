@@ -287,6 +287,12 @@ PallasTrade::Core::Engine.add_routes do
         resources :abandoned_cart_notifications, only: [:index, :destroy] do
           post :run, on: :collection
         end
+        resources :reviews, only: [:index, :destroy] do
+          member do
+            patch :approve
+            patch :reject
+          end
+        end
 
     # CMS blog posts
     resources :posts

@@ -27,6 +27,8 @@ PallasTrade::Core::Engine.add_routes do
           end
           # Back-in-stock notifications (guest-accessible: subscribe with an email)
           resources :back_in_stock_subscriptions, only: [:create]
+          # Product reviews (P0-4) — read approved, create as signed-in customer
+          resources :reviews, only: [:index, :create]
         end
         resources :categories, only: [:index, :show], id: /.+/
 

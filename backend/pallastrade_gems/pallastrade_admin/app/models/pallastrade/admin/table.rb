@@ -3,9 +3,9 @@ module PallasTrade
     class Table
       attr_reader :columns, :bulk_actions, :context, :model_class, :key
       attr_accessor :search_param, :search_placeholder, :row_actions, :row_actions_edit, :row_actions_delete, :new_resource,
-                    :date_range_param, :date_range_label, :link_to_action
+                    :date_range_param, :date_range_label, :link_to_action, :row_actions_partial
 
-      def initialize(context, key: nil, model_class: nil, search_param: :name_cont, search_placeholder: nil, row_actions: false, row_actions_edit: true, row_actions_delete: false, new_resource: true, date_range_param: nil, date_range_label: nil, link_to_action: :edit)
+      def initialize(context, key: nil, model_class: nil, search_param: :name_cont, search_placeholder: nil, row_actions: false, row_actions_edit: true, row_actions_delete: false, new_resource: true, date_range_param: nil, date_range_label: nil, link_to_action: :edit, row_actions_partial: nil)
         @context = context
         @key = key
         @model_class = model_class
@@ -20,6 +20,7 @@ module PallasTrade
         @date_range_param = date_range_param
         @date_range_label = date_range_label
         @link_to_action = link_to_action
+        @row_actions_partial = row_actions_partial
       end
 
       # Check if date range filter is enabled
@@ -265,6 +266,7 @@ module PallasTrade
           row_actions: row_actions,
           row_actions_edit: row_actions_edit,
           row_actions_delete: row_actions_delete,
+          row_actions_partial: row_actions_partial,
           new_resource: new_resource,
           date_range_param: date_range_param,
           date_range_label: date_range_label,

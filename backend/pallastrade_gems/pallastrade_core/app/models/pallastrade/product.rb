@@ -111,6 +111,10 @@ module PallasTrade
     has_many :orders, through: :line_items
     has_many :completed_orders, -> { reorder(nil).distinct.complete }, through: :line_items, source: :order
 
+    # Customer product reviews (P0-4). Only `approved` reviews are public.
+    has_many :reviews, class_name: 'PallasTrade::Review', dependent: :destroy
+    has_many :approved_reviews, -> { approved }, class_name: 'PallasTrade::Review'
+
     has_many :media, -> { order(:position) }, as: :viewable, dependent: :destroy, class_name: 'PallasTrade::Asset'
 
     has_many :variant_images, -> { order(:position) }, source: :images, through: :variants_including_master
@@ -337,6 +341,17 @@ module PallasTrade
     # Can't use short form block syntax due to https://github.com/Netflix/fast_jsonapi/issues/259
     def backorderable?
       default_variant.backorderable? || variants.any?(&:backorderable?)
+    end
+
+    # Average rating across approved reviews (P0-4). Returns nil when there are
+    # no approved reviews yet so serializers can omit the aggregate.
+    def average_rating
+      approved_reviews.average(:rating)&.round(2)
+    end
+
+    # Number of approved reviews (P0-4).
+    def review_count
+      approved_reviews.count
     end
 
     def on_sale?(currency)

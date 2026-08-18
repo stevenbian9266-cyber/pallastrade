@@ -7,6 +7,10 @@ import { useEffect, useMemo, useState } from "react";
 import { BackInStockNotify } from "@/components/products/BackInStockNotify";
 import { MediaGallery } from "@/components/products/MediaGallery";
 import { ProductCustomFields } from "@/components/products/ProductCustomFields";
+import {
+  ProductReviews,
+  type ReviewView,
+} from "@/components/products/ProductReviews";
 import { VariantPicker } from "@/components/products/VariantPicker";
 import { Button } from "@/components/ui/button";
 import { QuantityPicker } from "@/components/ui/quantity-picker";
@@ -17,9 +21,20 @@ import { trackAddToCart, trackViewItem } from "@/lib/analytics/gtm";
 interface ProductDetailsProps {
   product: Product;
   basePath: string;
+  reviews?: ReviewView[];
+  averageRating?: number | null;
+  reviewCount?: number;
+  isAuthenticated?: boolean;
 }
 
-export function ProductDetails({ product, basePath }: ProductDetailsProps) {
+export function ProductDetails({
+  product,
+  basePath,
+  reviews = [],
+  averageRating = null,
+  reviewCount = 0,
+  isAuthenticated = false,
+}: ProductDetailsProps) {
   const { addItem } = useCart();
   const { currency } = useStore();
   const t = useTranslations("products");
@@ -252,6 +267,15 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
           </div>
         </div>
       </div>
+
+      {/* Product reviews (P0-4) */}
+      <ProductReviews
+        productId={product.id}
+        reviews={reviews}
+        averageRating={averageRating}
+        reviewCount={reviewCount}
+        isAuthenticated={isAuthenticated}
+      />
     </div>
   );
 }

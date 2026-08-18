@@ -16,6 +16,8 @@ module PallasTrade
                  preorder: :boolean,
                  price: 'Price',
                  original_price: ['Price', nullable: true],
+                 average_rating: [:number, nullable: true],
+                 review_count: :number,
                  tags: [:string, multi: true]
 
         attributes :name, :slug,
@@ -66,6 +68,17 @@ module PallasTrade
 
         attribute :tags do |product|
           product.tags.map(&:name) # not pluck as we preload tags
+        end
+
+        # Review aggregate (P0-4) — only counts approved reviews. `average_rating`
+        # is nil when there are no approved reviews yet (so the JSON-LD / UI can
+        # hide the rating block).
+        attribute :average_rating do |product|
+          product.average_rating
+        end
+
+        attribute :review_count do |product|
+          product.review_count
         end
 
         # Price object - calculated price with price list resolution

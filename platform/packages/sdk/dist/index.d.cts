@@ -1,5 +1,5 @@
-import { R as RequestFn, L as LoginCredentials, A as AuthTokens, a as RequestOptions, P as ProductListParams, b as PaginatedResponse, c as Product, d as ProductFiltersParams, e as ProductFiltersResponse, C as CategoryListParams, f as Category, g as ListResponse, h as Country, i as Currency, j as Locale, k as Policy, l as ListParams, m as Post, M as Market, n as Cart, o as CreateCartParams, U as UpdateCartParams, O as Order, p as AddLineItemParams, q as UpdateLineItemParams, r as CreatePaymentParams, s as Payment, t as CreatePaymentSessionParams, u as PaymentSession, v as UpdatePaymentSessionParams, w as CompletePaymentSessionParams, x as RegisterParams, N as NewsletterSubscriber, y as Customer, z as Address, B as AddressParams, D as CreditCard, G as GiftCard, S as StoreCredit, E as OrderListParams, F as CreatePaymentSetupSessionParams, H as PaymentSetupSession, I as CompletePaymentSetupSessionParams, J as RequestPasswordResetParams, K as ResetPasswordParams, W as Wishlist, Q as WishlistItem, T as RetryConfig } from './index-HzR6ufax.cjs';
-export { V as AvailabilityFilter, X as Base, Y as CartWarning, Z as CategoryFilter, _ as CategoryFilterOption, $ as CheckoutRequirement, a0 as CustomField, a1 as DeliveryMethod, a2 as DeliveryRate, a3 as Digital, a4 as DigitalLink, a5 as Discount, a6 as EmailPasswordLogin, a7 as ErrorResponse, a8 as FilterOption, a9 as Fulfillment, aa as GiftCardBatch, ab as Invitation, ac as LineItem, ad as LineItemInput, ae as LocaleDefaults, af as Media, ag as OptionFilter, ah as OptionFilterOption, ai as OptionType, aj as OptionValue, ak as PaginationMeta, al as PallasTradeError, am as PaymentMethod, an as PaymentSource, ao as Price, ap as PriceRangeFilter, aq as ProductFilter, ar as Promotion, as as ProviderLogin, at as Refund, au as ReturnAuthorization, av as ReturnItem, aw as SortOption, ax as State, ay as StockLocation, az as Variant } from './index-HzR6ufax.cjs';
+import { R as RequestFn, L as LoginCredentials, A as AuthTokens, a as RequestOptions, P as ProductListParams, b as PaginatedResponse, c as Product, d as ProductFiltersParams, e as ProductFiltersResponse, C as CategoryListParams, f as Category, g as ListResponse, h as Country, i as Currency, j as Locale, k as Policy, l as ListParams, m as Post, M as Market, n as Cart, o as CreateCartParams, U as UpdateCartParams, O as Order, p as AddLineItemParams, q as UpdateLineItemParams, r as CreatePaymentParams, s as Payment, t as CreatePaymentSessionParams, u as PaymentSession, v as UpdatePaymentSessionParams, w as CompletePaymentSessionParams, x as RegisterParams, N as NewsletterSubscriber, y as Customer, z as Address, B as AddressParams, D as CreditCard, G as GiftCard, S as StoreCredit, E as OrderListParams, F as CreatePaymentSetupSessionParams, H as PaymentSetupSession, I as CompletePaymentSetupSessionParams, J as RequestPasswordResetParams, K as ResetPasswordParams, W as Wishlist, Q as WishlistItem, T as RetryConfig } from './index-BRRJtBX3.cjs';
+export { V as AvailabilityFilter, X as Base, Y as CartWarning, Z as CategoryFilter, _ as CategoryFilterOption, $ as CheckoutRequirement, a0 as CustomField, a1 as DeliveryMethod, a2 as DeliveryRate, a3 as Digital, a4 as DigitalLink, a5 as Discount, a6 as EmailPasswordLogin, a7 as ErrorResponse, a8 as FilterOption, a9 as Fulfillment, aa as GiftCardBatch, ab as Invitation, ac as LineItem, ad as LineItemInput, ae as LocaleDefaults, af as Media, ag as OptionFilter, ah as OptionFilterOption, ai as OptionType, aj as OptionValue, ak as PaginationMeta, al as PallasTradeError, am as PaymentMethod, an as PaymentSource, ao as Price, ap as PriceRangeFilter, aq as ProductFilter, ar as Promotion, as as ProviderLogin, at as Refund, au as ReturnAuthorization, av as ReturnItem, aw as SortOption, ax as State, ay as StockLocation, az as Variant } from './index-BRRJtBX3.cjs';
 
 declare class StoreClient {
     /**
@@ -52,6 +52,39 @@ declare class StoreClient {
          * Returns filter options (price range, availability, option types, categories) with counts
          */
         filters: (params?: ProductFiltersParams, options?: RequestOptions) => Promise<ProductFiltersResponse>;
+        /**
+         * Product reviews (P0-4).
+         * `list` returns approved reviews (guest-accessible); `create` submits a
+         * review as the signed-in customer (pass a JWT via `options.token`).
+         */
+        reviews: {
+            list: (productId: string, params?: {
+                fields?: string[];
+            }, options?: RequestOptions) => Promise<Array<{
+                id: string;
+                product_id: string | null;
+                user_name: string | null;
+                rating: number;
+                title: string | null;
+                body: string | null;
+                verified_purchase: boolean;
+                created_at: string | null;
+            }>>;
+            create: (productId: string, params: {
+                rating: number;
+                title?: string;
+                body?: string;
+            }, options?: RequestOptions) => Promise<{
+                id: string;
+                product_id: string | null;
+                user_name: string | null;
+                rating: number;
+                title: string | null;
+                body: string | null;
+                verified_purchase: boolean;
+                created_at: string | null;
+            }>;
+        };
     };
     readonly categories: {
         /**

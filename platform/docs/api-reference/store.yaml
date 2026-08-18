@@ -142,7 +142,7 @@ paths:
                 description: |
                   Provider-dispatched login. The `provider` key selects a configured
                   authentication provider; the remaining fields are forwarded to it.
-                  Required fields depend on the provider — see
+                  Required fields depend on the provider 閳?see
                   [Custom API Authentication](https://pallastrade.cn/docs/developer/how-to/custom-api-authentication).
                 type: object
                 properties:
@@ -237,7 +237,7 @@ paths:
       security:
       - api_key: []
       description: Revokes the submitted refresh token. The refresh token itself is
-        the credential — no Authorization header is required, so a client with an
+        the credential 閳?no Authorization header is required, so a client with an
         expired access JWT can still log out.
       x-codeSamples:
       - lang: javascript
@@ -2276,7 +2276,7 @@ paths:
       description: |
         Associates a guest cart with the currently authenticated user.
         Requires JWT authentication and possession of the cart's token
-        (x-pallastrade-token) — the token authorizes claiming the cart.
+        (x-pallastrade-token) 閳?the token authorizes claiming the cart.
       x-codeSamples:
       - lang: javascript
         label: PallasTrade SDK
@@ -3541,8 +3541,7 @@ paths:
       - api_key: []
         bearer_auth: []
       description: |
-        Applies a gift card to the cart. Gift cards are treated as a payment method, not a discount —
-        the cart `total` remains unchanged while `amount_due` is reduced.
+        Applies a gift card to the cart. Gift cards are treated as a payment method, not a discount 閳?        the cart `total` remains unchanged while `amount_due` is reduced.
 
         For promotion discount codes, use the `POST /carts/{cart_id}/discount_codes` endpoint instead.
       x-codeSamples:
@@ -7262,7 +7261,7 @@ paths:
                   example: true
                 turnstile_token:
                   type: string
-                  description: Cloudflare Turnstile human-verification token (cf-turnstile-response). Optional — when the server has TURNSTILE_SECRET_KEY configured this is validated before the account is created, otherwise verification is skipped.
+                  description: Cloudflare Turnstile human-verification token (cf-turnstile-response). Optional 閳?when the server has TURNSTILE_SECRET_KEY configured this is validated before the account is created, otherwise verification is skipped.
                   example: 0.<token>
                 metadata:
                   type: object
@@ -8391,7 +8390,7 @@ paths:
                   symbol: "$"
                 - iso_code: EUR
                   name: Euro
-                  symbol: "€"
+                  symbol: "閳?
               schema:
                 type: object
                 properties:
@@ -9402,7 +9401,7 @@ paths:
           at `redirect_url?token=<verification_token>` and call `POST /newsletter_subscribers/verify`
           when the user clicks it.
         - If the request is authenticated via JWT and the customer's email matches the subscribed email,
-          the subscription is auto-verified and no events are fired — the JWT already proves email
+          the subscription is auto-verified and no events are fired 閳?the JWT already proves email
           ownership, so no confirmation email is needed.
 
         The optional `redirect_url` is where the verification token should land on the storefront. The
@@ -9439,7 +9438,7 @@ paths:
       - name: Authorization
         in: header
         required: false
-        description: Optional Bearer JWT — when present, links the subscription to
+        description: Optional Bearer JWT 閳?when present, links the subscription to
           that customer
         schema:
           type: string
@@ -9501,8 +9500,8 @@ paths:
       description: |
         Submits a contact message (complaint, feedback or general inquiry) from the
         storefront. Guest-accessible. The message is classified by `kind` and surfaced
-        in the admin **Email → Inbox & Feedback** page with a status flow
-        (pending → in_progress → resolved).
+        in the admin **Email 閳?Inbox & Feedback** page with a status flow
+        (pending 閳?in_progress 閳?resolved).
 
         Available `kind` values: `complaint`, `feedback`, `inquiry`.
       x-codeSamples:
@@ -9719,6 +9718,148 @@ paths:
                 "$ref": "#/components/schemas/ErrorResponse"
         '422':
           description: invalid email
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: customer@example.com
+  "/api/v3/store/products/{product_id}/reviews":
+    get:
+      summary: List approved reviews for a product
+      tags:
+      - Reviews
+      security:
+      - api_key: []
+      description: |
+        Returns the approved reviews for a product, newest first. Pending and
+        rejected reviews are never exposed. Review authors are identified by
+        their public display name; `verified_purchase` is true when the author
+        completed an order containing this product.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const reviews = await client.products.reviews.list('prod_abc123')
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: product_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: approved reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Review"
+        '404':
+          description: product not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+    post:
+      summary: Submit a review as a signed-in customer
+      tags:
+      - Reviews
+      security:
+      - api_key: []
+      description: |
+        Creates a review for a product with status `pending`. The customer must
+        authenticate with a JWT (Authorization: Bearer). A customer may review
+        a product once (unique per product + customer). `verified_purchase` is
+        computed automatically from the customer's completed orders.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const review = await client.products.reviews.create('prod_abc123', {
+            rating: 5,
+            title: 'Love it',
+            body: 'Works great',
+          }, { token: '<customer-jwt>' })
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: product_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - rating
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                title:
+                  type: string
+                body:
+                  type: string
+      responses:
+        '201':
+          description: review created (pending moderation)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Review"
+        '401':
+          description: authentication required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '404':
+          description: product not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '422':
+          description: invalid rating or duplicate review
           content:
             application/json:
               schema:
@@ -10126,8 +10267,7 @@ paths:
       description: |
         Downloads a digital product file using the digital link token.
         The token is provided via the `download_url` field on digital links
-        returned with order line items. No API key or authentication required —
-        the token itself grants access.
+        returned with order line items. No API key or authentication required 閳?        the token itself grants access.
         Each download increments the access counter. Downloads may be limited by
         store settings (number of downloads and/or time-based expiration).
       parameters:
@@ -10190,6 +10330,8 @@ tags:
   description: Store policies (return policy, privacy policy, terms of service)
 - name: Digitals
   description: Digital product downloads
+- name: Reviews
+  description: Customer product reviews (approved read + authenticated submit)
 x-tagGroups:
 - name: Authentication
   tags:
@@ -10438,7 +10580,7 @@ components:
       - message
     FulfillmentManifestItem:
       type: object
-      description: An item within a fulfillment — which line item and how many units
+      description: An item within a fulfillment 閳?which line item and how many units
         are in this fulfillment
       properties:
         item_id:
@@ -10494,7 +10636,7 @@ components:
       - type
     PromotionActionCalculator:
       type: object
-      description: The action's nested calculator (when the action carries one — null
+      description: The action's nested calculator (when the action carries one 閳?null
         for actions like `free_shipping`)
       properties:
         type:
@@ -10518,7 +10660,7 @@ components:
       - preference_schema
     PromotionActionLineItem:
       type: object
-      description: One row in a `create_line_items` action — the variant added to
+      description: One row in a `create_line_items` action 閳?the variant added to
         the order and how many
       properties:
         variant_id:
@@ -12466,6 +12608,76 @@ components:
       - filters
       - sort_options
       x-typelizer: true
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+        product_id:
+          type: string
+          nullable: true
+        user_name:
+          type: string
+          nullable: true
+        rating:
+          type: integer
+        title:
+          type: string
+          nullable: true
+        body:
+          type: string
+          nullable: true
+        verified_purchase:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - product_id
+      - user_name
+      - rating
+      - title
+      - body
+      - verified_purchase
+      - created_at
+      x-typelizer: true
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+        product_id:
+          type: string
+          nullable: true
+        user_name:
+          type: string
+          nullable: true
+        rating:
+          type: integer
+        title:
+          type: string
+          nullable: true
+        body:
+          type: string
+          nullable: true
+        verified_purchase:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - product_id
+      - user_name
+      - rating
+      - title
+      - body
+      - verified_purchase
+      - created_at
+      x-typelizer: true
     ProductPublication:
       type: object
       properties:
@@ -12539,6 +12751,11 @@ components:
           type: array
           items:
             type: string
+        average_rating:
+          type: number
+          nullable: true
+        review_count:
+          type: number
         price:
           "$ref": "#/components/schemas/Price"
         original_price:

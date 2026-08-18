@@ -332,6 +332,20 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
 - Notifications are sent by `PallasTrade::BackInStockSubscriber` on the `product.back_in_stock`
   event; see the events skill.
 
+### Product reviews (Store API, P0-4)
+
+- **Read (public, api_key)**: `GET /api/v3/store/products/:product_id/reviews` — approved reviews
+  only, newest first. `{ id, product_id, user_name, rating, title, body, verified_purchase, created_at }`.
+- **Write (customer JWT required)**: `POST /api/v3/store/products/:product_id/reviews`
+  with `{ rating (1–5, required), title?, body? }`. Creates a `pending` review; one review per
+  (product, user) — duplicates → 422. `verified_purchase` is computed from the customer's completed
+  orders. Unauthenticated → 401.
+- Moderation: admin `PallasTrade::Admin::ReviewsController` approves/rejects/deletes; only
+  `approved` reviews are public and counted in `Product#average_rating` / `#review_count`
+  (exposed on `ProductSerializer`). Product serializer also adds `average_rating`/`review_count`.
+- Model: `PallasTrade::Review` (`SingleStoreResource`, `has_prefix_id :rev`, unique
+  `[product_id, user_id]`).
+
 ### Blog posts — CMS (Store + Admin API)
 
 - **Store API (read-only, published only)**:
