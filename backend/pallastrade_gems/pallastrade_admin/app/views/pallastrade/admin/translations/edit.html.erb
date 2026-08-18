@@ -6,8 +6,10 @@
         <ul class="nav nav-pills mb-3">
           <% @locales.each do |locale| %>
             <% normalized = normalized_locale(locale) %>
+            <%# bug 2026-08-18：旧逻辑直接 t('i18n.this_file_language', locale:) 仅 en 有该 key，
+                I18n fallback 开启后所有 tab 都回退成 "English (US)"。改用 Locale#label（代码+本地化名）。 %>
             <%= nav_item(
-                 PallasTrade.t('i18n.this_file_language', locale: locale),
+                 PallasTrade::Locale.new(code: locale).label,
                  PallasTrade.edit_admin_translation_path(@object, resource_type: model_class.to_s, translation_locale: locale),
                  active: (normalized == @selected_translation_locale)
       

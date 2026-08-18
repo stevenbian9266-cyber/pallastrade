@@ -1,0 +1,36 @@
+# App-level native language names for `pallastrade.i18n.this_file_language`,
+# mirroring the core key in pallastrade_core/config/locales/en.yml
+# (`pallastrade.i18n.this_file_language: English (US)`).
+#
+# The admin translations drawer tabs (PallasTrade::Locale#name/#label) resolve
+# each tab's display name from these. Without them, non-English locales fall
+# back to the default locale when `config.i18n.fallbacks = true` — every tab
+# rendered identically as "English (US)" (bug 2026-08-18).
+ar:
+  pallastrade:
+    i18n:
+      this_file_language: العربية
+de:
+  pallastrade:
+    i18n:
+      this_file_language: Deutsch
+es:
+  pallastrade:
+    i18n:
+      this_file_language: Español
+fr:
+  pallastrade:
+    i18n:
+      this_file_language: Français
+it:
+  pallastrade:
+    i18n:
+      this_file_language: Italiano
+pt:
+  pallastrade:
+    i18n:
+      this_file_language: Português
+zh-CN:
+  pallastrade:
+    i18n:
+      this_file_language: 简体中文
