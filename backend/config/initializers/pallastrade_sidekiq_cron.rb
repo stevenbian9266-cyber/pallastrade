@@ -4,6 +4,10 @@
 # with sidekiq-cron inside the Sidekiq server process. Schedule lives in
 # config/sidekiq_schedule.rb.
 if defined?(Sidekiq::Cron::Job) && Sidekiq.server?
+  # config/sidekiq_schedule.rb lives outside config/initializers/, so it is
+  # NOT auto-loaded by Rails — require it explicitly to define the schedule.
+  require Rails.root.join('config/sidekiq_schedule')
+
   Rails.application.config.after_initialize do
     begin
       PALLAS_CART_SCHEDULE.each do |entry|
