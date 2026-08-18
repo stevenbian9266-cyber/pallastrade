@@ -38,7 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
-| verifying | PRD-20260818-other-p1-1-社交登录-google-facebook | other | 2026-08-18 | REQ-20260818-p1-1-social-login |
+| done | PRD-20260818-other-p1-1-社交登录-google-facebook | other | 2026-08-18 | REQ-20260818-p1-1-social-login |
 | draft | PRD-20260818-catalog-p0-4-产品评论 | catalog | 2026-08-18 | （实施时回填） |
 | draft | PRD-20260818-other-p0-3-邮件自动化-弃单恢复 | other | 2026-08-18 | （实施时回填） |
 | approved | PRD-20260817-other-移除根-package-json-无用的-glob-弃用依赖 | other | 2026-08-17 | （实施时回填） |
