@@ -4,9 +4,11 @@ import type { Cart as CartType } from './generated'
 // Re-export all generated types (unprefixed: Product, Order, etc.)
 export type {
   Address,
+  BackInStockSubscription,
   Base,
   Cart,
   Category,
+  ContactMessage,
   Country,
   CreditCard,
   Currency,

@@ -47,7 +47,7 @@ module PallasTrade
     # @param data [Hash<String, Hash>] resource => { scope:, scope_value:, custom_condition: }（数据权限）
     def rebuild_role_permissions(menu: nil, function: nil, data: nil)
       role_permissions.transaction do
-        role_permissions.where(permission_type: %w[menu function data]).delete_all
+        role_permissions.where(permission_type: %w[menu function data]).destroy_all
 
         Array(menu).uniq.compact.each do |nav_key|
           role_permissions.create!(permission_type: 'menu', nav_key: nav_key.to_s, allowed: true)
