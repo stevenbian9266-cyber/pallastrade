@@ -433,6 +433,15 @@
     "lastNamePlaceholder": "Dupont",
     "emailPlaceholder": "vous@exemple.com"
   },
+  "socialLogin": {
+    "orContinueWith": "ou continuer avec",
+    "continueWithGoogle": "Continuer avec Google",
+    "continueWithFacebook": "Continuer avec Facebook",
+    "loginFailed": "Impossible de se connecter avec ce fournisseur. Veuillez réessayer.",
+    "googleFailed": "La connexion Google a échoué. Veuillez réessayer.",
+    "facebookFailed": "La connexion Facebook a échoué. Veuillez réessayer.",
+    "facebookCancelled": "La connexion Facebook a été annulée."
+  },
   "orders": {
     "orderHistory": "Historique des commandes",
     "noOrders": "Aucune commande",

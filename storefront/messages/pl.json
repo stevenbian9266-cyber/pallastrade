@@ -435,6 +435,15 @@
     "lastNamePlaceholder": "Kowalski",
     "emailPlaceholder": "ty@przyklad.pl"
   },
+  "socialLogin": {
+    "orContinueWith": "lub kontynuuj przez",
+    "continueWithGoogle": "Kontynuuj z Google",
+    "continueWithFacebook": "Kontynuuj z Facebook",
+    "loginFailed": "Nie udało się zalogować przez tego dostawcę. Spróbuj ponownie.",
+    "googleFailed": "Logowanie przez Google nie powiodło się. Spróbuj ponownie.",
+    "facebookFailed": "Logowanie przez Facebook nie powiodło się. Spróbuj ponownie.",
+    "facebookCancelled": "Logowanie przez Facebook zostało anulowane."
+  },
   "orders": {
     "orderHistory": "Historia zamówień",
     "noOrders": "Brak zamówień",

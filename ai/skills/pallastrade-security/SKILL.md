@@ -279,6 +279,20 @@ Still layer defense in depth on top:
 
 Tune the numbers to your traffic shape — the defaults cap a leaked publishable key at 300 req/min, but a scraper rotating IPs without a key still warrants the CDN layer.
 
+### Social login (Google / Facebook, P1-1)
+
+Social sign-in is a third-party identity flow — the rules are **never trust a raw front-end token** and **verify server-side**. PallasTrade's strategies do this via `PallasTrade::Authentication::OAuthTokenValidator`:
+
+- **Google** (`google` provider): backend calls `https://oauth2.googleapis.com/tokeninfo?id_token=...`, then enforces `aud == GOOGLE_CLIENT_ID` (token minted for THIS app) and `exp` (not expired). Only `email_verified == true` identities are bound by email.
+- **Facebook** (`facebook` provider): backend builds an **app token** (`APP_ID|APP_SECRET`) to call Graph `debug_token`, enforces `data.is_valid`, `data.app_id == FACEBOOK_APP_ID`, `data.type == USER`, then fetches `/me?fields=id,name,email`.
+
+Credential hygiene:
+- `GOOGLE_CLIENT_ID` and `FACEBOOK_APP_ID` are **public** (like publishable keys) — safe for `NEXT_PUBLIC_` on the storefront.
+- `FACEBOOK_APP_SECRET` is a **secret**: backend ENV only, never `NEXT_PUBLIC_`, never committed. Rotate it in the Facebook dashboard if it leaks.
+- OAuth-created users get a random password (`SecureRandom.hex(32)`) via `UserIdentity.create_user_from_oauth` — they cannot log in with a social-password.
+- Email binding only happens when the provider returned a **verified** email, so an attacker can't hijack an account by registering the victim's email at a provider.
+- Auth rate limits still apply (`rate_limit_login` 5/60s per IP) — social login is not a bypass.
+
 ### Dependency hygiene
 
 ```bash

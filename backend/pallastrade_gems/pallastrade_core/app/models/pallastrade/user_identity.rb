@@ -36,15 +36,40 @@ module PallasTrade
         )
         identity.user
       else
-        # Create new user and identity
-        create_user_from_oauth(
-          provider: provider,
-          uid: uid,
-          info: info,
-          tokens: tokens,
-          user_class: user_class
-        )
+        # Bind to an existing user with the same (verified) email before creating
+        # a brand-new account — this lets a customer who registered by email sign
+        # in with the same email via a social provider without creating a duplicate.
+        existing = find_user_by_email(info[:email], user_class)
+        if existing
+          existing.identities.create!(
+            provider: provider,
+            uid: uid,
+            info: info,
+            access_token: tokens[:access_token],
+            refresh_token: tokens[:refresh_token],
+            expires_at: tokens[:expires_at]
+          )
+          existing
+        else
+          # Create new user and identity
+          create_user_from_oauth(
+            provider: provider,
+            uid: uid,
+            info: info,
+            tokens: tokens,
+            user_class: user_class
+          )
+        end
       end
+    end
+
+    # Find a user by email. Returns nil when no email was provided (providers
+    # without email access fall back to temp-email + new account).
+    def self.find_user_by_email(email, user_class = nil)
+      return nil if email.blank?
+
+      user_class ||= PallasTrade.user_class
+      user_class.find_by(email: email)
     end
 
     def self.create_user_from_oauth(provider:, uid:, info:, tokens: {}, user_class: nil)

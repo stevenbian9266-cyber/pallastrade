@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 import { useAuth } from "@/contexts/AuthContext";
 import { extractBasePath } from "@/lib/utils/path";
 
@@ -34,7 +35,13 @@ export default function AccountPage() {
   const searchParams = useSearchParams();
   const basePath = extractBasePath(pathname);
   const t = useTranslations("account");
-  const { login, isAuthenticated, loading: authLoading } = useAuth();
+  const ts = useTranslations("socialLogin");
+  const {
+    login,
+    loginWithProvider,
+    isAuthenticated,
+    loading: authLoading,
+  } = useAuth();
 
   // Get redirect URL from query params (e.g., from checkout)
   const redirectUrl = searchParams.get("redirect");
@@ -162,6 +169,30 @@ export default function AccountPage() {
                 </Button>
               </div>
             </form>
+
+            <div className="mt-6">
+              <SocialLoginButtons
+                onSuccess={async (credentials) => {
+                  setLoading(true);
+                  setError(null);
+                  const result = await loginWithProvider(
+                    credentials.provider,
+                    credentials.token,
+                  );
+                  if (result.success) {
+                    if (redirectUrl) {
+                      router.push(redirectUrl);
+                    }
+                  } else {
+                    setError(result.error || ts("loginFailed"));
+                  }
+                  setLoading(false);
+                }}
+                onError={(message) => {
+                  setError(message);
+                }}
+              />
+            </div>
           </CardContent>
 
           <CardFooter className="justify-center">

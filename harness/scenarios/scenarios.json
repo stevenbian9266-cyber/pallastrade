@@ -631,6 +631,27 @@
         "Push while doc-impact reports docs-required or nav:validate fails"
       ],
       "scoring": { "storeList": 15, "storeCreate": 20, "storeSwitch": 25, "storeAuthz": 20, "singleStoreCompat": 10, "regressionSpec": 10 }
+    },
+    {
+      "id": "GS-037",
+      "name": "Social login (Google / Facebook): strategy + token verification + storefront buttons",
+      "description": "Social sign-in must verify third-party tokens SERVER-SIDE (never trust a raw front-end token) and reuse the existing PallasTrade auth framework: a strategy class per provider registered in PallasTrade.store_authentication_strategies (BaseStrategy subclass with #authenticate + #provider), dispatching via POST /api/v3/store/auth/login { provider, ... }. GoogleStrategy verifies the ID token via Google tokeninfo enforcing aud == GOOGLE_CLIENT_ID + expiry; FacebookStrategy verifies via Graph debug_token (app token APP_ID|APP_SECRET) enforcing data.is_valid / app_id / type==USER then /me. Both create/bind customers through PallasTrade::UserIdentity.find_or_create_from_oauth (existing identity -> refresh tokens; same verified email -> bind; else create user with random password). HTTP verification lives in PallasTrade::Authentication::OAuthTokenValidator (Net::HTTP, injectable for specs). Storefront SocialLoginButtons (components/auth/SocialLoginButtons.tsx) renders per-provider buttons only when the PUBLIC NEXT_PUBLIC_GOOGLE_CLIENT_ID / NEXT_PUBLIC_FACEBOOK_APP_ID are set, loads provider SDKs via next/script afterInteractive, and hands { provider, token } to loginWithProvider -> auth.login. Secrets (FACEBOOK_APP_SECRET) stay backend-only; missing config degrades to 'X sign-in is not configured' (401) and hidden buttons.",
+      "mustDo": [
+        "Implement one BaseStrategy subclass per provider (google/facebook) and register them in store_authentication_strategies (NOT admin)",
+        "Verify tokens server-side (Google: aud + expiry; Facebook: debug_token app_id + type) before creating/binding any user",
+        "Route user creation/binding through PallasTrade::UserIdentity.find_or_create_from_oauth (bind same verified email, no duplicate)",
+        "Reuse OAuthTokenValidator with injectable HTTP for specs; keep FACEBOOK_APP_SECRET backend-only",
+        "Gate storefront buttons behind NEXT_PUBLIC_GOOGLE_CLIENT_ID / NEXT_PUBLIC_FACEBOOK_APP_ID, loading SDKs lazily (afterInteractive)",
+        "Add strategy specs + storefront component tests; update store.yaml + api-v3/security/storefront/sdk/data-model skills"
+      ],
+      "mustNotDo": [
+        "Trust a raw front-end token without server-side verification",
+        "Put FACEBOOK_APP_SECRET (or any OAuth secret) in NEXT_PUBLIC_ or front-end code",
+        "Create a duplicate account when a verified-email user already exists (must bind)",
+        "Expose social login on the Admin API this iteration (email only)",
+        "Hardcode brand-icon colors as theme colors / break AP-006 intent (provider brand colors are exempt by design)"
+      ],
+      "scoring": { "serverVerify": 25, "strategyPattern": 20, "emailBind": 20, "configGating": 15, "secretHygiene": 10, "testAndDocs": 10 }
     }
   ]
 }

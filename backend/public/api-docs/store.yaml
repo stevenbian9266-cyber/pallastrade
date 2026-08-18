@@ -156,6 +156,44 @@ paths:
                 required:
                 - provider
                 additionalProperties: true
+              - title: GoogleLogin
+                description: |
+                  Sign in with Google. The storefront obtains an ID token via the
+                  Google Identity Services JS SDK and sends it here; the backend
+                  verifies it server-side (audience + expiry) before creating or
+                  binding a customer account. Requires `GOOGLE_CLIENT_ID` to be
+                  configured on the backend.
+                type: object
+                properties:
+                  provider:
+                    type: string
+                    const: google
+                  id_token:
+                    type: string
+                    description: Google ID token (JWT) from Google Identity Services.
+                    example: eyJhbGciOiJSUzI1NiIs...
+                required:
+                - provider
+                - id_token
+              - title: FacebookLogin
+                description: |
+                  Sign in with Facebook. The storefront obtains a user access token
+                  via the Facebook JS SDK and sends it here; the backend verifies it
+                  server-side (debug_token + app_id) before creating or binding a
+                  customer account. Requires `FACEBOOK_APP_ID` and
+                  `FACEBOOK_APP_SECRET` to be configured on the backend.
+                type: object
+                properties:
+                  provider:
+                    type: string
+                    const: facebook
+                  access_token:
+                    type: string
+                    description: Facebook user access token from the Facebook JS SDK.
+                    example: EAAJx...
+                required:
+                - provider
+                - access_token
   "/api/v3/store/auth/refresh":
     post:
       summary: Refresh token

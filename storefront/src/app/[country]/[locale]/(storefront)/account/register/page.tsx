@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
+import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 import { PolicyConsent } from "@/components/policy/PolicyConsent";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,13 @@ export default function RegisterPage() {
   const basePath = extractBasePath(pathname);
   const t = useTranslations("register");
   const ta = useTranslations("account");
-  const { register, isAuthenticated, loading: authLoading } = useAuth();
+  const ts = useTranslations("socialLogin");
+  const {
+    register,
+    loginWithProvider,
+    isAuthenticated,
+    loading: authLoading,
+  } = useAuth();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -276,6 +283,28 @@ export default function RegisterPage() {
               </Button>
             </div>
           </form>
+
+          <div className="mt-6">
+            <SocialLoginButtons
+              onSuccess={async (credentials) => {
+                setSubmitting(true);
+                setError(null);
+                const result = await loginWithProvider(
+                  credentials.provider,
+                  credentials.token,
+                );
+                if (result.success) {
+                  router.push(`${basePath}/account`);
+                } else {
+                  setError(result.error || ts("loginFailed"));
+                }
+                setSubmitting(false);
+              }}
+              onError={(message) => {
+                setError(message);
+              }}
+            />
+          </div>
         </CardContent>
 
         <CardFooter className="justify-center">

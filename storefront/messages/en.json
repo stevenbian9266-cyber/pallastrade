@@ -435,6 +435,15 @@
     "lastNamePlaceholder": "Doe",
     "emailPlaceholder": "you@example.com"
   },
+  "socialLogin": {
+    "orContinueWith": "or continue with",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithFacebook": "Continue with Facebook",
+    "loginFailed": "Unable to sign in with this provider. Please try again.",
+    "googleFailed": "Google sign-in failed. Please try again.",
+    "facebookFailed": "Facebook sign-in failed. Please try again.",
+    "facebookCancelled": "Facebook sign-in was cancelled."
+  },
   "orders": {
     "orderHistory": "Order History",
     "noOrders": "No orders yet",

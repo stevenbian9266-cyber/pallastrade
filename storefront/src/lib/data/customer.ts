@@ -142,6 +142,44 @@ export async function login(
 }
 
 /**
+ * Login with a social provider (Google / Facebook).
+ *
+ * The storefront obtains an OAuth credential from the provider JS SDK and
+ * forwards it to the Store API auth endpoint, which verifies it server-side and
+ * creates/binds a customer account. Falls through the same session finalization
+ * as email login (token storage, guest-cart association, cache invalidation).
+ */
+export async function loginWithProvider(
+  provider: "google" | "facebook",
+  token: string,
+): Promise<{
+  success: boolean;
+  user?: {
+    id: string;
+    email: string;
+    first_name?: string | null;
+    last_name?: string | null;
+  };
+  error?: string;
+}> {
+  try {
+    const result = await getClient().auth.login({
+      provider,
+      ...(provider === "google"
+        ? { id_token: token }
+        : { access_token: token }),
+    });
+    await finalizeAuth(result.token, result.refresh_token);
+    return { success: true, user: result.user };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Social login failed",
+    };
+  }
+}
+
+/**
  * Register a new customer account.
  * Automatically associates any guest cart with the new account.
  */

@@ -435,6 +435,15 @@
     "lastNamePlaceholder": "Mustermann",
     "emailPlaceholder": "sie@beispiel.de"
   },
+  "socialLogin": {
+    "orContinueWith": "oder weiter mit",
+    "continueWithGoogle": "Mit Google fortfahren",
+    "continueWithFacebook": "Mit Facebook fortfahren",
+    "loginFailed": "Anmeldung mit diesem Anbieter fehlgeschlagen. Bitte erneut versuchen.",
+    "googleFailed": "Google-Anmeldung fehlgeschlagen. Bitte erneut versuchen.",
+    "facebookFailed": "Facebook-Anmeldung fehlgeschlagen. Bitte erneut versuchen.",
+    "facebookCancelled": "Facebook-Anmeldung wurde abgebrochen."
+  },
   "orders": {
     "orderHistory": "Bestellverlauf",
     "noOrders": "Noch keine Bestellungen",

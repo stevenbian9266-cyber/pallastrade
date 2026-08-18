@@ -20,6 +20,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/data/customer", () => ({
   syncSession: vi.fn(),
   login: vi.fn(),
+  loginWithProvider: vi.fn(),
   logout: vi.fn(),
   register: vi.fn(),
 }));
@@ -98,5 +99,28 @@ describe("AuthContext session sync", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.isAuthenticated).toBe(false);
     expect(result.current.user).toBeNull();
+  });
+
+  // PRD-20260818-other-p1-1-社交登录-google-facebook AC-005
+  it("exposes loginWithProvider and updates the user on success", async () => {
+    const { loginWithProvider } = await import("@/lib/data/customer");
+    const mockLoginWithProvider = vi.mocked(loginWithProvider);
+    mockLoginWithProvider.mockResolvedValue({
+      success: true,
+      user: mockCustomer,
+    });
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let outcome: { success: boolean } | undefined;
+    await act(async () => {
+      outcome = await result.current.loginWithProvider("google", "token");
+    });
+
+    expect(mockLoginWithProvider).toHaveBeenCalledWith("google", "token");
+    expect(outcome?.success).toBe(true);
+    expect(result.current.isAuthenticated).toBe(true);
+    expect(result.current.user?.email).toBe("test@example.com");
   });
 });

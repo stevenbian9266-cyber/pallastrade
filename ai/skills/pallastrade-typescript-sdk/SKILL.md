@@ -81,6 +81,26 @@ const orders = await client.customer.orders.list({}, { token })
 
 The login response's `token` field is the customer JWT. Store and pass per-request — server-rendered apps can stash it in a session cookie; client-side apps store it in memory and refresh via `client.auth.refresh({ refresh_token })`.
 
+### Social login (Google / Facebook, P1-1)
+
+`client.auth.login` accepts `LoginCredentials = EmailPasswordLogin | ProviderLogin`.
+For social providers, send the `provider` key plus the provider-specific credential
+(the storefront obtains these from the provider JS SDK, never hardcoded):
+
+```ts
+// Google: ID token from Google Identity Services
+await client.auth.login({ provider: 'google', id_token: '...' })
+
+// Facebook: user access token from the Facebook JS SDK
+await client.auth.login({ provider: 'facebook', access_token: '...' })
+```
+
+The response shape is identical to email login (`{ token, refresh_token, user }`).
+Provider availability is driven by backend ENV (`GOOGLE_CLIENT_ID`,
+`FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET`); unknown providers → `400 invalid_provider`,
+missing config → `401 authentication_failed`. See the `pallastrade-api-v3` skill's
+Social login section for the server-side verification contract.
+
 ### Setting defaults dynamically
 
 ```ts

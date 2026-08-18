@@ -129,6 +129,22 @@ StoreCredit (many)
 
 Use `PallasTrade.user_class` and `PallasTrade.admin_user_class` to reference user models — never `PallasTrade::User` directly. Apps can swap in their own user model via configuration.
 
+### UserIdentity — social login (P1-1)
+
+`PallasTrade::UserIdentity` links a user to a third-party identity (`provider` + `uid`),
+polymorphic on `user`. Store and Admin users each have `has_many :identities`.
+
+- `UserIdentity.find_or_create_from_oauth(provider:, uid:, info:, tokens:)` is the
+  single entry point used by the Google/Facebook auth strategies. Behavior:
+  - identity exists → refresh stored tokens, return its user;
+  - identity missing but a user with the same **verified** `info[:email]` exists →
+    attach a new identity to that user (no duplicate account);
+  - otherwise → create user (random password) + identity via `create_user_from_oauth`.
+- `provider` is validated against the keys in `store_authentication_strategies` +
+  `admin_authentication_strategies`; `uid` is unique per `(provider, user_type)`.
+- `info` is a JSON column (name/avatar, etc.); `access_token` / `refresh_token` are
+  encrypted OAuth tokens; `expired?` checks `expires_at`.
+
 ## Adjustments (polymorphic)
 
 ```

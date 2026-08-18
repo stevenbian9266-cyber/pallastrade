@@ -13,6 +13,7 @@ import {
 } from "react";
 import {
   login as loginAction,
+  loginWithProvider as loginWithProviderAction,
   logout as logoutAction,
   register as registerAction,
   syncSession,
@@ -31,6 +32,10 @@ interface AuthContextType {
   login: (
     email: string,
     password: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  loginWithProvider: (
+    provider: "google" | "facebook",
+    token: string,
   ) => Promise<{ success: boolean; error?: string }>;
   register: (params: {
     email: string;
@@ -129,6 +134,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [router],
   );
 
+  // Social login (Google / Facebook)
+  const loginWithProvider = useCallback(
+    async (provider: "google" | "facebook", token: string) => {
+      const result = await loginWithProviderAction(provider, token);
+      if (result.success && result.user) {
+        setUser(toUser(result.user));
+        router.refresh();
+      }
+      return result;
+    },
+    [router],
+  );
+
   // Register
   const register = useCallback(
     async (params: {
@@ -161,12 +179,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       loading,
       login,
+      loginWithProvider,
       register,
       logout,
       refreshUser,
       isAuthenticated: !!user,
     }),
-    [user, loading, login, register, logout, refreshUser],
+    [user, loading, login, loginWithProvider, register, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

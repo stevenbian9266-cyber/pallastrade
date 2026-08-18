@@ -385,7 +385,9 @@ module PallasTrade
 
         # Pre-load authentication strategy classes to avoid reflection at request time
         Rails.application.config.pallastrade.store_authentication_strategies = PallasTrade::Authentication::StrategyRegistry.new(
-          email: PallasTrade::Authentication::Strategies::EmailPasswordStrategy
+          email: PallasTrade::Authentication::Strategies::EmailPasswordStrategy,
+          google: PallasTrade::Authentication::Strategies::GoogleStrategy,
+          facebook: PallasTrade::Authentication::Strategies::FacebookStrategy
         )
         Rails.application.config.pallastrade.admin_authentication_strategies = PallasTrade::Authentication::StrategyRegistry.new(
           email: PallasTrade::Authentication::Strategies::EmailPasswordStrategy

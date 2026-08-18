@@ -433,6 +433,15 @@
     "lastNamePlaceholder": "Garcia",
     "emailPlaceholder": "tu@ejemplo.com"
   },
+  "socialLogin": {
+    "orContinueWith": "o continúa con",
+    "continueWithGoogle": "Continuar con Google",
+    "continueWithFacebook": "Continuar con Facebook",
+    "loginFailed": "No se pudo iniciar sesión con este proveedor. Inténtalo de nuevo.",
+    "googleFailed": "El inicio de sesión con Google falló. Inténtalo de nuevo.",
+    "facebookFailed": "El inicio de sesión con Facebook falló. Inténtalo de nuevo.",
+    "facebookCancelled": "Se canceló el inicio de sesión con Facebook."
+  },
   "orders": {
     "orderHistory": "Historial de pedidos",
     "noOrders": "Aun no hay pedidos",

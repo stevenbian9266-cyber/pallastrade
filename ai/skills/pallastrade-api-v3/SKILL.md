@@ -284,6 +284,29 @@ Hit limits → `429 Too Many Requests` with `Retry-After` header. The `@pallastr
 
 Tune via `PallasTrade::Api::Config[:rate_limit_per_key]` etc. in `config/initializers/pallastrade.rb`. For tougher global throttling (per-IP at the proxy edge), layer Rack::Attack or your CDN's WAF on top.
 
+## Social login (Google / Facebook, P1-1)
+
+`POST /api/v3/store/auth/login` dispatches on the `provider` field to a strategy
+registered in `PallasTrade.store_authentication_strategies`. Built-in providers:
+
+| provider | Payload | Verification |
+|---|---|---|
+| `google` | `{ provider: 'google', id_token }` | Backend calls Google `tokeninfo`, enforces `aud == GOOGLE_CLIENT_ID` + expiry |
+| `facebook` | `{ provider: 'facebook', access_token }` | Backend calls Graph API `debug_token` (enforces `app_id` + `type == USER`) then `/me` |
+
+Both strategies (`PallasTrade::Authentication::Strategies::GoogleStrategy` /
+`FacebookStrategy`) verify the token **server-side** via
+`PallasTrade::Authentication::OAuthTokenValidator` (Net::HTTP, no extra gem),
+then create/bind a customer through `PallasTrade::UserIdentity.find_or_create_from_oauth`.
+Email binding: if a customer with the same (verified) email already exists, the
+identity is attached to it instead of creating a duplicate.
+
+**Config (ENV):** `GOOGLE_CLIENT_ID` (public), `FACEBOOK_APP_ID` (public),
+`FACEBOOK_APP_SECRET` (secret, backend-only). When a provider's credentials are
+missing, its strategy returns `401 authentication_failed` with
+"`X sign-in is not configured`" and the storefront hides the button. Admin API
+does NOT register social providers (email only).
+
 ## Turnstile human verification (customer registration)
 
 `POST /api/v3/store/customers` (and newsletter subscribe) gates registration on a

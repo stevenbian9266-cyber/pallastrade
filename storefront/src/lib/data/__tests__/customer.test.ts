@@ -65,6 +65,7 @@ vi.mock("next/cache", () => ({
 import {
   getCustomer,
   login,
+  loginWithProvider,
   logout,
   register,
   syncSession,
@@ -267,6 +268,53 @@ describe("customer server actions", () => {
         password: "password123",
       });
       expect(result).toEqual({ success: true, user: mockUser });
+    });
+  });
+
+  // PRD-20260818-other-p1-1-社交登录-google-facebook AC-005
+  describe("loginWithProvider", () => {
+    it("logs in with a Google ID token", async () => {
+      mockClient.auth.login.mockResolvedValue({
+        token: "jwt",
+        refresh_token: "rt",
+        user: mockUser,
+      });
+
+      const result = await loginWithProvider("google", "google-id-token");
+
+      expect(mockClient.auth.login).toHaveBeenCalledWith({
+        provider: "google",
+        id_token: "google-id-token",
+      });
+      expect(result).toEqual({ success: true, user: mockUser });
+    });
+
+    it("logs in with a Facebook access token", async () => {
+      mockClient.auth.login.mockResolvedValue({
+        token: "jwt",
+        refresh_token: "rt",
+        user: mockUser,
+      });
+
+      const result = await loginWithProvider(
+        "facebook",
+        "fb-access-token",
+      );
+
+      expect(mockClient.auth.login).toHaveBeenCalledWith({
+        provider: "facebook",
+        access_token: "fb-access-token",
+      });
+      expect(result).toEqual({ success: true, user: mockUser });
+    });
+
+    it("returns an error when the provider login fails", async () => {
+      mockClient.auth.login.mockRejectedValue(new Error("Invalid credential"));
+
+      const result = await loginWithProvider("google", "bad-token");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Invalid credential");
     });
   });
 
