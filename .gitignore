@@ -25,3 +25,6 @@ Thumbs.db
 # Local-only Claude Code settings (machine-specific, never commit)
 .claude/settings.local.json
 **/settings.local.json
+
+# Temporary debug/utility scripts (local-only, never commit)
+/tmp-toy/

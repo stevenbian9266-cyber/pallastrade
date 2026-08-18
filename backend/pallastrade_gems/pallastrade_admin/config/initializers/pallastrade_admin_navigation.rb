@@ -562,7 +562,7 @@ Rails.application.config.after_initialize do
   sidebar_nav.add :abandoned_cart_notifications,
           label: 'admin.abandoned_cart_notifications.title',
           url: :admin_abandoned_cart_notifications_path,
-          icon: 'cart-arrow-down',
+          icon: 'shopping-cart-down',
           position: 171,
           active: -> { controller_name == 'abandoned_cart_notifications' },
           if: -> { can?(:manage, PallasTrade::AbandonedCartNotification) }

@@ -17,6 +17,8 @@ import "mapkick/bundle"
 import 'pallastrade/admin/helpers/tinymce'
 import 'pallastrade/admin/helpers/trix/video_embed'
 import 'pallastrade/admin/helpers/turbo_confirm'
+import { initSidebarScrollRestore } from 'pallastrade/admin/helpers/sidebar_scroll'
+initSidebarScrollRestore()
 
 // Stimulus controllers
 import { Application } from "@hotwired/stimulus"
