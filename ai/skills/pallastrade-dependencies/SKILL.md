@@ -55,7 +55,7 @@ Every `run` step must return `success(...)` or `failure(...)` — otherwise `Pal
 
 ### Step 2: register the override
 
-In `config/initializers/pallastrade.rb`. Two syntaxes — both work, the direct form is concise:
+In `backend/config/initializers/pallastrade.rb`. Two syntaxes — both work, the direct form is concise:
 
 ```ruby
 # Direct (recommended)

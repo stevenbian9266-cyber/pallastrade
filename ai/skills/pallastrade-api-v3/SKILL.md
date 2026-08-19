@@ -342,7 +342,7 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
   plus CanCanCan `manage`). Records carry optional business-facing `title`/`description`
   (serializer + `permitted_params` both expose them) so the admin list is readable.
   `active: false` entries are ignored by resolve.
-- Storefront: `storefront/src/lib/pallastrade/middleware.ts` (wired via `src/proxy.ts`) resolves
+- Storefront: `storefront/src/lib/pallastrade/middleware.ts` (wired via `storefront/src/proxy.ts`) resolves
   every storefront pathname with a 60s revalidate cache; on a hit it issues
   `NextResponse.redirect(target, status)`, guarded against A→A loops and degrading open when the
   API is unreachable (Turnstile-style).

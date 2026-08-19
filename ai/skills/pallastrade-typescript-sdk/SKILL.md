@@ -534,7 +534,7 @@ cd packages/sdk && pnpm generate:zod
 cd packages/sdk && pnpm test
 ```
 
-In the monorepo, a Lefthook pre-commit hook runs steps 1–2 automatically whenever `pallastrade/api/app/serializers/**/*.rb` files are committed.
+In the monorepo, a Lefthook pre-commit hook runs steps 1–2 automatically whenever `backend/pallastrade_gems/pallastrade_api/app/serializers/**/*.rb` files are committed.
 
 If you're a SDK consumer (not the maintainer), you don't run this — just `npm update @pallastrade/sdk` to get the latest types.
 
@@ -625,7 +625,7 @@ function useCreateCart() {
 
 ## Where to read further
 
-- **Store SDK source:** `packages/sdk/src/store-client.ts` — every resource and its methods.
+- **Store SDK source:** `platform/packages/sdk/src/store-client.ts` — every resource and its methods.
 - **Admin SDK source status:** the Developer Preview package is described by this Skill, but the former `admin-sdk` package directory is not present under `platform/packages` in the current repository checkout. Do not invent or edit a local source path; verify the released package/current integration branch before proposing source changes.
 - **API protocol details:** see the `pallastrade-api-v3` skill — auth, prefixed IDs, pagination, envelope.
 - **Webhooks delivery side:** see the `pallastrade-events-webhooks` skill — endpoint config, retry logic, payload shape.

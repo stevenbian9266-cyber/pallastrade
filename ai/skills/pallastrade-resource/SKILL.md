@@ -15,7 +15,7 @@ To add a new model that's exposed via the PallasTrade v3 API, use the `pallastra
 - Store + Admin serializers
 - FactoryBot factory
 - Controller specs covering full CRUD
-- Routes (injected into `pallastrade/api/config/routes.rb`)
+- Routes (injected into `backend/pallastrade_gems/pallastrade_api/config/routes.rb`)
 
 Prerequisite: run `pallastrade eject` first — the generator executes inside the Docker container, and only the ejected dev compose bind-mounts `./backend`, so generated files appear (and persist) on your host.
 
@@ -126,7 +126,7 @@ pallastrade generate api_resource Vendor name:string:uniq slug:string:uniq --par
 
 ## Model only — no API surface
 
-If you want a PallasTrade model but no Store/Admin API (internal-only record, supporting model, lookup table), use the **`pallastrade:model` generator** directly. It produces the model file + migration with all the PallasTrade conventions baked in — no controllers, serializers, or routes. Unlike `pallastrade:api_resource` (which strips Rails' test-framework hooks), `pallastrade:model` keeps them — and dev/starter apps typically configure rspec + factory_bot as generator hooks (e.g. via a `config/initializers/pallastrade_dev_tools.rb` setting `g.test_framework :rspec` + `g.fixture_replacement :factory_bot`), in which case you'll also get a stub model spec and factory, as with any `rails g model`.
+If you want a PallasTrade model but no Store/Admin API (internal-only record, supporting model, lookup table), use the **`pallastrade:model` generator** directly. It produces the model file + migration with all the PallasTrade conventions baked in — no controllers, serializers, or routes. Unlike `pallastrade:api_resource` (which strips Rails' test-framework hooks), `pallastrade:model` keeps them — and dev/starter apps typically configure rspec + factory_bot as generator hooks (e.g. via a `backend/config/initializers/pallastrade_dev_tools.rb` setting `g.test_framework :rspec` + `g.fixture_replacement :factory_bot`), in which case you'll also get a stub model spec and factory, as with any `rails g model`.
 
 ```bash
 pallastrade generate model Brand name:string:uniq active:boolean   # bare names auto-prefix to pallastrade:

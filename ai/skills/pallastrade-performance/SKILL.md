@@ -160,7 +160,7 @@ bundle exec sidekiq -q payment_webhooks,5 -q events,4 -q default,3 -q search,2 -
 
 Why weights matter: payment webhooks must process fast (customer is waiting); image processing can lag. Without weights, image jobs flood and delay payment events.
 
-The full queue list lives in `PallasTrade.queues` in `pallastrade_core/lib/pallastrade/core.rb` of the installed gem. Available: `default`, `events`, `exports`, `images`, `imports`, `products`, `reports`, `variants`, `taxons`, `stock_location_stock_items`, `coupon_codes`, `themes`, `addresses`, `gift_cards`, `webhooks`, `payment_webhooks`, `api_keys`, `search`, `stock_reservations`.
+The full queue list lives in `PallasTrade.queues` in `backend/pallastrade_gems/pallastrade_core/lib/pallastrade/core.rb` of the installed gem. Available: `default`, `events`, `exports`, `images`, `imports`, `products`, `reports`, `variants`, `taxons`, `stock_location_stock_items`, `coupon_codes`, `themes`, `addresses`, `gift_cards`, `webhooks`, `payment_webhooks`, `api_keys`, `search`, `stock_reservations`.
 
 ## Admin product table N+1
 

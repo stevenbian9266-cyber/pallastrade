@@ -97,10 +97,12 @@ cd pallastrade_simple_sales
 
 The scaffold produces:
 
-- `lib/pallastrade_simple_sales/engine.rb` — the Rails engine declaration
-- `lib/generators/pallastrade_simple_sales/install/install_generator.rb` — the convention `<name>:install` generator
-- `app/` — where your models, controllers, services live (same `PallasTrade::` namespacing rules)
-- `db/migrate/` — your migrations (copied into the host app by the install generator)
+| File | Purpose |
+|---|---|
+| `lib/pallastrade_simple_sales/engine.rb` | the Rails engine declaration |
+| `lib/generators/pallastrade_simple_sales/install/install_generator.rb` | the convention `<name>:install` generator |
+| `app/` | your models, controllers, services live here (same `PallasTrade::` namespacing rules) |
+| `db/migrate/` | your migrations (copied into the host app by the install generator) |
 
 The engine declaration registers dependencies, subscribers, and admin UI extensions:
 

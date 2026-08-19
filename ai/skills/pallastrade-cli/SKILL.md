@@ -37,7 +37,7 @@ Credentials resolve in this order (first match wins); host and key always resolv
    PALLASTRADE_API_KEY=sk_xxx pallastrade api get /products            # → localhost:3000
    PALLASTRADE_BASE_URL=https://store.example.com PALLASTRADE_API_KEY=sk_xxx pallastrade api get /orders
    ```
-3. **Inside a local PallasTrade project** (a dir with `docker-compose.yml`, dev stack running): zero config. The first `pallastrade api` call mints a **read-only** key via the dev stack and saves it to `.pallastrade/credentials.json` (gitignored). Just run commands.
+3. **Inside a local PallasTrade project** (a dir with `docker-compose.yml`, dev stack running): zero config. The first `pallastrade api` call mints a **read-only** key via the dev stack and saves it to a gitignored credentials file (a dotfile named credentials.json under .pallastrade/ — created at runtime, not committed, so it does not exist in a fresh checkout). Just run commands.
 4. **Default profile** (the first profile you `pallastrade auth login` becomes the default; key read from a prompt, never a flag):
    ```bash
    pallastrade auth login --profile prod --base-url https://store.example.com

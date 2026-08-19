@@ -66,7 +66,7 @@ The SDK includes:
 > The SDK's fetch has **no built-in timeout** and retries GET network errors (maxRetries=2,
 > exponential backoff). When the API is unreachable (deployment/rebuild window, DNS/network
 > fault), a single request can hang for minutes — Next.js prerender "use cache" cache-fill
-> then times out (`USE_CACHE_TIMEOUT`) and the **build fails**. `lib/pallastrade/config.ts`
+> then times out (`USE_CACHE_TIMEOUT`) and the **build fails**. `storefront/src/lib/pallastrade/config.ts`
 > therefore wraps the SDK client's `fetch` with `createFetchWithTimeout()` (8s
 > `AbortSignal.timeout`), so every API call fails fast and bubbles to the existing
 > `.catch(() => …)` degradation instead of hanging. Keep this timeout when touching
@@ -150,18 +150,18 @@ matching builder in `metadata/` rather than inlining metadata in the page.
 
 Key components:
 
-- `ProductCard` (`components/products/ProductCard.tsx`) — product grid card; consumes the product + media via the SDK and links to the PDP.
+- `ProductCard` (`storefront/src/components/products/ProductCard.tsx`) — product grid card; consumes the product + media via the SDK and links to the PDP.
 - `product-image` (`components/ui/product-image.tsx`) — shared image renderer with srcset/fallback handling. When `src` is missing or fails to load it renders an **accessible placeholder**: a `<div role="img">` with an icon + `aria-label` (NOT a `<img>` element) — tests must assert on that placeholder (e.g. `getAllByRole("img")` → `tagName === "DIV"`), not on the absence of an image role. Pass a multi-size webp `srcSet` (built with `lib/image-srcset.ts` `buildImageSrcSet(media)` from the media record's `small/medium/large/xlarge_url` CDN variants) to get a responsive plain `<img>` — the backend already produced optimized webp variants, so they must NOT be run through the Next.js optimizer again. `ProductCard` and `MediaGallery` feed `srcSet`; leave `srcSet` unset to keep the existing `next/image` path. CI enforces `pnpm check` (Biome lint + format) on every push — new files must pass locally (`pnpm check` / `pnpm check --write`) before committing.
 - `CategoryBanner` (`app/[country]/[locale]/(storefront)/c/[...permalink]/CategoryBanner.tsx`) — category hero banner in the category listing route.
 - `BackInStockNotify` (`components/products/BackInStockNotify.tsx`) — client-side "notify me when back in stock" form. Shown on the PDP (`ProductDetails`) only when the selected variant is out of stock; calls `sdk.backInStockSubscriptions.create(productId, { email })` (Store API, guest-accessible) and shows success/error states with i18n labels (`backInStock*` keys).
-- `ProductReviews` (`components/products/ProductReviews.tsx`, P0-4) — PDP review section: rating summary (stars + count), approved review list (author, verified-purchase badge, date) and a submit form for signed-in customers. The server component page fetches reviews + auth state via `lib/data/reviews.ts` (`getProductReviews` public, `createProductReview` posts with the customer JWT) and passes them into the client `ProductDetails`; the form renders only when `isAuthenticated`. i18n labels live under a top-level `reviews` namespace in `messages/*.json`. Only admin-approved reviews are returned by the Store API, so a fresh submission won't appear until moderation.
+- `ProductReviews` (`storefront/src/components/products/ProductReviews.tsx`, P0-4) — PDP review section: rating summary (stars + count), approved review list (author, verified-purchase badge, date) and a submit form for signed-in customers. The server component page fetches reviews + auth state via `storefront/src/lib/data/reviews.ts` (`getProductReviews` public, `createProductReview` posts with the customer JWT) and passes them into the client `ProductDetails`; the form renders only when `isAuthenticated`. i18n labels live under a top-level `reviews` namespace in `storefront/messages/*.json`. Only admin-approved reviews are returned by the Store API, so a fresh submission won't appear until moderation.
 
 **Client-component import rule (build breaker):** a `"use client"` component MUST NOT import from the `@/lib/pallastrade` barrel (`index.ts`) — the barrel re-exports server-only cookie/`next/headers` helpers, and pulling them into the client bundle fails `next build` with "Ecmascript file had an error" on `import { cookies } from "next/headers"`. Import the specific client-safe module instead, e.g. `getClient` from `@/lib/pallastrade/config`. Server components / route handlers may keep using the barrel.
 
-**Client-component SDK calls go through server actions.** `PALLASTRADE_API_URL` / `PALLASTRADE_PUBLISHABLE_KEY` are **server-only env** (no `NEXT_PUBLIC_` prefix), so `getClient()` throws in the browser. A client component that needs the Store API must call a `"use server"` action in `src/lib/data/` (e.g. `cart.ts`, `backInStock.ts`) that runs `getClient()` server-side; the action returns a `{ success, error }` result (via `actionResult`). Never build an SDK client directly in a client component.
+**Client-component SDK calls go through server actions.** `PALLASTRADE_API_URL` / `PALLASTRADE_PUBLISHABLE_KEY` are **server-only env** (no `NEXT_PUBLIC_` prefix), so `getClient()` throws in the browser. A client component that needs the Store API must call a `"use server"` action in `storefront/src/lib/data/` (e.g. `cart.ts`, `backInStock.ts`) that runs `getClient()` server-side; the action returns a `{ success, error }` result (via `actionResult`). Never build an SDK client directly in a client component.
 - `TawkToWidget` (`components/layout/TawkToWidget.tsx`) — optional Tawk.to live-chat widget, mounted in the root layout `<body>`. Enabled only when BOTH `NEXT_PUBLIC_TAWK_TO_PROPERTY_ID` and `NEXT_PUBLIC_TAWK_TO_WIDGET_ID` are set (public IDs, like publishable keys — safe for `NEXT_PUBLIC_`); loads via `next/script` `afterInteractive` so it never blocks first paint. Renders `null` (no third-party script) when either var is missing.
 - `TurnstileWidget` (`components/auth/TurnstileWidget.tsx`) — optional Cloudflare Turnstile human-verification widget, used on the registration form (`account/register/page.tsx`). Enabled only when `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is set (the site key is PUBLIC — it is not a secret); loads the script from the **exact official URL** `https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit` (explicit rendering — the path MUST include `/v0/`, omitting it returns 404 + `Cross-Origin-Resource-Policy: same-origin` which blocks loading) and reports the `cf-turnstile-response` token through `onTokenChange`. **The component ALWAYS renders a visible wrapper** (border + status area) with loading → ready/error states; if the script fails to load (network/region blocking) it shows an error message + retry button (retry reloads the script with a native `<script>` tag so next/script dedup can't swallow it). Labels are passed via the `labels` prop (i18n lives in the parent). The page must gate submission on the token when the widget is enabled; the backend validates the token server-side via `PallasTrade::Api::Turnstile` (secret key only from `ENV['TURNSTILE_SECRET_KEY']`, never committed).
-- `SocialLoginButtons` (`components/auth/SocialLoginButtons.tsx`, P1-1) — optional Google/Facebook sign-in buttons for the login page (`account/page.tsx`) and registration page (`account/register/page.tsx`). Enabled per-provider only when the PUBLIC env var is set: `NEXT_PUBLIC_GOOGLE_CLIENT_ID` / `NEXT_PUBLIC_FACEBOOK_APP_ID` (like publishable keys — safe for `NEXT_PUBLIC_`); renders `null` (no third-party script) when both are missing. Loads provider SDKs lazily via `next/script` `afterInteractive` (GIS `accounts.google.com/gsi/client` + Facebook `connect.facebook.net`), initializes on click, and reports a normalized `{ provider, token }` through `onSuccess` (Google ID token / Facebook user access token). **The button component never calls the API** — the parent page passes `onSuccess` up to `loginWithProvider(provider, token)` in `AuthContext` (backed by the server action in `src/lib/data/customer.ts`), which calls `auth.login({ provider, ... })` and reuses `finalizeAuth` (token storage + guest-cart association). Brand SVG colors are the providers' official colors and are intentionally exempt from AP-006. i18n keys live in the `socialLogin` namespace (all 5 locales).
+- `SocialLoginButtons` (`components/auth/SocialLoginButtons.tsx`, P1-1) — optional Google/Facebook sign-in buttons for the login page (`account/page.tsx`) and registration page (`account/register/page.tsx`). Enabled per-provider only when the PUBLIC env var is set: `NEXT_PUBLIC_GOOGLE_CLIENT_ID` / `NEXT_PUBLIC_FACEBOOK_APP_ID` (like publishable keys — safe for `NEXT_PUBLIC_`); renders `null` (no third-party script) when both are missing. Loads provider SDKs lazily via `next/script` `afterInteractive` (GIS `accounts.google.com/gsi/client` + Facebook `connect.facebook.net`), initializes on click, and reports a normalized `{ provider, token }` through `onSuccess` (Google ID token / Facebook user access token). **The button component never calls the API** — the parent page passes `onSuccess` up to `loginWithProvider(provider, token)` in `AuthContext` (backed by the server action in `storefront/src/lib/data/customer.ts`), which calls `auth.login({ provider, ... })` and reuses `finalizeAuth` (token storage + guest-cart association). Brand SVG colors are the providers' official colors and are intentionally exempt from AP-006. i18n keys live in the `socialLogin` namespace (all 5 locales).
 
 ### Cookie consent (2026-08, PRD-20260812)
 
@@ -222,13 +222,14 @@ The home page (`app/[country]/(storefront)/page.tsx`) composes 8 sections in `co
 
 ### SEO 301 redirects (2026-08, phase-1)
 
-`src/lib/pallastrade/middleware.ts` (`createPallasTradeMiddleware`, wired via Next.js 16
-`src/proxy.ts`) resolves every storefront pathname against the store's SEO redirects via
+`storefront/src/lib/pallastrade/middleware.ts` (`createPallasTradeMiddleware`, wired via Next.js 16
+`storefront/src/proxy.ts`) resolves every storefront pathname against the store's SEO redirects via
 `GET /api/v3/store/redirects/resolve?path=...` (60s `revalidate` cache, 3s timeout). On a hit it
 issues `NextResponse.redirect(target, status)` (guarded against A→A loops); on API failure it
 **degrades open** (continues normal rendering — Turnstile-style). Redirects are managed in the
 admin (Developers → Redirects) as `PallasTrade::Redirect` records. Static assets, `_next/*`
-and `api/*` are excluded by the proxy matcher. Do NOT add a separate `src/middleware.ts` —
+and `api/*` are excluded by the proxy matcher. Do NOT add a separate middleware file at the
+storefront root (`storefront/src/middleware.ts` is a path that must NOT exist) —
 Next.js 16 errors when both a middleware and a proxy file are present.
 ### Blog posts — CMS (2026-08, PRD-20260816-other-新增cms博客)
 
@@ -236,14 +237,14 @@ Blog is rendered from the PallasTrade CMS `Post` model (published only):
 
 - Routes: `/blog` (list) and `/blog/[slug]` (detail) under
   `app/[country]/[locale]/(storefront)/blog/`.
-- Data layer: `src/lib/data/posts.ts` (`listPosts` / `getPost`) uses `client.posts.list`
+- Data layer: `storefront/src/lib/data/posts.ts` (`listPosts` / `getPost`) uses `client.posts.list`
   / `client.posts.get` from `@pallastrade/sdk`.
-- Components: `src/components/blog/PostCard.tsx` (server component; cover image, title,
+- Components: `storefront/src/components/blog/PostCard.tsx` (server component; cover image, title,
   excerpt, author, publish date).
 - SEO: detail page `generateMetadata` uses `seo_title`/`seo_description` (fall back to
-  title/excerpt) + JSON-LD `Article`; published posts are added to `src/app/sitemap.ts`
+  title/excerpt) + JSON-LD `Article`; published posts are added to `storefront/src/app/sitemap.ts`
   via `client.posts.list` (`Post` type from SDK).
-- Locale messages: `blog` namespace in all 5 `messages/*.json` files.
+- Locale messages: `blog` namespace in all 5 `storefront/messages/*.json` files.
 - Do NOT use inline `style={{}}` — Tailwind classes only (AP-001).
 ### Client-side cart
 

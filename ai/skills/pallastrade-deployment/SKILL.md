@@ -58,7 +58,7 @@ PallasTrade's product images, customer uploads, and admin assets go through Acti
 | Local disk | (none) | Default. Doesn't work on ephemeral filesystems (Heroku, K8s without persistent volumes) — files vanish on dyno restart. |
 | AWS S3 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_BUCKET` | Auto-detected: the `:amazon` service activates when the two access-key vars are set (region/bucket are read via storage.yml with defaults). |
 | Cloudflare R2 | `CLOUDFLARE_ENDPOINT`, `CLOUDFLARE_ACCESS_KEY_ID`, `CLOUDFLARE_SECRET_ACCESS_KEY`, `CLOUDFLARE_BUCKET` | S3-compatible. Cheaper egress; same API. Auto-detected when the two access-key vars **and** `CLOUDFLARE_ENDPOINT` are set. |
-| GCS / Azure | Standard ActiveStorage config | PallasTrade doesn't ship special integration; use ActiveStorage's standard configuration in `config/storage.yml`. |
+| GCS / Azure | Standard ActiveStorage config | PallasTrade doesn't ship special integration; use ActiveStorage's standard configuration in `backend/config/storage.yml`. |
 
 For production, always use an object store — local disk on ephemeral platforms loses files on restart.
 
@@ -93,7 +93,7 @@ Run at least one worker process. For high-traffic stores, run multiple worker pr
 
 ### Queue weights matter
 
-See the `pallastrade-performance` skill for the full discussion. Queue names must match your app's `PallasTrade.queues.*` mapping — out of the box every PallasTrade queue maps to `:default`; pallastrade-starter overrides them to `pallastrade_`-prefixed names in `config/initializers/pallastrade.rb`. Any queue missing from the worker's list never gets processed. This is pallastrade-starter's shipped `config/sidekiq.yml` (the safe baseline — adjust weights, don't drop queues):
+See the `pallastrade-performance` skill for the full discussion. Queue names must match your app's `PallasTrade.queues.*` mapping — out of the box every PallasTrade queue maps to `:default`; pallastrade-starter overrides them to `pallastrade_`-prefixed names in `backend/config/initializers/pallastrade.rb`. Any queue missing from the worker's list never gets processed. This is pallastrade-starter's shipped `config/sidekiq.yml` (the safe baseline — adjust weights, don't drop queues):
 
 ```yaml
 # config/sidekiq.yml
@@ -259,7 +259,7 @@ ActiveStorage::Blob.first.url                       # should return a signed URL
 
 ### "Webhooks aren't firing"
 
-Sidekiq worker isn't running, OR the `pallastrade_events` / `pallastrade_webhooks` queues aren't in the worker's queue list. Confirm with `Sidekiq.redis { |r| [r.lrange('queue:pallastrade_events', 0, -1), r.lrange('queue:pallastrade_webhooks', 0, -1)] }` (queue names come from `PallasTrade.queues.*` in `config/initializers/pallastrade.rb`).
+Sidekiq worker isn't running, OR the `pallastrade_events` / `pallastrade_webhooks` queues aren't in the worker's queue list. Confirm with `Sidekiq.redis { |r| [r.lrange('queue:pallastrade_events', 0, -1), r.lrange('queue:pallastrade_webhooks', 0, -1)] }` (queue names come from `PallasTrade.queues.*` in `backend/config/initializers/pallastrade.rb`).
 
 ### "Search returns nothing after deploy"
 

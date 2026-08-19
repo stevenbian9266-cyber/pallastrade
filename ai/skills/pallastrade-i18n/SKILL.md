@@ -87,7 +87,7 @@ bundle exec i18n-tasks unused             # list unused keys
 bundle exec i18n-tasks health             # all of the above
 ```
 
-The PallasTrade monorepo runs `normalize` on its YAML files; if you're modifying `pallastrade/admin/config/locales/en.yml` (the Rails admin), always normalize after.
+The PallasTrade monorepo runs `normalize` on its YAML files; if you're modifying `backend/pallastrade_gems/pallastrade_admin/config/locales/en.yml` (the Rails admin), always normalize after.
 
 ### Default + fallback
 
@@ -175,7 +175,7 @@ Out of the box (5.x+):
 - `PallasTrade::Store` — name, meta_description, meta_keywords, seo_title, customer_support_email, address, contact_phone
 - `PallasTrade::Policy` — name, body
 
-The 5.4 plan covers translating MetafieldDefinition names + Metafield text values — see `docs/plans/5.4-metafield-translations.md` if you have the monorepo.
+The 5.4 plan covers translating MetafieldDefinition names + Metafield text values — see `platform/docs/plans/5.4-metafield-translations.md` if you have the monorepo.
 
 ### Locale availability
 
@@ -285,11 +285,11 @@ Switchers should read `store.supported_locales_list` (markets' locales + the sto
 
 ### "Translations admin is missing for new content"
 
-The Rails admin already ships a centralized Product Translations page: an overview grid with per-locale coverage stats at `/admin/product_translations`, plus bulk CSV export/import via `PallasTrade::Exports::ProductTranslations` / `PallasTrade::Imports::ProductTranslations`. Per-field editing for other translatable models (`PallasTrade.translatable_resources`: OptionType, OptionValue, Product, Taxon, Taxonomy, Store, Policy) lives on each record's own translations page (`/admin/translations/:resource_type/:id/edit`). The plan in `docs/plans/5.4-centralized-translations-admin.md` is still marked Draft, but its core scope — the product overview grid + CSV bulk operations — has already landed; only extensions beyond products remain open.
+The Rails admin already ships a centralized Product Translations page: an overview grid with per-locale coverage stats at `/admin/product_translations`, plus bulk CSV export/import via `PallasTrade::Exports::ProductTranslations` / `PallasTrade::Imports::ProductTranslations`. Per-field editing for other translatable models (`PallasTrade.translatable_resources`: OptionType, OptionValue, Product, Taxon, Taxonomy, Store, Policy) lives on each record's own translations page (`/admin/translations/:resource_type/:id/edit`). The plan in `platform/docs/plans/5.4-centralized-translations-admin.md` is still marked Draft, but its core scope — the product overview grid + CSV bulk operations — has already landed; only extensions beyond products remain open.
 
 ## Where to read further
 
 - **Mobility gem docs:** https://github.com/shioyama/mobility — backends, fallbacks, dirty tracking.
 - **PallasTrade docs:** `node_modules/@pallastrade/docs/dist/developer/core-concepts/translations.md` (resource + UI translations); `node_modules/@pallastrade/docs/dist/developer/core-concepts/markets.md` for locale/currency configuration per market.
 - **`pallastrade_i18n` gem:** https://github.com/stevenbian9266-cyber/pallastrade — community translations.
-- **Plan files (monorepo):** `docs/plans/5.4-centralized-translations-admin.md`, `docs/plans/5.4-metafield-translations.md`.
+- **Plan files (monorepo):** `platform/docs/plans/5.4-centralized-translations-admin.md`, `platform/docs/plans/5.4-metafield-translations.md`.

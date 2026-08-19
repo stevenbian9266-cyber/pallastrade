@@ -214,7 +214,7 @@ RSpec.describe PallasTrade::Api::V3::Store::BrandsController, type: :controller 
 end
 ```
 
-`json_response` comes from `PallasTrade::TestingSupport::ApiHelpers` (defined in pallastrade_dev_tools' generated `spec/support/pallastrade.rb`), which is only included for `type: :request` specs by default. For API controller specs, extend the include in `spec/support/pallastrade.rb`: `config.include PallasTrade::TestingSupport::ApiHelpers, type: :controller`.
+`json_response` comes from `PallasTrade::TestingSupport::ApiHelpers` (defined in pallastrade_dev_tools' generated `backend/spec/support/pallastrade.rb`), which is only included for `type: :request` specs by default. For API controller specs, extend the include in `backend/spec/support/pallastrade.rb`: `config.include PallasTrade::TestingSupport::ApiHelpers, type: :controller`.
 
 Equivalent shared context for admin: `include_context 'API v3 Admin'` (provisions admin JWT + a secret key). Use it for Admin API controller specs.
 

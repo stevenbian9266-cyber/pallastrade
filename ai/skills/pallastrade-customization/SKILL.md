@@ -16,7 +16,7 @@ This skill is a decision tree. It maps a customization need to the right specifi
 | What you're trying to do | Reach for | Deep-dive skill |
 |---|---|---|
 | Change merchant-facing settings (currencies, languages, tax zones, shipping methods, payment methods) | Admin Settings UI | — |
-| Tweak PallasTrade's runtime behavior globally | `PallasTrade.config` block (`config.<setting> = …`) in `config/initializers/pallastrade.rb`; read anywhere via `PallasTrade::Config[:key]` | (configuration is straightforward — see docs link below) |
+| Tweak PallasTrade's runtime behavior globally | `PallasTrade.config` block (`config.<setting> = …`) in `backend/config/initializers/pallastrade.rb`; read anywhere via `PallasTrade::Config[:key]` | (configuration is straightforward — see docs link below) |
 | React to something happening in PallasTrade (order completed, product updated, customer registered, stock changed) | Events subscriber | **`pallastrade-events-webhooks`** |
 | Notify an external service (ERP, CRM, fulfillment, analytics, Slack) when something happens | Events subscriber OR outbound webhook | **`pallastrade-events-webhooks`** |
 | Replace how a core service computes (cart add, tax calculation, search, checkout flow, ability checks) | Dependency injection via `PallasTrade.dependencies` | **`pallastrade-dependencies`** |
