@@ -135,22 +135,27 @@ export function ProductReviews({
   };
 
   const showSummary = averageRating != null && reviewCount > 0;
+  // Defensive: the API may historically return average_rating as a string
+  // ("5.0") — coerce to number so `.toFixed` never throws.
+  const averageRatingNum = averageRating != null ? Number(averageRating) : null;
 
   return (
     <div className="mt-10 border-t pt-8">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-medium text-gray-900">{t("title")}</h2>
-        {showSummary && (
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-gray-900">
-              {averageRating?.toFixed(1)}
-            </span>
-            <Stars rating={averageRating ?? 0} />
-            <span className="text-sm text-gray-500">
-              ({reviewCount} {t("count")})
-            </span>
-          </div>
-        )}
+        {showSummary &&
+          averageRatingNum != null &&
+          !Number.isNaN(averageRatingNum) && (
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold text-gray-900">
+                {averageRatingNum.toFixed(1)}
+              </span>
+              <Stars rating={averageRatingNum} />
+              <span className="text-sm text-gray-500">
+                ({reviewCount} {t("count")})
+              </span>
+            </div>
+          )}
       </div>
 
       {allReviews.length > 0 ? (

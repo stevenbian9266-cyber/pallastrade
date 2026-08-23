@@ -72,9 +72,10 @@ module PallasTrade
 
         # Review aggregate (P0-4) — only counts approved reviews. `average_rating`
         # is nil when there are no approved reviews yet (so the JSON-LD / UI can
-        # hide the rating block).
+        # hide the rating block). `to_f` keeps it a JSON number (BigDecimal would
+        # otherwise serialize as a string, which breaks `toFixed` on the frontend).
         attribute :average_rating do |product|
-          product.average_rating
+          product.average_rating&.to_f
         end
 
         attribute :review_count do |product|

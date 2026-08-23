@@ -65,6 +65,19 @@ describe("ProductReviews", () => {
     expect(screen.getByText("signInToReview")).toBeTruthy();
   });
 
+  it("does not crash when averageRating arrives as a string (API BigDecimal serialization)", () => {
+    render(
+      <ProductReviews
+        productId="prod_1"
+        reviews={[]}
+        averageRating={"5.0" as unknown as number}
+        reviewCount={1}
+        isAuthenticated={false}
+      />,
+    );
+    expect(screen.getByText("5.0")).toBeTruthy();
+  });
+
   it("shows empty state when there are no reviews", () => {
     render(
       <ProductReviews
