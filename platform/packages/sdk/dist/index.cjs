@@ -18,7 +18,7 @@ function resolveRetryConfig(retry) {
     retryOnNetworkError: retry?.retryOnNetworkError ?? true
   };
 }
-var PASSTHROUGH_KEYS = /* @__PURE__ */ new Set(["page", "limit", "expand", "sort", "fields"]);
+var PASSTHROUGH_KEYS = /* @__PURE__ */ new Set(["page", "limit", "expand", "sort", "fields", "scope"]);
 function transformListParams(params) {
   const result = {};
   for (const [key, value] of Object.entries(params)) {

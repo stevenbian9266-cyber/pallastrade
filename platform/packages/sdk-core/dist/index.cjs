@@ -20,7 +20,7 @@ function resolveRetryConfig(retry) {
 }
 
 // src/params.ts
-var PASSTHROUGH_KEYS = /* @__PURE__ */ new Set(["page", "limit", "expand", "sort", "fields"]);
+var PASSTHROUGH_KEYS = /* @__PURE__ */ new Set(["page", "limit", "expand", "sort", "fields", "scope"]);
 function transformListParams(params) {
   const result = {};
   for (const [key, value] of Object.entries(params)) {
