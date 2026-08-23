@@ -961,6 +961,26 @@
         "testCoverage": 25,
         "noAntiPatterns": 15
       }
+    },
+    {
+      "id": "GS-040",
+      "name": "Numeric API fields must stay JSON numbers (BigDecimal serializer trap)",
+      "description": "Numeric fields (e.g. average_rating, prices, weights) must be serialized as JSON numbers. BigDecimal serializes to a JSON string (\"5.0\") and breaks frontend number methods like toFixed — the backend serializer must use &.to_f and the frontend should defensively coerce with Number().",
+      "mustDo": [
+        "Backend numeric serializer attributes use &.to_f",
+        "Frontend coerces defensive Number() before calling number methods",
+        "Verify actual API JSON type (not just the typelize declaration)"
+      ],
+      "mustNotDo": [
+        "Return BigDecimal directly from serializer attributes",
+        "Call .toFixed() on values that may arrive as strings"
+      ],
+      "scoring": {
+        "correctFiles": 30,
+        "correctPatterns": 30,
+        "testCoverage": 25,
+        "noAntiPatterns": 15
+      }
     }
   ]
 }
