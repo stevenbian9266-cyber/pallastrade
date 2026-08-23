@@ -14,6 +14,8 @@ export interface ReviewView {
   body: string | null;
   verified_purchase: boolean;
   created_at: string | null;
+  /** Freshly submitted review awaiting admin approval — echoed back to the list. */
+  is_pending?: boolean;
 }
 
 interface ProductReviewsProps {
@@ -85,6 +87,11 @@ export function ProductReviews({
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "done">("idle");
+  // Freshly submitted reviews (status=pending) echoed at the top of the list
+  // until an admin approves them and they start returning from the Store API.
+  const [pendingReviews, setPendingReviews] = useState<ReviewView[]>([]);
+
+  const allReviews = [...pendingReviews, ...reviews];
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -104,6 +111,19 @@ export function ProductReviews({
       setRating(0);
       setTitle("");
       setBody("");
+      setPendingReviews((prev) => [
+        {
+          id: result.review.id,
+          user_name: result.review.user_name,
+          rating: result.review.rating,
+          title: result.review.title,
+          body: result.review.body,
+          verified_purchase: result.review.verified_purchase,
+          created_at: result.review.created_at,
+          is_pending: true,
+        },
+        ...prev,
+      ]);
     } else {
       setError(
         result.error === "authentication_required"
@@ -133,9 +153,9 @@ export function ProductReviews({
         )}
       </div>
 
-      {reviews.length > 0 ? (
+      {allReviews.length > 0 ? (
         <ul className="mt-6 space-y-6">
-          {reviews.map((review) => (
+          {allReviews.map((review) => (
             <li key={review.id} className="border-b pb-6 last:border-b-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -146,6 +166,11 @@ export function ProductReviews({
                     <span className="inline-flex items-center gap-1 text-xs text-green-600">
                       <BadgeCheck className="size-3.5" aria-hidden="true" />
                       {t("verifiedPurchase")}
+                    </span>
+                  )}
+                  {review.is_pending && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
+                      {t("pending")}
                     </span>
                   )}
                 </div>

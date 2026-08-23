@@ -75,6 +75,26 @@ module PallasTrade
               )
 
               if @payment_session.errors.empty?
+                # PALLAS-CUSTOM: 合并支付 — complete 成功后立即完成组内全部订单。
+                # 幂等（PaymentGroups::Complete 跳过已支付/已完成订单），
+                # 让前端在 storefront 主动 complete 时立即看到完成，不依赖 webhook 时序。
+                if @payment_session.payment_group.present?
+                  begin
+                    PallasTrade::PaymentGroups::Complete.call(
+                      payment_group: @payment_session.payment_group,
+                      payment_session: @payment_session
+                    )
+                  rescue StandardError => e
+                    Rails.error.report(
+                      e,
+                      context: {
+                        payment_group_id: @payment_session.payment_group.id,
+                        payment_session_id: @payment_session.id
+                      },
+                      source: 'PallasTrade.api.payment_group.complete'
+                    )
+                  end
+                end
                 render json: serialize_resource(@payment_session.reload)
               else
                 render_errors(@payment_session.errors)

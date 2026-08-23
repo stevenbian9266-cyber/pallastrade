@@ -268,7 +268,8 @@
     "success": "Thanks! Your review has been submitted and is awaiting moderation.",
     "submitError": "Something went wrong. Please try again.",
     "signInRequired": "Please sign in to submit a review.",
-    "signInToReview": "Sign in to write a review."
+    "signInToReview": "Sign in to write a review.",
+    "pending": "Pending approval"
   },
   "navigation": {
     "home": "Home",

@@ -268,7 +268,8 @@
     "success": "Merci ! Votre avis a été envoyé et est en attente de modération.",
     "submitError": "Une erreur est survenue. Veuillez réessayer.",
     "signInRequired": "Veuillez vous connecter pour soumettre un avis.",
-    "signInToReview": "Connectez-vous pour rédiger un avis."
+    "signInToReview": "Connectez-vous pour rédiger un avis.",
+    "pending": "En attente"
   },
   "navigation": {
     "home": "Accueil",

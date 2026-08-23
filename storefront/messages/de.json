@@ -268,7 +268,8 @@
     "success": "Danke! Ihre Bewertung wurde eingereicht und wartet auf Freischaltung.",
     "submitError": "Etwas ist schief gelaufen. Bitte versuchen Sie es erneut.",
     "signInRequired": "Bitte melden Sie sich an, um eine Bewertung zu schreiben.",
-    "signInToReview": "Anmelden, um eine Bewertung zu schreiben."
+    "signInToReview": "Anmelden, um eine Bewertung zu schreiben.",
+    "pending": "Ausstehend"
   },
   "navigation": {
     "home": "Startseite",

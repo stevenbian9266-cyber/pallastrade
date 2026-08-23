@@ -95,7 +95,19 @@ describe("ProductReviews", () => {
   });
 
   it("submits a review and shows the success message", async () => {
-    mockedCreate.mockResolvedValue({ success: true });
+    mockedCreate.mockResolvedValue({
+      success: true,
+      review: {
+        id: "rev_new",
+        product_id: "prod_1",
+        user_name: null,
+        rating: 5,
+        title: "Great",
+        body: "Really good",
+        verified_purchase: false,
+        created_at: "2026-08-23T08:00:00Z",
+      },
+    });
     const user = userEvent.setup();
     render(
       <ProductReviews
@@ -107,17 +119,57 @@ describe("ProductReviews", () => {
       />,
     );
     await user.click(screen.getByRole("button", { name: "5 stars" }));
+    await user.type(screen.getByPlaceholderText("titlePlaceholder"), "Great");
     await user.type(
-      screen.getByPlaceholderText("titlePlaceholder"),
-      "Great",
+      screen.getByPlaceholderText("bodyPlaceholder"),
+      "Really good",
     );
     await user.click(screen.getByRole("button", { name: "submit" }));
     expect(mockedCreate).toHaveBeenCalledWith("prod_1", {
       rating: 5,
       title: "Great",
-      body: undefined,
+      body: "Really good",
     });
     expect(screen.getByText("success")).toBeTruthy();
+    // AC-005: the freshly submitted review is echoed back with a pending badge
+    expect(screen.getByText("Great")).toBeTruthy();
+    expect(screen.getByText("Really good")).toBeTruthy();
+    expect(screen.getByText("pending")).toBeTruthy();
+  });
+
+  it("echoes a freshly submitted review to the top of the list with a pending badge", async () => {
+    mockedCreate.mockResolvedValue({
+      success: true,
+      review: {
+        id: "rev_new",
+        product_id: "prod_1",
+        user_name: "Bob",
+        rating: 4,
+        title: "Nice",
+        body: null,
+        verified_purchase: false,
+        created_at: "2026-08-23T09:00:00Z",
+      },
+    });
+    const user = userEvent.setup();
+    render(
+      <ProductReviews
+        productId="prod_1"
+        reviews={reviews}
+        averageRating={4}
+        reviewCount={2}
+        isAuthenticated={true}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "4 stars" }));
+    await user.type(screen.getByPlaceholderText("titlePlaceholder"), "Nice");
+    await user.click(screen.getByRole("button", { name: "submit" }));
+
+    // New review (with pending badge) appears alongside approved ones
+    expect(screen.getByText("Bob")).toBeTruthy();
+    expect(screen.getByText("Nice")).toBeTruthy();
+    expect(screen.getByText("pending")).toBeTruthy();
+    expect(screen.getByText("Alice")).toBeTruthy();
   });
 
   it("shows an error when submission fails", async () => {

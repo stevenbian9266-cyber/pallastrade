@@ -268,7 +268,8 @@
     "success": "¡Gracias! Tu reseña ha sido enviada y está pendiente de moderación.",
     "submitError": "Algo salió mal. Inténtalo de nuevo.",
     "signInRequired": "Inicia sesión para enviar una reseña.",
-    "signInToReview": "Inicia sesión para escribir una reseña."
+    "signInToReview": "Inicia sesión para escribir una reseña.",
+    "pending": "Pendiente"
   },
   "navigation": {
     "home": "Inicio",

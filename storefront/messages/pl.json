@@ -268,7 +268,8 @@
     "success": "Dziękujemy! Twoja opinia została wysłana i czeka na moderację.",
     "submitError": "Coś poszło nie tak. Spróbuj ponownie.",
     "signInRequired": "Zaloguj się, aby dodać opinię.",
-    "signInToReview": "Zaloguj się, aby napisać opinię."
+    "signInToReview": "Zaloguj się, aby napisać opinię.",
+    "pending": "Oczekuje"
   },
   "navigation": {
     "home": "Strona główna",

@@ -3,6 +3,7 @@
 import type { PaymentGroup, PaymentMethod } from "@pallastrade/sdk";
 import { CircleAlert, Loader2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -33,6 +34,8 @@ export function CombinedPaymentContent({
   basePath,
 }: CombinedPaymentContentProps) {
   const t = useTranslations("combinedPayment");
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [group, setGroup] = useState<PaymentGroup | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +64,40 @@ export function CombinedPaymentContent({
       cancelled = true;
     };
   }, [groupId, t]);
+
+  // Stripe redirect-back (e.g. 3D Secure): `stripe.confirmPayment` with
+  // `redirect: "if_required"` sends the browser to Stripe, then back to the
+  // return_url with ?session=<sessionId>&redirect_status=... . After the reload
+  // our local sessionId state is gone, so we read it from the URL and complete
+  // the payment group here instead of leaving the customer stuck on the page.
+  const redirectSessionId = searchParams.get("session");
+  const redirectStatus = searchParams.get("redirect_status");
+  const redirectHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (!redirectSessionId || redirectHandledRef.current) return;
+    redirectHandledRef.current = true;
+
+    if (redirectStatus === "failed") {
+      setError(t("payFailed"));
+      return;
+    }
+
+    (async () => {
+      setProcessing(true);
+      const complete = await completeGroupPaymentSession(
+        groupId,
+        redirectSessionId,
+      );
+      setProcessing(false);
+      if (complete.success) {
+        setPaid(true);
+        router.replace(`${basePath}/account/combined-payment/${groupId}`);
+      } else {
+        setError(complete.error || t("payFailed"));
+      }
+    })();
+  }, [groupId, redirectSessionId, redirectStatus, basePath, router, t]);
 
   const orders = group?.orders ?? [];
 
@@ -97,7 +134,7 @@ export function CombinedPaymentContent({
     setError(null);
 
     const result = await stripeFormRef.current.confirmPayment(
-      `${basePath}/account/combined-payment/${groupId}`,
+      `${window.location.origin}${basePath}/account/combined-payment/${groupId}?session=${sessionId}`,
     );
 
     if (result.error) {
