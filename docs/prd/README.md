@@ -38,7 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
-| draft | PRD-20260823-checkout-多订单拆分与合并支付 | checkout | 2026-08-23 | （实施时回填） |
+| done | PRD-20260823-checkout-多订单拆分与合并支付 | checkout | 2026-08-23 | REQ-20260823-order-split-combined-payment |
 | done | PRD-20260818-other-p1-1-社交登录-google-facebook | other | 2026-08-18 | REQ-20260818-p1-1-social-login |
 | draft | PRD-20260818-catalog-p0-4-产品评论 | catalog | 2026-08-18 | （实施时回填） |
 | draft | PRD-20260818-other-p0-3-邮件自动化-弃单恢复 | other | 2026-08-18 | （实施时回填） |
