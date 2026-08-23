@@ -166,6 +166,8 @@ Key components:
 ### Cookie consent (2026-08, PRD-20260812)
 
 > 组件与测试文件统一遵循 Biome 格式（`pnpm format` / `pnpm check`），CI 的 `pnpm check` 强制校验格式与 lint。
+>
+> **提交前自检（2026-08 实战）**：改动任何 storefront 源文件后先跑 `pnpm check`，对不通过的文件执行 `pnpm exec biome check --write`（含 `messages/*.json`），再重跑 `pnpm check` 确认全绿。Windows 本地 checkout 会把 LF 检出为 CRLF，导致未改动的预存文件也被 Biome 标记（formatter 想要重排全文件）——这类是本地假象（CI 用 LF）；判断标准：`git diff` 该文件无内容差异则忽略。真正要修的是**有内容 diff** 的文件（import 顺序/多余空行等）。
 
 The storefront has a GDPR/CCPA-style cookie consent system. Consent is stored in a
 plain-JS-readable cookie `pallastrade_cookie_consent` (JSON: `necessary` + `functional`
