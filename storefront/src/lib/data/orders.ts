@@ -29,6 +29,14 @@ export async function getOrders(params?: OrderListParams) {
 }
 
 /**
+ * PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+ * Lists placed-but-unpaid orders eligible for combined payment.
+ */
+export async function getUnpaidOrders(limit = 50) {
+  return getOrders({ limit, scope: "unpaid" as string } as OrderListParams);
+}
+
+/**
  * Get a single order by ID or number.
  * Works for both authenticated users (JWT) and guests (guestToken).
  */

@@ -136,6 +136,17 @@ module PallasTrade
     scope :placed_orders,  -> { where(status: 'placed') }
     scope :canceled_orders, -> { where(status: 'canceled') }
 
+    # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+    # Placed-but-unpaid orders eligible for combined payment:
+    #   - status placed (not draft/canceled)
+    #   - not canceled
+    #   - still owes money (payment_state != paid)
+    scope :unpaid_for_combined_payment, lambda {
+      where(status: 'placed', canceled_at: nil)
+        .where.not(payment_state: 'paid')
+        .where.not(payment_state: 'credit_owed')
+    }
+
     acts_as_taggable_on :tags
     acts_as_taggable_tenant :store_id
 
@@ -169,6 +180,13 @@ module PallasTrade
     belongs_to :market, class_name: 'PallasTrade::Market', optional: true
     belongs_to :channel, class_name: 'PallasTrade::Channel', optional: true
     belongs_to :preferred_stock_location, class_name: 'PallasTrade::StockLocation', optional: true
+
+    # PALLAS-CUSTOM: 多订单合并支付 / 拆单（PRD-20260823-checkout-多订单拆分与合并支付）
+    belongs_to :payment_group, class_name: 'PallasTrade::PaymentGroup', optional: true, inverse_of: :orders
+    # 手动/自动拆单来源订单（可空）
+    belongs_to :split_from, class_name: 'PallasTrade::Order', optional: true, inverse_of: :split_orders
+    has_many :split_orders, class_name: 'PallasTrade::Order', foreign_key: :split_from_id,
+                            dependent: :nullify, inverse_of: :split_from
 
     with_options dependent: :destroy do
       has_many :state_changes, as: :stateful, class_name: 'PallasTrade::StateChange'

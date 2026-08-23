@@ -24,8 +24,13 @@ module PallasTrade
               :orders
             end
 
+            # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+            # ?scope=unpaid → placed-but-unpaid orders (for combined payment picker)
             def scope
-              super.for_store(current_store).complete
+              base = super.for_store(current_store)
+              return base.unpaid_for_combined_payment if params[:scope] == 'unpaid'
+
+              base.complete
             end
           end
         end

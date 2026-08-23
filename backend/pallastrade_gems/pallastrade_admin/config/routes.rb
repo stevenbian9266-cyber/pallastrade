@@ -84,10 +84,14 @@ PallasTrade::Core::Engine.add_routes do
 
     # orders
     resources :checkouts, only: %i[index]
+    # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+    resources :payment_groups, only: %i[index show]
     resources :orders do
       member do
         post :resend
         put :cancel
+        # PALLAS-CUSTOM: 后台手动拆单（PRD-20260823-checkout-多订单拆分与合并支付）
+        post :split_order
       end
       resource :shipping_address, except: [:show], controller: 'orders/shipping_address'
       resource :billing_address, except: [:show], controller: 'orders/billing_address'

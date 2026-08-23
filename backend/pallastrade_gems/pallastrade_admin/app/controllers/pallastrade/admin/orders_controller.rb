@@ -6,7 +6,7 @@ module PallasTrade
       include PallasTrade::Admin::TableConcern
 
       before_action :initialize_order_events
-      before_action :load_order, only: %i[show edit cancel resend destroy]
+      before_action :load_order, only: %i[show edit cancel resend destroy split_order]
       before_action :load_order_items, only: :show
       before_action :load_user, only: [:index]
 
@@ -79,6 +79,24 @@ module PallasTrade
         end
       end
 
+      # PALLAS-CUSTOM: 后台手动拆单（PRD-20260823-checkout-多订单拆分与合并支付）
+      # POST /admin/orders/:id/split_order
+      # Moves the selected line items into one (or more, via the API) new order(s).
+      def split_order
+        result = PallasTrade::Orders::Splitter.call(
+          order: @order,
+          groups: split_order_groups
+        )
+
+        if result.success?
+          flash[:success] = PallasTrade.t(:order_split_success)
+        else
+          flash[:error] = result.error.to_s
+        end
+
+        redirect_back fallback_location: PallasTrade.admin_order_url(@order)
+      end
+
       private
 
       def scope
@@ -102,6 +120,16 @@ module PallasTrade
       def order_params
         params[:created_by_id] = try_pallastrade_current_user.try(:id)
         params.permit(:created_by_id, :user_id, :store_id, :channel, tag_list: [])
+      end
+
+      # PALLAS-CUSTOM: 后台手动拆单（PRD-20260823-checkout-多订单拆分与合并支付）
+      # Form posts one group per submit: { group_name: "...", line_item_ids: ["li_x", ...] }
+      def split_order_groups
+        return {} unless params[:split_order].present?
+
+        group_name = params.dig(:split_order, :group_name).to_s.presence || 'split'
+        line_item_ids = Array(params.dig(:split_order, :line_item_ids)).compact_blank
+        { group_name => line_item_ids }
       end
 
       def load_order

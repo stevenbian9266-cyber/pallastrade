@@ -21954,6 +21954,140 @@ paths:
                   in: 1
                   previous:
                   next:
+  # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+  "/api/v3/admin/orders/{id}/split":
+    post:
+      summary: Split an order
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |
+        Splits an unpaid order into multiple new orders by moving line items
+        into the specified groups. Requires the write_orders scope (API key)
+        or the update ability (JWT admin).
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Order prefixed ID
+        schema:
+          type: string
+      responses:
+        '200':
+          description: split orders created
+          content:
+            application/json:
+              example:
+                data:
+                - id: or_gbHJdmfrXB
+                  number: R100002
+                  status: placed
+                  total: '10.00'
+                  currency: USD
+                meta:
+                  count: 1
+        '422':
+          description: cannot split
+          content:
+            application/json:
+              example:
+                error:
+                  code: order_not_splittable
+                  message: Order cannot be split
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                groups:
+                  type: object
+                  description: Group name → line item ids to move into a new order
+                  additionalProperties:
+                    type: array
+                    items:
+                      type: string
+              required:
+              - groups
+  "/api/v3/admin/payment_groups":
+    get:
+      summary: List payment groups
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: Returns payment groups for the current store.
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: payment groups found
+          content:
+            application/json:
+              example:
+                data:
+                - id: pg_UkLWZg9DAJ
+                  status: completed
+                  currency: USD
+                  amount: '80.00'
+                  completed_at: '2026-08-23T10:00:00Z'
+                meta:
+                  page: 1
+                  limit: 25
+                  count: 1
+                  pages: 1
+                  from: 1
+                  to: 1
+                  in: 1
+                  previous:
+                  next:
+  "/api/v3/admin/payment_groups/{id}":
+    get:
+      summary: Get a payment group
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: expand
+        in: query
+        required: false
+        description: Expand associations (orders, payment_sessions)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: payment group found
+          content:
+            application/json:
+              example:
+                id: pg_UkLWZg9DAJ
+                status: completed
+                currency: USD
+                amount: '80.00'
+                completed_at: '2026-08-23T10:00:00Z'
+              schema:
+                "$ref": "#/components/schemas/AdminPaymentGroup"
 servers:
 - url: http://{defaultHost}
   variables:
@@ -24648,6 +24782,62 @@ components:
       - updated_at
       - captured_amount
       - order_id
+      x-typelizer: true
+    # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+    PaymentSession:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        currency:
+          type: string
+        external_id:
+          type: string
+        external_data:
+          type: object
+        amount:
+          type: string
+        payment_method_id:
+          type: string
+        order_id:
+          type: string
+      required:
+      - id
+      - status
+      - currency
+      - external_id
+      - amount
+      x-typelizer: true
+    # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+    AdminPaymentGroup:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        currency:
+          type: string
+        amount:
+          type: string
+        completed_at:
+          type: string
+          nullable: true
+        orders:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Order"
+        payment_sessions:
+          type: array
+          items:
+            "$ref": "#/components/schemas/PaymentSession"
+      required:
+      - id
+      - status
+      - currency
+      - amount
       x-typelizer: true
     PaymentSource:
       type: object

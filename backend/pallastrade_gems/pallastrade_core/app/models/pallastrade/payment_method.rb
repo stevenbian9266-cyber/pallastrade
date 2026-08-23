@@ -61,7 +61,8 @@ module PallasTrade
 
     # Creates a payment session via the provider.
     # Override in gateway subclasses to implement provider-specific session creation.
-    def create_payment_session(order:, amount: nil, external_data: {})
+    # PALLAS-CUSTOM: payment_group 支持多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+    def create_payment_session(order:, amount: nil, external_data: {}, payment_group: nil)
       raise ::NotImplementedError, 'You must implement create_payment_session method for this gateway.'
     end
 

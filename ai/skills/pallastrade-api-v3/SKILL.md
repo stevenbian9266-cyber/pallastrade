@@ -30,7 +30,6 @@ source and issue tracking live at
 ### Store API
 
 **Who calls it:** customer browsers and apps. Public, untrusted clients.
-
 **Auth:** Always include `X-PallasTrade-Api-Key: pk_<token>` (a publishable key). Additional layers:
 - **Anonymous browse:** publishable key alone is enough for reading products, categories.
 - **Guest cart:** publishable key + `X-PallasTrade-Token: <cart_token>` for operations on a specific guest cart.
@@ -167,6 +166,8 @@ prod_86Rf07xd4z       Product
 variant_k5nR8xLq      Variant
 or_m3Rp9wXz           Order
 py_…                  Payment       (Stripe parity)
+pg_…                  PaymentGroup  (combined payment across orders — PRD-20260823)
+ps_…                  PaymentSession
 ful_…                 Shipment
 adj_…                 Adjustment
 li_…                  LineItem

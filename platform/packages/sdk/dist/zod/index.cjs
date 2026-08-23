@@ -472,6 +472,17 @@ var PaymentSessionSchema = zod.z.object({
   payment_method: PaymentMethodSchema,
   payment: PaymentSchema.optional()
 });
+
+// src/zod/generated/PaymentGroup.ts
+var PaymentGroupSchema = zod.z.object({
+  id: zod.z.string(),
+  status: zod.z.string(),
+  currency: zod.z.string(),
+  amount: zod.z.string(),
+  completed_at: zod.z.string().nullable(),
+  orders: zod.z.array(OrderSchema).optional(),
+  payment_sessions: zod.z.array(PaymentSessionSchema).optional()
+});
 var PaymentSetupSessionSchema = zod.z.object({
   id: zod.z.string(),
   status: zod.z.string(),
@@ -748,6 +759,7 @@ exports.NewsletterSubscriberSchema = NewsletterSubscriberSchema;
 exports.OptionTypeSchema = OptionTypeSchema;
 exports.OptionValueSchema = OptionValueSchema;
 exports.OrderSchema = OrderSchema;
+exports.PaymentGroupSchema = PaymentGroupSchema;
 exports.PaymentMethodSchema = PaymentMethodSchema;
 exports.PaymentSchema = PaymentSchema;
 exports.PaymentSessionSchema = PaymentSessionSchema;

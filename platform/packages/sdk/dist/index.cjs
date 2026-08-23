@@ -599,6 +599,72 @@ var StoreClient = class {
     })
   };
   // ============================================
+  // Payment methods (front-facing)
+  // ============================================
+  paymentMethods = {
+    /**
+     * List front-facing payment methods (used by the combined payment page).
+     */
+    list: (options) => this.request("GET", "/payment_methods", options)
+  };
+  // ============================================
+  // Payment Groups (combined payment for multiple unpaid orders)
+  // ============================================
+  paymentGroups = {
+    /**
+     * Create a payment group from multiple unpaid order ids.
+     * Requires a logged-in customer (JWT via options.token).
+     */
+    create: (params, options) => this.request("POST", "/payment_groups", {
+      ...options,
+      body: params
+    }),
+    /**
+     * Get a payment group by prefixed ID (own groups only).
+     */
+    get: (id, params, options) => this.request("GET", `/payment_groups/${id}`, {
+      ...options,
+      params: getParams(params)
+    }),
+    /**
+     * Nested resource: Payment sessions for a payment group.
+     */
+    paymentSessions: {
+      /**
+       * Create a payment session covering the whole group.
+       */
+      create: (groupId, params, options) => this.request(
+        "POST",
+        `/payment_groups/${groupId}/payment_sessions`,
+        { ...options, body: params }
+      ),
+      /**
+       * Get a payment session of the group by ID.
+       */
+      get: (groupId, sessionId, options) => this.request(
+        "GET",
+        `/payment_groups/${groupId}/payment_sessions/${sessionId}`,
+        options
+      ),
+      /**
+       * Update a payment session of the group.
+       */
+      update: (groupId, sessionId, params, options) => this.request(
+        "PATCH",
+        `/payment_groups/${groupId}/payment_sessions/${sessionId}`,
+        { ...options, body: params }
+      ),
+      /**
+       * Complete a payment session of the group.
+       */
+      complete: (groupId, sessionId, params, options) => this.request(
+        "PATCH",
+        `/payment_groups/${groupId}/payment_sessions/${sessionId}/complete`,
+        { ...options, body: params }
+      )
+    }
+  };
+  // ============================================
   // Customer
   // ============================================
   customers = {

@@ -491,7 +491,29 @@
     "orderTitle": "Pedido #{number}",
     "shipmentCanceledRefund": "Envio cancelado — se ha emitido un reembolso.",
     "shippingMethodUnavailable": "No disponible",
-    "totalColumn": "Total"
+    "totalColumn": "Total",
+    "pendingPayment": "Pago pendiente",
+    "pendingPaymentDescription": "Selecciona uno o más pedidos impagados para pagarlos juntos.",
+    "noPendingPayment": "No tienes pagos pendientes.",
+    "selectedCount": "{count} seleccionados",
+    "payTogether": "Pagar juntos",
+    "combinedPayFailed": "No se pudo crear el grupo de pago. Inténtalo de nuevo."
+  },
+  "combinedPayment": {
+    "title": "Pago combinado",
+    "notFound": "Grupo de pago no encontrado",
+    "notFoundDescription": "Este grupo de pago no existe o no es tuyo.",
+    "orders": "Pedidos",
+    "total": "Total",
+    "selectPaymentMethod": "Selecciona un método de pago",
+    "pay": "Pagar",
+    "confirmPay": "Pagar ahora",
+    "payFailed": "El pago falló. Inténtalo de nuevo.",
+    "loadFailed": "No se pudo cargar el grupo de pago.",
+    "paymentSuccess": "Pago exitoso",
+    "paymentSuccessDescription": "Todos los pedidos de este grupo han sido pagados.",
+    "backToOrders": "Volver a los pedidos",
+    "noPaymentMethod": "No hay método de pago disponible."
   },
   "orderPlaced": {
     "thanksForOrder": "¡Gracias por tu pedido, {name}!",

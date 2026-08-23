@@ -98,6 +98,40 @@ The session has events: `payment_session.processing`, `payment_session.completed
 
 For most stores, you don't interact with PaymentSession directly — the gateway extension (pallastrade_stripe, pallastrade_adyen) handles creation and completion. You just subscribe to the events if you need to react.
 
+## Payment groups (5.6+) — combined payment across orders
+
+> PALLAS-CUSTOM: PRD-20260823-checkout-多订单拆分与合并支付.
+
+`PallasTrade::PaymentGroup` (`pg_`) bundles multiple unpaid orders into **one** payment:
+one Stripe PaymentIntent covers every member order, and a single successful
+webhook completes them all. This powers "合并支付" (combined payment) and
+checkout-time/admin order splitting.
+
+```
+Order A (unpaid) ─┐
+Order B (unpaid) ─┼─ PaymentGroup ── PaymentSession (one PI) ── webhook ── all orders complete
+Order C (unpaid) ─┘
+```
+
+Key facts:
+
+- **Membership** is validated server-side (`PallasTrade::PaymentGroups::Create`):
+  same store, same user, same currency; no canceled / already-paid / already-in-active-group orders.
+- **Amount** is always server-computed (`payment_group.total_minus_store_credits`
+  = sum of member orders' `total_minus_store_credits`); clients only send order ids.
+- **Completion** (`PallasTrade::PaymentGroups::Complete` / Stripe
+  `PallasTradeStripe::CompletePaymentGroup`) is idempotent — each member order
+  gets its own `Payment` record sharing the group's `response_code`, and only
+  unpaid orders are touched; duplicate webhooks and job retries are safe.
+- **State machine**: `pending → processing → completed`, plus `failed` /
+  `canceled` / `expired`; events `payment_group.processing/completed/failed/canceled/expired`.
+- **Store API**: `POST/GET /api/v3/store/payment_groups`, nested
+  `payment_sessions` (create/show/update/complete). Requires a logged-in customer (JWT).
+- **Split provenance**: `orders.split_from_id` records which order a split order
+  came from; `PallasTrade::Orders::Splitter` moves line items into new orders
+  (admin split + checkout-time auto-split by warehouse, gated by
+  `PallasTrade::Config[:auto_split_orders_by_warehouse]`).
+
 ## Adding a payment gateway
 
 Stripe, Adyen and PayPal ship preinstalled in pallastrade-starter projects (the backend `create-pallastrade-app` scaffolds) — nothing to install; enable and configure them in the admin under Settings → Payment methods. For any other gateway gem:

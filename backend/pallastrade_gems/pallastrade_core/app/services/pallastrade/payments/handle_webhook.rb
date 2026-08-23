@@ -14,12 +14,19 @@ module PallasTrade
 
         case action
         when :captured, :authorized
-          handle_success(payment_session, order, metadata)
+          # PALLAS-CUSTOM: 合并支付组 — 一次成功支付完成组内全部订单（PRD-20260823-checkout-多订单拆分与合并支付）
+          if payment_session.payment_group.present?
+            handle_group_success(payment_session, metadata)
+          else
+            handle_success(payment_session, order, metadata)
+          end
         when :failed
           payment_session.fail if payment_session.can_fail?
+          payment_session.payment_group&.fail if payment_session.payment_group&.can_fail?
           success(payment_session)
         when :canceled
           payment_session.cancel if payment_session.can_cancel?
+          payment_session.payment_group&.cancel if payment_session.payment_group&.can_cancel?
           success(payment_session)
         else
           failure(payment_session, "Unknown webhook action: #{action}")
@@ -27,6 +34,23 @@ module PallasTrade
       end
 
       private
+
+      # PALLAS-CUSTOM: 合并支付组完成（PRD-20260823-checkout-多订单拆分与合并支付）
+      # Idempotent — delegates to PallasTrade::PaymentGroups::Complete.
+      def handle_group_success(payment_session, metadata)
+        payment_session.reload
+
+        if payment_session.completed?
+          return success(payment_session)
+        end
+
+        payment_group = payment_session.payment_group
+        PallasTrade::PaymentGroups::Complete.call(payment_group: payment_group, payment_session: payment_session)
+        success(payment_session.reload)
+      rescue StandardError => e
+        Rails.error.report(e, context: { payment_group_id: payment_session.payment_group&.id, payment_session_id: payment_session.id }, source: 'PallasTrade.payments.webhook.group')
+        failure(payment_session, e.message)
+      end
 
       # `PallasTrade::Payment#confirm!` honors the payment method's `auto_capture?` setting:
       # auto_capture → complete! + capture_event; otherwise → pend! (auth-only, payment_state=balance_due).

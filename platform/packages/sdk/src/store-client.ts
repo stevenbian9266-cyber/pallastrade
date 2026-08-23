@@ -18,6 +18,7 @@ import type {
   CompletePaymentSetupSessionParams,
   Country,
   CreateCartParams,
+  CreatePaymentGroupParams,
   CreatePaymentParams,
   CreatePaymentSessionParams,
   CreatePaymentSetupSessionParams,
@@ -32,6 +33,8 @@ import type {
   Order,
   OrderListParams,
   Payment,
+  PaymentGroup,
+  PaymentMethod,
   PaymentSession,
   PaymentSetupSession,
   Policy,
@@ -658,6 +661,113 @@ export class StoreClient {
         ...options,
         params: getParams(params),
       }),
+  }
+
+  // ============================================
+  // Payment methods (front-facing)
+  // ============================================
+
+  readonly paymentMethods = {
+    /**
+     * List front-facing payment methods (used by the combined payment page).
+     */
+    list: (options?: RequestOptions): Promise<ListResponse<PaymentMethod>> =>
+      this.request<ListResponse<PaymentMethod>>('GET', '/payment_methods', options),
+  }
+
+  // ============================================
+  // Payment Groups (combined payment for multiple unpaid orders)
+  // ============================================
+
+  readonly paymentGroups = {
+    /**
+     * Create a payment group from multiple unpaid order ids.
+     * Requires a logged-in customer (JWT via options.token).
+     */
+    create: (
+      params: CreatePaymentGroupParams,
+      options?: RequestOptions,
+    ): Promise<PaymentGroup> =>
+      this.request<PaymentGroup>('POST', '/payment_groups', {
+        ...options,
+        body: params,
+      }),
+
+    /**
+     * Get a payment group by prefixed ID (own groups only).
+     */
+    get: (
+      id: string,
+      params?: { expand?: string[]; fields?: string[] },
+      options?: RequestOptions,
+    ): Promise<PaymentGroup> =>
+      this.request<PaymentGroup>('GET', `/payment_groups/${id}`, {
+        ...options,
+        params: getParams(params),
+      }),
+
+    /**
+     * Nested resource: Payment sessions for a payment group.
+     */
+    paymentSessions: {
+      /**
+       * Create a payment session covering the whole group.
+       */
+      create: (
+        groupId: string,
+        params: CreatePaymentSessionParams,
+        options?: RequestOptions,
+      ): Promise<PaymentSession> =>
+        this.request<PaymentSession>(
+          'POST',
+          `/payment_groups/${groupId}/payment_sessions`,
+          { ...options, body: params },
+        ),
+
+      /**
+       * Get a payment session of the group by ID.
+       */
+      get: (
+        groupId: string,
+        sessionId: string,
+        options?: RequestOptions,
+      ): Promise<PaymentSession> =>
+        this.request<PaymentSession>(
+          'GET',
+          `/payment_groups/${groupId}/payment_sessions/${sessionId}`,
+          options,
+        ),
+
+      /**
+       * Update a payment session of the group.
+       */
+      update: (
+        groupId: string,
+        sessionId: string,
+        params: UpdatePaymentSessionParams,
+        options?: RequestOptions,
+      ): Promise<PaymentSession> =>
+        this.request<PaymentSession>(
+          'PATCH',
+          `/payment_groups/${groupId}/payment_sessions/${sessionId}`,
+          { ...options, body: params },
+        ),
+
+      /**
+       * Complete a payment session of the group.
+       */
+      complete: (
+        groupId: string,
+        sessionId: string,
+        params?: CompletePaymentSessionParams,
+        options?: RequestOptions,
+      ): Promise<PaymentSession> =>
+        this.request<PaymentSession>(
+          'PATCH',
+          `/payment_groups/${groupId}/payment_sessions/${sessionId}/complete`,
+          { ...options, body: params },
+        ),
+    },
   }
 
   // ============================================

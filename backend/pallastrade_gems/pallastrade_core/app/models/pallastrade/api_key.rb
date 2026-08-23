@@ -15,6 +15,8 @@ module PallasTrade
       read_promotions write_promotions
       read_customers write_customers
       read_payments write_payments
+      # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+      read_payment_groups write_payment_groups
       read_fulfillments write_fulfillments
       read_refunds write_refunds
       read_gift_cards write_gift_cards

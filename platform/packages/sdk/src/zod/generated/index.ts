@@ -28,6 +28,7 @@ export { OptionValueSchema, type OptionValue } from './OptionValue';
 export { OrderSchema, type Order } from './Order';
 export { PaymentSchema, type Payment } from './Payment';
 export { PaymentMethodSchema, type PaymentMethod } from './PaymentMethod';
+export { PaymentGroupSchema, type PaymentGroup } from './PaymentGroup';
 export { PaymentSessionSchema, type PaymentSession } from './PaymentSession';
 export { PaymentSetupSessionSchema, type PaymentSetupSession } from './PaymentSetupSession';
 export { PaymentSourceSchema, type PaymentSource } from './PaymentSource';

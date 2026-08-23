@@ -2,9 +2,10 @@ import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
+import { CombinedPaymentPicker } from "@/components/account/CombinedPaymentPicker";
 import { OrderList } from "@/components/account/OrderList";
 import { Button } from "@/components/ui/button";
-import { getOrders } from "@/lib/data/orders";
+import { getOrders, getUnpaidOrders } from "@/lib/data/orders";
 
 interface OrdersPageProps {
   params: Promise<{ country: string; locale: string }>;
@@ -22,11 +23,21 @@ export default async function OrdersPage({ params }: OrdersPageProps) {
   const response = await getOrders({ limit: 50 });
   const orders = response.data.filter((order) => order.completed_at !== null);
 
+  // PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+  const unpaidResponse = await getUnpaidOrders(50);
+  const unpaidOrders = unpaidResponse.data;
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
         {t("orderHistory")}
       </h1>
+
+      {/* PALLAS-CUSTOM: 待支付订单合并支付入口 */}
+      <CombinedPaymentPicker
+        orders={unpaidOrders}
+        basePath={basePath}
+      />
 
       {orders.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">

@@ -10332,6 +10332,371 @@ paths:
             application/octet-stream:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+  # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+  "/api/v3/store/payment_methods":
+    get:
+      summary: List front-facing payment methods
+      tags:
+      - Carts
+      security:
+      - api_key: []
+      description: Returns active payment methods shown to customers (used by the
+        combined payment page).
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: payment methods found
+          content:
+            application/json:
+              example:
+                data:
+                - id: pm_UkLWZg9DAJ
+                  name: Credit Card
+                  description:
+                  type: stripe
+                  session_required: true
+                  source_required: false
+                meta:
+                  count: 1
+        '401':
+          description: missing API key
+          content:
+            application/json:
+              example:
+                error:
+                  code: invalid_token
+                  message: Valid API key required
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/payment_groups":
+    post:
+      summary: Create a payment group
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |
+        Bundles multiple unpaid orders into one payment group so they can be
+        paid together in a single Stripe payment. Requires a logged-in customer.
+        All orders must belong to the same store, user and currency, and must
+        not be paid, canceled, or already in an active group.
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer JWT token
+        schema:
+          type: string
+      responses:
+        '201':
+          description: payment group created
+          content:
+            application/json:
+              example:
+                id: pg_UkLWZg9DAJ
+                status: pending
+                currency: USD
+                amount: '80.00'
+                completed_at:
+              schema:
+                "$ref": "#/components/schemas/PaymentGroup"
+        '422':
+          description: validation failed
+          content:
+            application/json:
+              example:
+                error:
+                  code: mixed_currency
+                  message: All orders must use the same currency
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '401':
+          description: authentication required
+          content:
+            application/json:
+              example:
+                error:
+                  code: authentication_required
+                  message: Authentication required
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order_ids:
+                  type: array
+                  description: Prefixed order ids to bundle (or_...)
+                  items:
+                    type: string
+                    example: or_abc123
+              required:
+              - order_ids
+  "/api/v3/store/payment_groups/{id}":
+    get:
+      summary: Get a payment group
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: Returns a payment group owned by the current customer.
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        description: Payment group prefixed ID (pg_...)
+        schema:
+          type: string
+      - name: expand
+        in: query
+        required: false
+        description: Expand associations (orders, payment_sessions)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: payment group found
+          content:
+            application/json:
+              example:
+                id: pg_UkLWZg9DAJ
+                status: completed
+                currency: USD
+                amount: '80.00'
+                completed_at: '2026-08-23T10:00:00Z'
+              schema:
+                "$ref": "#/components/schemas/PaymentGroup"
+        '404':
+          description: payment group not found
+          content:
+            application/json:
+              example:
+                error:
+                  code: record_not_found
+                  message: PaymentGroup not found
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/payment_groups/{payment_group_id}/payment_sessions":
+    post:
+      summary: Create a payment session for a payment group
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: Creates one provider session covering every order in the group.
+        The amount is the server-computed group total.
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: payment_group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: payment session created
+          content:
+            application/json:
+              example:
+                id: ps_UkLWZg9DAJ
+                status: pending
+                currency: USD
+                external_id: pi_test_123
+                external_data:
+                  client_secret: pi_test_secret_123
+                amount: '80.00'
+                payment_method_id: pm_UkLWZg9DAJ
+                order_id: or_UkLWZg9DAJ
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+        '422':
+          description: session creation failed
+          content:
+            application/json:
+              example:
+                error:
+                  code: processing_error
+                  message: Payment session could not be created
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payment_method_id:
+                  type: string
+                  example: pm_abc123
+                amount:
+                  type: string
+                external_data:
+                  type: object
+              required:
+              - payment_method_id
+  "/api/v3/store/payment_groups/{payment_group_id}/payment_sessions/{id}":
+    get:
+      summary: Get a payment group session
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: payment_group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: payment session found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+    patch:
+      summary: Update a payment group session
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: payment_group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: payment session updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: string
+                external_data:
+                  type: object
+  "/api/v3/store/payment_groups/{payment_group_id}/payment_sessions/{id}/complete":
+    patch:
+      summary: Complete a payment group session
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: Confirms the payment with the provider and completes every order
+        in the group.
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: payment_group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: payment session completed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                session_result:
+                  type: string
+                external_data:
+                  type: object
 servers:
 - url: http://{defaultHost}
   variables:
@@ -12285,6 +12650,36 @@ components:
       - payment_method_id
       - order_id
       - payment_method
+      x-typelizer: true
+    # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+    PaymentGroup:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        currency:
+          type: string
+        amount:
+          type: string
+        completed_at:
+          type: string
+          nullable: true
+        orders:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Order"
+        payment_sessions:
+          type: array
+          items:
+            "$ref": "#/components/schemas/PaymentSession"
+      required:
+      - id
+      - status
+      - currency
+      - amount
+      - completed_at
       x-typelizer: true
     PaymentSetupSession:
       type: object

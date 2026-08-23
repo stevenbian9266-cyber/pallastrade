@@ -12,6 +12,8 @@ module PallasTrade
       def activate!
         can [:read, :admin, :index], PallasTrade::Order
         can [:read, :admin], PallasTrade::Payment
+        # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+        can [:read, :admin, :index], PallasTrade::PaymentGroup
         can [:read, :admin], PallasTrade::Shipment
         can [:read, :admin], PallasTrade::Adjustment
         can [:read, :admin], PallasTrade::LineItem

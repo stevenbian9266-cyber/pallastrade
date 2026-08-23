@@ -6,6 +6,21 @@ en:
     redirects: Redirects
     emails: Emails
     blog: Blog
+    # PALLAS-CUSTOM: 后台手动拆单（PRD-20260823-checkout-多订单拆分与合并支付）
+    split_order: Split order
+    split_order_description: Move one or more line items into a new order.
+    split_order_submit: Split
+    new_order_name: New order name
+    new_order_name_placeholder: e.g. Warehouse B
+    move: Move
+    item: Item
+    order_split_success: Order split successfully
+    # PALLAS-CUSTOM: 支付组（PRD-20260823-checkout-多订单拆分与合并支付）
+    payment_groups: Payment Groups
+    payment_group: Payment Group
+    no_payment_groups: No payment groups yet.
+    payment_sessions: Payment Sessions
+    session: Session
     back_in_stock_subscriptions: Back in Stock Subscriptions
     abandoned_cart_notifications: Abandoned Cart Notifications
     profile: Profile

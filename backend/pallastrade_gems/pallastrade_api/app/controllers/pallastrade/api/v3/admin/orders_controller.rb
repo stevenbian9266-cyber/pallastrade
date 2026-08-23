@@ -8,7 +8,7 @@ module PallasTrade
           scoped_resource :orders
 
           skip_before_action :set_resource, only: [:index, :create]
-          before_action :set_resource, only: [:show, :update, :destroy, :complete, :cancel, :approve, :resume, :resend_confirmation]
+          before_action :set_resource, only: [:show, :update, :destroy, :complete, :cancel, :approve, :resume, :resend_confirmation, :split]
 
           # POST /api/v3/admin/orders
           def create
@@ -91,6 +91,24 @@ module PallasTrade
             render json: serialize_resource(@resource)
           end
 
+          # PALLAS-CUSTOM: 后台手动拆单（PRD-20260823-checkout-多订单拆分与合并支付）
+          # POST /api/v3/admin/orders/:id/split
+          # body: { groups: { "g1": ["li_xxx", "li_yyy"], "g2": ["li_zzz"] } }
+          def split
+            with_order_lock do
+              result = PallasTrade::Orders::Splitter.call(
+                order: @resource,
+                groups: split_params
+              )
+
+              if result.success?
+                render json: serialize_collection(result.value)
+              else
+                render_service_error(result.error)
+              end
+            end
+          end
+
           protected
 
           def model_class
@@ -115,7 +133,7 @@ module PallasTrade
           # Map state transition actions to :update permission
           def authorize_resource!(resource = @resource, action = action_name.to_sym)
             mapped_action = case action
-                            when :complete, :cancel, :approve, :resume, :resend_confirmation
+                            when :complete, :cancel, :approve, :resume, :resend_confirmation, :split
                               :update
                             else
                               action
@@ -182,6 +200,11 @@ module PallasTrade
 
           def item_permitted_keys
             [:variant_id, :quantity, { metadata: {} }]
+          end
+
+          # PALLAS-CUSTOM: 后台手动拆单（PRD-20260823-checkout-多订单拆分与合并支付）
+          def split_params
+            params.require(:groups).permit!.to_h
           end
         end
       end

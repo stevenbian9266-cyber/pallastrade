@@ -36,6 +36,7 @@ module PallasTrade
       :page_link_attributes,
       :page_section_attributes,
       :payment_attributes,
+      :payment_group_attributes,
       :payment_method_attributes,
       :payment_session_attributes,
       :payment_setup_session_attributes,
@@ -169,6 +170,9 @@ module PallasTrade
     @@page_section_attributes = [:type, :name, :position, :asset, :text, :description]
 
     @@payment_attributes = [:amount, :payment_method_id, :payment_method]
+
+    # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+    @@payment_group_attributes = [{ order_ids: [] }]
 
     @@payment_method_attributes = [:name, :type, :description, :active, :display_on, :auto_capture, :position, { metadata: {}, preferences: {} }]
 

@@ -276,6 +276,19 @@ The Store API exposes payment sessions for the checkout flow — a single, provi
 
 The `pallastrade_stripe` / `pallastrade_adyen` / `pallastrade_paypal_checkout` gems ship reference checkout flows. Don't roll your own unless you're integrating a new provider.
 
+#### Combined payment for multiple unpaid orders (PRD-20260823)
+
+When an order is split (warehouse or admin) — or a customer simply has several
+unpaid orders — the account area offers **combined payment**:
+
+1. Account → Orders lists unpaid orders (`customer.orders.list({ scope: 'unpaid' })`).
+2. Customer selects several → `pallastrade.paymentGroups.create({ order_ids })` (JWT required) → a `pg_…` PaymentGroup.
+3. Combined payment page (`/account/combined-payment/[id]`) renders the group's
+   orders + server-computed total, then `pallastrade.paymentGroups.paymentSessions.create(groupId, { payment_method_id })` → one Stripe PaymentIntent `client_secret` → the reusable `StripePaymentForm` (Elements) → `…/complete` finishes every order in the group.
+
+All money math is server-side; the group amount is the sum of member orders'
+outstanding totals. See the `pallastrade-payments` skill for the model.
+
 #### Recovering a guest cart from an emailed checkout link (abandoned-cart recovery)
 
 Recovery emails (e.g. `abandoned_cart_mailer.recovery_email`) link back to `/{country}/{locale}/checkout/{cart_id}?token=…`. The checkout page must restore the cart token cookie **before** fetching the cart, otherwise the guest cart is treated as anonymous:

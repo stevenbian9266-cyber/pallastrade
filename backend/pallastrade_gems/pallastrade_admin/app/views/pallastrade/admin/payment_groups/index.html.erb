@@ -1,0 +1,48 @@
+<%# PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付） %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t(:payment_groups) %>
+<% end %>
+
+<% groups = current_store.payment_groups.includes(:orders).order(created_at: :desc) %>
+
+<div class="card mb-6">
+  <div class="card-body p-0">
+    <% if groups.any? %>
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t(:payment_group) %></th>
+            <th><%= PallasTrade.t(:orders) %></th>
+            <th class="text-right"><%= PallasTrade.t(:amount) %></th>
+            <th><%= PallasTrade.t(:status) %></th>
+            <th><%= PallasTrade.t(:created_at) %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% groups.each do |group| %>
+            <tr>
+              <td>
+                <%= link_to group.prefixed_id, PallasTrade.admin_payment_group_path(group),
+                            class: 'text-primary font-medium' %>
+              </td>
+              <td><%= group.orders.size %></td>
+              <td class="text-right">
+                <%= PallasTrade::Money.new(group.amount, currency: group.currency) %>
+              </td>
+              <td>
+                <span class="badge <%= group.status == 'completed' ? 'badge-success' : 'badge-info' %>">
+                  <%= group.status %>
+                </span>
+              </td>
+              <td><%= pallastrade_time_ago(group.created_at) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <div class="p-8 text-center text-gray-500">
+        <%= PallasTrade.t(:no_payment_groups) %>
+      </div>
+    <% end %>
+  </div>
+</div>

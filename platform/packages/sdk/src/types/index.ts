@@ -32,6 +32,7 @@ export type {
   OptionValue,
   Order,
   Payment,
+  PaymentGroup,
   PaymentMethod,
   PaymentSession,
   PaymentSetupSession,
@@ -236,6 +237,12 @@ export interface UpdatePaymentSessionParams {
 export interface CompletePaymentSessionParams {
   session_result?: string
   external_data?: Record<string, unknown>
+}
+
+// Payment Groups (combined payment for multiple unpaid orders)
+export interface CreatePaymentGroupParams {
+  /** Prefixed order ids (or_...) to bundle into one payment group */
+  order_ids: string[]
 }
 
 // Payment Setup Sessions

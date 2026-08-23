@@ -493,7 +493,29 @@
     "orderTitle": "Order #{number}",
     "shipmentCanceledRefund": "Shipment canceled — a refund has been issued.",
     "shippingMethodUnavailable": "Unavailable",
-    "totalColumn": "Total"
+    "totalColumn": "Total",
+    "pendingPayment": "Pending Payment",
+    "pendingPaymentDescription": "Select one or more unpaid orders to pay them together.",
+    "noPendingPayment": "You have no pending payments.",
+    "selectedCount": "{count} selected",
+    "payTogether": "Pay together",
+    "combinedPayFailed": "Could not create the payment group. Please try again."
+  },
+  "combinedPayment": {
+    "title": "Combined Payment",
+    "notFound": "Payment group not found",
+    "notFoundDescription": "This payment group doesn't exist or isn't yours.",
+    "orders": "Orders",
+    "total": "Total",
+    "selectPaymentMethod": "Select a payment method",
+    "pay": "Pay",
+    "confirmPay": "Pay now",
+    "payFailed": "Payment failed. Please try again.",
+    "loadFailed": "Failed to load payment group.",
+    "paymentSuccess": "Payment successful",
+    "paymentSuccessDescription": "All orders in this group have been paid.",
+    "backToOrders": "Back to orders",
+    "noPaymentMethod": "No payment method available."
   },
   "orderPlaced": {
     "thanksForOrder": "Thanks for your order, {name}!",

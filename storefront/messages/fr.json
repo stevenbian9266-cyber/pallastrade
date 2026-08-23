@@ -491,7 +491,29 @@
     "orderTitle": "Commande #{number}",
     "shipmentCanceledRefund": "Expedition annulee — un remboursement a ete emis.",
     "shippingMethodUnavailable": "Indisponible",
-    "totalColumn": "Total"
+    "totalColumn": "Total",
+    "pendingPayment": "Paiement en attente",
+    "pendingPaymentDescription": "Sélectionnez une ou plusieurs commandes impayées pour les payer ensemble.",
+    "noPendingPayment": "Vous n'avez aucun paiement en attente.",
+    "selectedCount": "{count} sélectionné(s)",
+    "payTogether": "Payer ensemble",
+    "combinedPayFailed": "Impossible de créer le groupe de paiement. Réessayez."
+  },
+  "combinedPayment": {
+    "title": "Paiement combiné",
+    "notFound": "Groupe de paiement introuvable",
+    "notFoundDescription": "Ce groupe de paiement n'existe pas ou ne vous appartient pas.",
+    "orders": "Commandes",
+    "total": "Total",
+    "selectPaymentMethod": "Choisissez un moyen de paiement",
+    "pay": "Payer",
+    "confirmPay": "Payer maintenant",
+    "payFailed": "Le paiement a échoué. Réessayez.",
+    "loadFailed": "Impossible de charger le groupe de paiement.",
+    "paymentSuccess": "Paiement réussi",
+    "paymentSuccessDescription": "Toutes les commandes de ce groupe ont été payées.",
+    "backToOrders": "Retour aux commandes",
+    "noPaymentMethod": "Aucun moyen de paiement disponible."
   },
   "orderPlaced": {
     "thanksForOrder": "Merci pour votre commande, {name} !",

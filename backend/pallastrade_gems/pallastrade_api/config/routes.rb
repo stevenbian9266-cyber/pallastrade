@@ -54,6 +54,20 @@ PallasTrade::Core::Engine.add_routes do
         # Orders (single order lookup, guest-accessible via order token)
         resources :orders, only: [:show]
 
+        # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+        # Front-facing payment methods for the combined payment page
+        resources :payment_methods, only: [:index]
+
+        # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+        resources :payment_groups, only: [:create, :show] do
+          resources :payment_sessions, only: [:create, :show, :update],
+                                       controller: 'payment_groups/payment_sessions' do
+            member do
+              patch :complete
+            end
+          end
+        end
+
         # Policies (return policy, privacy policy, terms of service, etc.)
         resources :policies, only: [:index, :show]
 
@@ -371,6 +385,8 @@ PallasTrade::Core::Engine.add_routes do
             patch :approve
             patch :resume
             post :resend_confirmation
+            # PALLAS-CUSTOM: 后台手动拆单（PRD-20260823-checkout-多订单拆分与合并支付）
+            post :split
           end
 
           resources :items, only: [:index, :show, :create, :update, :destroy], controller: 'orders/items'
@@ -393,6 +409,9 @@ PallasTrade::Core::Engine.add_routes do
           resources :gift_cards, controller: 'orders/gift_cards', only: [:create, :destroy]
           resource :store_credits, controller: 'orders/store_credits', only: [:create, :destroy]
         end
+
+        # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+        resources :payment_groups, only: [:index, :show]
       end
 
       # Webhooks (outside of store namespace — no API key authentication)

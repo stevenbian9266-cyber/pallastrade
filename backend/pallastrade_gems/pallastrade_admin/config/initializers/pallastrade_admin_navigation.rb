@@ -77,6 +77,14 @@ Rails.application.config.after_initialize do
               position: 20,
               active: -> { controller_name == 'checkouts' || (@order.present? && !@order.completed?) },
               if: -> { can?(:manage, :checkouts) }
+
+    # PALLAS-CUSTOM: 支付组查看（PRD-20260823-checkout-多订单拆分与合并支付）
+    orders.add :payment_groups,
+              label: :payment_groups,
+              url: :admin_payment_groups_path,
+              position: 30,
+              active: -> { controller_name == 'payment_groups' },
+              if: -> { can?(:read, PallasTrade::PaymentGroup) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns

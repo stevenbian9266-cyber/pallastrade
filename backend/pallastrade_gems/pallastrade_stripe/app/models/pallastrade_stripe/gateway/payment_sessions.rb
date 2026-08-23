@@ -11,9 +11,13 @@ module PallasTradeStripe
         PallasTrade::PaymentSessions::Stripe
       end
 
-      def create_payment_session(order:, amount: nil, external_data: {})
-        total = amount.presence || order.total_minus_store_credits
-        amount_in_cents = PallasTrade::Money.new(total, currency: order.currency).cents
+      # PALLAS-CUSTOM: 合并支付 — 支持 payment_group 上下文（PRD-20260823-checkout-多订单拆分与合并支付）
+      # 当 payment_group 存在时，金额 = 组内未支付订单合计（服务端计算），
+      # order 为组内主订单（用于 customer/currency/shipping 继承）。
+      def create_payment_session(order:, amount: nil, external_data: {}, payment_group: nil)
+        total = amount.presence || (payment_group&.total_minus_store_credits) || order.total_minus_store_credits
+        currency = payment_group&.currency || order.currency
+        amount_in_cents = PallasTrade::Money.new(total, currency: currency).cents
 
         raise PallasTrade::Core::GatewayError, I18n.t('pallastrade.stripe.payment_session_errors.zero_amount') if amount_in_cents.zero?
 
@@ -31,9 +35,10 @@ module PallasTradeStripe
 
         payment_session_class.create!(
           order: order,
+          payment_group: payment_group,
           payment_method: self,
           amount: total,
-          currency: order.currency,
+          currency: currency,
           status: 'pending',
           external_id: response.authorization,
           customer: order.user,

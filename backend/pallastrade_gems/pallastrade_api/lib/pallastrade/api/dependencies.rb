@@ -17,6 +17,8 @@ module PallasTrade
         order_serializer: 'PallasTrade::Api::V3::OrderSerializer',
         line_item_serializer: 'PallasTrade::Api::V3::LineItemSerializer',
         payment_serializer: 'PallasTrade::Api::V3::PaymentSerializer',
+        payment_group_serializer: 'PallasTrade::Api::V3::PaymentGroupSerializer',
+        admin_payment_group_serializer: 'PallasTrade::Api::V3::Admin::PaymentGroupSerializer',
         payment_session_serializer: 'PallasTrade::Api::V3::PaymentSessionSerializer',
         payment_setup_session_serializer: 'PallasTrade::Api::V3::PaymentSetupSessionSerializer',
         payment_source_serializer: 'PallasTrade::Api::V3::PaymentSourceSerializer',

@@ -1,0 +1,60 @@
+<%# PALLAS-CUSTOM: 后台手动拆单（PRD-20260823-checkout-多订单拆分与合并支付） %>
+<% splittable = !@order.completed? && !@order.canceled? && can?(:update, @order) %>
+<% if splittable && @order.line_items.size > 1 %>
+  <div class="card mb-6">
+    <div class="card-header flex justify-between items-center border-0 bg-transparent">
+      <h5 class="card-title flex items-center">
+        <%= icon('arrows-split', class: 'mr-2') %>
+        <%= PallasTrade.t(:split_order) %>
+      </h5>
+    </div>
+    <div class="card-body">
+      <p class="text-sm text-gray-500 mb-4">
+        <%= PallasTrade.t(:split_order_description) %>
+      </p>
+      <%= form_with url: PallasTrade.split_order_admin_order_path(@order), method: :post,
+                    data: { turbo: true } do |f| %>
+        <div class="mb-4">
+          <label class="form-label" for="split_order_group_name">
+            <%= PallasTrade.t(:new_order_name) %>
+          </label>
+          <input type="text" id="split_order_group_name" name="split_order[group_name]"
+                 class="form-control" placeholder="<%= PallasTrade.t(:new_order_name_placeholder) %>" />
+        </div>
+
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th class="w-8"><%= PallasTrade.t(:move) %></th>
+              <th><%= PallasTrade.t(:item) %></th>
+              <th class="text-right"><%= PallasTrade.t(:quantity) %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @order.line_items.each do |line_item| %>
+              <tr>
+                <td>
+                  <%= check_box_tag "split_order[line_item_ids][]", line_item.prefixed_id, false,
+                                    id: "split_order_line_item_#{line_item.id}",
+                                    class: 'form-check-input' %>
+                </td>
+                <td>
+                  <label for="split_order_line_item_<%= line_item.id %>" class="cursor-pointer">
+                    <%= line_item.variant&.descriptive_name || line_item.name %>
+                    <span class="text-gray-500 text-sm">(<%= line_item.variant&.sku %>)</span>
+                  </label>
+                </td>
+                <td class="text-right"><%= line_item.quantity %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+
+        <div class="flex justify-end">
+          <%= f.submit PallasTrade.t(:split_order_submit), class: 'btn btn-primary',
+                       data: { turbo_confirm: PallasTrade.t(:are_you_sure) } %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

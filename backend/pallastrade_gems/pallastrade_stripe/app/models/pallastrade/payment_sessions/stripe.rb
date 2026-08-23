@@ -49,5 +49,16 @@ module PallasTrade
         amount: amount
       ).call
     end
+
+    # PALLAS-CUSTOM: 合并支付 — 为支付组内某一订单创建 Payment（PRD-20260823-checkout-多订单拆分与合并支付）
+    # 多个订单共享同一个 Stripe 支付意图；每个订单获得自己份额的 Payment 记录。
+    def find_or_create_payment_for_order!(target_order, metadata = {})
+      PallasTradeStripe::CreatePayment.new(
+        order: target_order,
+        payment_intent: self,
+        gateway: payment_method,
+        amount: target_order.total_minus_store_credits
+      ).call
+    end
   end
 end

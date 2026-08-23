@@ -493,7 +493,29 @@
     "orderTitle": "Bestellung #{number}",
     "shipmentCanceledRefund": "Sendung storniert — eine Rückerstattung wurde veranlasst.",
     "shippingMethodUnavailable": "Nicht verfügbar",
-    "totalColumn": "Gesamt"
+    "totalColumn": "Gesamt",
+    "pendingPayment": "Ausstehende Zahlung",
+    "pendingPaymentDescription": "Wählen Sie eine oder mehrere unbezahlte Bestellungen aus, um sie zusammen zu bezahlen.",
+    "noPendingPayment": "Sie haben keine ausstehenden Zahlungen.",
+    "selectedCount": "{count} ausgewählt",
+    "payTogether": "Zusammen bezahlen",
+    "combinedPayFailed": "Die Zahlungsgruppe konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
+  },
+  "combinedPayment": {
+    "title": "Kombinierte Zahlung",
+    "notFound": "Zahlungsgruppe nicht gefunden",
+    "notFoundDescription": "Diese Zahlungsgruppe existiert nicht oder gehört nicht Ihnen.",
+    "orders": "Bestellungen",
+    "total": "Gesamt",
+    "selectPaymentMethod": "Zahlungsmethode auswählen",
+    "pay": "Bezahlen",
+    "confirmPay": "Jetzt bezahlen",
+    "payFailed": "Zahlung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "loadFailed": "Zahlungsgruppe konnte nicht geladen werden.",
+    "paymentSuccess": "Zahlung erfolgreich",
+    "paymentSuccessDescription": "Alle Bestellungen in dieser Gruppe wurden bezahlt.",
+    "backToOrders": "Zurück zu den Bestellungen",
+    "noPaymentMethod": "Keine Zahlungsmethode verfügbar."
   },
   "orderPlaced": {
     "thanksForOrder": "Vielen Dank für Ihre Bestellung, {name}!",

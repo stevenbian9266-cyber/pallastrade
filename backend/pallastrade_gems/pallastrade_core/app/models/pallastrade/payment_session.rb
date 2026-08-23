@@ -13,6 +13,9 @@ module PallasTrade
     belongs_to :order, class_name: 'PallasTrade::Order'
     belongs_to :payment_method, class_name: 'PallasTrade::PaymentMethod'
     belongs_to :customer, class_name: PallasTrade.user_class.to_s, optional: true
+    # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+    # 一个会话可覆盖一个支付组（可空，单订单路径不变）；此时 order 为组内主订单。
+    belongs_to :payment_group, class_name: 'PallasTrade::PaymentGroup', optional: true, inverse_of: :payment_sessions
 
     has_one :payment, class_name: 'PallasTrade::Payment',
             foreign_key: :response_code,
@@ -99,6 +102,29 @@ module PallasTrade
       )
     end
 
+    # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+    # Creates or finds the Payment record for a specific member order of a payment
+    # group. Each order gets its own Payment record sharing the group's external
+    # transaction id; the amount is the order's own outstanding share.
+    #
+    # @param target_order [PallasTrade::Order] a member order of payment_group
+    # @param metadata [Hash] gateway-specific metadata
+    # @return [PallasTrade::Payment] the payment record
+    def find_or_create_payment_for_order!(target_order, metadata = {})
+      target_order.payments.find_or_create_by!(
+        payment_method: payment_method,
+        response_code: external_id,
+      ) do |p|
+        p.amount = target_order.total_minus_store_credits
+        p.skip_source_requirement = true
+      end
+    rescue ActiveRecord::RecordNotUnique
+      target_order.payments.find_by!(
+        payment_method: payment_method,
+        response_code: external_id
+      )
+    end
+
     private
 
     def publish_processing_event
@@ -122,6 +148,13 @@ module PallasTrade
     end
 
     def set_defaults_from_order
+      # PALLAS-CUSTOM: 合并支付组上下文优先（PRD-20260823-checkout-多订单拆分与合并支付）
+      if payment_group.present?
+        self.amount ||= payment_group.total_minus_store_credits if amount.blank? || amount.zero?
+        self.currency ||= payment_group.currency
+        self.customer ||= payment_group.customer
+        return
+      end
       return unless order
 
       self.amount ||= order.total_minus_store_credits if amount.blank? || amount.zero?
