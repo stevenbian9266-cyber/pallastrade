@@ -2,8 +2,8 @@
 
 import type { Order } from "@pallastrade/sdk";
 import { CircleAlert, Loader2 } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";

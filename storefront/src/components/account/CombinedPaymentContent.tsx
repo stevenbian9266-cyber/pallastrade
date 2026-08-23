@@ -2,8 +2,8 @@
 
 import type { PaymentGroup, PaymentMethod } from "@pallastrade/sdk";
 import { CircleAlert, Loader2, ShieldCheck } from "lucide-react";
-import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   StripePaymentForm,
@@ -68,8 +68,7 @@ export function CombinedPaymentContent({
     return sum + (parseFloat(order.total ?? "0") || 0);
   }, 0);
 
-  const stripeMethod =
-    paymentMethods.find((pm) => pm.session_required) ?? null;
+  const stripeMethod = paymentMethods.find((pm) => pm.session_required) ?? null;
 
   const startPayment = useCallback(async () => {
     if (!stripeMethod) return;
@@ -196,9 +195,7 @@ export function CombinedPaymentContent({
               disabled={processing}
               data-testid="confirm-combined-payment"
             >
-              {processing && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("confirmPay")}
             </Button>
           </>

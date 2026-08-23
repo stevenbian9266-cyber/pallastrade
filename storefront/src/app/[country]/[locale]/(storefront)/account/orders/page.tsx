@@ -34,10 +34,7 @@ export default async function OrdersPage({ params }: OrdersPageProps) {
       </h1>
 
       {/* PALLAS-CUSTOM: 待支付订单合并支付入口 */}
-      <CombinedPaymentPicker
-        orders={unpaidOrders}
-        basePath={basePath}
-      />
+      <CombinedPaymentPicker orders={unpaidOrders} basePath={basePath} />
 
       {orders.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">

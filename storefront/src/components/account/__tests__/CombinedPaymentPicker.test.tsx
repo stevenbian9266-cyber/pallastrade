@@ -28,7 +28,11 @@ vi.mock("@/lib/data/payment-groups", () => ({
 }));
 
 vi.mock("@/components/ui/checkbox", () => ({
-  Checkbox: ({ id, checked, onCheckedChange }: {
+  Checkbox: ({
+    id,
+    checked,
+    onCheckedChange,
+  }: {
     id: string;
     checked: boolean;
     onCheckedChange: () => void;
@@ -85,11 +89,10 @@ describe("CombinedPaymentPicker", () => {
     fireEvent.click(screen.getByTestId("combined-pay-button"));
 
     await waitFor(() => {
-      expect(mockCreatePaymentGroup).toHaveBeenCalledWith([
-        "or_aaa",
-        "or_bbb",
-      ]);
-      expect(mockPush).toHaveBeenCalledWith("/us/en/account/combined-payment/pg_123");
+      expect(mockCreatePaymentGroup).toHaveBeenCalledWith(["or_aaa", "or_bbb"]);
+      expect(mockPush).toHaveBeenCalledWith(
+        "/us/en/account/combined-payment/pg_123",
+      );
     });
   });
 
