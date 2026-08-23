@@ -940,6 +940,27 @@
         "testCoverage": 25,
         "noAntiPatterns": 15
       }
+    },
+    {
+      "id": "GS-039",
+      "name": "Storefront review echo-back + combined payment 3DS redirect-back",
+      "description": "Submitting a product review must echo the created review back to the list with a pending badge (create API returns the review). Combined payment must survive Stripe 3DS redirect-back: return_url carries ?session=<sessionId> and the page auto-completes the payment group when it reloads with session+redirect_status params; backend complete endpoint also triggers idempotent group completion.",
+      "mustDo": [
+        "createProductReview returns the created review and the UI echoes it with a pending badge",
+        "CombinedPaymentContent reads ?session=&redirect_status= on mount and auto-completes the group",
+        "Backend complete endpoint runs idempotent PaymentGroups::Complete"
+      ],
+      "mustNotDo": [
+        "Drop the created review from createProductReview",
+        "Leave the customer stuck on the payment page after 3DS (return_url without session param)",
+        "Make group completion dependent only on webhook timing"
+      ],
+      "scoring": {
+        "correctFiles": 30,
+        "correctPatterns": 30,
+        "testCoverage": 25,
+        "noAntiPatterns": 15
+      }
     }
   ]
 }
