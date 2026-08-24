@@ -981,6 +981,27 @@
         "testCoverage": 25,
         "noAntiPatterns": 15
       }
+    },
+    {
+      "id": "GS-040",
+      "name": "Checkout hydration safety + Stripe publishable key",
+      "description": "The checkout page must never SSR its form content (client-mount-only rendering, skeleton on SSR) to avoid React #418 hydration crashes, and the Stripe PaymentElement requires NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY passed as a Docker build arg at build time.",
+      "mustDo": [
+        "CheckoutPageContent renders skeleton until client mount (mounted gate)",
+        "Dockerfile and deploy.yml pass NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+        "SSR HTML of /checkout/[id] contains no rendered checkout form texts (Contact Information/Pay Now/Test card)"
+      ],
+      "mustNotDo": [
+        "SSR the checkout form and hydrate against it",
+        "Rely on runtime env for NEXT_PUBLIC_* values (they are inlined at build)",
+        "Leave stripePromise null in production builds"
+      ],
+      "scoring": {
+        "correctFiles": 30,
+        "correctPatterns": 30,
+        "testCoverage": 25,
+        "noAntiPatterns": 15
+      }
     }
   ]
 }
