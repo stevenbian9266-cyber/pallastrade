@@ -120,12 +120,21 @@ module PallasTrade
             private
 
             # PALLAS-CUSTOM: 下单前置校验（PRD-20260824）— 服务端强制执行
-            # 未登录/黑名单/风控命中 → 403 + { error: { code, message } }（FR-004）
+            # 登录/黑名单/风控 + 下单库存校验（FR-015）命中 → 403 + { error: { code, message } }（FR-004）
             def enforce_checkout_guard
-              result = PallasTrade::Checkout::Guard.call(user: current_user)
-              return if result.success?
+              guard_result = PallasTrade::Checkout::Guard.call(user: current_user)
+              return render_checkout_blocked(guard_result.error.value) if guard_result.failure?
 
-              error = result.error.value
+              # 下单库存校验（FR-015）：对支付组内每个订单校验可售库存（按锁库存模式）
+              @payment_group.orders.each do |order|
+                stock_result = PallasTrade::Checkout::StockGuard.call(order: order)
+                next if stock_result.success?
+
+                return render_checkout_blocked(stock_result.error.value)
+              end
+            end
+
+            def render_checkout_blocked(error)
               render json: {
                 error: {
                   code: error[:code],

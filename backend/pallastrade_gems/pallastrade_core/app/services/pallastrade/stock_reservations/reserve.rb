@@ -3,7 +3,10 @@ module PallasTrade
     class Reserve
       prepend PallasTrade::ServiceModule::Base
 
-      def call(order:)
+      # PALLAS-CUSTOM: 锁库存双模式（PRD-20260824-checkout-正向订单-逆向订单链路重构或优化）
+      # hold: true  = 下单锁库存（校验 + 建预留，现有行为）
+      # hold: false = 支付锁库存模式下仅校验可售量，不建预留（支付成功后再锁/扣）
+      def call(order:, hold: true)
         return success(order) unless PallasTrade::Config[:stock_reservations_enabled]
 
         expires_at = Time.current + PallasTrade::StockReservation.ttl_for(order)
@@ -42,6 +45,9 @@ module PallasTrade
             end
 
             this_order_used[stock_item.id] += line_item.quantity
+
+            # 支付锁库存模式：只校验，不建立预留（支付成功后再锁定/扣减）
+            next unless hold
 
             reservation = existing[[stock_item.id, line_item.id]] ||
                           PallasTrade::StockReservation.new(stock_item: stock_item, line_item: line_item)

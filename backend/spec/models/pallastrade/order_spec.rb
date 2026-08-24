@@ -21,7 +21,7 @@ RSpec.describe PallasTrade::Order, type: :model do
       child1 = create(:order_with_line_items, store: store, user: user, parent: parent)
       child2 = create(:order_with_line_items, store: store, user: user, parent: parent)
 
-      expect(parent.children).to contain_exactly(child1, child2)
+      expect(parent.children.reload).to contain_exactly(child1, child2)
       expect(child1.parent).to eq(parent)
       expect(child2.parent).to eq(parent)
       expect(parent.parent_order?).to be true
@@ -49,8 +49,8 @@ RSpec.describe PallasTrade::Order, type: :model do
       child1 = create(:order_with_line_items, store: store, user: user, parent: parent)
       child2 = create(:order_with_line_items, store: store, user: user, parent: parent)
 
-      expect(child1.sibling_orders).to contain_exactly(child2)
-      expect(child2.sibling_orders).to contain_exactly(child1)
+      expect(child1.sibling_orders.reload).to contain_exactly(child2)
+      expect(child2.sibling_orders.reload).to contain_exactly(child1)
     end
   end
 end
