@@ -94,6 +94,13 @@ module PallasTrade
       preference :return_eligibility_number_of_days, :integer, default: 365
       preference :reserve_stock_on, :string, default: 'checkout' # 'checkout' (default) or 'cart' — landing in 6.0 alongside Cart/Order split
       preference :stock_reservations_enabled, :boolean, default: true # Hold stock during checkout to prevent overselling
+      # PALLAS-CUSTOM: 锁库存双模式（PRD-20260824-checkout-正向订单-逆向订单链路重构或优化）
+      # 'order' = 下单锁库存（订单创建即锁定）；'payment' = 支付锁库存（支付成功才锁定/扣减）。店铺级可覆盖。
+      preference :stock_reservation_strategy, :string, default: 'order'
+      # PALLAS-CUSTOM: 风控评估钩子（PRD-20260824）— 可注入自定义评估（nil=关闭默认规则之外的自定义评估）
+      preference :risk_assessment, :string, default: nil
+      # PALLAS-CUSTOM: 防刷单-下单频率限制（次/分钟，0=关闭）
+      preference :order_frequency_limit_per_minute, :integer, default: 0
       preference :default_stock_reservation_ttl_minutes, :integer, default: 10 # Fallback TTL when a Store doesn't override
       preference :send_core_emails, :boolean, default: true, deprecated: true # Default mail headers settings
       preference :shipping_instructions, :boolean, deprecated: true

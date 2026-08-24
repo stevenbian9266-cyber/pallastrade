@@ -19,6 +19,8 @@ module PallasTrade
             prepend_before_action :require_authentication!
             before_action :set_payment_group!
             before_action :set_payment_session, only: [:show, :update, :complete]
+            # PALLAS-CUSTOM: 下单前置校验（PRD-20260824）— 登录/黑名单/风控，服务端强制执行
+            before_action :enforce_checkout_guard, only: [:create]
 
             # POST /api/v3/store/payment_groups/:payment_group_id/payment_sessions
             def create
@@ -116,6 +118,21 @@ module PallasTrade
             end
 
             private
+
+            # PALLAS-CUSTOM: 下单前置校验（PRD-20260824）— 服务端强制执行
+            # 未登录/黑名单/风控命中 → 403 + { error: { code, message } }（FR-004）
+            def enforce_checkout_guard
+              result = PallasTrade::Checkout::Guard.call(user: current_user)
+              return if result.success?
+
+              error = result.error.value
+              render json: {
+                error: {
+                  code: error[:code],
+                  message: error[:message]
+                }
+              }, status: :forbidden
+            end
 
             def set_payment_group!
               @payment_group = PallasTrade::PaymentGroup

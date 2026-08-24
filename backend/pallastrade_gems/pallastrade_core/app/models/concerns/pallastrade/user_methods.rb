@@ -43,7 +43,6 @@ module PallasTrade
 
       # Enable lifecycle events for user models
       publishes_lifecycle_events
-
       # Password reset token (Rails 7.1+ signed token, no DB column needed)
       # Token auto-invalidates when password changes (salt changes)
       # Expiration is configurable via PallasTrade::Config.customer_password_reset_expires_in (in minutes)
@@ -60,6 +59,13 @@ module PallasTrade
       before_destroy :check_completed_orders
 
       attr_accessor :use_billing
+
+      # PALLAS-CUSTOM: 用户黑名单（PRD-20260824-checkout-正向订单-逆向订单链路重构或优化）
+      # blacklisted_at 非空 = 用户被列入黑名单，任何下单入口被拦截。
+      # 支持管理员后台标记（设置 blacklisted_at 即可）；提示文案不泄露敏感信息。
+      def blacklisted?
+        blacklisted_at.present?
+      end
 
       has_person_name
       normalizes :email, :first_name, :last_name, with: ->(value) { value&.to_s&.squish&.presence }
