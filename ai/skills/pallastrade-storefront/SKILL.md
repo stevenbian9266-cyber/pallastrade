@@ -297,6 +297,26 @@ unpaid orders — the account area offers **combined payment**:
 All money math is server-side; the group amount is the sum of member orders'
 outstanding totals. See the `pallastrade-payments` skill for the model.
 
+#### Order status tabs & single-order payment (PRD-20260824)
+
+Account → Orders now has **status tabs** (`?status=` drives server rendering) and
+each unpaid order can be paid **alone or together**:
+
+1. `OrderStatusTabs` (`components/account/OrderStatusTabs.tsx`) renders
+   All / Unpaid / Processing / Shipped / Completed / Canceled; the active tab links
+   to `/account/orders?status=<key>` (or base path for All).
+2. The orders page reads `searchParams.status`, picks the matching scope and calls
+   `customer.orders.list({ scope })` — `all` | `unpaid` | `processing` | `shipped`
+   | `canceled`; the default (no scope) returns completed orders only.
+3. `CombinedPaymentPicker` keeps the multi-select "Pay together" flow and adds a
+   per-row **Pay now** button that creates a 1-order `PaymentGroup` and routes to the
+   combined-payment cashier (same flow as "Pay together").
+4. `CombinedPaymentContent` now shows a **payment-method RadioGroup** — the customer
+   picks a method, then confirms to create the payment session and reveal the Stripe
+   form (previously it silently used the first `session_required` method).
+5. i18n: `orders.tabAll/tabUnpaid/tabProcessing/tabShipped/tabCompleted/tabCanceled/payNow`
+   added across all 5 locales.
+
 #### Checkout page rendering & Stripe key (2026-08-24 fix)
 
 - **Client-side-only rendering:** `CheckoutPageContent` renders the checkout body only after

@@ -500,7 +500,14 @@
     "noPendingPayment": "No tienes pagos pendientes.",
     "selectedCount": "{count} seleccionados",
     "payTogether": "Pagar juntos",
-    "combinedPayFailed": "No se pudo crear el grupo de pago. Inténtalo de nuevo."
+    "combinedPayFailed": "No se pudo crear el grupo de pago. Inténtalo de nuevo.",
+    "tabAll": "Todos",
+    "tabUnpaid": "Impagados",
+    "tabProcessing": "En proceso",
+    "tabShipped": "Enviados",
+    "tabCompleted": "Completados",
+    "tabCanceled": "Cancelados",
+    "payNow": "Pagar ahora"
   },
   "combinedPayment": {
     "title": "Pago combinado",

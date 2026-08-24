@@ -919,6 +919,8 @@ interface OrderListParams extends ListParams {
     sort?: string;
     /** Full-text search across number, email, customer name */
     search?: string;
+    /** Order status filter: 'all', 'unpaid', 'processing', 'shipped', 'canceled', or omitted for completed orders */
+    scope?: string;
     state_eq?: string;
     completed_at_gte?: string;
     completed_at_lte?: string;

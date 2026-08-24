@@ -6647,8 +6647,8 @@ paths:
       security:
       - api_key: []
         bearer_auth: []
-      description: Returns a paginated list of completed orders for the authenticated
-        customer.
+      description: Returns a paginated list of orders for the authenticated customer,
+        filtered by the `scope` query parameter (default: completed orders).
       x-codeSamples:
       - lang: javascript
         label: PallasTrade SDK
@@ -6662,6 +6662,7 @@ paths:
 
           const orders = await client.customer.orders.list(
             {
+              scope: 'unpaid',
               completed_at_gt: '2026-01-01',
               sort: '-completed_at',
             },
@@ -6695,6 +6696,14 @@ paths:
         required: false
         description: 'Sort order. Prefix with - for descending. Values: completed_at,
           -completed_at, total, -total, number, -number'
+        schema:
+          type: string
+      - name: scope
+        in: query
+        required: false
+        description: 'Filter by order status. Values: all (every order), unpaid (placed-but-unpaid,
+          for combined payment), processing (paid but not yet shipped), shipped (fulfilled),
+          canceled (canceled orders). Default: completed orders only.'
         schema:
           type: string
       - name: q[completed_at_gt]

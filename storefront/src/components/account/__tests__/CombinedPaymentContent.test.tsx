@@ -1,10 +1,11 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockReplace = vi.fn();
 const mockSearchParams = new Map<string, string>();
 const mockGetPaymentGroup = vi.fn();
 const mockGetPaymentMethods = vi.fn();
+const mockCreateGroupPaymentSession = vi.fn();
 const mockCompleteGroupPaymentSession = vi.fn();
 
 vi.mock("next-intl", async () => {
@@ -31,7 +32,8 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/data/payment-groups", () => ({
   getPaymentGroup: (groupId: string) => mockGetPaymentGroup(groupId),
-  createGroupPaymentSession: vi.fn(),
+  createGroupPaymentSession: (groupId: string, methodId: string) =>
+    mockCreateGroupPaymentSession(groupId, methodId),
   completeGroupPaymentSession: (groupId: string, sessionId: string) =>
     mockCompleteGroupPaymentSession(groupId, sessionId),
 }));
@@ -85,6 +87,7 @@ describe("CombinedPaymentContent", () => {
     });
     mockGetPaymentMethods.mockResolvedValue([
       { id: "pm_cc", name: "Credit Card", session_required: true },
+      { id: "pm_pp", name: "PayPal", session_required: false },
     ]);
   });
 
@@ -154,5 +157,45 @@ describe("CombinedPaymentContent", () => {
       expect(screen.getByText("completeError")).toBeTruthy();
     });
     expect(screen.queryByText("paymentSuccess")).toBeNull();
+  });
+
+  // # PRD-20260824-checkout-订单列表状态选项卡-待支付订单单独-合并支付收银台 AC-006
+  it("lists payment methods and disables confirm until one is selected", async () => {
+    renderContent();
+
+    const methodGroup = await screen.findByTestId(
+      "combined-payment-methods",
+    );
+    expect(methodGroup.textContent).toContain("Credit Card");
+    expect(methodGroup.textContent).toContain("PayPal");
+
+    const confirm = screen.getByTestId(
+      "start-combined-payment",
+    ) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+  });
+
+  // # PRD-20260824-checkout-订单列表状态选项卡-待支付订单单独-合并支付收银台 AC-006
+  it("creates a payment session for the selected method and reveals the Stripe form", async () => {
+    mockCreateGroupPaymentSession.mockResolvedValue({
+      success: true,
+      session: {
+        id: "ps_123",
+        external_data: { client_secret: "cs_123" },
+      },
+    });
+    renderContent();
+
+    await screen.findByTestId("combined-payment-methods");
+    fireEvent.click(screen.getByText("Credit Card"));
+    fireEvent.click(screen.getByTestId("start-combined-payment"));
+
+    await waitFor(() => {
+      expect(mockCreateGroupPaymentSession).toHaveBeenCalledWith(
+        "pg_123",
+        "pm_cc",
+      );
+      expect(screen.getByTestId("stripe-form")).toBeTruthy();
+    });
   });
 });

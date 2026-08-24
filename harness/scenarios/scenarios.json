@@ -1002,6 +1002,28 @@
         "testCoverage": 25,
         "noAntiPatterns": 15
       }
+    },
+    {
+      "id": "GS-041",
+      "name": "Order status tabs + single/combined payment cashier",
+      "description": "Account → Orders must render status tabs (all/unpaid/processing/shipped/completed/canceled) driven by ?status= mapping to customer.orders.list({ scope }); unpaid orders support both per-row Pay now (1-order PaymentGroup) and Pay together; the combined-payment cashier requires explicit payment-method selection before creating the Stripe session.",
+      "mustDo": [
+        "Orders page reads searchParams.status and passes scope to getOrders (all|unpaid|processing|shipped|canceled; default completed)",
+        "OrderStatusTabs links ?status=<key> and marks aria-current on the active tab",
+        "CombinedPaymentPicker has per-row Pay now that creates createPaymentGroup([order.id]) and routes to the cashier",
+        "CombinedPaymentContent shows a payment-method RadioGroup and only enables confirm after a method is selected"
+      ],
+      "mustNotDo": [
+        "Filter completed_at on the client while the server scope already handles it",
+        "Silently pick the first session_required method without user selection",
+        "Drop the combined-payment picker from the All/Unpaid tabs"
+      ],
+      "scoring": {
+        "correctFiles": 30,
+        "correctPatterns": 30,
+        "testCoverage": 25,
+        "noAntiPatterns": 15
+      }
     }
   ]
 }

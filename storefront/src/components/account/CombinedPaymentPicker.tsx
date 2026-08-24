@@ -61,6 +61,28 @@ export function CombinedPaymentPicker({
     router.push(`${basePath}/account/combined-payment/${result.group.id}`);
   };
 
+  // PALLAS-CUSTOM: 待支付订单单独支付（PRD-20260824-checkout-订单列表状态选项卡）—
+  // 单个订单直接创建 1 订单的支付组并进入收银台。
+  const paySingle = async (orderId: string) => {
+    if (loading) return;
+    setLoading(true);
+    setError(null);
+
+    const result = await createPaymentGroup([orderId]);
+    setLoading(false);
+
+    if (!result.success) {
+      setError(result.error || t("combinedPayFailed"));
+      return;
+    }
+    if (!result.group) {
+      setError(t("combinedPayFailed"));
+      return;
+    }
+
+    router.push(`${basePath}/account/combined-payment/${result.group.id}`);
+  };
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
       <h2 className="text-lg font-medium text-gray-900 mb-1">
@@ -93,6 +115,15 @@ export function CombinedPaymentPicker({
                     {order.currency} {order.total}
                   </span>
                 </label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => paySingle(order.id)}
+                  disabled={loading}
+                  data-testid={`pay-single-${order.id}`}
+                >
+                  {t("payNow")}
+                </Button>
               </li>
             ))}
           </ul>

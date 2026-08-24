@@ -111,4 +111,30 @@ describe("CombinedPaymentPicker", () => {
     });
     expect(mockPush).not.toHaveBeenCalled();
   });
+
+  // # PRD-20260824-checkout-订单列表状态选项卡-待支付订单单独-合并支付收银台 AC-005
+  it("pays a single order via its own pay button", async () => {
+    render(<CombinedPaymentPicker orders={unpaidOrders} basePath="/us/en" />);
+
+    fireEvent.click(screen.getByTestId("pay-single-or_aaa"));
+
+    await waitFor(() => {
+      expect(mockCreatePaymentGroup).toHaveBeenCalledWith(["or_aaa"]);
+      expect(mockPush).toHaveBeenCalledWith(
+        "/us/en/account/combined-payment/pg_123",
+      );
+    });
+  });
+
+  // # PRD-20260824-checkout-订单列表状态选项卡-待支付订单单独-合并支付收银台 AC-005
+  it("does not submit multiple times while a single-order payment is in flight", async () => {
+    render(<CombinedPaymentPicker orders={unpaidOrders} basePath="/us/en" />);
+
+    fireEvent.click(screen.getByTestId("pay-single-or_aaa"));
+    fireEvent.click(screen.getByTestId("pay-single-or_aaa"));
+
+    await waitFor(() => {
+      expect(mockCreatePaymentGroup).toHaveBeenCalledTimes(1);
+    });
+  });
 });

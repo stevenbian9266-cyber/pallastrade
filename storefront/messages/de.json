@@ -500,7 +500,14 @@
     "noPendingPayment": "Sie haben keine ausstehenden Zahlungen.",
     "selectedCount": "{count} ausgewählt",
     "payTogether": "Zusammen bezahlen",
-    "combinedPayFailed": "Die Zahlungsgruppe konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
+    "combinedPayFailed": "Die Zahlungsgruppe konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+    "tabAll": "Alle",
+    "tabUnpaid": "Unbezahlt",
+    "tabProcessing": "In Bearbeitung",
+    "tabShipped": "Versendet",
+    "tabCompleted": "Abgeschlossen",
+    "tabCanceled": "Storniert",
+    "payNow": "Jetzt bezahlen"
   },
   "combinedPayment": {
     "title": "Kombinierte Zahlung",

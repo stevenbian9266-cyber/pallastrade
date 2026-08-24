@@ -142,7 +142,7 @@ paths:
                 description: |
                   Provider-dispatched login. The `provider` key selects a configured
                   authentication provider; the remaining fields are forwarded to it.
-                  Required fields depend on the provider 閳?see
+                  Required fields depend on the provider — see
                   [Custom API Authentication](https://pallastrade.cn/docs/developer/how-to/custom-api-authentication).
                 type: object
                 properties:
@@ -275,7 +275,7 @@ paths:
       security:
       - api_key: []
       description: Revokes the submitted refresh token. The refresh token itself is
-        the credential 閳?no Authorization header is required, so a client with an
+        the credential — no Authorization header is required, so a client with an
         expired access JWT can still log out.
       x-codeSamples:
       - lang: javascript
@@ -2314,7 +2314,7 @@ paths:
       description: |
         Associates a guest cart with the currently authenticated user.
         Requires JWT authentication and possession of the cart's token
-        (x-pallastrade-token) 閳?the token authorizes claiming the cart.
+        (x-pallastrade-token) — the token authorizes claiming the cart.
       x-codeSamples:
       - lang: javascript
         label: PallasTrade SDK
@@ -3579,7 +3579,8 @@ paths:
       - api_key: []
         bearer_auth: []
       description: |
-        Applies a gift card to the cart. Gift cards are treated as a payment method, not a discount 閳?        the cart `total` remains unchanged while `amount_due` is reduced.
+        Applies a gift card to the cart. Gift cards are treated as a payment method, not a discount —
+        the cart `total` remains unchanged while `amount_due` is reduced.
 
         For promotion discount codes, use the `POST /carts/{cart_id}/discount_codes` endpoint instead.
       x-codeSamples:
@@ -6646,8 +6647,8 @@ paths:
       security:
       - api_key: []
         bearer_auth: []
-      description: Returns a paginated list of completed orders for the authenticated
-        customer.
+      description: Returns a paginated list of orders for the authenticated customer,
+        filtered by the `scope` query parameter (default: completed orders).
       x-codeSamples:
       - lang: javascript
         label: PallasTrade SDK
@@ -6661,6 +6662,7 @@ paths:
 
           const orders = await client.customer.orders.list(
             {
+              scope: 'unpaid',
               completed_at_gt: '2026-01-01',
               sort: '-completed_at',
             },
@@ -6694,6 +6696,14 @@ paths:
         required: false
         description: 'Sort order. Prefix with - for descending. Values: completed_at,
           -completed_at, total, -total, number, -number'
+        schema:
+          type: string
+      - name: scope
+        in: query
+        required: false
+        description: 'Filter by order status. Values: all (every order), unpaid (placed-but-unpaid,
+          for combined payment), processing (paid but not yet shipped), shipped (fulfilled),
+          canceled (canceled orders). Default: completed orders only.'
         schema:
           type: string
       - name: q[completed_at_gt]
@@ -7299,7 +7309,7 @@ paths:
                   example: true
                 turnstile_token:
                   type: string
-                  description: Cloudflare Turnstile human-verification token (cf-turnstile-response). Optional 閳?when the server has TURNSTILE_SECRET_KEY configured this is validated before the account is created, otherwise verification is skipped.
+                  description: Cloudflare Turnstile human-verification token (cf-turnstile-response). Optional — when the server has TURNSTILE_SECRET_KEY configured this is validated before the account is created, otherwise verification is skipped.
                   example: 0.<token>
                 metadata:
                   type: object
@@ -8428,7 +8438,7 @@ paths:
                   symbol: "$"
                 - iso_code: EUR
                   name: Euro
-                  symbol: "閳?
+                  symbol: "€"
               schema:
                 type: object
                 properties:
@@ -9439,7 +9449,7 @@ paths:
           at `redirect_url?token=<verification_token>` and call `POST /newsletter_subscribers/verify`
           when the user clicks it.
         - If the request is authenticated via JWT and the customer's email matches the subscribed email,
-          the subscription is auto-verified and no events are fired 閳?the JWT already proves email
+          the subscription is auto-verified and no events are fired — the JWT already proves email
           ownership, so no confirmation email is needed.
 
         The optional `redirect_url` is where the verification token should land on the storefront. The
@@ -9476,7 +9486,7 @@ paths:
       - name: Authorization
         in: header
         required: false
-        description: Optional Bearer JWT 閳?when present, links the subscription to
+        description: Optional Bearer JWT — when present, links the subscription to
           that customer
         schema:
           type: string
@@ -9538,8 +9548,8 @@ paths:
       description: |
         Submits a contact message (complaint, feedback or general inquiry) from the
         storefront. Guest-accessible. The message is classified by `kind` and surfaced
-        in the admin **Email 閳?Inbox & Feedback** page with a status flow
-        (pending 閳?in_progress 閳?resolved).
+        in the admin **Email → Inbox & Feedback** page with a status flow
+        (pending → in_progress → resolved).
 
         Available `kind` values: `complaint`, `feedback`, `inquiry`.
       x-codeSamples:
@@ -9760,18 +9770,6 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-              - email
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: customer@example.com
   "/api/v3/store/products/{product_id}/reviews":
     get:
       summary: List approved reviews for a product
@@ -10305,7 +10303,8 @@ paths:
       description: |
         Downloads a digital product file using the digital link token.
         The token is provided via the `download_url` field on digital links
-        returned with order line items. No API key or authentication required 閳?        the token itself grants access.
+        returned with order line items. No API key or authentication required —
+        the token itself grants access.
         Each download increments the access counter. Downloads may be limited by
         store settings (number of downloads and/or time-based expiration).
       parameters:
@@ -10342,6 +10341,371 @@ paths:
             application/octet-stream:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+  # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+  "/api/v3/store/payment_methods":
+    get:
+      summary: List front-facing payment methods
+      tags:
+      - Carts
+      security:
+      - api_key: []
+      description: Returns active payment methods shown to customers (used by the
+        combined payment page).
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: payment methods found
+          content:
+            application/json:
+              example:
+                data:
+                - id: pm_UkLWZg9DAJ
+                  name: Credit Card
+                  description:
+                  type: stripe
+                  session_required: true
+                  source_required: false
+                meta:
+                  count: 1
+        '401':
+          description: missing API key
+          content:
+            application/json:
+              example:
+                error:
+                  code: invalid_token
+                  message: Valid API key required
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/payment_groups":
+    post:
+      summary: Create a payment group
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |
+        Bundles multiple unpaid orders into one payment group so they can be
+        paid together in a single Stripe payment. Requires a logged-in customer.
+        All orders must belong to the same store, user and currency, and must
+        not be paid, canceled, or already in an active group.
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer JWT token
+        schema:
+          type: string
+      responses:
+        '201':
+          description: payment group created
+          content:
+            application/json:
+              example:
+                id: pg_UkLWZg9DAJ
+                status: pending
+                currency: USD
+                amount: '80.00'
+                completed_at:
+              schema:
+                "$ref": "#/components/schemas/PaymentGroup"
+        '422':
+          description: validation failed
+          content:
+            application/json:
+              example:
+                error:
+                  code: mixed_currency
+                  message: All orders must use the same currency
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '401':
+          description: authentication required
+          content:
+            application/json:
+              example:
+                error:
+                  code: authentication_required
+                  message: Authentication required
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order_ids:
+                  type: array
+                  description: Prefixed order ids to bundle (or_...)
+                  items:
+                    type: string
+                    example: or_abc123
+              required:
+              - order_ids
+  "/api/v3/store/payment_groups/{id}":
+    get:
+      summary: Get a payment group
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: Returns a payment group owned by the current customer.
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        description: Payment group prefixed ID (pg_...)
+        schema:
+          type: string
+      - name: expand
+        in: query
+        required: false
+        description: Expand associations (orders, payment_sessions)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: payment group found
+          content:
+            application/json:
+              example:
+                id: pg_UkLWZg9DAJ
+                status: completed
+                currency: USD
+                amount: '80.00'
+                completed_at: '2026-08-23T10:00:00Z'
+              schema:
+                "$ref": "#/components/schemas/PaymentGroup"
+        '404':
+          description: payment group not found
+          content:
+            application/json:
+              example:
+                error:
+                  code: record_not_found
+                  message: PaymentGroup not found
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/payment_groups/{payment_group_id}/payment_sessions":
+    post:
+      summary: Create a payment session for a payment group
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: Creates one provider session covering every order in the group.
+        The amount is the server-computed group total.
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: payment_group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: payment session created
+          content:
+            application/json:
+              example:
+                id: ps_UkLWZg9DAJ
+                status: pending
+                currency: USD
+                external_id: pi_test_123
+                external_data:
+                  client_secret: pi_test_secret_123
+                amount: '80.00'
+                payment_method_id: pm_UkLWZg9DAJ
+                order_id: or_UkLWZg9DAJ
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+        '422':
+          description: session creation failed
+          content:
+            application/json:
+              example:
+                error:
+                  code: processing_error
+                  message: Payment session could not be created
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payment_method_id:
+                  type: string
+                  example: pm_abc123
+                amount:
+                  type: string
+                external_data:
+                  type: object
+              required:
+              - payment_method_id
+  "/api/v3/store/payment_groups/{payment_group_id}/payment_sessions/{id}":
+    get:
+      summary: Get a payment group session
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: payment_group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: payment session found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+    patch:
+      summary: Update a payment group session
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: payment_group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: payment session updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: string
+                external_data:
+                  type: object
+  "/api/v3/store/payment_groups/{payment_group_id}/payment_sessions/{id}/complete":
+    patch:
+      summary: Complete a payment group session
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: Confirms the payment with the provider and completes every order
+        in the group.
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: payment_group_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: payment session completed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                session_result:
+                  type: string
+                external_data:
+                  type: object
 servers:
 - url: http://{defaultHost}
   variables:
@@ -10618,7 +10982,7 @@ components:
       - message
     FulfillmentManifestItem:
       type: object
-      description: An item within a fulfillment 閳?which line item and how many units
+      description: An item within a fulfillment — which line item and how many units
         are in this fulfillment
       properties:
         item_id:
@@ -10674,7 +11038,7 @@ components:
       - type
     PromotionActionCalculator:
       type: object
-      description: The action's nested calculator (when the action carries one 閳?null
+      description: The action's nested calculator (when the action carries one — null
         for actions like `free_shipping`)
       properties:
         type:
@@ -10698,7 +11062,7 @@ components:
       - preference_schema
     PromotionActionLineItem:
       type: object
-      description: One row in a `create_line_items` action 閳?the variant added to
+      description: One row in a `create_line_items` action — the variant added to
         the order and how many
       properties:
         variant_id:
@@ -12296,6 +12660,36 @@ components:
       - order_id
       - payment_method
       x-typelizer: true
+    # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
+    PaymentGroup:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        currency:
+          type: string
+        amount:
+          type: string
+        completed_at:
+          type: string
+          nullable: true
+        orders:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Order"
+        payment_sessions:
+          type: array
+          items:
+            "$ref": "#/components/schemas/PaymentSession"
+      required:
+      - id
+      - status
+      - currency
+      - amount
+      - completed_at
+      x-typelizer: true
     PaymentSetupSession:
       type: object
       properties:
@@ -12645,41 +13039,6 @@ components:
       - total_count
       - filters
       - sort_options
-      x-typelizer: true
-    Review:
-      type: object
-      properties:
-        id:
-          type: string
-        product_id:
-          type: string
-          nullable: true
-        user_name:
-          type: string
-          nullable: true
-        rating:
-          type: integer
-        title:
-          type: string
-          nullable: true
-        body:
-          type: string
-          nullable: true
-        verified_purchase:
-          type: boolean
-        created_at:
-          type: string
-          format: date-time
-          nullable: true
-      required:
-      - id
-      - product_id
-      - user_name
-      - rating
-      - title
-      - body
-      - verified_purchase
-      - created_at
       x-typelizer: true
     Review:
       type: object

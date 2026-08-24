@@ -12,6 +12,7 @@ import {
 } from "@/components/checkout/StripePaymentForm";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   completeGroupPaymentSession,
   createGroupPaymentSession,
@@ -43,6 +44,7 @@ export function CombinedPaymentContent({
   const [paid, setPaid] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
   const stripeFormRef = useRef<StripePaymentFormHandle | null>(null);
 
   useEffect(() => {
@@ -105,7 +107,10 @@ export function CombinedPaymentContent({
     return sum + (parseFloat(order.total ?? "0") || 0);
   }, 0);
 
-  const stripeMethod = paymentMethods.find((pm) => pm.session_required) ?? null;
+  // PALLAS-CUSTOM: 收银台选择支付方式（PRD-20260824-checkout-订单列表状态选项卡）—
+  // 用户先选择支付方式，确认后再创建 payment session 显示 Stripe 表单。
+  const stripeMethod =
+    paymentMethods.find((pm) => pm.id === selectedMethodId) ?? null;
 
   const startPayment = useCallback(async () => {
     if (!stripeMethod) return;
@@ -203,17 +208,37 @@ export function CombinedPaymentContent({
             <p className="text-sm text-gray-600 mb-4">
               {t("selectPaymentMethod")}
             </p>
-            {stripeMethod ? (
-              <Button
-                onClick={startPayment}
-                disabled={processing}
-                data-testid="start-combined-payment"
-              >
-                {processing && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {t("pay")}
-              </Button>
+            {paymentMethods.length > 0 ? (
+              <>
+                <RadioGroup
+                  value={selectedMethodId ?? ""}
+                  onValueChange={setSelectedMethodId}
+                  className="gap-2 mb-4"
+                  data-testid="combined-payment-methods"
+                >
+                  {paymentMethods.map((pm) => (
+                    <label
+                      key={pm.id}
+                      className="flex items-center gap-3 rounded-md border border-gray-200 px-4 py-3 cursor-pointer bg-white hover:bg-gray-50"
+                    >
+                      <RadioGroupItem value={pm.id} />
+                      <span className="text-sm font-medium text-gray-900">
+                        {pm.name}
+                      </span>
+                    </label>
+                  ))}
+                </RadioGroup>
+                <Button
+                  onClick={startPayment}
+                  disabled={!stripeMethod || processing}
+                  data-testid="start-combined-payment"
+                >
+                  {processing && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {t("confirmPay")}
+                </Button>
+              </>
             ) : (
               <p className="text-sm text-gray-500">{t("noPaymentMethod")}</p>
             )}

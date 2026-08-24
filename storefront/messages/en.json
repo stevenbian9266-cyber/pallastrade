@@ -500,7 +500,14 @@
     "noPendingPayment": "You have no pending payments.",
     "selectedCount": "{count} selected",
     "payTogether": "Pay together",
-    "combinedPayFailed": "Could not create the payment group. Please try again."
+    "combinedPayFailed": "Could not create the payment group. Please try again.",
+    "tabAll": "All",
+    "tabUnpaid": "Unpaid",
+    "tabProcessing": "Processing",
+    "tabShipped": "Shipped",
+    "tabCompleted": "Completed",
+    "tabCanceled": "Canceled",
+    "payNow": "Pay now"
   },
   "combinedPayment": {
     "title": "Combined Payment",

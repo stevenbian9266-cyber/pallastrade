@@ -500,7 +500,14 @@
     "noPendingPayment": "Nie masz oczekujących płatności.",
     "selectedCount": "Wybrano: {count}",
     "payTogether": "Zapłać razem",
-    "combinedPayFailed": "Nie udało się utworzyć grupy płatności. Spróbuj ponownie."
+    "combinedPayFailed": "Nie udało się utworzyć grupy płatności. Spróbuj ponownie.",
+    "tabAll": "Wszystkie",
+    "tabUnpaid": "Nieopłacone",
+    "tabProcessing": "W realizacji",
+    "tabShipped": "Wysłane",
+    "tabCompleted": "Ukończone",
+    "tabCanceled": "Anulowane",
+    "payNow": "Zapłać teraz"
   },
   "combinedPayment": {
     "title": "Płatność łączna",
