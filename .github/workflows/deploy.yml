@@ -50,6 +50,7 @@ jobs:
             --build-arg NEXT_PUBLIC_TAWK_TO_PROPERTY_ID="${{ vars.TAWK_TO_PROPERTY_ID }}" \
             --build-arg NEXT_PUBLIC_TAWK_TO_WIDGET_ID="${{ vars.TAWK_TO_WIDGET_ID }}" \
             --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY="${{ vars.TURNSTILE_SITE_KEY }}" \
+            --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="${{ vars.STRIPE_PUBLISHABLE_KEY }}" \
             --build-arg NPM_REGISTRY=https://registry.npmmirror.com \
             --build-arg APK_MIRROR=mirrors.aliyun.com \
             .

@@ -80,6 +80,13 @@ ENV NEXT_PUBLIC_TAWK_TO_PROPERTY_ID=$NEXT_PUBLIC_TAWK_TO_PROPERTY_ID \
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
+# Optional Stripe publishable key for Stripe PaymentElement (checkout /
+# combined-payment). The key is PUBLIC (not a secret) and MUST be passed at
+# build time because NEXT_PUBLIC_* env is inlined into the client bundle.
+# Empty = Stripe checkout disabled (payment form won't render).
+ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+
 # Optional Sentry release/source-map upload. When SENTRY_DSN is empty,
 # next.config.ts skips withSentryConfig entirely, so the build still works.
 # SENTRY_AUTH_TOKEN is intentionally not declared as ARG/ENV — it's mounted
