@@ -7,9 +7,11 @@ RSpec.describe PallasTrade::Orders::Splitter, type: :service do
   let(:store) { create(:store, code: 'order_splitter_test') }
   let(:user) { create(:user) }
 
-  let(:order) { create(:order_with_totals, store: store, user: user, currency: 'USD') }
+  # order_with_line_items 会通过 update_with_updater! 正确重算 total（order_with_totals 不重算，属 pre-existing 缺陷）
+  let(:order) { create(:order_with_line_items, store: store, user: user, currency: 'USD') }
   let(:line_item) { order.line_items.first }
-  let(:extra_line_item) { create(:line_item, order: order) }
+  # 显式价格：确保拆分前后总额可比较（默认 price=0 会导致拆走 0 金额行项目 total 不变）
+  let(:extra_line_item) { create(:line_item, order: order, price: 50) }
 
   describe '#call' do
     it 'moves selected line items into a new split order' do
@@ -25,6 +27,19 @@ RSpec.describe PallasTrade::Orders::Splitter, type: :service do
       expect(split_order.line_items).to include(extra_line_item)
       expect(order.reload.line_items).not_to include(extra_line_item)
       expect(order.line_items).to include(line_item)
+    end
+
+    it 'AC-006/029: 拆出的子订单 parent 指向源订单（父子单结构）' do
+      order
+      extra_line_item
+
+      result = described_class.call(order: order, groups: { 'g1' => [extra_line_item.id] })
+      split_order = result.value.first
+
+      expect(split_order.parent).to eq(order)
+      expect(split_order.parent_order? ? true : split_order.child_order?).to be true
+      expect(order.children).to include(split_order)
+      expect(split_order.sibling_orders).to be_empty
     end
 
     it 'copies store/user/currency/addresses to the split order' do
@@ -55,6 +70,9 @@ RSpec.describe PallasTrade::Orders::Splitter, type: :service do
     it 'recalculates totals after splitting' do
       order
       extra_line_item
+      # extra_line_item 创建后 order.line_items 关联集合已缓存（不含 extra），先 reload 再重算使其计入 before_total
+      order.line_items.reload
+      PallasTrade::OrderUpdater.new(order).update
       before_total = order.reload.total
 
       result = described_class.call(order: order, groups: { 'g1' => [extra_line_item.id] })

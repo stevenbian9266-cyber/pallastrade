@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_23_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_24_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1099,6 +1099,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_23_000000) do
     t.bigint "market_id"
     t.decimal "non_taxable_adjustment_total", precision: 10, scale: 2, default: "0.0", null: false
     t.string "number", limit: 32
+    t.bigint "parent_id"
     t.bigint "payment_group_id"
     t.string "payment_state"
     t.decimal "payment_total", precision: 10, scale: 2, default: "0.0"
@@ -1134,6 +1135,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_23_000000) do
     t.index ["last_activity_at"], name: "index_pallastrade_orders_on_last_activity_at"
     t.index ["market_id"], name: "index_pt_orders_on_market_id"
     t.index ["number"], name: "index_pt_orders_on_number", unique: true
+    t.index ["parent_id"], name: "index_pallastrade_orders_on_parent_id"
     t.index ["payment_group_id"], name: "index_pallastrade_orders_on_payment_group_id"
     t.index ["preferred_stock_location_id"], name: "index_pt_orders_on_preferred_stock_location_id"
     t.index ["ship_address_id"], name: "index_pt_orders_on_ship_address_id"
@@ -2607,6 +2609,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_23_000000) do
   add_foreign_key "pallastrade_menu_configs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_option_type_translations", "pallastrade_option_types"
   add_foreign_key "pallastrade_option_value_translations", "pallastrade_option_values"
+  add_foreign_key "pallastrade_orders", "pallastrade_orders", column: "parent_id"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_payment_methods", column: "payment_method_id"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_users", column: "user_id"
   add_foreign_key "pallastrade_product_translations", "pallastrade_products"

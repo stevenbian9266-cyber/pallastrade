@@ -1,0 +1,56 @@
+require 'rails_helper'
+
+# PRD-20260824-checkout-正向订单-逆向订单链路重构或优化
+# AC-005/006/007/008 — 父子单结构（Order#parent_id 自引用，父=子语义）
+RSpec.describe PallasTrade::Order, type: :model do
+  let(:store) { PallasTrade::Store.default }
+  let(:user) { create(:user) }
+
+  describe '父子单结构 (PRD-20260824)' do
+    it 'AC-005: parent_id 可空自引用 FK，父/子订单 ID 各自唯一' do
+      order = create(:order_with_line_items, store: store, user: user)
+      expect(order.parent_id).to be_nil
+      expect(order).to respond_to(:parent)
+      expect(order).to respond_to(:children)
+      expect(order.id).to be_present
+      expect(order.number).to be_present
+    end
+
+    it 'AC-006: 拆单后父订单保留，子订单 parent_id 指向父；一个父订单对应多个子订单' do
+      parent = create(:order_with_line_items, store: store, user: user)
+      child1 = create(:order_with_line_items, store: store, user: user, parent: parent)
+      child2 = create(:order_with_line_items, store: store, user: user, parent: parent)
+
+      expect(parent.children).to contain_exactly(child1, child2)
+      expect(child1.parent).to eq(parent)
+      expect(child2.parent).to eq(parent)
+      expect(parent.parent_order?).to be true
+      expect(child1.child_order?).to be true
+      expect(child2.child_order?).to be true
+    end
+
+    it 'AC-007: 未拆单单笔订单 parent_id=nil 且无子订单 → 既是父订单也是子订单（父=子）' do
+      order = create(:order_with_line_items, store: store, user: user)
+      expect(order.parent_id).to be_nil
+      expect(order.parent_order?).to be false
+      expect(order.child_order?).to be false
+      expect(order.single_order?).to be true
+    end
+
+    it 'AC-008: split_from_id 保留为展示用来源引用' do
+      source = create(:order_with_line_items, store: store, user: user)
+      split = create(:order_with_line_items, store: store, user: user, split_from: source)
+      expect(split.split_from).to eq(source)
+      expect(source.split_orders).to include(split)
+    end
+
+    it 'sibling_orders 返回同一父订单下的其它子订单' do
+      parent = create(:order_with_line_items, store: store, user: user)
+      child1 = create(:order_with_line_items, store: store, user: user, parent: parent)
+      child2 = create(:order_with_line_items, store: store, user: user, parent: parent)
+
+      expect(child1.sibling_orders).to contain_exactly(child2)
+      expect(child2.sibling_orders).to contain_exactly(child1)
+    end
+  end
+end

@@ -57,6 +57,8 @@ module PallasTrade
           bill_address: source.bill_address,
           ship_address: source.ship_address,
           split_from: source,
+          # PALLAS-CUSTOM: 父子单结构（PRD-20260824）— 拆出的子订单归入同一父订单
+          parent: source,
           last_ip_address: source.last_ip_address,
           created_by: source.created_by
         )

@@ -188,6 +188,14 @@ module PallasTrade
     has_many :split_orders, class_name: 'PallasTrade::Order', foreign_key: :split_from_id,
                             dependent: :nullify, inverse_of: :split_from
 
+    # PALLAS-CUSTOM: 父子单结构（PRD-20260824-checkout-正向订单-逆向订单链路重构或优化）
+    # 父订单 ↔ 子订单：parent_id 为可空自引用 FK。
+    # - 拆单后：父订单保留，子订单 parent_id 指向父；一个父订单对应 N 个子订单。
+    # - 未拆单：parent_id=nil 且无 children → 该订单既是父订单也是子订单（父=子语义）。
+    belongs_to :parent, class_name: 'PallasTrade::Order', optional: true, inverse_of: :children
+    has_many :children, class_name: 'PallasTrade::Order', foreign_key: :parent_id,
+                        dependent: :nullify, inverse_of: :parent
+
     with_options dependent: :destroy do
       has_many :state_changes, as: :stateful, class_name: 'PallasTrade::StateChange'
       has_many :line_items, -> { order(:created_at) }, inverse_of: :order, class_name: 'PallasTrade::LineItem'
@@ -406,6 +414,27 @@ module PallasTrade
     # that should only run during the active checkout phase.
     def in_checkout?
       !cart? && !complete? && !canceled?
+    end
+
+    # PALLAS-CUSTOM: 父子单语义（PRD-20260824-checkout-正向订单-逆向订单链路重构或优化）
+    # 一个父订单可对应 N 个子订单；未拆单时单笔订单既是父订单也是子订单（父=子）。
+    def parent_order?
+      children.exists?
+    end
+
+    def child_order?
+      parent_id.present?
+    end
+
+    # 未拆单：既没有子订单也不是子订单 → 该订单既是父订单也是子订单
+    def single_order?
+      !parent_order? && !child_order?
+    end
+
+    # 兄弟订单（同一父订单下的其它子订单）
+    def sibling_orders
+      return PallasTrade::Order.none unless parent_id
+      parent.children.where.not(id: id)
     end
 
     def draft?
