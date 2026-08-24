@@ -129,6 +129,15 @@ Key facts:
   `PallasTradeStripe::CompletePaymentGroup`) is idempotent — each member order
   gets its own `Payment` record sharing the group's `response_code`, and only
   unpaid orders are touched; duplicate webhooks and job retries are safe.
+- **Non-active session/group tolerance (2026-08-24)**: gateways and jobs must
+  never call the non-bang state-machine transition on a session that already
+  left `pending/processing` (e.g. a stale retry against an already-`failed`
+  session). StateMachines writes *errors* (not exceptions) for invalid
+  transitions, so calling `payment_session.complete` unconditionally surfaces a
+  bare `Status cannot transition via "complete"` 422 to the client. Always guard
+  with `if session.can_complete?` / `if group.can_complete?` before transitioning.
+  Storefront renders non-active groups (`failed`/`expired`/`canceled`) as an
+  end-state page with no payment form (see `CombinedPaymentContent`).
 - **State machine**: `pending → processing → completed`, plus `failed` /
   `canceled` / `expired`; events `payment_group.processing/completed/failed/canceled/expired`.
 - **Store API**: `POST/GET /api/v3/store/payment_groups`, nested
