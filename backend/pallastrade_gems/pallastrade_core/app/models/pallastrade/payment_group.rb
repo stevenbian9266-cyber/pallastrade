@@ -74,6 +74,13 @@ module PallasTrade
 
     delegate :name, to: :store, prefix: true, allow_nil: true
 
+    # PALLAS-CUSTOM: instance-level active check used by PaymentGroups::Create
+    # (2026-08-24). A group is active while still open for payment (pending or
+    # processing) and not expired.
+    def active?
+      %w[pending processing].include?(status) && (expires_at.nil? || expires_at > Time.current)
+    end
+
     def amount_in_cents
       money.cents
     end
