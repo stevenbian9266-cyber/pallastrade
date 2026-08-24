@@ -82,4 +82,37 @@ RSpec.describe PallasTrade::Orders::Splitter, type: :service do
       expect(split_order.reload.total).to be > 0
     end
   end
+
+  # PRD-20260824-checkout-正向订单-逆向订单链路重构或优化 FR-027/028/029
+  describe '跨店铺拆分（PRD-20260824）' do
+    let(:target_store) { create(:store, code: 'order_splitter_target') }
+
+    it 'AC-028: 目标店铺无该商品 → 返回 split_error 明确错误' do
+      order
+      extra_line_item
+      result = described_class.call(
+        order: order,
+        groups: { 'g1' => { 'line_item_ids' => [extra_line_item.id], 'store_id' => target_store.prefixed_id } }
+      )
+      expect(result).to be_failure
+      expect(result.error.value[:code]).to eq(:split_error)
+      expect(result.error.value[:message]).to include('目标店铺')
+    end
+
+    it 'AC-027/029: 目标店铺有该商品 → 子订单归属目标店铺，parent 指向原订单' do
+      product_b = create(:product, store: target_store)
+      variant_b = create(:variant, product: product_b)
+      line_item_b = create(:line_item, order: order, variant: variant_b, price: 30)
+
+      result = described_class.call(
+        order: order,
+        groups: { 'g1' => { 'line_item_ids' => [line_item_b.id], 'store_id' => target_store.prefixed_id } }
+      )
+      expect(result).to be_success
+      split_order = result.value.first
+      expect(split_order.store).to eq(target_store)
+      expect(split_order.parent).to eq(order)
+      expect(split_order.split_from).to eq(order)
+    end
+  end
 end

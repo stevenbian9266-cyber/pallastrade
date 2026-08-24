@@ -123,7 +123,11 @@ module PallasTrade
 
         # Convenience method for service result errors
         def render_service_error(error, code: ERROR_CODES[:processing_error], status: :unprocessable_content)
-          if error.is_a?(ActiveModel::Errors)
+          # PALLAS-CUSTOM: 结构化错误（{ code:, message: }，PRD-20260824）— 先解包 ServiceModule::ResultError
+          error = error.value if error.respond_to?(:value)
+          if error.is_a?(Hash) && error[:message].present?
+            render_error(code: error[:code] || code, message: error[:message], status: status)
+          elsif error.is_a?(ActiveModel::Errors)
             render_validation_error(error, code: code)
           elsif error.is_a?(String)
             render_error(code: code, message: error, status: status)

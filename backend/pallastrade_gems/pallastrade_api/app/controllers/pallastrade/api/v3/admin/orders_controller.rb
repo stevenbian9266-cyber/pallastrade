@@ -102,9 +102,9 @@ module PallasTrade
               )
 
               if result.success?
-                render json: serialize_collection(result.value)
+                render json: { data: serialize_collection(result.value), meta: { count: result.value.size } }
               else
-                render_service_error(result.error)
+                render_service_error(result.error.respond_to?(:value) ? result.error.value : result.error)
               end
             end
           end

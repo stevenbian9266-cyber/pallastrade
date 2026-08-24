@@ -13,6 +13,9 @@
 module PallasTrade
   module Orders
     class Splitter
+      # 拆单业务错误（如跨店铺目标缺商品）——事务回滚并转为 failure
+      class SplitterError < StandardError; end
+
       prepend PallasTrade::ServiceModule::Base
 
       # @param order [PallasTrade::Order] the source order
@@ -30,8 +33,11 @@ module PallasTrade
           return failure(order, { code: :no_split_groups, message: PallasTrade.t(:no_split_groups) }) if groups.blank?
 
           paid = order.paid?
-          new_orders = groups.filter_map do |_key, line_item_ids|
-            build_split_order(order, Array(line_item_ids), paid: paid)
+          new_orders = groups.filter_map do |_key, spec|
+            ids, options = normalize_group(spec)
+            build_split_order(order, Array(ids), store_id: options[:store_id],
+                                                stock_location_id: options[:stock_location_id],
+                                                paid: paid)
           end
 
           return failure(order, { code: :no_split_line_items, message: PallasTrade.t(:no_split_line_items) }) if new_orders.empty?
@@ -47,9 +53,29 @@ module PallasTrade
 
           success(new_orders)
         end
+      rescue SplitterError => e
+        failure(order, { code: :split_error, message: e.message })
       end
 
       private
+
+      # 兼容两种 group 形态：
+      #   { "g1" => ["li_x"] }                                        —— 数组（继承源订单店铺）
+      #   { "g1" => { "line_item_ids" => [...], "store_id" => "st_x",
+      #               "stock_location_id" => "loc_y" } }              —— Hash（跨店/指定仓库，FR-027）
+      def normalize_group(spec)
+        if spec.is_a?(Hash) && spec.key?('line_item_ids')
+          [
+            Array(spec['line_item_ids']),
+            {
+              store_id: spec['store_id'],
+              stock_location_id: spec['stock_location_id']
+            }
+          ]
+        else
+          [Array(spec), {}]
+        end
+      end
 
       def resolve_groups(order, by)
         return {} if by.blank?
@@ -62,12 +88,23 @@ module PallasTrade
         !order.completed? && !order.canceled? && (allow_paid || order.payments.completed.none?)
       end
 
-      def build_split_order(source, line_item_ids, _paid = false)
+      def build_split_order(source, line_item_ids, paid: false, store_id: nil, stock_location_id: nil)
         line_items = source.line_items.where(id: line_item_ids).to_a
         return nil if line_items.empty?
 
+        target_store = resolve_target_store(source, store_id)
+        # PALLAS-CUSTOM: 跨店铺拆单（FR-028）— 目标店铺必须有该商品，否则返回明确错误
+        if target_store != source.store
+          missing = line_items.reject { |li| li.variant&.product && li.variant.product.store_id == target_store.id }
+          unless missing.empty?
+            raise SplitterError,
+                  PallasTrade.t(:order_split_store_missing_product,
+                                 default: '商品 %{item} 在目标店铺不可用', item: missing.first.variant&.name || 'N/A')
+          end
+        end
+
         split_order = PallasTrade::Order.new(
-          store: source.store,
+          store: target_store,
           user: source.user,
           channel: source.channel,
           market: source.market,
@@ -88,6 +125,12 @@ module PallasTrade
         line_items.each { |li| li.update!(order: split_order) }
 
         split_order
+      end
+
+      def resolve_target_store(source, store_id)
+        return source.store if store_id.blank?
+
+        PallasTrade::Store.find_by_prefix_id!(store_id)
       end
 
       # PALLAS-CUSTOM: 资金分摊（FR-021）— 原订单已支付时，为子订单创建真实 Payment 记录
