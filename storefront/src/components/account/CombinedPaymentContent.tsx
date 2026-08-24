@@ -35,6 +35,12 @@ export function CombinedPaymentContent({
   basePath,
 }: CombinedPaymentContentProps) {
   const t = useTranslations("combinedPayment");
+  // PALLAS-CUSTOM: 修复无限请求循环（2026-08-24）— next-intl 的 useTranslations
+  // 返回的 t 引用不稳定，若放进 useEffect/useCallback 依赖会导致每次 setState
+  // 重渲染后 effect 重跑 → 反复调用 server action（getPaymentGroup/getPaymentMethods）
+  // → 无限请求。改用 ref 持有 t，副作用依赖只保留真实数据源。
+  const tRef = useRef(t);
+  tRef.current = t;
   const router = useRouter();
   const searchParams = useSearchParams();
   const [group, setGroup] = useState<PaymentGroup | null>(null);
@@ -46,8 +52,11 @@ export function CombinedPaymentContent({
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
   const stripeFormRef = useRef<StripePaymentFormHandle | null>(null);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
     let cancelled = false;
     (async () => {
       const [groupResult, methodsResult] = await Promise.all([
@@ -56,7 +65,7 @@ export function CombinedPaymentContent({
       ]);
       if (cancelled) return;
       if (!groupResult.success) {
-        setError(groupResult.error || t("loadFailed"));
+        setError(groupResult.error || tRef.current("loadFailed"));
         return;
       }
       setGroup(groupResult.group);
@@ -65,7 +74,7 @@ export function CombinedPaymentContent({
     return () => {
       cancelled = true;
     };
-  }, [groupId, t]);
+  }, [groupId]);
 
   // Stripe redirect-back (e.g. 3D Secure): `stripe.confirmPayment` with
   // `redirect: "if_required"` sends the browser to Stripe, then back to the
@@ -81,7 +90,7 @@ export function CombinedPaymentContent({
     redirectHandledRef.current = true;
 
     if (redirectStatus === "failed") {
-      setError(t("payFailed"));
+      setError(tRef.current("payFailed"));
       return;
     }
 
@@ -96,10 +105,10 @@ export function CombinedPaymentContent({
         setPaid(true);
         router.replace(`${basePath}/account/combined-payment/${groupId}`);
       } else {
-        setError(complete.error || t("payFailed"));
+        setError(complete.error || tRef.current("payFailed"));
       }
     })();
-  }, [groupId, redirectSessionId, redirectStatus, basePath, router, t]);
+  }, [groupId, redirectSessionId, redirectStatus, basePath, router]);
 
   const orders = group?.orders ?? [];
 
@@ -119,19 +128,19 @@ export function CombinedPaymentContent({
     const result = await createGroupPaymentSession(groupId, stripeMethod.id);
     setProcessing(false);
     if (!result.success) {
-      setError(result.error || t("payFailed"));
+      setError(result.error || tRef.current("payFailed"));
       return;
     }
     const secret = result.session.external_data?.client_secret as
       | string
       | undefined;
     if (!secret) {
-      setError(t("payFailed"));
+      setError(tRef.current("payFailed"));
       return;
     }
     setClientSecret(secret);
     setSessionId(result.session.id);
-  }, [groupId, stripeMethod, t]);
+  }, [groupId, stripeMethod]);
 
   const confirmPayment = useCallback(async () => {
     if (!stripeFormRef.current || !sessionId) return;
@@ -152,11 +161,11 @@ export function CombinedPaymentContent({
     setProcessing(false);
 
     if (!complete.success) {
-      setError(complete.error || t("payFailed"));
+      setError(complete.error || tRef.current("payFailed"));
       return;
     }
     setPaid(true);
-  }, [basePath, groupId, sessionId, t]);
+  }, [basePath, groupId, sessionId]);
 
   if (paid) {
     return (

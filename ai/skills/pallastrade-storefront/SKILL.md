@@ -317,6 +317,18 @@ each unpaid order can be paid **alone or together**:
 5. i18n: `orders.tabAll/tabUnpaid/tabProcessing/tabShipped/tabCompleted/tabCanceled/payNow`
    added across all 5 locales.
 
+#### NEVER put `useTranslations` `t` in effect/callback deps (2026-08-24 loop fix)
+
+`useTranslations("ns")` returns a `t` whose reference is **not guaranteed stable**
+across renders. Putting `t` inside a `useEffect`/`useCallback` dependency array
+made `CombinedPaymentContent`'s load effect re-run on every `setState` re-render,
+re-firing the `getPaymentGroup`/`getPaymentMethods` server actions in an infinite
+loop (the browser hammered `POST /account/combined-payment/<id>` with `_rsc`
+requests). Fix: hold `t` in a ref (`const tRef = useRef(t); tRef.current = t;`)
+and keep real data sources (`groupId`, params, etc.) as the only effect deps.
+The regression test mocks `useTranslations` to return a **new function each render**
+and asserts the load effect runs exactly once.
+
 #### Checkout page rendering & Stripe key (2026-08-24 fix)
 
 - **Client-side-only rendering:** `CheckoutPageContent` renders the checkout body only after

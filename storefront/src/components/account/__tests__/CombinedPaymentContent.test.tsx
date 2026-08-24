@@ -98,6 +98,19 @@ describe("CombinedPaymentContent", () => {
     expect(screen.getByText("USD 80.00")).toBeTruthy();
   });
 
+  // # PRD-20260824-checkout-合并支付复用已有支付组继续支付-订单已在支付组时不报错
+  // Bug fix 2026-08-24：加载 effect 不得依赖 useTranslations 的 t（引用不稳定会
+  // 导致每次重渲染后 effect 重跑 → 无限请求循环）。此处 mock 的 useTranslations
+  // 每次渲染返回新函数，正好复现该场景——断言只加载一次。
+  it("loads group data exactly once (no infinite request loop)", async () => {
+    renderContent();
+    await waitFor(() => {
+      expect(screen.getByText("#R1001")).toBeTruthy();
+    });
+    expect(mockGetPaymentGroup).toHaveBeenCalledTimes(1);
+    expect(mockGetPaymentMethods).toHaveBeenCalledTimes(1);
+  });
+
   // Bug 修复：Stripe 3DS redirect-back 后自动完成支付组，不再停留当前页
   it("auto-completes the payment group on Stripe redirect-back (session param present)", async () => {
     setSearchParams({
