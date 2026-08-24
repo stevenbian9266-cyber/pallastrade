@@ -69,6 +69,8 @@ module PallasTrade
     preference :stock_reservation_ttl_minutes, :integer, default: 10
     # PALLAS-CUSTOM: 锁库存双模式（PRD-20260824）— 'order'=下单锁 / 'payment'=支付锁（店铺级覆盖全局）
     preference :stock_reservation_strategy, :string, default: 'order'
+    # PALLAS-CUSTOM: 系统拆单策略（PRD-20260824）— 'warehouse' / 'store' / nil=关闭（店铺级覆盖全局）
+    preference :auto_split_orders, :string, default: nil
     # Address preferences
     preference :company_field_enabled, :boolean, default: false
     # digital assets preferences

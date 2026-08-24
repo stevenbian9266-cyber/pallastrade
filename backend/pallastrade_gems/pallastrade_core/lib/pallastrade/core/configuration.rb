@@ -101,6 +101,10 @@ module PallasTrade
       preference :risk_assessment, :string, default: nil
       # PALLAS-CUSTOM: 防刷单-下单频率限制（次/分钟，0=关闭）
       preference :order_frequency_limit_per_minute, :integer, default: 0
+      # PALLAS-CUSTOM: 系统拆单策略（PRD-20260824）— 'warehouse'=按仓库地址 / 'store'=按店铺 / nil=关闭（店铺级可覆盖）
+      preference :auto_split_orders, :string, default: nil
+      # PALLAS-CUSTOM: 自定义拆单策略扩展点（PRD-20260824）— ->(order) { { key => [line_item_ids] } }
+      preference :auto_split_orders_custom, :string, default: nil
       preference :default_stock_reservation_ttl_minutes, :integer, default: 10 # Fallback TTL when a Store doesn't override
       preference :send_core_emails, :boolean, default: true, deprecated: true # Default mail headers settings
       preference :shipping_instructions, :boolean, deprecated: true

@@ -36,11 +36,31 @@ module PallasTrade
           payment_group.completed_at ||= Time.current
           payment_group.complete if payment_group.can_complete?
 
+          # PALLAS-CUSTOM: 支付后系统自动拆单（PRD-20260824 FR-020/023）—
+          # 合并支付成功后对组内每笔订单执行拆单评估（按 auto_split_orders 策略）
+          split_after_payment(payment_group)
+
           success(payment_group)
         end
       rescue StandardError => e
         Rails.error.report(e, context: { payment_group_id: payment_group.id }, source: 'PallasTrade.payment_group.complete')
         failure(payment_group, e.message)
+      end
+
+      private
+
+      # 合并支付成功 → 对每笔覆盖订单执行支付后拆单（幂等：不满足条件自动跳过）
+      def split_after_payment(payment_group)
+        payment_group.orders.each do |order|
+          next if order.canceled? || !order.paid?
+
+          result = PallasTrade::Orders::Splitting::AfterPayment.call(order: order)
+          Rails.error.report(
+            result.error.value.to_s,
+            context: { order_id: order.id, payment_group_id: payment_group.id },
+            source: 'PallasTrade.payment_group.complete.split_after_payment'
+          ) if result.failure?
+        end
       end
     end
   end
