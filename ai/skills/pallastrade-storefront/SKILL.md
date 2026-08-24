@@ -297,6 +297,18 @@ unpaid orders — the account area offers **combined payment**:
 All money math is server-side; the group amount is the sum of member orders'
 outstanding totals. See the `pallastrade-payments` skill for the model.
 
+#### Checkout page rendering & Stripe key (2026-08-24 fix)
+
+- **Client-side-only rendering:** `CheckoutPageContent` renders the checkout body only after
+  client mount — SSR and the client's first pass both render the skeleton. This avoids React
+  #418 hydration text mismatches on production builds, which previously unmounted the whole
+  checkout tree (blank page / dead Pay Now). Checkout is cart-bound and does not need SSR.
+- **Stripe publishable key:** `StripePaymentForm` / `ExpressCheckoutButton` read
+  `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` from `@/lib/utils/stripe` (`stripePromise`). It MUST be
+  passed as a Docker build arg (`storefront/Dockerfile` declares it, `.github/workflows/deploy.yml`
+  passes `vars.STRIPE_PUBLISHABLE_KEY`); without it `stripePromise` is `null` and the
+  PaymentElement silently never renders.
+
 #### Recovering a guest cart from an emailed checkout link (abandoned-cart recovery)
 
 Recovery emails (e.g. `abandoned_cart_mailer.recovery_email`) link back to `/{country}/{locale}/checkout/{cart_id}?token=…`. The checkout page must restore the cart token cookie **before** fetching the cart, otherwise the guest cart is treated as anonymous:
