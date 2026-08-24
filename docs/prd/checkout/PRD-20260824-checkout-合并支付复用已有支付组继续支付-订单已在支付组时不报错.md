@@ -2,12 +2,12 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved（用户 2026-08-24 通过 askQuestions 确认三项方案） |
+| 状态 | done（已验证上线） |
 | 创建日期 | 2026-08-24 |
 | 来源 | 优化：合并支付复用已有支付组继续支付（订单已在支付组时不报错） |
 | 分类 | checkout（自动判定） |
 | 关联 Skill | pallastrade-payments、pallastrade-api-v3、pallastrade-storefront |
-| 关联 REQ | REQ-20260824-payment-group-reuse.md（实施时回填） |
+| 关联 REQ | REQ-20260824-payment-group-reuse.md |
 | 关联 PRD | PRD-20260823-checkout-多订单拆分与合并支付（合并支付基础，本 PRD 为行为修正） |
 | 需求类型 | 优化迭代 |
 
