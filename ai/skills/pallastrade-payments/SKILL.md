@@ -116,7 +116,13 @@ Order C (unpaid) ─┘
 Key facts:
 
 - **Membership** is validated server-side (`PallasTrade::PaymentGroups::Create`):
-  same store, same user, same currency; no canceled / already-paid / already-in-active-group orders.
+  same store, same user, same currency; no canceled / already-paid orders.
+- **Idempotent reuse (2026-08-24)**: if a selected order is already in an
+  *active* payment group (`status` pending/processing and not expired), `Create`
+  no longer fails — it reuses the **most recently created** active group and
+  merges the selected orders (including ones spread across other groups or not
+  yet grouped) into it, recomputing the group `amount`. Groups that become empty
+  after the merge are `canceled`. Use `PaymentGroup#active?` for the check.
 - **Amount** is always server-computed (`payment_group.total_minus_store_credits`
   = sum of member orders' `total_minus_store_credits`); clients only send order ids.
 - **Completion** (`PallasTrade::PaymentGroups::Complete` / Stripe

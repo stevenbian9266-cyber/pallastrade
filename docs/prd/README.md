@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| approved | PRD-20260824-checkout-合并支付复用已有支付组继续支付-订单已在支付组时不报错 | checkout | 2026-08-24 | REQ-20260824-payment-group-reuse（实施时回填） |
 | draft | PRD-20260824-checkout-订单列表状态选项卡-待支付订单单独-合并支付收银台 | checkout | 2026-08-24 | （实施时回填） |
 | done | PRD-20260823-checkout-多订单拆分与合并支付 | checkout | 2026-08-23 | REQ-20260823-order-split-combined-payment |
 | done | PRD-20260818-other-p1-1-社交登录-google-facebook | other | 2026-08-18 | REQ-20260818-p1-1-social-login |

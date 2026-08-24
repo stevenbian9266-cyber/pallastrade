@@ -1006,17 +1006,19 @@
     {
       "id": "GS-041",
       "name": "Order status tabs + single/combined payment cashier",
-      "description": "Account → Orders must render status tabs (all/unpaid/processing/shipped/completed/canceled) driven by ?status= mapping to customer.orders.list({ scope }); unpaid orders support both per-row Pay now (1-order PaymentGroup) and Pay together; the combined-payment cashier requires explicit payment-method selection before creating the Stripe session.",
+      "description": "Account → Orders must render status tabs (all/unpaid/processing/shipped/completed/canceled) driven by ?status= mapping to customer.orders.list({ scope }); unpaid orders support both per-row Pay now (1-order PaymentGroup) and Pay together; the combined-payment cashier requires explicit payment-method selection before creating the Stripe session. Since 2026-08-24, PaymentGroups::Create is idempotent: an order already in an active payment group is NOT rejected — the most recently created active group is reused and the selected orders are merged into it (empty old groups are canceled).",
       "mustDo": [
         "Orders page reads searchParams.status and passes scope to getOrders (all|unpaid|processing|shipped|canceled; default completed)",
         "OrderStatusTabs links ?status=<key> and marks aria-current on the active tab",
         "CombinedPaymentPicker has per-row Pay now that creates createPaymentGroup([order.id]) and routes to the cashier",
-        "CombinedPaymentContent shows a payment-method RadioGroup and only enables confirm after a method is selected"
+        "CombinedPaymentContent shows a payment-method RadioGroup and only enables confirm after a method is selected",
+        "PaymentGroups::Create reuses the most recently created active group when any selected order is already in one (never fails with order_in_active_group), merging selected orders and recomputing amount"
       ],
       "mustNotDo": [
         "Filter completed_at on the client while the server scope already handles it",
         "Silently pick the first session_required method without user selection",
-        "Drop the combined-payment picker from the All/Unpaid tabs"
+        "Drop the combined-payment picker from the All/Unpaid tabs",
+        "Reject payment because an order is already in an active payment group — reuse the group instead"
       ],
       "scoring": {
         "correctFiles": 30,

@@ -8,26 +8,43 @@ RSpec.describe 'GET /api/v3/store/customer/orders with scope', type: :request do
   include_context 'API v3 Store authenticated'
 
   let(:store) { @default_store }
-  let(:path) { '/api/v3/store/customer/orders' }
+  let(:path) { '/api/v3/store/customers/me/orders' }
+
+  # 用 order_with_line_items（updater 重算 total），再显式覆盖状态字段，
+  # 避免依赖 factory 派生（shipped_order 不重算 order.fulfillment_status 等）。
+  def order_with(completed_at:, payment_state:, fulfillment_status:, status:)
+    order = create(:order_with_line_items, store: store, user: user,
+                                           currency: 'USD', status: 'placed',
+                                           payment_state: 'balance_due', completed_at: nil)
+    order.update_columns(
+      completed_at: completed_at,
+      payment_state: payment_state,
+      fulfillment_status: fulfillment_status,
+      status: status
+    )
+    order
+  end
 
   # 各状态订单
   let!(:completed) do
-    create(:completed_order_with_totals, store: store, user: user)
+    order_with(completed_at: Time.current, payment_state: 'paid',
+               fulfillment_status: nil, status: 'placed')
   end
   let!(:unpaid) do
-    create(:order_with_totals, store: store, user: user,
-                               status: 'placed', payment_state: 'balance_due',
-                               completed_at: nil)
+    order_with(completed_at: nil, payment_state: 'balance_due',
+               fulfillment_status: nil, status: 'placed')
   end
   let!(:processing) do
-    create(:order_ready_to_ship, store: store, user: user)
+    order_with(completed_at: nil, payment_state: 'paid',
+               fulfillment_status: 'ready', status: 'placed')
   end
   let!(:shipped) do
-    create(:shipped_order, store: store, user: user)
+    order_with(completed_at: nil, payment_state: 'paid',
+               fulfillment_status: 'shipped', status: 'placed')
   end
   let!(:canceled) do
-    create(:order_with_totals, store: store, user: user,
-                               status: 'canceled', completed_at: nil)
+    order_with(completed_at: nil, payment_state: 'balance_due',
+               fulfillment_status: nil, status: 'canceled')
   end
 
   def ids_for(params = {})

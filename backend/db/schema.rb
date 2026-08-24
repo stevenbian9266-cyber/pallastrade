@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_23_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1099,6 +1099,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.bigint "market_id"
     t.decimal "non_taxable_adjustment_total", precision: 10, scale: 2, default: "0.0", null: false
     t.string "number", limit: 32
+    t.bigint "payment_group_id"
     t.string "payment_state"
     t.decimal "payment_total", precision: 10, scale: 2, default: "0.0"
     t.bigint "preferred_stock_location_id"
@@ -1110,6 +1111,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.decimal "shipment_total", precision: 10, scale: 2, default: "0.0", null: false
     t.boolean "signup_for_an_account", default: false
     t.text "special_instructions"
+    t.bigint "split_from_id"
     t.string "state"
     t.integer "state_lock_version", default: 0, null: false
     t.string "status", default: "draft", null: false
@@ -1132,8 +1134,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.index ["last_activity_at"], name: "index_pallastrade_orders_on_last_activity_at"
     t.index ["market_id"], name: "index_pt_orders_on_market_id"
     t.index ["number"], name: "index_pt_orders_on_number", unique: true
+    t.index ["payment_group_id"], name: "index_pallastrade_orders_on_payment_group_id"
     t.index ["preferred_stock_location_id"], name: "index_pt_orders_on_preferred_stock_location_id"
     t.index ["ship_address_id"], name: "index_pt_orders_on_ship_address_id"
+    t.index ["split_from_id"], name: "index_pallastrade_orders_on_split_from_id"
     t.index ["status"], name: "index_pt_orders_on_status"
     t.index ["store_id"], name: "index_pt_orders_on_store_id"
     t.index ["token"], name: "index_pt_orders_on_token"
@@ -1146,6 +1150,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.bigint "payment_id"
     t.datetime "updated_at", null: false
     t.index ["payment_id"], name: "index_pt_payment_capture_events_on_payment_id"
+  end
+
+  create_table "pallastrade_payment_groups", force: :cascade do |t|
+    t.decimal "amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.string "currency", null: false
+    t.bigint "customer_id"
+    t.datetime "deleted_at"
+    t.datetime "expires_at"
+    t.string "status", default: "pending", null: false
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["completed_at"], name: "index_pallastrade_payment_groups_on_completed_at"
+    t.index ["customer_id"], name: "index_pallastrade_payment_groups_on_customer_id"
+    t.index ["deleted_at"], name: "index_pallastrade_payment_groups_on_deleted_at"
+    t.index ["expires_at"], name: "index_pallastrade_payment_groups_on_expires_at"
+    t.index ["status"], name: "index_pallastrade_payment_groups_on_status"
+    t.index ["store_id"], name: "index_pallastrade_payment_groups_on_store_id"
   end
 
   create_table "pallastrade_payment_methods", force: :cascade do |t|
@@ -1187,6 +1210,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.jsonb "external_data"
     t.string "external_id", null: false
     t.bigint "order_id", null: false
+    t.bigint "payment_group_id"
     t.bigint "payment_method_id", null: false
     t.string "status", null: false
     t.string "type", null: false
@@ -1197,6 +1221,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.index ["external_id"], name: "index_pt_payment_sessions_on_external_id"
     t.index ["order_id", "payment_method_id", "external_id"], name: "idx_payment_sessions_order_method_external", unique: true
     t.index ["order_id"], name: "index_pt_payment_sessions_on_order_id"
+    t.index ["payment_group_id"], name: "index_pallastrade_payment_sessions_on_payment_group_id"
     t.index ["payment_method_id"], name: "index_pt_payment_sessions_on_payment_method_id"
     t.index ["status"], name: "index_pt_payment_sessions_on_status"
     t.index ["type"], name: "index_pt_payment_sessions_on_type"
