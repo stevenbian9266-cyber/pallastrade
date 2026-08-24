@@ -81,6 +81,21 @@ RSpec.describe PallasTrade::Orders::Splitter, type: :service do
       expect(order.reload.total).to be < before_total
       expect(split_order.reload.total).to be > 0
     end
+
+    # PRD-20260824 FR-031/032
+    it 'AC-031: 拆出的子订单获得独立 shipment（可单独触发发货）' do
+      order
+      target = order.line_items.first
+      expect(target.inventory_units).not_to be_empty
+
+      result = described_class.call(order: order, groups: { 'g1' => [target.id] })
+      split_order = result.value.first
+
+      expect(split_order.shipments.size).to eq(1)
+      expect(split_order.shipments.first.stock_location).to eq(order.shipments.first.stock_location)
+      expect(split_order.inventory_units).not_to be_empty
+      expect(split_order.inventory_units.first.shipment).to eq(split_order.shipments.first)
+    end
   end
 
   # PRD-20260824-checkout-正向订单-逆向订单链路重构或优化 FR-027/028/029

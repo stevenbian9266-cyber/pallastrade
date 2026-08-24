@@ -130,7 +130,31 @@ module PallasTrade
           li.inventory_units.update_all(order_id: split_order.id) if li.inventory_units.any?
         end
 
+        # PALLAS-CUSTOM: 子订单可独立发货（PRD-20260824 FR-031/032）—
+        # 从源订单复制 shipment（stock_location + shipping method），关联子订单 inventory_units，
+        # 使子订单在管理后台可单独触发发货，父订单视图能展示各子订单发货进度。
+        build_split_shipment(split_order, source)
+
         split_order
+      end
+
+      def build_split_shipment(split_order, source)
+        return if split_order.ship_address.blank?
+
+        source_shipment = source.shipments.order(:created_at).first
+        return unless source_shipment
+        return if split_order.inventory_units.none?
+
+        shipment = PallasTrade::Shipment.create!(
+          order: split_order,
+          address: split_order.ship_address,
+          stock_location: source_shipment.stock_location,
+          cost: source_shipment.cost || 0
+        )
+        shipping_method = source_shipment.shipping_method
+        shipment.add_shipping_method(shipping_method, true) if shipping_method
+        split_order.inventory_units.update_all(shipment_id: shipment.id)
+        shipment
       end
 
       def resolve_target_store(source, store_id)

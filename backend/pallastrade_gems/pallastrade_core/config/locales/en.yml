@@ -1460,6 +1460,7 @@ en:
         track_information: 'Tracking Information: %{tracking}'
         track_link: 'Tracking Link: %{url}'
     shipment_state: Shipment State
+    child_orders_shipments: Sub-order Shipments
     shipments: Shipments
     shipped: Shipped
     shipping: Shipping

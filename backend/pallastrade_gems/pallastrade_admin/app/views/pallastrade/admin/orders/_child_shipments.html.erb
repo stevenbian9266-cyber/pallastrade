@@ -1,0 +1,55 @@
+<%# PALLAS-CUSTOM: 子订单发货进度（PRD-20260824 FR-032）— 父订单视图展示各子订单发货状态 %>
+<% if @child_orders.any? && can?(:read, PallasTrade::Order) %>
+  <div class="card mb-6">
+    <div class="card-header flex items-center border-0">
+      <h5 class="card-title flex items-center">
+        <%= icon('truck', class: 'mr-2') %>
+        <%= PallasTrade.t(:child_orders_shipments) %>
+      </h5>
+      <span class="badge badge-info ml-2"><%= @child_orders.size %></span>
+    </div>
+    <div class="card-body px-2 pt-0 pb-2">
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead class="border-b">
+            <tr>
+              <th scope="col"><%= PallasTrade.t(:order) %></th>
+              <th scope="col"><%= PallasTrade.t(:status) %></th>
+              <th scope="col"><%= PallasTrade.t(:shipment_state) %></th>
+              <th scope="col"><%= PallasTrade.t(:tracking) %></th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @child_orders.each do |child| %>
+              <tr>
+                <td class="font-bolder">
+                  <%= link_to child.number, PallasTrade.edit_admin_order_path(child) %>
+                </td>
+                <td><%= order_shipment_state(child) %></td>
+                <td>
+                  <% if child.shipments.any? %>
+                    <%= child.shipments.map { |s| shipment_state(s.state) }.join(', ') %>
+                  <% else %>
+                    <span class="text-gray-500"><%= PallasTrade.t(:no_resource_found, resource: plural_resource_name(PallasTrade::Shipment)) %></span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if (shipped_shipment = child.shipments.find(&:shipped?)) %>
+                    <%= shipped_shipment.tracking.presence || PallasTrade.t(:no_tracking_present) %>
+                  <% else %>
+                    <span class="text-gray-500"><%= PallasTrade.t(:no_tracking_present) %></span>
+                  <% end %>
+                </td>
+                <td class="text-right">
+                  <%= link_to_with_icon 'eye', PallasTrade.t(:preview), PallasTrade.edit_admin_order_path(child),
+                                        class: 'btn btn-sm btn-light', no_text: true, title: PallasTrade.t(:preview) %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<% end %>

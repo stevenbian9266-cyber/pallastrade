@@ -28,6 +28,9 @@ module PallasTrade
 
         @order_promotions = @order.order_promotions.includes(promotion: :promotion_actions)
         @tax_adjustments = @order.all_adjustments.tax.includes(:source, :adjustable)
+
+        # PALLAS-CUSTOM: 子订单发货进度（PRD-20260824 FR-032）— 父订单视图展示各子订单发货状态
+        @child_orders = @order.children.includes(:shipments).order(:created_at)
       end
 
       def resource_not_found
