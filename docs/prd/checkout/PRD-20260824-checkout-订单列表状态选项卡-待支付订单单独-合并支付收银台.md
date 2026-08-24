@@ -2,12 +2,12 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | draft（待用户确认） |
+| 状态 | done（已验证上线） |
 | 创建日期 | 2026-08-24 |
 | 来源 | 优化：1、商城前台 order 菜单下，增加订单状态选项卡，按照订单状态切换显示订单列表 2、待支付订单，可以单独支付、可以合并支付，流程是：点击支付、唤起收银台、选择支付方式、支付 |
 | 分类 | checkout（自动判定） |
 | 关联 Skill | pallastrade-storefront、pallastrade-api-v3、pallastrade-payments |
-| 关联 REQ | REQ-20260824-xxx.md（实施时回填） |
+| 关联 REQ | REQ-20260824-order-status-tabs-and-payment-cashier.md |
 | 关联 PRD | PRD-20260823-checkout-多订单拆分与合并支付（合并支付基础，本 PRD 在此基础上增强） |
 | 需求类型 | 优化迭代 |
 
