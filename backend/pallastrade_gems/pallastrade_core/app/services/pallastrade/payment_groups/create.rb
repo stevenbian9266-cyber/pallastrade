@@ -12,6 +12,7 @@ module PallasTrade
       # @param user [User, nil] current customer (combined payment is for logged-in users)
       # @return [ServiceResult<PallasTrade::PaymentGroup>]
       def call(store:, order_ids:, user: nil)
+        group = nil
         ApplicationRecord.transaction do
           orders = resolve_orders(store, order_ids)
           return failure(nil, :orders_not_found) if orders.size != order_ids.size || orders.empty?
@@ -28,12 +29,12 @@ module PallasTrade
           group.orders = orders
           group.amount = group.total_minus_store_credits
 
-          if group.save
-            success(group)
-          else
-            failure(group)
-          end
+          # 保存失败（例如成员订单校验不通过）时回滚整个事务，
+          # 避免留下半成品的 payment group 脏数据（PALLAS-CUSTOM 2026-08-24）。
+          raise ActiveRecord::Rollback unless group.save
         end
+
+        group ? success(group) : failure(group)
       end
 
       private

@@ -29,11 +29,22 @@ module PallasTrade
             if result.success?
               render json: serialize_resource(result.value), status: :created
             else
-              render_error(
-                code: result.error.value.to_s,
-                message: payment_group_error_message(result.error.value),
-                status: :unprocessable_entity
-              )
+              error_value = result.error&.value
+              # 保存校验失败时 error 是 ActiveModel::Errors（无 to_sym），
+              # 需单独处理，避免 500（PALLAS-CUSTOM 2026-08-24）。
+              if error_value.respond_to?(:full_messages)
+                render_error(
+                  code: 'payment_group_invalid',
+                  message: error_value.full_messages.join(', '),
+                  status: :unprocessable_entity
+                )
+              else
+                render_error(
+                  code: error_value.to_s,
+                  message: payment_group_error_message(error_value),
+                  status: :unprocessable_entity
+                )
+              end
             end
           end
 
