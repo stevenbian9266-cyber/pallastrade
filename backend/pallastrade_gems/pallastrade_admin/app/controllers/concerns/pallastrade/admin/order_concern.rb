@@ -22,7 +22,8 @@ module PallasTrade
         @payments = @order.payments.includes(:payment_method, :source).order(:created_at)
         @refunds = @order.refunds
 
-        @return_authorizations = @order.return_authorizations.includes(:return_items)
+        # PALLAS-CUSTOM: 父订单售后汇总（PRD-20260824 FR-036）— 含其下全部子订单的售后记录
+        @return_authorizations = PallasTrade::ReturnAuthorization.where(order_id: [@order.id] + @order.children.ids).includes(:return_items, :order)
         @customer_returns = @order.customer_returns.distinct
 
         @order_promotions = @order.order_promotions.includes(promotion: :promotion_actions)

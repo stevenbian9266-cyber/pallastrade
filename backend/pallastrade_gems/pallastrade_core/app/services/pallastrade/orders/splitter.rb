@@ -122,7 +122,13 @@ module PallasTrade
         split_order.save!
 
         # Move the selected line items onto the new order (triggers inventory/adjustment recalc)
-        line_items.each { |li| li.update!(order: split_order) }
+        line_items.each do |li|
+          li.update!(order: split_order)
+          # PALLAS-CUSTOM: 子订单售后（PRD-20260824 FR-034）— 库存单元跟随行项目转移，
+          # 保证子订单发货后能对其发起 ReturnAuthorization（must_have_shipped_units 校验子订单自身库存单元）。
+          # 拆单时订单未完成（splittable? 要求 !completed），不存在 shipped/returned 单元，转移安全。
+          li.inventory_units.update_all(order_id: split_order.id) if li.inventory_units.any?
+        end
 
         split_order
       end

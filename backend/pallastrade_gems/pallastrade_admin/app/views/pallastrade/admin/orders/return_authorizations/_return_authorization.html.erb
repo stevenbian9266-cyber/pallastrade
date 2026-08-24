@@ -1,11 +1,13 @@
-<% edit_link =
+<% # PALLAS-CUSTOM: 售后归属（PRD-20260824 FR-036）— RA 属于子订单时链接到其自身订单
+owner_order = return_authorization.order || @order
+edit_link =
   if can?(:edit, return_authorization)
     PallasTrade.edit_admin_order_return_authorization_path(
-      @order,
+      owner_order,
       return_authorization,
     )
   else
-    PallasTrade.admin_order_return_authorization_path(@order, return_authorization)
+    PallasTrade.admin_order_return_authorization_path(owner_order, return_authorization)
   end %>
 
 <tr
@@ -15,6 +17,9 @@
 >
   <td data-action="click->row-link#openLink" class="font-bolder">
     <%= link_to return_authorization.number, edit_link %>
+  </td>
+  <td data-action="click->row-link#openLink">
+    <%= link_to owner_order.number, PallasTrade.edit_admin_order_path(owner_order) %>
   </td>
   <td data-action="click->row-link#openLink">
     <small class="badge badge-<%= return_authorization.state %>">

@@ -412,6 +412,12 @@ PallasTrade::Core::Engine.add_routes do
           end
           resources :refunds, controller: 'orders/refunds', only: [:index, :create]
           resources :adjustments, controller: 'orders/adjustments', only: [:index, :show]
+          # PALLAS-CUSTOM: 售后父子单化（PRD-20260824 FR-033~036）
+          resources :return_authorizations, controller: 'orders/return_authorizations', only: [:index, :create] do
+            collection do
+              post :bulk_from_parent
+            end
+          end
           resources :gift_cards, controller: 'orders/gift_cards', only: [:create, :destroy]
           resource :store_credits, controller: 'orders/store_credits', only: [:create, :destroy]
         end

@@ -10,6 +10,8 @@
           <thead class="border-b">
             <tr>
               <th scope="col"><%= PallasTrade.t(:rma_number) %></th>
+              <!-- PALLAS-CUSTOM: 售后归属展示（PRD-20260824 FR-036）— 父订单汇总时区分子订单 -->
+              <th scope="col"><%= PallasTrade.t(:order) %></th>
               <th scope="col"><%= PallasTrade.t(:status) %></th>
               <th scope="col"><%= PallasTrade.t(:pre_tax_total) %></th>
               <th scope="col"><%= "#{PallasTrade.t("date")}/#{PallasTrade.t("time")}" %></th>
