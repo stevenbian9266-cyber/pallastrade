@@ -95,7 +95,13 @@ PallasTrade::Core::Engine.add_routes do
           get '/', action: :show, controller: '/pallastrade/api/v3/store/customers'
           patch '/', action: :update, controller: '/pallastrade/api/v3/store/customers'
 
-          resources :orders, only: [:index, :show]
+          resources :orders, only: [:index, :show] do
+            member do
+              # PALLAS-CUSTOM: 父子单结构（PRD-20260824）
+              get :children
+              get :parent
+            end
+          end
           resources :addresses, only: [:index, :show, :create, :update, :destroy]
           resources :credit_cards, only: [:index, :show, :destroy]
           resources :gift_cards, only: [:index, :show]

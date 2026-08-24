@@ -85,3 +85,73 @@ RSpec.describe 'GET /api/v3/store/customer/orders with scope', type: :request do
     expect(ids_for(scope: 'all')).not_to include(other.prefixed_id)
   end
 end
+
+# PRD-20260824-checkout-正向订单-逆向订单链路重构或优化
+# AC-007/009：父子单结构 — Store API 返回父子关系 + children/parent 端点
+RSpec.describe 'GET /api/v3/store/customers/me/orders/:id/children|parent', type: :request do
+  include_context 'API v3 Store authenticated'
+
+  let(:store) { @default_store }
+  let(:path) { '/api/v3/store/customers/me/orders' }
+
+  # show 端点走 scope（默认仅 complete 订单），故父子测试订单需置为 complete
+  def completed_order(attrs = {})
+    order = create(:order_with_line_items, store: store, user: user, currency: 'USD', **attrs)
+    order.update_columns(completed_at: Time.current, status: 'placed', payment_state: 'paid')
+    order
+  end
+
+  let!(:parent) { completed_order }
+  let!(:child1) { completed_order(parent: parent) }
+  let!(:child2) { completed_order(parent: parent) }
+
+  it 'AC-009: 订单详情响应包含父子关系字段' do
+    get "#{path}/#{parent.prefixed_id}", headers: headers
+    expect(response).to have_http_status(:ok)
+    data = json_response
+    expect(data['parent_id']).to be_nil
+    expect(data['children_ids']).to contain_exactly(child1.prefixed_id, child2.prefixed_id)
+    expect(data['is_parent']).to be true
+    expect(data['is_child']).to be false
+    expect(data['is_single']).to be false
+  end
+
+  it 'AC-007/009: 未拆单订单父=子（is_single=true，无 parent/children）' do
+    single = completed_order
+    get "#{path}/#{single.prefixed_id}", headers: headers
+    expect(response).to have_http_status(:ok)
+    data = json_response
+    expect(data['parent_id']).to be_nil
+    expect(data['children_ids']).to eq([])
+    expect(data['is_parent']).to be false
+    expect(data['is_child']).to be false
+    expect(data['is_single']).to be true
+  end
+
+  it 'AC-009: GET /orders/:id/children 返回父订单的子订单列表' do
+    get "#{path}/#{parent.prefixed_id}/children", headers: headers
+    expect(response).to have_http_status(:ok)
+    expect(json_response['data'].map { |o| o['id'] })
+      .to contain_exactly(child1.prefixed_id, child2.prefixed_id)
+  end
+
+  it 'AC-009: GET /orders/:id/parent 返回子订单的父订单' do
+    get "#{path}/#{child1.prefixed_id}/parent", headers: headers
+    expect(response).to have_http_status(:ok)
+    expect(json_response['id']).to eq(parent.prefixed_id)
+  end
+
+  it 'AC-009: 未拆单订单 parent 返回 404' do
+    single = completed_order
+    get "#{path}/#{single.prefixed_id}/parent", headers: headers
+    expect(response).to have_http_status(:not_found)
+  end
+
+  it 'AC-009: 不能访问其他用户的父子订单' do
+    other = create(:order_with_line_items, store: store, user: create(:user))
+    get "#{path}/#{other.prefixed_id}/children", headers: headers
+    expect(response).to have_http_status(:not_found)
+    get "#{path}/#{other.prefixed_id}/parent", headers: headers
+    expect(response).to have_http_status(:not_found)
+  end
+end

@@ -23,7 +23,11 @@ module PallasTrade
                  amount_due: [:string, nullable: true], display_amount_due: [:string, nullable: true],
                  completed_at: [:string, nullable: true],
                  billing_address: { nullable: true }, shipping_address: { nullable: true },
-                 gift_card: { nullable: true }, market: { nullable: true }
+                 gift_card: { nullable: true }, market: { nullable: true },
+                 # PALLAS-CUSTOM: 父子单结构（PRD-20260824）
+                 parent_id: [:string, nullable: true],
+                 children_ids: [:array, nullable: true],
+                 is_parent: :boolean, is_child: :boolean, is_single: :boolean
 
         attribute :market_id do |order|
           order.market&.prefixed_id
@@ -59,6 +63,27 @@ module PallasTrade
 
         attribute :covered_by_store_credit do |order|
           order.covered_by_store_credit?
+        end
+
+        # PALLAS-CUSTOM: 父子单结构（PRD-20260824）— 父/子 ID 唯一，未拆单时父=子
+        attribute :parent_id do |order|
+          order.parent&.prefixed_id
+        end
+
+        attribute :children_ids do |order|
+          order.children.map(&:prefixed_id)
+        end
+
+        attribute :is_parent do |order|
+          order.parent_order?
+        end
+
+        attribute :is_child do |order|
+          order.child_order?
+        end
+
+        attribute :is_single do |order|
+          order.single_order?
         end
 
         many :discounts, resource: proc { PallasTrade.api.discount_serializer }

@@ -6,6 +6,29 @@ module PallasTrade
           class OrdersController < ResourceController
             prepend_before_action :require_authentication!
 
+            # PALLAS-CUSTOM: 父子单结构（PRD-20260824-checkout-正向订单-逆向订单链路重构或优化）
+            # GET /api/v3/store/customers/me/orders/:id/children — 父订单的子订单列表
+            # GET /api/v3/store/customers/me/orders/:id/parent    — 子订单的父订单
+            # 只允许访问当前用户自己的订单（base_orders 约束）。
+
+            def children
+              order = base_orders.find_by_prefix_id!(params[:id])
+              authorize!(:show, order)
+              @collection = order.children.for_store(current_store)
+              render json: {
+                data: serialize_collection(@collection),
+                meta: collection_meta(@collection)
+              }
+            end
+
+            def parent
+              order = base_orders.find_by_prefix_id!(params[:id])
+              authorize!(:show, order)
+              return head(:not_found) unless order.parent
+
+              render json: serialize_resource(order.parent)
+            end
+
             protected
 
             def model_class
@@ -48,6 +71,13 @@ module PallasTrade
               when 'all' then base
               else base.complete
               end
+            end
+
+            private
+
+            # 当前用户自己的全部订单（不受状态选项卡 scope 过滤，便于查看任意父子订单）
+            def base_orders
+              current_user.orders.for_store(current_store)
             end
           end
         end
