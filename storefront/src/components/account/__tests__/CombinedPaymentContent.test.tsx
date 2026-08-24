@@ -163,9 +163,7 @@ describe("CombinedPaymentContent", () => {
   it("lists payment methods and disables confirm until one is selected", async () => {
     renderContent();
 
-    const methodGroup = await screen.findByTestId(
-      "combined-payment-methods",
-    );
+    const methodGroup = await screen.findByTestId("combined-payment-methods");
     expect(methodGroup.textContent).toContain("Credit Card");
     expect(methodGroup.textContent).toContain("PayPal");
 

@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  SocialLoginButtons,
   type SocialCredentials,
+  SocialLoginButtons,
 } from "@/components/auth/SocialLoginButtons";
 
 vi.mock("next-intl", () => ({
@@ -12,13 +12,9 @@ vi.mock("next-intl", () => ({
 // next/script renders only an empty placeholder for afterInteractive scripts in
 // SSR output. Mock it to a plain <script> so we can assert the props passed.
 vi.mock("next/script", () => ({
-  default: ({
-    src,
-    strategy,
-  }: {
-    src?: string;
-    strategy?: string;
-  }) => <script src={src} data-nscript={strategy} />,
+  default: ({ src, strategy }: { src?: string; strategy?: string }) => (
+    <script src={src} data-nscript={strategy} />
+  ),
 }));
 
 function renderWithProviders() {
@@ -45,7 +41,10 @@ describe("SocialLoginButtons", () => {
   });
 
   it("renders the Google button and GIS script when the Google client id is set (AC-005)", () => {
-    vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "client-id.apps.googleusercontent.com");
+    vi.stubEnv(
+      "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
+      "client-id.apps.googleusercontent.com",
+    );
 
     const { container } = renderWithProviders();
 

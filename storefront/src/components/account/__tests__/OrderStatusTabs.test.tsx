@@ -15,11 +15,7 @@ const tabs = [
 describe("OrderStatusTabs", () => {
   it("renders all status tabs with links", () => {
     render(
-      <OrderStatusTabs
-        tabs={[...tabs]}
-        activeKey="all"
-        basePath="/us/en"
-      />,
+      <OrderStatusTabs tabs={[...tabs]} activeKey="all" basePath="/us/en" />,
     );
 
     for (const tab of tabs) {
@@ -29,11 +25,7 @@ describe("OrderStatusTabs", () => {
 
   it("links the all tab to the base orders path and others to ?status=", () => {
     render(
-      <OrderStatusTabs
-        tabs={[...tabs]}
-        activeKey="all"
-        basePath="/us/en"
-      />,
+      <OrderStatusTabs tabs={[...tabs]} activeKey="all" basePath="/us/en" />,
     );
 
     expect(screen.getByTestId("order-tab-all").getAttribute("href")).toBe(

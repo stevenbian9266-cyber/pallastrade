@@ -296,10 +296,7 @@ describe("customer server actions", () => {
         user: mockUser,
       });
 
-      const result = await loginWithProvider(
-        "facebook",
-        "fb-access-token",
-      );
+      const result = await loginWithProvider("facebook", "fb-access-token");
 
       expect(mockClient.auth.login).toHaveBeenCalledWith({
         provider: "facebook",
