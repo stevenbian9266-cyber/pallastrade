@@ -102,6 +102,12 @@ services:
         NEXT_PUBLIC_TAWK_TO_WIDGET_ID: ${NEXT_PUBLIC_TAWK_TO_WIDGET_ID:-}
         APK_MIRROR: ${APK_MIRROR:-}
         NPM_REGISTRY: ${NPM_REGISTRY:-}
+    # Runtime (server actions / SSR data fetching) must hit the backend over the
+    # internal docker network instead of the public domain — the public route
+    # goes out to nginx and back, and fails intermittently (HTML/connection
+    # errors) under load. The client bundle keeps the build-time public URL.
+    environment:
+      PALLASTRADE_API_URL: http://web:3000
     env_file: .env.storefront.dev
     ports:
       - "127.0.0.1:3103:3001"
