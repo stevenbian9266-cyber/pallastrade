@@ -317,6 +317,20 @@ each unpaid order can be paid **alone or together**:
 5. i18n: `orders.tabAll/tabUnpaid/tabProcessing/tabShipped/tabCompleted/tabCanceled/payNow`
    added across all 5 locales.
 
+#### Non-active payment-group states (2026-08-24 fix)
+
+`CombinedPaymentContent` must never render the payment form (RadioGroup + Stripe)
+for a group that is not `pending`/`processing`. It renders an **end-state page**
+per `group.status`:
+- `completed` (or `paid` flag): success view.
+- `failed`: "Payment Failed" heading + description + **Back to orders** link, no form.
+- `canceled` / `expired`: "Payment Session Ended" heading + description + back link.
+- `undefined` (loading): skeleton.
+Backend gateways guard every transition with `if session.can_complete?` /
+`if group.can_complete?` so a stale retry against a `failed` session never
+surfaces the bare state-machine error `Status cannot transition via "complete"`
+(a `422`) — StateMachines writes such failures into `errors` instead of raising.
+
 #### NEVER put `useTranslations` `t` in effect/callback deps (2026-08-24 loop fix)
 
 `useTranslations("ns")` returns a `t` whose reference is **not guaranteed stable**
