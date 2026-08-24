@@ -167,7 +167,7 @@ export function CombinedPaymentContent({
     setPaid(true);
   }, [basePath, groupId, sessionId]);
 
-  if (paid) {
+  if (paid || group?.status === "completed") {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
         <ShieldCheck className="w-12 h-12 text-green-600 mx-auto mb-4" />
@@ -178,6 +178,49 @@ export function CombinedPaymentContent({
         <Button asChild>
           <Link href={`${basePath}/account/orders`}>{t("backToOrders")}</Link>
         </Button>
+      </div>
+    );
+  }
+
+  // PALLAS-CUSTOM: 处理非激活支付组（2026-08-24）— failed/expired/canceled 组
+  // 不允许再支付，展示明确状态，不再抛状态机裸错误（后端 Complete 已容错）。
+  if (group?.status === "failed") {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+        <CircleAlert className="w-12 h-12 text-red-600 mx-auto mb-4" />
+        <h2 className="text-xl font-medium text-gray-900 mb-2">
+          {t("groupFailed")}
+        </h2>
+        <p className="text-gray-500 mb-6">{t("groupFailedDescription")}</p>
+        <Button asChild variant="outline">
+          <Link href={`${basePath}/account/orders`}>{t("backToOrders")}</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (group?.status === "canceled" || group?.status === "expired") {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+        <CircleAlert className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+        <h2 className="text-xl font-medium text-gray-900 mb-2">
+          {t("groupEnded")}
+        </h2>
+        <p className="text-gray-500 mb-6">{t("groupEndedDescription")}</p>
+        <Button asChild variant="outline">
+          <Link href={`${basePath}/account/orders`}>{t("backToOrders")}</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (!group) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-1/3 mb-4" />
+          <div className="h-4 bg-gray-200 rounded w-1/2" />
+        </div>
       </div>
     );
   }

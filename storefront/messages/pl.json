@@ -523,7 +523,11 @@
     "paymentSuccess": "Płatność zakończona sukcesem",
     "paymentSuccessDescription": "Wszystkie zamówienia w tej grupie zostały opłacone.",
     "backToOrders": "Wróć do zamówień",
-    "noPaymentMethod": "Brak dostępnej metody płatności."
+    "noPaymentMethod": "Brak dostępnej metody płatności.",
+    "groupFailed": "Płatność nieudana",
+    "groupFailedDescription": "Płatność dla tej grupy nie powiodła się. Wróć i spróbuj ponownie.",
+    "groupEnded": "Sesja płatności zakończona",
+    "groupEndedDescription": "Ta sesja płatności nie jest już aktywna. Wróć do swoich zamówień."
   },
   "orderPlaced": {
     "thanksForOrder": "Dziękujemy za zamówienie, {name}!",

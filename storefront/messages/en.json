@@ -523,7 +523,11 @@
     "paymentSuccess": "Payment successful",
     "paymentSuccessDescription": "All orders in this group have been paid.",
     "backToOrders": "Back to orders",
-    "noPaymentMethod": "No payment method available."
+    "noPaymentMethod": "No payment method available.",
+    "groupFailed": "Payment Failed",
+    "groupFailedDescription": "The payment for this group failed. Please go back and try again.",
+    "groupEnded": "Payment Session Ended",
+    "groupEndedDescription": "This payment session is no longer active. Please go back to your orders."
   },
   "orderPlaced": {
     "thanksForOrder": "Thanks for your order, {name}!",

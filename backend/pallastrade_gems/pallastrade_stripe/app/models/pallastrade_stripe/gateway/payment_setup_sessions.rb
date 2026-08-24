@@ -47,7 +47,7 @@ module PallasTradeStripe
           ).call
 
           setup_session.payment_source = source
-          setup_session.complete unless setup_session.completed?
+          setup_session.complete if setup_session.can_complete?
         else
           setup_session.fail if setup_session.can_fail?
         end

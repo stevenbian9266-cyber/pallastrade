@@ -523,7 +523,11 @@
     "paymentSuccess": "Zahlung erfolgreich",
     "paymentSuccessDescription": "Alle Bestellungen in dieser Gruppe wurden bezahlt.",
     "backToOrders": "Zurück zu den Bestellungen",
-    "noPaymentMethod": "Keine Zahlungsmethode verfügbar."
+    "noPaymentMethod": "Keine Zahlungsmethode verfügbar.",
+    "groupFailed": "Zahlung fehlgeschlagen",
+    "groupFailedDescription": "Die Zahlung für diese Gruppe ist fehlgeschlagen. Bitte gehen Sie zurück und versuchen Sie es erneut.",
+    "groupEnded": "Zahlungssitzung beendet",
+    "groupEndedDescription": "Diese Zahlungssitzung ist nicht mehr aktiv. Bitte kehren Sie zu Ihren Bestellungen zurück."
   },
   "orderPlaced": {
     "thanksForOrder": "Vielen Dank für Ihre Bestellung, {name}!",

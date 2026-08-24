@@ -111,6 +111,52 @@ describe("CombinedPaymentContent", () => {
     expect(mockGetPaymentMethods).toHaveBeenCalledTimes(1);
   });
 
+  // # 修复：合并支付收银台处理支付组非激活状态（failed/expired 组不再抛状态机裸错误）
+  // failed 组显示失败提示，不渲染支付表单/支付方式
+  it("shows a failed state for a failed group and hides the payment form", async () => {
+    mockGetPaymentGroup.mockResolvedValue({
+      success: true,
+      group: {
+        id: "pg_123",
+        currency: "USD",
+        status: "failed",
+        orders: [
+          { id: "or_aaa", number: "R1001", currency: "USD", total: "50.00" },
+        ],
+      },
+    });
+
+    renderContent();
+
+    expect(await screen.findByText("groupFailed")).toBeTruthy();
+    expect(screen.getByText("groupFailedDescription")).toBeTruthy();
+    expect(screen.queryByTestId("combined-payment-methods")).toBeNull();
+    expect(screen.queryByTestId("start-combined-payment")).toBeNull();
+  });
+
+  it("shows an ended state for canceled/expired groups", async () => {
+    mockGetPaymentGroup.mockResolvedValue({
+      success: true,
+      group: { id: "pg_123", currency: "USD", status: "expired", orders: [] },
+    });
+
+    renderContent();
+
+    expect(await screen.findByText("groupEnded")).toBeTruthy();
+    expect(screen.getByText("groupEndedDescription")).toBeTruthy();
+  });
+
+  it("shows the success state when the group is already completed", async () => {
+    mockGetPaymentGroup.mockResolvedValue({
+      success: true,
+      group: { id: "pg_123", currency: "USD", status: "completed", orders: [] },
+    });
+
+    renderContent();
+
+    expect(await screen.findByText("paymentSuccess")).toBeTruthy();
+  });
+
   // Bug 修复：Stripe 3DS redirect-back 后自动完成支付组，不再停留当前页
   it("auto-completes the payment group on Stripe redirect-back (session param present)", async () => {
     setSearchParams({

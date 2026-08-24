@@ -428,6 +428,30 @@ RSpec.describe PallasTradeStripe::Gateway::PaymentSessions do
         expect(payment_session.reload.status).to eq('completed')
       end
     end
+
+    # 修复：合并支付收银台处理支付组非激活状态（failed/expired 组不再抛状态机裸错误）
+    # failed 会话被重复 complete（陈旧重试）时：不得抛 InvalidTransition，不得把
+    # "Status cannot transition via complete" 写进 errors（否则 controller 返回 422 裸错误）。
+    context 'when the session has already failed (stale retry)' do
+      let(:stripe_pi) { Stripe::StripeObject.construct_from(id: 'pi_complete_123', status: 'succeeded', payment_method: { type: 'card' }) }
+      let(:payment) do
+        create(:payment, order: order, payment_method: gateway, amount: order.total, state: 'completed')
+      end
+
+      before do
+        payment_session.update_column(:status, 'failed')
+        allow(gateway).to receive(:retrieve_payment_intent).and_return(stripe_pi)
+        allow(payment_session).to receive(:find_or_create_payment!).and_return(payment)
+        allow(payment_session).to receive(:payment).and_return(payment)
+      end
+
+      it 'does not raise and does not add state-machine errors to the session' do
+        expect { gateway.complete_payment_session(payment_session: payment_session) }
+          .not_to raise_error
+        expect(payment_session.errors).to be_empty
+        expect(payment_session.reload.status).to eq('failed')
+      end
+    end
   end
 
   describe '#parse_webhook_event' do

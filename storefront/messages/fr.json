@@ -523,7 +523,11 @@
     "paymentSuccess": "Paiement réussi",
     "paymentSuccessDescription": "Toutes les commandes de ce groupe ont été payées.",
     "backToOrders": "Retour aux commandes",
-    "noPaymentMethod": "Aucun moyen de paiement disponible."
+    "noPaymentMethod": "Aucun moyen de paiement disponible.",
+    "groupFailed": "Paiement échoué",
+    "groupFailedDescription": "Le paiement de ce groupe a échoué. Revenez en arrière et réessayez.",
+    "groupEnded": "Session de paiement terminée",
+    "groupEndedDescription": "Cette session de paiement n'est plus active. Revenez à vos commandes."
   },
   "orderPlaced": {
     "thanksForOrder": "Merci pour votre commande, {name} !",

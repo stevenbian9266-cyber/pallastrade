@@ -6,7 +6,7 @@ module PallasTradeStripe
       # PaymentSessions::Stripe duck-types as PaymentIntent
       PallasTradeStripe::CompleteOrder.new(payment_intent: payment_session).call
 
-      payment_session.complete unless payment_session.completed?
+      payment_session.complete if payment_session.can_complete?
     end
   end
 end

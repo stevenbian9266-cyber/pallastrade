@@ -11,9 +11,9 @@ module PallasTradeStripe
         PallasTrade::PaymentSessions::Stripe
       end
 
-      # PALLAS-CUSTOM: 合并支付 — 支持 payment_group 上下文（PRD-20260823-checkout-多订单拆分与合并支付）
-      # 当 payment_group 存在时，金额 = 组内未支付订单合计（服务端计算），
-      # order 为组内主订单（用于 customer/currency/shipping 继承）。
+      # PALLAS-CUSTOM: 合并支付 �?支持 payment_group 上下文（PRD-20260823-checkout-多订单拆分与合并支付�?
+      # �?payment_group 存在时，金额 = 组内未支付订单合计（服务端计算）�?
+      # order 为组内主订单（用�?customer/currency/shipping 继承）�?
       def create_payment_session(order:, amount: nil, external_data: {}, payment_group: nil)
         total = amount.presence || (payment_group&.total_minus_store_credits) || order.total_minus_store_credits
         currency = payment_group&.currency || order.currency
@@ -79,7 +79,7 @@ module PallasTradeStripe
       # Completes a payment session by verifying with Stripe, creating the
       # Payment record, and patching wallet address data.
       #
-      # Does NOT complete the order — that is handled by Carts::Complete
+      # Does NOT complete the order �?that is handled by Carts::Complete
       # (called by the storefront or by the webhook handler).
       def complete_payment_session(payment_session:, params: {})
         stripe_pi = retrieve_payment_intent(payment_session.external_id)
@@ -97,7 +97,7 @@ module PallasTradeStripe
           payment_session.find_or_create_payment!
 
           # `else` covers requires_capture (manual capture), processing (delayed-notification
-          # banks), and requires_action (bank transfer awaiting funds) — all auth-only states.
+          # banks), and requires_action (bank transfer awaiting funds) �?all auth-only states.
           payment = payment_session.payment
           if payment.present? && !payment.completed?
             if payment_intent_successful?(stripe_pi)
@@ -107,7 +107,7 @@ module PallasTradeStripe
             end
           end
 
-          payment_session.complete unless payment_session.completed?
+          payment_session.complete if payment_session.can_complete?
         else
           payment_session.fail if payment_session.can_fail?
         end

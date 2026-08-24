@@ -101,7 +101,7 @@ module PallasTradeStripe
             end
           end
 
-          payment_session.complete unless payment_session.completed?
+          payment_session.complete if payment_session.can_complete?
         else
           payment_session.fail if payment_session.can_fail?
         end
