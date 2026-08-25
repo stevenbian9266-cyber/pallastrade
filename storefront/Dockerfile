@@ -80,6 +80,16 @@ ENV NEXT_PUBLIC_TAWK_TO_PROPERTY_ID=$NEXT_PUBLIC_TAWK_TO_PROPERTY_ID \
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
+# Optional Stripe publishable key for Stripe PaymentElement (checkout). The key
+# is PUBLIC (not a secret) and MUST be passed at build time because
+# NEXT_PUBLIC_* is inlined into the client bundle. If it is not baked, the
+# storefront's stripePromise resolves to null and the PaymentElement renders an
+# EMPTY container (Stripe form silently missing on checkout).
+# PALLAS-CUSTOM bugfix (2026-08-26): restored after rollback to 2155920 dropped
+# the original b68095f fix.
+ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+
 # Store identity vars — MUST be baked here and MUST match the runtime env file
 # (.env.storefront.dev / .env.storefront). These are read by CLIENT components
 # (checkout layout header/footer, Header, Footer, StoreContext) via

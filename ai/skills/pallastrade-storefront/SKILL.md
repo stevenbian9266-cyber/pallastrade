@@ -304,6 +304,14 @@ Correct fix (not just a mounted gate): **bake every `NEXT_PUBLIC_*` that client 
 
 A mounted gate (render the checkout body only after client mount, SSR outputs the skeleton) is a **fallback** that stops the checkout body from participating in hydration, but it does NOT fix the underlying mismatch — always fix the env consistency first. Verify: after deploy, the SSR HTML and the client bundle must contain the same store name; console must be free of #418.
 
+#### ⚠️ Stripe PaymentElement silently empty when `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is not baked (PALLAS-CUSTOM bugfix 2026-08-26)
+
+Symptom: checkout renders fully (Pay Now visible, "Test card: 4242…" note shown) but the Stripe payment form area is **empty** — no card-number input, no Stripe iframe. Console has no obvious error; backend logs show `POST /carts/:id/payment_sessions 201` with a valid `client_secret`. The `StripePaymentForm` mounts (`<div class="p-4"><div><div></div></div></div>`) but `PaymentElement` renders nothing.
+
+Root cause: `@stripe/stripe-js`'s `loadStripe(publishableKey)` runs on the client and reads `process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` — a `NEXT_PUBLIC_*` var that must be **inlined at build time**. If the Dockerfile does not declare `ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (e.g. after a rollback that dropped the original `b68095f` fix), Docker silently ignores the `--build-arg`, the bundle ships with an empty key, `isStripeConfigured` is false, `stripePromise` resolves to `null`, and `Elements` renders an empty container. The backend still creates PaymentIntents (201) — the failure is purely the client key.
+
+Correct fix: `storefront/Dockerfile` must declare `ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` + `ENV`, and the build (`deploy.yml` via `vars.STRIPE_PUBLISHABLE_KEY`, `docker-compose.dev.yml`, or the manual `docker build`) must pass the key. Verify after deploy: `grep -rl pk_ /app/.next/static/chunks/` inside the image must match the key; in the browser the Stripe iframe (`iframe[src*="stripe"]`) must appear under Payment Method.
+
 ### Webhook handling
 
 For Next.js storefronts, `@pallastrade/sdk/webhooks` provides HMAC signature verification with typed event payloads:

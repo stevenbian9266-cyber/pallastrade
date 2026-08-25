@@ -35,6 +35,21 @@ module PallasTrade
               end
             end
 
+            # DELETE /api/v3/store/customers/me/addresses/:id
+            # Unlike the generic ResourceController#destroy (which pre-checks
+            # can_be_deleted? and 422s when the address is referenced by any
+            # shipment — including transient cart/draft orders), we delegate to
+            # PallasTrade::Address#destroy, which soft-deletes (sets deleted_at)
+            # when the address is referenced by completed orders or shipments,
+            # and hard-deletes otherwise. This lets customers remove addresses
+            # that were used in abandoned carts / draft orders (the cart row is
+            # preserved for checkout history; only the address-book entry goes
+            # away). Matches the admin AddressesController#destroy behavior.
+            def destroy
+              @resource.destroy
+              head :no_content
+            end
+
             protected
 
             def set_parent

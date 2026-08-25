@@ -634,22 +634,23 @@
     },
     {
       "id": "GS-037",
-      "name": "Storefront bugfix after rollback to 2155920: average_rating Number guard + checkout hydration (mounted gate + NEXT_PUBLIC_* build/runtime divergence)",
-      "description": "After rolling back to 2155920 (no order-split/combined-payment), two regressions resurfaced: (1) the PDP crashed with `TypeError: b?.toFixed is not a function` because ProductReviews rendered `averageRating?.toFixed(1)` while the Store API serializes average_rating as a string (BigDecimal) — fixed by wrapping in Number(). (2) checkout rendered blank / stuck skeleton (React #418 hydration mismatch). Two-part root cause & fix: (a) CheckoutPageContent SSR'd the full form without a mounted gate — fixed by rendering a skeleton until client mount so SSR and the first client pass match; (b) the store-name hydration mismatch itself was caused by NEXT_PUBLIC_STORE_NAME=PallasTrade-Dev existing only in the runtime env file while the client bundle was built without it (client inlines NEXT_PUBLIC_* at build time, server reads runtime env) — fixed by baking NEXT_PUBLIC_STORE_NAME/SITE_URL/DEFAULT_LOCALE/DEFAULT_COUNTRY as Docker build args in storefront/Dockerfile + deploy.yml + docker-compose.dev.yml so server and client render the same strings.",
+      "name": "Storefront bugfix after rollback to 2155920: average_rating Number guard + checkout hydration (mounted gate + NEXT_PUBLIC_* build/runtime divergence + Stripe key baking)",
+      "description": "After rolling back to 2155920 (no order-split/combined-payment), three regressions resurfaced: (1) the PDP crashed with `TypeError: b?.toFixed is not a function` because ProductReviews rendered `averageRating?.toFixed(1)` while the Store API serializes average_rating as a string (BigDecimal) — fixed by wrapping in Number(). (2) checkout rendered blank / stuck skeleton (React #418 hydration mismatch). Root cause: NEXT_PUBLIC_STORE_NAME=PallasTrade-Dev existed only in the runtime env file while the client bundle was built without it (client inlines NEXT_PUBLIC_* at build time, server reads runtime env) — fixed by baking NEXT_PUBLIC_STORE_NAME/SITE_URL/DEFAULT_LOCALE/DEFAULT_COUNTRY as Docker build args (storefront/Dockerfile + deploy.yml + docker-compose.dev.yml) so server and client render the same strings; the mounted gate (SSR skeleton until client mount) is the fallback. (3) the Stripe PaymentElement rendered an EMPTY container on checkout — the rollback dropped the original b68095f Dockerfile `ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` declaration, so the build arg was silently ignored, the client bundle shipped without the publishable key, stripePromise resolved to null, and Elements rendered nothing (backend still created PaymentIntents 201). Fixed by restoring the ARG/ENV + build-arg in Dockerfile/deploy.yml/compose.",
       "mustDo": [
         "Render the PDP rating summary with Number(averageRating).toFixed(1) so a string average_rating never throws",
         "Keep checkout SSR and the first client pass both rendering the skeleton (mounted gate) to avoid React #418 unmounting the checkout tree",
-        "Bake every NEXT_PUBLIC_* read by client components (STORE_NAME, SITE_URL, DEFAULT_LOCALE, DEFAULT_COUNTRY) as build args matching the runtime .env.storefront.* values",
-        "After deploy: the SSR HTML and the client bundle must contain the same store name and the console must be free of #418; checkout renders within ~2s with the Stripe payment form",
+        "Bake every NEXT_PUBLIC_* read by client components (STORE_NAME, SITE_URL, DEFAULT_LOCALE, DEFAULT_COUNTRY, STRIPE_PUBLISHABLE_KEY) as build args matching the runtime .env.storefront.* values",
+        "After deploy: SSR HTML and client bundle contain the same store name, console free of #418, checkout renders within ~2s, and the Stripe PaymentElement iframe (iframe[src*='stripe']) is visible under Payment Method",
         "Pass pnpm check (Biome), tsc --noEmit, and the ProductReviews vitest suite"
       ],
       "mustNotDo": [
         "Call averageRating?.toFixed(1) directly on the possibly-string API value",
         "Fix a #418 by only adding a mounted gate while build-time NEXT_PUBLIC_* diverges from the runtime env file (env consistency is the root fix)",
+        "Assume a PaymentElement that mounts but renders an empty div is fine — verify the publishable key is actually baked in the client bundle (grep pk_ in /app/.next/static/chunks/)",
         "Re-introduce order-splitting / combined-payment UI or server code on this rollback baseline",
         "Push while doc-impact reports docs-required"
       ],
-      "scoring": { "pdpNoCrash": 25, "checkoutRenders": 25, "stripeRenders": 20, "noHydration418": 20, "noNewFeatures": 5, "ciGreen": 5 }
+      "scoring": { "pdpNoCrash": 20, "checkoutRenders": 20, "stripeFormRenders": 25, "noHydration418": 20, "noNewFeatures": 5, "ciGreen": 5, "addressDelete422": 5 }
     }
   ]
 }
