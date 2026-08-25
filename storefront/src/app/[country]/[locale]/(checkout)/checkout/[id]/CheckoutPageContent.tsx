@@ -122,6 +122,17 @@ function CheckoutPageContentInner({
   const [policyConsent, setPolicyConsent] = useState(false);
   const [policyError, setPolicyError] = useState(false);
   const [isSessionPayment, setIsSessionPayment] = useState(true);
+  // PALLAS-CUSTOM bugfix (2026-08-25): render the checkout body only after
+  // client mount. SSR and the client's first pass both render the skeleton, so
+  // the checkout markup is never hydrated against a server-rendered copy — this
+  // eliminates React #418 hydration text mismatches that previously unmounted
+  // the whole checkout tree (blank page / Stripe form not rendered) on
+  // production builds. Checkout is an authenticated/cart-bound page that does
+  // not need SSR/SEO.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const fulfillments = cart?.fulfillments ?? [];
 
@@ -605,10 +616,10 @@ function CheckoutPageContentInner({
     // PaymentSection handles setProcessing(false) on error internally
   };
 
-  // Loading state — only shown when no initial data (client-side navigation).
-  // When initialData is provided (SSR), skip the authLoading check since
-  // we already know isAuthenticated from the server.
-  if (loading || (!initialData && authLoading)) {
+  // Loading state — rendered on the server AND on the client's first pass so
+  // React has no SSR/CSR text mismatch to reconcile (the real content renders
+  // only after mount). Also shown while client-side data is loading.
+  if (!mounted || loading || (!initialData && authLoading)) {
     return (
       <div className="animate-pulse space-y-6">
         <div className="h-8 bg-gray-200 rounded w-1/3" />

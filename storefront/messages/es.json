@@ -250,7 +250,8 @@
     "yes": "Si",
     "no": "No",
     "optionFilterChip": "{filter}: {value}"
-  },  "reviews": {
+  },
+  "reviews": {
     "title": "Reseñas",
     "count": "reseñas",
     "empty": "Aún no hay reseñas.",
@@ -268,7 +269,8 @@
     "submitError": "Algo salió mal. Inténtalo de nuevo.",
     "signInRequired": "Inicia sesión para enviar una reseña.",
     "signInToReview": "Inicia sesión para escribir una reseña."
-  },  "navigation": {
+  },
+  "navigation": {
     "home": "Inicio",
     "categories": "Categorias",
     "breadcrumb": "Migas de pan"

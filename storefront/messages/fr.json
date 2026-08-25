@@ -250,7 +250,8 @@
     "yes": "Oui",
     "no": "Non",
     "optionFilterChip": "{filter} : {value}"
-  },  "reviews": {
+  },
+  "reviews": {
     "title": "Avis",
     "count": "avis",
     "empty": "Aucun avis pour le moment.",
@@ -268,7 +269,8 @@
     "submitError": "Une erreur est survenue. Veuillez réessayer.",
     "signInRequired": "Veuillez vous connecter pour soumettre un avis.",
     "signInToReview": "Connectez-vous pour rédiger un avis."
-  },  "navigation": {
+  },
+  "navigation": {
     "home": "Accueil",
     "categories": "Categories",
     "breadcrumb": "Fil d'Ariane"

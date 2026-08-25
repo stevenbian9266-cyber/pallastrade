@@ -5,9 +5,9 @@ import { Suspense } from "react";
 import { getAddresses } from "@/lib/data/addresses";
 import { getCheckoutOrder } from "@/lib/data/checkout";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
-import { setCartCookies } from "@/lib/pallastrade/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
+import { setCartCookies } from "@/lib/pallastrade/cookies";
 
 import { CheckoutPageContent } from "./CheckoutPageContent";
 
@@ -29,10 +29,7 @@ interface CheckoutPageProps {
   }>;
 }
 
-async function CheckoutDataLoader({
-  params,
-  searchParams,
-}: CheckoutPageProps) {
+async function CheckoutDataLoader({ params, searchParams }: CheckoutPageProps) {
   await connection();
 
   const { id: cartId, country: urlCountry } = await params;
@@ -91,7 +88,10 @@ async function CheckoutDataLoader({
   );
 }
 
-export default function CheckoutPage({ params, searchParams }: CheckoutPageProps) {
+export default function CheckoutPage({
+  params,
+  searchParams,
+}: CheckoutPageProps) {
   return (
     <Suspense>
       <CheckoutDataLoader params={params} searchParams={searchParams} />

@@ -107,10 +107,7 @@ describe("ProductReviews", () => {
       />,
     );
     await user.click(screen.getByRole("button", { name: "5 stars" }));
-    await user.type(
-      screen.getByPlaceholderText("titlePlaceholder"),
-      "Great",
-    );
+    await user.type(screen.getByPlaceholderText("titlePlaceholder"), "Great");
     await user.click(screen.getByRole("button", { name: "submit" }));
     expect(mockedCreate).toHaveBeenCalledWith("prod_1", {
       rating: 5,
