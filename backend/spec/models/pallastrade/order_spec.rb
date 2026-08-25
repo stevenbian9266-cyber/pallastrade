@@ -53,4 +53,54 @@ RSpec.describe PallasTrade::Order, type: :model do
       expect(child2.sibling_orders.reload).to contain_exactly(child1)
     end
   end
+
+  # Bugfix 2026-08-25: PaymentSession checkout 创建的订单在未完成支付前
+  # payment_state 为 nil（从未运行 OrderUpdater#update_payment_state）。
+  # 旧 scope 的 `where.not(payment_state: 'paid')` 在 SQL 层对 NULL 不成立，
+  # 导致此类"待付款"订单被排除出合并支付列表（订单页无付款入口）。
+  describe 'unpaid_for_combined_payment (bugfix 2026-08-25)' do
+    it '包含 payment_state 为 NULL 的 placed 订单（无 payment 记录但欠款）' do
+      order = create(
+        :order_with_line_items,
+        store: store,
+        user: user,
+        status: 'placed',
+        payment_state: nil,
+        canceled_at: nil,
+      )
+      expect(described_class.unpaid_for_combined_payment).to include(order)
+    end
+
+    it '包含 balance_due 的 placed 订单' do
+      order = create(
+        :order_with_line_items,
+        store: store,
+        user: user,
+        status: 'placed',
+        payment_state: 'balance_due',
+        canceled_at: nil,
+      )
+      expect(described_class.unpaid_for_combined_payment).to include(order)
+    end
+
+    it '排除 paid / credit_owed / canceled / draft 订单' do
+      paid = create(:order_with_line_items, store: store, user: user, status: 'placed', payment_state: 'paid')
+      credit = create(:order_with_line_items, store: store, user: user, status: 'placed', payment_state: 'credit_owed')
+      canceled = create(
+        :order_with_line_items,
+        store: store,
+        user: user,
+        status: 'placed',
+        payment_state: 'balance_due',
+        canceled_at: Time.current,
+      )
+      draft = create(:order_with_line_items, store: store, user: user, status: 'draft', payment_state: nil)
+
+      result = described_class.unpaid_for_combined_payment
+      expect(result).not_to include(paid)
+      expect(result).not_to include(credit)
+      expect(result).not_to include(canceled)
+      expect(result).not_to include(draft)
+    end
+  end
 end

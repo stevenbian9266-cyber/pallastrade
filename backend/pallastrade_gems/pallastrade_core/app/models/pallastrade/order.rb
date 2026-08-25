@@ -141,10 +141,15 @@ module PallasTrade
     #   - status placed (not draft/canceled)
     #   - not canceled
     #   - still owes money (payment_state != paid)
+    #
+    # PALLAS-CUSTOM bugfix (2026-08-25): orders whose `payment_state` has never
+    # been computed (nil — no payment record yet, e.g. created by a
+    # PaymentSession checkout that never reached completion) were silently
+    # excluded because `payment_state != 'paid'` is NULL-false in SQL. Such
+    # orders are still "unpaid" and must appear in the combined-payment picker.
     scope :unpaid_for_combined_payment, lambda {
       where(status: 'placed', canceled_at: nil)
-        .where.not(payment_state: 'paid')
-        .where.not(payment_state: 'credit_owed')
+        .where('payment_state IS NULL OR payment_state NOT IN (?)', %w[paid credit_owed])
     }
 
     acts_as_taggable_on :tags
