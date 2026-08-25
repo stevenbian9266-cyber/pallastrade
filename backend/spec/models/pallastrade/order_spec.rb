@@ -83,7 +83,20 @@ RSpec.describe PallasTrade::Order, type: :model do
       expect(described_class.unpaid_for_combined_payment).to include(order)
     end
 
-    it '排除 paid / credit_owed / canceled / draft 订单' do
+    it '包含 checkout 进入支付阶段但未完成（status=draft, state=payment）的订单' do
+      order = create(
+        :order_with_line_items,
+        store: store,
+        user: user,
+        status: 'draft',
+        state: 'payment',
+        payment_state: nil,
+        canceled_at: nil,
+      )
+      expect(described_class.unpaid_for_combined_payment).to include(order)
+    end
+
+    it '排除 paid / credit_owed / canceled / 购物车阶段(draft+state=cart) 订单' do
       paid = create(:order_with_line_items, store: store, user: user, status: 'placed', payment_state: 'paid')
       credit = create(:order_with_line_items, store: store, user: user, status: 'placed', payment_state: 'credit_owed')
       canceled = create(
@@ -94,13 +107,21 @@ RSpec.describe PallasTrade::Order, type: :model do
         payment_state: 'balance_due',
         canceled_at: Time.current,
       )
-      draft = create(:order_with_line_items, store: store, user: user, status: 'draft', payment_state: nil)
+      cart_stage = create(
+        :order_with_line_items,
+        store: store,
+        user: user,
+        status: 'draft',
+        state: 'cart',
+        payment_state: nil,
+        canceled_at: nil,
+      )
 
       result = described_class.unpaid_for_combined_payment
       expect(result).not_to include(paid)
       expect(result).not_to include(credit)
       expect(result).not_to include(canceled)
-      expect(result).not_to include(draft)
+      expect(result).not_to include(cart_stage)
     end
   end
 end

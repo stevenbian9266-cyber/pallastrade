@@ -138,17 +138,24 @@ module PallasTrade
 
     # PALLAS-CUSTOM: 多订单合并支付（PRD-20260823-checkout-多订单拆分与合并支付）
     # Placed-but-unpaid orders eligible for combined payment:
-    #   - status placed (not draft/canceled)
+    #   - status placed (not draft/canceled) — completed the checkout flow
+    #   - OR state payment — entered the payment step of checkout but never
+    #     finished (status still draft, no finalize!) — still owes money
     #   - not canceled
     #   - still owes money (payment_state != paid)
     #
-    # PALLAS-CUSTOM bugfix (2026-08-25): orders whose `payment_state` has never
-    # been computed (nil — no payment record yet, e.g. created by a
-    # PaymentSession checkout that never reached completion) were silently
-    # excluded because `payment_state != 'paid'` is NULL-false in SQL. Such
-    # orders are still "unpaid" and must appear in the combined-payment picker.
+    # PALLAS-CUSTOM bugfix (2026-08-25): two NULL-related traps were fixed:
+    #   1) orders whose `payment_state` has never been computed (nil — no
+    #      payment record yet) were silently excluded because
+    #      `payment_state != 'paid'` is NULL-false in SQL.
+    #   2) checkout orders stuck in `state = 'payment'` keep `status = 'draft'`
+    #      (finalize! only sets 'placed' at complete) and were excluded by the
+    #      old `status = 'placed'` filter — so they never appeared in the
+    #      account "Pending Payment" list and could not be paid from PRD
+    #      链路 C. They are still unpaid and must be payable.
     scope :unpaid_for_combined_payment, lambda {
-      where(status: 'placed', canceled_at: nil)
+      where(canceled_at: nil)
+        .where('(status = ? OR state = ?)', 'placed', 'payment')
         .where('payment_state IS NULL OR payment_state NOT IN (?)', %w[paid credit_owed])
     }
 
