@@ -80,6 +80,27 @@ ENV NEXT_PUBLIC_TAWK_TO_PROPERTY_ID=$NEXT_PUBLIC_TAWK_TO_PROPERTY_ID \
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
+# Store identity vars — MUST be baked here and MUST match the runtime env file
+# (.env.storefront.dev / .env.storefront). These are read by CLIENT components
+# (checkout layout header/footer, Header, Footer, StoreContext) via
+# lib/store.ts getStoreName()/getStoreUrl() — NEXT_PUBLIC_* is inlined into the
+# client bundle at BUILD time, while server components read the runtime env.
+# If the build value and the runtime value diverge, SSR renders one name and
+# the client hydrates another -> React #418 hydration mismatch (blank / stuck
+# checkout, dead header/footer). Pass the same value as the runtime env file.
+# PALLAS-CUSTOM bugfix (2026-08-25): bake store identity to match runtime env.
+ARG NEXT_PUBLIC_STORE_NAME
+ENV NEXT_PUBLIC_STORE_NAME=$NEXT_PUBLIC_STORE_NAME
+
+ARG NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+
+ARG NEXT_PUBLIC_DEFAULT_LOCALE
+ENV NEXT_PUBLIC_DEFAULT_LOCALE=$NEXT_PUBLIC_DEFAULT_LOCALE
+
+ARG NEXT_PUBLIC_DEFAULT_COUNTRY
+ENV NEXT_PUBLIC_DEFAULT_COUNTRY=$NEXT_PUBLIC_DEFAULT_COUNTRY
+
 # Optional Sentry release/source-map upload. When SENTRY_DSN is empty,
 # next.config.ts skips withSentryConfig entirely, so the build still works.
 # SENTRY_AUTH_TOKEN is intentionally not declared as ARG/ENV — it's mounted

@@ -39,14 +39,17 @@ jobs:
           if [ "${{ github.ref_name }}" = "main" ]; then
             API_URL="https://pallastrade.cn"
             PUB_KEY="${{ secrets.PALLASTRADE_PUBLISHABLE_KEY_PROD }}"
+            STORE_NAME="${{ vars.STORE_NAME_PROD }}"
           else
             API_URL="https://dev.pallastrade.cn"
             PUB_KEY="${{ secrets.PALLASTRADE_PUBLISHABLE_KEY_DEV }}"
+            STORE_NAME="${{ vars.STORE_NAME_DEV }}"
           fi
           docker build -t ghcr.io/${{ github.repository_owner }}/pallastrade-storefront:${{ github.ref_name }} \
             -f storefront/Dockerfile \
             --build-arg PALLASTRADE_API_URL="$API_URL" \
             --build-arg PALLASTRADE_PUBLISHABLE_KEY="$PUB_KEY" \
+            --build-arg NEXT_PUBLIC_STORE_NAME="$STORE_NAME" \
             --build-arg NEXT_PUBLIC_TAWK_TO_PROPERTY_ID="${{ vars.TAWK_TO_PROPERTY_ID }}" \
             --build-arg NEXT_PUBLIC_TAWK_TO_WIDGET_ID="${{ vars.TAWK_TO_WIDGET_ID }}" \
             --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY="${{ vars.TURNSTILE_SITE_KEY }}" \

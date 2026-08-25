@@ -291,6 +291,19 @@ export default async function CheckoutPage({ params, searchParams }) {
 
 Use `setCartCookies(cartId, token)` (shared cookie helper) so subsequent client-side fetches and the payment session calls carry the token.
 
+#### ⚠️ NEXT_PUBLIC_* build/runtime divergence → React #418 hydration mismatch (PALLAS-CUSTOM bugfix 2026-08-25)
+
+Symptom: checkout page blank / stuck on the loading skeleton; console shows `Minified React error #418` (hydration text mismatch) on production builds; the page occasionally recovers after 30–60s or never does. Product/PDP pages (server-component layout) are unaffected — only pages whose **layout or header/footer are client components** (e.g. the `(checkout)/layout.tsx`, `Header.tsx`, `Footer.tsx`, `StoreContext.tsx`) throw it.
+
+Root cause: client components read `NEXT_PUBLIC_*` (e.g. `getStoreName()` in `lib/store.ts`) — those are **inlined into the client bundle at build time**. Server components read the **runtime** `process.env`. If the build-time value differs from the runtime env file value (`.env.storefront.dev` → `NEXT_PUBLIC_STORE_NAME=PallasTrade-Dev`), the server SSR-renders one string while the client hydrates another → #418 → React aborts hydration → the mounted-gate `useEffect` never runs → permanent skeleton / blank page.
+
+Correct fix (not just a mounted gate): **bake every `NEXT_PUBLIC_*` that client components read as a Docker build arg, and make it exactly match the runtime env file**:
+- `storefront/Dockerfile` — declare `ARG` + `ENV` for `NEXT_PUBLIC_STORE_NAME`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_DEFAULT_LOCALE`, `NEXT_PUBLIC_DEFAULT_COUNTRY` (in addition to the existing Tawk/Turnstile/Stripe args).
+- `.github/workflows/deploy.yml` + `deploy/docker-compose.dev.yml` — pass the same values as build args.
+- Runtime `.env.storefront.*` must keep the identical values.
+
+A mounted gate (render the checkout body only after client mount, SSR outputs the skeleton) is a **fallback** that stops the checkout body from participating in hydration, but it does NOT fix the underlying mismatch — always fix the env consistency first. Verify: after deploy, the SSR HTML and the client bundle must contain the same store name; console must be free of #418.
+
 ### Webhook handling
 
 For Next.js storefronts, `@pallastrade/sdk/webhooks` provides HMAC signature verification with typed event payloads:
