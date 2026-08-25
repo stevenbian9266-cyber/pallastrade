@@ -202,6 +202,8 @@
     "backInStockError": "Something went wrong. Please try again.",
     "addToCart": "Ajouter au panier",
     "adding": "Ajout...",
+    "buyNow": "Acheter maintenant",
+    "buying": "Démarrage du paiement...",
     "description": "Description",
     "details": "Details",
     "sku": "UGS",

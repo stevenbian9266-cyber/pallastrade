@@ -3,8 +3,11 @@
 import type { Media, Product, Variant } from "@pallastrade/sdk";
 import { CircleCheckBig, CircleX, Loader2, ShoppingBag } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { BackInStockNotify } from "@/components/products/BackInStockNotify";
+import { BuyNowButton } from "@/components/products/BuyNowButton";
+import { buyNow } from "@/lib/data/buy-now";
 import { MediaGallery } from "@/components/products/MediaGallery";
 import { ProductCustomFields } from "@/components/products/ProductCustomFields";
 import {
@@ -37,6 +40,7 @@ export function ProductDetails({
 }: ProductDetailsProps) {
   const { addItem } = useCart();
   const { currency } = useStore();
+  const router = useRouter();
   const t = useTranslations("products");
 
   // Filter variants list
@@ -61,6 +65,8 @@ export function ProductDetails({
 
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
+  // PALLAS-CUSTOM: Buy Now（PRD-20260824 FR-011）— 独立 loading，避免与 Add to Cart 互扰
+  const [buying, setBuying] = useState(false);
 
   // Track product view (analytics - client-only side effect)
   useEffect(() => {
@@ -124,6 +130,36 @@ export function ProductDetails({
     await addItem(variantId, quantity);
     setLoading(false);
     trackAddToCart(product, selectedVariant, quantity, currency);
+  };
+
+  // PALLAS-CUSTOM: Buy Now（PRD-20260824 FR-011）— 创建仅含当前商品的快捷购物车
+  // → 公用确认页 /checkout/{id}?from=buy-now（不污染原购物车，原车已备份）
+  const handleBuyNow = async () => {
+    const variantId =
+      selectedVariant?.id ||
+      product.default_variant?.id ||
+      product.default_variant_id;
+    if (!variantId) {
+      throw new Error("No variant selected");
+    }
+
+    setBuying(true);
+    try {
+      const result = await buyNow(variantId, quantity);
+      if (result.success) {
+        const checkoutUrl = `${basePath}/checkout/${result.cartId}?from=buy-now`;
+        if (isAuthenticated) {
+          router.push(checkoutUrl);
+        } else {
+          // 未登录：跳转登录，登录后回跳确认页（FR-001/FR-011）
+          router.push(
+            `${basePath}/account?redirect=${encodeURIComponent(checkoutUrl)}`,
+          );
+        }
+      }
+    } finally {
+      setBuying(false);
+    }
   };
 
   return (
@@ -206,6 +242,7 @@ export function ProductDetails({
                 size="lg"
                 onClick={handleAddToCart}
                 disabled={loading || !isPurchasable}
+                className="flex-1"
               >
                 {loading ? (
                   <>
@@ -221,6 +258,15 @@ export function ProductDetails({
                   t("outOfStock")
                 )}
               </Button>
+
+              {/* PALLAS-CUSTOM: Buy Now（PRD-20260824 FR-011）*/}
+              {isPurchasable && (
+                <BuyNowButton
+                  loading={buying}
+                  disabled={loading}
+                  onClick={handleBuyNow}
+                />
+              )}
             </div>
           </div>
 

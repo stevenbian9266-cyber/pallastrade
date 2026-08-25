@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { trackPurchase } from "@/lib/analytics/gtm";
+import { restorePreviousCart } from "@/lib/data/buy-now";
 import { getCompletedOrder } from "@/lib/data/checkout";
 import { getCachedCompletedOrder } from "@/lib/utils/completed-order-cache";
 import { extractBasePath } from "@/lib/utils/path";
@@ -43,6 +44,18 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
   useEffect(() => {
     setSummaryContent(null);
   }, [setSummaryContent]);
+
+  // PALLAS-CUSTOM: Buy Now 结算完成后恢复原购物车（PRD-20260824 FR-011 不污染购物车）。
+  // Buy Now 进入时原购物车 cookie 被备份到 *_prev，结算完成回到结果页时恢复，
+  // 使用户回到原购物车内容。无备份（普通结账）时无副作用。
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    restorePreviousCart().catch(() => {
+      // 恢复失败不阻断结果页展示
+    });
+  }, []);
 
   // Track whether we've already loaded the order to avoid re-fetching
   // after the cart token cookie is cleared by CartProvider

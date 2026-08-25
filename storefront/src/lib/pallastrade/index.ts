@@ -12,9 +12,11 @@ export {
 export { getClient, getConfig, initPallasTradeNext } from "./config";
 // Cookie management
 export {
+  backupCartCookies,
   canPersistCookies,
   clearAccessToken,
   clearCartCookies,
+  clearPrevCartCookies,
   clearRefreshToken,
   getAccessToken,
   getCartId,
@@ -22,6 +24,7 @@ export {
   getCartToken,
   getRefreshToken,
   requireCartId,
+  restoreCartCookies,
   setAccessToken,
   setCartCookies,
   setRefreshToken,

@@ -202,6 +202,8 @@
     "backInStockError": "Something went wrong. Please try again.",
     "addToCart": "Add to Cart",
     "adding": "Adding...",
+    "buyNow": "Buy Now",
+    "buying": "Starting checkout...",
     "description": "Description",
     "details": "Details",
     "sku": "SKU",

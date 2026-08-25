@@ -82,6 +82,68 @@ export async function clearCartCookies(): Promise<void> {
   cookieStore.set(getCartIdCookieName(), "", opts);
 }
 
+// --- Buy Now cart backup/restore (PRD-20260824 FR-011) ---
+// Buy Now 会切换当前购物车 cookie 到快捷订单，为不污染用户原购物车，
+// 进入前备份原购物车，结算完成后恢复（clearPrevCartCookies 用于放弃时清理）。
+
+function getPrevCartTokenCookieName(): string {
+  return `${getCartCookieName()}_prev`;
+}
+
+function getPrevCartIdCookieName(): string {
+  return `${getCartIdCookieName()}_prev`;
+}
+
+export async function backupCartCookies(): Promise<{
+  id?: string;
+  token?: string;
+}> {
+  const id = await getCartId();
+  const token = await getCartToken();
+  if (!id) return {};
+
+  const cookieStore = await cookies();
+  const opts = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: CART_TOKEN_MAX_AGE,
+  };
+  cookieStore.set(getPrevCartIdCookieName(), id, opts);
+  if (token) {
+    cookieStore.set(getPrevCartTokenCookieName(), token, opts);
+  }
+  return { id, token };
+}
+
+export async function restoreCartCookies(): Promise<void> {
+  const cookieStore = await cookies();
+  const prevId = cookieStore.get(getPrevCartIdCookieName())?.value;
+  const prevToken = cookieStore.get(getPrevCartTokenCookieName())?.value;
+  if (prevId) {
+    const opts = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax" as const,
+      path: "/",
+      maxAge: CART_TOKEN_MAX_AGE,
+    };
+    cookieStore.set(getCartIdCookieName(), prevId, opts);
+    if (prevToken) {
+      cookieStore.set(getCartCookieName(), prevToken, opts);
+    }
+  }
+  await clearPrevCartCookies();
+}
+
+export async function clearPrevCartCookies(): Promise<void> {
+  const cookieStore = await cookies();
+  const opts = { maxAge: -1, path: "/" };
+  cookieStore.set(getPrevCartIdCookieName(), "", opts);
+  cookieStore.set(getPrevCartTokenCookieName(), "", opts);
+}
+
 // --- Access Token (JWT) ---
 
 export async function getAccessToken(): Promise<string | undefined> {
