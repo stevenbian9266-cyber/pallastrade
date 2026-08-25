@@ -1030,6 +1030,33 @@
         "testCoverage": 25,
         "noAntiPatterns": 15
       }
+    },
+    {
+      "id": "GS-042",
+      "name": "Order lifecycle 父子单/拆单/合并支付/Buy Now（PRD-20260824）",
+      "description": "Order#parent_id 自引用父子单（未拆单父=子）；System split by warehouse/store/custom after payment（AfterPayment + Splitter allow_paid，资金/税费/运费/订单级促销按行项目金额比例分摊、总额守恒）；manual split 支持跨店（groups hash store_id/stock_location_id，目标店无商品 → split_error）；sub-orders 可独立发货（复制 shipment）与售后（inventory_units 转移 + Returns::FromParent 批量 RA）；取消联动（Cancel cascade）；Buy Now 快捷购物车（carts.create({items})，备份/恢复原购物车 cookie，未登录 /account?redirect 回跳）；三条下单链路统一公用确认页 /checkout/{id} 与公用收银台 GroupPaymentForm（单订单与合并支付复用同一组件）。",
+      "mustDo": [
+        "Splitter: groups hash 跨店（store_id/stock_location_id）+ SplitterError + by 自动分组（warehouse/store/custom）+ allow_paid 支付后拆单 + 预写 item_total 列修复 includes(:adjustable) 促销重置 bug",
+        "Splitter: inventory_units 跟随行项目转移 + 复制 shipment（子订单可发货/售后）+ 运费按行项目比例分摊（总额守恒）+ 订单级 promo adjustment 复制（compute_amount 自动按比例分摊）",
+        "Returns::FromParent: 父单售后批量创建 RA（[父]+children，幂等，无 shipped units 跳过）；admin orders/:id/return_authorizations + bulk_from_parent",
+        "Orders::Cancel(cascade:): 父取消联动全部子订单（各自原因/退款/库存释放）；cascade: false 仅取消指定子订单",
+        "Risk::Assessment: order_frequency_limit_per_minute + risk_max_items_per_order + risk_max_quantity_per_item",
+        "BuyNowButton + buyNow server action: carts.create({items}) 快捷车 + backupCartCookies/restorePreviousCart 防污染 + 未登录 /account?redirect 回跳",
+        "GroupPaymentForm 公用收银台: 单订单付款与多订单合并支付复用同一组件（CombinedPaymentContent 使用）"
+      ],
+      "mustNotDo": [
+        "拆单后子订单无 shipment/inventory_units（无法发货/售后）",
+        "拆单丢失订单级促销/运费或金额不守恒（双算运费/促销重置 0）",
+        "Buy Now 污染用户原购物车（不备份/恢复 cookie）",
+        "父订单取消不联动子订单（或强制联动无法仅取消单子单）",
+        "为三条下单链路重复实现多套确认页/收银台"
+      ],
+      "scoring": {
+        "correctFiles": 30,
+        "correctPatterns": 30,
+        "testCoverage": 25,
+        "noAntiPatterns": 15
+      }
     }
   ]
 }

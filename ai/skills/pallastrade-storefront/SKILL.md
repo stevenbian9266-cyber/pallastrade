@@ -317,6 +317,26 @@ each unpaid order can be paid **alone or together**:
 5. i18n: `orders.tabAll/tabUnpaid/tabProcessing/tabShipped/tabCompleted/tabCanceled/payNow`
    added across all 5 locales.
 
+#### Buy Now + 公用确认页/收银台（PRD-20260824 FR-011~014）
+
+三条下单链路（商品详情 Buy Now / 购物车 / 账户订单付款）统一进入**同一确认页与收银台**：
+
+- **Buy Now（FR-011）**: PDP 的 `BuyNowButton`（`components/products/BuyNowButton.tsx`）
+  调 `buyNow(variantId, quantity)` server action（`lib/data/buy-now.ts`）——用
+  `carts.create({ items: [{ variant_id, quantity }] })` 创建**仅含当前商品的快捷购物车**
+  并切换 cookie；进入前把原购物车 cookie 备份到 `*_prev`（`backupCartCookies`），结算完成后
+  order-placed 页调 `restorePreviousCart()` 恢复（**不污染原购物车**）。未登录先跳
+  `/account?redirect=<encoded checkout url>` 登录回跳（FR-001）。
+- **公用确认页（FR-012）**: 三条链路统一 `/checkout/{id}`（cart 驱动）；
+  Buy Now 仅附加 `?from=buy-now` 标记。购物车 Proceed to Checkout 与 Buy Now 走同一页。
+- **公用收银台（FR-013）**: `components/checkout/GroupPaymentForm.tsx` 是从
+  `CombinedPaymentContent` 抽出的共享收银台组件（支付方式 RadioGroup → 创建 payment
+  session → Stripe 表单 → complete → `onPaid` 回调；含 3DS `?session=` 回跳）。
+  单订单付款与多订单合并支付**复用同一组件**（单订单也走 1 订单 PaymentGroup）。
+- **链路 C（FR-014）**: 账户订单模块待付订单「Pay now」→ 1 订单 PaymentGroup →
+  `/account/combined-payment/[id]`（同上公用收银台）；多订单勾选 → 合并支付同样落在该组件。
+- i18n: `products.buyNow/buying` 5 语言。
+
 #### Non-active payment-group states (2026-08-24 fix)
 
 `CombinedPaymentContent` must never render the payment form (RadioGroup + Stripe)

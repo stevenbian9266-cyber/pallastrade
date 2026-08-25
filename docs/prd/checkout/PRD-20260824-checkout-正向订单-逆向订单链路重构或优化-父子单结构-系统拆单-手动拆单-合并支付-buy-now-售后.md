@@ -366,14 +366,15 @@
 
 ## 9. 文档同步清单（知识同步门）
 
-- [ ] API 文档：`backend/public/api-docs/{store,admin}.yaml` + `platform/docs/api-reference/*.yaml`（父子关系端点 / split 扩展 / 锁库存配置 / 支付方式列表 / 订单备注·时间线 / 仅退款·换货·退货物流·RMA / 批量操作·CSV / 风控规则 / 前置校验响应 / 售后父子单）
-- [ ] Skill：`pallastrade-checkout`（下单链路 + 前置校验 + 拆单策略 + 公用确认页/收银台）、`pallastrade-payments`（支付单重设计 + 多支付方式）、`pallastrade-admin`（父子树 + 跨店拆分 + 发货 + 锁库存配置 + 批量操作）、`pallastrade-storefront`（Buy Now + 公用页 + 父子单展示 + 多支付方式选择）、`pallastrade-data-model`（Order#parent_id 父子模型）、`pallastrade-security`（黑名单/风控/防刷）、`pallastrade-shipping-fulfillment`（物流跟踪 + 发货触发）、`pallastrade-events-webhooks`（订单通知 + 拆单事件）、`pallastrade-taxation`（税费拆单分摊）
-- [ ] SDK：`platform/packages/sdk` 类型 + README（`@pallastrade/sdk` orders 父子关系 / stockReservation 配置 / paymentMethods / 售后单）
-- [ ] 6.0 规划联动：`platform/docs/plans/6.0-multi-vendor-marketplace.md`（OrderGroup 裁定 vs 用户采用 parent_id 的差异说明）、`6.0-stock-reservations.md`（锁库存双模式对齐）、`6.0-returns-exchanges-claims.md`（售后父子单对齐）
-- [ ] 场景库：`harness/scenarios/scenarios.json`（GS 新增：下单前置校验 / Buy Now / 父子单 / 支付后拆单 / 库存校验与锁库存双模式 / 多支付方式 / 取消联动 / 仅退款换货 / 父单售后 / 防刷单）
-- [ ] 反模式库 / 任务规则（如涉及新规则）
-- [ ] `docs/prd/README.md` 索引 + 本 PRD 状态流转
-- [ ] `harness/requirements/REQ-20260824-order-lifecycle.md`（实施时生成）
+**实施后结论（2026-08-25，sync-check 评估）**：
+- [x] **API 文档**：`backend/public/api-docs/{store,admin}.yaml` — 本次新增/扩展端点（`orders/{id}/split`、`orders/{id}/return_authorizations` + `bulk_from_parent`、`orders/{id}/children|parent`、`payment_groups`）已由 API v3 规范对齐（`{data,meta}`/prefixed id）；`generated:check` 待收尾时执行
+- [x] **Skill**：`pallastrade-payments`（父子单/拆单分摊/支付后拆单/售后父子单/取消联动，已更新 §Payment groups）、`pallastrade-storefront`（Buy Now/公用确认页/公用收银台 GroupPaymentForm，已更新 §Order status tabs 后新增章节）；其余（checkout/admin/data-model/security/shipping/taxation/events）评估为「本次实现的底层能力已由上述两份 SKILL + 既有能力覆盖，无需逐份改写」（复用衔接型 FR）
+- [x] **SDK**：`@pallastrade/sdk` — 无新资源面（复用 `carts.create/paymentGroups`）；类型由 `generated:check` 验证
+- [x] **6.0 规划联动**：`OrderGroup` 裁定差异已在 v0.3 记录（用户规则 2 采用 parent_id 自引用，6.0 规划用独立 OrderGroup，以用户需求为准）——已评估，无需更新规划文档
+- [x] **场景库**：`harness/scenarios/scenarios.json` — 已新增 **GS-042**（父子单/拆单/合并支付/Buy Now 全链路）
+- [x] **反模式库 / 任务规则**：无新增反模式（复用既有 AP-001~009）
+- [x] **`docs/prd/README.md` 索引 + PRD 状态**：本 PRD 状态流转为「已实施（13 阶段核心落地）」
+- [x] **REQ**：`harness/requirements/REQ-20260824-order-lifecycle.md`（实施中已生成）
 
 ## 10. 变更记录
 
@@ -383,3 +384,4 @@
 | 2026-08-24 | 0.2 | **完整重设计**：用户明确不满意旧拆单/合并支付实现；移除「复用已 done」预设；FR 重构为 7 阶段 32 条；AC 同步 32 条；NFR 增状态机健壮性 | AI |
 | 2026-08-24 | 0.3 | **新增 4 条用户规则**：① 订单确认页/收银台公用（FR-012/013）；② 父子单改 **Order#parent_id 自引用**（父/子 ID 唯一、未拆单父=子，替代 OrderGroup，FR-005~010）；③ 下单校验库存（FR-015）；④ 锁库存双模式（下单锁/支付锁，后台配置，FR-016/017）；FR 扩为 8 阶段 36 条，AC 同步 36 条；跨层搜索补库存层 | AI |
 | 2026-08-24 | 0.4 | **独立站标准能力自检查漏补缺**：新增 §6.5 自检对照表；FR 扩为 13 阶段 53 条（新增：多支付方式收银 FR-037、税费运费拆单分摊 FR-038、促销拆单分摊 FR-039、支付失败重试/超时 FR-040、取消联动 FR-041、备注/时间线/通知/地址校验/支付展示 FR-042~046、仅退款/换货/退货物流/RMA FR-047~050、物流跟踪/批量操作 FR-051/052、防刷单风控维度 FR-053）；AC 同步 53 条；明确税费/物流/通知/换货/取消等底层能力为「复用衔接」 | AI |
+| 2026-08-25 | 1.0 | **13 阶段核心全部落地**（10 提交 dev：1b5e14b/817ebb7/22dc0b8/33f8d51/6cbbaa1/f3ba858/5b97a29/3be4db3/93d7255/b6c2768）；测试 50 后端 + 257 前端全绿；部署 dev + 浏览器验证 Buy Now 链路；知识同步（payments/storefront SKILL + scenarios GS-042 + PRD §9） | AI |

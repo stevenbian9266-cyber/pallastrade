@@ -142,10 +142,26 @@ Key facts:
   `canceled` / `expired`; events `payment_group.processing/completed/failed/canceled/expired`.
 - **Store API**: `POST/GET /api/v3/store/payment_groups`, nested
   `payment_sessions` (create/show/update/complete). Requires a logged-in customer (JWT).
-- **Split provenance**: `orders.split_from_id` records which order a split order
-  came from; `PallasTrade::Orders::Splitter` moves line items into new orders
-  (admin split + checkout-time auto-split by warehouse, gated by
-  `PallasTrade::Config[:auto_split_orders_by_warehouse]`).
+- **Split provenance + 父子单（PRD-20260824）**: `orders.split_from_id` 记录拆出来源；
+  父子单结构用 **`Order#parent_id` 自引用**（未拆单时父=子，用户规则 2）。
+  `PallasTrade::Orders::Splitter` 拆分能力（FR-022~039）：
+  - **策略** `groups:` 手分组 / `by:` 自动分组（`:warehouse` 按仓 / `:store` 按店铺 /
+    `:custom` 钩子 `Config[:auto_split_orders_custom]`）；`allow_paid: true` 支持支付后拆单
+    （`PallasTrade::Orders::Splitting::AfterPayment` 在支付组完成后评估，配置
+    `Config[:auto_split_orders]` 或店铺级 `preferred_auto_split_orders`）。
+  - **跨店手动拆单（FR-027~029）**: group 可为 Hash
+    `{"line_item_ids"=>[], "store_id"=>"st_x", "stock_location_id"=>"loc_y"}`；
+    目标店无商品 → `SplitterError` → failure `{code: :split_error}`。
+  - **资金/税费/运费/促销分摊**: 拆单时子订单继承已付状态（真实 `Payment` 记录）；
+    订单级促销 adjustment 复制到子订单（`compute_amount` 基于子订单金额自动按比例分摊，
+    需先 `update_columns(item_total:)` 预写列避免 `includes(:adjustable)` 旧列值 bug）；
+    shipment 运费按行项目金额比例分摊（父/子订单同步调减，总额守恒）。
+  - **子订单可售可发**: inventory_units 跟随行项目转移；复制源订单 shipment
+    （stock_location + shipping method），子订单可独立触发发货与售后。
+  - **售后父子单（FR-033~036）**: `PallasTrade::Returns::FromParent` 父单售后批量创建
+    RA（`[父]+children` 展开，幂等）；Admin API
+    `POST /api/v3/admin/orders/:id/return_authorizations(/bulk_from_parent)`。
+  - **取消联动（FR-041）**: `PallasTrade::Orders::Cancel(cascade: true)` 父取消联动全部子订单。
 
 ## Adding a payment gateway
 
