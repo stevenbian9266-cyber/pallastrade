@@ -44,5 +44,46 @@ RSpec.describe PallasTrade::Risk::Assessment, type: :service do
     ensure
       PallasTrade::Config[:risk_assessment] = nil
     end
+
+    # PRD-20260824 FR-053/AC-053 — 数量上限风控维度
+    it 'AC-053: 单次下单商品行数超上限时拦截' do
+      PallasTrade::Config[:risk_max_items_per_order] = 2
+
+      result = described_class.call(
+        user: user,
+        order_params: { items: [{ variant_id: 'v1', quantity: 1 }, { variant_id: 'v2', quantity: 1 }, { variant_id: 'v3', quantity: 1 }] }
+      )
+      expect(result).to be_failure
+      expect(result.error.value[:code]).to eq(:too_many_items)
+    ensure
+      PallasTrade::Config[:risk_max_items_per_order] = nil
+    end
+
+    it 'AC-053: 单个商品数量超上限时拦截' do
+      PallasTrade::Config[:risk_max_quantity_per_item] = 10
+
+      result = described_class.call(
+        user: user,
+        order_params: { items: [{ variant_id: 'v1', quantity: 11 }] }
+      )
+      expect(result).to be_failure
+      expect(result.error.value[:code]).to eq(:quantity_limit_exceeded)
+    ensure
+      PallasTrade::Config[:risk_max_quantity_per_item] = nil
+    end
+
+    it 'AC-053: 数量在上限内时通过' do
+      PallasTrade::Config[:risk_max_items_per_order] = 2
+      PallasTrade::Config[:risk_max_quantity_per_item] = 10
+
+      result = described_class.call(
+        user: user,
+        order_params: { items: [{ variant_id: 'v1', quantity: 5 }, { variant_id: 'v2', quantity: 2 }] }
+      )
+      expect(result).to be_success
+    ensure
+      PallasTrade::Config[:risk_max_items_per_order] = nil
+      PallasTrade::Config[:risk_max_quantity_per_item] = nil
+    end
   end
 end

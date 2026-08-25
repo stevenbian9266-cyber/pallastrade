@@ -130,4 +130,85 @@ RSpec.describe PallasTrade::Orders::Splitter, type: :service do
       expect(split_order.split_from).to eq(order)
     end
   end
+
+  # PRD-20260824-checkout-正向订单-逆向订单链路重构或优化 FR-039/AC-039
+  describe '促销优惠拆单分摊（PRD-20260824）' do
+    it 'AC-039: 订单级促销按行项目金额比例分摊到子订单，总额守恒' do
+      promotion = create(:promotion, code: 'PCT10')
+      calculator = PallasTrade::Calculator::FlatPercentItemTotal.new
+      calculator.preferred_flat_percent = 10
+      PallasTrade::Promotion::Actions::CreateAdjustment.create!(calculator: calculator, promotion: promotion)
+
+      order = create(:order_with_line_items, store: store, user: user, currency: 'USD', shipment_cost: 0)
+      extra = create(:line_item, order: order, price: 50)
+      order.line_items.reload
+      PallasTrade::OrderUpdater.new(order).update
+      promotion.activate(order: order)
+      order.reload
+      PallasTrade::OrderUpdater.new(order).update
+
+      before_promo = order.adjustments.promotion.eligible.sum(:amount)
+      expect(before_promo).to be < 0
+
+      result = described_class.call(order: order, groups: { 'g1' => [extra.id] })
+      expect(result).to be_success
+      child = result.value.first
+
+      # 子订单获得订单级促销（负值）
+      child_promo = child.adjustments.promotion.eligible.sum(:amount)
+      expect(child_promo).to be < 0
+
+      # 总额守恒：父订单 promo + 子订单 promo == 拆前 promo
+      parent_promo = order.reload.adjustments.promotion.eligible.sum(:amount)
+      expect((parent_promo + child_promo).round(2)).to eq(before_promo.round(2))
+    end
+
+    it 'AC-039: 子订单 promo 约等于按行项目金额比例分摊的金额' do
+      promotion = create(:promotion, code: 'PCT10B')
+      calculator = PallasTrade::Calculator::FlatPercentItemTotal.new
+      calculator.preferred_flat_percent = 10
+      PallasTrade::Promotion::Actions::CreateAdjustment.create!(calculator: calculator, promotion: promotion)
+
+      order = create(:order_with_line_items, store: store, user: user, currency: 'USD', shipment_cost: 0)
+      extra = create(:line_item, order: order, price: 50)
+      order.line_items.reload
+      PallasTrade::OrderUpdater.new(order).update
+      promotion.activate(order: order)
+      order.reload
+      PallasTrade::OrderUpdater.new(order).update
+
+      result = described_class.call(order: order, groups: { 'g1' => [extra.id] })
+      child = result.value.first
+
+      # 子订单金额 50 / 总额 60 → 10% 折扣 6 中分摊 5
+      child_promo = child.adjustments.promotion.eligible.sum(:amount)
+      expect(child_promo).to be_within(0.01).of(-5.0)
+    end
+  end
+
+  # PRD-20260824-checkout-正向订单-逆向订单链路重构或优化 FR-038/AC-038
+  describe '税费运费拆单分摊（PRD-20260824）' do
+    it 'AC-038: 拆单后运费按行项目金额比例分摊，总额守恒' do
+      order = create(:order_with_line_items, store: store, user: user, currency: 'USD', shipment_cost: 10)
+      # 拆走第一个 line_item（10 元，有 inventory_units）；第二个（50 元）留在父订单
+      extra = create(:line_item, order: order, price: 50)
+      order.line_items.reload
+      PallasTrade::OrderUpdater.new(order).update
+      before_total = order.reload.total
+
+      target = order.line_items.find { |li| li.price.to_d == 10 }
+      result = described_class.call(order: order, groups: { 'g1' => [target.id] })
+      expect(result).to be_success
+      child = result.value.first
+
+      # 子订单获得 shipment（运费分摊 10 * 10/60 ≈ 1.67）
+      expect(child.shipments.size).to eq(1)
+      child_cost = child.shipments.first.cost.to_d
+      parent_cost = order.reload.shipments.first.cost.to_d
+      expect((child_cost + parent_cost).round(2)).to eq(10.0)
+
+      # 总额守恒（商品 + 运费）
+      expect((child.reload.total + order.reload.total).round(2)).to eq(before_total.round(2))
+    end
+  end
 end

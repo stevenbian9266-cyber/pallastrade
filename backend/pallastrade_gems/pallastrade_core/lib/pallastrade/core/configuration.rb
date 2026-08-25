@@ -101,6 +101,10 @@ module PallasTrade
       preference :risk_assessment, :string, default: nil
       # PALLAS-CUSTOM: 防刷单-下单频率限制（次/分钟，0=关闭）
       preference :order_frequency_limit_per_minute, :integer, default: 0
+      # PALLAS-CUSTOM: 防刷单-单次下单商品行数上限（0=关闭，PRD-20260824 FR-053）
+      preference :risk_max_items_per_order, :integer, default: 0
+      # PALLAS-CUSTOM: 防刷单-单个商品数量上限（0=关闭，PRD-20260824 FR-053）
+      preference :risk_max_quantity_per_item, :integer, default: 0
       # PALLAS-CUSTOM: 系统拆单策略（PRD-20260824）— 'warehouse'=按仓库地址 / 'store'=按店铺 / nil=关闭（店铺级可覆盖）
       preference :auto_split_orders, :string, default: nil
       # PALLAS-CUSTOM: 自定义拆单策略扩展点（PRD-20260824）— ->(order) { { key => [line_item_ids] } }

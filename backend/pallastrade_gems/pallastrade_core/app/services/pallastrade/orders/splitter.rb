@@ -46,6 +46,11 @@ module PallasTrade
           order.reload
           PallasTrade::OrderUpdater.new(order).update
           new_orders.each do |o|
+            o.reload
+            # PALLAS-CUSTOM: FR-039 订单级促销分摊 — OrderUpdater.recalculate_adjustments 通过
+            # includes(:adjustable) 预加载 Order 实例读 DB 列，若 item_total 列仍是旧值 0 会把
+            # 订单级促销金额重置为 0；先把 item_total 列预写为正确值，使促销按子订单金额分摊。
+            o.update_columns(item_total: o.line_items.to_a.sum(&:amount))
             PallasTrade::OrderUpdater.new(o).update
             # 资金分摊在 OrderUpdater 重算之后执行（OrderUpdater 会基于 payments 重置 payment_total）
             allocate_payment(o, order) if paid
@@ -130,12 +135,39 @@ module PallasTrade
           li.inventory_units.update_all(order_id: split_order.id) if li.inventory_units.any?
         end
 
+        # PALLAS-CUSTOM: 订单级促销优惠拆单分摊（PRD-20260824 FR-039）— 复制源订单的
+        # 订单级（adjustable = Order）促销 adjustment 到子订单（同一 PromotionAction source），
+        # OrderUpdater 重算时 CreateAdjustment#compute_amount(child) 基于子订单金额计算折扣，
+        # 自动按行项目金额比例分摊、总额守恒；源订单保留其 adjustment，重算后按剩余金额计算。
+        allocate_order_level_promotions(source, split_order)
+
         # PALLAS-CUSTOM: 子订单可独立发货（PRD-20260824 FR-031/032）—
         # 从源订单复制 shipment（stock_location + shipping method），关联子订单 inventory_units，
         # 使子订单在管理后台可单独触发发货，父订单视图能展示各子订单发货进度。
         build_split_shipment(split_order, source)
 
         split_order
+      end
+
+      # PALLAS-CUSTOM: 订单级促销优惠拆单分摊（PRD-20260824 FR-039/AC-039）
+      # 复制源订单的订单级（adjustable = Order）促销 adjustment 到子订单（同一 PromotionAction
+      # source）；金额由 OrderUpdater 基于子订单 item_total 重算（CreateAdjustment#compute_amount
+      # 基于子订单金额 → 自动按行项目金额比例分摊、总额守恒）。
+      # 源订单保留其 adjustment（OrderUpdater 重算后按剩余金额计算）。
+      def allocate_order_level_promotions(source, split_order)
+        source.adjustments.promotion.eligible.where(adjustable_type: 'PallasTrade::Order').each do |adj|
+          next if adj.source.blank?
+
+          split_order.adjustments.create!(
+            order: split_order,
+            source: adj.source,
+            label: adj.label,
+            amount: 0,
+            mandatory: adj.mandatory,
+            included: adj.included,
+            eligible: true
+          )
+        end
       end
 
       def build_split_shipment(split_order, source)
@@ -145,15 +177,31 @@ module PallasTrade
         return unless source_shipment
         return if split_order.inventory_units.none?
 
+        # PALLAS-CUSTOM: 运费按行项目金额比例分摊（PRD-20260824 FR-038/AC-038）—
+        # 子订单 shipment 承担拆走行项目比例对应的运费，父订单剩余 shipment 同步调减，
+        # 保证拆单后运费总额守恒、不重复计算。
+        split_item_total = split_order.line_items.sum { |li| li.price.to_d * li.quantity }
+        remaining_item_total = source.line_items.sum { |li| li.price.to_d * li.quantity }
+        total_item = split_item_total + remaining_item_total
+        ratio = total_item > 0 ? split_item_total / total_item : 0
+
+        source_cost = source_shipment.cost.to_d
+        split_cost = (source_cost * ratio).round(2)
+        remaining_cost = (source_cost * (1 - ratio)).round(2)
+
         shipment = PallasTrade::Shipment.create!(
           order: split_order,
           address: split_order.ship_address,
           stock_location: source_shipment.stock_location,
-          cost: source_shipment.cost || 0
+          cost: split_cost
         )
         shipping_method = source_shipment.shipping_method
         shipment.add_shipping_method(shipping_method, true) if shipping_method
         split_order.inventory_units.update_all(shipment_id: shipment.id)
+
+        # 父订单 shipment 运费按剩余行项目比例调减（总额守恒）
+        source_shipment.update_columns(cost: remaining_cost)
+
         shipment
       end
 
