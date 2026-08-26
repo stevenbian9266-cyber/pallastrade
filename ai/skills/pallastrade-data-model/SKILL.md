@@ -104,6 +104,17 @@ PallasTrade::Order.complete                  # named scope — NOT equivalent: d
 
 `Order#token` (`has_secure_token :token, length: 35`) identifies an anonymous cart across requests. Logged-in carts are owned via the `user_id` FK.
 
+## Order parent/child + split_from (P1, 数据层)
+
+> P1（2026-08-26）为「父子单 / 拆单 / 合并支付」铺数据地基。以下关联已存在但**尚未接入任何业务流程**。
+
+- `orders.parent_id`（可空自引用 FK）→ `Order#parent` / `#children`（`dependent: :nullify`）。
+  - 语义方法：`parent_order?`（有 children）/ `child_order?`（有 parent）/ `single_order?`（两者皆无，未拆单订单）/ `sibling_orders` / `root_order`（沿父链到根，防环）。
+  - 未拆单订单 `parent_id = NULL`，行为完全不变。
+- `orders.split_from_id`（可空 FK）→ `Order#split_from` / `#split_orders`：拆单来源血缘（展示用）。
+- `orders.payment_combination_id`（可空）→ 合并支付归属（跨父订单聚合支付）。
+- **`PaymentCombination` / `PaymentSplit`**：见 `pallastrade-payments` SKILL（P1 数据层）。
+
 ## Checkout-side models
 
 ```

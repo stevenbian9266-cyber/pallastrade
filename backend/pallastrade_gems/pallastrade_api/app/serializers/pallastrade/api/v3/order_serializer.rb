@@ -22,6 +22,9 @@ module PallasTrade
                  total: [:string, nullable: true], display_total: [:string, nullable: true],
                  amount_due: [:string, nullable: true], display_amount_due: [:string, nullable: true],
                  completed_at: [:string, nullable: true],
+                 parent_id: [:string, nullable: true],
+                 children_ids: [:string, multi: true],
+                 is_parent: :boolean, is_child: :boolean, is_single: :boolean,
                  billing_address: { nullable: true }, shipping_address: { nullable: true },
                  gift_card: { nullable: true }, market: { nullable: true }
 
@@ -36,6 +39,7 @@ module PallasTrade
         attributes :number, :email, :customer_note,
                    :currency, :locale, :total_quantity,
                    :fulfillment_status, :payment_status,
+                   :parent_id, :children_ids, :is_parent, :is_child, :is_single,
                    completed_at: :iso8601
 
         # Nulled for gated (prices_hidden) guests, consistent with cart and
@@ -59,6 +63,28 @@ module PallasTrade
 
         attribute :covered_by_store_credit do |order|
           order.covered_by_store_credit?
+        end
+
+        # Order lifecycle P1 (2026-08-26): parent/child order structure.
+        # Non-split orders are single (parent_id nil, no children).
+        attribute :parent_id do |order|
+          order.parent&.prefixed_id
+        end
+
+        attribute :children_ids do |order|
+          order.children.map(&:prefixed_id)
+        end
+
+        attribute :is_parent do |order|
+          order.parent_order?
+        end
+
+        attribute :is_child do |order|
+          order.child_order?
+        end
+
+        attribute :is_single do |order|
+          order.single_order?
         end
 
         many :discounts, resource: proc { PallasTrade.api.discount_serializer }

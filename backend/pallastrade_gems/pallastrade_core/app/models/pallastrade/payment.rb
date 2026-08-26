@@ -28,6 +28,10 @@ module PallasTrade
       belongs_to :order, class_name: 'PallasTrade::Order', touch: true
       belongs_to :payment_method, -> { with_deleted }, class_name: 'PallasTrade::PaymentMethod'
     end
+    # Order lifecycle P1 (2026-08-26): combined-payment carrier. A combined
+    # payment attaches to the combination (order_id may be nil); single-order
+    # payments keep order_id as today. Keeps PaymentSession <-> Payment 1:1.
+    belongs_to :payment_combination, class_name: 'PallasTrade::PaymentCombination', optional: true
     belongs_to :source, polymorphic: true
 
     has_many :offsets, -> { offset_payment }, class_name: 'PallasTrade::Payment', foreign_key: :source_id

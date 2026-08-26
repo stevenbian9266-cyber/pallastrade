@@ -98,6 +98,21 @@ The session has events: `payment_session.processing`, `payment_session.completed
 
 For most stores, you don't interact with PaymentSession directly — the gateway extension (pallastrade_stripe, pallastrade_adyen) handles creation and completion. You just subscribe to the events if you need to react.
 
+## Payment combinations + splits (数据层, P1)
+
+> P1（2026-08-26）为后续「父子单 / 拆单 / 合并支付」铺数据地基。以下模型已存在但**尚未接入任何业务流程**（拆单/合并支付引擎在 P2/P4+）。
+
+- **`PallasTrade::PaymentCombination`**（表 `pallastrade_payment_combinations`，前缀 `pcom_`）——一次合并支付的载体，与父子结构**解耦**：只管「收了多少钱、覆盖哪些订单」。
+  - 字段：`store_id` / `customer_id` / `currency` / `amount` / `status` / `expires_at` / `completed_at` / metadata。
+  - 状态机：`pending → processing → succeeded | failed | canceled | expired`；**非法迁移抛 `PallasTrade::PaymentCombination::InvalidTransitionError`（业务错误，非 `StateMachines::InvalidTransition`）**。
+  - 成员订单通过 `payment_splits` 关联（非直接 FK）。
+- **`PallasTrade::PaymentSplit`**（表 `pallastrade_payment_splits`，前缀 `psplit_`）——每成员订单一条分摊记录：`authorized_amount` / `captured_amount` / `refunded_amount` / `currency`。
+  - 唯一索引 `[payment_combination_id, order_id]`（幂等基础）。
+  - `credit_allowed = captured_amount - refunded_amount`。
+- **既有表新增可空列**：`orders.payment_combination_id`、`payments.payment_combination_id`（合并支付时 payment 挂组合，`order_id` 可空）、`payment_sessions.payment_combination_id`（保持 `session ↔ payment` 1:1）。
+
+设计约束（吸取上次 PaymentGroup 失败教训）：一个组合只允许一个 `PaymentSession` + 一个 `Payment`（挂 primary order），子订单用 `PaymentSplit` 记账，**禁止一个 session 对应多个 payment**。
+
 ## Adding a payment gateway
 
 Stripe, Adyen and PayPal ship preinstalled in pallastrade-starter projects (the backend `create-pallastrade-app` scaffolds) — nothing to install; enable and configure them in the admin under Settings → Payment methods. For any other gateway gem:

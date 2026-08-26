@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_26_090004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1099,6 +1099,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.bigint "market_id"
     t.decimal "non_taxable_adjustment_total", precision: 10, scale: 2, default: "0.0", null: false
     t.string "number", limit: 32
+    t.bigint "parent_id"
+    t.bigint "payment_combination_id"
     t.string "payment_state"
     t.decimal "payment_total", precision: 10, scale: 2, default: "0.0"
     t.bigint "preferred_stock_location_id"
@@ -1110,6 +1112,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.decimal "shipment_total", precision: 10, scale: 2, default: "0.0", null: false
     t.boolean "signup_for_an_account", default: false
     t.text "special_instructions"
+    t.bigint "split_from_id"
     t.string "state"
     t.integer "state_lock_version", default: 0, null: false
     t.string "status", default: "draft", null: false
@@ -1132,8 +1135,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.index ["last_activity_at"], name: "index_pallastrade_orders_on_last_activity_at"
     t.index ["market_id"], name: "index_pt_orders_on_market_id"
     t.index ["number"], name: "index_pt_orders_on_number", unique: true
+    t.index ["parent_id"], name: "index_pallastrade_orders_on_parent_id"
+    t.index ["payment_combination_id"], name: "index_pallastrade_orders_on_payment_combination_id"
     t.index ["preferred_stock_location_id"], name: "index_pt_orders_on_preferred_stock_location_id"
     t.index ["ship_address_id"], name: "index_pt_orders_on_ship_address_id"
+    t.index ["split_from_id"], name: "index_pallastrade_orders_on_split_from_id"
     t.index ["status"], name: "index_pt_orders_on_status"
     t.index ["store_id"], name: "index_pt_orders_on_store_id"
     t.index ["token"], name: "index_pt_orders_on_token"
@@ -1146,6 +1152,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.bigint "payment_id"
     t.datetime "updated_at", null: false
     t.index ["payment_id"], name: "index_pt_payment_capture_events_on_payment_id"
+  end
+
+  create_table "pallastrade_payment_combinations", force: :cascade do |t|
+    t.decimal "amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.string "currency", null: false
+    t.bigint "customer_id", null: false
+    t.datetime "expires_at"
+    t.jsonb "private_metadata", default: {}
+    t.jsonb "public_metadata", default: {}
+    t.string "status", default: "pending", null: false
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_pallastrade_payment_combinations_on_customer_id"
+    t.index ["status"], name: "index_pallastrade_payment_combinations_on_status"
+    t.index ["store_id"], name: "index_pallastrade_payment_combinations_on_store_id"
   end
 
   create_table "pallastrade_payment_methods", force: :cascade do |t|
@@ -1187,6 +1210,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.jsonb "external_data"
     t.string "external_id", null: false
     t.bigint "order_id", null: false
+    t.bigint "payment_combination_id"
     t.bigint "payment_method_id", null: false
     t.string "status", null: false
     t.string "type", null: false
@@ -1197,6 +1221,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.index ["external_id"], name: "index_pt_payment_sessions_on_external_id"
     t.index ["order_id", "payment_method_id", "external_id"], name: "idx_payment_sessions_order_method_external", unique: true
     t.index ["order_id"], name: "index_pt_payment_sessions_on_order_id"
+    t.index ["payment_combination_id"], name: "index_pallastrade_payment_sessions_on_payment_combination_id"
     t.index ["payment_method_id"], name: "index_pt_payment_sessions_on_payment_method_id"
     t.index ["status"], name: "index_pt_payment_sessions_on_status"
     t.index ["type"], name: "index_pt_payment_sessions_on_type"
@@ -1240,6 +1265,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.index ["user_id"], name: "index_pt_payment_sources_on_user_id"
   end
 
+  create_table "pallastrade_payment_splits", force: :cascade do |t|
+    t.decimal "authorized_amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.decimal "captured_amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.datetime "created_at", null: false
+    t.string "currency", null: false
+    t.bigint "order_id", null: false
+    t.bigint "payment_combination_id", null: false
+    t.bigint "payment_id", null: false
+    t.decimal "refunded_amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.datetime "updated_at", null: false
+    t.index ["order_id"], name: "index_pallastrade_payment_splits_on_order_id"
+    t.index ["payment_combination_id", "order_id"], name: "index_pt_payment_splits_on_combination_and_order", unique: true
+    t.index ["payment_combination_id"], name: "index_pallastrade_payment_splits_on_payment_combination_id"
+    t.index ["payment_id"], name: "index_pallastrade_payment_splits_on_payment_id"
+  end
+
   create_table "pallastrade_payments", force: :cascade do |t|
     t.decimal "amount", precision: 10, scale: 2, default: "0.0", null: false
     t.string "avs_response"
@@ -1248,6 +1289,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.string "cvv_response_message"
     t.string "number"
     t.bigint "order_id"
+    t.bigint "payment_combination_id"
     t.bigint "payment_method_id"
     t.jsonb "private_metadata"
     t.jsonb "public_metadata"
@@ -1259,6 +1301,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
     t.index ["number"], name: "index_pt_payments_on_number", unique: true
     t.index ["order_id", "payment_method_id", "response_code"], name: "idx_payments_order_method_response_code", unique: true, where: "(response_code IS NOT NULL)"
     t.index ["order_id"], name: "index_pt_payments_on_order_id"
+    t.index ["payment_combination_id"], name: "index_pallastrade_payments_on_payment_combination_id"
     t.index ["payment_method_id"], name: "index_pt_payments_on_payment_method_id"
     t.index ["source_id", "source_type"], name: "index_pt_payments_on_source_id_and_source_type"
   end
@@ -2582,8 +2625,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_080000) do
   add_foreign_key "pallastrade_menu_configs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_option_type_translations", "pallastrade_option_types"
   add_foreign_key "pallastrade_option_value_translations", "pallastrade_option_values"
+  add_foreign_key "pallastrade_orders", "pallastrade_orders", column: "parent_id"
+  add_foreign_key "pallastrade_orders", "pallastrade_orders", column: "split_from_id"
+  add_foreign_key "pallastrade_orders", "pallastrade_payment_combinations", column: "payment_combination_id"
+  add_foreign_key "pallastrade_payment_combinations", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_payment_combinations", "pallastrade_users", column: "customer_id"
+  add_foreign_key "pallastrade_payment_sessions", "pallastrade_payment_combinations", column: "payment_combination_id"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_payment_methods", column: "payment_method_id"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_users", column: "user_id"
+  add_foreign_key "pallastrade_payment_splits", "pallastrade_orders", column: "order_id"
+  add_foreign_key "pallastrade_payment_splits", "pallastrade_payment_combinations", column: "payment_combination_id"
+  add_foreign_key "pallastrade_payment_splits", "pallastrade_payments", column: "payment_id"
+  add_foreign_key "pallastrade_payments", "pallastrade_payment_combinations", column: "payment_combination_id"
   add_foreign_key "pallastrade_product_translations", "pallastrade_products"
   add_foreign_key "pallastrade_redirects", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_reviews", "pallastrade_products", column: "product_id"

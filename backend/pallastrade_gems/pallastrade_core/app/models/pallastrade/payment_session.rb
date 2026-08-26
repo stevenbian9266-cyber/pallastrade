@@ -13,6 +13,10 @@ module PallasTrade
     belongs_to :order, class_name: 'PallasTrade::Order'
     belongs_to :payment_method, class_name: 'PallasTrade::PaymentMethod'
     belongs_to :customer, class_name: PallasTrade.user_class.to_s, optional: true
+    # Order lifecycle P1 (2026-08-26): combined-payment carrier. A combination
+    # session still belongs to its primary order (order_id stays NOT NULL) and
+    # keeps the 1:1 session <-> payment contract.
+    belongs_to :payment_combination, class_name: 'PallasTrade::PaymentCombination', optional: true
 
     has_one :payment, class_name: 'PallasTrade::Payment',
             foreign_key: :response_code,

@@ -170,6 +170,18 @@ module PallasTrade
     belongs_to :channel, class_name: 'PallasTrade::Channel', optional: true
     belongs_to :preferred_stock_location, class_name: 'PallasTrade::StockLocation', optional: true
 
+    # Order lifecycle P1 (2026-08-26): parent/child order structure.
+    # - split: children.parent_id points at the parent (container) order;
+    #   a non-split order has parent_id = nil and no children (single_order?)
+    # - split_from preserves the source order lineage for display only
+    belongs_to :parent, class_name: 'PallasTrade::Order', optional: true, inverse_of: :children
+    has_many :children, class_name: 'PallasTrade::Order', foreign_key: :parent_id,
+                        dependent: :nullify, inverse_of: :parent
+    belongs_to :split_from, class_name: 'PallasTrade::Order', optional: true, inverse_of: :split_orders
+    has_many :split_orders, class_name: 'PallasTrade::Order', foreign_key: :split_from_id,
+                            dependent: :nullify, inverse_of: :split_from
+    has_many :payment_splits, class_name: 'PallasTrade::PaymentSplit', inverse_of: :order
+
     with_options dependent: :destroy do
       has_many :state_changes, as: :stateful, class_name: 'PallasTrade::StateChange'
       has_many :line_items, -> { order(:created_at) }, inverse_of: :order, class_name: 'PallasTrade::LineItem'
@@ -551,6 +563,40 @@ module PallasTrade
 
     def all_inventory_units_returned?
       inventory_units.all?(&:returned?)
+    end
+
+    # Order lifecycle P1 (2026-08-26): parent/child semantics.
+    # A non-split order is both its own parent and its own child (single_order?);
+    # after a split the parent keeps the un-split line items (possibly none) and
+    # each child points back via parent_id.
+    def parent_order?
+      children.exists?
+    end
+
+    def child_order?
+      parent_id.present?
+    end
+
+    def single_order?
+      !parent_order? && !child_order?
+    end
+
+    # Sibling orders under the same parent (excluding self).
+    def sibling_orders
+      parent ? parent.children.where.not(id: id) : PallasTrade::Order.none
+    end
+
+    # Root of the parent chain (cycle-safe).
+    def root_order
+      return self if parent_id.blank?
+
+      seen = { id => true }
+      cursor = parent
+      while cursor&.parent_id.present? && !seen[cursor.parent_id]
+        seen[cursor.parent_id] = true
+        cursor = cursor.parent
+      end
+      cursor || self
     end
 
     # Associates the specified user with the order.
