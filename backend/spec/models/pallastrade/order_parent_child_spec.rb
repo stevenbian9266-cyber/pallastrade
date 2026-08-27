@@ -91,4 +91,80 @@ RSpec.describe PallasTrade::Order, type: :model do
       expect(order.root_order).to eq(order)
     end
   end
+
+  # PRD-20260827-payments P3 AC-001~007：父订单聚合派生（金额/支付/发货状态）
+  describe 'P3 combined aggregates (AC-001~007)' do
+    # order_ready_to_ship: line_item(10) + shipment(100) = total 110, completed payment 110, ready shipment
+    let!(:parent)  { create(:order_ready_to_ship, store: store) }
+    let!(:child_a) { create(:order_ready_to_ship, store: store, parent: parent) }
+    let!(:child_b) { create(:order_ready_to_ship, store: store, parent: parent) }
+
+    it 'AC-001 combined_total aggregates children recursively' do
+      expect(parent.combined_total).to eq(330) # 110 * 3
+      # 无 children → 回退 own total
+      expect(child_a.combined_total).to eq(110)
+    end
+
+    it 'AC-002 combined_payment_total aggregates children payments' do
+      expect(parent.combined_payment_total).to eq(330)
+      expect(child_a.combined_payment_total).to eq(110)
+    end
+
+    it 'AC-003 combined_outstanding_balance = combined_total - (paid + reimbursed)' do
+      expect(parent.combined_outstanding_balance).to eq(0)
+      # 少付一个子订单 → 正余额（payment_total 是 DB 列，直接模拟 + 刷新 children 缓存）
+      child_a.update_column(:payment_total, 50)
+      parent.children.reload
+      expect(parent.combined_outstanding_balance).to eq(60)
+    end
+
+    it 'AC-004 combined_amount_due caps at zero' do
+      expect(parent.combined_amount_due).to eq(0)
+      child_a.update_column(:payment_total, 0)
+      parent.children.reload
+      expect(parent.combined_amount_due).to eq(110)
+    end
+
+    it 'AC-005 combined_shipment_state aggregates to partial when mixed' do
+      expect(parent.combined_shipment_state).to eq('ready')
+      # shipment_state 是 DB 列，直接模拟子订单已发货 + 刷新 children 缓存
+      child_b.update_column(:shipment_state, 'shipped')
+      parent.children.reload
+      expect(child_b.combined_shipment_state).to eq('shipped')
+      expect(parent.combined_shipment_state).to eq('partial')
+    end
+
+    it 'AC-006 combined_payment_state reflects aggregate balance' do
+      expect(parent.combined_payment_state).to eq('paid')
+
+      child_a.update_column(:payment_total, 50)
+      parent.children.reload
+      expect(parent.combined_payment_state).to eq('balance_due')
+
+      child_a.update_column(:payment_total, 120)
+      parent.children.reload
+      expect(parent.combined_payment_state).to eq('credit_owed')
+    end
+
+    it 'AC-007 no children → combined_* fall back to own values' do
+      single = create(:order_ready_to_ship, store: store)
+      expect(single.combined_total).to eq(single.total)
+      expect(single.combined_payment_total).to eq(single.payment_total)
+      expect(single.combined_outstanding_balance).to eq(single.outstanding_balance)
+      expect(single.combined_amount_due).to eq(single.amount_due)
+      expect(single.combined_shipment_state).to eq('ready')
+      expect(single.combined_payment_state).to eq('paid')
+    end
+
+    it 'AC-008 effective_payment_total uses PaymentSplit when present, else payment_total' do
+      # 无 split → payment_total
+      expect(child_a.effective_payment_total).to eq(110)
+
+      # 有 split → captured - refunded（复用已有 completed payment，避免重复建 store）
+      payment = parent.payments.completed.first
+      create(:payment_split, order: parent, payment_combination: nil, payment: payment,
+                             captured_amount: 80, refunded_amount: 10)
+      expect(parent.effective_payment_total).to eq(70)
+    end
+  end
 end

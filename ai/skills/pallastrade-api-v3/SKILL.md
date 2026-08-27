@@ -392,6 +392,20 @@ The attribute isn't in the model's Ransack allowlist. The API uses lenient `.ran
 
 It doesn't — Webhooks 2.0 uses the same prefixed IDs as the API. If you're seeing integer IDs, you're either on the legacy webhooks system OR the consumer is parsing wrong.
 
+### 父订单聚合序列化（P3, 2026-08-27）
+
+拆单后父订单（`is_parent: true`，有 children）的金额/状态字段在 Store + Admin `OrderSerializer` 中输出**聚合派生值**（模型方法见 `pallastrade-data-model` SKILL「Order 聚合派生」）：
+
+| 字段 | 聚合语义 |
+|---|---|
+| `total` / `display_total` | own + Σ children（递归） |
+| `amount_due` / `display_amount_due` | 聚合未结余额 - 已用 store credit，下限 0 |
+| `payment_total` / `display_payment_total`（Admin） | own + Σ children 已付 |
+| `payment_status`（= `fulfillment_status` 旧别名） | `combined_payment_state` |
+| `fulfillment_status`（= `shipment_state` 旧别名） | `combined_shipment_state`（partial 等） |
+
+单订单（无 children）时聚合值 == 原值，响应与拆单前完全一致（零行为变化）。字段类型不变（string money / string enum），OpenAPI schema 无需变更。
+
 ## Where to read further
 
 - **OpenAPI specs:** `node_modules/@pallastrade/docs/dist/api-reference/store.yaml` (Store API) and `admin.yaml` (Admin API) — every endpoint, parameter, response schema. Authoritative.

@@ -54,7 +54,9 @@ module PallasTrade
                   :included_tax_total,  :additional_tax_total, :tax_total,
                   :shipment_total,      :promo_total,          :total,
                   :cart_promo_total,    :pre_tax_item_amount,  :pre_tax_total,
-                  :payment_total,       :amount_due
+                  :payment_total,       :amount_due,
+                  :combined_total, :combined_payment_total,
+                  :combined_outstanding_balance, :combined_amount_due
 
     alias display_ship_total display_shipment_total
     alias_attribute :ship_total, :shipment_total
@@ -597,6 +599,90 @@ module PallasTrade
         cursor = cursor.parent
       end
       cursor || self
+    end
+
+    # ---- Order lifecycle P3 (2026-08-27): 父订单聚合派生 ----
+    # 父订单（有 children）的金额/支付/发货状态聚合。
+    # ⚠️ 不覆写核心 total/payment_total/outstanding_balance/shipment_state——
+    # 这些被 OrderUpdater/状态机/校验依赖；聚合方法仅供序列化器/查询在父订单时使用，
+    # 无 children 时回退原值（零行为变化）。
+
+    # 聚合总额：own（item+shipment+adjustment）+ Σ children.combined_total（递归）
+    def combined_total
+      return total unless parent_order?
+
+      own_total = item_total + shipment_total + adjustment_total
+      own_total + children.to_a.sum { |child| child.combined_total }
+    end
+
+    # 聚合已付总额：own completed payments + Σ children
+    def combined_payment_total
+      return payment_total unless parent_order?
+
+      payment_total + children.to_a.sum { |child| child.combined_payment_total }
+    end
+
+    # 聚合未结余额（与 outstanding_balance 规则一致，基于聚合值）
+    def combined_outstanding_balance
+      return outstanding_balance unless parent_order?
+
+      if canceled?
+        -1 * combined_payment_total
+      else
+        combined_total - (combined_payment_total + reimbursement_paid_total)
+      end
+    end
+
+    # 聚合应付金额（与 amount_due 规则一致）
+    def combined_amount_due
+      return amount_due unless parent_order?
+
+      [combined_outstanding_balance - total_applied_store_credit, 0].max
+    end
+
+    # 聚合发货状态：own shipments + children 状态，套用 OrderUpdater#update_shipment_state 规则
+    def combined_shipment_state
+      return shipment_state unless parent_order?
+
+      states = shipments.states.dup
+      children.each { |child| states << child.combined_shipment_state if child.combined_shipment_state.present? }
+
+      if states.include?('backorder')
+        'backorder'
+      elsif states.size > 1
+        if states.include?('shipped')
+          'partial'
+        elsif states.include?('pending')
+          'pending'
+        else
+          'ready'
+        end
+      else
+        states.first
+      end
+    end
+
+    # 聚合支付状态：基于 combined_outstanding_balance，套用 OrderUpdater#update_payment_state 规则
+    def combined_payment_state
+      return payment_state unless parent_order?
+
+      if canceled? && combined_payment_total == 0
+        'void'
+      elsif combined_outstanding_balance > 0
+        'balance_due'
+      elsif combined_outstanding_balance < 0
+        'credit_owed'
+      else
+        'paid'
+      end
+    end
+
+    # 有效已付金额：有 PaymentSplit（拆单记账分摊）时用 split 推导，否则 payment_total
+    def effective_payment_total
+      split = payment_splits.order(:id).last
+      return split.captured_amount - split.refunded_amount if split
+
+      payment_total
     end
 
     # Associates the specified user with the order.

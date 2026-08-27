@@ -116,6 +116,19 @@ PallasTrade::Order.complete                  # named scope — NOT equivalent: d
 - **`PaymentCombination` / `PaymentSplit`**：见 `pallastrade-payments` SKILL（P1 数据层）。
 - **统一拆单引擎**：`PallasTrade::Orders::Splitter`（P2）——把订单按分组拆成子订单，迁移行项目/分摊调整/分摊已付 `PaymentSplit`/重算金额；策略 `SplitStrategies::ByStockLocation` / `ByStore`。详见 `pallastrade-checkout` SKILL。
 
+## Order 聚合派生 (P3, 只读派生)
+
+> P3（2026-08-27）为父订单（有 children）提供金额/支付/发货状态聚合。**这些方法不覆写核心 `total` / `payment_total` / `outstanding_balance` / `shipment_state`**——核心方法仍被 `OrderUpdater` / 状态机 / 校验依赖；聚合方法仅供序列化器 / 查询在父订单时使用，无 children 时回退原值（零行为变化）。
+
+- `combined_total`：own（item + shipment + adjustment）+ Σ children.combined_total（递归）。
+- `combined_payment_total`：own completed payments + Σ children。
+- `combined_outstanding_balance`：与 `outstanding_balance` 同规则（取消 → `-payment`；否则 `total - (payment + reimbursement)`），基于聚合值。
+- `combined_amount_due`：`[combined_outstanding_balance - total_applied_store_credit, 0].max`。
+- `combined_shipment_state`：聚合 own+children 状态，套 `OrderUpdater#update_shipment_state` 规则（backorder → `backorder`；多状态含 shipped → `partial`；含 pending → `pending`；否则 `ready`）。
+- `combined_payment_state`：基于 `combined_outstanding_balance`（>0 → `balance_due`；<0 → `credit_owed`；=0 → `paid`；取消且 0 → `void`）。
+- `effective_payment_total`：有 `PaymentSplit` 时用 `captured - refunded`（拆单记账分摊），否则 `payment_total`。
+- 上述金额方法已注册 `money_methods`（`display_combined_*` 可用）。Store/Admin `OrderSerializer` 在 `parent_order?` 时用聚合值输出 `total` / `amount_due` / `payment_status` / `fulfillment_status`。
+
 ## Checkout-side models
 
 ```

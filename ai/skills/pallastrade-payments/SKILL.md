@@ -113,6 +113,15 @@ For most stores, you don't interact with PaymentSession directly — the gateway
 
 设计约束（吸取上次 PaymentGroup 失败教训）：一个组合只允许一个 `PaymentSession` + 一个 `Payment`（挂 primary order），子订单用 `PaymentSplit` 记账，**禁止一个 session 对应多个 payment**。
 
+### 支付聚合派生（P3, 2026-08-27）
+
+> 父订单（有 children）的支付金额/状态由聚合方法派生（只读，不覆写核心 `payment_total`/`payment_state`）：
+
+- `Order#combined_payment_total`：own completed payments + Σ children（递归）。
+- `Order#combined_payment_state`：基于 `combined_outstanding_balance`（>0 → `balance_due`；<0 → `credit_owed`；=0 → `paid`；取消且 0 → `void`）。
+- `Order#effective_payment_total`：有 `PaymentSplit` 时用 `captured - refunded`（拆单记账分摊），否则 `payment_total`。
+- Admin `OrderSerializer` 输出 `payment_total`/`display_payment_total` 走 `combined_payment_total`（单订单时 == 原值）。
+
 ## Adding a payment gateway
 
 Stripe, Adyen and PayPal ship preinstalled in pallastrade-starter projects (the backend `create-pallastrade-app` scaffolds) — nothing to install; enable and configure them in the admin under Settings → Payment methods. For any other gateway gem:

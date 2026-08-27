@@ -23,6 +23,10 @@ Checkout is how a cart becomes a completed order. In PallasTrade, an Order is th
 - **策略分组**：`PallasTrade::Orders::SplitStrategies::ByStockLocation`（按变体主供仓库分组）、`ByStore`（按商品归属店铺）；自定义策略继承 `SplitStrategies::Base#groups_for(order)`。
 - 关键约定：拆单前后**总额守恒**（Σ子订单 + 源订单剩余 = 原订单）；源订单全部分出后成为空父订单容器（金额派生见 P3）。
 
+### 发货状态聚合（P3, 2026-08-27）
+
+> 父订单（有 children）的发货状态由 `Order#combined_shipment_state` 派生（只读，不覆写核心 `shipment_state`）：聚合 own shipments + children 状态，套用 `OrderUpdater#update_shipment_state` 规则（任一 backorder → `backorder`；多状态含 shipped → `partial`；含 pending → `pending`；否则 `ready`）。Store/Admin `OrderSerializer` 的 `fulfillment_status` 在父订单时输出该聚合值。
+
 ## The order state machine
 
 Default checkout flow on an Order:

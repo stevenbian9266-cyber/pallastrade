@@ -36,9 +36,18 @@ module PallasTrade
           # Admin-only attributes
           attributes :status, :last_ip_address, :considered_risky,
                      :confirmation_delivered, :store_owner_notification_delivered,
-                     :payment_total, :display_payment_total, :metadata,
+                     :metadata,
                      canceled_at: :iso8601, approved_at: :iso8601,
                      created_at: :iso8601, updated_at: :iso8601
+
+          # P3 (2026-08-27): 父订单聚合已付总额（无 children 时 combined == payment_total）
+          attribute :payment_total do |order|
+            order.combined_payment_total.to_s
+          end
+
+          attribute :display_payment_total do |order|
+            order.display_combined_payment_total.to_s
+          end
 
           attribute :preferred_stock_location_id do |order|
             order.preferred_stock_location&.prefixed_id

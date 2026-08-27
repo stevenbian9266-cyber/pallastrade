@@ -223,14 +223,17 @@ def root_order     = parent ? parent.root_order : self     # 防环
 - 关联：PRD-20260826-checkout、REQ-20260826-order-lifecycle-p2、gate GATE-2026-08-26T15-31-01。
 - 注意：新增迁移 `payment_splits.payment_combination_id` 改为**可空**（P2 拆单记账分摊先不归入组合，P4 合并支付归入）；`Adjustment` 分摊记录须**强制 closed 冻结**（防 `AdjustmentsUpdater` 重算覆盖）；OrderUpdater 前须 `line_items.reload`（缓存旧关联坑）。
 
-### P3 父子单金额与支付状态派生（2 天，默认关闭）
+### P3 父子单金额与支付状态派生（2 天，默认关闭）—— ✅ 已完成（2026-08-27）
 
-- `Order#total` 派生：`own_line_items_total + children.sum(:total)`（有 children 时）。
-- `Order#payment_total` / `payment_state` / `outstanding_balance`：合并支付场景下由 `PaymentSplit` 推导；普通场景保持原逻辑。
-- `shipment_state`：父订单 = 各子订单派生的聚合视图（`partial/shipped/...`）。
-- `amount_due`：未支付订单归集为组合金额。
-- **验证**：`order_spec` 新增父子金额/支付状态用例。
-- **回滚**：默认关闭时（无 children）走原逻辑，公式零影响。
+> 实际实现（提交 `需求：P3 父子单金额与支付状态派生`）：**不覆写核心方法**，新增只读聚合方法（无 children 回退原值，零行为变化）：
+
+- `Order#combined_total`（own item+shipment+adjustment + Σ children.combined_total 递归）、`combined_payment_total`、`combined_outstanding_balance`（取消 → `-payment`；否则 `total - (payment + reimbursement)`，基于聚合值）、`combined_amount_due`（`[outstanding - store_credit, 0].max`）。已注册 `money_methods`（`display_combined_*` 可用）。
+- `Order#combined_shipment_state`：聚合 own+children，套 `OrderUpdater#update_shipment_state` 规则（backorder/partial/pending/ready）。
+- `Order#combined_payment_state`：基于 `combined_outstanding_balance`（>0 balance_due / <0 credit_owed / =0 paid / 取消且 0 void）。
+- `Order#effective_payment_total`：有 `PaymentSplit` 用 `captured - refunded`，否则 `payment_total`。
+- Store/Admin `OrderSerializer` 父订单时输出聚合值（`total`/`display_total`/`amount_due`/`payment_total`/`payment_status`/`fulfillment_status`）。
+- **验证**：`order_parent_child_spec` 17 例 + `order_serializer_parent_child_spec` 5 例全绿；P1 支付回归 9 例全绿；`harness check --profile quick` 通过。
+- **回滚**：无 children 时聚合 == 原值；如异常 `git revert` 本提交（无迁移，零 DB 影响）。
 
 ### P4 合并支付载体 + Webhook（3-4 天，默认关闭）
 
@@ -385,3 +388,5 @@ def root_order     = parent ? parent.root_order : self     # 防环
 |---|---|---|---|
 | 2026-08-26 | 0.1 | 初稿：基于现状审查 + 上次失败代码复盘，输出分阶段可回滚升级方案 | AI |
 | 2026-08-26 | 0.2 | **P0 已完成**：备份/回滚演练脚本（`scripts/ops/`）+ Config 机制确认 + 测试基线记录（见 P0 段与基线文档） | AI |
+| 2026-08-26 | 0.3 | **P1 已完成**（4 迁移 + PaymentCombination/PaymentSplit 模型 + Order 父子语义方法 + 序列化器字段，提交 `054f936`）；**P2 已完成**（统一拆单引擎 `Orders::Splitter` + 策略 + PaymentSplit 分摊，提交 `5c70c6c`） | AI |
+| 2026-08-27 | 0.4 | **P3 已完成**：combined_*/effective_payment_total 聚合方法 + 序列化器父订单聚合输出（提交 `需求：P3 父子单金额与支付状态派生`）；task/gate 关闭，22+9 用例全绿 | AI |

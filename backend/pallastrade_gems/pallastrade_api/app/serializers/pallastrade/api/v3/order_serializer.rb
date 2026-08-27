@@ -38,9 +38,17 @@ module PallasTrade
 
         attributes :number, :email, :customer_note,
                    :currency, :locale, :total_quantity,
-                   :fulfillment_status, :payment_status,
                    :parent_id, :children_ids, :is_parent, :is_child, :is_single,
                    completed_at: :iso8601
+
+        # P3 (2026-08-27): 金额/状态字段走聚合派生（父订单 = Σ children；无 children 回退原值）
+        attribute :fulfillment_status do |order|
+          order.combined_shipment_state
+        end
+
+        attribute :payment_status do |order|
+          order.combined_payment_state
+        end
 
         # Nulled for gated (prices_hidden) guests, consistent with cart and
         # catalog price hiding.
@@ -48,10 +56,26 @@ module PallasTrade
                          :adjustment_total, :display_adjustment_total,
                          :discount_total, :display_discount_total,
                          :tax_total, :display_tax_total, :included_tax_total, :display_included_tax_total,
-                         :additional_tax_total, :display_additional_tax_total, :total, :display_total,
+                         :additional_tax_total, :display_additional_tax_total,
                          :gift_card_total, :display_gift_card_total,
-                         :amount_due, :display_amount_due,
                          :delivery_total, :display_delivery_total
+
+        # P3: total / amount_due 父订单聚合（无 children 时 combined_* == 原值）
+        attribute :total do |order|
+          order.combined_total.to_s unless params[:hide_prices]
+        end
+
+        attribute :display_total do |order|
+          order.display_combined_total.to_s unless params[:hide_prices]
+        end
+
+        attribute :amount_due do |order|
+          order.combined_amount_due.to_s unless params[:hide_prices]
+        end
+
+        attribute :display_amount_due do |order|
+          order.display_combined_amount_due.to_s unless params[:hide_prices]
+        end
 
         attribute :store_credit_total do |order|
           order.total_applied_store_credit.to_s unless params[:hide_prices]
