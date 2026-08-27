@@ -77,8 +77,15 @@ module PallasTrade
               if states[:payment]
                 before_transition to: :complete do |order|
                   if order.payment_required? && order.payments.valid.empty?
-                    order.errors.add(:base, PallasTrade.t(:no_payment_found))
-                    false
+                    # Order lifecycle P4 (2026-08-27): 合并支付成员订单——资金已由组合经
+                    # PaymentSplit 入账（captured > 0，payment_total 已按 split 记账），
+                    # 无需本地 payment 也无需再 process_payments!。单订单场景行为不变。
+                    if order.payment_splits.any? { |s| s.captured_amount.to_f.positive? }
+                      true
+                    else
+                      order.errors.add(:base, PallasTrade.t(:no_payment_found))
+                      false
+                    end
                   elsif order.payment_required?
                     order.process_payments!
                   end

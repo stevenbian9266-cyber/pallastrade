@@ -65,7 +65,15 @@ module PallasTrade
     end
 
     def update_payment_total
-      order.payment_total = payments.completed.includes(:refunds).inject(0) { |sum, payment| sum + payment.amount - payment.refunds.sum(:amount) }
+      # Order lifecycle P4 (2026-08-27): 订单存在有效 PaymentSplit（拆单分摊 / 合并支付成员）时，
+      # 已付金额以 split 为准（captured - refunded），而非 order.payments 求和——
+      # 组合支付的 Payment 挂在组合上（order_id nil），不会出现在 order.payments 里。
+      split = order.payment_splits.order(:id).last
+      if split
+        order.payment_total = split.captured_amount - split.refunded_amount
+      else
+        order.payment_total = payments.completed.includes(:refunds).inject(0) { |sum, payment| sum + payment.amount - payment.refunds.sum(:amount) }
+      end
     end
 
     def update_shipment_total

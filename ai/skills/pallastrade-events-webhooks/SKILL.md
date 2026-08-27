@@ -296,6 +296,10 @@ In production, endpoint URLs are validated against private IP ranges (RFC 1918, 
 | `payment_session.canceled` | Customer canceled |
 | `payment_session.expired` | Session timed out |
 
+### 组合支付 Webhook 分支（P4, 2026-08-27）
+
+> 入站支付 webhook（网关 → `PallasTrade::Payments::HandleWebhook` 或 Stripe `CompleteOrderFromSessionJob`）在处理成功时：若 `PaymentSession#payment_combination` 存在（合并支付），**走 `PaymentCombinations::Complete`**（先入账支付 → 逐个订单完成 → 失败补偿队列），而非单订单完成路径；单订单 session 流程零改动。详见 `pallastrade-payments` SKILL「合并支付服务层」与 `pallastrade-checkout` SKILL。
+
 Payment **setup** sessions (saving a payment method without charging) fire the same set: `payment_setup_session.processing`, `.completed`, `.failed`, `.canceled`, `.expired`.
 
 ### Shipment lifecycle

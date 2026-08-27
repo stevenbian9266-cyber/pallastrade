@@ -13,9 +13,11 @@ module PallasTrade
     belongs_to :payment_combination, class_name: 'PallasTrade::PaymentCombination',
                                      inverse_of: :payment_splits, optional: true
     belongs_to :order, class_name: 'PallasTrade::Order'
-    belongs_to :payment, class_name: 'PallasTrade::Payment'
+    # payment 可空（P4）：PaymentCombinations::Create 在支付发生前建 split（payment 后补），
+    # 支付完成后由 Complete 回填。单订单 / P2 拆单分摊始终有 payment。
+    belongs_to :payment, class_name: 'PallasTrade::Payment', optional: true
 
-    validates :order, :payment, :currency, presence: true
+    validates :order, :currency, presence: true
     validates :authorized_amount, :captured_amount, :refunded_amount,
               numericality: { greater_than_or_equal_to: 0 }
     validates :order_id, uniqueness: { scope: :payment_combination_id }

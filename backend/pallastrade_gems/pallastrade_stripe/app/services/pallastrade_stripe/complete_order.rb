@@ -7,6 +7,13 @@ module PallasTradeStripe
     attr_reader :payment_intent
 
     def call
+      # P4 (2026-08-27): 组合支付（session 挂 PaymentCombination）走统一组合完成：
+      # 先入账支付再逐个订单完成，部分失败进补偿队列，不回滚已入账资金。
+      if payment_intent.payment_combination.present?
+        PallasTrade::Payments::PaymentCombinations::Complete.call(payment_session: payment_intent)
+        return payment_intent.order.reload
+      end
+
       order = payment_intent.order
 
       return order if (order.completed? && order.paid?) || order.canceled?

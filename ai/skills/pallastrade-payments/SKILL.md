@@ -122,6 +122,21 @@ For most stores, you don't interact with PaymentSession directly — the gateway
 - `Order#effective_payment_total`：有 `PaymentSplit` 时用 `captured - refunded`（拆单记账分摊），否则 `payment_total`。
 - Admin `OrderSerializer` 输出 `payment_total`/`display_payment_total` 走 `combined_payment_total`（单订单时 == 原值）。
 
+### 合并支付服务层（P4, 2026-08-27，能力层默认关闭）
+
+> P4 实现 `PaymentCombination` 服务层闭环，**不暴露端点**（P5 收银台接线）。吸取 PaymentGroup 失败教训：先入账支付、再逐订单完成、部分失败补偿。
+
+- **`PallasTrade::Payments::PaymentCombinations::Create`**：`(store:, customer:, orders:, payment_method:, primary_order:)`。
+  - 校验同 store/同用户/同币种；仅未支付（`outstanding_balance > 0`）订单计入；金额**服务端计算** = Σ `amount_due`。
+  - 创建组合（`pending → processing`）+ 每成员订单一条 `PaymentSplit`（`payment_id` 为空，支付后回填）+ primary 订单 `PaymentSession`（金额=组合合计，挂组合，`external_data` 含 `payment_combination_id`）。
+- **`PallasTrade::Payments::PaymentCombinations::Complete`**：`(combination: nil, payment_session: nil)`。
+  - **阶段 1 入账（组合事务）**：组合 `succeeded`；1 个 `Payment` 挂组合（`order_id=nil`、金额=组合合计、`completed`）；splits 按 `amount_due` 比例记 `captured_amount` + 回填 `payment_id`；各订单 `payment_total`/`payment_state` 更新。
+  - **阶段 2 完成（事务外）**：逐个 `checkout_complete_service` 完成订单；失败**不回滚已入账支付**，订单标 `balance_due` + 入 `CombinationSettleJob` 重试（资金 >= 订单状态）。
+  - **幂等**：组合 `succeeded` / session `completed` / 订单已完成 → 跳过；Webhook + API 双路径安全。
+- **`PallasTrade::Payments::CombinationSettleJob`**：补偿队列，重试失败成员订单完成（幂等，耗尽保留 `balance_due` 供人工介入）。
+- **Webhook 接线**：`HandleWebhook` 与 Stripe `CompleteOrderFromSessionJob`/`CompleteOrder` 在 session 挂组合时走 `PaymentCombinations::Complete`（单订单流程零改动）。
+- **配套数据/模型变更**：`payment_splits.payment_id` 改可空（支付前建 split）；`Payment#order` 改 optional（组合支付 `order_id=nil`，`update_order`/`invalidate_old_payments`/`currency` 已有 nil 守卫）；`PaymentCombination#payments` 关联；`OrderUpdater#update_payment_total` 有 `PaymentSplit` 时取 `captured - refunded`；checkout 状态机在订单有已捕获 split 时放行（无需本地 payment）。
+
 ## Adding a payment gateway
 
 Stripe, Adyen and PayPal ship preinstalled in pallastrade-starter projects (the backend `create-pallastrade-app` scaffolds) — nothing to install; enable and configure them in the admin under Settings → Payment methods. For any other gateway gem:

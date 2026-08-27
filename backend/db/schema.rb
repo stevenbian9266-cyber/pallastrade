@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_26_160000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_27_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1272,7 +1272,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_26_160000) do
     t.string "currency", null: false
     t.bigint "order_id", null: false
     t.bigint "payment_combination_id"
-    t.bigint "payment_id", null: false
+    t.bigint "payment_id"
     t.decimal "refunded_amount", precision: 10, scale: 2, default: "0.0", null: false
     t.datetime "updated_at", null: false
     t.index ["order_id"], name: "index_pallastrade_payment_splits_on_order_id"

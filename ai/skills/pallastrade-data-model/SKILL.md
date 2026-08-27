@@ -129,6 +129,16 @@ PallasTrade::Order.complete                  # named scope — NOT equivalent: d
 - `effective_payment_total`：有 `PaymentSplit` 时用 `captured - refunded`（拆单记账分摊），否则 `payment_total`。
 - 上述金额方法已注册 `money_methods`（`display_combined_*` 可用）。Store/Admin `OrderSerializer` 在 `parent_order?` 时用聚合值输出 `total` / `amount_due` / `payment_status` / `fulfillment_status`。
 
+## 合并支付数据配套 (P4, 2026-08-27)
+
+> P4 实现 `PaymentCombination` 服务层时的数据/模型配套（`payment_splits.payment_id` 由 NOT NULL 改为可空，迁移 `20260827000001`）：
+
+- `payment_splits.payment_id` 可空：`PaymentCombinations::Create` 在支付发生前建 split（payment 后补），`Complete` 回填。
+- `Payment#order` 改 `optional: true`：组合支付挂 `order_id=nil`；`update_order` / `invalidate_old_payments` / `currency`（`order&.currency || payment_combination&.currency`）已有 nil 守卫。
+- `PaymentCombination#payments` 关联（`has_many :payments`，组合支付本身，`dependent: :nullify`）。
+- `OrderUpdater#update_payment_total`：订单存在有效 `PaymentSplit` 时取 `captured - refunded`（组合/拆单成员订单的已付金额以 split 为准，因为组合 payment 不在 order.payments 里）。
+- 服务层（Create/Complete/SettleJob/Webhook 分支）见 `pallastrade-payments` SKILL。
+
 ## Checkout-side models
 
 ```

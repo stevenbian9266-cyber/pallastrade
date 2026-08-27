@@ -235,17 +235,18 @@ def root_order     = parent ? parent.root_order : self     # 防环
 - **验证**：`order_parent_child_spec` 17 例 + `order_serializer_parent_child_spec` 5 例全绿；P1 支付回归 9 例全绿；`harness check --profile quick` 通过。
 - **回滚**：无 children 时聚合 == 原值；如异常 `git revert` 本提交（无迁移，零 DB 影响）。
 
-### P4 合并支付载体 + Webhook（3-4 天，默认关闭）
+### P4 合并支付载体 + Webhook（3-4 天，默认关闭）—— ✅ 已完成（2026-08-27）
 
 - `PaymentCombinations::Create`：服务端计算金额（仅未支付订单计入），同 store/同用户/同币种校验；`PaymentCombinations::Complete`：幂等完成。
 - **关键设计（避免上次失败）**：
   - 一个组合 → **一个 `PaymentSession`**（挂 primary order）+ **一个 `Payment`**（挂组合，`order_id=nil`，金额=组合合计），维持 `session ↔ payment` 1:1；
-  - 每成员订单一条 `PaymentSplit`；
-  - Webhook 成功 → `PaymentCombinations::Complete`：**先完成支付记账（payment + splits + 各订单 payment_state）**，再逐个订单完成（`carts_complete_service`）；
+  - 每成员订单一条 `PaymentSplit`（`payment_id` 改可空——支付前建 split，Complete 回填）；
+  - Webhook 成功 → `PaymentCombinations::Complete`：**先完成支付记账（payment + splits + 各订单 payment_state）**，再逐个订单完成（`checkout_complete_service`）；
   - **一致性兜底**：某订单完成失败时**不回滚已入账支付**，将该订单标记 `balance_due` + 入异常队列（`PallasTrade::Payments::CombinationSettleJob` 重试/人工介入），资金始终 >= 订单状态。
-- Stripe 网关：`create_payment_session` 支持组合金额；`CompletePaymentGroup` 逻辑迁移为 `CompletePaymentCombination`。
-- **验证**：组合状态机（非法迁移→业务错误）、幂等 webhook、部分订单失败补偿路径。
-- **回滚**：flag 关闭即不暴露新端点；旧支付链路零改动。
+- Stripe 网关：`CompleteOrder` / `CompleteOrderFromSessionJob` 在 session 挂组合时走 `PaymentCombinations::Complete`（收敛同一完成服务）。
+- **配套模型**：`Payment#order` optional（组合支付 order_id=nil + nil 守卫）；`PaymentCombination#payments` 关联；`OrderUpdater#update_payment_total` 有 split 时取 `captured - refunded`；checkout 状态机在订单有已捕获 split 时放行（无需本地 payment）。
+- **验证**：15 新 spec（Create 5 + Complete 5 + SettleJob 3 + Webhook 2）全绿；回归 39 全绿；quick check 通过；迁移 `20260827000001` 应用成功。
+- **回滚**：flag 关闭即不暴露新端点；旧支付链路零改动；`git revert` P4 commit（无破坏性迁移）。
 
 ### P5 Checkout 集成（自动拆单 + 合并支付收银台，4-5 天，flag 灰度）
 

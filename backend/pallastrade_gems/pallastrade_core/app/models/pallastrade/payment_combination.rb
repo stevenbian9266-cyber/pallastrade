@@ -29,6 +29,9 @@ module PallasTrade
     has_many :payment_splits, class_name: 'PallasTrade::PaymentSplit',
                               inverse_of: :payment_combination, dependent: :destroy
     has_many :orders, through: :payment_splits
+    # P4 (2026-08-27): 组合支付本身（挂组合 order_id=nil，session ↔ payment 保持 1:1）
+    has_many :payments, class_name: 'PallasTrade::Payment',
+                        inverse_of: :payment_combination, dependent: :nullify
 
     extend PallasTrade::DisplayMoney
     money_methods :amount

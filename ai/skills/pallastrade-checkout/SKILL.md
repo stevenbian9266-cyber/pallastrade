@@ -27,6 +27,13 @@ Checkout is how a cart becomes a completed order. In PallasTrade, an Order is th
 
 > 父订单（有 children）的发货状态由 `Order#combined_shipment_state` 派生（只读，不覆写核心 `shipment_state`）：聚合 own shipments + children 状态，套用 `OrderUpdater#update_shipment_state` 规则（任一 backorder → `backorder`；多状态含 shipped → `partial`；含 pending → `pending`；否则 `ready`）。Store/Admin `OrderSerializer` 的 `fulfillment_status` 在父订单时输出该聚合值。
 
+### 组合支付订单完成（P4, 2026-08-27）
+
+> 合并支付成员订单没有本地 payment（资金在组合上）。两个配套点使其可完成：
+
+- **checkout 状态机放行**：`before_transition to: :complete` 在 `payment_required? && payments.valid.empty?` 时，若订单存在**已捕获的 `PaymentSplit`**（`captured_amount > 0`）则放行（无需本地 payment、不再 `process_payments!`）；否则维持原 `no_payment_found` 错误。单订单场景行为不变。
+- **完成入口**：`PaymentCombinations::Complete` 阶段 2 逐个用 `checkout_complete_service`（`PallasTrade::Checkout::Complete`）完成成员订单；失败标 `balance_due` + 入 `CombinationSettleJob` 重试。详见 `pallastrade-payments` SKILL。
+
 ## The order state machine
 
 Default checkout flow on an Order:

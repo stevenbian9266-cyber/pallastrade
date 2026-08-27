@@ -25,7 +25,9 @@ module PallasTrade
     INVALID_STATES      = %w(failed invalid void).freeze
 
     with_options inverse_of: :payments do
-      belongs_to :order, class_name: 'PallasTrade::Order', touch: true
+      # P4 (2026-08-27): 组合支付（PaymentCombination）的 Payment 挂组合，order_id 可空；
+      # 单订单支付 order 始终存在。
+      belongs_to :order, class_name: 'PallasTrade::Order', touch: true, optional: true
       belongs_to :payment_method, -> { with_deleted }, class_name: 'PallasTrade::PaymentMethod'
     end
     # Order lifecycle P1 (2026-08-26): combined-payment carrier. A combined
@@ -100,7 +102,10 @@ module PallasTrade
     # transaction_id is much easier to understand
     alias_attribute :transaction_id, :response_code
 
-    delegate :currency, to: :order
+    # P4 (2026-08-27): 组合支付（order 为空）时从组合取币种；单订单支付取 order.currency。
+    def currency
+      order&.currency || payment_combination&.currency
+    end
 
     money_methods :amount, :credit_allowed
     alias money display_amount # for compatibility with older versions of PallasTrade
@@ -371,6 +376,10 @@ module PallasTrade
     end
 
     def update_order
+      # P4: 组合支付（order_id nil）的金额/状态由 PaymentCombinations::Complete 统一记账，
+      # 不在单个 Payment 保存时触碰 order 侧汇总。
+      return if order.nil?
+
       order.updater.update_payment_total if completed? || void?
 
       if order.completed?
@@ -399,6 +408,8 @@ module PallasTrade
     def invalidate_old_payments
       # invalid payment or store_credit payment shouldn't invalidate other payment types
       return if has_invalid_state? || store_credit?
+      # P4: 组合支付（order_id nil）无同订单其他支付需失效
+      return if order.nil?
 
       order.payments.with_state('checkout').where.not(id: id).each do |payment|
         payment.invalidate! unless payment.store_credit?
