@@ -114,6 +114,7 @@ PallasTrade::Order.complete                  # named scope — NOT equivalent: d
 - `orders.split_from_id`（可空 FK）→ `Order#split_from` / `#split_orders`：拆单来源血缘（展示用）。
 - `orders.payment_combination_id`（可空）→ 合并支付归属（跨父订单聚合支付）。
 - **`PaymentCombination` / `PaymentSplit`**：见 `pallastrade-payments` SKILL（P1 数据层）。
+- **统一拆单引擎**：`PallasTrade::Orders::Splitter`（P2）——把订单按分组拆成子订单，迁移行项目/分摊调整/分摊已付 `PaymentSplit`/重算金额；策略 `SplitStrategies::ByStockLocation` / `ByStore`。详见 `pallastrade-checkout` SKILL。
 
 ## Checkout-side models
 

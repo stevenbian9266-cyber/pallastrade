@@ -9,12 +9,13 @@ module PallasTrade
     include PallasTrade::Metafields
     include PallasTrade::Metadata
 
+    # payment_combination 可空：P2 拆单时先记账分摊（未归入组合），P4 合并支付再归入组合。
     belongs_to :payment_combination, class_name: 'PallasTrade::PaymentCombination',
-                                     inverse_of: :payment_splits
+                                     inverse_of: :payment_splits, optional: true
     belongs_to :order, class_name: 'PallasTrade::Order'
     belongs_to :payment, class_name: 'PallasTrade::Payment'
 
-    validates :payment_combination, :order, :payment, :currency, presence: true
+    validates :order, :payment, :currency, presence: true
     validates :authorized_amount, :captured_amount, :refunded_amount,
               numericality: { greater_than_or_equal_to: 0 }
     validates :order_id, uniqueness: { scope: :payment_combination_id }

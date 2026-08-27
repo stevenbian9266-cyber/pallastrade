@@ -7,6 +7,22 @@ description: Use when the user is working on PallasTrade's checkout flow — car
 
 Checkout is how a cart becomes a completed order. In PallasTrade, an Order is the cart (while in cart state) AND the completed transaction (post-complete); the `state` column tracks which phase you're in.
 
+## Order splitting (P2, 能力层服务)
+
+> P2（2026-08-26）新增**统一拆单引擎**（默认不接入任何流程，P5 自动拆单 / P6 手动拆单负责接入）。
+
+- **`PallasTrade::Orders::Splitter`**：`split(order:, groups:, options)`，把订单行项目按分组拆成多笔子订单。
+  - `groups = { group_key => [line_item_id, ...] }`（支持 `li_` 前缀或整型 id）
+  - `options[:parent_order]` 指定父订单（默认源订单自身为父）
+  - 子订单复制 store/user/channel/market/currency/email/地址 + `parent_id`/`split_from_id` 指向源订单
+  - **调整项**：line_item 级调整随行项目迁移；order 级非税 eligible 调整（promo）按行项目金额比例分摊到子订单（**分摊调整创建后强制 closed 冻结**，防 `AdjustmentsUpdater` 用 source 重算覆盖）；分摊后删除源订单的原 order 级调整（防父容器金额重复）
+  - **已付分摊**：源订单有 completed 支付时，按行项目金额比例创建 `PaymentSplit`（`payment_combination` 为空——记账分摊，P4 合并支付归入组合）
+  - **金额重算**：子订单/源订单各跑 `OrderUpdater`（注意先 `line_items.reload`，避免缓存旧关联）
+  - **幂等**：重复拆分返回失败（源订单行项目已迁移/为空）
+  - 发布 `order.splitted` 事件（payload 含 `child_order_ids`）
+- **策略分组**：`PallasTrade::Orders::SplitStrategies::ByStockLocation`（按变体主供仓库分组）、`ByStore`（按商品归属店铺）；自定义策略继承 `SplitStrategies::Base#groups_for(order)`。
+- 关键约定：拆单前后**总额守恒**（Σ子订单 + 源订单剩余 = 原订单）；源订单全部分出后成为空父订单容器（金额派生见 P3）。
+
 ## The order state machine
 
 Default checkout flow on an Order:

@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| draft | PRD-20260826-checkout-实施-p2-统一拆单引擎-orders-splitter-策略分组-调整分摊-幂等 | checkout | 2026-08-26 | REQ-20260826-order-lifecycle-p2.md |
 | draft | PRD-20260826-payments-实施-p1-数据模型与语义方法-父子单-parent_id-paymentcombination-paymentspli | payments | 2026-08-26 | REQ-20260826-order-lifecycle-p1.md |
 | draft | PRD-20260818-catalog-p0-4-产品评论 | catalog | 2026-08-18 | （实施时回填） |
 | draft | PRD-20260818-other-p0-3-邮件自动化-弃单恢复 | other | 2026-08-18 | （实施时回填） |
