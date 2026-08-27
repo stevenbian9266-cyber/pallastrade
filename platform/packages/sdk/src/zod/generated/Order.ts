@@ -10,6 +10,11 @@ import { PaymentSchema } from './Payment';
 
 export const OrderSchema = z.object({
   id: z.string(),
+  parent_id: z.string().nullable(),
+  children_ids: z.any(),
+  is_parent: z.boolean(),
+  is_child: z.boolean(),
+  is_single: z.boolean(),
   market_id: z.string().nullable(),
   channel_id: z.string().nullable(),
   number: z.string(),

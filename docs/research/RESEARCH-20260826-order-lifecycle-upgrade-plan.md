@@ -248,13 +248,13 @@ def root_order     = parent ? parent.root_order : self     # 防环
 - **验证**：15 新 spec（Create 5 + Complete 5 + SettleJob 3 + Webhook 2）全绿；回归 39 全绿；quick check 通过；迁移 `20260827000001` 应用成功。
 - **回滚**：flag 关闭即不暴露新端点；旧支付链路零改动；`git revert` P4 commit（无破坏性迁移）。
 
-### P5 Checkout 集成（自动拆单 + 合并支付收银台，4-5 天，flag 灰度）
+### P5 Checkout 集成（自动拆单 + 合并支付收银台 + Buy Now，4-5 天，flag 灰度）—— ✅ 已完成（2026-08-27）
 
-- **自动拆单**：在 `Carts::Complete` 完成时（支付确认后）执行拆单评估（`Config[:auto_split_orders]` = 策略列表，默认 `[]`）。拆出子订单挂父订单，资金经 `PaymentSplit` 分摊；**不在 cart 状态中途拆**。
-- **合并支付收银台**：Storefront `PaymentSection` 支持组合支付（账户订单模块多选待支付 → 组合 → 走 Stripe Elements 单次扣款）；`(checkout)/combined-payment/[id]` 页复用现有 `confirm-payment` 回调。
-- **Buy Now**：详情页快捷下单（仅当前商品进确认页，不污染购物车），复用公用确认页。
-- **验证**：E2E（下单→自动拆→合并支付→回调→订单列表父子视图）；`harness e2e storefront`。
-- **回滚**：flag 关闭 → 完全回到单笔订单老流程。
+- **自动拆单**：`PallasTrade::Carts::AutoSplit`（`Carts::Complete` 完成事务后调用）按 `store.preferred_auto_split_orders`（JSON 数组）回退 `Config[:auto_split_orders]`（默认 `[]` 关闭）策略拆分；**不在 cart 中途拆**；失败不影响订单完成。
+- **合并支付收银台**：Store API `POST/GET /payment_combinations`（创建/详情）+ `payment_sessions#complete` 组合分支（收敛 `PaymentCombinations::Complete`）；SDK `paymentCombinations.create/get` + `PaymentCombination` 类型；Storefront `(checkout)/combined-payment/[id]` 收银台 + `OrderCombinedPay` 账户订单多选（默认支付方式取自 cart）。
+- **Buy Now**：详情页 `BuyNowButton` → `createBuyNowCart`（独立 cart 不污染购物车）→ 复用确认页。
+- **验证**：后端 30 例 + SDK 160 例 + storefront 211 例（含 BuyNowButton/OrderCombinedPay 组件测试）+ typecheck/generated:check/quick check 全过。
+- **回滚**：`auto_split_orders=[]` + 组合入口按 store 关闭 → 完全回到单笔订单老流程；`git revert` P5 commit。
 
 ### P6 Admin 手动拆单 + 父子树 UI（3-4 天，flag 灰度）
 

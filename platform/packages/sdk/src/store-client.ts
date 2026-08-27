@@ -18,6 +18,7 @@ import type {
   CompletePaymentSetupSessionParams,
   Country,
   CreateCartParams,
+  CreatePaymentCombinationParams,
   CreatePaymentParams,
   CreatePaymentSessionParams,
   CreatePaymentSetupSessionParams,
@@ -32,6 +33,7 @@ import type {
   Order,
   OrderListParams,
   Payment,
+  PaymentCombination,
   PaymentSession,
   PaymentSetupSession,
   Policy,
@@ -670,6 +672,38 @@ export class StoreClient {
      */
     create: (params: RegisterParams): Promise<AuthTokens> =>
       this.request<AuthTokens>('POST', '/customers', { body: params }),
+  }
+
+  // ============================================
+  // Payment Combinations (P5, 2026-08-27)
+  // ============================================
+
+  readonly paymentCombinations = {
+    /**
+     * Create a payment combination: combine multiple unpaid orders into a
+     * single checkout payment (amount is server-computed).
+     * POST /api/v3/store/payment_combinations
+     * @param params - Prefixed order IDs + payment method
+     * @returns The created combination (with its payment session for the checkout)
+     */
+    create: (
+      params: CreatePaymentCombinationParams,
+      options?: RequestOptions,
+    ): Promise<PaymentCombination> =>
+      this.request<PaymentCombination>('POST', '/payment_combinations', {
+        ...options,
+        body: params,
+      }),
+
+    /**
+     * Get a payment combination by ID (for the combined-payment checkout page).
+     * GET /api/v3/store/payment_combinations/:id
+     */
+    get: (
+      id: string,
+      options?: RequestOptions,
+    ): Promise<PaymentCombination> =>
+      this.request<PaymentCombination>('GET', `/payment_combinations/${id}`, options),
   }
 
   // ============================================

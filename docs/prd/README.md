@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| done | PRD-20260827-checkout-实施-p5-checkout-集成-自动拆单-合并支付收银台-buy-now-flag-灰度 | checkout | 2026-08-27 | REQ-20260827-order-lifecycle-p5.md |
 | done | PRD-20260827-payments-实施-p4-合并支付载体-paymentcombination-服务层-webhook-幂等完成 | payments | 2026-08-27 | REQ-20260827-order-lifecycle-p4.md |
 | done | PRD-20260827-payments-实施-p3-父子单金额与支付状态派生-combined_total-payment-shipment_state-聚合 | payments | 2026-08-27 | REQ-20260827-order-lifecycle-p3.md |
 | done | PRD-20260826-checkout-实施-p2-统一拆单引擎-orders-splitter-策略分组-调整分摊-幂等 | checkout | 2026-08-26 | REQ-20260826-order-lifecycle-p2.md |

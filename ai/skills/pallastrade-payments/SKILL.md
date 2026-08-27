@@ -135,6 +135,7 @@ For most stores, you don't interact with PaymentSession directly — the gateway
   - **幂等**：组合 `succeeded` / session `completed` / 订单已完成 → 跳过；Webhook + API 双路径安全。
 - **`PallasTrade::Payments::CombinationSettleJob`**：补偿队列，重试失败成员订单完成（幂等，耗尽保留 `balance_due` 供人工介入）。
 - **Webhook 接线**：`HandleWebhook` 与 Stripe `CompleteOrderFromSessionJob`/`CompleteOrder` 在 session 挂组合时走 `PaymentCombinations::Complete`（单订单流程零改动）。
+- **Store API（P5）**：`POST /api/v3/store/payment_combinations`（创建：order_ids + payment_method_id → 组合 + session）与 `GET /api/v3/store/payment_combinations/:id`（收银台详情）；`payment_sessions#complete` 对挂组合的 session 走 `PaymentCombinations::Complete`。SDK `paymentCombinations.create/get` + Storefront 收银台（`(checkout)/combined-payment/[id]`）+ 账户订单多选（`OrderCombinedPay`）。
 - **配套数据/模型变更**：`payment_splits.payment_id` 改可空（支付前建 split）；`Payment#order` 改 optional（组合支付 `order_id=nil`，`update_order`/`invalidate_old_payments`/`currency` 已有 nil 守卫）；`PaymentCombination#payments` 关联；`OrderUpdater#update_payment_total` 有 `PaymentSplit` 时取 `captured - refunded`；checkout 状态机在订单有已捕获 split 时放行（无需本地 payment）。
 
 ## Adding a payment gateway

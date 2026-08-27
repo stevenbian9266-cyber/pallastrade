@@ -608,6 +608,27 @@ var StoreClient = class {
     create: (params) => this.request("POST", "/customers", { body: params })
   };
   // ============================================
+  // Payment Combinations (P5, 2026-08-27)
+  // ============================================
+  paymentCombinations = {
+    /**
+     * Create a payment combination: combine multiple unpaid orders into a
+     * single checkout payment (amount is server-computed).
+     * POST /api/v3/store/payment_combinations
+     * @param params - Prefixed order IDs + payment method
+     * @returns The created combination (with its payment session for the checkout)
+     */
+    create: (params, options) => this.request("POST", "/payment_combinations", {
+      ...options,
+      body: params
+    }),
+    /**
+     * Get a payment combination by ID (for the combined-payment checkout page).
+     * GET /api/v3/store/payment_combinations/:id
+     */
+    get: (id, options) => this.request("GET", `/payment_combinations/${id}`, options)
+  };
+  // ============================================
   // Newsletter Subscribers
   // ============================================
   newsletterSubscribers = {

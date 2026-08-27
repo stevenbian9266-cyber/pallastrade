@@ -28,7 +28,8 @@ Rails.application.config.after_initialize do
       TaxCategory CustomerReturn
     ].to_set
 
-    # Store SDK — no prefix, package provides namespace
+    # Store SDK — no prefix, package provides namespace.
+    # 容器内 /rails/packages/sdk = 宿主 backend/packages/sdk；生成后 docker cp 至 platform/packages/sdk（monorepo）。
     config.writer(:store) do |c|
       c.output_dir = api_root.join('../../packages/sdk/src/types/generated')
       c.reject_class = ->(serializer:) {
@@ -43,7 +44,8 @@ Rails.application.config.after_initialize do
       }
     end
 
-    # Admin SDK — no prefix, package provides namespace
+    # Admin SDK — no prefix, package provides namespace.
+    # 容器内 /rails/packages/admin-sdk；生成后 docker cp 至 platform/packages/admin-sdk。
     config.writer(:admin) do |c|
       c.output_dir = api_root.join('../../packages/admin-sdk/src/types/generated')
       c.reject_class = ->(serializer:) { !serializer.name.to_s.include?('::Admin::') }

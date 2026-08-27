@@ -2,8 +2,10 @@ import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
+import { OrderCombinedPay } from "@/components/account/OrderCombinedPay";
 import { OrderList } from "@/components/account/OrderList";
 import { Button } from "@/components/ui/button";
+import { getCart } from "@/lib/data/cart";
 import { getOrders } from "@/lib/data/orders";
 
 interface OrdersPageProps {
@@ -21,6 +23,11 @@ export default async function OrdersPage({ params }: OrdersPageProps) {
 
   const response = await getOrders({ limit: 50 });
   const orders = response.data.filter((order) => order.completed_at !== null);
+
+  // 合并支付（P5）：默认支付方式取自当前 cart 的第一个会话类支付方式
+  const cart = await getCart().catch(() => null);
+  const defaultPaymentMethodId =
+    cart?.payment_methods?.find((pm) => pm.session_required)?.id ?? "";
 
   return (
     <div>
@@ -40,7 +47,14 @@ export default async function OrdersPage({ params }: OrdersPageProps) {
           </Button>
         </div>
       ) : (
-        <OrderList orders={orders} basePath={basePath} locale={locale} />
+        <>
+          <OrderCombinedPay
+            orders={orders}
+            basePath={basePath}
+            defaultPaymentMethodId={defaultPaymentMethodId}
+          />
+          <OrderList orders={orders} basePath={basePath} locale={locale} />
+        </>
       )}
     </div>
   );

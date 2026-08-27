@@ -26,6 +26,9 @@ PallasTrade.config do |config|
   # Disable the copy-check because those versions are already tracked here.
   config.disable_migration_check = true
 
+  # Order lifecycle P5 (2026-08-27): 自动拆单策略列表默认关闭（store.preferred_auto_split_orders 覆盖）
+  config.auto_split_orders = []
+
   # Example:
   # Uncomment to stop tracking inventory levels in the application
   # config.track_inventory_levels = false

@@ -1,9 +1,11 @@
 // This file is auto-generated. Do not edit directly.
 export { AddressSchema, type Address } from './Address';
+export { BackInStockSubscriptionSchema, type BackInStockSubscription } from './BackInStockSubscription';
 export { BaseSchema, type Base } from './Base';
 export { CartSchema, type Cart } from './Cart';
 export { CategorySchema, type Category } from './Category';
 export { ChannelSchema, type Channel } from './Channel';
+export { ContactMessageSchema, type ContactMessage } from './ContactMessage';
 export { CountrySchema, type Country } from './Country';
 export { CreditCardSchema, type CreditCard } from './CreditCard';
 export { CurrencySchema, type Currency } from './Currency';
@@ -27,6 +29,7 @@ export { OptionTypeSchema, type OptionType } from './OptionType';
 export { OptionValueSchema, type OptionValue } from './OptionValue';
 export { OrderSchema, type Order } from './Order';
 export { PaymentSchema, type Payment } from './Payment';
+export { PaymentCombinationSchema, type PaymentCombination } from './PaymentCombination';
 export { PaymentMethodSchema, type PaymentMethod } from './PaymentMethod';
 export { PaymentSessionSchema, type PaymentSession } from './PaymentSession';
 export { PaymentSetupSessionSchema, type PaymentSetupSession } from './PaymentSetupSession';
@@ -50,6 +53,7 @@ export { PromotionSchema, type Promotion } from './Promotion';
 export { RefundSchema, type Refund } from './Refund';
 export { ReturnAuthorizationSchema, type ReturnAuthorization } from './ReturnAuthorization';
 export { ReturnItemSchema, type ReturnItem } from './ReturnItem';
+export { ReviewSchema, type Review } from './Review';
 export { StateSchema, type State } from './State';
 export { StockLocationSchema, type StockLocation } from './StockLocation';
 export { StockReservationSchema, type StockReservation } from './StockReservation';

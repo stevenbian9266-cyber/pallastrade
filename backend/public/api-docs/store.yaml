@@ -5623,6 +5623,103 @@ paths:
                 market:
               schema:
                 "$ref": "#/components/schemas/Cart"
+  "/api/v3/store/payment_combinations":
+    post:
+      summary: Create a payment combination (合并支付)
+      tags:
+      - Payment Combinations
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: Combines multiple unpaid orders into a single checkout payment.
+        Amount is server-computed (sum of each unpaid order's amount_due). Returns
+        the combination with its payment session for the checkout (P5, flag-gated).
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const combination = await client.paymentCombinations.create({
+            order_ids: ['or_abc123', 'or_def456'],
+            payment_method_id: 'pm_abc123',
+          }, {
+            token: '<token>',
+          })
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for the authenticated customer (requires login)
+        schema:
+          type: string
+      - name: Idempotency-Key
+        in: header
+        required: false
+        description: Unique key for request idempotency.
+        schema:
+          type: string
+      responses:
+        '201':
+          description: payment combination created
+          content:
+            application/json:
+              example:
+                id: pcom_gbHJdmfrXB
+                status: processing
+                amount: '99.98'
+                currency: USD
+                expires_at:
+                completed_at:
+                payment_session:
+                  id: ps_gbHJdmfrXB
+                  status: pending
+                  amount: '99.98'
+                  currency: USD
+                  external_id: bogus_eb5c77e8a4ddf687caec9273
+                  external_data:
+                    client_secret: bogus_secret_292f452459b9679c
+                  payment_method_id: pm_UkLWZg9DAJ
+                  order_id: or_UkLWZg9DAJ
+              schema:
+                "$ref": "#/components/schemas/PaymentCombination"
+        '422':
+          description: validation failed (e.g. cross-store orders, no unpaid orders)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order_ids:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                  - or_abc123
+                  - or_def456
+                  description: Prefixed order IDs to combine (unpaid orders only)
+                payment_method_id:
+                  type: string
+                  example: pm_abc123
+                  description: Payment method ID
+              required:
+              - order_ids
+              - payment_method_id
   "/api/v3/store/orders/{id}":
     get:
       summary: Get an order
@@ -12205,6 +12302,49 @@ components:
       - source_id
       - source
       - payment_method
+      x-typelizer: true
+    PaymentCombination:
+      type: object
+      description: 合并支付组合（P5）——一次支付覆盖多笔未支付订单；金额服务端计算；session 挂 primary order。
+      properties:
+        id:
+          type: string
+          description: Prefixed ID (pcom_…)
+        status:
+          type: string
+          enum:
+          - pending
+          - processing
+          - succeeded
+          - failed
+          - canceled
+          - expired
+        amount:
+          type: string
+          description: Server-computed total (sum of each unpaid order's amount_due)
+        currency:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        orders:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Order"
+          description: Member orders (expand=orders)
+        payment_session:
+          "$ref": "#/components/schemas/PaymentSession"
+          description: Payment session for the checkout (client_secret etc.)
+      required:
+      - id
+      - status
+      - amount
+      - currency
       x-typelizer: true
     PaymentSession:
       type: object

@@ -85,6 +85,7 @@ namespace :typelizer do
 
     # Post-process: convert `type Foo = {` to `interface Foo {` for declaration merging support.
     # This lets SDK consumers extend generated types via `declare module '@pallastrade/sdk' { interface Product { ... } }`.
+    # 输出在容器内 /rails/packages（宿主 backend/packages/sdk），生成后 docker cp 至 platform/packages/sdk。
     api_root = PallasTrade::Api::Engine.root
     [
       api_root.join('../../packages/sdk/src/types/generated'),

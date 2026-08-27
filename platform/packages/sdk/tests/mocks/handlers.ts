@@ -382,6 +382,41 @@ export const handlers = [
 
   http.delete(`${API_PREFIX}/carts/:cartId/store_credits`, () => HttpResponse.json(fixtures.cart)),
 
+  // Payment Combinations (P5): POST /api/v3/store/payment_combinations
+  http.post(`${API_PREFIX}/payment_combinations`, () =>
+    HttpResponse.json(
+      {
+        id: 'pcom_1',
+        status: 'processing',
+        amount: '99.98',
+        currency: 'USD',
+        expires_at: null,
+        completed_at: null,
+        payment_session: {
+          id: 'ps_1',
+          status: 'pending',
+          amount: '99.98',
+          currency: 'USD',
+          external_id: 'bogus_abc123',
+          external_data: { client_secret: 'bogus_secret_xyz' },
+          expires_at: null,
+          customer_external_id: null,
+          payment_method_id: 'pm_1',
+          order_id: 'order_1',
+          created_at: '2026-02-13T00:00:00.000Z',
+          updated_at: '2026-02-13T00:00:00.000Z',
+          payment_method: {
+            id: 'pm_1',
+            name: 'Credit Card',
+            description: null,
+            type: 'PallasTrade::Gateway::Bogus',
+          },
+        },
+      },
+      { status: 201 },
+    ),
+  ),
+
   // Orders (read-only, single lookup)
   http.get(`${API_PREFIX}/orders/:id`, () => HttpResponse.json(fixtures.order)),
 

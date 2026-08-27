@@ -54,6 +54,9 @@ PallasTrade::Core::Engine.add_routes do
         # Orders (single order lookup, guest-accessible via order token)
         resources :orders, only: [:show]
 
+        # Payment combinations (P5, 2026-08-27): 合并支付发起 + 详情（flag 灰度）
+        resources :payment_combinations, only: [:create, :show]
+
         # Policies (return policy, privacy policy, terms of service, etc.)
         resources :policies, only: [:index, :show]
 

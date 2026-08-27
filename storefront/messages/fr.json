@@ -249,7 +249,8 @@
     "properties": "Proprietes",
     "yes": "Oui",
     "no": "Non",
-    "optionFilterChip": "{filter} : {value}"
+    "optionFilterChip": "{filter} : {value}",
+    "buyNow": "Buy Now"
   },
   "reviews": {
     "title": "Avis",
@@ -347,7 +348,9 @@
     "policyConsentRequired": "Vous devez accepter les politiques du magasin avant de passer votre commande",
     "iAgreeToThe": "J'accepte les",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " et "
+    "policySeparatorAnd": " et ",
+    "combinedPayment": "Combined payment",
+    "processing": "Processing..."
   },
   "address": {
     "firstName": "Prenom",
@@ -484,7 +487,10 @@
     "orderTitle": "Commande #{number}",
     "shipmentCanceledRefund": "Expedition annulee — un remboursement a ete emis.",
     "shippingMethodUnavailable": "Indisponible",
-    "totalColumn": "Total"
+    "totalColumn": "Total",
+    "combinedPayHint": "{count} unpaid orders can be paid together",
+    "paySelected": "Pay selected",
+    "selectOrder": "Select order"
   },
   "orderPlaced": {
     "thanksForOrder": "Merci pour votre commande, {name} !",

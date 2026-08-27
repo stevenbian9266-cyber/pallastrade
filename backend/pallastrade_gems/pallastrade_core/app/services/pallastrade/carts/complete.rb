@@ -23,6 +23,9 @@ module PallasTrade
 
           if cart.reload.complete?
             PallasTrade::StockReservations::Release.call(order: cart)
+            # Order lifecycle P5 (2026-08-27): 自动拆单（flag 灰度）——支付确认后按策略拆分，
+            # 失败不影响订单完成（AutoSplit 内部 rescue）。默认 [] 关闭，零行为变化。
+            PallasTrade::Carts::AutoSplit.call(order: cart)
             success(cart)
           else
             failure(cart, cart.errors.full_messages.to_sentence.presence || 'Could not complete checkout')

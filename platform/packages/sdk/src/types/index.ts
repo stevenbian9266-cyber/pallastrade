@@ -32,6 +32,7 @@ export type {
   OptionValue,
   Order,
   Payment,
+  PaymentCombination,
   PaymentMethod,
   PaymentSession,
   PaymentSetupSession,
@@ -226,6 +227,15 @@ export interface CreatePaymentSessionParams {
   payment_method_id: string
   amount?: string
   external_data?: Record<string, unknown>
+}
+
+// Payment Combinations (P5, 2026-08-27): 合并支付
+// POST /api/v3/store/payment_combinations
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface CreatePaymentCombinationParams {
+  /** Prefixed order IDs (e.g. order_…) to combine into a single payment */
+  order_ids: string[]
+  payment_method_id: string
 }
 
 export interface UpdatePaymentSessionParams {

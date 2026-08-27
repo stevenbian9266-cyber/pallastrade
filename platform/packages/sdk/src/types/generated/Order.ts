@@ -5,6 +5,11 @@ import type {Discount, LineItem, Fulfillment, Payment, Address, GiftCard, Market
 
 interface Order {
   id: string;
+  parent_id: string | null;
+  children_ids: string[];
+  is_parent: boolean;
+  is_child: boolean;
+  is_single: boolean;
   market_id: string | null;
   channel_id: string | null;
   number: string;

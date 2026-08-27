@@ -22,6 +22,15 @@ declare const AddressSchema: z.ZodObject<{
 }, z.core.$strip>;
 type Address = z.infer<typeof AddressSchema>;
 
+declare const BackInStockSubscriptionSchema: z.ZodObject<{
+    id: z.ZodString;
+    product_id: z.ZodNullable<z.ZodString>;
+    email: z.ZodString;
+    status: z.ZodString;
+    created_at: z.ZodString;
+}, z.core.$strip>;
+type BackInStockSubscription = z.infer<typeof BackInStockSubscriptionSchema>;
+
 declare const BaseSchema: z.ZodObject<{
     id: z.ZodString;
 }, z.core.$strip>;
@@ -290,6 +299,18 @@ declare const ChannelSchema: z.ZodObject<{
     default: z.ZodBoolean;
 }, z.core.$strip>;
 type Channel = z.infer<typeof ChannelSchema>;
+
+declare const ContactMessageSchema: z.ZodObject<{
+    id: z.ZodString;
+    kind: z.ZodString;
+    name: z.ZodNullable<z.ZodString>;
+    email: z.ZodString;
+    subject: z.ZodNullable<z.ZodString>;
+    body: z.ZodString;
+    status: z.ZodString;
+    created_at: z.ZodString;
+}, z.core.$strip>;
+type ContactMessage = z.infer<typeof ContactMessageSchema>;
 
 declare const CountrySchema: z.ZodObject<any>;
 type Country = z.infer<typeof CountrySchema>;
@@ -698,6 +719,11 @@ type OptionValue = z.infer<typeof OptionValueSchema>;
 
 declare const OrderSchema: z.ZodObject<{
     id: z.ZodString;
+    parent_id: z.ZodNullable<z.ZodString>;
+    children_ids: z.ZodAny;
+    is_parent: z.ZodBoolean;
+    is_child: z.ZodBoolean;
+    is_single: z.ZodBoolean;
     market_id: z.ZodNullable<z.ZodString>;
     channel_id: z.ZodNullable<z.ZodString>;
     number: z.ZodString;
@@ -956,6 +982,297 @@ declare const PaymentSchema: z.ZodObject<{
 }, z.core.$strip>;
 type Payment = z.infer<typeof PaymentSchema>;
 
+declare const PaymentCombinationSchema: z.ZodObject<{
+    id: z.ZodString;
+    status: z.ZodString;
+    currency: z.ZodString;
+    expires_at: z.ZodNullable<z.ZodString>;
+    completed_at: z.ZodNullable<z.ZodString>;
+    amount: z.ZodString;
+    orders: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        parent_id: z.ZodNullable<z.ZodString>;
+        children_ids: z.ZodAny;
+        is_parent: z.ZodBoolean;
+        is_child: z.ZodBoolean;
+        is_single: z.ZodBoolean;
+        market_id: z.ZodNullable<z.ZodString>;
+        channel_id: z.ZodNullable<z.ZodString>;
+        number: z.ZodString;
+        email: z.ZodString;
+        customer_note: z.ZodNullable<z.ZodString>;
+        currency: z.ZodString;
+        locale: z.ZodNullable<z.ZodString>;
+        total_quantity: z.ZodNumber;
+        fulfillment_status: z.ZodNullable<z.ZodString>;
+        payment_status: z.ZodNullable<z.ZodString>;
+        completed_at: z.ZodNullable<z.ZodString>;
+        item_total: z.ZodNullable<z.ZodString>;
+        display_item_total: z.ZodNullable<z.ZodString>;
+        adjustment_total: z.ZodNullable<z.ZodString>;
+        display_adjustment_total: z.ZodNullable<z.ZodString>;
+        discount_total: z.ZodNullable<z.ZodString>;
+        display_discount_total: z.ZodNullable<z.ZodString>;
+        tax_total: z.ZodNullable<z.ZodString>;
+        display_tax_total: z.ZodNullable<z.ZodString>;
+        included_tax_total: z.ZodNullable<z.ZodString>;
+        display_included_tax_total: z.ZodNullable<z.ZodString>;
+        additional_tax_total: z.ZodNullable<z.ZodString>;
+        display_additional_tax_total: z.ZodNullable<z.ZodString>;
+        total: z.ZodNullable<z.ZodString>;
+        display_total: z.ZodNullable<z.ZodString>;
+        gift_card_total: z.ZodNullable<z.ZodString>;
+        display_gift_card_total: z.ZodNullable<z.ZodString>;
+        amount_due: z.ZodNullable<z.ZodString>;
+        display_amount_due: z.ZodNullable<z.ZodString>;
+        delivery_total: z.ZodNullable<z.ZodString>;
+        display_delivery_total: z.ZodNullable<z.ZodString>;
+        store_credit_total: z.ZodNullable<z.ZodString>;
+        display_store_credit_total: z.ZodNullable<z.ZodString>;
+        covered_by_store_credit: z.ZodBoolean;
+        discounts: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            promotion_id: z.ZodString;
+            name: z.ZodString;
+            description: z.ZodNullable<z.ZodString>;
+            code: z.ZodNullable<z.ZodString>;
+            amount: z.ZodNullable<z.ZodString>;
+            display_amount: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        items: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            variant_id: z.ZodString;
+            preorder: z.ZodBoolean;
+            preorder_ships_at: z.ZodNullable<z.ZodString>;
+            quantity: z.ZodNumber;
+            currency: z.ZodString;
+            name: z.ZodString;
+            slug: z.ZodString;
+            options_text: z.ZodString;
+            price: z.ZodNullable<z.ZodString>;
+            display_price: z.ZodNullable<z.ZodString>;
+            total: z.ZodNullable<z.ZodString>;
+            display_total: z.ZodNullable<z.ZodString>;
+            adjustment_total: z.ZodNullable<z.ZodString>;
+            display_adjustment_total: z.ZodNullable<z.ZodString>;
+            additional_tax_total: z.ZodNullable<z.ZodString>;
+            display_additional_tax_total: z.ZodNullable<z.ZodString>;
+            included_tax_total: z.ZodNullable<z.ZodString>;
+            display_included_tax_total: z.ZodNullable<z.ZodString>;
+            discount_total: z.ZodNullable<z.ZodString>;
+            display_discount_total: z.ZodNullable<z.ZodString>;
+            pre_tax_amount: z.ZodNullable<z.ZodString>;
+            display_pre_tax_amount: z.ZodNullable<z.ZodString>;
+            discounted_amount: z.ZodNullable<z.ZodString>;
+            display_discounted_amount: z.ZodNullable<z.ZodString>;
+            display_compare_at_amount: z.ZodNullable<z.ZodString>;
+            compare_at_amount: z.ZodNullable<z.ZodString>;
+            thumbnail_url: z.ZodNullable<z.ZodString>;
+            option_values: z.ZodArray<z.ZodObject<{
+                id: z.ZodString;
+                option_type_id: z.ZodString;
+                name: z.ZodString;
+                label: z.ZodString;
+                position: z.ZodNumber;
+                color_code: z.ZodNullable<z.ZodString>;
+                option_type_name: z.ZodString;
+                option_type_label: z.ZodString;
+                image_url: z.ZodNullable<z.ZodString>;
+            }, z.core.$strip>>;
+            digital_links: z.ZodArray<z.ZodObject<{
+                id: z.ZodString;
+                access_counter: z.ZodNumber;
+                filename: z.ZodString;
+                content_type: z.ZodString;
+                download_url: z.ZodString;
+                authorizable: z.ZodBoolean;
+                expired: z.ZodBoolean;
+                access_limit_exceeded: z.ZodBoolean;
+            }, z.core.$strip>>;
+        }, z.core.$strip>>;
+        fulfillments: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            number: z.ZodString;
+            tracking: z.ZodNullable<z.ZodString>;
+            tracking_url: z.ZodNullable<z.ZodString>;
+            cost: z.ZodNullable<z.ZodString>;
+            display_cost: z.ZodNullable<z.ZodString>;
+            total: z.ZodNullable<z.ZodString>;
+            display_total: z.ZodNullable<z.ZodString>;
+            discount_total: z.ZodNullable<z.ZodString>;
+            display_discount_total: z.ZodNullable<z.ZodString>;
+            additional_tax_total: z.ZodNullable<z.ZodString>;
+            display_additional_tax_total: z.ZodNullable<z.ZodString>;
+            included_tax_total: z.ZodNullable<z.ZodString>;
+            display_included_tax_total: z.ZodNullable<z.ZodString>;
+            tax_total: z.ZodNullable<z.ZodString>;
+            display_tax_total: z.ZodNullable<z.ZodString>;
+            status: z.ZodString;
+            fulfillment_type: z.ZodString;
+            fulfilled_at: z.ZodNullable<z.ZodString>;
+            items: z.ZodArray<z.ZodObject<{
+                item_id: z.ZodAny;
+            }, z.core.$strip>>;
+            delivery_method: z.ZodObject<{
+                id: z.ZodString;
+                name: z.ZodString;
+                code: z.ZodNullable<z.ZodString>;
+            }, z.core.$strip>;
+            stock_location: z.ZodObject<{
+                id: z.ZodString;
+                state_abbr: z.ZodNullable<z.ZodString>;
+                name: z.ZodString;
+                address1: z.ZodNullable<z.ZodString>;
+                city: z.ZodNullable<z.ZodString>;
+                zipcode: z.ZodNullable<z.ZodString>;
+                country_iso: z.ZodNullable<z.ZodString>;
+                country_name: z.ZodNullable<z.ZodString>;
+                state_text: z.ZodNullable<z.ZodString>;
+            }, z.core.$strip>;
+            delivery_rates: z.ZodArray<z.ZodObject<{
+                id: z.ZodString;
+                delivery_method_id: z.ZodString;
+                name: z.ZodString;
+                selected: z.ZodBoolean;
+                cost: z.ZodString;
+                total: z.ZodString;
+                additional_tax_total: z.ZodString;
+                included_tax_total: z.ZodString;
+                tax_total: z.ZodString;
+                display_cost: z.ZodString;
+                display_total: z.ZodString;
+                display_additional_tax_total: z.ZodString;
+                display_included_tax_total: z.ZodString;
+                display_tax_total: z.ZodString;
+                delivery_method: z.ZodObject<{
+                    id: z.ZodString;
+                    name: z.ZodString;
+                    code: z.ZodNullable<z.ZodString>;
+                }, z.core.$strip>;
+            }, z.core.$strip>>;
+        }, z.core.$strip>>;
+        payments: z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            payment_method_id: z.ZodString;
+            response_code: z.ZodNullable<z.ZodString>;
+            number: z.ZodString;
+            amount: z.ZodNullable<z.ZodString>;
+            display_amount: z.ZodNullable<z.ZodString>;
+            status: z.ZodString;
+            source_type: z.ZodNullable<z.ZodString>;
+            source_id: z.ZodNullable<z.ZodString>;
+            source: z.ZodAny;
+            payment_method: z.ZodObject<{
+                id: z.ZodString;
+                name: z.ZodString;
+                description: z.ZodNullable<z.ZodString>;
+                type: z.ZodString;
+                session_required: z.ZodBoolean;
+                source_required: z.ZodBoolean;
+            }, z.core.$strip>;
+        }, z.core.$strip>>;
+        billing_address: z.ZodNullable<z.ZodObject<{
+            id: z.ZodString;
+            first_name: z.ZodNullable<z.ZodString>;
+            last_name: z.ZodNullable<z.ZodString>;
+            full_name: z.ZodString;
+            address1: z.ZodNullable<z.ZodString>;
+            address2: z.ZodNullable<z.ZodString>;
+            postal_code: z.ZodNullable<z.ZodString>;
+            city: z.ZodNullable<z.ZodString>;
+            phone: z.ZodNullable<z.ZodString>;
+            company: z.ZodNullable<z.ZodString>;
+            country_name: z.ZodString;
+            country_iso: z.ZodString;
+            state_text: z.ZodNullable<z.ZodString>;
+            state_abbr: z.ZodNullable<z.ZodString>;
+            quick_checkout: z.ZodBoolean;
+            is_default_billing: z.ZodBoolean;
+            is_default_shipping: z.ZodBoolean;
+            state_name: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        shipping_address: z.ZodNullable<z.ZodObject<{
+            id: z.ZodString;
+            first_name: z.ZodNullable<z.ZodString>;
+            last_name: z.ZodNullable<z.ZodString>;
+            full_name: z.ZodString;
+            address1: z.ZodNullable<z.ZodString>;
+            address2: z.ZodNullable<z.ZodString>;
+            postal_code: z.ZodNullable<z.ZodString>;
+            city: z.ZodNullable<z.ZodString>;
+            phone: z.ZodNullable<z.ZodString>;
+            company: z.ZodNullable<z.ZodString>;
+            country_name: z.ZodString;
+            country_iso: z.ZodString;
+            state_text: z.ZodNullable<z.ZodString>;
+            state_abbr: z.ZodNullable<z.ZodString>;
+            quick_checkout: z.ZodBoolean;
+            is_default_billing: z.ZodBoolean;
+            is_default_shipping: z.ZodBoolean;
+            state_name: z.ZodNullable<z.ZodString>;
+        }, z.core.$strip>>;
+        gift_card: z.ZodNullable<z.ZodObject<{
+            id: z.ZodString;
+            code: z.ZodString;
+            status: z.ZodString;
+            currency: z.ZodString;
+            amount: z.ZodNullable<z.ZodString>;
+            amount_used: z.ZodNullable<z.ZodString>;
+            amount_authorized: z.ZodNullable<z.ZodString>;
+            amount_remaining: z.ZodNullable<z.ZodString>;
+            display_amount: z.ZodNullable<z.ZodString>;
+            display_amount_used: z.ZodNullable<z.ZodString>;
+            display_amount_remaining: z.ZodNullable<z.ZodString>;
+            expires_at: z.ZodNullable<z.ZodString>;
+            redeemed_at: z.ZodNullable<z.ZodString>;
+            expired: z.ZodBoolean;
+            active: z.ZodBoolean;
+        }, z.core.$strip>>;
+        market: z.ZodNullable<z.ZodLazy<z.ZodObject<any, z.core.$strip>>>;
+    }, z.core.$strip>>>;
+    payment_session: z.ZodOptional<z.ZodObject<{
+        id: z.ZodString;
+        status: z.ZodString;
+        currency: z.ZodString;
+        external_id: z.ZodString;
+        external_data: z.ZodRecord<z.ZodString, z.ZodUnknown>;
+        customer_external_id: z.ZodNullable<z.ZodString>;
+        expires_at: z.ZodNullable<z.ZodString>;
+        amount: z.ZodString;
+        payment_method_id: z.ZodString;
+        order_id: z.ZodString;
+        payment_method: z.ZodObject<{
+            id: z.ZodString;
+            name: z.ZodString;
+            description: z.ZodNullable<z.ZodString>;
+            type: z.ZodString;
+            session_required: z.ZodBoolean;
+            source_required: z.ZodBoolean;
+        }, z.core.$strip>;
+        payment: z.ZodOptional<z.ZodObject<{
+            id: z.ZodString;
+            payment_method_id: z.ZodString;
+            response_code: z.ZodNullable<z.ZodString>;
+            number: z.ZodString;
+            amount: z.ZodNullable<z.ZodString>;
+            display_amount: z.ZodNullable<z.ZodString>;
+            status: z.ZodString;
+            source_type: z.ZodNullable<z.ZodString>;
+            source_id: z.ZodNullable<z.ZodString>;
+            source: z.ZodAny;
+            payment_method: z.ZodObject<{
+                id: z.ZodString;
+                name: z.ZodString;
+                description: z.ZodNullable<z.ZodString>;
+                type: z.ZodString;
+                session_required: z.ZodBoolean;
+                source_required: z.ZodBoolean;
+            }, z.core.$strip>;
+        }, z.core.$strip>>;
+    }, z.core.$strip>>;
+}, z.core.$strip>;
+type PaymentCombination = z.infer<typeof PaymentCombinationSchema>;
+
 declare const PaymentMethodSchema: z.ZodObject<{
     id: z.ZodString;
     name: z.ZodString;
@@ -1102,6 +1419,8 @@ declare const ProductSchema: z.ZodObject<{
     default_variant_id: z.ZodString;
     thumbnail_url: z.ZodNullable<z.ZodString>;
     tags: z.ZodArray<z.ZodString>;
+    average_rating: z.ZodNullable<z.ZodNumber>;
+    review_count: z.ZodNumber;
     price: z.ZodObject<{
         id: z.ZodString;
         amount: z.ZodNullable<z.ZodString>;
@@ -1548,6 +1867,18 @@ declare const ReturnItemSchema: z.ZodObject<{
 }, z.core.$strip>;
 type ReturnItem = z.infer<typeof ReturnItemSchema>;
 
+declare const ReviewSchema: z.ZodObject<{
+    id: z.ZodString;
+    product_id: z.ZodNullable<z.ZodString>;
+    user_name: z.ZodNullable<z.ZodString>;
+    rating: z.ZodNumber;
+    title: z.ZodNullable<z.ZodString>;
+    body: z.ZodNullable<z.ZodString>;
+    verified_purchase: z.ZodBoolean;
+    created_at: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type Review = z.infer<typeof ReviewSchema>;
+
 declare const StateSchema: z.ZodObject<{
     abbr: z.ZodString;
     name: z.ZodString;
@@ -1918,4 +2249,4 @@ declare const WishlistItemSchema: z.ZodObject<{
 }, z.core.$strip>;
 type WishlistItem = z.infer<typeof WishlistItemSchema>;
 
-export { type Address, AddressSchema, type Base, BaseSchema, type Cart, CartSchema, type Category, CategorySchema, type Channel, ChannelSchema, type Country, CountrySchema, type CreditCard, CreditCardSchema, type Currency, CurrencySchema, type CustomField, CustomFieldSchema, type Customer, CustomerSchema, type DeliveryMethod, DeliveryMethodSchema, type DeliveryRate, DeliveryRateSchema, type Digital, type DigitalLink, DigitalLinkSchema, DigitalSchema, type Discount, DiscountSchema, type Fulfillment, FulfillmentSchema, type GiftCard, type GiftCardBatch, GiftCardBatchSchema, GiftCardSchema, type Invitation, InvitationSchema, type LineItem, LineItemSchema, type Locale, LocaleSchema, type Market, MarketSchema, type Media, MediaSchema, type NewsletterSubscriber, NewsletterSubscriberSchema, type OptionType, OptionTypeSchema, type OptionValue, OptionValueSchema, type Order, OrderSchema, type Payment, type PaymentMethod, PaymentMethodSchema, PaymentSchema, type PaymentSession, PaymentSessionSchema, type PaymentSetupSession, PaymentSetupSessionSchema, type PaymentSource, PaymentSourceSchema, type Policy, PolicySchema, type Post, PostSchema, type Price, type PriceHistory, PriceHistorySchema, PriceSchema, type Product, type ProductFilterAvailability, type ProductFilterAvailabilityOption, ProductFilterAvailabilityOptionSchema, ProductFilterAvailabilitySchema, type ProductFilterCategory, type ProductFilterCategoryOption, ProductFilterCategoryOptionSchema, ProductFilterCategorySchema, type ProductFilterOption, ProductFilterOptionSchema, type ProductFilterOptionValue, ProductFilterOptionValueSchema, type ProductFilterPriceRange, ProductFilterPriceRangeSchema, type ProductFilterSortOption, ProductFilterSortOptionSchema, type ProductFilters, ProductFiltersSchema, type ProductPublication, ProductPublicationSchema, ProductSchema, type Promotion, PromotionSchema, type Refund, RefundSchema, type ReturnAuthorization, ReturnAuthorizationSchema, type ReturnItem, ReturnItemSchema, type State, StateSchema, type StockLocation, StockLocationSchema, type StockReservation, StockReservationSchema, type StoreCredit, StoreCreditSchema, type Variant, VariantSchema, type Wishlist, type WishlistItem, WishlistItemSchema, WishlistSchema };
+export { type Address, AddressSchema, type BackInStockSubscription, BackInStockSubscriptionSchema, type Base, BaseSchema, type Cart, CartSchema, type Category, CategorySchema, type Channel, ChannelSchema, type ContactMessage, ContactMessageSchema, type Country, CountrySchema, type CreditCard, CreditCardSchema, type Currency, CurrencySchema, type CustomField, CustomFieldSchema, type Customer, CustomerSchema, type DeliveryMethod, DeliveryMethodSchema, type DeliveryRate, DeliveryRateSchema, type Digital, type DigitalLink, DigitalLinkSchema, DigitalSchema, type Discount, DiscountSchema, type Fulfillment, FulfillmentSchema, type GiftCard, type GiftCardBatch, GiftCardBatchSchema, GiftCardSchema, type Invitation, InvitationSchema, type LineItem, LineItemSchema, type Locale, LocaleSchema, type Market, MarketSchema, type Media, MediaSchema, type NewsletterSubscriber, NewsletterSubscriberSchema, type OptionType, OptionTypeSchema, type OptionValue, OptionValueSchema, type Order, OrderSchema, type Payment, type PaymentCombination, PaymentCombinationSchema, type PaymentMethod, PaymentMethodSchema, PaymentSchema, type PaymentSession, PaymentSessionSchema, type PaymentSetupSession, PaymentSetupSessionSchema, type PaymentSource, PaymentSourceSchema, type Policy, PolicySchema, type Post, PostSchema, type Price, type PriceHistory, PriceHistorySchema, PriceSchema, type Product, type ProductFilterAvailability, type ProductFilterAvailabilityOption, ProductFilterAvailabilityOptionSchema, ProductFilterAvailabilitySchema, type ProductFilterCategory, type ProductFilterCategoryOption, ProductFilterCategoryOptionSchema, ProductFilterCategorySchema, type ProductFilterOption, ProductFilterOptionSchema, type ProductFilterOptionValue, ProductFilterOptionValueSchema, type ProductFilterPriceRange, ProductFilterPriceRangeSchema, type ProductFilterSortOption, ProductFilterSortOptionSchema, type ProductFilters, ProductFiltersSchema, type ProductPublication, ProductPublicationSchema, ProductSchema, type Promotion, PromotionSchema, type Refund, RefundSchema, type ReturnAuthorization, ReturnAuthorizationSchema, type ReturnItem, ReturnItemSchema, type Review, ReviewSchema, type State, StateSchema, type StockLocation, StockLocationSchema, type StockReservation, StockReservationSchema, type StoreCredit, StoreCreditSchema, type Variant, VariantSchema, type Wishlist, type WishlistItem, WishlistItemSchema, WishlistSchema };

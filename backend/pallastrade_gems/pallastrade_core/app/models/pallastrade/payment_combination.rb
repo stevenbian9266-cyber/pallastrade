@@ -32,6 +32,9 @@ module PallasTrade
     # P4 (2026-08-27): 组合支付本身（挂组合 order_id=nil，session ↔ payment 保持 1:1）
     has_many :payments, class_name: 'PallasTrade::Payment',
                         inverse_of: :payment_combination, dependent: :nullify
+    # P5 (2026-08-27): 组合支付会话（挂 primary order，组合一个会话）
+    has_many :payment_sessions, class_name: 'PallasTrade::PaymentSession',
+                                inverse_of: :payment_combination
 
     extend PallasTrade::DisplayMoney
     money_methods :amount
@@ -85,6 +88,11 @@ module PallasTrade
 
     def money
       @money ||= PallasTrade::Money.new(amount, currency: currency)
+    end
+
+    # P5 (2026-08-27): 组合支付会话（一个组合一个会话，挂 primary order）
+    def payment_session
+      payment_sessions.order(:id).last
     end
 
     def expired?

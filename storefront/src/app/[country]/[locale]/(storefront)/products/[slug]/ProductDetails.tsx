@@ -5,6 +5,7 @@ import { CircleCheckBig, CircleX, Loader2, ShoppingBag } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { BackInStockNotify } from "@/components/products/BackInStockNotify";
+import { BuyNowButton } from "@/components/products/BuyNowButton";
 import { MediaGallery } from "@/components/products/MediaGallery";
 import { ProductCustomFields } from "@/components/products/ProductCustomFields";
 import {
@@ -222,6 +223,18 @@ export function ProductDetails({
                 )}
               </Button>
             </div>
+
+            {/* Buy Now (P5, 2026-08-27): 快捷下单，不污染购物车 */}
+            <BuyNowButton
+              variantId={
+                selectedVariant?.id ||
+                product.default_variant?.id ||
+                product.default_variant_id ||
+                ""
+              }
+              disabled={!isPurchasable}
+              quantity={quantity}
+            />
           </div>
 
           {/* Description */}

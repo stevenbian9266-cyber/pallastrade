@@ -63,6 +63,14 @@ module PallasTrade
                   return
                 end
 
+                # P5 (2026-08-27): 组合支付会话完成 → 走 PaymentCombinations::Complete
+                # （先入账支付 → 逐个完成所有成员订单），与 Webhook 路径收敛到同一服务。
+                if @payment_session.payment_combination.present?
+                  PallasTrade::Payments::PaymentCombinations::Complete.call(payment_session: @payment_session)
+                  render json: serialize_resource(@payment_session.reload)
+                  return
+                end
+
                 @payment_session.payment_method.complete_payment_session(
                   payment_session: @payment_session,
                   params: complete_params

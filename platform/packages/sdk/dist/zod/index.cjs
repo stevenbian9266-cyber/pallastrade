@@ -23,6 +23,13 @@ var AddressSchema = zod.z.object({
   is_default_shipping: zod.z.boolean(),
   state_name: zod.z.string().nullable()
 });
+var BackInStockSubscriptionSchema = zod.z.object({
+  id: zod.z.string(),
+  product_id: zod.z.string().nullable(),
+  email: zod.z.string(),
+  status: zod.z.string(),
+  created_at: zod.z.string()
+});
 var BaseSchema = zod.z.object({
   id: zod.z.string()
 });
@@ -308,6 +315,16 @@ var ChannelSchema = zod.z.object({
   active: zod.z.boolean(),
   default: zod.z.boolean()
 });
+var ContactMessageSchema = zod.z.object({
+  id: zod.z.string(),
+  kind: zod.z.string(),
+  name: zod.z.string().nullable(),
+  email: zod.z.string(),
+  subject: zod.z.string().nullable(),
+  body: zod.z.string(),
+  status: zod.z.string(),
+  created_at: zod.z.string()
+});
 var CreditCardSchema = zod.z.object({
   id: zod.z.string(),
   brand: zod.z.string(),
@@ -415,6 +432,11 @@ var OptionTypeSchema = zod.z.object({
 });
 var OrderSchema = zod.z.object({
   id: zod.z.string(),
+  parent_id: zod.z.string().nullable(),
+  children_ids: zod.z.any(),
+  is_parent: zod.z.boolean(),
+  is_child: zod.z.boolean(),
+  is_single: zod.z.boolean(),
   market_id: zod.z.string().nullable(),
   channel_id: zod.z.string().nullable(),
   number: zod.z.string(),
@@ -471,6 +493,18 @@ var PaymentSessionSchema = zod.z.object({
   order_id: zod.z.string(),
   payment_method: PaymentMethodSchema,
   payment: PaymentSchema.optional()
+});
+
+// src/zod/generated/PaymentCombination.ts
+var PaymentCombinationSchema = zod.z.object({
+  id: zod.z.string(),
+  status: zod.z.string(),
+  currency: zod.z.string(),
+  expires_at: zod.z.string().nullable(),
+  completed_at: zod.z.string().nullable(),
+  amount: zod.z.string(),
+  orders: zod.z.array(OrderSchema).optional(),
+  payment_session: PaymentSessionSchema.optional()
 });
 var PaymentSetupSessionSchema = zod.z.object({
   id: zod.z.string(),
@@ -574,6 +608,8 @@ var ProductSchema = zod.z.object({
   default_variant_id: zod.z.string(),
   thumbnail_url: zod.z.string().nullable(),
   tags: zod.z.array(zod.z.string()),
+  average_rating: zod.z.number().nullable(),
+  review_count: zod.z.number(),
   price: PriceSchema,
   original_price: PriceSchema.nullable(),
   primary_media: MediaSchema.optional(),
@@ -690,6 +726,16 @@ var ReturnItemSchema = zod.z.object({
   reimbursement_id: zod.z.string().nullable(),
   exchange_variant_id: zod.z.string().nullable()
 });
+var ReviewSchema = zod.z.object({
+  id: zod.z.string(),
+  product_id: zod.z.string().nullable(),
+  user_name: zod.z.string().nullable(),
+  rating: zod.z.number(),
+  title: zod.z.string().nullable(),
+  body: zod.z.string().nullable(),
+  verified_purchase: zod.z.boolean(),
+  created_at: zod.z.string().nullable()
+});
 var StockReservationSchema = zod.z.object({
   id: zod.z.string()
 });
@@ -722,10 +768,12 @@ var WishlistSchema = zod.z.object({
 });
 
 exports.AddressSchema = AddressSchema;
+exports.BackInStockSubscriptionSchema = BackInStockSubscriptionSchema;
 exports.BaseSchema = BaseSchema;
 exports.CartSchema = CartSchema;
 exports.CategorySchema = CategorySchema;
 exports.ChannelSchema = ChannelSchema;
+exports.ContactMessageSchema = ContactMessageSchema;
 exports.CountrySchema = CountrySchema;
 exports.CreditCardSchema = CreditCardSchema;
 exports.CurrencySchema = CurrencySchema;
@@ -748,6 +796,7 @@ exports.NewsletterSubscriberSchema = NewsletterSubscriberSchema;
 exports.OptionTypeSchema = OptionTypeSchema;
 exports.OptionValueSchema = OptionValueSchema;
 exports.OrderSchema = OrderSchema;
+exports.PaymentCombinationSchema = PaymentCombinationSchema;
 exports.PaymentMethodSchema = PaymentMethodSchema;
 exports.PaymentSchema = PaymentSchema;
 exports.PaymentSessionSchema = PaymentSessionSchema;
@@ -772,6 +821,7 @@ exports.PromotionSchema = PromotionSchema;
 exports.RefundSchema = RefundSchema;
 exports.ReturnAuthorizationSchema = ReturnAuthorizationSchema;
 exports.ReturnItemSchema = ReturnItemSchema;
+exports.ReviewSchema = ReviewSchema;
 exports.StateSchema = StateSchema;
 exports.StockLocationSchema = StockLocationSchema;
 exports.StockReservationSchema = StockReservationSchema;

@@ -34,6 +34,11 @@ Checkout is how a cart becomes a completed order. In PallasTrade, an Order is th
 - **checkout 状态机放行**：`before_transition to: :complete` 在 `payment_required? && payments.valid.empty?` 时，若订单存在**已捕获的 `PaymentSplit`**（`captured_amount > 0`）则放行（无需本地 payment、不再 `process_payments!`）；否则维持原 `no_payment_found` 错误。单订单场景行为不变。
 - **完成入口**：`PaymentCombinations::Complete` 阶段 2 逐个用 `checkout_complete_service`（`PallasTrade::Checkout::Complete`）完成成员订单；失败标 `balance_due` + 入 `CombinationSettleJob` 重试。详见 `pallastrade-payments` SKILL。
 
+### 自动拆单 + Buy Now（P5, 2026-08-27，flag 灰度）
+
+- **自动拆单**：`PallasTrade::Carts::AutoSplit` 在 `Carts::Complete` 完成（支付确认后）按配置策略拆分。策略列表来自 `store.preferred_auto_split_orders`（JSON 数组字符串，如 `'["PallasTrade::Orders::SplitStrategies::ByStockLocation"]'`）回退 `Config[:auto_split_orders]`，默认 `[]`（关闭）。**不在 cart 中途拆**；拆单失败不影响订单完成（`Rails.error.report`）。
+- **Buy Now**：商品详情页 `BuyNowButton`（`storefront/src/components/products/BuyNowButton.tsx`）——`createBuyNowCart`（`lib/data/buy-now.ts`）创建含当前商品的独立 cart 直接进入确认页，不污染购物车。
+
 ## The order state machine
 
 Default checkout flow on an Order:

@@ -62,6 +62,8 @@ module PallasTrade
     preference :guest_checkout, :boolean, default: true
     # Store-level fallback for the channel-owned `storefront_access` posture.
     preference :storefront_access, :string, default: 'public'
+    # P5 (2026-08-27): 自动拆单策略列表（JSON 数组字符串，如 '["PallasTrade::Orders::SplitStrategies::ByStockLocation"]'），默认关闭
+    preference :auto_split_orders, :string, default: '[]'
     # Canonical storefront origin used in customer-facing emails and links,
     # e.g. "https://myshop.com" — see #storefront_url for the fallback chain.
     preference :storefront_url, :string

@@ -1,5 +1,5 @@
-import { R as RequestFn, L as LoginCredentials, A as AuthTokens, a as RequestOptions, P as ProductListParams, b as PaginatedResponse, c as Product, d as ProductFiltersParams, e as ProductFiltersResponse, C as CategoryListParams, f as Category, g as ListResponse, h as Country, i as Currency, j as Locale, k as Policy, l as ListParams, m as Post, M as Market, n as Cart, o as CreateCartParams, U as UpdateCartParams, O as Order, p as AddLineItemParams, q as UpdateLineItemParams, r as CreatePaymentParams, s as Payment, t as CreatePaymentSessionParams, u as PaymentSession, v as UpdatePaymentSessionParams, w as CompletePaymentSessionParams, x as RegisterParams, N as NewsletterSubscriber, y as Customer, z as Address, B as AddressParams, D as CreditCard, G as GiftCard, S as StoreCredit, E as OrderListParams, F as CreatePaymentSetupSessionParams, H as PaymentSetupSession, I as CompletePaymentSetupSessionParams, J as RequestPasswordResetParams, K as ResetPasswordParams, W as Wishlist, Q as WishlistItem, T as RetryConfig } from './index-zOMH3eJF.js';
-export { V as AvailabilityFilter, X as BackInStockSubscription, Y as Base, Z as CartWarning, _ as CategoryFilter, $ as CategoryFilterOption, a0 as CheckoutRequirement, a1 as ContactMessage, a2 as CustomField, a3 as DeliveryMethod, a4 as DeliveryRate, a5 as Digital, a6 as DigitalLink, a7 as Discount, a8 as EmailPasswordLogin, a9 as ErrorResponse, aa as FilterOption, ab as Fulfillment, ac as GiftCardBatch, ad as Invitation, ae as LineItem, af as LineItemInput, ag as LocaleDefaults, ah as Media, ai as OptionFilter, aj as OptionFilterOption, ak as OptionType, al as OptionValue, am as PaginationMeta, an as PallasTradeError, ao as PaymentMethod, ap as PaymentSource, aq as Price, ar as PriceRangeFilter, as as ProductFilter, at as Promotion, au as ProviderLogin, av as Refund, aw as ReturnAuthorization, ax as ReturnItem, ay as SortOption, az as State, aA as StockLocation, aB as Variant } from './index-zOMH3eJF.js';
+import { R as RequestFn, L as LoginCredentials, A as AuthTokens, a as RequestOptions, P as ProductListParams, b as PaginatedResponse, c as Product, d as ProductFiltersParams, e as ProductFiltersResponse, C as CategoryListParams, f as Category, g as ListResponse, h as Country, i as Currency, j as Locale, k as Policy, l as ListParams, m as Post, M as Market, n as Cart, o as CreateCartParams, U as UpdateCartParams, O as Order, p as AddLineItemParams, q as UpdateLineItemParams, r as CreatePaymentParams, s as Payment, t as CreatePaymentSessionParams, u as PaymentSession, v as UpdatePaymentSessionParams, w as CompletePaymentSessionParams, x as RegisterParams, y as CreatePaymentCombinationParams, z as PaymentCombination, N as NewsletterSubscriber, B as Customer, D as Address, E as AddressParams, F as CreditCard, G as GiftCard, S as StoreCredit, H as OrderListParams, I as CreatePaymentSetupSessionParams, J as PaymentSetupSession, K as CompletePaymentSetupSessionParams, Q as RequestPasswordResetParams, T as ResetPasswordParams, W as Wishlist, V as WishlistItem, X as RetryConfig } from './index-X_-YFXYx.js';
+export { Y as AvailabilityFilter, Z as BackInStockSubscription, _ as Base, $ as CartWarning, a0 as CategoryFilter, a1 as CategoryFilterOption, a2 as CheckoutRequirement, a3 as ContactMessage, a4 as CustomField, a5 as DeliveryMethod, a6 as DeliveryRate, a7 as Digital, a8 as DigitalLink, a9 as Discount, aa as EmailPasswordLogin, ab as ErrorResponse, ac as FilterOption, ad as Fulfillment, ae as GiftCardBatch, af as Invitation, ag as LineItem, ah as LineItemInput, ai as LocaleDefaults, aj as Media, ak as OptionFilter, al as OptionFilterOption, am as OptionType, an as OptionValue, ao as PaginationMeta, ap as PallasTradeError, aq as PaymentMethod, ar as PaymentSource, as as Price, at as PriceRangeFilter, au as ProductFilter, av as Promotion, aw as ProviderLogin, ax as Refund, ay as ReturnAuthorization, az as ReturnItem, aA as SortOption, aB as State, aC as StockLocation, aD as Variant } from './index-X_-YFXYx.js';
 
 declare class StoreClient {
     /**
@@ -365,6 +365,21 @@ declare class StoreClient {
          */
         create: (params: RegisterParams) => Promise<AuthTokens>;
     };
+    readonly paymentCombinations: {
+        /**
+         * Create a payment combination: combine multiple unpaid orders into a
+         * single checkout payment (amount is server-computed).
+         * POST /api/v3/store/payment_combinations
+         * @param params - Prefixed order IDs + payment method
+         * @returns The created combination (with its payment session for the checkout)
+         */
+        create: (params: CreatePaymentCombinationParams, options?: RequestOptions) => Promise<PaymentCombination>;
+        /**
+         * Get a payment combination by ID (for the combined-payment checkout page).
+         * GET /api/v3/store/payment_combinations/:id
+         */
+        get: (id: string, options?: RequestOptions) => Promise<PaymentCombination>;
+    };
     readonly newsletterSubscribers: {
         /**
          * Subscribe an email address to the newsletter for the current store.
@@ -661,4 +676,4 @@ interface Client extends StoreClient {
  */
 declare function createClient(config: ClientConfig): Client;
 
-export { AddLineItemParams, Address, AddressParams, AuthTokens, Cart, Category, CategoryListParams, type Client, type ClientConfig, CompletePaymentSessionParams, CompletePaymentSetupSessionParams, Country, CreateCartParams, CreatePaymentParams, CreatePaymentSessionParams, CreatePaymentSetupSessionParams, CreditCard, Currency, Customer, GiftCard, ListParams, ListResponse, Locale, LoginCredentials, Market, NewsletterSubscriber, Order, OrderListParams, PaginatedResponse, Payment, PaymentSession, PaymentSetupSession, Policy, Post, Product, ProductFiltersParams, ProductFiltersResponse, ProductListParams, RegisterParams, RequestFn, RequestOptions, RequestPasswordResetParams, ResetPasswordParams, RetryConfig, StoreClient, StoreCredit, UpdateCartParams, UpdateLineItemParams, UpdatePaymentSessionParams, Wishlist, WishlistItem, createClient };
+export { AddLineItemParams, Address, AddressParams, AuthTokens, Cart, Category, CategoryListParams, type Client, type ClientConfig, CompletePaymentSessionParams, CompletePaymentSetupSessionParams, Country, CreateCartParams, CreatePaymentCombinationParams, CreatePaymentParams, CreatePaymentSessionParams, CreatePaymentSetupSessionParams, CreditCard, Currency, Customer, GiftCard, ListParams, ListResponse, Locale, LoginCredentials, Market, NewsletterSubscriber, Order, OrderListParams, PaginatedResponse, Payment, PaymentCombination, PaymentSession, PaymentSetupSession, Policy, Post, Product, ProductFiltersParams, ProductFiltersResponse, ProductListParams, RegisterParams, RequestFn, RequestOptions, RequestPasswordResetParams, ResetPasswordParams, RetryConfig, StoreClient, StoreCredit, UpdateCartParams, UpdateLineItemParams, UpdatePaymentSessionParams, Wishlist, WishlistItem, createClient };

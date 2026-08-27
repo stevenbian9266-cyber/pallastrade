@@ -19,6 +19,7 @@ module PallasTrade
         payment_serializer: 'PallasTrade::Api::V3::PaymentSerializer',
         payment_session_serializer: 'PallasTrade::Api::V3::PaymentSessionSerializer',
         payment_setup_session_serializer: 'PallasTrade::Api::V3::PaymentSetupSessionSerializer',
+        payment_combination_serializer: 'PallasTrade::Api::V3::PaymentCombinationSerializer',
         payment_source_serializer: 'PallasTrade::Api::V3::PaymentSourceSerializer',
         store_credit_serializer: 'PallasTrade::Api::V3::StoreCreditSerializer',
         shipment_serializer: 'PallasTrade::Api::V3::FulfillmentSerializer',

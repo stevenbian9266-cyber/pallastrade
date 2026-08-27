@@ -29,6 +29,8 @@ export const ProductSchema = z.object({
   default_variant_id: z.string(),
   thumbnail_url: z.string().nullable(),
   tags: z.array(z.string()),
+  average_rating: z.number().nullable(),
+  review_count: z.number(),
   price: PriceSchema,
   original_price: PriceSchema.nullable(),
   primary_media: MediaSchema.optional(),
