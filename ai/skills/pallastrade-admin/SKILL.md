@@ -273,9 +273,19 @@ end
 
 > 注意：`determine_role_names` 按 `role_users.where(store: @store)` 解析角色，因此切换到无 RoleUser 的店铺需先授权（超管自动授权），否则该店能力为空 → forbidden。
 
-## Customizing admin tables
+## 手动拆单 + 父子树 UI（P6, 2026-08-28，flag 灰度）
 
-Most admin listing pages (Products, Orders, Promotions, etc.) use a registered table definition — see the gem's `config/initializers/pallastrade_admin_tables.rb` for the registered keys (note: the Customers page is registered as `:users`; a few pages like Payment Methods don't use the table registry). Add, remove, or reorder columns from an initializer:
+订单详情页新增手动拆单能力（`pallastrade_admin` gem 直接修改）：
+
+- **入口**：`views/.../orders/_header.html.erb` `page_actions_dropdown` 加「Split Order」链接（`PallasTrade.split_admin_order_path`），显示条件 `order.completed? && manual_split_enabled? && can?(:update, order)`。`manual_split_enabled?` 为 `orders_controller` helper_method（`store.preferred_manual_split_enabled.presence || Config[:admin_manual_split_enabled]`）。
+- **路由**：`resources :orders` member `get :split` + `post :split, action: :split_create`。
+- **拆分页**：`views/.../orders/split.html.erb`（行项目 checkbox + Stimulus `order_split_controller.js` 实时预览已选数量/小计 + 提交 `line_item_ids[]`）。`split_create` 调 `PallasTrade::Orders::ManualSplit`，成功重定向父订单详情，失败 flash 错误回拆分页。
+- **父子树**：`views/.../orders/_parent_child_tree.html.erb`——子订单显示父订单 banner；父订单显示 children 卡片（订单号/金额/支付/发货状态 + `display_combined_total`）。挂在 `show.html.erb` 主列顶部 + `split.html.erb` 侧栏。
+- **列表父子过滤**：`pallastrade_admin_tables.rb` orders 表格 filter-only 列 `parent_filter`（`ransack_attribute: 'parent_id_null'`，select Parent orders/Child orders）。
+- **权限**：split/split_create 授权映射 `:update`（兼容 function 权限只授 update 的角色）。
+- **flag 关闭**：入口不显示；直接访问 split 页 → redirect 回订单页。
+
+## Customizing admin tables
 
 ```ruby
 # backend/config/initializers/pallastrade_admin_products_table_customization.rb

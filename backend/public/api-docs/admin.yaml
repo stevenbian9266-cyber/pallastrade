@@ -10234,6 +10234,119 @@ paths:
                 canceler_id: admin_UkLWZg9DAJ
                 created_by_id:
                 customer_id: cus_UkLWZg9DAJ
+  "/api/v3/admin/orders/{id}/split":
+    post:
+      summary: Split an order into child orders (manual split)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |-
+        Splits selected line items of a completed order into one or more child orders,
+        reusing the shared split engine. Parent order keeps unselected line items.
+        Gated by `store.preferred_manual_split_enabled` / `Config[:admin_manual_split_enabled]`
+        (default off); returns 404 when disabled. Shipped line items cannot be split.
+        Cross-store split is not supported.
+
+        **Required scope:** `write_orders` (for API-key authentication).
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade Admin SDK
+        source: |-
+          import { createAdminClient } from '@pallastrade/admin-sdk'
+
+          const client = createAdminClient({
+            baseUrl: 'https://your-store.com',
+            secretKey: 'sk_xxx',
+          })
+
+          await client.orders.split('or_UkLWZg9DAJ', {
+            groups: { manual: ['li_xxxxxx'] },
+          })
+      - lang: bash
+        label: PallasTrade CLI
+        source: pallastrade api post /orders/{id}/split -d '{"groups":{"manual":["li_xxxxxx"]}}'
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        description: Order ID
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - groups
+              properties:
+                groups:
+                  type: object
+                  description: Group key → line item IDs (prefixed `li_` or integer)
+                  additionalProperties:
+                    type: array
+                    items:
+                      type: string
+                parent_order_id:
+                  type: string
+                  description: Optional parent order ID (defaults to the source order)
+                store_id:
+                  type: string
+                  description: Must equal the source order's store (cross-store split is not supported)
+            example:
+              groups:
+                manual:
+                - li_xxxxxx
+                - li_yyyyyy
+      responses:
+        '200':
+          description: split result with parent and child orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      parent:
+                        $ref: '#/components/schemas/Order'
+                      children:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Order'
+              example:
+                data:
+                  parent:
+                    id: or_UkLWZg9DAJ
+                    type: order
+                    is_parent: true
+                    children_ids:
+                    - or_AbCdEf1234
+                  children:
+                  - id: or_AbCdEf1234
+                    type: order
+                    parent_id: or_UkLWZg9DAJ
+                    is_child: true
+        '404':
+          description: order not found or manual split disabled
+        '422':
+          description: split failed (shipped line items / cross-store / invalid groups)
+
   "/api/v3/admin/orders/{id}/resend_confirmation":
     post:
       summary: Resend confirmation email

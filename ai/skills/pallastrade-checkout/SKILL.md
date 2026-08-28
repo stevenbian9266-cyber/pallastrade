@@ -39,6 +39,15 @@ Checkout is how a cart becomes a completed order. In PallasTrade, an Order is th
 - **自动拆单**：`PallasTrade::Carts::AutoSplit` 在 `Carts::Complete` 完成（支付确认后）按配置策略拆分。策略列表来自 `store.preferred_auto_split_orders`（JSON 数组字符串，如 `'["PallasTrade::Orders::SplitStrategies::ByStockLocation"]'`）回退 `Config[:auto_split_orders]`，默认 `[]`（关闭）。**不在 cart 中途拆**；拆单失败不影响订单完成（`Rails.error.report`）。
 - **Buy Now**：商品详情页 `BuyNowButton`（`storefront/src/components/products/BuyNowButton.tsx`）——`createBuyNowCart`（`lib/data/buy-now.ts`）创建含当前商品的独立 cart 直接进入确认页，不污染购物车。
 
+### 手动拆单 + 父子树（P6, 2026-08-28，flag 灰度）
+
+- **编排服务**：`PallasTrade::Orders::ManualSplit`（`pallastrade_core/app/services/pallastrade/orders/manual_split.rb`）复用 P2 `Splitter` 之上补齐 P6 语义：
+  - **不可拆已发货**：勾选行项目含 `shipped` inventory_units → 明确业务错误（不部分执行）；
+  - **子订单补 completed**：源订单 completed 时子订单 `update_columns(state: 'complete', completed_at:)`（绕过状态机，不重走 checkout）；
+  - **子订单建 shipment**：stock_location 取源订单首个未取消 shipment，迁移 inventory_units；**运费保留在父订单**——子订单 shipment `cost: 0`，且不调 `OrderUpdater#update_shipments`（会对 completed 子订单 `refresh_rates` 重复计运费），手动派生 `shipment_total/shipment_state/payment_total/payment_state/total`（`payment_total` 从 P2 `PaymentSplit` 刷新）。
+- **Admin API**：`POST /api/v3/admin/orders/:id/split`（`groups` 分组 + `parent_order_id` + `store_id` 同店校验；flag 关闭 404）。详见 `pallastrade-api-v3`。
+- **flag**：`store.preferred_manual_split_enabled` / `Config[:admin_manual_split_enabled]`，默认关闭。
+
 ## The order state machine
 
 Default checkout flow on an Order:

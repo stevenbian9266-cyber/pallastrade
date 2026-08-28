@@ -40,6 +40,8 @@ module PallasTrade
       preference :auto_capture_on_dispatch, :boolean, default: false # Captures payment for each shipment in Shipment#after_ship callback, and makes Shipment.ready when payment authorized.
       # Order lifecycle P5 (2026-08-27): 自动拆单策略列表（类名数组，默认 [] 关闭；store.preferred_auto_split_orders 覆盖）
       preference :auto_split_orders, :string, default: []
+      # Order lifecycle P6 (2026-08-28): Admin 手动拆单开关（默认关闭；store.preferred_manual_split_enabled 覆盖）
+      preference :admin_manual_split_enabled, :boolean, default: false
       preference :binary_inventory_cache, :boolean, default: false, deprecated: true # only invalidate product cache when a stock item changes whether it is in_stock
       preference :checkout_zone, :string, default: nil, deprecated: true # replace with the name of a zone if you would like to limit the countries
       preference :company, :boolean, default: false, deprecated: 'Use the company_field_enabled preference in the PallasTrade::Store model' # Request company field for billing and shipping addr

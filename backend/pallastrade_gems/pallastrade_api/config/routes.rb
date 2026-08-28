@@ -374,6 +374,7 @@ PallasTrade::Core::Engine.add_routes do
             patch :approve
             patch :resume
             post :resend_confirmation
+            post :split
           end
 
           resources :items, only: [:index, :show, :create, :update, :destroy], controller: 'orders/items'

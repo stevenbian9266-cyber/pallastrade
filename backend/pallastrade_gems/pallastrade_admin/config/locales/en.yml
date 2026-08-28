@@ -458,6 +458,9 @@ en:
       orders:
         add_user_to_this_order: Add customer to this order
         all_orders: All Orders
+        parent_filter: Order type
+        parent_orders: Parent orders
+        child_orders: Child orders
         avs_responses:
           a: Street address matches, but 5-digit and 9-digit postal code do not match.
           b: Street address matches, but postal code not verified.
@@ -969,6 +972,16 @@ en:
     display_settings: Display settings
     domains: Domains
     draft_orders: Draft Orders
+    split_order: Split Order
+    split_order_hint: Select line items to split into a child order. Unselected line items stay on this order.
+    split_selected: "Selected line items:"
+    split_selected_total: "Split total:"
+    confirm_split: Confirm Split
+    select_all: Select all
+    parent_order: Parent Order
+    child_orders: Child Orders
+    combined_total: Combined total
+    order_split_success: Order split successfully
     edit_address: Edit address
     edit_prices: Edit Prices
     edit_refund: Edit refund

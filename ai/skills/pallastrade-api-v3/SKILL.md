@@ -406,6 +406,16 @@ It doesn't — Webhooks 2.0 uses the same prefixed IDs as the API. If you're see
 
 单订单（无 children）时聚合值 == 原值，响应与拆单前完全一致（零行为变化）。字段类型不变（string money / string enum），OpenAPI schema 无需变更。
 
+### 手动拆单端点（P6, 2026-08-28，flag 灰度）
+
+`POST /api/v3/admin/orders/:id/split`（Admin API，scope `write_orders`）——把订单部分行项目拆成子订单：
+
+- **参数**：`groups`（必需，`Hash<group_key → line_item_ids>`，支持 `li_` 前缀或整型）、`parent_order_id`（可选）、`store_id`（可选，P6 仅允许 == 源订单 store，跨店返回 `order_cannot_split`）。
+- **flag**：`store.preferred_manual_split_enabled` / `Config[:admin_manual_split_enabled]`，默认关闭 → 404。
+- **响应**：`{ data: { parent, children } }`（均走 Admin `OrderSerializer`，父订单输出 P3 聚合值）。
+- **错误**：`order_cannot_split`（已取消/无行项目/重复拆单/跨店/已发货行项目），`code + message` 无裸 422。
+- **编排**：`PallasTrade::Orders::ManualSplit`（复用 P2 `Splitter`，见 `pallastrade-checkout` SKILL「手动拆单」）。
+
 ## Where to read further
 
 - **OpenAPI specs:** `node_modules/@pallastrade/docs/dist/api-reference/store.yaml` (Store API) and `admin.yaml` (Admin API) — every endpoint, parameter, response schema. Authoritative.

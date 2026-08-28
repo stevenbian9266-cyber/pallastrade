@@ -1,0 +1,62 @@
+<%# PALLAS-CUSTOM: P6 Admin 手动拆单表单页（flag 灰度，PRD-20260828） %>
+<%= render 'header' %>
+
+<div class="grid grid-cols-12 gap-6">
+  <div class="col-span-12 lg:col-span-8">
+    <div class="card mb-6" data-controller="order-split">
+      <div class="card-header">
+        <h5 class="card-title flex items-center">
+          <%= icon('scissors', class: 'mr-2') %>
+          <%= PallasTrade.t(:split_order) %>
+        </h5>
+      </div>
+      <div class="card-body">
+        <p class="text-gray-600 text-sm mb-4"><%= PallasTrade.t(:split_order_hint) %></p>
+
+        <%= form_with url: PallasTrade.split_admin_order_path(@order), method: :post, data: { turbo: false } do |f| %>
+          <div class="flex items-center text-gray-600 border-b py-2 px-4 text-sm bg-gray-25 border-t">
+            <div class="w-5">
+              <input type="checkbox" data-action="change->order-split#toggleAll" aria-label="<%= PallasTrade.t(:select_all) %>" />
+            </div>
+            <div class="w-35"><%= PallasTrade.t(:item_description) %></div>
+            <div class="w-10"><%= PallasTrade.t(:quantity) %></div>
+            <div class="w-10"><%= PallasTrade.t(:total) %></div>
+          </div>
+
+          <% @line_items.each do |line_item| %>
+            <div class="order-line-items__form flex items-center" data-order-split-target="row" data-total="<%= line_item.display_total.to_s.gsub(/[^\d.]/, '') %>">
+              <div class="w-5">
+                <%= check_box_tag 'line_item_ids[]', line_item.prefixed_id, false, class: 'mr-2', data: { action: 'change->order-split#toggle' } %>
+              </div>
+              <div class="w-35">
+                <%= render "pallastrade/admin/variants/variant", variant: line_item.variant %>
+              </div>
+              <div class="w-10"><%= line_item.quantity %></div>
+              <div class="w-10"><%= line_item.display_total %></div>
+            </div>
+          <% end %>
+
+          <div class="mt-4 flex items-center justify-between bg-gray-25 rounded-lg px-4 py-3 text-sm">
+            <div class="text-gray-600">
+              <%= PallasTrade.t(:split_selected) %>
+              <span class="font-medium" data-order-split-target="count">0</span>
+            </div>
+            <div class="text-gray-600">
+              <%= PallasTrade.t(:split_selected_total) %>
+              <span class="font-medium" data-order-split-target="total">0.00</span>
+            </div>
+          </div>
+
+          <div class="mt-4 flex justify-end gap-2">
+            <%= link_to PallasTrade.t(:cancel), PallasTrade.admin_order_path(@order), class: 'btn btn-secondary' %>
+            <%= f.submit PallasTrade.t(:confirm_split), class: 'btn btn-primary', disabled: true, data: { order_split_target: 'submit', turbo_confirm: PallasTrade.t(:are_you_sure) } %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-span-12 lg:col-span-4">
+    <%= render 'pallastrade/admin/orders/parent_child_tree', order: @order %>
+  </div>
+</div>

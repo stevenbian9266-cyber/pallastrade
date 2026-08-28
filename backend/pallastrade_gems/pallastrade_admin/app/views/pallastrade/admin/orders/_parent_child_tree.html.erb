@@ -1,0 +1,53 @@
+<%# PALLAS-CUSTOM: P6 父子树 partial（flag 灰度，PRD-20260828）
+    - 子订单：显示父订单 banner（链接回父）
+    - 父订单：显示 children 卡片列表（金额/支付/发货聚合）
+    - 单订单：不渲染 %>
+<% order ||= @order %>
+<% if order.child_order? && order.parent.present? %>
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title flex items-center">
+        <%= icon('git-branch', class: 'mr-2') %>
+        <%= PallasTrade.t(:parent_order) %>
+      </h5>
+    </div>
+    <div class="card-body p-4">
+      <%= link_to order.parent.number, PallasTrade.admin_order_path(order.parent), class: 'text-blue-600 hover:underline font-medium' %>
+      <div class="text-sm text-gray-600 mt-1 flex gap-2">
+        <span><%= order_payment_state(order.parent) %></span>
+        <span><%= order_shipment_state(order.parent) %></span>
+      </div>
+    </div>
+  </div>
+<% elsif order.parent_order? %>
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title flex items-center">
+        <%= icon('git-branch', class: 'mr-2') %>
+        <%= PallasTrade.t(:child_orders) %>
+        <span class="badge badge-info ml-2"><%= order.children.count %></span>
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="flex items-center justify-between border-b px-4 py-2 text-sm bg-gray-25">
+        <span class="text-gray-600"><%= PallasTrade.t(:combined_total) %> <%= order.display_combined_total %></span>
+        <span class="flex gap-2">
+          <span class="badge"><%= order_payment_state(order) %></span>
+          <span class="badge"><%= order_shipment_state(order) %></span>
+        </span>
+      </div>
+      <% order.children.each do |child| %>
+        <div class="flex items-center justify-between px-4 py-2 border-b text-sm">
+          <div>
+            <%= link_to child.number, PallasTrade.admin_order_path(child), class: 'text-blue-600 hover:underline font-medium' %>
+            <span class="text-gray-500 text-xs ml-2"><%= child.display_total %></span>
+          </div>
+          <div class="flex gap-2">
+            <span class="badge"><%= order_payment_state(child) %></span>
+            <span class="badge"><%= order_shipment_state(child) %></span>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

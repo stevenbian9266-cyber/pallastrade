@@ -32,6 +32,7 @@ module PallasTrade
           # Order errors
           order_not_found: 'order_not_found',
           order_cannot_complete: 'order_cannot_complete',
+          order_cannot_split: 'order_cannot_split',
 
           # Line item errors
           line_item_not_found: 'line_item_not_found',

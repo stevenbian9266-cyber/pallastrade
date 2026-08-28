@@ -88,6 +88,9 @@ PallasTrade::Core::Engine.add_routes do
       member do
         post :resend
         put :cancel
+        # P6 (2026-08-28): Admin 手动拆单（flag 灰度）
+        get :split
+        post :split, action: :split_create
       end
       resource :shipping_address, except: [:show], controller: 'orders/shipping_address'
       resource :billing_address, except: [:show], controller: 'orders/billing_address'

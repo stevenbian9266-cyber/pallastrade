@@ -64,6 +64,8 @@ module PallasTrade
     preference :storefront_access, :string, default: 'public'
     # P5 (2026-08-27): 自动拆单策略列表（JSON 数组字符串，如 '["PallasTrade::Orders::SplitStrategies::ByStockLocation"]'），默认关闭
     preference :auto_split_orders, :string, default: '[]'
+    # P6 (2026-08-28): Admin 手动拆单开关（默认关闭；Config[:admin_manual_split_enabled] 回退）
+    preference :manual_split_enabled, :boolean, default: false
     # Canonical storefront origin used in customer-facing emails and links,
     # e.g. "https://myshop.com" — see #storefront_url for the fallback chain.
     preference :storefront_url, :string

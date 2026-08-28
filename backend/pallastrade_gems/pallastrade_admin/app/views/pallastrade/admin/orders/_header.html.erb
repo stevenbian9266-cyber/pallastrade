@@ -57,6 +57,13 @@
 
   <%= render_admin_partials(:order_page_dropdown_partials, order: @order) %>
 
+  <% if @order.completed? && manual_split_enabled? && can?(:update, @order) %>
+    <%= link_to_with_icon "scissors",
+    PallasTrade.t(:split_order),
+    PallasTrade.split_admin_order_path(@order),
+    class: "btn text-left dropdown-item" %>
+  <% end %>
+
   <% if can?(:cancel, @order) %>
     <div class="dropdown-divider"></div>
     <%= link_to PallasTrade.cancel_admin_order_path(@order),

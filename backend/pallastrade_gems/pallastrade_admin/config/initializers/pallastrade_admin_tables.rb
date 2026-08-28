@@ -205,6 +205,24 @@ Rails.application.config.after_initialize do
   # Register Orders table
   PallasTrade.admin.tables.register(:orders, model_class: PallasTrade::Order, search_param: :search, date_range_param: :completed_at)
 
+  # P6 (2026-08-28): 父子关系过滤（filter-only，不显示为列）
+  PallasTrade.admin.tables.orders.add :parent_filter,
+                                      label: 'admin.orders.parent_filter',
+                                      type: :string,
+                                      filter_type: :select,
+                                      sortable: false,
+                                      filterable: true,
+                                      displayable: false,
+                                      default: false,
+                                      position: 5,
+                                      ransack_attribute: 'parent_id_null',
+                                      value_options: -> {
+                                        [
+                                          { value: 'true', label: PallasTrade.t('admin.orders.parent_orders') },
+                                          { value: 'false', label: PallasTrade.t('admin.orders.child_orders') }
+                                        ]
+                                      }
+
   PallasTrade.admin.tables.orders.add :number,
                                       label: :number,
                                       type: :link,

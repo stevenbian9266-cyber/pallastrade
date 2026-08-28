@@ -256,12 +256,12 @@ def root_order     = parent ? parent.root_order : self     # 防环
 - **验证**：后端 30 例 + SDK 160 例 + storefront 211 例（含 BuyNowButton/OrderCombinedPay 组件测试）+ typecheck/generated:check/quick check 全过。
 - **回滚**：`auto_split_orders=[]` + 组合入口按 store 关闭 → 完全回到单笔订单老流程；`git revert` P5 commit。
 
-### P6 Admin 手动拆单 + 父子树 UI（3-4 天，flag 灰度）
+### P6 Admin 手动拆单 + 父子树 UI（3-4 天，flag 灰度）—— ✅ 已完成（2026-08-28）
 
-- Admin API：`POST /api/v3/admin/orders/:id/split`（`store_id` / `stock_location_id` / 行项目数量 / 预览 + 确认）；父子关系过滤。
-- Admin UI：订单详情"拆分订单"入口（目标店铺/仓库选择、行项目数量、金额预览）、父订单聚合页（成员/支付/发货/售后汇总）、父子树展示。
-- **验证**：Admin request spec + 浏览器验证拆分流程。
-- **回滚**：flag 关闭；`FulfilmentChanger`（现有发货拆分）不受影响。
+- **Admin API**：`POST /api/v3/admin/orders/:id/split`（`groups` 分组 + `parent_order_id` + `store_id` 同店校验；flag 关闭 404；错误 `order_cannot_split` code+message）；编排服务 `Orders::ManualSplit`（复用 P2 `Splitter` + 已发货行项目拒拆 + 子订单补 completed + 建 shipment 迁移 inventory_units，运费保留父订单）。
+- **Admin UI**：订单详情 dropdown「Split Order」入口（flag + `can?(:update)`）；拆分页（行项目勾选 + Stimulus 金额预览 + 确认）；父子树 partial（父订单 children 卡片聚合 / 子订单父 banner）；orders 列表 Ransack `parent_id_null` 过滤。
+- **验证**：后端 35 例（manual_split 6 + admin split API 7 + admin UI 7 + P2/P5 回归 15）+ P4/P1/P3 回归 35 全绿；quick check / generated:check 通过。
+- **回滚**：`admin_manual_split_enabled=false`（默认）+ 入口不渲染；`git revert` P6 commit。
 
 ### P7 逆向链路：售后父子单化（4-5 天，flag 灰度）
 
