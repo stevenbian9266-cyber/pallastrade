@@ -35,6 +35,14 @@ PallasTrade.config do |config|
   # Order lifecycle P7 (2026-08-28): 父订单批量售后默认关闭（store.preferred_returns_parent_order_handling 覆盖）
   config.returns_parent_order_handling = false
 
+  # Order lifecycle P8 (2026-08-28): 下单前置校验（风控）默认关闭（store.preferred_checkout_preflight_enabled 覆盖）
+  config.checkout_preflight_enabled = false
+  # Order lifecycle P8 (2026-08-28): 防刷单默认关闭（同用户 N 分钟内完成订单数上限，nil=关）
+  config.order_frequency_limit = nil
+  config.order_frequency_window_minutes = 10
+  # Order lifecycle P8 (2026-08-28): 锁库存时机默认 :order（下单时锁；:payment = 支付确认后锁）
+  config.stock_reservation_strategy = 'order'
+
   # Example:
   # Uncomment to stop tracking inventory levels in the application
   # config.track_inventory_levels = false

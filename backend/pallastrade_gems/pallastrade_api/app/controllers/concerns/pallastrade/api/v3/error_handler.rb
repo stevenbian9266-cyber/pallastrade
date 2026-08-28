@@ -124,7 +124,13 @@ module PallasTrade
 
         # Convenience method for service result errors
         def render_service_error(error, code: ERROR_CODES[:processing_error], status: :unprocessable_content)
-          if error.is_a?(ActiveModel::Errors)
+          if error.is_a?(PallasTrade::ServiceModule::ResultError)
+            # 解包 ResultError（failure 的 error 参数被包裹）→ 递归处理其 value（Hash / String / ActiveModel::Errors）
+            render_service_error(error.value, code: code, status: status)
+          elsif error.is_a?(Hash) && error[:code].present? && error[:message].present?
+            # P8：结构化业务错误 { code:, message: } → 统一 code + message（黑名单/风控/防刷单等）
+            render_error(code: error[:code], message: error[:message], status: status)
+          elsif error.is_a?(ActiveModel::Errors)
             render_validation_error(error, code: code)
           elsif error.is_a?(String)
             render_error(code: code, message: error, status: status)

@@ -164,6 +164,10 @@ StoreCredit (many)
 
 Use `PallasTrade.user_class` and `PallasTrade.admin_user_class` to reference user models — never `PallasTrade::User` directly. Apps can swap in their own user model via configuration.
 
+### 用户黑名单（P8, 2026-08-28）
+
+`pallastrade_users.blacklisted_at`（datetime，可空）——用户拉黑时间戳。由 `PallasTrade::Risk::BlacklistRule` 在下单前置校验时拦截（命中 → `user_blacklisted` 错误）。
+
 ## Adjustments (polymorphic)
 
 ```

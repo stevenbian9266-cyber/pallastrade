@@ -15,9 +15,21 @@ module PallasTrade
         return failure(cart, PallasTrade.t(:guest_checkout_not_allowed)) if cart.guest_checkout_disallowed?
 
         cart.with_lock do
+          # Order lifecycle P8 (2026-08-28): 下单前置校验（风控/黑名单/防刷单，flag 灰度）——
+          # 支付处理前拦截，命中返回 { code:, message: } 统一业务错误。
+          preflight = PallasTrade::Checkout::Preflight.call(order: cart)
+          return preflight unless preflight.success?
+
           process_payments!(cart) if cart.payment_required?
 
           return failure(cart, cart.errors.full_messages.to_sentence) if cart.errors.any?
+
+          # Order lifecycle P8 (2026-08-28): 锁库存 :payment 模式——支付确认后真正锁定
+          # （cart 操作阶段只校验不落 reservation，见 StockReservations::Reserve validate_only）。
+          if payment_reservation_strategy? && cart.payment_total.to_f > 0
+            reserve_result = PallasTrade::StockReservations::Reserve.call(order: cart)
+            return failure(cart, reserve_result.error) if reserve_result.failure?
+          end
 
           advance_to_complete!(cart)
 
@@ -34,6 +46,11 @@ module PallasTrade
       end
 
       private
+
+      # P8：锁库存时机 —— :payment = 支付确认后锁（默认 :order = 下单/cart 操作时锁）
+      def payment_reservation_strategy?
+        PallasTrade::Config[:stock_reservation_strategy].to_s == 'payment'
+      end
 
       def process_payments!(cart)
         # If payments were already processed by the payment session

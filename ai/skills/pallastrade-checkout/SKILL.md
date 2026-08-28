@@ -58,6 +58,13 @@ Checkout is how a cart becomes a completed order. In PallasTrade, an Order is th
 - **Admin**：父订单详情 dropdown「Parent Order Returns」入口（flag + `can?(:create, ReturnAuthorization)`）+ `parent_order_returns` 批量创建页。
 - **flag**：`store.preferred_returns_parent_order_handling` / `Config[:returns_parent_order_handling]`，默认关闭。
 
+### 前置校验 / 风控 / 锁存双模式（P8, 2026-08-28，flag 灰度）
+
+- **风控引擎**：`PallasTrade::Risk`（`lib/pallastrade/risk.rb`）——`rules` 可注册（`PallasTrade::Risk.rules << RuleClass`，规则实现 `#call(order:, user:, store:)` → nil 或 `{ code:, message: }`）；`evaluate` 返回首个命中。内置：`BlacklistRule`（`users.blacklisted_at`）与 `OrderFrequencyRule`（同用户 N 分钟内完成订单数 > `order_frequency_limit`，默认关闭）。
+- **前置校验**：`PallasTrade::Checkout::Preflight`（`call(order:)`）——`Carts::Complete` 支付处理前评估 Risk，命中返回 `failure(order, { code:, message: })`；登录强制已由既有 `guest_checkout_disallowed?` 覆盖。flag `checkout_preflight_enabled` 默认关闭。
+- **统一错误**：`render_service_error` 支持 `ResultError` 解包 + `{ code:, message: }` Hash 结构化错误（黑名单/风控/防刷单等）。
+- **锁存双模式**：`Config[:stock_reservation_strategy]`（`:order` 默认 / `:payment`）——`:order` = cart 操作时 Reserve（现状）；`:payment` = cart 操作只校验不落 reservation（`Reserve.call(order:, validate_only: true)`，调用点：add_item/set_quantity/update/remove_line_item），支付确认后（`Carts::Complete` 内 `payment_total > 0` 时）真正 Reserve → complete 后 Release。
+
 ## The order state machine
 
 Default checkout flow on an Order:

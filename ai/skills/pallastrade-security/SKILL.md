@@ -279,6 +279,15 @@ Still layer defense in depth on top:
 
 Tune the numbers to your traffic shape — the defaults cap a leaked publishable key at 300 req/min, but a scraper rotating IPs without a key still warrants the CDN layer.
 
+### 下单风控规则（P8, 2026-08-28，flag 灰度）
+
+API 级 rate limit 之上叠加**业务级下单风控**（`PallasTrade::Risk` 规则引擎，见 `pallastrade-checkout` SKILL「前置校验」）：
+
+- `users.blacklisted_at`（P8 新增列）→ `BlacklistRule` 命中 `user_blacklisted`。
+- `order_frequency_limit`（同用户 N 分钟内完成订单数上限，默认 nil 关闭）→ `OrderFrequencyRule` 命中 `order_frequency_limit`。
+- 自定义规则：`PallasTrade::Risk.rules << MyRule`（`#call(order:, user:, store:)` → `{ code:, message: }`）。
+- 错误统一 `{ code:, message: }`（经 `render_service_error`），不泄露内部细节。
+
 ### Dependency hygiene
 
 ```bash

@@ -270,13 +270,13 @@ def root_order     = parent ? parent.root_order : self     # 防环
 - **验证**：后端 55 例（P7 13 + P6 20 + P3 17 + P4 5）全绿；quick check / generated:check 通过。
 - **回滚**：`returns_parent_order_handling=false`（默认）+ 入口不渲染；`git revert` P7 commit。
 
-### P8 前置校验 / 库存 / 风控 / 订单服务增强（3-4 天，可裁剪，可与 P5 并行）
+### P8 前置校验 / 库存 / 风控 / 订单服务增强（3-4 天，可裁剪，可与 P5 并行）—— ✅ 已完成（2026-08-28）
 
-- 前置校验：登录强制 / 黑名单（`users.blacklisted_at`）/ 风控评估（`PallasTrade::Risk` 可配置规则钩子）→ 统一 `code + message`。
-- 库存：下单校验（复用 `Stock::Quantifier`）+ 锁库存双模式（`Config[:stock_reservation_strategy] = :order | :payment`，复用 `StockReservations::Reserve/Release`）。
-- 订单服务：备注（内部/客户可见）、状态时间线、通知（子订单独立通知）、防刷单（频率/数量上限）。
-- **验证**：对应 spec + 浏览器。
-- **回滚**：独立 flag。
+- **前置校验**：`PallasTrade::Risk` 规则引擎（`rules` 注册 + `evaluate` 首个命中）+ `Checkout::Preflight` 服务（`Carts::Complete` 支付处理前评估）；内置 `BlacklistRule`（`users.blacklisted_at` 新列）+ `OrderFrequencyRule`（防刷单，`order_frequency_limit` 默认关闭）；登录强制复用既有 `guest_checkout_disallowed?`；错误统一 `{ code:, message: }`（`render_service_error` 支持 ResultError 解包 + Hash 结构化错误）。
+- **库存**：`Config[:stock_reservation_strategy]`（`:order` 默认 / `:payment`）——`:payment` 模式 cart 操作只校验不落 reservation（`Reserve.validate_only`），支付确认后（`Carts::Complete`）真正锁定 → 完成释放。
+- **订单服务**：备注（`internal_note`/`customer_note`）与状态时间线（`StateChange`）已存在，本次评估无需更新。
+- **验证**：后端 47 例（risk 7 + preflight 5 + reserve 4 + 回归 31）全绿；quick check / generated:check 通过。
+- **回滚**：`checkout_preflight_enabled=false`（默认）+ `order_frequency_limit=nil` + `stock_reservation_strategy='order'`（默认）→ 现状零变化；`git revert` P8 commit。
 
 ---
 

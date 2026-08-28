@@ -119,11 +119,16 @@ module PallasTrade
         if cart.cart?
           PallasTrade::StockReservations::Release.call(order: cart) unless was_in_cart
         elsif was_in_cart
-          result = PallasTrade::StockReservations::Reserve.call(order: cart)
+          result = PallasTrade::StockReservations::Reserve.call(order: cart, validate_only: payment_strategy?)
           raise PallasTrade::StockReservations::InsufficientStockError.new(nil, result.error.to_s) if result.failure?
         else
           PallasTrade::StockReservations::Extend.call(order: cart)
         end
+      end
+
+      # P8：:payment 锁存模式——cart/checkout 操作只校验不落 reservation（支付确认后由 Carts::Complete 锁定）
+      def payment_strategy?
+        PallasTrade::Config[:stock_reservation_strategy].to_s == 'payment'
       end
 
       # Auto-advance as far as the checkout state machine allows, but never

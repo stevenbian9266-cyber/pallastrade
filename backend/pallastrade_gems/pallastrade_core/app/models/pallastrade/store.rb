@@ -68,6 +68,10 @@ module PallasTrade
     preference :manual_split_enabled, :boolean, default: false
     # P7 (2026-08-28): 父订单批量售后开关（默认关闭；Config[:returns_parent_order_handling] 回退）
     preference :returns_parent_order_handling, :boolean, default: false
+    # P8 (2026-08-28): 下单前置校验（风控）开关（默认关闭；Config[:checkout_preflight_enabled] 回退）
+    preference :checkout_preflight_enabled, :boolean, default: false
+    # P8 (2026-08-28): 防刷单——同用户 N 分钟内完成订单数上限（默认 nil=关闭；Config[:order_frequency_limit] 回退）
+    preference :order_frequency_limit, :integer, default: nil
     # Canonical storefront origin used in customer-facing emails and links,
     # e.g. "https://myshop.com" — see #storefront_url for the fallback chain.
     preference :storefront_url, :string

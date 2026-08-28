@@ -21,11 +21,16 @@ module PallasTrade
 
       def handle_stock_reservations(order:, line_item:)
         if order.in_checkout?
-          result = PallasTrade::StockReservations::Reserve.call(order: order)
+          result = PallasTrade::StockReservations::Reserve.call(order: order, validate_only: validate_only_reservations?)
           return failure(line_item, result.error) if result.failure?
         end
 
         success(order: order, line_item: line_item)
+      end
+
+      # P8：:payment 锁存模式——cart 操作只校验不落 reservation
+      def validate_only_reservations?
+        PallasTrade::Config[:stock_reservation_strategy].to_s == 'payment'
       end
     end
   end

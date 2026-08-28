@@ -3,7 +3,9 @@ module PallasTrade
     class Reserve
       prepend PallasTrade::ServiceModule::Base
 
-      def call(order:)
+      # P8 (2026-08-28)：validate_only —— 只做库存校验不创建/更新 reservation
+      # （:payment 锁存模式下 cart 操作阶段仅校验，支付确认后由 Carts::Complete 真正 Reserve）。
+      def call(order:, validate_only: false)
         return success(order) unless PallasTrade::Config[:stock_reservations_enabled]
 
         expires_at = Time.current + PallasTrade::StockReservation.ttl_for(order)
@@ -21,7 +23,7 @@ module PallasTrade
             .index_by(&:id)
 
           held = held_by_others(locked_stock_items.keys, order.id)
-          existing = existing_reservations_for(targets)
+          existing = validate_only ? {} : existing_reservations_for(targets)
 
           this_order_used = Hash.new(0)
 
@@ -42,6 +44,7 @@ module PallasTrade
             end
 
             this_order_used[stock_item.id] += line_item.quantity
+            next if validate_only
 
             reservation = existing[[stock_item.id, line_item.id]] ||
                           PallasTrade::StockReservation.new(stock_item: stock_item, line_item: line_item)
