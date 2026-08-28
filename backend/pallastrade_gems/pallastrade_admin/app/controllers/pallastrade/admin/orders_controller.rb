@@ -6,11 +6,11 @@ module PallasTrade
       include PallasTrade::Admin::TableConcern
 
       before_action :initialize_order_events
-      before_action :load_order, only: %i[show edit cancel resend destroy split split_create]
+      before_action :load_order, only: %i[show edit cancel resend destroy split split_create parent_order_returns parent_order_returns_create]
       before_action :load_order_items, only: %i[show split]
       before_action :load_user, only: [:index]
 
-      helper_method :manual_split_enabled?
+      helper_method :manual_split_enabled?, :returns_parent_order_handling?, :parent_order_returns_targets
 
       # GET /admin/orders/new
       def new
@@ -80,6 +80,42 @@ module PallasTrade
         end
       end
 
+      # GET /admin/orders/:id/parent_order_returns
+      # P7 (2026-08-28)：父订单批量售后表单页（flag 灰度）——为全部子订单创建退货授权。
+      def parent_order_returns
+        unless returns_parent_order_handling?
+          flash[:error] = PallasTrade.t(:authorization_failure)
+          return redirect_to(PallasTrade.admin_order_path(@order))
+        end
+
+        @reasons = PallasTrade::ReturnAuthorizationReason.active.to_a
+        @stock_locations = PallasTrade::StockLocation.order_default.active
+
+        add_breadcrumb @order.number, PallasTrade.admin_order_path(@order)
+        add_breadcrumb PallasTrade.t(:parent_order_returns), PallasTrade.parent_order_returns_admin_order_path(@order)
+      end
+      def parent_order_returns_create
+        unless returns_parent_order_handling?
+          flash[:error] = PallasTrade.t(:authorization_failure)
+          return redirect_to(PallasTrade.admin_order_path(@order))
+        end
+
+        result = PallasTrade::Returns::ParentOrderReturns.call(
+          parent_order: @order,
+          stock_location: PallasTrade::StockLocation.order_default.active.find_by_prefix_id!(parent_order_returns_params[:stock_location_id]),
+          reason: PallasTrade::ReturnAuthorizationReason.active.find_by_prefix_id!(parent_order_returns_params[:return_authorization_reason_id]),
+          memo: parent_order_returns_params[:memo]
+        )
+
+        if result.success?
+          flash[:success] = PallasTrade.t(:parent_order_returns_success, count: result.value.size)
+          redirect_to PallasTrade.admin_order_path(@order)
+        else
+          flash[:error] = result.error.to_s
+          redirect_to PallasTrade.parent_order_returns_admin_order_path(@order)
+        end
+      end
+
       # PUT /admin/orders/:id/cancel
       def cancel
         result = @order.canceled_by(try_pallastrade_current_user)
@@ -145,8 +181,28 @@ module PallasTrade
         current_store.preferred_manual_split_enabled.presence || PallasTrade::Config[:admin_manual_split_enabled]
       end
 
+      # P7：父订单批量售后 flag——store preference 覆盖 Config，默认关闭
+      def returns_parent_order_handling?
+        current_store.preferred_returns_parent_order_handling.presence || PallasTrade::Config[:returns_parent_order_handling]
+      end
+
       def split_params
         params.permit(line_item_ids: [])
+      end
+
+      def parent_order_returns_params
+        params.permit(:stock_location_id, :return_authorization_reason_id, :memo)
+      end
+
+      # P7：供批量售后视图使用——各目标订单（父 + 子）的可退 inventory_units（shipped 且未被既有 RA 关联）
+      def parent_order_returns_targets
+        return [] unless @order.parent_order?
+
+        ([@order, *@order.children]).map do |o|
+          associated = o.return_authorizations.includes(:return_items).flat_map { |ra| ra.return_items.map(&:inventory_unit_id) }
+          units = o.inventory_units.where(state: 'shipped').where.not(id: associated)
+          { order: o, inventory_units: units }
+        end.select { |target| target[:inventory_units].any? }
       end
 
       def load_order
@@ -154,9 +210,10 @@ module PallasTrade
         authorize! authorization_action, @order
       end
 
-      # P6：手动拆单动作映射到 :update 授权（与 Admin API 一致，兼容 function 权限只授 update 的角色）
+      # P6/P7：手动拆单 / 批量售后动作映射到 :update 授权（与 Admin API 一致，兼容 function 权限只授 update 的角色）
       def authorization_action
-        %i[split split_create].include?(action_name.to_sym) ? :update : action
+        actions = %i[split split_create parent_order_returns parent_order_returns_create]
+        actions.include?(action_name.to_sym) ? :update : action
       end
 
       # Used for extensions which need to provide their own custom event links on the order details view.

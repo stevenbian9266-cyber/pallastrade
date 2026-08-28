@@ -66,6 +66,8 @@ module PallasTrade
     preference :auto_split_orders, :string, default: '[]'
     # P6 (2026-08-28): Admin 手动拆单开关（默认关闭；Config[:admin_manual_split_enabled] 回退）
     preference :manual_split_enabled, :boolean, default: false
+    # P7 (2026-08-28): 父订单批量售后开关（默认关闭；Config[:returns_parent_order_handling] 回退）
+    preference :returns_parent_order_handling, :boolean, default: false
     # Canonical storefront origin used in customer-facing emails and links,
     # e.g. "https://myshop.com" — see #storefront_url for the fallback chain.
     preference :storefront_url, :string

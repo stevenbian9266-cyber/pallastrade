@@ -982,6 +982,14 @@ en:
     child_orders: Child Orders
     combined_total: Combined total
     order_split_success: Order split successfully
+    parent_order_returns: Parent Order Returns
+    parent_order_returns_hint: Create return authorizations for this parent order and all of its child orders. Only shipped inventory units are included.
+    confirm_create_returns: Create Return Authorizations
+    parent_order_returns_success:
+      one: "Created %{count} return authorization"
+      other: "Created %{count} return authorizations"
+    return_authorization_reason: Return reason
+    units: units
     edit_address: Edit address
     edit_prices: Edit Prices
     edit_refund: Edit refund

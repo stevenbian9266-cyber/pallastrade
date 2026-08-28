@@ -34,7 +34,12 @@ module PallasTrade
 
     attr_reader :response
 
-    delegate :order, :currency, to: :payment
+    delegate :currency, to: :payment
+
+    # P7 (2026-08-28)：payment.order 在组合支付场景为 nil → 从 reimbursement 链推导目标订单
+    def order
+      payment.order || reimbursement_target_order
+    end
 
     def amount=(amount)
       self[:amount] = PallasTrade::LocalizedNumber.parse(amount)
@@ -68,10 +73,17 @@ module PallasTrade
     #
     # @return [Boolean]
     def editable?
-      !payment.order.canceled?
+      target = order
+      target.present? && !target.canceled?
     end
 
     private
+
+    # P7：组合支付退款的目标订单 = reimbursement → customer_return/return_items → inventory_unit.order
+    def reimbursement_target_order
+      reimbursement&.customer_return&.return_items&.first&.inventory_unit&.order ||
+        reimbursement&.return_items&.first&.inventory_unit&.order
+    end
 
     # attempts to perform the refund.
     # raises an error if the refund fails.
@@ -131,7 +143,17 @@ module PallasTrade
     end
 
     def update_order
-      payment.order.updater.update
+      if payment.order
+        payment.order.updater.update
+      elsif payment.payment_combination.present?
+        # P7：组合支付退款——只更新对应子订单 PaymentSplit.refunded_amount（P4 语义），不碰兄弟单
+        target_order = reimbursement_target_order
+        if target_order
+          split = target_order.payment_splits.where(payment_id: payment.id).first
+          split&.update_columns(refunded_amount: split.refunded_amount.to_f + amount.to_f)
+          target_order.updater.update
+        end
+      end
     end
   end
 end

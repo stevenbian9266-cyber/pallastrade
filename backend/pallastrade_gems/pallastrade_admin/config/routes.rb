@@ -91,6 +91,9 @@ PallasTrade::Core::Engine.add_routes do
         # P6 (2026-08-28): Admin 手动拆单（flag 灰度）
         get :split
         post :split, action: :split_create
+        # P7 (2026-08-28): 父订单批量售后（flag 灰度）
+        get :parent_order_returns
+        post :parent_order_returns, action: :parent_order_returns_create
       end
       resource :shipping_address, except: [:show], controller: 'orders/shipping_address'
       resource :billing_address, except: [:show], controller: 'orders/billing_address'

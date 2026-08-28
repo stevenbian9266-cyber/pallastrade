@@ -64,6 +64,13 @@
     class: "btn text-left dropdown-item" %>
   <% end %>
 
+  <% if @order.parent_order? && returns_parent_order_handling? && can?(:create, PallasTrade::ReturnAuthorization) %>
+    <%= link_to_with_icon "rotate-ccw",
+    PallasTrade.t(:parent_order_returns),
+    PallasTrade.parent_order_returns_admin_order_path(@order),
+    class: "btn text-left dropdown-item" %>
+  <% end %>
+
   <% if can?(:cancel, @order) %>
     <div class="dropdown-divider"></div>
     <%= link_to PallasTrade.cancel_admin_order_path(@order),

@@ -178,6 +178,14 @@ For partial refunds with return authorizations, the chain is:
 Customer requests return → ReturnAuthorization → CustomerReturn → Reimbursement → Refund / StoreCredit
 ```
 
+### 父子售后退款（P7, 2026-08-28）
+
+拆单/组合支付后**子订单无本地 payment**（资金在组合 payment 上），售后退款走：
+
+- `OriginalPayment.reimburse` 在 `order.payments.completed` 为空时从 `order.payment_splits` 取关联 payment（组合 payment），退款上限 = `split.captured_amount - refunded_amount`（不超 split 未退部分，不碰兄弟单）。
+- `Refund#update_order`：`payment.order` 为 nil（组合）→ 更新该子订单 `PaymentSplit.refunded_amount`；`Refund#order` 从 reimbursement 链推导。
+- 普通单订单退款行为零变化（`payment.order` 存在时走原逻辑）。
+
 See the `pallastrade-shipping-fulfillment` skill for the reverse-logistics chain.
 
 ## Store credits

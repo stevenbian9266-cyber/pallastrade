@@ -48,6 +48,16 @@ Checkout is how a cart becomes a completed order. In PallasTrade, an Order is th
 - **Admin API**：`POST /api/v3/admin/orders/:id/split`（`groups` 分组 + `parent_order_id` + `store_id` 同店校验；flag 关闭 404）。详见 `pallastrade-api-v3`。
 - **flag**：`store.preferred_manual_split_enabled` / `Config[:admin_manual_split_enabled]`，默认关闭。
 
+### 售后父子单化（P7, 2026-08-28，flag 灰度）
+
+- **子订单退款**（拆单/组合支付后资金在组合 payment，子订单无本地 payment）：
+  - `ReimbursementType::OriginalPayment#reimburse`：`order.payments.completed` 为空时从 `order.payment_splits`（P2/P4 已建）定位关联 payment（含组合 payment）退款，且退款上限按 `split.captured - refunded`（`reimbursement_helpers#create_refunds` 新增 `payment_credit_limits` 参数）。
+  - `Refund#update_order`：`payment.order` 为 nil（组合支付）时更新对应子订单 `PaymentSplit.refunded_amount`（P4 语义：部分退款只更新对应子订单 split，不碰兄弟单）+ 触发子订单 updater。
+  - `Refund#order`/`editable?`：`payment.order` nil 时从 reimbursement→customer_return→return_items→inventory_unit.order 推导（`reimbursement_target_order`）。
+- **父订单批量售后**：`PallasTrade::Returns::ParentOrderReturns`（`call(parent_order:, stock_location:, reason:, memo:)`）——展开父订单 + 全部 children，为每个有 shipped（且未被既有 RA 关联）inventory_units 的订单创建 `ReturnAuthorization` + return_items；单订单失败跳过（尽力而为），幂等（已关联 units 自动排除）。
+- **Admin**：父订单详情 dropdown「Parent Order Returns」入口（flag + `can?(:create, ReturnAuthorization)`）+ `parent_order_returns` 批量创建页。
+- **flag**：`store.preferred_returns_parent_order_handling` / `Config[:returns_parent_order_handling]`，默认关闭。
+
 ## The order state machine
 
 Default checkout flow on an Order:

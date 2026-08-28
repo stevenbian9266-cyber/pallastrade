@@ -273,8 +273,16 @@ end
 
 > 注意：`determine_role_names` 按 `role_users.where(store: @store)` 解析角色，因此切换到无 RoleUser 的店铺需先授权（超管自动授权），否则该店能力为空 → forbidden。
 
-## 手动拆单 + 父子树 UI（P6, 2026-08-28，flag 灰度）
+## 父订单批量售后（P7, 2026-08-28，flag 灰度）
 
+订单详情页新增父订单批量售后能力（`pallastrade_admin` gem 直接修改）：
+
+- **入口**：`views/.../orders/_header.html.erb` `page_actions_dropdown` 加「Parent Order Returns」链接（`PallasTrade.parent_order_returns_admin_order_path`），显示条件 `@order.parent_order? && returns_parent_order_handling? && can?(:create, PallasTrade::ReturnAuthorization)`。`returns_parent_order_handling?` 为 `orders_controller` helper_method（`store.preferred_returns_parent_order_handling.presence || Config[:returns_parent_order_handling]`）。
+- **路由**：`resources :orders` member `get :parent_order_returns` + `post :parent_order_returns, action: :parent_order_returns_create`。
+- **批量页**：`views/.../orders/parent_order_returns.html.erb`（各目标订单可退 shipped units 列表 + reason/stock_location 选择 + 确认）。`parent_order_returns_create` 调 `PallasTrade::Returns::ParentOrderReturns`，成功重定向父订单详情。`parent_order_returns_targets` helper 供视图计算可退 units（shipped 且未被既有 RA 关联）。
+- **flag 关闭**：入口不显示；直接访问 → redirect 回订单页。
+
+## 手动拆单 + 父子树 UI（P6, 2026-08-28，flag 灰度）
 订单详情页新增手动拆单能力（`pallastrade_admin` gem 直接修改）：
 
 - **入口**：`views/.../orders/_header.html.erb` `page_actions_dropdown` 加「Split Order」链接（`PallasTrade.split_admin_order_path`），显示条件 `order.completed? && manual_split_enabled? && can?(:update, order)`。`manual_split_enabled?` 为 `orders_controller` helper_method（`store.preferred_manual_split_enabled.presence || Config[:admin_manual_split_enabled]`）。

@@ -1,11 +1,15 @@
 module PallasTrade
   module ReimbursementType::ReimbursementHelpers
-    def create_refunds(reimbursement, payments, unpaid_amount, simulate, reimbursement_list = [])
+    # P7 (2026-08-28)：新增可选 payment_credit_limits（Hash payment_id → 上限），
+    # 供拆单/组合支付子订单退款时按 PaymentSplit 未退部分限制（而非 payment 全局 credit_allowed）。
+    def create_refunds(reimbursement, payments, unpaid_amount, simulate, reimbursement_list = [], payment_credit_limits = {})
       payments.each do |payment|
         break if unpaid_amount <= 0
-        next unless payment.can_credit?
 
-        amount = [unpaid_amount, payment.credit_allowed].min
+        limit = payment_credit_limits[payment.id] || payment.credit_allowed
+        next if limit <= 0
+
+        amount = [unpaid_amount, limit].min
         reimbursement_list << create_refund(reimbursement, payment, amount, simulate)
         unpaid_amount -= amount
       end

@@ -263,13 +263,12 @@ def root_order     = parent ? parent.root_order : self     # 防环
 - **验证**：后端 35 例（manual_split 6 + admin split API 7 + admin UI 7 + P2/P5 回归 15）+ P4/P1/P3 回归 35 全绿；quick check / generated:check 通过。
 - **回滚**：`admin_manual_split_enabled=false`（默认）+ 入口不渲染；`git revert` P6 commit。
 
-### P7 逆向链路：售后父子单化（4-5 天，flag 灰度）
+### P7 逆向链路：售后父子单化（4-5 天，flag 灰度）—— ✅ 已完成（2026-08-28）
 
-- **子订单售后**：现有 RA/CR/Reimb/Refund 底链不变，仅把 scope 收敛到子订单。
-- **父订单批量售后**：前端/后台对父订单发起 → 服务层展开为其下全部子订单，批量创建 `ReturnAuthorization`，金额/退款按子订单归集（`PaymentSplit.refunded_amount`）。
-- 改造点（来自现状审查 §8.3 K1-K12）：`CustomerReturn#order` 解析、`Reimbursement` 同订单校验、`DefaultRefundAmount` 订单级调整分摊改为"子订单级"、`order.all_inventory_units_returned?` 按子订单判定。
-- **验证**：子单售后 + 父单批量售后 spec + Admin/前端展示。
-- **回滚**：flag 关闭 → 售后走现有单订单逻辑。
+- **子订单售后**：现有 RA/CR/Reimb/Refund 底链不变，scope 收敛子订单。关键修复：`OriginalPayment.reimburse` 在子订单无本地 payment 时从 `payment_splits` 取关联 payment（组合 payment）退款，上限按 `split.captured - refunded`；`Refund#update_order` 在 `payment.order` nil（组合）时更新对应子订单 `PaymentSplit.refunded_amount`；`Refund#order`/`editable?` 从 reimbursement 链推导。`DefaultRefundAmount`（P2 已按子订单分摊 order 调整）与 `all_inventory_units_returned?`（按子订单 inventory_units 判定）天然适配。
+- **父订单批量售后**：`PallasTrade::Returns::ParentOrderReturns` 服务（展开父 + 全部 children，为每个有 shipped 且未关联 RA 的 units 建 RA，幂等）；Admin 父订单详情「Parent Order Returns」批量创建页（flag 灰度）。
+- **验证**：后端 55 例（P7 13 + P6 20 + P3 17 + P4 5）全绿；quick check / generated:check 通过。
+- **回滚**：`returns_parent_order_handling=false`（默认）+ 入口不渲染；`git revert` P7 commit。
 
 ### P8 前置校验 / 库存 / 风控 / 订单服务增强（3-4 天，可裁剪，可与 P5 并行）
 

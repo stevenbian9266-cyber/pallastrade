@@ -42,6 +42,8 @@ module PallasTrade
       preference :auto_split_orders, :string, default: []
       # Order lifecycle P6 (2026-08-28): Admin 手动拆单开关（默认关闭；store.preferred_manual_split_enabled 覆盖）
       preference :admin_manual_split_enabled, :boolean, default: false
+      # Order lifecycle P7 (2026-08-28): 父订单批量售后开关（默认关闭；store.preferred_returns_parent_order_handling 覆盖）
+      preference :returns_parent_order_handling, :boolean, default: false
       preference :binary_inventory_cache, :boolean, default: false, deprecated: true # only invalidate product cache when a stock item changes whether it is in_stock
       preference :checkout_zone, :string, default: nil, deprecated: true # replace with the name of a zone if you would like to limit the countries
       preference :company, :boolean, default: false, deprecated: 'Use the company_field_enabled preference in the PallasTrade::Store model' # Request company field for billing and shipping addr

@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| done | PRD-20260828-checkout-p7-逆向链路售后父子单化-flag-灰度 | checkout | 2026-08-28 | REQ-20260828-order-lifecycle-p7.md |
 | done | PRD-20260828-admin-p6-admin-手动拆单-父子树-ui-flag-灰度 | admin | 2026-08-28 | REQ-20260828-order-lifecycle-p6.md |
 | done | PRD-20260827-checkout-实施-p5-checkout-集成-自动拆单-合并支付收银台-buy-now-flag-灰度 | checkout | 2026-08-27 | REQ-20260827-order-lifecycle-p5.md |
 | done | PRD-20260827-payments-实施-p4-合并支付载体-paymentcombination-服务层-webhook-幂等完成 | payments | 2026-08-27 | REQ-20260827-order-lifecycle-p4.md |

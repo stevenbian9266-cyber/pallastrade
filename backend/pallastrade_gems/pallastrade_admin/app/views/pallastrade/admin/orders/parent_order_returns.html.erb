@@ -1,0 +1,60 @@
+<%# PALLAS-CUSTOM: P7 父订单批量售后表单页（flag 灰度，PRD-20260828） %>
+<%= render 'header' %>
+
+<div class="grid grid-cols-12 gap-6">
+  <div class="col-span-12 lg:col-span-8">
+    <div class="card mb-6">
+      <div class="card-header">
+        <h5 class="card-title flex items-center">
+          <%= icon('rotate-ccw', class: 'mr-2') %>
+          <%= PallasTrade.t(:parent_order_returns) %>
+        </h5>
+      </div>
+      <div class="card-body">
+        <p class="text-gray-600 text-sm mb-4"><%= PallasTrade.t(:parent_order_returns_hint) %></p>
+
+        <%= form_with url: PallasTrade.parent_order_returns_admin_order_path(@order), method: :post, data: { turbo: false } do |f| %>
+          <div class="mb-4 grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"><%= PallasTrade.t(:return_authorization_reason) %></label>
+              <%= select_tag :return_authorization_reason_id, options_from_collection_for_select(@reasons, :prefixed_id, :name), class: 'form-select w-full', required: true %>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"><%= PallasTrade.t(:stock_location) %></label>
+              <%= select_tag :stock_location_id, options_from_collection_for_select(@stock_locations, :prefixed_id, :name), class: 'form-select w-full', required: true %>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1"><%= PallasTrade.t(:memo) %></label>
+            <%= text_area_tag :memo, nil, class: 'form-control w-full', rows: 3 %>
+          </div>
+
+          <% parent_order_returns_targets.each do |target| %>
+            <div class="border rounded-lg p-4 mb-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-medium">
+                  <%= link_to target[:order].number, PallasTrade.admin_order_path(target[:order]), class: 'text-blue-600 hover:underline' %>
+                </span>
+                <span class="badge badge-info"><%= target[:inventory_units].count %> <%= PallasTrade.t(:units) %></span>
+              </div>
+              <ul class="text-sm text-gray-600 list-disc pl-5">
+                <% target[:inventory_units].each do |inventory_unit| %>
+                  <li><%= inventory_unit.variant.sku %> × <%= inventory_unit.quantity %> — <%= inventory_unit.state %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div class="mt-4 flex justify-end gap-2">
+            <%= link_to PallasTrade.t(:cancel), PallasTrade.admin_order_path(@order), class: 'btn btn-secondary' %>
+            <%= f.submit PallasTrade.t(:confirm_create_returns), class: 'btn btn-primary', data: { turbo_confirm: PallasTrade.t(:are_you_sure) } %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-span-12 lg:col-span-4">
+    <%= render 'pallastrade/admin/orders/parent_child_tree', order: @order %>
+  </div>
+</div>

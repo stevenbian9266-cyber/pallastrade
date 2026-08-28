@@ -32,6 +32,9 @@ PallasTrade.config do |config|
   # Order lifecycle P6 (2026-08-28): Admin 手动拆单默认关闭（store.preferred_manual_split_enabled 覆盖）
   config.admin_manual_split_enabled = false
 
+  # Order lifecycle P7 (2026-08-28): 父订单批量售后默认关闭（store.preferred_returns_parent_order_handling 覆盖）
+  config.returns_parent_order_handling = false
+
   # Example:
   # Uncomment to stop tracking inventory levels in the application
   # config.track_inventory_levels = false
