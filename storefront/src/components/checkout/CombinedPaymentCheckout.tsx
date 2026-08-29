@@ -3,7 +3,7 @@
 import { Loader2, PackageCheck } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { use, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   StripePaymentForm,
   type StripePaymentFormHandle,

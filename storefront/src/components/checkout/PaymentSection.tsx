@@ -581,7 +581,6 @@ export function PaymentSection({
       selectedMethod,
       paymentSessionId,
       sessionExternalData,
-      selectedCardId,
       useShippingForBilling,
       billAddress,
       onUpdateBillingAddress,

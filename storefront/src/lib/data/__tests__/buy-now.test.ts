@@ -22,8 +22,8 @@ vi.mock("next/cache", () => ({
   updateTag: vi.fn(),
 }));
 
-import { setCartCookies } from "@/lib/pallastrade";
 import { createBuyNowCart } from "@/lib/data/buy-now";
+import { setCartCookies } from "@/lib/pallastrade";
 
 // Minimal cart fixture
 const newCart = {
@@ -65,7 +65,10 @@ describe("createBuyNowCart", () => {
   it("persists the new cart id/token to cookies so the checkout page can authorize", async () => {
     await createBuyNowCart("variant_1", 1);
 
-    expect(setCartCookies).toHaveBeenCalledWith("cart_buynow1", "new-cart-token-456");
+    expect(setCartCookies).toHaveBeenCalledWith(
+      "cart_buynow1",
+      "new-cart-token-456",
+    );
   });
 
   it("returns the updated cart", async () => {

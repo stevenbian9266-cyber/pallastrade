@@ -1,11 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
-import {
-  getCartOptions,
-  getClient,
-  setCartCookies,
-} from "@/lib/pallastrade";
+import { getCartOptions, getClient, setCartCookies } from "@/lib/pallastrade";
 import { actionResult } from "./utils";
 
 /**
