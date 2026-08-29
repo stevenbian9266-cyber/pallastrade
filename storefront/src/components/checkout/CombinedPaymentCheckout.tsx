@@ -4,6 +4,10 @@ import { Loader2, PackageCheck } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { use, useRef, useState } from "react";
+import {
+  StripePaymentForm,
+  type StripePaymentFormHandle,
+} from "@/components/checkout/StripePaymentForm";
 import { Button } from "@/components/ui/button";
 import {
   completeCombinationSession,
@@ -19,8 +23,10 @@ interface CombinedPaymentCheckoutProps {
 
 /**
  * 合并支付收银台（P5, 2026-08-27，flag 灰度）。
- * 展示组合金额与成员订单，确认后完成组合支付会话——
+ * 展示组合金额与成员订单，经 Stripe PaymentElement 确认支付后完成组合会话——
  * 后端 PaymentCombinations::Complete 先入账支付再逐个完成成员订单。
+ * PALLAS-CUSTOM (2026-08-29, PRD-20260829-payments): 补渲染 Stripe Elements——
+ * Checkout Session 必须由 PaymentElement 确认（此前只 complete 未确认，PI 迁移后无法扣款）。
  */
 export function CombinedPaymentCheckout({
   combinationId,
@@ -38,6 +44,7 @@ export function CombinedPaymentCheckout({
   > | null>(null);
   const [loaded, setLoaded] = useState(false);
   const loadedRef = useRef(false);
+  const gatewayRef = useRef<StripePaymentFormHandle | null>(null);
 
   // Load the combination once on mount (client-side, with JWT refresh)
   if (!loadedRef.current && !loaded) {
@@ -58,7 +65,23 @@ export function CombinedPaymentCheckout({
     }
     setProcessing(true);
     setError(null);
-    const result = await completeCombinationSession(session.order_id, session.id);
+
+    // Confirm the Checkout Session via the PaymentElement first (the session
+    // must be confirmed before the backend can complete the combination).
+    if (gatewayRef.current) {
+      const returnUrl = `${window.location.origin}${basePath}/confirm-payment/${session.order_id}?session=${session.id}`;
+      const confirm = await gatewayRef.current.confirmPayment(returnUrl);
+      if (confirm.error) {
+        setError(confirm.error);
+        setProcessing(false);
+        return;
+      }
+    }
+
+    const result = await completeCombinationSession(
+      session.order_id,
+      session.id,
+    );
     if ("error" in result) {
       setError(result.error);
       setProcessing(false);
@@ -77,10 +100,10 @@ export function CombinedPaymentCheckout({
 
   if (!combination || "error" in combination) {
     const message =
-      combination && "error" in combination ? combination.error : t("paymentError");
-    return (
-      <div className="text-center py-24 text-gray-500">{message}</div>
-    );
+      combination && "error" in combination
+        ? combination.error
+        : t("paymentError");
+    return <div className="text-center py-24 text-gray-500">{message}</div>;
   }
 
   const combo = combination;
@@ -89,7 +112,9 @@ export function CombinedPaymentCheckout({
     <div className="mx-auto max-w-lg space-y-6 py-10">
       <div className="flex items-center gap-3">
         <PackageCheck className="h-6 w-6 text-gray-600" />
-        <h1 className="text-xl font-medium text-gray-900">{t("combinedPayment")}</h1>
+        <h1 className="text-xl font-medium text-gray-900">
+          {t("combinedPayment")}
+        </h1>
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-6">
@@ -112,6 +137,24 @@ export function CombinedPaymentCheckout({
           {error}
         </p>
       ) : null}
+
+      {/* Stripe PaymentElement — confirms the combined-payment Checkout Session */}
+      {(() => {
+        const session = combo.payment_session;
+        const secret = session?.external_data?.client_secret as
+          | string
+          | undefined;
+        return secret ? (
+          <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <StripePaymentForm
+              clientSecret={secret}
+              onReady={(handle) => {
+                gatewayRef.current = handle;
+              }}
+            />
+          </div>
+        ) : null;
+      })()}
 
       <Button
         onClick={handleConfirm}

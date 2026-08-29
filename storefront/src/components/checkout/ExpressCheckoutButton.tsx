@@ -323,10 +323,15 @@ function ExpressCheckoutInner({
         }
 
         const returnUrl = `${window.location.origin}${basePath}/confirm-payment/${orderId}?session=${sessionId}`;
+        // PALLAS-CUSTOM (2026-08-29, PRD-20260829-payments): after migrating to
+        // Checkout Sessions, the client_secret is a `cs_` session secret and
+        // `confirmParams.payment_method` is no longer accepted — the payment
+        // method comes from the Elements (ExpressCheckoutElement already
+        // created it via createPaymentMethod + elements.submit()).
         const { error: confirmError } = await stripe.confirmPayment({
+          elements,
           clientSecret,
           confirmParams: {
-            payment_method: paymentMethod.id,
             return_url: returnUrl,
           },
           redirect: "if_required",

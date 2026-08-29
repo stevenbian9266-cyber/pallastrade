@@ -30,7 +30,6 @@ import {
   type PayPalPaymentFormHandle,
 } from "@/components/checkout/PayPalPaymentForm";
 import {
-  confirmWithSavedCard,
   StripePaymentForm,
   type StripePaymentFormHandle,
 } from "@/components/checkout/StripePaymentForm";
@@ -513,35 +512,24 @@ export function PaymentSection({
 
               let error: string | undefined;
 
-              const clientSecret = sessionExternalData.client_secret as
-                | string
-                | undefined;
+              // PALLAS-CUSTOM (2026-08-29, PRD-20260829-payments): after migrating
+              // to Checkout Sessions the client_secret is a `cs_` session secret —
+              // `confirmCardPayment` no longer applies. Saved cards are handled by
+              // the PaymentElement (bound to the Stripe customer) via the same
+              // gateway handle as new cards.
               const gatewayId = resolveGatewayId(selectedMethod.type);
-              const isStripe = gatewayId === "stripe";
               const isApprovalDriven =
                 gatewayId === "adyen" || gatewayId === "paypal";
-              const canUseSavedCard =
-                isStripe && Boolean(selectedCardId && clientSecret);
 
-              if (!canUseSavedCard && !gatewayHandleRef.current) {
+              if (!gatewayHandleRef.current) {
                 setProcessing(false);
                 return { error: t("failedToInitPayment") };
               }
 
-              if (canUseSavedCard) {
-                // Stripe saved card flow
-                const result = await confirmWithSavedCard(
-                  clientSecret!,
-                  selectedCardId!,
-                  returnUrl,
-                );
-                error = result.error;
-              } else {
-                // New payment via gateway handle (Stripe PaymentElement, Adyen Drop-in, etc.)
-                const result =
-                  await gatewayHandleRef.current!.confirmPayment(returnUrl);
-                error = result.error;
-              }
+              // New payment via gateway handle (Stripe PaymentElement, Adyen Drop-in, etc.)
+              const result =
+                await gatewayHandleRef.current!.confirmPayment(returnUrl);
+              error = result.error;
 
               if (error) {
                 setGatewayError(error);
@@ -851,8 +839,7 @@ export function PaymentSection({
                                 | string
                                 | undefined;
                               return (
-                                secret &&
-                                isAddingNew && (
+                                secret && (
                                   <div className="p-4">
                                     <StripePaymentForm
                                       key={secret}
