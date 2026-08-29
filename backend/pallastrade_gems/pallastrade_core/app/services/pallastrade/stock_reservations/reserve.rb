@@ -78,7 +78,14 @@ module PallasTrade
       end
 
       def select_stock_item(variant)
-        variant.stock_items.detect { |si| si.stock_location&.active? && si.available? }
+        # 只选"非 backorderable 且实际有库存"的 stock_item——backorderable 的会在
+        # build_targets 被跳过（oversell 不需要 reservation），若用 available?
+        #（= in_stock? || backorderable?）做 detect，会选中 backorderable 的
+        # stock_item 然后被跳过，导致该 variant 永远不进 targets
+        # （seed 默认 location backorderable_default=true 时会复现此问题）。
+        variant.stock_items.detect do |si|
+          si.stock_location&.active? && !si.backorderable? && si.in_stock?
+        end
       end
 
       def held_by_others(stock_item_ids, exclude_order_id)
