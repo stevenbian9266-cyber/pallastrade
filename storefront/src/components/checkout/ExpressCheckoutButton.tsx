@@ -30,7 +30,7 @@ import {
   buildShippingRateMap,
   parseName,
 } from "@/lib/utils/express-checkout";
-import { isStripeConfigured, stripePromise } from "@/lib/utils/stripe";
+import { isStripeConfigured, normalizeClientSecret, stripePromise } from "@/lib/utils/stripe";
 
 export interface ExpressCheckoutButtonProps {
   cart: Cart;
@@ -330,7 +330,7 @@ function ExpressCheckoutInner({
         // created it via createPaymentMethod + elements.submit()).
         const { error: confirmError } = await stripe.confirmPayment({
           elements,
-          clientSecret,
+          clientSecret: normalizeClientSecret(clientSecret),
           confirmParams: {
             return_url: returnUrl,
           },

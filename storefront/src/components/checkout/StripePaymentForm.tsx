@@ -9,7 +9,7 @@ import {
 import { CircleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { stripePromise } from "@/lib/utils/stripe";
+import { normalizeClientSecret, stripePromise } from "@/lib/utils/stripe";
 
 export interface StripePaymentFormHandle {
   confirmPayment: (returnUrl: string) => Promise<{ error?: string }>;
@@ -94,7 +94,7 @@ export function StripePaymentForm({
     <Elements
       stripe={stripePromise}
       options={{
-        clientSecret,
+        clientSecret: normalizeClientSecret(clientSecret),
         appearance: {
           theme: "stripe",
           variables: {
