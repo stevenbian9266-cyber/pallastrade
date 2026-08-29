@@ -24,6 +24,33 @@ module PallasTrade
           @cart
         end
 
+        # ── 订单流程标准电商改造 P1（2026-08-30）：新购物车（PallasTrade::Cart）解析 ──
+        # 新流程（/carts → pallastrade_carts 实体）用 shopping_carts 关联；
+        # 与 legacy `find_cart`（Order 同表）前缀不同（cart_ vs or_），解析无歧义。
+
+        # Find the new-style shopping cart (PallasTrade::Cart) and authorize for show.
+        # @return [PallasTrade::Cart]
+        def find_shopping_cart
+          cart_id = params[:cart_id] || params[:id]
+          @shopping_cart = current_store.shopping_carts.find_by_prefix_id!(cart_id)
+          authorize!(:show, @shopping_cart, cart_token)
+          @shopping_cart
+        end
+
+        # Find the new-style shopping cart (PallasTrade::Cart) and authorize for update.
+        # @return [PallasTrade::Cart]
+        def find_shopping_cart!
+          cart_id = params[:cart_id] || params[:id]
+          @shopping_cart = current_store.shopping_carts.find_by_prefix_id!(cart_id)
+          authorize!(:update, @shopping_cart, cart_token)
+          @shopping_cart
+        end
+
+        # Render the new-style shopping cart using the shopping cart serializer.
+        def render_shopping_cart(status: :ok)
+          render json: PallasTrade.api.shopping_cart_serializer.new(@shopping_cart, params: serializer_params).to_h, status: status
+        end
+
         # Render the cart as JSON using the cart serializer.
         def render_cart(status: :ok)
           @cart = @cart.remove_out_of_stock_items!

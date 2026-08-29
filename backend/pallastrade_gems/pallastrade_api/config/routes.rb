@@ -33,10 +33,14 @@ PallasTrade::Core::Engine.add_routes do
         resources :categories, only: [:index, :show], id: /.+/
 
         # Carts
+        # 订单流程标准电商改造 P1（2026-08-30）：/carts 现为新 Cart 实体（pallastrade_carts）。
+        # 提交订单 = POST /carts/:id/submit（→ Order）；legacy 的 /complete 由 submit 取代。
+        # 嵌套的 legacy 资源（discount_codes/gift_cards/fulfillments/payments/payment_sessions/
+        # store_credits）保留供旧流程过渡使用（解析 Order 同表购物车）。
         resources :carts, only: [:index, :show, :create, :update, :destroy] do
           member do
             patch :associate
-            post :complete
+            post :submit
           end
           resources :items, only: [:create, :update, :destroy], controller: 'carts/items'
           resources :discount_codes, only: [:create, :destroy], controller: 'carts/discount_codes'
@@ -52,7 +56,14 @@ PallasTrade::Core::Engine.add_routes do
         end
 
         # Orders (single order lookup, guest-accessible via order token)
-        resources :orders, only: [:show]
+        # 订单流程标准电商改造 P1（2026-08-30）：Checkout（纯支付）在订单域创建/完成支付会话。
+        resources :orders, only: [:show] do
+          resources :payment_sessions, only: [:create, :show, :update], controller: 'orders/payment_sessions' do
+            member do
+              patch :complete
+            end
+          end
+        end
 
         # Payment combinations (P5, 2026-08-27): 合并支付发起 + 详情（flag 灰度）
         resources :payment_combinations, only: [:create, :show]

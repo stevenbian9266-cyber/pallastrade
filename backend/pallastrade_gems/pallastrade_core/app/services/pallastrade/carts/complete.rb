@@ -1,11 +1,15 @@
-# In PallasTrade 6 this servoice will complete the PallasTrade::Cart, and create a PallasTrade::Order
-# created based on the contents of the cart.
+# 订单流程标准电商改造 P1（2026-08-30）：
+# - legacy（Order 同表购物车）：推进 checkout 状态机到 complete（原逻辑，未变）
+# - standard flow（Carts::Submit 创建的 state=pending 订单）：pay!（pending→paid）
+#   + finalize!（completed_at / status=placed / 事件 / Webhook）
+# 支付入口（payment-session complete / Stripe webhook / confirm_payments）统一经本服务，
+# 因此分支必须对两种流程都幂等。
 module PallasTrade
   module Carts
     class Complete
       prepend PallasTrade::ServiceModule::Base
 
-      # Completes the cart and creates a PallasTrade::Order based on its contents.
+      # Completes the cart/order and creates a PallasTrade::Order based on its contents.
       # @return [PallasTrade::Order]
       def call(cart:)
         return success(cart) if cart.completed?
@@ -19,6 +23,8 @@ module PallasTrade
           # 支付处理前拦截，命中返回 { code:, message: } 统一业务错误。
           preflight = PallasTrade::Checkout::Preflight.call(order: cart)
           return preflight unless preflight.success?
+
+          return complete_standard_order!(cart) if cart.standard_flow?
 
           process_payments!(cart) if cart.payment_required?
 
@@ -46,6 +52,33 @@ module PallasTrade
       end
 
       private
+
+      # 标准流程完成：pending → pay! → paid → finalize!（状态/时间戳/事件/Webhook/库存分配）。
+      # 幂等：重复 webhook 在入口 `completed?`（completed_at 已设）短路。
+      def complete_standard_order!(order)
+        # 合并支付成员订单（P4）：资金已由组合经 PaymentSplit 入账，无需本地 payment。
+        if order.payment_required? && order.payments.valid.empty? &&
+           order.payment_splits.none? { |s| s.captured_amount.to_f.positive? }
+          return failure(order, PallasTrade.t(:no_payment_found))
+        end
+
+        process_payments!(order) if order.payment_required?
+        return failure(order, order.errors.full_messages.to_sentence) if order.errors.any?
+
+        if payment_reservation_strategy? && order.payment_total.to_f > 0
+          reserve_result = PallasTrade::StockReservations::Reserve.call(order: order)
+          return failure(order, reserve_result.error) if reserve_result.failure?
+        end
+
+        # 幂等：state 已是 paid 则跳过 pay!（防止重复 webhook 触发 InvalidTransition）。
+        order.pay! unless order.state == 'paid'
+        order.finalize!
+
+        PallasTrade::StockReservations::Release.call(order: order) if order.payment_total.to_f > 0
+        PallasTrade::Carts::AutoSplit.call(order: order)
+
+        success(order)
+      end
 
       # P8：锁库存时机 —— :payment = 支付确认后锁（默认 :order = 下单/cart 操作时锁）
       def payment_reservation_strategy?

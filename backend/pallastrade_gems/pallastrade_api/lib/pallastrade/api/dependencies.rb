@@ -14,6 +14,9 @@ module PallasTrade
         option_type_serializer: 'PallasTrade::Api::V3::OptionTypeSerializer',
         option_value_serializer: 'PallasTrade::Api::V3::OptionValueSerializer',
         cart_serializer: 'PallasTrade::Api::V3::CartSerializer',
+        # 订单流程标准电商改造 P1（2026-08-30）：新购物车实体序列化器。
+        shopping_cart_serializer: 'PallasTrade::Api::V3::ShoppingCartSerializer',
+        cart_item_serializer: 'PallasTrade::Api::V3::CartItemSerializer',
         order_serializer: 'PallasTrade::Api::V3::OrderSerializer',
         line_item_serializer: 'PallasTrade::Api::V3::LineItemSerializer',
         payment_serializer: 'PallasTrade::Api::V3::PaymentSerializer',

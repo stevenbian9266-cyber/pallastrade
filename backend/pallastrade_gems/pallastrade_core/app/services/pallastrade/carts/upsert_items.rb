@@ -1,19 +1,18 @@
 module PallasTrade
   module Carts
-    # Bulk upsert line items on a cart.
+    # 订单流程标准电商改造 P1（2026-08-30）：批量 upsert 购物车行（pallastrade_cart_items）。
     #
-    # For each entry in +items+:
-    # - If a line item for the variant already exists -> sets its quantity
-    # - If no line item exists -> creates one with the given quantity
-    #
-    # After all items are processed the cart is recalculated once.
+    # 与 legacy `CartLegacy::AddItem`（Order line_items + recalculate 链）不同：
+    # - 按 variant 查找已有 CartItem → 更新数量/勾选；否则新建
+    # - 支持 selected 勾选标记（本次结算范围）
+    # - Cart 不落金额，无需 recalculate（金额在提交订单时由 Order 权威计算）
     #
     # @example
     #   PallasTrade::Carts::UpsertItems.new.call(
     #     cart: cart,
     #     items: [
-    #       { variant_id: "variant_k5nR8xLq", quantity: 2 },
-    #       { variant_id: "variant_m3Rp9wXz", quantity: 1 }
+    #       { variant_id: "variant_k5nR8xLq", quantity: 2, selected: true },
+    #       { variant_id: "variant_m3Rp9wXz", quantity: 1, selected: false }
     #     ]
     #   )
     #
@@ -33,25 +32,30 @@ module PallasTrade
             next unless variant
 
             quantity = (item_params[:quantity] || 1).to_i
+            selected = item_params.key?(:selected) ? !!item_params[:selected] : true
 
             return failure(variant, "#{variant.name} is not available in #{cart.currency}") if variant.amount_in(cart.currency).nil?
 
-            line_item = PallasTrade.line_item_by_variant_finder.new.execute(order: cart, variant: variant)
+            cart_item = cart.cart_items.find_by(variant_id: variant.id)
 
-            if line_item
-              line_item.quantity = quantity
-              line_item.metadata = line_item.metadata.merge(item_params[:metadata].to_h) if item_params[:metadata].present?
+            if cart_item
+              cart_item.quantity = quantity
+              cart_item.selected = selected
+              cart_item.metadata = cart_item.metadata.merge(item_params[:metadata].to_h) if item_params[:metadata].present?
             else
-              line_item = cart.items.new(quantity: quantity, variant: variant, options: { currency: cart.currency })
-              line_item.metadata = item_params[:metadata].to_h if item_params[:metadata].present?
+              cart_item = cart.cart_items.new(
+                quantity: quantity,
+                selected: selected,
+                variant: variant
+              )
+              cart_item.metadata = item_params[:metadata].to_h if item_params[:metadata].present?
             end
 
-            return failure(line_item) unless line_item.save
+            return failure(cart_item) unless cart_item.save
           end
-
-          cart.update_with_updater!
         end
 
+        cart.touch_last_activity!
         success(cart)
       end
 

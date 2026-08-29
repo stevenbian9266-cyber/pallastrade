@@ -71,6 +71,35 @@ module PallasTrade
                 transition to: :awaiting_return
               end
 
+              # ── 订单流程标准电商改造 P1（2026-08-30）──────────────────────────────
+              # 标准状态机（新流程，Carts::Submit 创建 state=pending 的订单）。
+              # 与 legacy checkout 状态（cart→address→…→complete）并行共存——存量数据
+              # 不迁移，新订单只走标准状态；standard_flow?（order.rb）隔离两套语义。
+              # 谓词冲突说明：paid?/shipped?/completed? 在 order.rb 已有计算语义方法
+              # （payments/shipment_state/completed_at 派生），会覆盖本机生成的谓词——
+              # 这是有意的，状态机内部以 state 属性为准，不受影响。
+              state :pending
+              state :paid
+              state :processing
+              state :shipped
+              state :completed
+
+              event :pay do
+                transition pending: :paid
+              end
+
+              event :process do
+                transition paid: :processing
+              end
+
+              event :ship do
+                transition [:paid, :processing] => :shipped
+              end
+
+              event :complete_order do
+                transition shipped: :completed
+              end
+
               before_transition to: :complete, do: :ensure_line_item_variants_are_not_discontinued
               before_transition to: :complete, do: :ensure_line_items_are_in_stock
 

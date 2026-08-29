@@ -2,142 +2,111 @@ module PallasTrade
   module Api
     module V3
       module Store
+        # 订单流程标准电商改造 P1（2026-08-30）：购物车 API 切换为新 Cart 实体
+        # （pallastrade_carts）。与 legacy（Order 同表）的差异：
+        # - 解析用 current_store.shopping_carts（cart_ 前缀，与 Order 的 or_ 前缀区分）
+        # - 提交订单 = POST /carts/:id/submit（→ 创建 Order + Cart converted），
+        #   替代 legacy 的 POST /carts/:id/complete（推进 checkout 状态机）
+        # - 支付/物流/优惠券等嵌套资源迁移到 orders 域（支付会话）或确认页（物流）
         class CartsController < Store::ResourceController
           include PallasTrade::Api::V3::CartResolvable
-          include PallasTrade::Api::V3::OrderLock
 
           skip_before_action :set_resource
           prepend_before_action :require_authentication!, only: [:index, :associate]
 
           # GET /api/v3/store/carts/:id
-          # Returns cart by prefixed ID
-          # Auto-advances the checkout state machine so that shipments and
-          # payment requirements are up-to-date (temporary until PallasTrade 6 removes
-          # the state machine).
+          # Returns shopping cart by prefixed ID (cart_xxx).
           def show
-            @cart = find_cart
-
-            if @cart.ship_address_id.present? && @cart.shipments.empty?
-              ActiveRecord::Base.connected_to(role: :writing) do
-                with_order_lock { PallasTrade::Checkout::Advance.call(order: @cart) }
-              end
-            end
-
-            render_cart
+            find_shopping_cart
+            render_shopping_cart
           end
 
           # POST /api/v3/store/carts
-          # Creates a new shopping cart (order)
-          # Can be created by guests or authenticated customers
+          # Creates a new shopping cart (pallastrade_carts).
+          # Can be created by guests or authenticated customers.
           def create
             result = PallasTrade::Carts::Create.call(
               params: permitted_params.merge(
                 user: current_user,
                 store: current_store,
-                channel: current_channel,
                 currency: current_currency,
                 locale: current_locale
               )
             )
 
             if result.success?
-              @cart = result.value
-              render_cart(status: :created)
+              @shopping_cart = result.value
+              render_shopping_cart(status: :created)
             else
               render_service_error(result.error.to_s)
             end
           end
 
           # PATCH /api/v3/store/carts/:id
-          # Updates cart info (email, addresses, special instructions).
-          # Auto-advances to the next checkout step when possible.
+          # Updates cart info (email, addresses, shipping method, items).
           def update
-            find_cart!
+            find_shopping_cart!
 
-            with_order_lock do
-              result = PallasTrade::Carts::Update.call(
-                cart: @cart,
-                params: permitted_params
-              )
+            result = PallasTrade::Carts::Update.call(
+              cart: @shopping_cart,
+              params: permitted_params
+            )
 
-              if result.success?
-                render_cart
-              else
-                render_service_error(result.error, code: ERROR_CODES[:validation_error])
-              end
+            if result.success?
+              render_shopping_cart
+            else
+              render_service_error(result.error, code: ERROR_CODES[:validation_error])
             end
           end
 
           # DELETE /api/v3/store/carts/:id
-          # Deletes/abandons the cart
+          # Deletes the cart (cascades cart_items).
           def destroy
-            find_cart!
-
-            result = PallasTrade.cart_destroy_service.call(order: @cart)
-
-            if result.success?
-              head :no_content
-            else
-              render_service_error(result.error.to_s)
-            end
+            find_shopping_cart!
+            @shopping_cart.destroy
+            head :no_content
           end
 
           # PATCH /api/v3/store/carts/:id/associate
-          # Associates a guest cart with the currently authenticated user
-          # Requires: JWT authentication + cart ID in URL
+          # Associates a guest cart with the currently authenticated user.
+          # Requires: JWT authentication + cart ID in URL.
           def associate
-            @cart = find_cart_for_association
-
-            result = PallasTrade.cart_associate_service.call(guest_order: @cart, user: current_user, guest_only: true)
-
-            if result.success?
-              render_cart
-            else
-              render_service_error(result.error.to_s)
-            end
+            find_shopping_cart_for_association
+            @shopping_cart.update!(user: current_user)
+            render_shopping_cart
           end
 
-          # POST /api/v3/store/carts/:id/complete
-          # Completes the checkout — returns Order (not Cart).
-          # Idempotent: if the cart is already completed, falls back to the
-          # orders scope and returns the completed order.
-          def complete
-            find_cart!
+          # POST /api/v3/store/carts/:id/submit
+          # ★提交订单：校验勾选商品 → 从 Cart 快照创建 Order（state=pending）
+          # + Cart → converted。返回 Order（or_ 前缀）供前端跳转 /checkout/[orderId]。
+          def submit
+            find_shopping_cart!
 
-            if @cart.guest_checkout_disallowed?
-              return render_authentication_required('api.errors.guest_checkout_not_allowed', 'You must be signed in to complete checkout')
-            end
-
-            result = PallasTrade::Dependencies.carts_complete_service.constantize.call(cart: @cart)
+            result = PallasTrade::Carts::Submit.call(cart: @shopping_cart)
 
             if result.success?
-              @cart = result.value
-              render_order
+              @order = result.value
+              render json: PallasTrade.api.order_serializer.new(@order, params: serializer_params).to_h
             else
               render_service_error(
-                result.error.to_s.presence || 'Could not complete checkout',
+                result.error.to_s.presence || 'Could not submit order',
                 code: ERROR_CODES[:cart_cannot_complete]
               )
             end
-          rescue ActiveRecord::RecordNotFound
-            @cart = current_store.orders.complete.find_by_prefix_id!(params[:id])
-            authorize!(:show, @cart, cart_token)
-
-            render_order
           end
 
           protected
 
           def model_class
-            PallasTrade::Order
+            PallasTrade::Cart
           end
 
           def serializer_class
-            PallasTrade.api.cart_serializer
+            PallasTrade.api.shopping_cart_serializer
           end
 
           def scope
-            current_store.carts.where(user: current_user).order(updated_at: :desc)
+            current_store.shopping_carts.where(user: current_user).order(updated_at: :desc)
           end
 
           private
@@ -146,12 +115,11 @@ module PallasTrade
             params.permit(
               :email,
               :customer_note,
-              :market_id,
               :currency,
               :locale,
               :shipping_address_id,
               :billing_address_id,
-              :use_shipping,
+              :shipping_method_id,
               shipping_address: address_params,
               billing_address: address_params,
               metadata: {},
@@ -169,13 +137,12 @@ module PallasTrade
           end
 
           def item_params
-            [:variant_id, :quantity, { metadata: {}, options: {} }]
+            [:variant_id, :quantity, :selected, { metadata: {}, options: {} }]
           end
 
-          # Find incomplete cart for associate action.
-          # Only finds guest carts (no user) or carts already owned by current user (idempotent).
-          def find_cart_for_association
-            current_store.carts.where(user: [nil, current_user]).find_by_prefix_id!(params[:id])
+          # Find guest cart (no user) or cart already owned by current user (idempotent).
+          def find_shopping_cart_for_association
+            @shopping_cart = current_store.shopping_carts.where(user: [nil, current_user]).find_by_prefix_id!(params[:id])
           end
         end
       end

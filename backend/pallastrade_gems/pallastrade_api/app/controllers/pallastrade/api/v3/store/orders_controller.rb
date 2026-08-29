@@ -2,7 +2,12 @@ module PallasTrade
   module Api
     module V3
       module Store
+        # 订单流程标准电商改造 P1（2026-08-30）：单订单查询。
+        # 现通过 OrderResolvable 解析——范围含 state=pending 的待支付订单（新流程
+        # Checkout 支付页需要读取），但排除 legacy checkout 态（Order 同表购物车）。
         class OrdersController < Store::BaseController
+          include PallasTrade::Api::V3::OrderResolvable
+
           # GET /api/v3/store/orders/:id
           # Single order lookup — accessible via order token (guests) or JWT (authenticated users)
           before_action :find_order!
@@ -13,29 +18,8 @@ module PallasTrade
 
           private
 
-          def find_order!
-            @order = scope.find_by_prefix_id!(params[:id])
-            authorize!(:show, @order, order_token)
-          end
-
-          def scope
-            base = current_store.orders.complete
-
-            if current_user.present?
-              base.where(user: current_user)
-            elsif order_token.present?
-              base.where(token: order_token)
-            else
-              base.none
-            end
-          end
-
           def serializer_class
             PallasTrade.api.order_serializer
-          end
-
-          def order_token
-            request.headers['x-pallastrade-token'] || request.headers['x-pallastrade-token']
           end
         end
       end

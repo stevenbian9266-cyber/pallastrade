@@ -1,5 +1,5 @@
 module PallasTrade
-  module Cart
+  module CartLegacy
     class EstimateShippingRates
       prepend PallasTrade::ServiceModule::Base
 

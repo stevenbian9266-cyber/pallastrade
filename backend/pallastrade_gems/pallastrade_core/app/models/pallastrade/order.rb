@@ -73,7 +73,7 @@ module PallasTrade
     # would drop warnings already recorded for the order.
     def remove_out_of_stock_items!
       existing_warnings = warnings
-      result = PallasTrade::Cart::RemoveOutOfStockItems.call(order: self)
+      result = PallasTrade::CartLegacy::RemoveOutOfStockItems.call(order: self)
       return self unless result.success?
 
       order, _messages, new_warnings = result.value
@@ -171,6 +171,9 @@ module PallasTrade
     belongs_to :market, class_name: 'PallasTrade::Market', optional: true
     belongs_to :channel, class_name: 'PallasTrade::Channel', optional: true
     belongs_to :preferred_stock_location, class_name: 'PallasTrade::StockLocation', optional: true
+    # 订单流程标准电商改造 P1（2026-08-30）：来源购物车（分表后 Cart 实体）。
+    # 可空——存量订单 / Admin 代下单 / 直接下单无来源购物车。
+    belongs_to :cart, class_name: 'PallasTrade::Cart', optional: true, inverse_of: :orders
 
     # Order lifecycle P1 (2026-08-26): parent/child order structure.
     # - split: children.parent_id points at the parent (container) order;
@@ -397,10 +400,24 @@ module PallasTrade
       completed_at.present?
     end
 
+    # 订单流程标准电商改造 P1（2026-08-30）：标准状态集合（新流程）。
+    # 与 legacy checkout 状态（cart/address/.../complete）并行共存——存量数据不迁移，
+    # 新流程（Carts::Submit 创建）只走标准状态。standard_flow? 用于隔离两套语义。
+    STANDARD_STATES = %w[pending paid processing shipped completed].freeze
+
+    # True when the order was created through the standard flow (Carts::Submit).
+    def standard_flow?
+      STANDARD_STATES.include?(state)
+    end
+
     # True when the order is mid-checkout: past the `cart` state but not yet
     # completed or canceled. Used by stock reservation hooks and any flow
     # that should only run during the active checkout phase.
+    # Standard-flow orders are never "in checkout" — they are created submitted
+    # (pending) and only transition through the standard lifecycle.
     def in_checkout?
+      return false if standard_flow?
+
       !cart? && !complete? && !canceled?
     end
 
@@ -558,6 +575,14 @@ module PallasTrade
     end
 
     def allow_cancel?
+      # 标准流程（P1）：pending/paid 未开始履约的订单允许取消；
+      # processing 之后走退款/退货路径（与 legacy 一致）。
+      if standard_flow?
+        return false if canceled? || %w[processing shipped completed].include?(state)
+
+        return true
+      end
+
       return false if !completed? || canceled?
 
       shipment_state.nil? || %w{ready backorder pending canceled}.include?(shipment_state)
@@ -686,7 +711,7 @@ module PallasTrade
     end
 
     # Associates the specified user with the order.
-    # Delegates to {PallasTrade::Cart::Associate} service.
+    # Delegates to {PallasTrade::CartLegacy::Associate} service.
     #
     # @param user [PallasTrade.user_class] the user to associate with the order
     # @param override_email [Boolean] whether to override the order email with the user's email

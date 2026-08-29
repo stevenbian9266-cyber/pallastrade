@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_28_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_30_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -434,6 +434,45 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_28_000001) do
     t.index ["calculable_id", "calculable_type"], name: "index_pt_calculators_on_calculable_id_and_calculable_type"
     t.index ["deleted_at"], name: "index_pt_calculators_on_deleted_at"
     t.index ["id", "type"], name: "index_pt_calculators_on_id_and_type"
+  end
+
+  create_table "pallastrade_cart_items", force: :cascade do |t|
+    t.bigint "cart_id", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "metadata", default: {}
+    t.integer "quantity", default: 1, null: false
+    t.boolean "selected", default: true, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "variant_id", null: false
+    t.index ["cart_id", "variant_id"], name: "index_pallastrade_cart_items_on_cart_id_and_variant_id", unique: true
+    t.index ["cart_id"], name: "index_pallastrade_cart_items_on_cart_id"
+    t.index ["variant_id"], name: "index_pallastrade_cart_items_on_variant_id"
+  end
+
+  create_table "pallastrade_carts", force: :cascade do |t|
+    t.bigint "billing_address_id"
+    t.datetime "converted_at"
+    t.datetime "created_at", null: false
+    t.string "currency", default: "USD", null: false
+    t.string "customer_note"
+    t.string "email"
+    t.datetime "expires_at"
+    t.datetime "last_activity_at"
+    t.string "locale", default: "en", null: false
+    t.jsonb "private_metadata", default: {}
+    t.jsonb "public_metadata", default: {}
+    t.bigint "shipping_address_id"
+    t.bigint "shipping_method_id"
+    t.string "status", default: "active", null: false
+    t.bigint "store_id", null: false
+    t.string "token", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["shipping_method_id"], name: "index_pallastrade_carts_on_shipping_method_id"
+    t.index ["status"], name: "index_pallastrade_carts_on_status"
+    t.index ["store_id"], name: "index_pallastrade_carts_on_store_id"
+    t.index ["token"], name: "index_pallastrade_carts_on_token", unique: true
+    t.index ["user_id"], name: "index_pallastrade_carts_on_user_id"
   end
 
   create_table "pallastrade_channels", force: :cascade do |t|
@@ -1079,6 +1118,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_28_000001) do
     t.bigint "bill_address_id"
     t.datetime "canceled_at", precision: nil
     t.bigint "canceler_id"
+    t.bigint "cart_id"
     t.string "channel", default: "pallastrade"
     t.bigint "channel_id"
     t.datetime "completed_at", precision: nil
@@ -1118,6 +1158,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_28_000001) do
     t.string "status", default: "draft", null: false
     t.bigint "store_id"
     t.boolean "store_owner_notification_delivered"
+    t.datetime "submitted_at"
     t.decimal "taxable_adjustment_total", precision: 10, scale: 2, default: "0.0", null: false
     t.string "token"
     t.decimal "total", precision: 10, scale: 2, default: "0.0", null: false
@@ -1126,6 +1167,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_28_000001) do
     t.index ["approver_id"], name: "index_pt_orders_on_approver_id"
     t.index ["bill_address_id"], name: "index_pt_orders_on_bill_address_id"
     t.index ["canceler_id"], name: "index_pt_orders_on_canceler_id"
+    t.index ["cart_id"], name: "index_pallastrade_orders_on_cart_id"
     t.index ["channel_id"], name: "index_pt_orders_on_channel_id"
     t.index ["completed_at"], name: "index_pt_orders_on_completed_at"
     t.index ["confirmation_delivered"], name: "index_pt_orders_on_confirmation_delivered"
@@ -2620,12 +2662,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_28_000001) do
   add_foreign_key "pallastrade_ai_settings", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_back_in_stock_subscriptions", "pallastrade_products", column: "product_id"
   add_foreign_key "pallastrade_back_in_stock_subscriptions", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_carts", "pallastrade_shipping_methods", column: "shipping_method_id"
   add_foreign_key "pallastrade_contact_messages", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_email_logs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_email_templates", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_menu_configs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_option_type_translations", "pallastrade_option_types"
   add_foreign_key "pallastrade_option_value_translations", "pallastrade_option_values"
+  add_foreign_key "pallastrade_orders", "pallastrade_carts", column: "cart_id"
   add_foreign_key "pallastrade_orders", "pallastrade_orders", column: "parent_id"
   add_foreign_key "pallastrade_orders", "pallastrade_orders", column: "split_from_id"
   add_foreign_key "pallastrade_orders", "pallastrade_payment_combinations", column: "payment_combination_id"

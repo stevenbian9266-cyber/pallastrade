@@ -76,6 +76,8 @@ module PallasTrade
       has_many :promotion_rules, through: :promotion_rule_users, class_name: 'PallasTrade::PromotionRule'
       has_many :orders, foreign_key: :user_id, class_name: 'PallasTrade::Order'
       has_many :carts, -> { incomplete }, foreign_key: :user_id, class_name: 'PallasTrade::Order'
+      # 订单流程标准电商改造 P1（2026-08-30）：新购物车实体（pallastrade_carts）。
+      has_many :shopping_carts, foreign_key: :user_id, class_name: 'PallasTrade::Cart'
       has_many :completed_orders, -> { complete }, foreign_key: :user_id, class_name: 'PallasTrade::Order'
       has_many :store_credits, class_name: 'PallasTrade::StoreCredit', foreign_key: :user_id, dependent: :destroy
       has_many :wishlists, class_name: 'PallasTrade::Wishlist', foreign_key: :user_id, dependent: :destroy

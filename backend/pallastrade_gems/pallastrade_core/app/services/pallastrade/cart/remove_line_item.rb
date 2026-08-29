@@ -1,5 +1,5 @@
 module PallasTrade
-  module Cart
+  module CartLegacy
     class RemoveLineItem
       prepend PallasTrade::ServiceModule::Base
 

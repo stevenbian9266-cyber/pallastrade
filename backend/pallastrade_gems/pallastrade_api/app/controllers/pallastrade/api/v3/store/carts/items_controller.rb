@@ -3,71 +3,55 @@ module PallasTrade
     module V3
       module Store
         module Carts
+          # 订单流程标准电商改造 P1（2026-08-30）：购物车行 API（pallastrade_cart_items）。
+          # 操作新 Cart 实体（cart_ 前缀）；支持 selected 勾选标记（本次结算范围）。
           class ItemsController < Store::BaseController
             include PallasTrade::Api::V3::CartResolvable
-            include PallasTrade::Api::V3::OrderLock
 
-            before_action :find_cart!
+            before_action :find_shopping_cart!
 
             # POST  /api/v3/store/carts/:cart_id/items
             def create
-              with_order_lock do
-                result = PallasTrade.cart_add_item_service.call(
-                  order: @cart,
-                  variant: variant,
-                  quantity: permitted_params[:quantity] || 1,
-                  metadata: permitted_params[:metadata] || {},
-                  options: permitted_params[:options] || {}
-                )
+              result = PallasTrade::Carts::UpsertItems.call(
+                cart: @shopping_cart,
+                items: [permitted_params.merge(variant_id: variant.prefixed_id)]
+              )
 
-                if result.success?
-                  render_cart(status: :created)
-                else
-                  render_service_error(result.error, code: ERROR_CODES[:insufficient_stock])
-                end
+              if result.success?
+                render_shopping_cart(status: :created)
+              else
+                render_service_error(result.error, code: ERROR_CODES[:insufficient_stock])
               end
             end
 
             # PATCH  /api/v3/store/carts/:cart_id/items/:id
+            # 更新数量 / 勾选状态 / metadata。
             def update
-              with_order_lock do
-                @line_item = @cart.line_items.find_by_prefix_id!(params[:id])
+              @cart_item = @shopping_cart.cart_items.find_by_prefix_id!(params[:id])
 
-                @line_item.metadata = @line_item.metadata.merge(permitted_params[:metadata].to_h) if permitted_params[:metadata].present?
+              @cart_item.metadata = @cart_item.metadata.merge(permitted_params[:metadata].to_h) if permitted_params[:metadata].present?
+              @cart_item.selected = permitted_params[:selected] if permitted_params.key?(:selected)
+              @cart_item.quantity = permitted_params[:quantity] if permitted_params[:quantity].present?
 
-                if permitted_params[:quantity].present?
-                  result = PallasTrade.cart_set_item_quantity_service.call(
-                    order: @cart,
-                    line_item: @line_item,
-                    quantity: permitted_params[:quantity]
-                  )
-
-                  if result.success?
-                    render_cart
-                  else
-                    render_service_error(result.error, code: ERROR_CODES[:invalid_quantity])
-                  end
-                elsif @line_item.changed?
-                  @line_item.save!
-                  render_cart
+              if @cart_item.changed?
+                if @cart_item.valid?
+                  @cart_item.save!
+                  @shopping_cart.touch_last_activity!
+                  render_shopping_cart
                 else
-                  render_cart
+                  render_service_error(@cart_item.errors.full_messages.to_sentence, code: ERROR_CODES[:invalid_quantity])
                 end
+              else
+                render_shopping_cart
               end
             end
 
             # DELETE  /api/v3/store/carts/:cart_id/items/:id
             def destroy
-              with_order_lock do
-                @line_item = @cart.line_items.find_by_prefix_id!(params[:id])
-
-                PallasTrade.cart_remove_line_item_service.call(
-                  order: @cart,
-                  line_item: @line_item
-                )
-
-                render_cart
-              end
+              @cart_item = @shopping_cart.cart_items.find_by_prefix_id!(params[:id])
+              @cart_item.destroy
+              @shopping_cart.touch_last_activity!
+              render_shopping_cart
             end
 
             private
@@ -77,7 +61,7 @@ module PallasTrade
             end
 
             def permitted_params
-              params.permit(PallasTrade::PermittedAttributes.line_item_attributes + [{ options: {} }])
+              params.permit(:variant_id, :quantity, :selected, :metadata)
             end
           end
         end

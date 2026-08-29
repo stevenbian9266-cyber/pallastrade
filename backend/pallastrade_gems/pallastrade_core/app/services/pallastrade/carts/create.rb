@@ -1,5 +1,7 @@
 module PallasTrade
   module Carts
+    # 订单流程标准电商改造 P1（2026-08-30）：创建购物车（pallastrade_carts 实体）。
+    # 与 legacy `CartLegacy::Create`（操作 Order 同表）语义分离——本服务操作 `PallasTrade::Cart`。
     class Create
       prepend PallasTrade::ServiceModule::Base
 
@@ -9,10 +11,8 @@ module PallasTrade
         store = @params.delete(:store)
         return failure(:store_is_required) if store.nil?
 
-        cart = store.carts.create!(
+        cart = store.shopping_carts.create!(
           user: @params.delete(:user),
-          market: @params.delete(:market) || PallasTrade::Current.market,
-          channel: @params.delete(:channel) || PallasTrade::Current.channel,
           currency: @params.delete(:currency) || store.default_currency,
           locale: @params.delete(:locale) || PallasTrade::Current.locale
         )

@@ -93,6 +93,9 @@ module PallasTrade
     # Associations
     #
     has_many :carts, -> { incomplete }, class_name: 'PallasTrade::Order', inverse_of: :store
+    # 订单流程标准电商改造 P1（2026-08-30）：新购物车实体（pallastrade_carts）。
+    # `carts`（legacy，Order 同表）保留供旧流程/存量使用；新流程一律走 `shopping_carts`。
+    has_many :shopping_carts, class_name: 'PallasTrade::Cart', inverse_of: :store
     has_many :checkouts, -> { incomplete }, class_name: 'PallasTrade::Order', inverse_of: :store
     has_many :orders, class_name: 'PallasTrade::Order'
     has_many :line_items, through: :orders, class_name: 'PallasTrade::LineItem'

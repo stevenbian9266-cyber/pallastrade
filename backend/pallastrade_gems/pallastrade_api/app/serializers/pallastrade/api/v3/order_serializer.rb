@@ -8,6 +8,7 @@ module PallasTrade
                  customer_note: [:string, nullable: true],
                  market_id: [:string, nullable: true], channel_id: [:string, nullable: true],
                  currency: :string, locale: [:string, nullable: true], total_quantity: :number,
+                 state: :string, status: :string, submitted_at: [:string, nullable: true], cart_id: [:string, nullable: true],
                  fulfillment_status: [:string, nullable: true], payment_status: [:string, nullable: true],
                  item_total: [:string, nullable: true], display_item_total: [:string, nullable: true],
                  delivery_total: [:string, nullable: true], display_delivery_total: [:string, nullable: true],
@@ -39,7 +40,12 @@ module PallasTrade
         attributes :number, :email, :customer_note,
                    :currency, :locale, :total_quantity,
                    :parent_id, :children_ids, :is_parent, :is_child, :is_single,
+                   :state, :status, submitted_at: :iso8601,
                    completed_at: :iso8601
+
+        attribute :cart_id do |order|
+          order.cart&.prefixed_id
+        end
 
         # P3 (2026-08-27): 金额/状态字段走聚合派生（父订单 = Σ children；无 children 回退原值）
         attribute :fulfillment_status do |order|

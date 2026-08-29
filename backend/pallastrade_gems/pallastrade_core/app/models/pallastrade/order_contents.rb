@@ -21,7 +21,7 @@ module PallasTrade
     end
 
     def remove_line_item(line_item, options = {})
-      PallasTrade::Cart::RemoveLineItem.call(order: @order, line_item: line_item, options: options).value
+      PallasTrade::CartLegacy::RemoveLineItem.call(order: @order, line_item: line_item, options: options).value
     end
 
     def update_cart(params)

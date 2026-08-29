@@ -37,6 +37,30 @@ module PallasTrade
           !order.completed? && (order.user == user || order.token && token == order.token)
         end
 
+        # 订单流程标准电商改造 P1（2026-08-30）：新购物车（pallastrade_carts）授权。
+        # 游客/登录用户可创建并管理自己的购物车（owner 或 token 匹配）；converted/abandoned 不可改。
+        can :create, PallasTrade::Cart
+        can :show, PallasTrade::Cart do |cart, token|
+          cart.user == user || cart.token && token == cart.token
+        end
+        can :update, PallasTrade::Cart do |cart, token|
+          cart.active? && (cart.user == user || cart.token && token == cart.token)
+        end
+        can :destroy, PallasTrade::Cart do |cart, token|
+          cart.active? && (cart.user == user || cart.token && token == cart.token)
+        end
+
+        # CartItem 权限透传所属购物车权限（token 由 CartResolvable 透传）
+        can :create, PallasTrade::CartItem do |item, token|
+          item.cart.active? && (item.cart.user == user || item.cart.token && token == item.cart.token)
+        end
+        can :update, PallasTrade::CartItem do |item, token|
+          item.cart.active? && (item.cart.user == user || item.cart.token && token == item.cart.token)
+        end
+        can :destroy, PallasTrade::CartItem do |item, token|
+          item.cart.active? && (item.cart.user == user || item.cart.token && token == item.cart.token)
+        end
+
         # Line item management
         can :create, PallasTrade::LineItem do |line_item, token|
           line_item.order.user == user || line_item.order.token && token == line_item.order.token

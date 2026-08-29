@@ -1,5 +1,5 @@
 module PallasTrade
-  module Cart
+  module CartLegacy
     class Create
       prepend PallasTrade::ServiceModule::Base
 

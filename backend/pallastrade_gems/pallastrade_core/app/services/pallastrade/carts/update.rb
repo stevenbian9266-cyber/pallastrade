@@ -1,26 +1,28 @@
 module PallasTrade
   module Carts
+    # 订单流程标准电商改造 P1（2026-08-30）：更新购物车（pallastrade_carts 实体）。
+    # 与 legacy `CartLegacy::Update`（Order 同表 + checkout 自动推进 + 库存预留）不同，
+    # Cart 无 checkout 状态机：只维护属性/地址/物流方式/商品行。库存与金额在提交订单
+    # （Carts::Submit）时在 Order 上统一处理。
     class Update
       prepend PallasTrade::ServiceModule::Base
 
       def call(cart:, params:)
         @cart = cart
         @params = params.to_h.deep_symbolize_keys
-        was_in_cart = cart.cart?
 
         ApplicationRecord.transaction do
           assign_cart_attributes
-          clear_shipping_address_if_outside_market
           assign_address(:shipping_address)
           assign_address(:billing_address)
+          assign_shipping_method
 
           cart.save!
 
           process_items
-          try_advance
-          sync_stock_reservations(was_in_cart: was_in_cart)
         end
 
+        cart.touch_last_activity!
         success(cart)
       rescue ActiveRecord::RecordNotFound
         raise
@@ -37,12 +39,9 @@ module PallasTrade
       def assign_cart_attributes
         cart.email = params[:email] if params[:email].present?
         cart.customer_note = params[:customer_note] if params.key?(:customer_note)
-
-        assign_market if params[:market_id].present?
         cart.currency = params[:currency].upcase if params[:currency].present?
         cart.locale = params[:locale] if params[:locale].present?
         cart.metadata = cart.metadata.merge(params[:metadata].to_h) if params[:metadata].present?
-        cart.use_shipping = params[:use_shipping] if params.key?(:use_shipping)
       end
 
       def assign_address(address_type)
@@ -61,12 +60,25 @@ module PallasTrade
           address_id = resolve_address_id(address_params[:id])
           cart.public_send(:"#{address_type}_id=", address_id) if address_id
         else
-          # Only revert to address state when shipping address changes.
-          # Billing address updates (e.g. during payment) should not
-          # destroy shipments and reset the checkout flow.
-          revert_to_address_state if address_type == :shipping_address && cart.has_checkout_step?('address')
-          cart.public_send(:"#{address_type}_attributes=", address_params)
+          # 购物车暂存收件信息：提交订单时快照锁定到 Order。
+          # 复用已挂地址就地更新（避免孤儿地址累积）；与 legacy 不同，Cart 不收件后
+          # 重建发货/重置 checkout——那是 Order 的职责。
+          address = cart.public_send(address_type) || PallasTrade::Address.new
+          address.assign_attributes(address_params.slice(
+            :first_name, :last_name, :address1, :address2,
+            :city, :postal_code, :phone, :company,
+            :country_iso, :state_abbr, :state_name, :quick_checkout
+          ))
+          address.user = cart.user if cart.user
+          address.save!
+          cart.public_send(:"#{address_type}=", address)
         end
+      end
+
+      def assign_shipping_method
+        return if params[:shipping_method_id].blank?
+
+        cart.shipping_method = cart.store.shipping_methods.find_by_prefix_id!(params[:shipping_method_id])
       end
 
       def process_items
@@ -85,78 +97,6 @@ module PallasTrade
 
         decoded = PallasTrade::Address.decode_prefixed_id(prefixed_id)
         decoded ? cart.user.addresses.find_by(id: decoded)&.id : nil
-      end
-
-      def assign_market
-        market = cart.store.markets.find_by_prefix_id!(params[:market_id])
-        cart.market = market
-        cart.skip_market_resolution = true
-      end
-
-      # When the market changes, clear the shipping address if its country
-      # is not part of the new market. The market dictates which countries
-      # are available for checkout.
-      def clear_shipping_address_if_outside_market
-        return unless cart.market_id_changed? && cart.ship_address&.country
-
-        unless cart.market.country_ids.include?(cart.ship_address.country_id)
-          cart.ship_address = nil
-          revert_to_address_state if cart.has_checkout_step?('address')
-        end
-      end
-
-      def revert_to_address_state
-        return if ['cart', 'address'].include?(cart.state)
-
-        cart.state = 'address'
-      end
-
-      # Three-way dispatch on the cart→checkout transition:
-      # entering checkout → Reserve, mid-checkout mutation → Extend, reverting to cart → Release.
-      # A failed Reserve raises so the enclosing transaction rolls back and the
-      # outer rescue surfaces the error to the API caller.
-      def sync_stock_reservations(was_in_cart:)
-        if cart.cart?
-          PallasTrade::StockReservations::Release.call(order: cart) unless was_in_cart
-        elsif was_in_cart
-          result = PallasTrade::StockReservations::Reserve.call(order: cart, validate_only: payment_strategy?)
-          raise PallasTrade::StockReservations::InsufficientStockError.new(nil, result.error.to_s) if result.failure?
-        else
-          PallasTrade::StockReservations::Extend.call(order: cart)
-        end
-      end
-
-      # P8：:payment 锁存模式——cart/checkout 操作只校验不落 reservation（支付确认后由 Carts::Complete 锁定）
-      def payment_strategy?
-        PallasTrade::Config[:stock_reservation_strategy].to_s == 'payment'
-      end
-
-      # Auto-advance as far as the checkout state machine allows, but never
-      # to complete. The complete transition must always be explicit via
-      # the /carts/:id/complete endpoint — otherwise gift cards or store
-      # credits that fully cover the order total would auto-complete the
-      # cart during address/delivery updates.
-      def try_advance
-        return if cart.complete? || cart.canceled?
-
-        steps = cart.checkout_steps
-        loop do
-          current_index = steps.index(cart.state).to_i
-          next_step = steps[current_index + 1]
-          break if next_step.nil? || next_step == 'complete'
-          break unless cart.next
-        end
-      rescue StandardError => e
-        Rails.error.report(e, context: { order_id: cart.id, state: cart.state }, source: 'PallasTrade.checkout')
-      ensure
-        # A halted transition records warnings on the cart, which reload would drop, so carry them across the reload.
-        warnings = cart.warnings
-        begin
-          cart.reload
-        rescue StandardError # rubocop:disable Lint/SuppressedException
-          # reload failure must not mask the original result
-        end
-        cart.warnings |= warnings if warnings.present?
       end
     end
   end
