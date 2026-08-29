@@ -2,9 +2,14 @@ module PallasTrade
   module Api
     module V3
       class DeliveryMethodSerializer < BaseSerializer
-        typelize name: :string, code: [:string, nullable: true]
+        typelize id: :string, name: :string, code: [:string, nullable: true],
+                 display_estimated_price: [:string, nullable: true]
 
-        attributes :name, :code
+        attribute :id do |method|
+          method.prefixed_id
+        end
+
+        attributes :name, :code, :display_estimated_price
       end
     end
   end

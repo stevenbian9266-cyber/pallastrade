@@ -2,11 +2,13 @@ import type { Address, Cart, Country } from "@pallastrade/sdk";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { OrderPaymentContent } from "@/components/checkout/OrderPaymentContent";
 import { getAddresses } from "@/lib/data/addresses";
 import { getCheckoutOrder } from "@/lib/data/checkout";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
+import { getOrderForCheckout } from "@/lib/data/order-payment";
 import { setCartCookies } from "@/lib/pallastrade/cookies";
 
 import { CheckoutPageContent } from "./CheckoutPageContent";
@@ -50,6 +52,16 @@ async function CheckoutDataLoader({ params, searchParams }: CheckoutPageProps) {
     resolveMarket(urlCountry).catch(() => null),
     authStatus ? getAddresses() : Promise.resolve({ data: [] as Address[] }),
   ]);
+
+  // 订单流程标准电商改造 P1（2026-08-30）：标准流程订单（or_ 前缀）→ 纯支付页。
+  // 收货/物流已在 checkout-info 完成，这里只做支付。
+  if (cartData && cartData.id.startsWith("or_")) {
+    const order = await getOrderForCheckout(cartId);
+    if (order) {
+      return <OrderPaymentContent order={order} />;
+    }
+    redirect(`/${urlCountry}/en`);
+  }
 
   // Redirect to order-placed if already complete
   if (cartData?.current_step === "complete") {

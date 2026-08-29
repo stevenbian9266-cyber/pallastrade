@@ -166,6 +166,11 @@ export default {
         description: 'P1 order-flow specs (cart/submit/request + regression)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/cart_spec.rb spec/services/pallastrade/carts/submit_spec.rb spec/requests/api/v3/store/carts_controller_spec.rb spec/models/pallastrade/order_parent_child_spec.rb spec/requests/api/v3/store/payment_combinations_controller_spec.rb spec/services/pallastrade/carts/auto_split_spec.rb'],
       },
+      // P1 订单流程改造（前端）：storefront vitest 全量套件
+      'storefront-test': {
+        description: 'Storefront vitest suite (unit + component)',
+        command: ['node', 'storefront/node_modules/vitest/vitest.mjs', 'run', '--root', 'storefront'],
+      },
     },
   },
   plugins: {

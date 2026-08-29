@@ -1,60 +1,121 @@
 "use client";
 
-import type { LineItem } from "@pallastrade/sdk";
-import { ShoppingBag } from "lucide-react";
-import dynamic from "next/dynamic";
+import type { ShoppingCart } from "@pallastrade/sdk";
+import { Check, ShoppingBag } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { QuantityPicker } from "@/components/ui/quantity-picker";
-import { useCart } from "@/contexts/CartContext";
-import { trackRemoveFromCart, trackViewCart } from "@/lib/analytics/gtm";
-import { safeParseFloat } from "@/lib/utils/format";
+import {
+  getShoppingCart,
+  removeCartItem,
+  setAllCartItemsSelected,
+  updateCartItemQuantity,
+  updateCartItemSelection,
+} from "@/lib/data/shopping-cart";
 import { extractBasePath } from "@/lib/utils/path";
 
-const ExpressCheckoutButton = dynamic(
-  () =>
-    import("@/components/checkout/ExpressCheckoutButton").then((m) => ({
-      default: m.ExpressCheckoutButton,
-    })),
-  { ssr: false },
-);
-
+/**
+ * 订单流程标准电商改造 P1（2026-08-30）：购物车页（新 Cart 实体）。
+ * 支持勾选/全选/删除/数量调整；「去结算」仅在有勾选商品时可用，
+ * 跳转订单确认页 /checkout-info/[cartId]。
+ */
 export default function CartPage() {
-  const { cart, loading, updateItem, removeItem } = useCart();
-  const [expressProcessing, setExpressProcessing] = useState(false);
-  const pathname = usePathname();
-  const basePath = extractBasePath(pathname);
-  const viewCartFiredRef = useRef(false);
   const t = useTranslations("cart");
   const tc = useTranslations("common");
+  const router = useRouter();
+  const pathname = usePathname();
+  const basePath = extractBasePath(pathname);
 
-  // Track view_cart when cart loads with items
+  const [cart, setCart] = useState<ShoppingCart | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [busyItem, setBusyItem] = useState<string | null>(null);
+
+  const refresh = async () => {
+    const data = await getShoppingCart();
+    setCart(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    if (
-      !loading &&
-      cart &&
-      cart.total_quantity > 0 &&
-      !viewCartFiredRef.current
-    ) {
-      trackViewCart(cart);
-      viewCartFiredRef.current = true;
-    }
-  }, [cart, loading]);
+    refresh();
+  }, []);
 
-  const handleRemove = async (item: LineItem) => {
-    await removeItem(item.id);
-    if (cart) {
-      trackRemoveFromCart(item, cart.currency);
+  const items = cart?.items ?? [];
+  const selectedCount = items.filter((i) => i.selected).length;
+  const allSelected = items.length > 0 && selectedCount === items.length;
+  const someSelected = selectedCount > 0;
+
+  const itemTotal = useMemo(
+    () =>
+      items
+        .filter((i) => i.selected)
+        .reduce((sum, i) => sum + parseFloat(i.amount ?? "0"), 0),
+    [items],
+  );
+
+  const toggleAll = async () => {
+    if (!cart) return;
+    setUpdating(true);
+    const result = await setAllCartItemsSelected(cart.id, !allSelected);
+    if (result && "success" in result && result.success && result.cart) {
+      setCart(result.cart);
+    } else if (result && "error" in result) {
+      toast.error(result.error);
+    }
+    setUpdating(false);
+  };
+
+  const toggleItem = async (itemId: string, selected: boolean) => {
+    if (!cart) return;
+    setUpdating(true);
+    const result = await updateCartItemSelection(cart.id, itemId, selected);
+    if (result && "success" in result && result.success && result.cart) {
+      setCart(result.cart);
+    } else if (result && "error" in result) {
+      toast.error(result.error);
+    }
+    setUpdating(false);
+  };
+
+  const updateQuantity = async (itemId: string, quantity: number) => {
+    if (!cart) return;
+    setBusyItem(itemId);
+    try {
+      const result = await updateCartItemQuantity(cart.id, itemId, quantity);
+      if (result.success) {
+        setCart(result.cart);
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setBusyItem(null);
+    }
+  };
+
+  const removeItem = async (itemId: string) => {
+    if (!cart) return;
+    setBusyItem(itemId);
+    try {
+      const result = await removeCartItem(cart.id, itemId);
+      if (result.success) {
+        setCart(result.cart);
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setBusyItem(null);
     }
   };
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8  py-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-32 mb-8"></div>
           <div className="space-y-4">
@@ -67,9 +128,9 @@ export default function CartPage() {
     );
   }
 
-  if (!cart?.items || cart.items.length === 0) {
+  if (!cart || items.length === 0) {
     return (
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8  py-16">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center">
           <ShoppingBag
             className="w-24 h-24 text-gray-300 mx-auto"
@@ -92,7 +153,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8  py-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">
         {t("shoppingCart")}
       </h1>
@@ -100,11 +161,45 @@ export default function CartPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items */}
         <div className="lg:col-span-2">
+          {/* 全选 */}
+          <div className="mb-4 flex items-center gap-3 px-1">
+            <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                disabled={updating}
+                className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              {tc("selectAll")}
+            </label>
+            <span className="text-sm text-gray-500">
+              {t("selectedCount", { count: selectedCount })}
+            </span>
+          </div>
+
           <div className="bg-white rounded-xl border border-gray-200 divide-y">
-            {cart.items.map((item) => (
-              <div key={item.id} className="p-6 flex gap-6">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className={`p-6 flex gap-6 ${
+                  item.selected ? "" : "opacity-60"
+                }`}
+              >
+                {/* 勾选 */}
+                <label className="inline-flex items-start pt-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={item.selected}
+                    onChange={(e) => toggleItem(item.id, e.target.checked)}
+                    disabled={updating}
+                    className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    aria-label={t("selectItemLabel", { name: item.name })}
+                  />
+                </label>
+
                 {/* Image */}
-                <div className="relative w-24 h-24 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                <div className="relative w-24 h-24 bg-gray-100 rounded-xl overflow-hidden shrink-0">
                   <ProductImage
                     src={item.thumbnail_url}
                     alt={item.name}
@@ -125,7 +220,7 @@ export default function CartPage() {
                     </p>
                   )}
                   <p className="mt-2 text-lg font-semibold text-gray-900">
-                    {item.display_price}
+                    {item.display_unit_price}
                   </p>
                 </div>
 
@@ -133,16 +228,18 @@ export default function CartPage() {
                 <div className="flex flex-col items-end gap-2">
                   <QuantityPicker
                     quantity={item.quantity}
+                    disabled={busyItem === item.id}
                     onDecrement={() =>
-                      updateItem(item.id, Math.max(1, item.quantity - 1))
+                      updateQuantity(item.id, Math.max(1, item.quantity - 1))
                     }
-                    onIncrement={() => updateItem(item.id, item.quantity + 1)}
+                    onIncrement={() => updateQuantity(item.id, item.quantity + 1)}
                   />
                   <Button
                     variant="destructive"
                     size="sm"
+                    disabled={busyItem === item.id}
                     aria-label={t("removeItemLabel", { name: item.name })}
-                    onClick={() => handleRemove(item)}
+                    onClick={() => removeItem(item.id)}
                   >
                     {tc("remove")}
                   </Button>
@@ -164,85 +261,31 @@ export default function CartPage() {
                 <dt className="text-gray-500">{tc("subtotal")}</dt>
                 <dd className="text-gray-900">{cart.display_item_total}</dd>
               </div>
-              {cart.discount_total && parseFloat(cart.discount_total) < 0 && (
-                <div className="flex justify-between text-green-600">
-                  <dt>{tc("discount")}</dt>
-                  <dd>{cart.display_discount_total}</dd>
-                </div>
-              )}
-              {cart.delivery_total && parseFloat(cart.delivery_total) > 0 && (
-                <div className="flex justify-between">
-                  <dt className="text-gray-500">{tc("shipping")}</dt>
-                  <dd className="text-gray-900">
-                    {cart.display_delivery_total}
-                  </dd>
-                </div>
-              )}
-              {cart.tax_total && parseFloat(cart.tax_total) > 0 && (
-                <div className="flex justify-between">
-                  <dt className="text-gray-500">{tc("tax")}</dt>
-                  <dd className="text-gray-900">{cart.display_tax_total}</dd>
-                </div>
-              )}
               <div className="border-t pt-4 flex justify-between">
                 <dt className="text-lg font-medium text-gray-900">
                   {tc("total")}
                 </dt>
                 <dd className="text-lg font-bold text-gray-900">
-                  {cart.display_total}
+                  {cart.display_item_total}
                 </dd>
               </div>
-
-              {cart.gift_card && safeParseFloat(cart.gift_card_total) > 0 ? (
-                <div className="flex justify-between text-green-600">
-                  <dt>{t("giftCard")}</dt>
-                  <dd>-{cart.display_gift_card_total}</dd>
-                </div>
-              ) : cart.store_credit_total &&
-                parseFloat(cart.store_credit_total) > 0 ? (
-                <div className="flex justify-between text-green-600">
-                  <dt>{t("storeCredit")}</dt>
-                  <dd>-{cart.display_store_credit_total}</dd>
-                </div>
-              ) : null}
-
-              {cart.amount_due &&
-                cart.amount_due !== cart.total &&
-                parseFloat(cart.amount_due) > 0 && (
-                  <div className="border-t pt-4 flex justify-between">
-                    <dt className="text-lg font-medium text-gray-900">
-                      {t("amountDue")}
-                    </dt>
-                    <dd className="text-lg font-bold text-gray-900">
-                      {cart.display_amount_due}
-                    </dd>
-                  </div>
-                )}
             </dl>
 
-            <div className="mt-6 space-y-3">
-              {safeParseFloat(cart.total) > 0 && (
-                <ExpressCheckoutButton
-                  cart={cart}
-                  basePath={basePath}
-                  onComplete={() => {}}
-                  onProcessingChange={setExpressProcessing}
-                />
-              )}
-              {!expressProcessing && (
-                <>
-                  <Button size="lg" asChild className="w-full">
-                    <Link href={`${basePath}/checkout/${cart.id}`}>
-                      {t("proceedToCheckout")}
-                    </Link>
-                  </Button>
-                  <Button variant="link" asChild className="w-full">
-                    <Link href={`${basePath}/products`}>
-                      {tc("continueShopping")}
-                    </Link>
-                  </Button>
-                </>
-              )}
+            <div className="mt-6">
+              <Button
+                size="lg"
+                className="w-full"
+                disabled={!someSelected || updating}
+                onClick={() => router.push(`${basePath}/checkout-info/${cart.id}`)}
+              >
+                {t("checkout")}
+                {someSelected ? <Check className="w-4 h-4 ml-2" /> : null}
+              </Button>
+              <p className="mt-2 text-xs text-gray-400 text-center">
+                {someSelected
+                  ? t("checkoutSelectedHint")
+                  : t("checkoutDisabledHint")}
+              </p>
             </div>
           </div>
         </div>

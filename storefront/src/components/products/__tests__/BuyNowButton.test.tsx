@@ -36,7 +36,7 @@ describe("BuyNowButton", () => {
     await user.click(screen.getByRole("button", { name: "buyNow" }));
 
     expect(mockedBuyNow).toHaveBeenCalledWith("variant_1", 1);
-    expect(pushMock).toHaveBeenCalledWith("/us/en/checkout/cart_1");
+    expect(pushMock).toHaveBeenCalledWith("/us/en/checkout-info/cart_1");
   });
 
   it("is disabled without a variant (P5 AC-008)", () => {

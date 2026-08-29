@@ -21,7 +21,8 @@
     "myAccount": "My Account",
     "giftCard": "Gift card",
     "storeCredit": "Store credit",
-    "amountDue": "Amount due"
+    "amountDue": "Amount due",
+    "selectAll": "Select all"
   },
   "header": {
     "categories": "Categories",
@@ -165,7 +166,11 @@
     "amountDue": "Amount due",
     "failedToAddItem": "Could not add this item to your cart. Please try again.",
     "failedToUpdateItem": "Could not update your cart. Please try again.",
-    "failedToRemoveItem": "Could not remove this item from your cart. Please try again."
+    "failedToRemoveItem": "Could not remove this item from your cart. Please try again.",
+    "selectedCount": "{count, plural, one {# item selected} other {# items selected}}",
+    "selectItemLabel": "Select {name}",
+    "checkoutSelectedHint": "You have selected items to check out.",
+    "checkoutDisabledHint": "Select at least one item to continue."
   },
   "products": {
     "allProducts": "All Products",
@@ -338,6 +343,16 @@
     "noOrder": "No order",
     "confirmingPayment": "Confirming your payment...",
     "selectPaymentMethod": "Please select a payment method.",
+    "payment": "Payment",
+    "noShippingAddress": "No shipping address provided for this order.",
+    "payAmount": "Pay Now {amount}",
+    "orderConfirmation": "Order Confirmation",
+    "contactInfo": "Contact Information",
+    "email": "Email",
+    "deliveryMethod": "Delivery Method",
+    "shippingCalculatedAtSubmit": "Shipping cost is calculated when you submit your order.",
+    "submitting": "Submitting...",
+    "submitOrder": "Submit Order",
     "manualPaymentInfo": "You will receive payment instructions after placing your order.",
     "failedToCreatePayment": "Failed to create payment. Please try again.",
     "placeOrder": "Place Order",

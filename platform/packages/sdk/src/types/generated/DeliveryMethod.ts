@@ -6,6 +6,7 @@ interface DeliveryMethod {
   id: string;
   name: string;
   code: string | null;
+  display_estimated_price: string | null;
 }
 
 export default DeliveryMethod;

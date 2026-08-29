@@ -669,6 +669,27 @@
         "Push while doc-impact reports docs-required"
       ],
       "scoring": { "sameRow": 30, "equalWidth": 30, "responsive": 20, "skillSynced": 10, "noAntiPatterns": 10 }
+    },
+    {
+      "id": "GS-039",
+      "name": "Standard e-commerce order flow (cart split table, submit, checkout payment)",
+      "description": "P1 (PRD-20260829-checkout): new pallastrade_carts entity + standard flow — cart line-item selection, order-confirmation page (email/address/delivery method), Carts::Submit creates an or_-prefixed Order, checkout page branches to a pure payment page with order-scoped payment sessions (Stripe classic Elements), Buy Now routes to /checkout-info/[cartId].",
+      "mustDo": [
+        "Create the new Cart/CartItem models + migration in a separate table (pallastrade_carts) without touching legacy Order-table carts",
+        "Submit validates email + selected items, snapshots line items/addresses, selects shipping rate, converts cart, returns or_-prefixed Order",
+        "Order serializer exposes state/status/submitted_at/cart_id/payment_methods; delivery method serializer exposes display_estimated_price",
+        "Storefront: cart page selection toggles via server actions; checkout page branches on or_ prefix to OrderPaymentContent; payment via createOrderPaymentSession + StripePaymentForm + completeOrderPaymentSession",
+        "Buy Now routes to /checkout-info/[cartId]",
+        "Sync docs: pallastrade-storefront / pallastrade-api-v3 / pallastrade-typescript-sdk skills, backend/public/api-docs/store.yaml, SDK generated types (generated:check)"
+      ],
+      "mustNotDo": [
+        "Reuse the legacy Order-table cart for the new flow",
+        "Expose raw integer IDs or skip current_store scoping",
+        "Call getClient()/next/headers from a client component (must go through server actions)",
+        "Hardcode totals client-side; always use API display_* fields",
+        "Push while doc-impact reports docs-required or generated:check fails"
+      ],
+      "scoring": { "separateTable": 20, "submitFlow": 20, "serializerFields": 15, "storefrontFlow": 20, "buyNowRoute": 10, "docsSynced": 15 }
     }
   ]
 }

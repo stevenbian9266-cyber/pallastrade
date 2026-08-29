@@ -49,6 +49,16 @@ curl -H "X-PallasTrade-Api-Key: pk_CzEKBTWFiuNLgz4wciLsS59n" \
      https://my-pallastrade.example.com/api/v3/store/products
 ```
 
+### Standard e-commerce flow endpoints (P1 2026-08-30, PRD-20260829-checkout)
+
+New `pallastrade_carts` entity + order-domain payments (all under Store API, publishable key; cart/order ops need the cart token header `X-PallasTrade-Token`):
+
+- `POST /api/v3/store/carts/:id/submit` — converts an active cart into an `Order` (`or_`-prefixed). Validates email/selected items, snapshots line items + addresses, creates shipments, selects shipping rate, converts the cart. Returns the order; emits `order.submitted`.
+- `POST /api/v3/store/orders/:order_id/payment_sessions` + `GET/PATCH .../:id` + `PATCH .../:id/complete` — order-scoped payment sessions (Stripe Checkout `client_secret`, etc.); completion drives `Carts::Complete` standard branch (`pay!` + `finalize!`).
+- `GET /api/v3/store/shipping_methods` — front-end display list (`display_on: both/front_end`); each item carries `display_estimated_price` (authoritative cost is computed at submit).
+- `Order` serializer adds `state`, `status`, `submitted_at`, `cart_id`, `payment_methods` (the active `PaymentMethod` list for the order's market/currency).
+- Cart/CartItem serializers: new `ShoppingCart` shape with `status` and `items[].selected` (see `pallastrade-typescript-sdk`).
+
 ### Admin API
 
 **Who calls it:** trusted backend apps (your ERP integration, marketplace fulfillment service) or trusted humans (admin SPA users). Never the browser of an anonymous visitor.

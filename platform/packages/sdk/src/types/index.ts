@@ -1,5 +1,5 @@
 import type { AddressParams, ListParams } from '@pallastrade/sdk-core'
-import type { Cart as CartType } from './generated'
+import type { Address as AddressType, Cart as CartType } from './generated'
 
 // Re-export all generated types (unprefixed: Product, Order, etc.)
 export type {
@@ -169,8 +169,49 @@ export interface LineItemInput {
   variant_id: string
   /** Quantity to set (defaults to 1 if omitted) */
   quantity?: number
+  /** P1：勾选标记（新购物车结算范围；默认 true） */
+  selected?: boolean
   /** Arbitrary key-value metadata (merged with existing on upsert) */
   metadata?: Record<string, unknown>
+}
+
+// ── 订单流程标准电商改造 P1（2026-08-30）：新购物车实体（pallastrade_carts）──
+// 与 generated Cart（legacy Order 同表）不同：独立表、极简状态机、items 为 cart_items。
+export interface CartItem {
+  id: string
+  variant_id: string
+  quantity: number
+  /** 勾选（本次结算范围） */
+  selected: boolean
+  name: string
+  slug: string
+  options_text: string
+  currency: string
+  unit_price: string | null
+  display_unit_price: string | null
+  amount: string | null
+  display_amount: string | null
+  thumbnail_url: string | null
+}
+
+export type ShoppingCartStatus = 'active' | 'converted' | 'abandoned'
+
+export interface ShoppingCart {
+  id: string
+  token: string
+  status: ShoppingCartStatus
+  email: string | null
+  customer_note: string | null
+  currency: string
+  locale: string | null
+  item_count: number
+  item_total: string | null
+  display_item_total: string | null
+  converted_at: string | null
+  shipping_method_id: string | null
+  items: CartItem[]
+  billing_address: AddressType | null
+  shipping_address: AddressType | null
 }
 
 // Cart operations
@@ -190,7 +231,16 @@ export interface AddLineItemParams {
 
 export interface UpdateLineItemParams {
   quantity?: number
+  /** P1：新购物车行勾选状态（标准流程购物车专用） */
+  selected?: boolean
   /** Arbitrary key-value metadata (merged with existing) */
+  metadata?: Record<string, unknown>
+}
+
+/** P1：新购物车行更新参数（数量/勾选） */
+export interface UpdateCartItemParams {
+  quantity?: number
+  selected?: boolean
   metadata?: Record<string, unknown>
 }
 
@@ -209,6 +259,8 @@ export interface UpdateCartParams {
   billing_address?: AddressParams
   /** New shipping address */
   shipping_address?: AddressParams
+  /** P1：订单确认阶段选择的配送方式 */
+  shipping_method_id?: string
   /** When true, copies shipping address to billing address */
   use_shipping?: boolean
   /** Items to upsert (sets quantity for existing, creates new) */

@@ -68,6 +68,15 @@ Full five-method CRUD is an **Admin SDK** property. On the **Store SDK** most re
 
 Method name is always `get`, never `show`. The delete method is `delete`, not `destroy`. Nested resources (e.g. `client.carts.items.create(cartId, params, options)`) take the parent prefixed ID as the first positional argument.
 
+### Standard e-commerce flow extensions (P1 2026-08-30, PRD-20260829-checkout)
+
+New `Cart` entity (`pallastrade_carts`) plus order-domain payments:
+
+- `client.carts.submit(cartId, options?)` — `POST /carts/:id/submit`; converts the cart into an `Order` (`or_`-prefixed) and returns it (`Order` type now carries `state`, `status`, `submitted_at`, `cart_id`, `payment_methods`).
+- `client.orders.paymentSessions.create(orderId, { payment_method_id, amount?, external_data? }, options?)` / `.get` / `.complete(orderId, sessionId, { session_result?, external_data? }, options?)` — order-scoped payment sessions (Stripe Checkout `client_secret` etc.).
+- `client.shippingMethods.list(options?)` — `GET /shipping_methods`; `DeliveryMethod` carries `display_estimated_price` for the order-confirmation radio list.
+- Cart line items accept `selected?: boolean` (`UpdateLineItemParams` / `UpdateCartItemParams`) — only selected items are submitted to the order.
+
 ### Customer auth (JWT)
 
 After login, attach the JWT per request via `options.token`. There is no `setAccessToken` — the SDK doesn't hold customer tokens in client state.

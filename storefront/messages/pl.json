@@ -21,7 +21,8 @@
     "myAccount": "Moje konto",
     "giftCard": "Karta podarunkowa",
     "storeCredit": "Kredyt sklepowy",
-    "amountDue": "Do zapłaty"
+    "amountDue": "Do zapłaty",
+    "selectAll": "Zaznacz wszystko"
   },
   "header": {
     "categories": "Kategorie",
@@ -165,7 +166,11 @@
     "amountDue": "Do zapłaty",
     "failedToAddItem": "Nie udało się dodać tego produktu do koszyka. Spróbuj ponownie.",
     "failedToUpdateItem": "Nie udało się zaktualizować koszyka. Spróbuj ponownie.",
-    "failedToRemoveItem": "Nie udało się usunąć tego produktu z koszyka. Spróbuj ponownie."
+    "failedToRemoveItem": "Nie udało się usunąć tego produktu z koszyka. Spróbuj ponownie.",
+    "selectedCount": "{count, plural, one {# wybrany produkt} other {# wybranych produktów}}",
+    "selectItemLabel": "Wybierz {name}",
+    "checkoutSelectedHint": "Wybrałeś produkty do zapłaty.",
+    "checkoutDisabledHint": "Wybierz co najmniej jeden produkt, aby kontynuować."
   },
   "products": {
     "allProducts": "Wszystkie produkty",
@@ -336,6 +341,16 @@
     "noOrder": "Brak zamówienia",
     "confirmingPayment": "Potwierdzanie płatności...",
     "selectPaymentMethod": "Proszę wybrać metodę płatności.",
+    "payment": "Płatność",
+    "noShippingAddress": "Nie podano adresu dostawy dla tego zamówienia.",
+    "payAmount": "Zapłać teraz {amount}",
+    "orderConfirmation": "Potwierdzenie zamówienia",
+    "contactInfo": "Dane kontaktowe",
+    "email": "E-mail",
+    "deliveryMethod": "Metoda dostawy",
+    "shippingCalculatedAtSubmit": "Koszt dostawy jest obliczany po złożeniu zamówienia.",
+    "submitting": "Wysyłanie...",
+    "submitOrder": "Złóż zamówienie",
     "manualPaymentInfo": "Otrzymasz instrukcje płatności po złożeniu zamówienia.",
     "failedToCreatePayment": "Nie udało się utworzyć płatności. Spróbuj ponownie.",
     "placeOrder": "Złóż zamówienie",

@@ -275,6 +275,17 @@ The Store API exposes payment sessions for the checkout flow — a single, provi
 
 The `pallastrade_stripe` / `pallastrade_adyen` / `pallastrade_paypal_checkout` gems ship reference checkout flows. Don't roll your own unless you're integrating a new provider.
 
+#### Standard e-commerce flow (P1 2026-08-30, PRD-20260829-checkout)
+
+New Cart entity (`pallastrade_carts`, independent table — see `pallastrade-data-model`) with a standard flow:
+
+1. **Cart page** `/{country}/{locale}/cart` (`lib/data/shopping-cart.ts`): line-item `selected` checkboxes, select-all, quantity, remove. Only selected items flow into the order. Client component — all SDK calls go through `"use server"` actions (`updateCartItemSelection`, `setAllCartItemsSelected`, `updateCartItemQuantity`, `removeCartItem`); never import `getClient()` in a client component.
+2. **Order confirmation** `/{country}/{locale}/checkout-info/[cartId]`: email + shipping address + delivery-method radio (`lib/data/shopping-cart.ts` `updateShoppingCartDetails`, `getShippingMethods`), then `submitCartAndGoToCheckout` → backend `Carts::Submit` creates the Order → redirect to `/checkout/[orderId]` (`or_`-prefixed id).
+3. **Checkout (pure payment)** `/{country}/{locale}/checkout/[id]`: the page branches — `or_`-prefixed standard orders render `components/checkout/OrderPaymentContent` (read-only shipping, payment-method radio, `lib/data/order-payment.ts` `createOrderPaymentSession` → Stripe `StripePaymentForm(clientSecret)` classic flow → `completeOrderPaymentSession` + redirect to `/order-placed/[orderId]`); legacy carts keep `CheckoutPageContent`. Non-session methods (COD/check) skip online payment and go straight to the placed page.
+4. **Buy Now** (`components/products/BuyNowButton.tsx`) routes to `/checkout-info/[cartId]` (not `/checkout/[id]`).
+
+Keys: cart items use `selected`; the order keeps the cart's token; totals always come from the API (`display_*` fields). i18n keys live under `cart.*` / `checkout.*` / `common.*` in all five `messages/*.json` locales.
+
 #### Recovering a guest cart from an emailed checkout link (abandoned-cart recovery)
 
 Recovery emails (e.g. `abandoned_cart_mailer.recovery_email`) link back to `/{country}/{locale}/checkout/{cart_id}?token=…`. The checkout page must restore the cart token cookie **before** fetching the cart, otherwise the guest cart is treated as anonymous:

@@ -25,6 +25,7 @@ import type {
   CreditCard,
   Currency,
   Customer,
+  DeliveryMethod,
   GiftCard,
   Locale,
   LoginCredentials,
@@ -424,6 +425,15 @@ export class StoreClient {
       this.request<Order>('POST', `/carts/${cartId}/complete`, options),
 
     /**
+     * P1 (2026-08-30): Submit the cart — creates a pending Order (standard flow)
+     * from the selected cart items and converts the cart.
+     * Returns an Order (not Cart). Client should then navigate to /checkout/[orderId].
+     * @param cartId - Cart prefixed ID
+     */
+    submit: (cartId: string, options?: RequestOptions): Promise<Order> =>
+      this.request<Order>('POST', `/carts/${cartId}/submit`, options),
+
+    /**
      * Nested resource: Line items
      */
     items: {
@@ -643,6 +653,18 @@ export class StoreClient {
   }
 
   // ============================================
+  // Shipping Methods (P1, 2026-08-30) — 订单确认页可选配送方式
+  // ============================================
+
+  readonly shippingMethods = {
+    /**
+     * List front-end shipping methods (name/description with rate label).
+     */
+    list: (options?: RequestOptions): Promise<DeliveryMethod[]> =>
+      this.request<DeliveryMethod[]>('GET', '/shipping_methods', options),
+  }
+
+  // ============================================
   // Orders (post-purchase, read-only)
   // ============================================
 
@@ -660,6 +682,50 @@ export class StoreClient {
         ...options,
         params: getParams(params),
       }),
+
+    /**
+     * P1 (2026-08-30): Nested payment sessions — Checkout 纯支付在订单域创建/完成支付会话。
+     * 与 legacy `carts.paymentSessions`（Order 同表购物车）不同，标准流程订单是正式 Order。
+     */
+    paymentSessions: {
+      /**
+       * Create a payment session for the order.
+       */
+      create: (
+        orderId: string,
+        params: CreatePaymentSessionParams,
+        options?: RequestOptions,
+      ): Promise<PaymentSession> =>
+        this.request<PaymentSession>('POST', `/orders/${orderId}/payment_sessions`, {
+          ...options,
+          body: params,
+        }),
+
+      /**
+       * Get a payment session by ID.
+       */
+      get: (
+        orderId: string,
+        sessionId: string,
+        options?: RequestOptions,
+      ): Promise<PaymentSession> =>
+        this.request<PaymentSession>('GET', `/orders/${orderId}/payment_sessions/${sessionId}`, options),
+
+      /**
+       * Complete a payment session (confirm payment with the provider).
+       */
+      complete: (
+        orderId: string,
+        sessionId: string,
+        params?: CompletePaymentSessionParams,
+        options?: RequestOptions,
+      ): Promise<PaymentSession> =>
+        this.request<PaymentSession>(
+          'PATCH',
+          `/orders/${orderId}/payment_sessions/${sessionId}/complete`,
+          { ...options, body: params },
+        ),
+    },
   }
 
   // ============================================

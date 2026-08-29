@@ -21,7 +21,8 @@
     "myAccount": "Mi cuenta",
     "giftCard": "Tarjeta regalo",
     "storeCredit": "Credito de la tienda",
-    "amountDue": "Importe pendiente"
+    "amountDue": "Importe pendiente",
+    "selectAll": "Seleccionar todo"
   },
   "header": {
     "categories": "Categorias",
@@ -165,7 +166,11 @@
     "amountDue": "Importe pendiente",
     "failedToAddItem": "No se pudo agregar este articulo a tu carrito. Por favor, intentalo de nuevo.",
     "failedToUpdateItem": "No se pudo actualizar tu carrito. Por favor, intentalo de nuevo.",
-    "failedToRemoveItem": "No se pudo eliminar este articulo de tu carrito. Por favor, intentalo de nuevo."
+    "failedToRemoveItem": "No se pudo eliminar este articulo de tu carrito. Por favor, intentalo de nuevo.",
+    "selectedCount": "{count, plural, one {# artículo seleccionado} other {# artículos seleccionados}}",
+    "selectItemLabel": "Seleccionar {name}",
+    "checkoutSelectedHint": "Has seleccionado artículos para pagar.",
+    "checkoutDisabledHint": "Selecciona al menos un artículo para continuar."
   },
   "products": {
     "allProducts": "Todos los productos",
@@ -336,6 +341,16 @@
     "noOrder": "Sin pedido",
     "confirmingPayment": "Confirmando tu pago...",
     "selectPaymentMethod": "Por favor selecciona un método de pago.",
+    "payment": "Pago",
+    "noShippingAddress": "No se proporcionó dirección de envío para este pedido.",
+    "payAmount": "Pagar ahora {amount}",
+    "orderConfirmation": "Confirmación de pedido",
+    "contactInfo": "Información de contacto",
+    "email": "Correo electrónico",
+    "deliveryMethod": "Método de envío",
+    "shippingCalculatedAtSubmit": "El costo de envío se calcula al enviar tu pedido.",
+    "submitting": "Enviando...",
+    "submitOrder": "Enviar pedido",
     "manualPaymentInfo": "Recibirás instrucciones de pago después de realizar tu pedido.",
     "failedToCreatePayment": "No se pudo crear el pago. Inténtalo de nuevo.",
     "placeOrder": "Realizar pedido",

@@ -32,6 +32,9 @@ PallasTrade::Core::Engine.add_routes do
         end
         resources :categories, only: [:index, :show], id: /.+/
 
+        # 订单流程标准电商改造 P1（2026-08-30）：订单确认页可选配送方式
+        resources :shipping_methods, only: [:index], controller: 'shipping_methods'
+
         # Carts
         # 订单流程标准电商改造 P1（2026-08-30）：/carts 现为新 Cart 实体（pallastrade_carts）。
         # 提交订单 = POST /carts/:id/submit（→ Order）；legacy 的 /complete 由 submit 取代。

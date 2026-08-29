@@ -121,6 +121,8 @@ module PallasTrade
         many :line_items, key: :items, resource: proc { PallasTrade.api.line_item_serializer }
         many :fulfillments, resource: proc { PallasTrade.api.fulfillment_serializer }
         many :payments, resource: proc { PallasTrade.api.payment_serializer }
+        # 订单流程标准电商改造 P1（2026-08-30）：Checkout 纯支付页需要可选支付方式。
+        many :payment_methods, resource: proc { PallasTrade.api.payment_method_serializer }
         one :billing_address, resource: proc { PallasTrade.api.address_serializer }
         one :shipping_address, resource: proc { PallasTrade.api.address_serializer }
         one :gift_card, resource: proc { PallasTrade.api.gift_card_serializer }

@@ -1,5 +1,5 @@
-import { R as RequestFn, L as LoginCredentials, A as AuthTokens, a as RequestOptions, P as ProductListParams, b as PaginatedResponse, c as Product, d as ProductFiltersParams, e as ProductFiltersResponse, C as CategoryListParams, f as Category, g as ListResponse, h as Country, i as Currency, j as Locale, k as Policy, l as ListParams, m as Post, M as Market, n as Cart, o as CreateCartParams, U as UpdateCartParams, O as Order, p as AddLineItemParams, q as UpdateLineItemParams, r as CreatePaymentParams, s as Payment, t as CreatePaymentSessionParams, u as PaymentSession, v as UpdatePaymentSessionParams, w as CompletePaymentSessionParams, x as RegisterParams, y as CreatePaymentCombinationParams, z as PaymentCombination, N as NewsletterSubscriber, B as Customer, D as Address, E as AddressParams, F as CreditCard, G as GiftCard, S as StoreCredit, H as OrderListParams, I as CreatePaymentSetupSessionParams, J as PaymentSetupSession, K as CompletePaymentSetupSessionParams, Q as RequestPasswordResetParams, T as ResetPasswordParams, W as Wishlist, V as WishlistItem, X as RetryConfig } from './index-CPNiUnds.js';
-export { Y as AvailabilityFilter, Z as BackInStockSubscription, _ as Base, $ as CartWarning, a0 as CategoryFilter, a1 as CategoryFilterOption, a2 as CheckoutRequirement, a3 as ContactMessage, a4 as CustomField, a5 as DeliveryMethod, a6 as DeliveryRate, a7 as Digital, a8 as DigitalLink, a9 as Discount, aa as EmailPasswordLogin, ab as ErrorResponse, ac as FilterOption, ad as Fulfillment, ae as GiftCardBatch, af as Invitation, ag as LineItem, ah as LineItemInput, ai as LocaleDefaults, aj as Media, ak as OptionFilter, al as OptionFilterOption, am as OptionType, an as OptionValue, ao as PaginationMeta, ap as PallasTradeError, aq as PaymentMethod, ar as PaymentSource, as as Price, at as PriceRangeFilter, au as ProductFilter, av as Promotion, aw as ProviderLogin, ax as Refund, ay as ReturnAuthorization, az as ReturnItem, aA as SortOption, aB as State, aC as StockLocation, aD as Variant } from './index-CPNiUnds.js';
+import { R as RequestFn, L as LoginCredentials, A as AuthTokens, a as RequestOptions, P as ProductListParams, b as PaginatedResponse, c as Product, d as ProductFiltersParams, e as ProductFiltersResponse, C as CategoryListParams, f as Category, g as ListResponse, h as Country, i as Currency, j as Locale, k as Policy, l as ListParams, m as Post, M as Market, n as Cart, o as CreateCartParams, U as UpdateCartParams, O as Order, p as AddLineItemParams, q as UpdateLineItemParams, r as CreatePaymentParams, s as Payment, t as CreatePaymentSessionParams, u as PaymentSession, v as UpdatePaymentSessionParams, w as CompletePaymentSessionParams, D as DeliveryMethod, x as RegisterParams, y as CreatePaymentCombinationParams, z as PaymentCombination, N as NewsletterSubscriber, B as Customer, E as Address, F as AddressParams, G as CreditCard, H as GiftCard, S as StoreCredit, I as OrderListParams, J as CreatePaymentSetupSessionParams, K as PaymentSetupSession, Q as CompletePaymentSetupSessionParams, T as RequestPasswordResetParams, V as ResetPasswordParams, W as Wishlist, X as WishlistItem, Y as RetryConfig } from './index-BzkjRPGk.js';
+export { Z as AvailabilityFilter, _ as BackInStockSubscription, $ as Base, a0 as CartItem, a1 as CartWarning, a2 as CategoryFilter, a3 as CategoryFilterOption, a4 as CheckoutRequirement, a5 as ContactMessage, a6 as CustomField, a7 as DeliveryRate, a8 as Digital, a9 as DigitalLink, aa as Discount, ab as EmailPasswordLogin, ac as ErrorResponse, ad as FilterOption, ae as Fulfillment, af as GiftCardBatch, ag as Invitation, ah as LineItem, ai as LineItemInput, aj as LocaleDefaults, ak as Media, al as OptionFilter, am as OptionFilterOption, an as OptionType, ao as OptionValue, ap as PaginationMeta, aq as PallasTradeError, ar as PaymentMethod, as as PaymentSource, at as Price, au as PriceRangeFilter, av as ProductFilter, aw as Promotion, ax as ProviderLogin, ay as Refund, az as ReturnAuthorization, aA as ReturnItem, aB as ShoppingCart, aC as ShoppingCartStatus, aD as SortOption, aE as State, aF as StockLocation, aG as UpdateCartItemParams, aH as Variant } from './index-BzkjRPGk.js';
 
 declare class StoreClient {
     /**
@@ -223,6 +223,13 @@ declare class StoreClient {
          */
         complete: (cartId: string, options?: RequestOptions) => Promise<Order>;
         /**
+         * P1 (2026-08-30): Submit the cart — creates a pending Order (standard flow)
+         * from the selected cart items and converts the cart.
+         * Returns an Order (not Cart). Client should then navigate to /checkout/[orderId].
+         * @param cartId - Cart prefixed ID
+         */
+        submit: (cartId: string, options?: RequestOptions) => Promise<Order>;
+        /**
          * Nested resource: Line items
          */
         items: {
@@ -349,6 +356,12 @@ declare class StoreClient {
             remove: (cartId: string, options?: RequestOptions) => Promise<Cart>;
         };
     };
+    readonly shippingMethods: {
+        /**
+         * List front-end shipping methods (name/description with rate label).
+         */
+        list: (options?: RequestOptions) => Promise<DeliveryMethod[]>;
+    };
     readonly orders: {
         /**
          * Get a completed order by prefixed ID.
@@ -358,6 +371,24 @@ declare class StoreClient {
             expand?: string[];
             fields?: string[];
         }, options?: RequestOptions) => Promise<Order>;
+        /**
+         * P1 (2026-08-30): Nested payment sessions — Checkout 纯支付在订单域创建/完成支付会话。
+         * 与 legacy `carts.paymentSessions`（Order 同表购物车）不同，标准流程订单是正式 Order。
+         */
+        paymentSessions: {
+            /**
+             * Create a payment session for the order.
+             */
+            create: (orderId: string, params: CreatePaymentSessionParams, options?: RequestOptions) => Promise<PaymentSession>;
+            /**
+             * Get a payment session by ID.
+             */
+            get: (orderId: string, sessionId: string, options?: RequestOptions) => Promise<PaymentSession>;
+            /**
+             * Complete a payment session (confirm payment with the provider).
+             */
+            complete: (orderId: string, sessionId: string, params?: CompletePaymentSessionParams, options?: RequestOptions) => Promise<PaymentSession>;
+        };
     };
     readonly customers: {
         /**
@@ -676,4 +707,4 @@ interface Client extends StoreClient {
  */
 declare function createClient(config: ClientConfig): Client;
 
-export { AddLineItemParams, Address, AddressParams, AuthTokens, Cart, Category, CategoryListParams, type Client, type ClientConfig, CompletePaymentSessionParams, CompletePaymentSetupSessionParams, Country, CreateCartParams, CreatePaymentCombinationParams, CreatePaymentParams, CreatePaymentSessionParams, CreatePaymentSetupSessionParams, CreditCard, Currency, Customer, GiftCard, ListParams, ListResponse, Locale, LoginCredentials, Market, NewsletterSubscriber, Order, OrderListParams, PaginatedResponse, Payment, PaymentCombination, PaymentSession, PaymentSetupSession, Policy, Post, Product, ProductFiltersParams, ProductFiltersResponse, ProductListParams, RegisterParams, RequestFn, RequestOptions, RequestPasswordResetParams, ResetPasswordParams, RetryConfig, StoreClient, StoreCredit, UpdateCartParams, UpdateLineItemParams, UpdatePaymentSessionParams, Wishlist, WishlistItem, createClient };
+export { AddLineItemParams, Address, AddressParams, AuthTokens, Cart, Category, CategoryListParams, type Client, type ClientConfig, CompletePaymentSessionParams, CompletePaymentSetupSessionParams, Country, CreateCartParams, CreatePaymentCombinationParams, CreatePaymentParams, CreatePaymentSessionParams, CreatePaymentSetupSessionParams, CreditCard, Currency, Customer, DeliveryMethod, GiftCard, ListParams, ListResponse, Locale, LoginCredentials, Market, NewsletterSubscriber, Order, OrderListParams, PaginatedResponse, Payment, PaymentCombination, PaymentSession, PaymentSetupSession, Policy, Post, Product, ProductFiltersParams, ProductFiltersResponse, ProductListParams, RegisterParams, RequestFn, RequestOptions, RequestPasswordResetParams, ResetPasswordParams, RetryConfig, StoreClient, StoreCredit, UpdateCartParams, UpdateLineItemParams, UpdatePaymentSessionParams, Wishlist, WishlistItem, createClient };

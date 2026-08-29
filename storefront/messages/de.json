@@ -21,7 +21,8 @@
     "myAccount": "Mein Konto",
     "giftCard": "Geschenkkarte",
     "storeCredit": "Guthaben",
-    "amountDue": "Fälliger Betrag"
+    "amountDue": "Fälliger Betrag",
+    "selectAll": "Alle auswählen"
   },
   "header": {
     "categories": "Kategorien",
@@ -165,7 +166,11 @@
     "amountDue": "Fälliger Betrag",
     "failedToAddItem": "Dieser Artikel konnte nicht zum Warenkorb hinzugefügt werden. Bitte versuchen Sie es erneut.",
     "failedToUpdateItem": "Ihr Warenkorb konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
-    "failedToRemoveItem": "Dieser Artikel konnte nicht aus Ihrem Warenkorb entfernt werden. Bitte versuchen Sie es erneut."
+    "failedToRemoveItem": "Dieser Artikel konnte nicht aus Ihrem Warenkorb entfernt werden. Bitte versuchen Sie es erneut.",
+    "selectedCount": "{count, plural, one {# Artikel ausgewählt} other {# Artikel ausgewählt}}",
+    "selectItemLabel": "{name} auswählen",
+    "checkoutSelectedHint": "Sie haben Artikel zum Bezahlen ausgewählt.",
+    "checkoutDisabledHint": "Wählen Sie mindestens einen Artikel aus, um fortzufahren."
   },
   "products": {
     "allProducts": "Alle Produkte",
@@ -336,6 +341,16 @@
     "noOrder": "Keine Bestellung",
     "confirmingPayment": "Ihre Zahlung wird bestätigt...",
     "selectPaymentMethod": "Bitte wählen Sie eine Zahlungsmethode.",
+    "payment": "Zahlung",
+    "noShippingAddress": "Für diese Bestellung wurde keine Lieferadresse angegeben.",
+    "payAmount": "Jetzt bezahlen {amount}",
+    "orderConfirmation": "Bestellbestätigung",
+    "contactInfo": "Kontaktinformationen",
+    "email": "E-Mail",
+    "deliveryMethod": "Versandart",
+    "shippingCalculatedAtSubmit": "Die Versandkosten werden beim Absenden der Bestellung berechnet.",
+    "submitting": "Wird gesendet...",
+    "submitOrder": "Bestellung aufgeben",
     "manualPaymentInfo": "Sie erhalten Zahlungsanweisungen nach der Bestellung.",
     "failedToCreatePayment": "Zahlung konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
     "placeOrder": "Bestellung aufgeben",

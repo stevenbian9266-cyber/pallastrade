@@ -21,7 +21,8 @@
     "myAccount": "Mon compte",
     "giftCard": "Carte cadeau",
     "storeCredit": "Credit boutique",
-    "amountDue": "Montant du"
+    "amountDue": "Montant du",
+    "selectAll": "Tout sélectionner"
   },
   "header": {
     "categories": "Categories",
@@ -165,7 +166,11 @@
     "amountDue": "Montant du",
     "failedToAddItem": "Impossible d'ajouter cet article a votre panier. Veuillez reessayer.",
     "failedToUpdateItem": "Impossible de mettre a jour votre panier. Veuillez reessayer.",
-    "failedToRemoveItem": "Impossible de retirer cet article de votre panier. Veuillez reessayer."
+    "failedToRemoveItem": "Impossible de retirer cet article de votre panier. Veuillez reessayer.",
+    "selectedCount": "{count, plural, one {# article sélectionné} other {# articles sélectionnés}}",
+    "selectItemLabel": "Sélectionner {name}",
+    "checkoutSelectedHint": "Vous avez sélectionné des articles à payer.",
+    "checkoutDisabledHint": "Sélectionnez au moins un article pour continuer."
   },
   "products": {
     "allProducts": "Tous les produits",
@@ -336,6 +341,16 @@
     "noOrder": "Aucune commande",
     "confirmingPayment": "Confirmation de votre paiement...",
     "selectPaymentMethod": "Veuillez sélectionner un mode de paiement.",
+    "payment": "Paiement",
+    "noShippingAddress": "Aucune adresse de livraison fournie pour cette commande.",
+    "payAmount": "Payer maintenant {amount}",
+    "orderConfirmation": "Confirmation de commande",
+    "contactInfo": "Coordonnées",
+    "email": "E-mail",
+    "deliveryMethod": "Mode de livraison",
+    "shippingCalculatedAtSubmit": "Les frais de livraison sont calculés à la soumission de votre commande.",
+    "submitting": "Envoi en cours...",
+    "submitOrder": "Soumettre la commande",
     "manualPaymentInfo": "Vous recevrez les instructions de paiement après avoir passé votre commande.",
     "failedToCreatePayment": "Échec de la création du paiement. Veuillez réessayer.",
     "placeOrder": "Passer la commande",

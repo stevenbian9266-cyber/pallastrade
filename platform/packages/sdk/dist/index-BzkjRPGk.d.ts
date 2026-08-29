@@ -310,6 +310,7 @@ interface DeliveryMethod {
     id: string;
     name: string;
     code: string | null;
+    display_estimated_price: string | null;
 }
 
 interface DeliveryRate {
@@ -538,6 +539,11 @@ interface OptionValue {
 
 interface Order {
     id: string;
+    state: string | null;
+    status: string | null;
+    submitted_at: string | null;
+    cart_id: string | null;
+    payment_methods: Array<PaymentMethod>;
     parent_id: string | null;
     children_ids: string[];
     is_parent: boolean;
@@ -936,8 +942,44 @@ interface LineItemInput {
     variant_id: string;
     /** Quantity to set (defaults to 1 if omitted) */
     quantity?: number;
+    /** P1：勾选标记（新购物车结算范围；默认 true） */
+    selected?: boolean;
     /** Arbitrary key-value metadata (merged with existing on upsert) */
     metadata?: Record<string, unknown>;
+}
+interface CartItem {
+    id: string;
+    variant_id: string;
+    quantity: number;
+    /** 勾选（本次结算范围） */
+    selected: boolean;
+    name: string;
+    slug: string;
+    options_text: string;
+    currency: string;
+    unit_price: string | null;
+    display_unit_price: string | null;
+    amount: string | null;
+    display_amount: string | null;
+    thumbnail_url: string | null;
+}
+type ShoppingCartStatus = 'active' | 'converted' | 'abandoned';
+interface ShoppingCart {
+    id: string;
+    token: string;
+    status: ShoppingCartStatus;
+    email: string | null;
+    customer_note: string | null;
+    currency: string;
+    locale: string | null;
+    item_count: number;
+    item_total: string | null;
+    display_item_total: string | null;
+    converted_at: string | null;
+    shipping_method_id: string | null;
+    items: CartItem[];
+    billing_address: Address | null;
+    shipping_address: Address | null;
 }
 interface CreateCartParams {
     /** Arbitrary key-value metadata (stored, not returned in responses) */
@@ -953,7 +995,15 @@ interface AddLineItemParams {
 }
 interface UpdateLineItemParams {
     quantity?: number;
+    /** P1：新购物车行勾选状态（标准流程购物车专用） */
+    selected?: boolean;
     /** Arbitrary key-value metadata (merged with existing) */
+    metadata?: Record<string, unknown>;
+}
+/** P1：新购物车行更新参数（数量/勾选） */
+interface UpdateCartItemParams {
+    quantity?: number;
+    selected?: boolean;
     metadata?: Record<string, unknown>;
 }
 interface UpdateCartParams {
@@ -971,6 +1021,8 @@ interface UpdateCartParams {
     billing_address?: AddressParams;
     /** New shipping address */
     shipping_address?: AddressParams;
+    /** P1：订单确认阶段选择的配送方式 */
+    shipping_method_id?: string;
     /** When true, copies shipping address to billing address */
     use_shipping?: boolean;
     /** Items to upsert (sets quantity for existing, creates new) */
@@ -1064,4 +1116,4 @@ interface ProductFiltersParams {
     q?: Record<string, unknown>;
 }
 
-export { type CartWarning as $, type AuthTokens as A, type Customer as B, type CategoryListParams as C, type Address as D, type AddressParams as E, type CreditCard as F, type GiftCard as G, type OrderListParams as H, type CreatePaymentSetupSessionParams as I, type PaymentSetupSession as J, type CompletePaymentSetupSessionParams as K, type LoginCredentials as L, type Market as M, type NewsletterSubscriber as N, type Order as O, type ProductListParams as P, type RequestPasswordResetParams as Q, type RequestFn as R, type StoreCredit as S, type ResetPasswordParams as T, type UpdateCartParams as U, type WishlistItem as V, type Wishlist as W, type RetryConfig as X, type AvailabilityFilter as Y, type BackInStockSubscription as Z, type Base as _, type RequestOptions as a, type CategoryFilter as a0, type CategoryFilterOption as a1, type CheckoutRequirement as a2, type ContactMessage as a3, type CustomField as a4, type DeliveryMethod as a5, type DeliveryRate as a6, type Digital as a7, type DigitalLink as a8, type Discount as a9, type SortOption as aA, type State as aB, type StockLocation as aC, type Variant as aD, type EmailPasswordLogin as aa, type ErrorResponse as ab, type FilterOption as ac, type Fulfillment as ad, type GiftCardBatch as ae, type Invitation as af, type LineItem as ag, type LineItemInput as ah, type LocaleDefaults as ai, type Media as aj, type OptionFilter as ak, type OptionFilterOption as al, type OptionType as am, type OptionValue as an, type PaginationMeta as ao, PallasTradeError as ap, type PaymentMethod as aq, type PaymentSource as ar, type Price as as, type PriceRangeFilter as at, type ProductFilter as au, type Promotion as av, type ProviderLogin as aw, type Refund as ax, type ReturnAuthorization as ay, type ReturnItem as az, type PaginatedResponse as b, type Product as c, type ProductFiltersParams as d, type ProductFiltersResponse as e, type Category as f, type ListResponse as g, type Country as h, type Currency as i, type Locale as j, type Policy as k, type ListParams as l, type Post as m, type Cart as n, type CreateCartParams as o, type AddLineItemParams as p, type UpdateLineItemParams as q, type CreatePaymentParams as r, type Payment as s, type CreatePaymentSessionParams as t, type PaymentSession as u, type UpdatePaymentSessionParams as v, type CompletePaymentSessionParams as w, type RegisterParams as x, type CreatePaymentCombinationParams as y, type PaymentCombination as z };
+export { type Base as $, type AuthTokens as A, type Customer as B, type CategoryListParams as C, type DeliveryMethod as D, type Address as E, type AddressParams as F, type CreditCard as G, type GiftCard as H, type OrderListParams as I, type CreatePaymentSetupSessionParams as J, type PaymentSetupSession as K, type LoginCredentials as L, type Market as M, type NewsletterSubscriber as N, type Order as O, type ProductListParams as P, type CompletePaymentSetupSessionParams as Q, type RequestFn as R, type StoreCredit as S, type RequestPasswordResetParams as T, type UpdateCartParams as U, type ResetPasswordParams as V, type Wishlist as W, type WishlistItem as X, type RetryConfig as Y, type AvailabilityFilter as Z, type BackInStockSubscription as _, type RequestOptions as a, type CartItem as a0, type CartWarning as a1, type CategoryFilter as a2, type CategoryFilterOption as a3, type CheckoutRequirement as a4, type ContactMessage as a5, type CustomField as a6, type DeliveryRate as a7, type Digital as a8, type DigitalLink as a9, type ReturnItem as aA, type ShoppingCart as aB, type ShoppingCartStatus as aC, type SortOption as aD, type State as aE, type StockLocation as aF, type UpdateCartItemParams as aG, type Variant as aH, type Discount as aa, type EmailPasswordLogin as ab, type ErrorResponse as ac, type FilterOption as ad, type Fulfillment as ae, type GiftCardBatch as af, type Invitation as ag, type LineItem as ah, type LineItemInput as ai, type LocaleDefaults as aj, type Media as ak, type OptionFilter as al, type OptionFilterOption as am, type OptionType as an, type OptionValue as ao, type PaginationMeta as ap, PallasTradeError as aq, type PaymentMethod as ar, type PaymentSource as as, type Price as at, type PriceRangeFilter as au, type ProductFilter as av, type Promotion as aw, type ProviderLogin as ax, type Refund as ay, type ReturnAuthorization as az, type PaginatedResponse as b, type Product as c, type ProductFiltersParams as d, type ProductFiltersResponse as e, type Category as f, type ListResponse as g, type Country as h, type Currency as i, type Locale as j, type Policy as k, type ListParams as l, type Post as m, type Cart as n, type CreateCartParams as o, type AddLineItemParams as p, type UpdateLineItemParams as q, type CreatePaymentParams as r, type Payment as s, type CreatePaymentSessionParams as t, type PaymentSession as u, type UpdatePaymentSessionParams as v, type CompletePaymentSessionParams as w, type RegisterParams as x, type CreatePaymentCombinationParams as y, type PaymentCombination as z };

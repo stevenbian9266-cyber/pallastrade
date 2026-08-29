@@ -427,6 +427,13 @@ var StoreClient = class {
      */
     complete: (cartId, options) => this.request("POST", `/carts/${cartId}/complete`, options),
     /**
+     * P1 (2026-08-30): Submit the cart — creates a pending Order (standard flow)
+     * from the selected cart items and converts the cart.
+     * Returns an Order (not Cart). Client should then navigate to /checkout/[orderId].
+     * @param cartId - Cart prefixed ID
+     */
+    submit: (cartId, options) => this.request("POST", `/carts/${cartId}/submit`, options),
+    /**
      * Nested resource: Line items
      */
     items: {
@@ -584,6 +591,15 @@ var StoreClient = class {
     }
   };
   // ============================================
+  // Shipping Methods (P1, 2026-08-30) — 订单确认页可选配送方式
+  // ============================================
+  shippingMethods = {
+    /**
+     * List front-end shipping methods (name/description with rate label).
+     */
+    list: (options) => this.request("GET", "/shipping_methods", options)
+  };
+  // ============================================
   // Orders (post-purchase, read-only)
   // ============================================
   orders = {
@@ -594,7 +610,32 @@ var StoreClient = class {
     get: (id, params, options) => this.request("GET", `/orders/${id}`, {
       ...options,
       params: getParams(params)
-    })
+    }),
+    /**
+     * P1 (2026-08-30): Nested payment sessions — Checkout 纯支付在订单域创建/完成支付会话。
+     * 与 legacy `carts.paymentSessions`（Order 同表购物车）不同，标准流程订单是正式 Order。
+     */
+    paymentSessions: {
+      /**
+       * Create a payment session for the order.
+       */
+      create: (orderId, params, options) => this.request("POST", `/orders/${orderId}/payment_sessions`, {
+        ...options,
+        body: params
+      }),
+      /**
+       * Get a payment session by ID.
+       */
+      get: (orderId, sessionId, options) => this.request("GET", `/orders/${orderId}/payment_sessions/${sessionId}`, options),
+      /**
+       * Complete a payment session (confirm payment with the provider).
+       */
+      complete: (orderId, sessionId, params, options) => this.request(
+        "PATCH",
+        `/orders/${orderId}/payment_sessions/${sessionId}/complete`,
+        { ...options, body: params }
+      )
+    }
   };
   // ============================================
   // Customer

@@ -2767,6 +2767,75 @@ paths:
                   message: No payment found
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/carts/{id}/submit":
+    post:
+      summary: Submit cart (standard e-commerce flow, P1)
+      tags:
+      - Carts
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |-
+        Standard-flow cart submit (PRD-20260829-checkout): validates email and
+        selected items, snapshots line items and addresses, creates shipments,
+        selects the shipping rate, converts the cart, and returns the new
+        `or_`-prefixed Order. Emits `order.submitted`. The order carries the
+        cart's token so the checkout payment page can authorize.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+          const client = createClient({ baseUrl: 'https://your-store.com', publishableKey: '<api-key>' })
+          const order = await client.carts.submit(cartId, { guestToken: cart.token })
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Prefixed cart ID (cart_...)
+      responses:
+        '200':
+          description: cart submitted, order returned
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Order"
+        '422':
+          description: cannot submit (missing email / no selected items / pricing changed)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/shipping_methods":
+    get:
+      summary: List front-end shipping methods (P1)
+      tags:
+      - Shipping
+      security:
+      - api_key: []
+      description: |-
+        Front-end delivery-method list for the order-confirmation page
+        (`display_on` both/front_end). Each item carries
+        `display_estimated_price`; the authoritative shipping cost is computed
+        at order submit.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+          const client = createClient({ baseUrl: 'https://your-store.com', publishableKey: '<api-key>' })
+          const methods = await client.shippingMethods.list()
+      responses:
+        '200':
+          description: shipping methods
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/DeliveryMethod"
   "/api/v3/store/carts/{cart_id}/discount_codes":
     post:
       summary: Apply discount code
@@ -5966,6 +6035,149 @@ paths:
                   message: Order not found
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/orders/{order_id}/payment_sessions":
+    post:
+      summary: Create order payment session (standard flow, P1)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      description: |-
+        Creates a provider payment session for a standard-flow order
+        (`or_`-prefixed, after cart submit). Stripe returns a Checkout Session
+        `client_secret`; the checkout page renders the provider form and then
+        completes the session.
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - payment_method_id
+              properties:
+                payment_method_id:
+                  type: string
+                  description: Prefixed payment method ID (pm_...)
+                amount:
+                  type: string
+                external_data:
+                  type: object
+      responses:
+        '201':
+          description: payment session created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+        '422':
+          description: session could not be created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/orders/{order_id}/payment_sessions/{id}":
+    get:
+      summary: Get order payment session
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: payment session
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+    patch:
+      summary: Update order payment session
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: string
+                external_data:
+                  type: object
+      responses:
+        '200':
+          description: payment session updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+  "/api/v3/store/orders/{order_id}/payment_sessions/{id}/complete":
+    patch:
+      summary: Complete order payment session (standard flow, P1)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      description: |-
+        Completes the payment session; drives `Carts::Complete` standard branch
+        (`pay!` + `finalize!`) so the order reaches `paid`/`completed`.
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                session_result:
+                  type: string
+                external_data:
+                  type: object
+      responses:
+        '200':
+          description: payment session completed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
   "/api/v3/store/customers/me/addresses":
     get:
       summary: List customer addresses

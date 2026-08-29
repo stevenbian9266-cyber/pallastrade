@@ -40,7 +40,7 @@ export function BuyNowButton({
       setLoading(false);
       return;
     }
-    router.push(`${basePath}/checkout/${result.cart.id}`);
+    router.push(`${basePath}/checkout-info/${result.cart.id}`);
   }
 
   return (
