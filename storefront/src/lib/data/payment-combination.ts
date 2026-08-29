@@ -8,10 +8,11 @@ import { actionResult } from "./utils";
 /**
  * Creates a payment combination for the given unpaid orders (P5, 2026-08-27).
  * POST /api/v3/store/payment_combinations — server computes the total.
+ * PALLAS-CUSTOM (2026-08-29, bugfix): paymentMethodId 可选，缺省时服务端选默认会话类支付方式。
  */
 export async function createPaymentCombination(
   orderIds: string[],
-  paymentMethodId: string,
+  paymentMethodId?: string,
 ): Promise<{ combination: PaymentCombination } | { error: string }> {
   return actionResult(async () => {
     const combination = await withAuthRefresh(async (options) => {

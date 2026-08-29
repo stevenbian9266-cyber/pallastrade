@@ -989,7 +989,8 @@ interface CreatePaymentSessionParams {
 interface CreatePaymentCombinationParams {
     /** Prefixed order IDs (e.g. order_…) to combine into a single payment */
     order_ids: string[];
-    payment_method_id: string;
+    /** Optional payment method (defaults to the store's session-based method server-side) */
+    payment_method_id?: string;
 }
 interface UpdatePaymentSessionParams {
     amount?: string;

@@ -1,10 +1,10 @@
 "use client";
 
+import type { Order } from "@pallastrade/sdk";
 import { Loader2, Wallet } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
-import type { Order } from "@pallastrade/sdk";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createPaymentCombination } from "@/lib/data/payment-combination";
@@ -46,7 +46,10 @@ export function OrderCombinedPay({
     [orders],
   );
 
-  const canPay = payable.length > 0 && selected.size > 0 && !!defaultPaymentMethodId;
+  // PALLAS-CUSTOM (2026-08-29, bugfix): 不再依赖 defaultPaymentMethodId——
+  // 用户可能没有购物车（getCart 返回空），此前导致按钮永远灰色。
+  // 支付方式缺省时由服务端选择（payment_combinations API 的 payment_method_id 已可选）。
+  const canPay = payable.length > 0 && selected.size > 0;
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -63,7 +66,7 @@ export function OrderCombinedPay({
     setError(null);
     const result = await createPaymentCombination(
       Array.from(selected),
-      defaultPaymentMethodId,
+      defaultPaymentMethodId || undefined,
     );
     if ("error" in result) {
       setError(result.error);
@@ -71,7 +74,9 @@ export function OrderCombinedPay({
       return;
     }
     // 跳转合并支付收银台
-    router.push(`${extractedBasePath}/combined-payment/${result.combination.id}`);
+    router.push(
+      `${extractedBasePath}/combined-payment/${result.combination.id}`,
+    );
   }
 
   if (payable.length === 0) return null;

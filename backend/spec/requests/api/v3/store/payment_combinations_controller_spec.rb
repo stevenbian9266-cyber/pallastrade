@@ -56,6 +56,22 @@ RSpec.describe 'Payment combinations (Store API)', type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
     end
+
+    # PALLAS-CUSTOM (2026-08-29, bugfix): payment_method_id 可选——无购物车用户
+    # 拿不到 cart 支付方式，服务端应回退到 store 默认会话类支付方式。
+    it 'falls back to the store default session-based payment method when payment_method_id is omitted' do
+      # 触发 lazy let(:payment_method)，否则不传 payment_method_id 时不会创建默认支付方式
+      payment_method
+      order1 = unpaid_order
+
+      post '/api/v3/store/payment_combinations',
+           params: { order_ids: [order1.prefixed_id] },
+           headers: headers
+
+      expect(response).to have_http_status(:created)
+      body = JSON.parse(response.body)
+      expect(body['payment_session']['payment_method_id']).to eq(payment_method.prefixed_id)
+    end
   end
 
   describe 'PATCH /api/v3/store/carts/:cart_id/payment_sessions/:id/complete' do

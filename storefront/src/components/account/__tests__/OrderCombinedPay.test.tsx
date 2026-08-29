@@ -1,7 +1,7 @@
+import type { Order } from "@pallastrade/sdk";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Order } from "@pallastrade/sdk";
 import { OrderCombinedPay } from "@/components/account/OrderCombinedPay";
 
 const pushMock = vi.fn();
@@ -20,6 +20,7 @@ vi.mock("@/lib/data/payment-combination", () => ({
 }));
 
 import { createPaymentCombination } from "@/lib/data/payment-combination";
+
 const mockedCreate = vi.mocked(createPaymentCombination);
 
 function order(overrides: Partial<Order> = {}): Order {
@@ -73,5 +74,26 @@ describe("OrderCombinedPay", () => {
 
     expect(mockedCreate).toHaveBeenCalledWith(["order_1"], "pm_1");
     expect(pushMock).toHaveBeenCalledWith("/us/en/combined-payment/pcom_1");
+  });
+
+  // PALLAS-CUSTOM (2026-08-29, bugfix): 无购物车时 defaultPaymentMethodId 为空，
+  // 勾选后按钮仍应可用（支付方式由服务端默认选择）。
+  it("enables Pay selected without a cart payment method (server picks default)", async () => {
+    const user = userEvent.setup();
+    mockedCreate.mockResolvedValue({
+      combination: { id: "pcom_2" },
+    } as never);
+
+    render(<OrderCombinedPay orders={[order()]} basePath="/us/en" />);
+
+    const button = screen.getByRole("button", { name: "paySelected" });
+    expect(button).toBeDisabled();
+
+    await user.click(screen.getByRole("checkbox"));
+    expect(button).toBeEnabled();
+
+    await user.click(button);
+    expect(mockedCreate).toHaveBeenCalledWith(["order_1"], undefined);
+    expect(pushMock).toHaveBeenCalledWith("/us/en/combined-payment/pcom_2");
   });
 });

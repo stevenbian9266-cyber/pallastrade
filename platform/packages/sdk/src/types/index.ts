@@ -231,11 +231,12 @@ export interface CreatePaymentSessionParams {
 
 // Payment Combinations (P5, 2026-08-27): 合并支付
 // POST /api/v3/store/payment_combinations
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+// PALLAS-CUSTOM (2026-08-29, bugfix): payment_method_id 可选——服务端缺省选默认会话类支付方式。
 export interface CreatePaymentCombinationParams {
   /** Prefixed order IDs (e.g. order_…) to combine into a single payment */
   order_ids: string[]
-  payment_method_id: string
+  /** Optional payment method (defaults to the store's session-based method server-side) */
+  payment_method_id?: string
 }
 
 export interface UpdatePaymentSessionParams {
