@@ -8,7 +8,7 @@ import {
 import { CircleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { normalizeClientSecret, stripePromise } from "@/lib/utils/stripe";
+import { stripePromise } from "@/lib/utils/stripe";
 
 export interface StripePaymentFormHandle {
   confirmPayment: (returnUrl: string) => Promise<{ error?: string }>;
@@ -103,7 +103,9 @@ export function StripePaymentForm({
     <CheckoutProvider
       stripe={stripePromise}
       options={{
-        clientSecret: normalizeClientSecret(clientSecret),
+        // Stripe's Checkout Session client_secret is returned URL-encoded
+        // (e.g. `%2F`); the SDK handles it as-is — do NOT decode here.
+        clientSecret,
         elementsOptions: {
           appearance: {
             theme: "stripe",
