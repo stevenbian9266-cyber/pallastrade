@@ -11,7 +11,13 @@ module PallasTradeStripe
     WEBHOOK_EVENT_ACTIONS = {
       'payment_intent.succeeded' => :captured,
       'payment_intent.amount_capturable_updated' => :authorized,
-      'payment_intent.payment_failed' => :failed
+      'payment_intent.payment_failed' => :failed,
+      # PALLAS-CUSTOM (2026-08-29, PRD-20260829-payments): Checkout Session
+      # events (migrated from PaymentIntents).
+      'checkout.session.completed' => :captured,
+      'checkout.session.async_payment_succeeded' => :captured,
+      'checkout.session.async_payment_failed' => :failed,
+      'checkout.session.expired' => :canceled
     }.freeze
 
     has_one_attached :apple_developer_merchantid_domain_association, service: PallasTrade.private_storage_service_name
@@ -46,13 +52,30 @@ module PallasTradeStripe
       action = WEBHOOK_EVENT_ACTIONS[event.type]
       return nil unless action
 
-      payment_session = PallasTrade::PaymentSessions::Stripe.find_by(
-        payment_method: self,
-        external_id: event.data.object[:id]
-      )
+      object_id = event.data.object[:id]
+      payment_session =
+        if object_id.to_s.start_with?('cs_')
+          PallasTrade::PaymentSessions::Stripe.find_by(payment_method: self, external_id: object_id)
+        else
+          # payment_intent.* events carry a `pi_` id; our session stores the `cs_`
+          # id, so resolve the Checkout Session that owns this intent via Stripe.
+          find_session_by_payment_intent(object_id)
+        end
       return nil unless payment_session
 
       { action: action, payment_session: payment_session, metadata: { stripe_event: event } }
+    end
+
+    # Resolves the local PaymentSession that owns a given Stripe PaymentIntent
+    # (used for `payment_intent.*` webhook events after migrating to Checkout
+    # Sessions, where the session stores the `cs_` id).
+    def find_session_by_payment_intent(payment_intent_id)
+      session = send_request { |opts| Stripe::Checkout::Session.list({ payment_intent: payment_intent_id, limit: 1 }, opts) }.first
+      return nil unless session
+
+      PallasTrade::PaymentSessions::Stripe.find_by(payment_method: self, external_id: session.id)
+    rescue Stripe::StripeError
+      nil
     end
 
     def provider_class

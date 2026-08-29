@@ -18,16 +18,20 @@ module PallasTradeStripe
         raise PallasTrade::Core::GatewayError, I18n.t('pallastrade.stripe.payment_session_errors.zero_amount') if amount_in_cents.zero?
 
         customer = fetch_or_create_customer(order: order)
-        stripe_pm_id = external_data[:stripe_payment_method_id] || external_data['stripe_payment_method_id']
+        return_url = external_data[:return_url] || external_data['return_url']
 
-        response = create_payment_intent(
-          amount_in_cents, order,
-          payment_method_id: stripe_pm_id,
-          customer_profile_id: customer&.profile_id
-        )
+        # PALLAS-CUSTOM (2026-08-29, PRD-20260829-payments): migrate from
+        # PaymentIntents to Checkout Sessions (ui_mode: elements) per
+        # https://docs.stripe.com/payments/payment-element/migration-ewcs.
+        session_payload = CheckoutSessionPresenter.new(
+          amount_in_cents: amount_in_cents,
+          order: order,
+          customer: customer&.profile_id,
+          return_url: return_url,
+          capture_method: stripe_capture_method
+        ).call
 
-        ephemeral_key_response = create_ephemeral_key(customer.profile_id) if customer.present?
-        ephemeral_key_secret = ephemeral_key_response&.params&.dig('secret')
+        stripe_session = send_request { |opts| Stripe::Checkout::Session.create(session_payload, opts) }
 
         payment_session_class.create!(
           order: order,
@@ -35,40 +39,45 @@ module PallasTradeStripe
           amount: total,
           currency: order.currency,
           status: 'pending',
-          external_id: response.authorization,
+          external_id: stripe_session.id,
           customer: order.user,
           customer_external_id: customer&.profile_id,
           external_data: {
-            'client_secret' => response.params['client_secret'],
-            'ephemeral_key_secret' => ephemeral_key_secret,
-            'stripe_payment_method_id' => stripe_pm_id
+            'client_secret' => stripe_session.client_secret
           }.compact
         )
       end
 
+      # Checkout Sessions are immutable after creation (amount / line items can't
+      # be updated in place) — when the amount changes we recreate the Stripe
+      # session and rebind the local record. Otherwise just merge external_data.
       def update_payment_session(payment_session:, amount: nil, external_data: {})
-        attrs = {}
-        amount_in_cents = nil
-
-        if amount.present?
-          attrs[:amount] = amount
-          amount_in_cents = PallasTrade::Money.new(amount, currency: payment_session.currency).cents
+        if amount.present? && amount != payment_session.amount
+          replacement = create_payment_session(
+            order: payment_session.order,
+            amount: amount,
+            external_data: external_data
+          )
+          payment_session.update!(
+            external_id: replacement.external_id,
+            external_data: replacement.external_data,
+            amount: replacement.amount
+          )
+          return
         end
-
-        stripe_pm_id = external_data[:stripe_payment_method_id] || external_data['stripe_payment_method_id']
-
-        update_payment_intent(
-          payment_session.external_id,
-          amount_in_cents || payment_session.amount_in_cents,
-          payment_session.order,
-          stripe_pm_id
-        )
 
         if external_data.present?
-          attrs[:external_data] = (payment_session.external_data || {}).merge(external_data.stringify_keys)
+          payment_session.update!(
+            external_data: (payment_session.external_data || {}).merge(external_data.stringify_keys)
+          )
         end
+      end
 
-        payment_session.update!(attrs) if attrs.any?
+      # Retrieves a Stripe Checkout Session (expanded with its PaymentIntent).
+      def retrieve_checkout_session(session_id)
+        send_request do |opts|
+          Stripe::Checkout::Session.retrieve(session_id, opts.merge(expand: ['payment_intent']))
+        end
       end
 
       # Completes a payment session by verifying with Stripe, creating the
@@ -77,7 +86,10 @@ module PallasTradeStripe
       # Does NOT complete the order — that is handled by Carts::Complete
       # (called by the storefront or by the webhook handler).
       def complete_payment_session(payment_session:, params: {})
-        stripe_pi = retrieve_payment_intent(payment_session.external_id)
+        stripe_session = retrieve_checkout_session(payment_session.external_id)
+        stripe_pi = stripe_session.payment_intent
+        raise PallasTrade::Core::GatewayError, 'Checkout Session has no PaymentIntent yet' unless stripe_pi
+
         verify_payment_intent_matches!(stripe_pi, payment_session.amount_in_cents, payment_session.currency)
 
         if payment_intent_accepted?(stripe_pi)
