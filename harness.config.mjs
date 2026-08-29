@@ -154,6 +154,19 @@ export default {
   evidence: {
     autoVerify: true,
     maxOutputBytes: 262144,
+    // HTH-005: 已注册验证器（证据必须来自注册 verifier 才满足 Gate 的 test 类型）。
+    // 按需运行：`npx harness verify <id> --task <TASK-ID>`。
+    verifiers: {
+      'backend-rspec': {
+        description: 'Backend RSpec suite (PallasTrade core/api/app)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec'],
+      },
+      // P1 订单流程改造：本次变更相关 spec（新购物车/提交订单/回归）
+      'p1-order-flow-rspec': {
+        description: 'P1 order-flow specs (cart/submit/request + regression)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/cart_spec.rb spec/services/pallastrade/carts/submit_spec.rb spec/requests/api/v3/store/carts_controller_spec.rb spec/models/pallastrade/order_parent_child_spec.rb spec/requests/api/v3/store/payment_combinations_controller_spec.rb spec/services/pallastrade/carts/auto_split_spec.rb'],
+      },
+    },
   },
   plugins: {
     apiVersion: '1.0',
