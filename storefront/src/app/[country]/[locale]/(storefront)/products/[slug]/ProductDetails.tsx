@@ -202,11 +202,11 @@ export function ProductDetails({
             />
 
             {/* Actions row: Add to Cart + Buy Now side by side, equal width */}
-            <div className="flex flex-1 gap-4">
+            <div className="grid flex-1 grid-cols-2 gap-4">
               {/* Add to Cart Button */}
               <Button
                 size="lg"
-                className="flex-1"
+                className="w-full"
                 onClick={handleAddToCart}
                 disabled={loading || !isPurchasable}
               >

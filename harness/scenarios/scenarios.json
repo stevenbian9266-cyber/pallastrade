@@ -651,6 +651,24 @@
         "Push while doc-impact reports docs-required"
       ],
       "scoring": { "pdpNoCrash": 20, "checkoutRenders": 20, "stripeFormRenders": 25, "noHydration418": 20, "noNewFeatures": 5, "ciGreen": 5, "addressDelete422": 5 }
+    },
+    {
+      "id": "GS-038",
+      "name": "Storefront PDP Buy Now + Add to Cart same-row buttons",
+      "description": "AI should keep Buy Now and Add to Cart on the PDP in the same row at equal width (flex-1 each inside a flex flex-1 gap-4 wrapper; quantity picker wraps to its own line on mobile via flex-col sm:flex-row), and keep the component documented in pallastrade-storefront SKILL.md",
+      "mustDo": [
+        "Render Buy Now and Add to Cart in the same row at equal width using flex-1 on each action",
+        "Keep BuyNowButton's own button w-full inside its flex-1 wrapper",
+        "Use flex flex-col gap-4 sm:flex-row sm:items-center so mobile wraps the quantity picker to its own line while the two buttons share a row",
+        "Update ai/skills/pallastrade-storefront/SKILL.md Key components when the layout contract changes"
+      ],
+      "mustNotDo": [
+        "Stack Buy Now on its own full-width row below Add to Cart (pre-2026-08-29 behavior)",
+        "Use inline style={{}} or hardcoded hex colors for the buttons",
+        "Make Buy Now / Add to Cart unequal widths",
+        "Push while doc-impact reports docs-required"
+      ],
+      "scoring": { "sameRow": 30, "equalWidth": 30, "responsive": 20, "skillSynced": 10, "noAntiPatterns": 10 }
     }
   ]
 }
