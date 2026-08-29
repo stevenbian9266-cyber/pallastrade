@@ -2,7 +2,9 @@
 StripeEvent.signing_secret = ENV['STRIPE_SIGNING_SECRET'] if ENV['STRIPE_SIGNING_SECRET'].present?
 
 Stripe.log_level = ENV.fetch('STRIPE_LOG_LEVEL', 'debug')
-Stripe.api_version = '2023-10-16'
+# PALLAS-CUSTOM (2026-08-29, PRD-20260829-payments): `ui_mode: elements`
+# (Checkout Sessions + Payment Element) requires API 2026-03-25.dahlia or later.
+Stripe.api_version = ENV.fetch('STRIPE_API_VERSION', '2026-03-25.dahlia')
 Stripe.set_app_info('PallasTrade Stripe', version: PallasTrade.version, url: 'https://pallastrade.cn')
 
 Rails.application.config.after_initialize do
