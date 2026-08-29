@@ -193,18 +193,20 @@ export function ProductDetails({
           )}
 
           {/* Quantity & Add to Cart */}
-          <div className="mt-8">
-            <div className="flex gap-4">
-              <QuantityPicker
-                quantity={quantity}
-                onDecrement={() => setQuantity(Math.max(1, quantity - 1))}
-                onIncrement={() => setQuantity(quantity + 1)}
-                size="lg"
-              />
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+            <QuantityPicker
+              quantity={quantity}
+              onDecrement={() => setQuantity(Math.max(1, quantity - 1))}
+              onIncrement={() => setQuantity(quantity + 1)}
+              size="lg"
+            />
 
+            {/* Actions row: Add to Cart + Buy Now side by side, equal width */}
+            <div className="flex flex-1 gap-4">
               {/* Add to Cart Button */}
               <Button
                 size="lg"
+                className="flex-1"
                 onClick={handleAddToCart}
                 disabled={loading || !isPurchasable}
               >
@@ -222,19 +224,21 @@ export function ProductDetails({
                   t("outOfStock")
                 )}
               </Button>
-            </div>
 
-            {/* Buy Now (P5, 2026-08-27): 快捷下单，不污染购物车 */}
-            <BuyNowButton
-              variantId={
-                selectedVariant?.id ||
-                product.default_variant?.id ||
-                product.default_variant_id ||
-                ""
-              }
-              disabled={!isPurchasable}
-              quantity={quantity}
-            />
+              {/* Buy Now (P5, 2026-08-27): 快捷下单，不污染购物车 */}
+              <div className="flex-1">
+                <BuyNowButton
+                  variantId={
+                    selectedVariant?.id ||
+                    product.default_variant?.id ||
+                    product.default_variant_id ||
+                    ""
+                  }
+                  disabled={!isPurchasable}
+                  quantity={quantity}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Description */}

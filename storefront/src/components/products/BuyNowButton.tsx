@@ -44,7 +44,7 @@ export function BuyNowButton({
   }
 
   return (
-    <div className="mt-3">
+    <div>
       <Button
         variant="outline"
         size="lg"
