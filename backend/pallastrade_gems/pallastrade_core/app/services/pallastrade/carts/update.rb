@@ -78,7 +78,10 @@ module PallasTrade
       def assign_shipping_method
         return if params[:shipping_method_id].blank?
 
-        cart.shipping_method = cart.store.shipping_methods.find_by_prefix_id!(params[:shipping_method_id])
+        # PALLAS-CUSTOM (2026-08-30, bugfix): PallasTrade::ShippingMethod 是全局资源
+        # （表无 store_id，经 zone 与商店关联），Store 没有 shipping_methods 关联。
+        # 与 Store::ShippingMethodsController 一致按前缀全局查找（dm_ 前缀）。
+        cart.shipping_method = PallasTrade::ShippingMethod.find_by_prefix_id!(params[:shipping_method_id])
       end
 
       def process_items

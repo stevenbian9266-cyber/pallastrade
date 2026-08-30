@@ -70,6 +70,31 @@ RSpec.describe 'Store Carts API (standard flow)', type: :request do
     end
   end
 
+  describe 'PATCH /api/v3/store/carts/:id (update shipping method)' do
+    it 'assigns the shipping method by prefixed id (dm_)' do
+      shipping_method = PallasTrade::ShippingMethod.first
+      token_headers = headers.merge('x-pallastrade-token' => cart.token)
+
+      patch "/api/v3/store/carts/#{cart.prefixed_id}",
+            params: { shipping_method_id: shipping_method.prefixed_id }, headers: token_headers
+
+      expect(response).to have_http_status(:ok)
+      cart.reload
+      expect(cart.shipping_method).to eq(shipping_method)
+      # 序列化结果回显 dm_ 前缀
+      expect(json_response[:shipping_method_id]).to eq(shipping_method.prefixed_id)
+    end
+
+    it 'returns 404 for an unknown shipping method' do
+      token_headers = headers.merge('x-pallastrade-token' => cart.token)
+
+      patch "/api/v3/store/carts/#{cart.prefixed_id}",
+            params: { shipping_method_id: 'dm_doesnotexist' }, headers: token_headers
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
   describe 'POST /api/v3/store/carts/:id/submit' do
     it 'creates a pending order and converts the cart' do
       cart.update!(shipping_address: create(:address, user: nil), email: 'buyer@example.com')
