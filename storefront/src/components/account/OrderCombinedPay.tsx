@@ -101,11 +101,7 @@ export function OrderCombinedPay({
             {t("combinedPayHint", { count: payable.length })}
           </p>
         </div>
-        <Button
-          onClick={handlePay}
-          disabled={!canPay || processing}
-          size="sm"
-        >
+        <Button onClick={handlePay} disabled={!canPay || processing} size="sm">
           {processing ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : null}

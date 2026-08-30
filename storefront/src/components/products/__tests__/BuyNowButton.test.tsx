@@ -19,6 +19,7 @@ vi.mock("@/lib/data/buy-now", () => ({
 }));
 
 import { createBuyNowCart } from "@/lib/data/buy-now";
+
 const mockedBuyNow = vi.mocked(createBuyNowCart);
 
 describe("BuyNowButton", () => {

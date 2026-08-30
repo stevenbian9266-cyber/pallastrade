@@ -1,10 +1,6 @@
 "use server";
 
-import type {
-  AddressParams,
-  Order,
-  ShoppingCart,
-} from "@pallastrade/sdk";
+import type { AddressParams, Order, ShoppingCart } from "@pallastrade/sdk";
 import { PallasTradeError } from "@pallastrade/sdk";
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
@@ -25,7 +21,8 @@ export async function getShoppingCart(
   return withFallback(async () => {
     const options = await getCartOptions();
     const cartId =
-      explicitCartId ?? (await import("@/lib/pallastrade").then((m) => m.getCartId()));
+      explicitCartId ??
+      (await import("@/lib/pallastrade").then((m) => m.getCartId()));
 
     if (!cartId) return null;
 
@@ -42,7 +39,10 @@ export async function updateCartItemSelection(
   cartId: string,
   itemId: string,
   selected: boolean,
-): Promise<({ success: true } & { cart: ShoppingCart }) | { success: false; error: string }> {
+): Promise<
+  | ({ success: true } & { cart: ShoppingCart })
+  | { success: false; error: string }
+> {
   return actionResult(async () => {
     const options = await getCartOptions();
     const cart = await getClient().carts.items.update(
@@ -62,7 +62,10 @@ export async function updateCartItemSelection(
 export async function setAllCartItemsSelected(
   cartId: string,
   selected: boolean,
-): Promise<({ success: true } & { cart: ShoppingCart }) | { success: false; error: string }> {
+): Promise<
+  | ({ success: true } & { cart: ShoppingCart })
+  | { success: false; error: string }
+> {
   return actionResult(async () => {
     const options = await getCartOptions();
     const current = await getClient().carts.get(cartId, options);
@@ -70,7 +73,12 @@ export async function setAllCartItemsSelected(
 
     for (const item of items) {
       if (item.selected !== selected) {
-        await getClient().carts.items.update(cartId, item.id, { selected }, options);
+        await getClient().carts.items.update(
+          cartId,
+          item.id,
+          { selected },
+          options,
+        );
       }
     }
     updateTag("cart");
@@ -86,7 +94,10 @@ export async function updateCartItemQuantity(
   cartId: string,
   itemId: string,
   quantity: number,
-): Promise<({ success: true } & { cart: ShoppingCart }) | { success: false; error: string }> {
+): Promise<
+  | ({ success: true } & { cart: ShoppingCart })
+  | { success: false; error: string }
+> {
   return actionResult(async () => {
     const options = await getCartOptions();
     const cart = await getClient().carts.items.update(
@@ -106,7 +117,10 @@ export async function updateCartItemQuantity(
 export async function removeCartItem(
   cartId: string,
   itemId: string,
-): Promise<({ success: true } & { cart: ShoppingCart }) | { success: false; error: string }> {
+): Promise<
+  | ({ success: true } & { cart: ShoppingCart })
+  | { success: false; error: string }
+> {
   return actionResult(async () => {
     const options = await getCartOptions();
     const cart = await getClient().carts.items.delete(cartId, itemId, options);
@@ -125,7 +139,10 @@ export async function updateShoppingCartDetails(
     shipping_address?: AddressParams;
     shipping_method_id?: string;
   },
-): Promise<({ success: true } & { cart: ShoppingCart }) | { success: false; error: string }> {
+): Promise<
+  | ({ success: true } & { cart: ShoppingCart })
+  | { success: false; error: string }
+> {
   return actionResult(async () => {
     const options = await getCartOptions();
     const cart = await getClient().carts.update(cartId, params, options);
@@ -157,7 +174,9 @@ export async function submitCartOrder(cartId: string): Promise<Order> {
 /**
  * 提交订单并跳转 Checkout 支付页。
  */
-export async function submitCartAndGoToCheckout(cartId: string): Promise<never> {
+export async function submitCartAndGoToCheckout(
+  cartId: string,
+): Promise<never> {
   try {
     const order = await submitCartOrder(cartId);
     redirect(`/checkout/${order.id}`);

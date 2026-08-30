@@ -710,7 +710,11 @@ export class StoreClient {
         sessionId: string,
         options?: RequestOptions,
       ): Promise<PaymentSession> =>
-        this.request<PaymentSession>('GET', `/orders/${orderId}/payment_sessions/${sessionId}`, options),
+        this.request<PaymentSession>(
+          'GET',
+          `/orders/${orderId}/payment_sessions/${sessionId}`,
+          options,
+        ),
 
       /**
        * Complete a payment session (confirm payment with the provider).
@@ -738,11 +742,10 @@ export class StoreClient {
       params: UpdateOrderShippingAddressParams,
       options?: RequestOptions,
     ): Promise<Order> =>
-      this.request<Order>(
-        'PATCH',
-        `/customers/me/orders/${orderId}/shipping_address`,
-        { ...options, body: params },
-      ),
+      this.request<Order>('PATCH', `/customers/me/orders/${orderId}/shipping_address`, {
+        ...options,
+        body: params,
+      }),
   }
 
   // ============================================
@@ -862,7 +865,7 @@ export class StoreClient {
      */
     create: (
       params: {
-        kind: "complaint" | "feedback" | "inquiry"
+        kind: 'complaint' | 'feedback' | 'inquiry'
         name?: string
         email: string
         subject?: string

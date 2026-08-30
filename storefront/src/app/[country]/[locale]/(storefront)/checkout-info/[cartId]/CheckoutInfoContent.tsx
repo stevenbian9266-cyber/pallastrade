@@ -1,25 +1,29 @@
 "use client";
 
-import type { Country, DeliveryMethod, ShoppingCart } from "@pallastrade/sdk";
+import type {
+  Country,
+  DeliveryMethod,
+  ShoppingCart,
+  State,
+} from "@pallastrade/sdk";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { AddressFormFields } from "@/components/checkout/AddressFormFields";
 import { Button } from "@/components/ui/button";
-import { ProductImage } from "@/components/ui/product-image";
 import { Input } from "@/components/ui/input";
+import { ProductImage } from "@/components/ui/product-image";
+import { getCountry } from "@/lib/data/countries";
 import {
   submitCartAndGoToCheckout,
   updateShoppingCartDetails,
 } from "@/lib/data/shopping-cart";
-import { getCountry } from "@/lib/data/countries";
 import {
+  type AddressFormData,
   addressToFormData,
   emptyAddress,
   formDataToAddress,
-  type AddressFormData,
 } from "@/lib/utils/address";
-import type { State } from "@pallastrade/sdk";
 
 interface CheckoutInfoContentProps {
   cart: ShoppingCart;
@@ -202,9 +206,7 @@ export function CheckoutInfoContent({
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {item.name}
                     </p>
-                    <p className="text-sm text-gray-500">
-                      × {item.quantity}
-                    </p>
+                    <p className="text-sm text-gray-500">× {item.quantity}</p>
                   </div>
                   <p className="text-sm font-semibold text-gray-900">
                     {item.display_amount}

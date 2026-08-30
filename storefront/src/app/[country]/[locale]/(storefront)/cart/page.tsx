@@ -232,7 +232,9 @@ export default function CartPage() {
                     onDecrement={() =>
                       updateQuantity(item.id, Math.max(1, item.quantity - 1))
                     }
-                    onIncrement={() => updateQuantity(item.id, item.quantity + 1)}
+                    onIncrement={() =>
+                      updateQuantity(item.id, item.quantity + 1)
+                    }
                   />
                   <Button
                     variant="destructive"
@@ -276,7 +278,9 @@ export default function CartPage() {
                 size="lg"
                 className="w-full"
                 disabled={!someSelected || updating}
-                onClick={() => router.push(`${basePath}/checkout-info/${cart.id}`)}
+                onClick={() =>
+                  router.push(`${basePath}/checkout-info/${cart.id}`)
+                }
               >
                 {t("checkout")}
                 {someSelected ? <Check className="w-4 h-4 ml-2" /> : null}

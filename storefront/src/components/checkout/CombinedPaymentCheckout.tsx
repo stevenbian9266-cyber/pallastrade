@@ -27,10 +27,10 @@ import {
   updateOrderShippingAddress,
 } from "@/lib/data/payment-combination";
 import {
+  type AddressFormData,
   addressToFormData,
   emptyAddress,
   formDataToAddress,
-  type AddressFormData,
 } from "@/lib/utils/address";
 import { extractBasePath } from "@/lib/utils/path";
 
@@ -284,9 +284,7 @@ export function CombinedPaymentCheckout({
         <li className="text-gray-300">→</li>
         <li
           className={
-            step === "payment"
-              ? "font-medium text-indigo-600"
-              : "text-gray-500"
+            step === "payment" ? "font-medium text-indigo-600" : "text-gray-500"
           }
         >
           2. {t("paymentStep")}

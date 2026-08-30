@@ -55,7 +55,7 @@ async function CheckoutDataLoader({ params, searchParams }: CheckoutPageProps) {
 
   // 订单流程标准电商改造 P1（2026-08-30）：标准流程订单（or_ 前缀）→ 纯支付页。
   // 收货/物流已在 checkout-info 完成，这里只做支付。
-  if (cartData && cartData.id.startsWith("or_")) {
+  if (cartData?.id.startsWith("or_")) {
     const order = await getOrderForCheckout(cartId);
     if (order) {
       return <OrderPaymentContent order={order} />;

@@ -60,7 +60,11 @@ export async function completeOrder(orderId: string) {
     const options = await getCartOptions();
     // 标准流程：支付会话完成即驱动订单完成（Carts::Complete）。此处再查一次订单
     // 状态，已 paid/completed 直接返回。
-    const order: Order = await getClient().orders.get(orderId, undefined, options);
+    const order: Order = await getClient().orders.get(
+      orderId,
+      undefined,
+      options,
+    );
     return { success: true as const, order };
   } catch (error: unknown) {
     return {
@@ -72,7 +76,9 @@ export async function completeOrder(orderId: string) {
 }
 
 /** 读取订单（Checkout 支付页）。 */
-export async function getOrderForCheckout(orderId: string): Promise<Order | null> {
+export async function getOrderForCheckout(
+  orderId: string,
+): Promise<Order | null> {
   try {
     const options = await getCartOptions();
     return await getClient().orders.get(orderId, undefined, options);

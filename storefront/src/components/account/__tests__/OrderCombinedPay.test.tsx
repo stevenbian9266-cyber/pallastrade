@@ -100,10 +100,7 @@ describe("OrderCombinedPay", () => {
     await user.click(screen.getAllByRole("checkbox")[1]);
     await user.click(screen.getByRole("button", { name: "paySelected" }));
 
-    expect(mockedCreate).toHaveBeenCalledWith(
-      ["order_1", "order_2"],
-      "pm_1",
-    );
+    expect(mockedCreate).toHaveBeenCalledWith(["order_1", "order_2"], "pm_1");
     expect(pushMock).toHaveBeenCalledWith("/us/en/combined-payment/pcom_1");
   });
 
@@ -133,7 +130,10 @@ describe("OrderCombinedPay", () => {
     expect(button).toBeEnabled();
 
     await user.click(button);
-    expect(mockedCreate).toHaveBeenCalledWith(["order_1", "order_2"], undefined);
+    expect(mockedCreate).toHaveBeenCalledWith(
+      ["order_1", "order_2"],
+      undefined,
+    );
     expect(pushMock).toHaveBeenCalledWith("/us/en/combined-payment/pcom_2");
   });
 });

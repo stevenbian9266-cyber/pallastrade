@@ -1,12 +1,12 @@
 "use client";
 
 import type { Order, PaymentMethod } from "@pallastrade/sdk";
-import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { StripePaymentForm } from "@/components/checkout/StripePaymentForm";
 import type { StripePaymentFormHandle } from "@/components/checkout/StripePaymentForm";
+import { StripePaymentForm } from "@/components/checkout/StripePaymentForm";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import {
@@ -45,12 +45,9 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
 
   const isPaid = order.state === "paid" || order.state === "completed";
 
-  const handleStripeReady = useCallback(
-    (handle: StripePaymentFormHandle) => {
-      stripeHandleRef.current = handle;
-    },
-    [],
-  );
+  const handleStripeReady = useCallback((handle: StripePaymentFormHandle) => {
+    stripeHandleRef.current = handle;
+  }, []);
 
   // 已支付 → 直接跳完成页
   useEffect(() => {
@@ -68,7 +65,10 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
 
       if (isSessionBased) {
         // 创建订单支付会话 → 获取 client_secret（Stripe Checkout Session）
-        const result = await createOrderPaymentSession(order.id, selectedMethod.id);
+        const result = await createOrderPaymentSession(
+          order.id,
+          selectedMethod.id,
+        );
         if (!result.success) {
           toast.error(result.error);
           setProcessing(false);
@@ -126,9 +126,7 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">
-        {t("payment")}
-      </h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">{t("payment")}</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* 只读信息 */}
@@ -163,9 +161,7 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">
-                {t("noShippingAddress")}
-              </p>
+              <p className="text-sm text-gray-500">{t("noShippingAddress")}</p>
             )}
           </section>
 
@@ -268,15 +264,14 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
                 <dt className="text-gray-500">{tc("subtotal")}</dt>
                 <dd className="text-gray-900">{order.display_item_total}</dd>
               </div>
-              {order.delivery_total &&
-                parseFloat(order.delivery_total) > 0 && (
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">{tc("shipping")}</dt>
-                    <dd className="text-gray-900">
-                      {order.display_delivery_total}
-                    </dd>
-                  </div>
-                )}
+              {order.delivery_total && parseFloat(order.delivery_total) > 0 && (
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">{tc("shipping")}</dt>
+                  <dd className="text-gray-900">
+                    {order.display_delivery_total}
+                  </dd>
+                </div>
+              )}
               {order.tax_total && parseFloat(order.tax_total) > 0 && (
                 <div className="flex justify-between">
                   <dt className="text-gray-500">{tc("tax")}</dt>
