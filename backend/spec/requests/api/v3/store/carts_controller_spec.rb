@@ -114,5 +114,26 @@ RSpec.describe 'Store Carts API (standard flow)', type: :request do
       expect(json_response[:id]).to eq(order_id)
       expect(json_response[:state]).to eq('pending')
     end
+
+    # PRD-20260829-checkout 订单模块 AC-001：账户页勾选 1 笔「已完成但未支付」订单
+    # （completed_at 已设、payment_state=balance_due）→ 跳转单订单 checkout 纯支付页。
+    # show 必须使用 :show 能力（P1 曾误用 :update，导致已完成订单 403）。
+    it 'exposes a completed-but-unpaid order to its token holder (single-order checkout)' do
+      cart.update!(shipping_address: create(:address, user: nil), email: 'buyer@example.com')
+      cart.cart_items.create!(variant: variant, quantity: 1, selected: true)
+      post "/api/v3/store/carts/#{cart.prefixed_id}/submit", headers: headers.merge('x-pallastrade-token' => cart.token)
+      expect(response).to have_http_status(:ok)
+      order_id = json_response[:id]
+
+      order = PallasTrade::Order.find_by_prefix_id!(order_id)
+      # 模拟 legacy/已完成未支付订单：completed_at 已设但金额未结清
+      order.update_columns(completed_at: Time.current, state: 'complete', payment_state: 'balance_due')
+
+      get "/api/v3/store/orders/#{order_id}", headers: headers.merge('x-pallastrade-token' => cart.token)
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response[:id]).to eq(order_id)
+      expect(json_response[:payment_status]).to eq('balance_due')
+    end
   end
 end

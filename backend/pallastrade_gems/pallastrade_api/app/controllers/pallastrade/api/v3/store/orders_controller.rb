@@ -9,8 +9,11 @@ module PallasTrade
           include PallasTrade::Api::V3::OrderResolvable
 
           # GET /api/v3/store/orders/:id
-          # Single order lookup — accessible via order token (guests) or JWT (authenticated users)
-          before_action :find_order!
+          # Single order lookup — accessible via order token (guests) or JWT (authenticated users).
+          # Uses the `:show` ability (own orders are always viewable, including
+          # completed-but-unpaid orders on the checkout payment page); mutations
+          # (shipping address / payment sessions) keep the stricter `:update` ability.
+          before_action :find_order
 
           def show
             render json: serializer_class.new(@order, params: serializer_params).to_h
