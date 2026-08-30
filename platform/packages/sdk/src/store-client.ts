@@ -49,6 +49,7 @@ import type {
   StoreCredit,
   UpdateCartParams,
   UpdateLineItemParams,
+  UpdateOrderShippingAddressParams,
   UpdatePaymentSessionParams,
   Wishlist,
   WishlistItem,
@@ -726,6 +727,22 @@ export class StoreClient {
           { ...options, body: params },
         ),
     },
+
+    /**
+     * PRD-20260829-checkout（收货信息独立填写）：更新已下单未支付订单的收货地址。
+     * PATCH /api/v3/store/customers/me/orders/:order_id/shipping_address
+     * 需 JWT（当前登录用户自己的订单）；返回更新后的 Order。
+     */
+    updateShippingAddress: (
+      orderId: string,
+      params: UpdateOrderShippingAddressParams,
+      options?: RequestOptions,
+    ): Promise<Order> =>
+      this.request<Order>(
+        'PATCH',
+        `/customers/me/orders/${orderId}/shipping_address`,
+        { ...options, body: params },
+      ),
   }
 
   // ============================================
@@ -763,13 +780,19 @@ export class StoreClient {
 
     /**
      * Get a payment combination by ID (for the combined-payment checkout page).
+     * Pass `{ expand: ['orders'] }` to include each member order (items +
+     * shipping address) for the combined-flow shipping/itemized steps.
      * GET /api/v3/store/payment_combinations/:id
      */
     get: (
       id: string,
+      params?: { expand?: string[]; fields?: string[] },
       options?: RequestOptions,
     ): Promise<PaymentCombination> =>
-      this.request<PaymentCombination>('GET', `/payment_combinations/${id}`, options),
+      this.request<PaymentCombination>('GET', `/payment_combinations/${id}`, {
+        ...options,
+        params: getParams(params),
+      }),
   }
 
   // ============================================

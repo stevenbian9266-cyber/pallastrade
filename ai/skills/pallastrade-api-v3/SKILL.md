@@ -56,6 +56,8 @@ New `pallastrade_carts` entity + order-domain payments (all under Store API, pub
 - `POST /api/v3/store/carts/:id/submit` — converts an active cart into an `Order` (`or_`-prefixed). Validates email/selected items, snapshots line items + addresses, creates shipments, selects shipping rate, converts the cart. Returns the order; emits `order.submitted`.
 - `POST /api/v3/store/orders/:order_id/payment_sessions` + `GET/PATCH .../:id` + `PATCH .../:id/complete` — order-scoped payment sessions (Stripe Checkout `client_secret`, etc.); completion drives `Carts::Complete` standard branch (`pay!` + `finalize!`).
 - `GET /api/v3/store/shipping_methods` — front-end display list (`display_on: both/front_end`); each item carries `display_estimated_price` (authoritative cost is computed at submit).
+- `PATCH /api/v3/store/customers/me/orders/:order_id/shipping_address` — update an own unpaid order's shipping address (combined-payment shipping step). Only `!paid? && amount_due > 0` orders; `shipping_address_id` (user's saved address) or inline `shipping_address` (country_iso/state_abbr resolved by Address model); IDOR-safe, syncs shipment address_id, does not reset checkout state. `Store::Customer::Orders::ShippingAddressController` + `PallasTrade::Orders::UpdateShippingAddress`.
+- `GET /api/v3/store/payment_combinations/:id?expand=orders` — expands member orders (items + shipping addresses) for the combined-flow shipping/itemized steps.
 - `Order` serializer adds `state`, `status`, `submitted_at`, `cart_id`, `payment_methods` (the active `PaymentMethod` list for the order's market/currency).
 - Cart/CartItem serializers: new `ShoppingCart` shape with `status` and `items[].selected` (see `pallastrade-typescript-sdk`).
 

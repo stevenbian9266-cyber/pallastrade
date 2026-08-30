@@ -171,6 +171,11 @@ export default {
         description: 'Storefront vitest suite (unit + component)',
         command: ['node', 'storefront/node_modules/vitest/vitest.mjs', 'run', '--root', 'storefront'],
       },
+      // 订单模块（PRD-20260829-checkout 订单模块）：收货地址更新 + 组合支付 + 购物车回归
+      'order-module-rspec': {
+        description: 'Order-module specs (shipping address + combined payment + cart regression)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/api/v3/store/customer_order_shipping_address_spec.rb spec/requests/api/v3/store/payment_combinations_controller_spec.rb spec/requests/api/v3/store/carts_controller_spec.rb'],
+      },
     },
   },
   plugins: {

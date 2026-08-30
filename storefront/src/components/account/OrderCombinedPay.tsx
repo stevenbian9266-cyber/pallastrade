@@ -60,12 +60,23 @@ export function OrderCombinedPay({
     });
   }
 
-  async function handleCombinedPay() {
+  async function handlePay() {
     if (!canPay) return;
     setProcessing(true);
     setError(null);
+
+    const selectedIds = Array.from(selected);
+
+    // PRD-20260829-checkout（单笔/多笔分流）：
+    // 恰好 1 笔待支付订单 → 走单订单 checkout（沿用地址/配送，确认 + 支付）。
+    // 2 笔及以上 → 走合并支付新流程（收货信息独立步骤 + 商品明细 + 组合支付）。
+    if (selectedIds.length === 1) {
+      router.push(`${extractedBasePath}/checkout/${selectedIds[0]}`);
+      return;
+    }
+
     const result = await createPaymentCombination(
-      Array.from(selected),
+      selectedIds,
       defaultPaymentMethodId || undefined,
     );
     if ("error" in result) {
@@ -91,7 +102,7 @@ export function OrderCombinedPay({
           </p>
         </div>
         <Button
-          onClick={handleCombinedPay}
+          onClick={handlePay}
           disabled={!canPay || processing}
           size="sm"
         >

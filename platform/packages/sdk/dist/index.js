@@ -635,7 +635,17 @@ var StoreClient = class {
         `/orders/${orderId}/payment_sessions/${sessionId}/complete`,
         { ...options, body: params }
       )
-    }
+    },
+    /**
+     * PRD-20260829-checkout（收货信息独立填写）：更新已下单未支付订单的收货地址。
+     * PATCH /api/v3/store/customers/me/orders/:order_id/shipping_address
+     * 需 JWT（当前登录用户自己的订单）；返回更新后的 Order。
+     */
+    updateShippingAddress: (orderId, params, options) => this.request(
+      "PATCH",
+      `/customers/me/orders/${orderId}/shipping_address`,
+      { ...options, body: params }
+    )
   };
   // ============================================
   // Customer
@@ -663,9 +673,14 @@ var StoreClient = class {
     }),
     /**
      * Get a payment combination by ID (for the combined-payment checkout page).
+     * Pass `{ expand: ['orders'] }` to include each member order (items +
+     * shipping address) for the combined-flow shipping/itemized steps.
      * GET /api/v3/store/payment_combinations/:id
      */
-    get: (id, options) => this.request("GET", `/payment_combinations/${id}`, options)
+    get: (id, params, options) => this.request("GET", `/payment_combinations/${id}`, {
+      ...options,
+      params: getParams(params)
+    })
   };
   // ============================================
   // Newsletter Subscribers

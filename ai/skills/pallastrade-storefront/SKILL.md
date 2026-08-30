@@ -286,6 +286,11 @@ New Cart entity (`pallastrade_carts`, independent table — see `pallastrade-dat
 
 Keys: cart items use `selected`; the order keeps the cart's token; totals always come from the API (`display_*` fields). i18n keys live under `cart.*` / `checkout.*` / `common.*` in all five `messages/*.json` locales.
 
+#### Account orders: single vs combined payment (2026-08-29, PRD-20260829-checkout 订单模块)
+
+- **`OrderCombinedPay`** (`components/account/OrderCombinedPay.tsx`) splits by selection count: exactly **1** unpaid order → `/checkout/[orderId]` (single-order checkout reusing `OrderPaymentContent`, read-only address/delivery + pay); **2+** → `POST /payment_combinations` → `/combined-payment/[pcom_id]`.
+- **`CombinedPaymentCheckout`** (`components/checkout/CombinedPaymentCheckout.tsx`) is a two-step flow: step 1 **收货** (per-member-order `AddressFormFields` + save via `lib/data/payment-combination.ts` `updateOrderShippingAddress` → `PATCH /customers/me/orders/:id/shipping_address`; saved-address dropdown; no-address orders forced before continuing) → step 2 **商品 + 支付** (per-order itemized lines + combined total + `StripePaymentForm`; no address inputs in the payment card). Uses `paymentCombinations.get(id, { expand: ['orders'] })` for member order items/addresses.
+
 #### Recovering a guest cart from an emailed checkout link (abandoned-cart recovery)
 
 Recovery emails (e.g. `abandoned_cart_mailer.recovery_email`) link back to `/{country}/{locale}/checkout/{cart_id}?token=…`. The checkout page must restore the cart token cookie **before** fetching the cart, otherwise the guest cart is treated as anonymous:

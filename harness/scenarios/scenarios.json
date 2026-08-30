@@ -690,6 +690,26 @@
         "Push while doc-impact reports docs-required or generated:check fails"
       ],
       "scoring": { "separateTable": 20, "submitFlow": 20, "serializerFields": 15, "storefrontFlow": 20, "buyNowRoute": 10, "docsSynced": 15 }
+    },
+    {
+      "id": "GS-040",
+      "name": "Order module: single order checkout vs multi-order combined payment with independent shipping step",
+      "description": "PRD-20260829-checkout 订单模块: account orders page splits by selection — exactly 1 unpaid order routes to /checkout/[orderId] (single-order checkout, read-only address/delivery + pay); 2+ route to the combined flow /combined-payment/[pcom_id] with a two-step page (step 1 per-order shipping address confirm/edit saved via PATCH /customers/me/orders/:id/shipping_address, step 2 itemized items + combined total + Stripe PaymentElement with no address inputs).",
+      "mustDo": [
+        "OrderCombinedPay: 1 selected → push /checkout/[orderId] without creating a combination; 2+ → create payment combination → /combined-payment/[id]",
+        "CombinedPaymentCheckout: two steps (shipping → items+payment); per-member-order AddressFormFields + save; no-address orders block continuing (AC-004)",
+        "Backend Store API PATCH /customers/me/orders/:order_id/shipping_address: only own unpaid orders, IDOR-safe address resolution, syncs shipment address_id, does not reset checkout state",
+        "Payment step shows each member order's items + totals and the combined amount; Stripe payment card contains no address inputs (AC-007)",
+        "Sync docs: pallastrade-checkout / pallastrade-storefront skills, store.yaml (backend + platform), SDK (paymentCombinations.get expand + orders.updateShippingAddress), scenarios.json"
+      ],
+      "mustNotDo": [
+        "Route a single selected order through the combined-payment flow",
+        "Allow editing shipping addresses on paid/refunded orders",
+        "Call getClient()/next/headers from a client component (server actions only)",
+        "Put address inputs inside the Stripe PaymentElement card area",
+        "Push while doc-impact reports docs-required or generated:check fails"
+      ],
+      "scoring": { "splitLogic": 20, "shippingStep": 20, "backendEndpoint": 20, "itemsAndPayment": 15, "noAddressInPayment": 10, "docsSynced": 15 }
     }
   ]
 }

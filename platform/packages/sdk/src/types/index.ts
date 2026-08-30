@@ -267,6 +267,18 @@ export interface UpdateCartParams {
   items?: LineItemInput[]
 }
 
+/**
+ * 订单模块（PRD-20260829-checkout 收货信息独立填写）：
+ * 更新已下单未支付订单的收货地址（PATCH /customers/me/orders/:id/shipping_address）。
+ * 二选一：shipping_address_id 引用用户已存地址，或 shipping_address 就地更新/新建。
+ */
+export interface UpdateOrderShippingAddressParams {
+  /** Existing address ID (must belong to the current user) */
+  shipping_address_id?: string
+  /** New/inline shipping address */
+  shipping_address?: AddressParams
+}
+
 // Payments
 export interface CreatePaymentParams {
   payment_method_id: string

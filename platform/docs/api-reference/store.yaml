@@ -7588,6 +7588,86 @@ paths:
                   type: object
                   example:
                     preferred_contact: email
+  "/api/v3/store/customers/me/orders/{order_id}/shipping_address":
+    patch:
+      summary: Update order shipping address (combined flow, PRD-20260829-checkout)
+      tags:
+      - Customers
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |-
+        Updates the shipping address of an own, unpaid order — used by the
+        combined-payment shipping step. Only the current customer's own orders
+        with `amount_due > 0` are editable; paid/refunded orders are frozen.
+        Pass either `shipping_address_id` (a saved address of the current user)
+        or an inline `shipping_address`. Returns the refreshed Order.
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Prefixed order ID (or_...)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                shipping_address_id:
+                  type: string
+                  description: Prefixed saved-address ID of the current user
+                shipping_address:
+                  type: object
+                  properties:
+                    first_name:
+                      type: string
+                    last_name:
+                      type: string
+                    address1:
+                      type: string
+                    address2:
+                      type: string
+                    city:
+                      type: string
+                    postal_code:
+                      type: string
+                    phone:
+                      type: string
+                    company:
+                      type: string
+                    country_iso:
+                      type: string
+                    state_abbr:
+                      type: string
+                    state_name:
+                      type: string
+      responses:
+        '200':
+          description: order with updated shipping address
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Order"
+        '401':
+          description: authentication required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '404':
+          description: order not found (not yours)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '422':
+          description: order not editable (paid) or invalid address
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
   "/api/v3/store/customers/me/gift_cards":
     get:
       summary: List gift cards

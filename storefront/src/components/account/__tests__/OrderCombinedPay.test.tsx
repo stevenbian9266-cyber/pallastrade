@@ -55,11 +55,9 @@ describe("OrderCombinedPay", () => {
     expect(screen.queryByText("#R2")).not.toBeInTheDocument();
   });
 
-  it("creates a combination for selected orders and navigates to checkout (P5 AC-007)", async () => {
+  // PRD-20260829-checkout AC-001：恰好 1 笔待支付订单 → 单订单 checkout（同 cart）
+  it("routes a single selected order to the single-order checkout", async () => {
     const user = userEvent.setup();
-    mockedCreate.mockResolvedValue({
-      combination: { id: "pcom_1" },
-    } as never);
 
     render(
       <OrderCombinedPay
@@ -72,7 +70,40 @@ describe("OrderCombinedPay", () => {
     await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "paySelected" }));
 
-    expect(mockedCreate).toHaveBeenCalledWith(["order_1"], "pm_1");
+    expect(mockedCreate).not.toHaveBeenCalled();
+    expect(pushMock).toHaveBeenCalledWith("/us/en/checkout/order_1");
+  });
+
+  // PRD-20260829-checkout AC-002：2+ 笔待支付订单 → 合并支付新流程
+  it("creates a combination for multiple selected orders and navigates to the combined flow", async () => {
+    const user = userEvent.setup();
+    mockedCreate.mockResolvedValue({
+      combination: { id: "pcom_1" },
+    } as never);
+
+    render(
+      <OrderCombinedPay
+        orders={[
+          order(),
+          order({
+            id: "order_2",
+            number: "R2",
+            display_amount_due: "$20.00",
+          }),
+        ]}
+        basePath="/us/en"
+        defaultPaymentMethodId="pm_1"
+      />,
+    );
+
+    await user.click(screen.getAllByRole("checkbox")[0]);
+    await user.click(screen.getAllByRole("checkbox")[1]);
+    await user.click(screen.getByRole("button", { name: "paySelected" }));
+
+    expect(mockedCreate).toHaveBeenCalledWith(
+      ["order_1", "order_2"],
+      "pm_1",
+    );
     expect(pushMock).toHaveBeenCalledWith("/us/en/combined-payment/pcom_1");
   });
 
@@ -84,16 +115,25 @@ describe("OrderCombinedPay", () => {
       combination: { id: "pcom_2" },
     } as never);
 
-    render(<OrderCombinedPay orders={[order()]} basePath="/us/en" />);
+    render(
+      <OrderCombinedPay
+        orders={[
+          order(),
+          order({ id: "order_2", number: "R2", display_amount_due: "$20.00" }),
+        ]}
+        basePath="/us/en"
+      />,
+    );
 
     const button = screen.getByRole("button", { name: "paySelected" });
     expect(button).toBeDisabled();
 
-    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getAllByRole("checkbox")[0]);
+    await user.click(screen.getAllByRole("checkbox")[1]);
     expect(button).toBeEnabled();
 
     await user.click(button);
-    expect(mockedCreate).toHaveBeenCalledWith(["order_1"], undefined);
+    expect(mockedCreate).toHaveBeenCalledWith(["order_1", "order_2"], undefined);
     expect(pushMock).toHaveBeenCalledWith("/us/en/combined-payment/pcom_2");
   });
 });
