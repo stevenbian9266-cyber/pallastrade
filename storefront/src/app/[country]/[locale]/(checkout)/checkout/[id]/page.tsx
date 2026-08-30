@@ -3,12 +3,14 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { OrderPaymentContent } from "@/components/checkout/OrderPaymentContent";
+import { UnifiedCheckout } from "@/components/checkout/UnifiedCheckout";
 import { getAddresses } from "@/lib/data/addresses";
 import { getCheckoutOrder } from "@/lib/data/checkout";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
 import { getOrderForCheckout } from "@/lib/data/order-payment";
+import { getShippingMethods } from "@/lib/data/shopping-cart";
 import { setCartCookies } from "@/lib/pallastrade/cookies";
 
 import { CheckoutPageContent } from "./CheckoutPageContent";
@@ -43,12 +45,36 @@ async function CheckoutDataLoader({ params, searchParams }: CheckoutPageProps) {
     await setCartCookies(cartId, token);
   }
 
-  // 修复（2026-08-30）：新购物车（cart_ 前缀，pallastrade_carts 实体）不得进入
-  // legacy 一页式 checkout（该分支期望 Order 同表购物车形态，新购物车缺
-  // payment_methods 等字段 → "No payment methods available for this order."）。
-  // 统一走新流程确认页 checkout-info（地址/物流/提交 → or_ 订单 → 纯支付）。
+  // 下单链路统一化（PRD-20260830-checkout）：新购物车（cart_ 前缀）→ 统一下单页
+  // UnifiedCheckout（左右布局：地址/商品/物流/支付方式 + Pay Now 内联提交）。
+  // 不再 redirect 到 checkout-info（独立确认页），也不再落入 legacy 一页式。
   if (cartId.startsWith("cart_")) {
-    redirect(`/${urlCountry}/${locale}/checkout-info/${cartId}`);
+    const [cartData, market, shippingMethods] = await Promise.all([
+      getCheckoutOrder(cartId),
+      resolveMarket(urlCountry).catch(() => null),
+      getShippingMethods(),
+    ]);
+    if (!cartData || cartData.id !== cartId) {
+      // 购物车不存在/已转换 → 回购物车页
+      redirect(`/${urlCountry}/${locale}/cart`);
+    }
+    const countriesData = market
+      ? await getMarketCountries(market.id).catch(() => ({
+          data: [] as Country[],
+        }))
+      : { data: [] as Country[] };
+    const defaultIso =
+      cartData.shipping_address?.country_iso ?? countriesData.data[0]?.iso;
+    if (defaultIso) {
+      getCountry(defaultIso).catch(() => {});
+    }
+    return (
+      <UnifiedCheckout
+        cart={cartData as unknown as import("@pallastrade/sdk").ShoppingCart}
+        shippingMethods={shippingMethods}
+        countries={countriesData.data}
+      />
+    );
   }
 
   // Check auth first so we can skip address fetch for guests

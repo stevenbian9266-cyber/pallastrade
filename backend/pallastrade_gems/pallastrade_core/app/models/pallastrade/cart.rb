@@ -95,6 +95,12 @@ module PallasTrade
       update_column(:last_activity_at, Time.current)
     end
 
+    # 可选支付方式（下单链路统一化 PRD-20260830-checkout）：统一下单页购物车模式
+    # 需要展示支付方式；与 Order#payment_methods 同源（store 前端可用会话/非会话方式）。
+    def payment_methods
+      @payment_methods ||= store.payment_methods.active.available_on_front_end
+    end
+
     private
 
     # 事件 payload 用最小回退（id/timestamps）——约定解析会命中 legacy CartSerializer

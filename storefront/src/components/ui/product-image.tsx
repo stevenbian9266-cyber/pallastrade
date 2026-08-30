@@ -43,7 +43,7 @@ export function ProductImage({
   // again would double-encode and waste bandwidth.
   if (srcSet) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
+      // biome-ignore lint/performance/noImgElement: CDN 已优化的 webp 变体直出，避免 Next 二次编码
       <img
         src={src}
         srcSet={srcSet}

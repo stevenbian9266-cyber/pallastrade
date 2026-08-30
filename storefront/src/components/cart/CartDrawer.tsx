@@ -278,11 +278,11 @@ export function CartDrawer() {
             {!expressProcessing && (
               <div className="space-y-2">
                 <Button size="lg" className="w-full" asChild>
-                  {/* PALLAS-CUSTOM (2026-08-30, bugfix): 新购物车（cart_ 前缀）去结算
-                      走新流程确认页 checkout-info（地址/物流/提交 → or_ 订单 → 纯支付），
-                      不再跳 /checkout/[cartId]（legacy 一页式缺 payment_methods → 报错）。 */}
+                  {/* PALLAS-CUSTOM (2026-08-30, PRD-20260830-checkout): 新购物车（cart_ 前缀）去结算
+                      进入统一下单页 /checkout/[cartId]（UnifiedCheckout：左右布局 + 内联提交+支付），
+                      不再走 legacy 一页式（缺 payment_methods → 报错，已修复）。 */}
                   <Link
-                    href={`${basePath}/checkout-info/${cart?.id}`}
+                    href={`${basePath}/checkout/${cart?.id}`}
                     onClick={closeCart}
                   >
                     {t("checkout")}

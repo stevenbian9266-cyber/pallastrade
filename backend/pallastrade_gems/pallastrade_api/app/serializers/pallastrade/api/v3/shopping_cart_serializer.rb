@@ -39,6 +39,10 @@ module PallasTrade
         many :cart_items, key: :items, resource: proc { PallasTrade.api.cart_item_serializer }
         one :billing_address, resource: proc { PallasTrade.api.address_serializer }
         one :shipping_address, resource: proc { PallasTrade.api.address_serializer }
+
+        # 下单链路统一化（PRD-20260830-checkout）：统一下单页购物车模式需要可选支付方式。
+        # 与 Order serializer 一致：store.payment_methods.active.available_on_front_end。
+        many :payment_methods, resource: proc { PallasTrade.api.payment_method_serializer }
       end
     end
   end

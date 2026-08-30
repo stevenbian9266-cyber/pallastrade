@@ -2,13 +2,11 @@
 
 import type { Order } from "@pallastrade/sdk";
 import { Loader2, Wallet } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { PaymentCheckoutModal } from "@/components/checkout/PaymentCheckoutModal";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { createPaymentCombination } from "@/lib/data/payment-combination";
-import { extractBasePath } from "@/lib/utils/path";
 
 interface OrderCombinedPayProps {
   orders: Order[];
@@ -20,6 +18,8 @@ interface OrderCombinedPayProps {
 /**
  * 账户订单多选 → 合并支付（P5, 2026-08-27，flag 灰度）。
  * 仅显示待支付（balance_due）且非子订单（is_child）的订单。
+ * 下单链路统一化（PRD-20260830-checkout，场景 C）：点击 Pay selected 打开
+ * 收银台弹窗（PaymentCheckoutModal）——1 笔单笔支付，2+ 笔合并支付。
  */
 export function OrderCombinedPay({
   orders,
@@ -27,28 +27,23 @@ export function OrderCombinedPay({
   defaultPaymentMethodId = "",
 }: OrderCombinedPayProps) {
   const t = useTranslations("orders");
-  const router = useRouter();
-  const pathname = usePathname();
-  const extractedBasePath = extractBasePath(pathname);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalOrders, setModalOrders] = useState<Order[]>([]);
 
   // 可合并的待支付订单（排除已付/子订单）
-  const payable = useMemo(
-    () =>
-      orders.filter(
-        (order) =>
-          order.payment_status === "balance_due" &&
-          !order.is_child &&
-          Number(order.amount_due) > 0,
-      ),
-    [orders],
+  const payable = orders.filter(
+    (order) =>
+      order.payment_status === "balance_due" &&
+      !order.is_child &&
+      Number(order.amount_due) > 0,
   );
 
   // PALLAS-CUSTOM (2026-08-29, bugfix): 不再依赖 defaultPaymentMethodId——
   // 用户可能没有购物车（getCart 返回空），此前导致按钮永远灰色。
-  // 支付方式缺省时由服务端选择（payment_combinations API 的 payment_method_id 已可选）。
+  // 支付方式缺省时由弹窗/服务端选择（payment_combinations API 的 payment_method_id 已可选）。
   const canPay = payable.length > 0 && selected.size > 0;
 
   function toggle(id: string) {
@@ -60,34 +55,15 @@ export function OrderCombinedPay({
     });
   }
 
-  async function handlePay() {
+  function handlePay() {
     if (!canPay) return;
     setProcessing(true);
     setError(null);
-
-    const selectedIds = Array.from(selected);
-
-    // PRD-20260829-checkout（单笔/多笔分流）：
-    // 恰好 1 笔待支付订单 → 走单订单 checkout（沿用地址/配送，确认 + 支付）。
-    // 2 笔及以上 → 走合并支付新流程（收货信息独立步骤 + 商品明细 + 组合支付）。
-    if (selectedIds.length === 1) {
-      router.push(`${extractedBasePath}/checkout/${selectedIds[0]}`);
-      return;
-    }
-
-    const result = await createPaymentCombination(
-      selectedIds,
-      defaultPaymentMethodId || undefined,
-    );
-    if ("error" in result) {
-      setError(result.error);
-      setProcessing(false);
-      return;
-    }
-    // 跳转合并支付收银台
-    router.push(
-      `${extractedBasePath}/combined-payment/${result.combination.id}`,
-    );
+    const selectedOrders = payable.filter((o) => selected.has(o.id));
+    // 打开收银台弹窗（单笔/合并统一）
+    setModalOrders(selectedOrders);
+    setModalOpen(true);
+    setProcessing(false);
   }
 
   if (payable.length === 0) return null;
@@ -135,6 +111,14 @@ export function OrderCombinedPay({
           {error}
         </p>
       ) : null}
+
+      <PaymentCheckoutModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        orders={modalOrders}
+        basePath={basePath}
+        defaultPaymentMethodId={defaultPaymentMethodId}
+      />
     </div>
   );
 }

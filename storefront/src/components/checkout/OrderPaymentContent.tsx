@@ -1,7 +1,7 @@
 "use client";
 
 import type { Order, PaymentMethod } from "@pallastrade/sdk";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -23,6 +23,8 @@ interface OrderPaymentContentProps {
 /**
  * 订单流程标准电商改造 P1（2026-08-30）：Checkout 纯支付页（标准流程订单）。
  * 收货/物流只读；仅支付。支付完成 → 订单 paid → 跳转 order-placed。
+ * 下单链路统一化（PRD-20260830-checkout）：支持 ?pm=<payment_method_id> 预选支付方式
+ * （统一下单页 UnifiedCheckout 提交后携带预选方式跳转）。
  */
 export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
   const t = useTranslations("checkout");
@@ -30,11 +32,16 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
   const router = useRouter();
   const pathname = usePathname();
   const basePath = extractBasePath(pathname);
+  const searchParams = useSearchParams();
 
   const paymentMethods: PaymentMethod[] = order.payment_methods ?? [];
-  const [selectedMethodId, setSelectedMethodId] = useState(
-    paymentMethods[0]?.id ?? "",
-  );
+  // 默认选中：URL 预选（?pm=）> 首个可用支付方式
+  const [selectedMethodId, setSelectedMethodId] = useState(() => {
+    const preset = searchParams?.get("pm") ?? "";
+    return paymentMethods.some((m) => m.id === preset)
+      ? preset
+      : (paymentMethods[0]?.id ?? "");
+  });
   const selectedMethod =
     paymentMethods.find((m) => m.id === selectedMethodId) ?? paymentMethods[0];
 
@@ -115,7 +122,7 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
       }
       // 支付确认成功 → 完成会话 + 完成订单
       await completeOrderPaymentSession(order.id, stripeSessionId);
-      const done = await completeOrder(order.id);
+      await completeOrder(order.id);
       router.push(`${basePath}/order-placed/${order.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Payment failed");

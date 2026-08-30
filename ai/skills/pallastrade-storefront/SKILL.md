@@ -275,21 +275,23 @@ The Store API exposes payment sessions for the checkout flow — a single, provi
 
 The `pallastrade_stripe` / `pallastrade_adyen` / `pallastrade_paypal_checkout` gems ship reference checkout flows. Don't roll your own unless you're integrating a new provider.
 
-#### Standard e-commerce flow (P1 2026-08-30, PRD-20260829-checkout)
+#### Standard e-commerce flow (P1 2026-08-30, PRD-20260829-checkout + PRD-20260830-checkout 下单链路统一化)
 
-New Cart entity (`pallastrade_carts`, independent table — see `pallastrade-data-model`) with a standard flow:
+New Cart entity (`pallastrade_carts`, independent table — see `pallastrade-data-model`) with a standard flow. Since 2026-08-30 the flow is unified (阿里国际站风格：一页确认+支付 / 收银台弹窗):
 
-1. **Cart page** `/{country}/{locale}/cart` (`lib/data/shopping-cart.ts`): line-item `selected` checkboxes, select-all, quantity, remove. Only selected items flow into the order. Client component — all SDK calls go through `"use server"` actions (`updateCartItemSelection`, `setAllCartItemsSelected`, `updateCartItemQuantity`, `removeCartItem`); never import `getClient()` in a client component.
-2. **Order confirmation** `/{country}/{locale}/checkout-info/[cartId]`: email + shipping address + delivery-method radio (`lib/data/shopping-cart.ts` `updateShoppingCartDetails`, `getShippingMethods`), then `submitCartAndGoToCheckout` → backend `Carts::Submit` creates the Order → redirect to `/checkout/[orderId]` (`or_`-prefixed id).
-3. **Checkout (pure payment)** `/{country}/{locale}/checkout/[id]`: the page branches — `or_`-prefixed standard orders render `components/checkout/OrderPaymentContent` (read-only shipping, payment-method radio, `lib/data/order-payment.ts` `createOrderPaymentSession` → Stripe `StripePaymentForm(clientSecret)` classic flow → `completeOrderPaymentSession` + redirect to `/order-placed/[orderId]`); legacy carts keep `CheckoutPageContent`. Non-session methods (COD/check) skip online payment and go straight to the placed page.
-4. **Buy Now** (`components/products/BuyNowButton.tsx`) routes to `/checkout-info/[cartId]` (not `/checkout/[id]`).
+1. **Cart page** `/{country}/{locale}/cart` (`lib/data/shopping-cart.ts`): line-item `selected` checkboxes, select-all, quantity, remove. Only selected items flow into the order. Client component — all SDK calls go through `"use server"` actions (`updateCartItemSelection`, `setAllCartItemsSelected`, `updateCartItemQuantity`, `removeCartItem`); never import `getClient()` in a client component. **去结算** → `/checkout/[cartId]`（统一下单页，不再有独立的 `/checkout-info` 确认页——该目录已删除）。
+2. **Unified checkout** `/{country}/{locale}/checkout/[id]`（`components/checkout/UnifiedCheckout.tsx`，购物车模式）：left column = email + `AddressFormFields` + itemized lines + delivery-method radio + payment-method radio（`cart.payment_methods`，由 `ShoppingCartSerializer` 提供）；right column = sticky order summary + **Pay Now**。Pay Now 内联「`updateShoppingCartDetails`(PATCH cart) → `submitCartOrder`(Carts::Submit 生成 or_ 订单) → `router.replace(/checkout/[orderId]?pm=…)`」同页切换为订单支付态。
+3. **Order payment** `/{country}/{locale}/checkout/[id]`（`components/checkout/OrderPaymentContent.tsx`，`or_` 订单模式）：read-only shipping, payment-method radio（支持 `?pm=` 预选）, `lib/data/order-payment.ts` `createOrderPaymentSession` → Stripe `StripePaymentForm(clientSecret)` → `completeOrderPaymentSession` + `completeOrder` → `/order-placed/[orderId]`. Non-session methods (COD/check) skip online payment. Legacy `or_` carts keep `CheckoutPageContent` (AC-009 兼容).
+4. **Buy Now** (`components/products/BuyNowButton.tsx`) → `/checkout/[cartId]`（统一下单页）。
+5. **Cashier modal（个人中心场景 C）** `components/checkout/PaymentCheckoutModal.tsx`（Dialog）：仅支付方式 radio + 金额（单笔订单金额 / 组合总额+各单分摊）+ Stripe 表单 + Cancel/Pay Now，**不含地址/物流编辑**。单笔 → `createOrderPaymentSession`（Orders::PaymentSessions）；2+ 笔 → 弹窗内 `createPaymentCombination` + `getPaymentCombination`（`payment_session.external_data.client_secret`）→ confirm → `completeCombinationSession`（PaymentCombinations::Complete 幂等）→ 关闭 + `router.refresh()`。
 
 Keys: cart items use `selected`; the order keeps the cart's token; totals always come from the API (`display_*` fields). i18n keys live under `cart.*` / `checkout.*` / `common.*` in all five `messages/*.json` locales.
 
-#### Account orders: single vs combined payment (2026-08-29, PRD-20260829-checkout 订单模块)
+#### Account orders: single vs combined payment (2026-08-29, PRD-20260829-checkout 订单模块；2026-08-30 改收银台弹窗)
 
-- **`OrderCombinedPay`** (`components/account/OrderCombinedPay.tsx`) splits by selection count: exactly **1** unpaid order → `/checkout/[orderId]` (single-order checkout reusing `OrderPaymentContent`, read-only address/delivery + pay); **2+** → `POST /payment_combinations` → `/combined-payment/[pcom_id]`.
-- **`CombinedPaymentCheckout`** (`components/checkout/CombinedPaymentCheckout.tsx`) is a two-step flow: step 1 **收货** (per-member-order `AddressFormFields` + save via `lib/data/payment-combination.ts` `updateOrderShippingAddress` → `PATCH /customers/me/orders/:id/shipping_address`; saved-address dropdown; no-address orders forced before continuing) → step 2 **商品 + 支付** (per-order itemized lines + combined total + `StripePaymentForm`; no address inputs in the payment card). Uses `paymentCombinations.get(id, { expand: ['orders'] })` for member order items/addresses.
+- **`OrderCombinedPay`** (`components/account/OrderCombinedPay.tsx`) opens **`PaymentCheckoutModal`** on Pay selected: **1** unpaid order → 单笔弹窗（`Orders::PaymentSessions`）；**2+** → 组合弹窗（弹窗内 `POST /payment_combinations` + 各单分摊 + `PaymentCombinations::Complete`）。不再跳 `/combined-payment/[pcom_id]` 两步页。
+- **`OrderDetail`** (`components/account/OrderDetail.tsx`) 补 **Pay Now**（`components/account/OrderPayButton.tsx`，`balance_due` 且非子订单）→ 打开单笔收银台弹窗（AC-007）。
+- **`CombinedPaymentCheckout`** (`components/checkout/CombinedPaymentCheckout.tsx`) 保留为 `/combined-payment/[pcom_id]` 两步页（存量链接兼容）：step 1 **收货** (per-member-order `AddressFormFields` + save via `lib/data/payment-combination.ts` `updateOrderShippingAddress` → `PATCH /customers/me/orders/:id/shipping_address`; saved-address dropdown; no-address orders forced before continuing) → step 2 **商品 + 支付** (per-order itemized lines + combined total + `StripePaymentForm`; no address inputs in the payment card). Uses `paymentCombinations.get(id, { expand: ['orders'] })` for member order items/addresses.
 
 #### Recovering a guest cart from an emailed checkout link (abandoned-cart recovery)
 

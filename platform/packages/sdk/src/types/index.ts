@@ -1,5 +1,9 @@
 import type { AddressParams, ListParams } from '@pallastrade/sdk-core'
-import type { Address as AddressType, Cart as CartType } from './generated'
+import type {
+  Address as AddressType,
+  Cart as CartType,
+  PaymentMethod,
+} from './generated'
 
 // Re-export all generated types (unprefixed: Product, Order, etc.)
 export type {
@@ -212,6 +216,8 @@ export interface ShoppingCart {
   items: CartItem[]
   billing_address: AddressType | null
   shipping_address: AddressType | null
+  /** 下单链路统一化（PRD-20260830-checkout）：可选支付方式（store 前端可用） */
+  payment_methods?: PaymentMethod[]
 }
 
 // Cart operations

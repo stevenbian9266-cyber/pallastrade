@@ -628,7 +628,11 @@ var StoreClient = class {
       /**
        * Get a payment session by ID.
        */
-      get: (orderId, sessionId, options) => this.request("GET", `/orders/${orderId}/payment_sessions/${sessionId}`, options),
+      get: (orderId, sessionId, options) => this.request(
+        "GET",
+        `/orders/${orderId}/payment_sessions/${sessionId}`,
+        options
+      ),
       /**
        * Complete a payment session (confirm payment with the provider).
        */
@@ -643,11 +647,10 @@ var StoreClient = class {
      * PATCH /api/v3/store/customers/me/orders/:order_id/shipping_address
      * 需 JWT（当前登录用户自己的订单）；返回更新后的 Order。
      */
-    updateShippingAddress: (orderId, params, options) => this.request(
-      "PATCH",
-      `/customers/me/orders/${orderId}/shipping_address`,
-      { ...options, body: params }
-    )
+    updateShippingAddress: (orderId, params, options) => this.request("PATCH", `/customers/me/orders/${orderId}/shipping_address`, {
+      ...options,
+      body: params
+    })
   };
   // ============================================
   // Customer

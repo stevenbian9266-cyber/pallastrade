@@ -34,6 +34,22 @@ RSpec.describe 'Store Carts API (standard flow)', type: :request do
     end
   end
 
+  describe 'GET /api/v3/store/carts/:id (payment methods)' do
+    # PRD-20260830-checkout AC-001：统一下单页需要购物车级可用支付方式
+    it 'returns active front-end payment methods scoped to the store' do
+      create(:bogus_payment_method, name: 'Card', store: store, active: true, display_on: 'both')
+
+      get "/api/v3/store/carts/#{cart.prefixed_id}", params: {}, headers: headers.merge('x-pallastrade-token' => cart.token)
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response[:id]).to eq(cart.prefixed_id)
+      methods = json_response[:payment_methods]
+      expect(methods).to be_present
+      expect(methods.map { |m| m[:id] }).to all(start_with('pm_'))
+      expect(methods.map { |m| m[:name] }).to include('Card')
+    end
+  end
+
   describe 'cart item lifecycle' do
     it 'adds / lists / updates / deletes items' do
       token_headers = headers.merge('x-pallastrade-token' => cart.token)

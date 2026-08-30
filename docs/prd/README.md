@@ -38,6 +38,8 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| approved | PRD-20260830-checkout-下单链路规范化统一化-场景a-b统一下单页-场景c收银台弹窗-参考阿里国际站 | checkout | 2026-08-30 | （实施时回填） |
+| done | PRD-20260830-other-修复-skill-权威路径 | other | 2026-08-30 | REQ-20260830-fix-skill-authority-paths.md |
 | approved | PRD-20260829-checkout-订单模块-单笔走现有checkout-多笔走组合支付新流程-收货信息独立填写 | checkout | 2026-08-29 | REQ-20260830-order-module-single-combined-payment.md |
 | approved | PRD-20260829-checkout-订单流程标准电商改造-购物车与订单分表-订单确认-提交订单-checkout纯支付-自有化去spree化 | checkout | 2026-08-29 | REQ-20260830-order-flow-standard-ecommerce-p1.md |
 | done | PRD-20260828-checkout-p8-前置校验-库存-风控-订单服务增强-flag-灰度 | checkout | 2026-08-28 | REQ-20260828-order-lifecycle-p8.md |

@@ -347,6 +347,7 @@
     "noShippingAddress": "No shipping address provided for this order.",
     "payAmount": "Pay Now {amount}",
     "orderConfirmation": "Order Confirmation",
+    "items": "Items",
     "contactInfo": "Contact Information",
     "email": "Email",
     "deliveryMethod": "Delivery Method",
@@ -382,7 +383,8 @@
     "policyConsentRequired": "You must agree to the store policies before placing your order",
     "iAgreeToThe": "I agree to the",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " and "
+    "policySeparatorAnd": " and ",
+    "confirmPayment": "Confirm Payment"
   },
   "address": {
     "firstName": "First name",
@@ -523,7 +525,8 @@
     "orderTitle": "Order #{number}",
     "shipmentCanceledRefund": "Shipment canceled — a refund has been issued.",
     "shippingMethodUnavailable": "Unavailable",
-    "totalColumn": "Total"
+    "totalColumn": "Total",
+    "payNow": "Pay Now"
   },
   "orderPlaced": {
     "thanksForOrder": "Thanks for your order, {name}!",

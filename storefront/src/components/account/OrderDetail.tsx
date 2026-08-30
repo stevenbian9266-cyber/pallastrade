@@ -2,6 +2,7 @@ import type { Order } from "@pallastrade/sdk";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { OrderPayButton } from "@/components/account/OrderPayButton";
 import { AddressBlock } from "@/components/order/AddressBlock";
 import { FulfillmentBlock } from "@/components/order/FulfillmentBlock";
 import { LineItemCard } from "@/components/order/LineItemCard";
@@ -36,12 +37,20 @@ export async function OrderDetail({
         {t("backToOrders")}
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900">
-        {t("orderTitle", { number: order.number })}
-      </h1>
-      <p className="text-sm text-gray-500 mt-1 mb-6">
-        {t("placedOn", { date: formatDateTime(order.completed_at, locale) })}
-      </p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {t("orderTitle", { number: order.number })}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {t("placedOn", {
+              date: formatDateTime(order.completed_at, locale),
+            })}
+          </p>
+        </div>
+        {/* 下单链路统一化（PRD-20260830-checkout AC-007）：待支付订单补 Pay Now */}
+        <OrderPayButton order={order} basePath={basePath} />
+      </div>
 
       {hasFulfillments ? (
         order.fulfillments.map((fulfillment) => {

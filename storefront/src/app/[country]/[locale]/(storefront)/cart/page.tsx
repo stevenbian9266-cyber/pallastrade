@@ -5,7 +5,7 @@ import { Check, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
@@ -22,7 +22,7 @@ import { extractBasePath } from "@/lib/utils/path";
 /**
  * 订单流程标准电商改造 P1（2026-08-30）：购物车页（新 Cart 实体）。
  * 支持勾选/全选/删除/数量调整；「去结算」仅在有勾选商品时可用，
- * 跳转订单确认页 /checkout-info/[cartId]。
+ * 跳转统一下单页 /checkout/[cartId]（下单链路统一化 PRD-20260830-checkout）。
  */
 export default function CartPage() {
   const t = useTranslations("cart");
@@ -36,28 +36,20 @@ export default function CartPage() {
   const [updating, setUpdating] = useState(false);
   const [busyItem, setBusyItem] = useState<string | null>(null);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     const data = await getShoppingCart();
     setCart(data);
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
   const items = cart?.items ?? [];
   const selectedCount = items.filter((i) => i.selected).length;
   const allSelected = items.length > 0 && selectedCount === items.length;
   const someSelected = selectedCount > 0;
-
-  const itemTotal = useMemo(
-    () =>
-      items
-        .filter((i) => i.selected)
-        .reduce((sum, i) => sum + parseFloat(i.amount ?? "0"), 0),
-    [items],
-  );
 
   const toggleAll = async () => {
     if (!cart) return;
@@ -279,7 +271,8 @@ export default function CartPage() {
                 className="w-full"
                 disabled={!someSelected || updating}
                 onClick={() =>
-                  router.push(`${basePath}/checkout-info/${cart.id}`)
+                  // 下单链路统一化（PRD-20260830-checkout）：去结算进入统一下单页
+                  router.push(`${basePath}/checkout/${cart.id}`)
                 }
               >
                 {t("checkout")}

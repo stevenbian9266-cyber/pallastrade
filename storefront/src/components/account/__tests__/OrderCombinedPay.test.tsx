@@ -4,24 +4,18 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrderCombinedPay } from "@/components/account/OrderCombinedPay";
 
-const pushMock = vi.fn();
+// Mock PaymentCheckoutModal：仅暴露 props 供断言
+const modalProps = vi.fn();
+vi.mock("@/components/checkout/PaymentCheckoutModal", () => ({
+  PaymentCheckoutModal: (props: Record<string, unknown>) => {
+    modalProps(props);
+    return props.open ? <div data-testid="checkout-modal" /> : null;
+  },
+}));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock }),
-  usePathname: () => "/us/en/account/orders",
-}));
-
-vi.mock("@/lib/data/payment-combination", () => ({
-  createPaymentCombination: vi.fn(),
-}));
-
-import { createPaymentCombination } from "@/lib/data/payment-combination";
-
-const mockedCreate = vi.mocked(createPaymentCombination);
 
 function order(overrides: Partial<Order> = {}): Order {
   return {
@@ -36,10 +30,9 @@ function order(overrides: Partial<Order> = {}): Order {
   } as Order;
 }
 
-describe("OrderCombinedPay", () => {
+describe("OrderCombinedPay (场景 C：收银台弹窗, PRD-20260830-checkout)", () => {
   beforeEach(() => {
-    pushMock.mockReset();
-    mockedCreate.mockReset();
+    modalProps.mockReset();
   });
 
   it("renders only payable (balance_due, non-child) orders (P5 AC-007)", () => {
@@ -55,8 +48,8 @@ describe("OrderCombinedPay", () => {
     expect(screen.queryByText("#R2")).not.toBeInTheDocument();
   });
 
-  // PRD-20260829-checkout AC-001：恰好 1 笔待支付订单 → 单订单 checkout（同 cart）
-  it("routes a single selected order to the single-order checkout", async () => {
+  // AC-005：勾选 1 笔 → 打开单笔收银台弹窗（不再跳 /checkout）
+  it("opens the single-order checkout modal for one selected order (AC-005)", async () => {
     const user = userEvent.setup();
 
     render(
@@ -70,26 +63,21 @@ describe("OrderCombinedPay", () => {
     await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "paySelected" }));
 
-    expect(mockedCreate).not.toHaveBeenCalled();
-    expect(pushMock).toHaveBeenCalledWith("/us/en/checkout/order_1");
+    expect(screen.getByTestId("checkout-modal")).toBeInTheDocument();
+    const props = modalProps.mock.calls.at(-1)?.[0];
+    expect(props.orders).toHaveLength(1);
+    expect(props.orders[0].id).toBe("order_1");
   });
 
-  // PRD-20260829-checkout AC-002：2+ 笔待支付订单 → 合并支付新流程
-  it("creates a combination for multiple selected orders and navigates to the combined flow", async () => {
+  // AC-006：勾选 2+ 笔 → 打开组合收银台弹窗（组合逻辑在弹窗内）
+  it("opens the combination modal for multiple selected orders (AC-006)", async () => {
     const user = userEvent.setup();
-    mockedCreate.mockResolvedValue({
-      combination: { id: "pcom_1" },
-    } as never);
 
     render(
       <OrderCombinedPay
         orders={[
           order(),
-          order({
-            id: "order_2",
-            number: "R2",
-            display_amount_due: "$20.00",
-          }),
+          order({ id: "order_2", number: "R2", display_amount_due: "$20.00" }),
         ]}
         basePath="/us/en"
         defaultPaymentMethodId="pm_1"
@@ -100,17 +88,18 @@ describe("OrderCombinedPay", () => {
     await user.click(screen.getAllByRole("checkbox")[1]);
     await user.click(screen.getByRole("button", { name: "paySelected" }));
 
-    expect(mockedCreate).toHaveBeenCalledWith(["order_1", "order_2"], "pm_1");
-    expect(pushMock).toHaveBeenCalledWith("/us/en/combined-payment/pcom_1");
+    expect(screen.getByTestId("checkout-modal")).toBeInTheDocument();
+    const props = modalProps.mock.calls.at(-1)?.[0];
+    expect(props.orders.map((o: Order) => o.id)).toEqual([
+      "order_1",
+      "order_2",
+    ]);
   });
 
   // PALLAS-CUSTOM (2026-08-29, bugfix): 无购物车时 defaultPaymentMethodId 为空，
   // 勾选后按钮仍应可用（支付方式由服务端默认选择）。
   it("enables Pay selected without a cart payment method (server picks default)", async () => {
     const user = userEvent.setup();
-    mockedCreate.mockResolvedValue({
-      combination: { id: "pcom_2" },
-    } as never);
 
     render(
       <OrderCombinedPay
@@ -130,10 +119,6 @@ describe("OrderCombinedPay", () => {
     expect(button).toBeEnabled();
 
     await user.click(button);
-    expect(mockedCreate).toHaveBeenCalledWith(
-      ["order_1", "order_2"],
-      undefined,
-    );
-    expect(pushMock).toHaveBeenCalledWith("/us/en/combined-payment/pcom_2");
+    expect(screen.getByTestId("checkout-modal")).toBeInTheDocument();
   });
 });

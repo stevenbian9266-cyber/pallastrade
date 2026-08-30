@@ -345,6 +345,7 @@
     "noShippingAddress": "Für diese Bestellung wurde keine Lieferadresse angegeben.",
     "payAmount": "Jetzt bezahlen {amount}",
     "orderConfirmation": "Bestellbestätigung",
+    "items": "Artikel",
     "contactInfo": "Kontaktinformationen",
     "email": "E-Mail",
     "deliveryMethod": "Versandart",
@@ -382,7 +383,8 @@
     "policySeparatorComma": ", ",
     "policySeparatorAnd": " und ",
     "combinedPayment": "Combined payment",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "confirmPayment": "Zahlung bestätigen"
   },
   "address": {
     "firstName": "Vorname",
@@ -523,7 +525,8 @@
     "totalColumn": "Gesamt",
     "combinedPayHint": "{count} unpaid orders can be paid together",
     "paySelected": "Pay selected",
-    "selectOrder": "Select order"
+    "selectOrder": "Select order",
+    "payNow": "Pay Now"
   },
   "orderPlaced": {
     "thanksForOrder": "Vielen Dank für Ihre Bestellung, {name}!",

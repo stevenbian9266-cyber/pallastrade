@@ -40,7 +40,8 @@ export function BuyNowButton({
       setLoading(false);
       return;
     }
-    router.push(`${basePath}/checkout-info/${result.cart.id}`);
+    // 下单链路统一化（PRD-20260830-checkout）：Buy Now 进入统一下单页
+    router.push(`${basePath}/checkout/${result.cart.id}`);
   }
 
   return (
