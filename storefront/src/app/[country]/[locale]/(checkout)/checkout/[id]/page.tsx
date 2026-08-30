@@ -34,13 +34,21 @@ interface CheckoutPageProps {
 async function CheckoutDataLoader({ params, searchParams }: CheckoutPageProps) {
   await connection();
 
-  const { id: cartId, country: urlCountry } = await params;
+  const { id: cartId, country: urlCountry, locale } = await params;
   const { token } = await searchParams;
 
   // P0-3 (2026-08-18): abandoned-cart recovery emails link here with ?token=…
   // so a returning visitor on a new device can re-attach to their cart.
   if (token) {
     await setCartCookies(cartId, token);
+  }
+
+  // 修复（2026-08-30）：新购物车（cart_ 前缀，pallastrade_carts 实体）不得进入
+  // legacy 一页式 checkout（该分支期望 Order 同表购物车形态，新购物车缺
+  // payment_methods 等字段 → "No payment methods available for this order."）。
+  // 统一走新流程确认页 checkout-info（地址/物流/提交 → or_ 订单 → 纯支付）。
+  if (cartId.startsWith("cart_")) {
+    redirect(`/${urlCountry}/${locale}/checkout-info/${cartId}`);
   }
 
   // Check auth first so we can skip address fetch for guests
