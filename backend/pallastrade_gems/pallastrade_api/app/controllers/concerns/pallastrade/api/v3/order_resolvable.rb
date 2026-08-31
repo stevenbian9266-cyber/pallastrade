@@ -14,8 +14,13 @@ module PallasTrade
 
         # Find order by prefixed ID and authorize access via CanCanCan.
         # @return [PallasTrade::Order]
+        # PALLAS-CUSTOM: nested routes (e.g. /orders/:order_id/payment_sessions/:id)
+        # expose both params — :id is the child resource's id, so the order must
+        # always resolve from :order_id when present. (Previously the nested
+        # payment_sessions complete/show returned 404 because find_order picked
+        # up the ps_ session id.)
         def find_order
-          @order = order_scope.find_by_prefix_id!(params[:id] || params[:order_id])
+          @order = order_scope.find_by_prefix_id!(params[:order_id].presence || params[:id])
           authorize!(:show, @order, order_token)
           @order
         end

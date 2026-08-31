@@ -41,4 +41,32 @@ RSpec.describe 'Order payment sessions (Store API)', type: :request do
       expect(response).to have_http_status(:not_found)
     end
   end
+
+  # 回归：嵌套路由下 find_order 必须解析 :order_id（params[:id] 是子资源 id，
+  # 若误用会按 ps_ 会话 id 查找 Order → 404）。PRD-20260831-payments-stripe 支付链路发现。
+  describe 'nested :order_id resolution' do
+    it 'completes a payment session on the nested complete route' do
+      order = completed_balance_due_order
+      session = payment_method.create_payment_session(order: order, amount: order.total)
+      session.save!
+
+      patch "/api/v3/store/orders/#{order.prefixed_id}/payment_sessions/#{session.prefixed_id}/complete",
+            headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(session.reload).to be_completed
+    end
+
+    it 'shows a payment session on the nested show route' do
+      order = completed_balance_due_order
+      session = payment_method.create_payment_session(order: order, amount: order.total)
+      session.save!
+
+      get "/api/v3/store/orders/#{order.prefixed_id}/payment_sessions/#{session.prefixed_id}",
+          headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)['id']).to eq(session.prefixed_id)
+    end
+  end
 end
