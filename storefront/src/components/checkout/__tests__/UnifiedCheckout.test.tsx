@@ -28,6 +28,34 @@ vi.mock("@/lib/data/shopping-cart", () => ({
   submitCartOrder: (...args: unknown[]) => submitMock(...args),
 }));
 
+const createOrderSessionMock = vi.fn();
+const completeOrderSessionMock = vi.fn();
+const completeOrderMock = vi.fn();
+
+vi.mock("@/lib/data/order-payment", () => ({
+  createOrderPaymentSession: (...args: unknown[]) =>
+    createOrderSessionMock(...args),
+  completeOrderPaymentSession: (...args: unknown[]) =>
+    completeOrderSessionMock(...args),
+  completeOrder: (...args: unknown[]) => completeOrderMock(...args),
+}));
+
+const confirmMock = vi.fn();
+vi.mock("@/components/checkout/StripePaymentForm", () => ({
+  StripePaymentForm: ({
+    clientSecret,
+    onReady,
+  }: {
+    clientSecret: string;
+    onReady: (h: {
+      confirmPayment: (url: string) => Promise<{ error?: string }>;
+    }) => void;
+  }) => {
+    onReady({ confirmPayment: (url: string) => confirmMock(url) });
+    return <div data-testid="stripe-form" data-secret={clientSecret} />;
+  },
+}));
+
 // AddressFormFields 简化 mock：渲染全部地址字段输入
 vi.mock("@/components/checkout/AddressFormFields", () => ({
   AddressFormFields: ({
@@ -70,7 +98,14 @@ function makeCart(overrides: Partial<ShoppingCart> = {}): ShoppingCart {
     email: "",
     shipping_address: null,
     shipping_method_id: null,
-    payment_methods: [{ id: "pm_card", name: "Card" }],
+    payment_methods: [
+      {
+        id: "pm_card",
+        name: "Card",
+        type: "stripe",
+        session_required: true,
+      },
+    ],
     items: [
       {
         id: "li_1",
@@ -113,8 +148,19 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     submitMock.mockReset();
     pushMock.mockReset();
     replaceMock.mockReset();
+    createOrderSessionMock.mockReset();
+    completeOrderSessionMock.mockReset();
+    completeOrderMock.mockReset();
+    confirmMock.mockReset();
     updateMock.mockResolvedValue({ success: true });
     submitMock.mockResolvedValue({ id: "or_123" });
+    createOrderSessionMock.mockResolvedValue({
+      success: true,
+      session: { id: "ps_1", client_secret: "sec_1" },
+    });
+    completeOrderSessionMock.mockResolvedValue({ success: true });
+    completeOrderMock.mockResolvedValue({ success: true, order: {} });
+    confirmMock.mockResolvedValue({});
   });
 
   it("renders shipping address, items, delivery method, payment method and order summary", () => {
@@ -160,7 +206,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     await waitFor(() => expect(payNow).toBeEnabled());
   });
 
-  it("submits: PATCH cart details then submit order then replace to order page with pm", async () => {
+  it("submits then shows Stripe form in-page and confirms payment (AC-002)", async () => {
     const user = userEvent.setup();
     render(
       <UnifiedCheckout
@@ -175,6 +221,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     await user.click(screen.getByRole("radio", { name: /Standard/ }));
     await user.click(screen.getByRole("button", { name: "payNow" }));
 
+    // 1. PATCH cart + submit 订单
     await waitFor(() => {
       expect(updateMock).toHaveBeenCalledWith(
         "cart_1",
@@ -182,11 +229,58 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
       );
     });
     await waitFor(() => expect(submitMock).toHaveBeenCalledWith("cart_1"));
+    // 2. 创建订单支付会话 → 同页渲染 Stripe 表单（不跳转）
     await waitFor(() =>
-      expect(replaceMock).toHaveBeenCalledWith(
-        "/us/en/checkout/or_123?pm=pm_card",
-      ),
+      expect(createOrderSessionMock).toHaveBeenCalledWith("or_123", "pm_card"),
     );
+    await waitFor(() =>
+      expect(screen.getByTestId("stripe-form")).toBeInTheDocument(),
+    );
+    expect(replaceMock).not.toHaveBeenCalled();
+
+    // 3. 按钮变为确认支付 → 点击 → 完成会话 + 完成订单 → 完成页
+    await user.click(screen.getByRole("button", { name: "confirmPayment" }));
+    await waitFor(() =>
+      expect(completeOrderSessionMock).toHaveBeenCalledWith("or_123", "ps_1"),
+    );
+    await waitFor(() =>
+      expect(completeOrderMock).toHaveBeenCalledWith("or_123"),
+    );
+    await waitFor(() =>
+      expect(pushMock).toHaveBeenCalledWith("/us/en/order-placed/or_123"),
+    );
+  });
+
+  it("non-session payment (Check) goes straight to the placed page after submit", async () => {
+    const user = userEvent.setup();
+    const cart = makeCart({
+      payment_methods: [
+        {
+          id: "pm_check",
+          name: "Check",
+          type: "check",
+          session_required: false,
+        },
+      ],
+    } as never);
+    render(
+      <UnifiedCheckout
+        cart={cart}
+        shippingMethods={shippingMethods}
+        countries={[]}
+      />,
+    );
+
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    await waitFor(() => expect(submitMock).toHaveBeenCalledWith("cart_1"));
+    await waitFor(() =>
+      expect(pushMock).toHaveBeenCalledWith("/us/en/order-placed/or_123"),
+    );
+    expect(createOrderSessionMock).not.toHaveBeenCalled();
   });
 
   it("shows a fallback message when no payment methods are available", () => {
@@ -220,6 +314,6 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
 
     await waitFor(() => expect(updateMock).toHaveBeenCalled());
     expect(submitMock).not.toHaveBeenCalled();
-    expect(replaceMock).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
   });
 });
