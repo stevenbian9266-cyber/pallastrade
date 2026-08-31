@@ -53,7 +53,13 @@ RUN cp -r /platform/packages/sdk/dist /app/node_modules/@pallastrade/sdk/dist
 FROM node:${NODE_VERSION} AS builder
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@11.1.1 --activate
+# corepack prepare downloads pnpm from the npm registry; in CN networks that
+# times out, so honor the same NPM_REGISTRY mirror used by the deps stage.
+ARG NPM_REGISTRY=""
+RUN if [ -n "$NPM_REGISTRY" ]; then \
+      export COREPACK_NPM_REGISTRY="$NPM_REGISTRY"; \
+    fi && \
+    corepack enable && corepack prepare pnpm@11.1.1 --activate
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
