@@ -34,6 +34,19 @@ RSpec.describe 'Store Carts API (standard flow)', type: :request do
     end
   end
 
+  describe 'GET /api/v3/store/carts' do
+    it 'returns only active carts for the authenticated customer' do
+      active_cart = store.shopping_carts.create!(user: user, currency: 'USD', locale: 'en')
+      store.shopping_carts.create!(user: user, currency: 'USD', locale: 'en', status: 'converted')
+      store.shopping_carts.create!(user: create(:user), currency: 'USD', locale: 'en')
+
+      get '/api/v3/store/carts', headers: bearer_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response[:data].map { |item| item[:id] }).to eq([active_cart.prefixed_id])
+    end
+  end
+
   describe 'GET /api/v3/store/carts/:id (payment methods)' do
     # PRD-20260830-checkout AC-001：统一下单页需要购物车级可用支付方式
     it 'returns active front-end payment methods scoped to the store' do

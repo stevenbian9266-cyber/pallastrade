@@ -40,7 +40,6 @@ describe("OrderCombinedPay (场景 C：收银台弹窗, PRD-20260830-checkout)",
       <OrderCombinedPay
         orders={[order(), order({ id: "order_2", payment_status: "paid" })]}
         basePath="/us/en"
-        defaultPaymentMethodId="pm_1"
       />,
     );
 
@@ -52,13 +51,7 @@ describe("OrderCombinedPay (场景 C：收银台弹窗, PRD-20260830-checkout)",
   it("opens the single-order checkout modal for one selected order (AC-005)", async () => {
     const user = userEvent.setup();
 
-    render(
-      <OrderCombinedPay
-        orders={[order()]}
-        basePath="/us/en"
-        defaultPaymentMethodId="pm_1"
-      />,
-    );
+    render(<OrderCombinedPay orders={[order()]} basePath="/us/en" />);
 
     await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "paySelected" }));
@@ -80,7 +73,6 @@ describe("OrderCombinedPay (场景 C：收银台弹窗, PRD-20260830-checkout)",
           order({ id: "order_2", number: "R2", display_amount_due: "$20.00" }),
         ]}
         basePath="/us/en"
-        defaultPaymentMethodId="pm_1"
       />,
     );
 
@@ -96,9 +88,7 @@ describe("OrderCombinedPay (场景 C：收银台弹窗, PRD-20260830-checkout)",
     ]);
   });
 
-  // PALLAS-CUSTOM (2026-08-29, bugfix): 无购物车时 defaultPaymentMethodId 为空，
-  // 勾选后按钮仍应可用（支付方式由服务端默认选择）。
-  it("enables Pay selected without a cart payment method (server picks default)", async () => {
+  it("enables Pay selected without loading a cart payment method", async () => {
     const user = userEvent.setup();
 
     render(

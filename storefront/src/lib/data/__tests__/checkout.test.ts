@@ -63,6 +63,7 @@ import {
 
 const mockOrder = {
   id: "order-1",
+  status: "active",
   number: "R100",
   current_step: "address",
 };

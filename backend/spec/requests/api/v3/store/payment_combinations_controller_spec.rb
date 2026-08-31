@@ -57,6 +57,20 @@ RSpec.describe 'Payment combinations (Store API)', type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
     end
 
+    it 'does not resolve another customer order for payment' do
+      other_customer_order = unpaid_order
+      other_customer_order.update!(user: create(:user))
+
+      post '/api/v3/store/payment_combinations',
+           params: { order_ids: [other_customer_order.prefixed_id],
+                     payment_method_id: payment_method.prefixed_id },
+           headers: headers
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(JSON.parse(response.body).dig('error', 'message'))
+        .to eq('Combination requires at least one order')
+    end
+
     # PALLAS-CUSTOM (2026-08-29, bugfix): payment_method_id 可选——无购物车用户
     # 拿不到 cart 支付方式，服务端应回退到 store 默认会话类支付方式。
     it 'falls back to the store default session-based payment method when payment_method_id is omitted' do

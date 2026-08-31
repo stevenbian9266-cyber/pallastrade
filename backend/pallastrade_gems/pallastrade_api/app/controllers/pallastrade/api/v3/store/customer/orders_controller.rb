@@ -1,3 +1,4 @@
+# PALLAS-CUSTOM: Keep customer order history explicitly scoped by store and JWT user ID.
 module PallasTrade
   module Api
     module V3
@@ -16,16 +17,11 @@ module PallasTrade
               PallasTrade.api.order_serializer
             end
 
-            def set_parent
-              @parent = current_user
-            end
-
-            def parent_association
-              :orders
-            end
-
             def scope
-              super.for_store(current_store).complete
+              current_store.orders
+                           .where(user_id: current_user.id)
+                           .complete
+                           .preload_associations_lazily
             end
           end
         end

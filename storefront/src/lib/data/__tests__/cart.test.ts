@@ -33,6 +33,10 @@ vi.mock("next/cache", () => ({
   updateTag: vi.fn(),
 }));
 
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn(),
+}));
+
 import {
   addToCart,
   associateCartWithUser,
@@ -42,10 +46,12 @@ import {
   removeCartItem,
   updateCartItem,
 } from "@/lib/data/cart";
+import { getShoppingCart } from "@/lib/data/shopping-cart";
 
 // Minimal cart fixture for tests
 const mockCart = {
   id: "cart-1",
+  status: "active",
   number: "R123456",
   state: "cart",
   token: "order-token-123",
@@ -67,6 +73,39 @@ describe("cart server actions", () => {
         token: undefined,
       });
       expect(result).toBe(mockCart);
+    });
+
+    it("does not return a converted cart as the current cart", async () => {
+      mockClient.carts.get.mockResolvedValue({
+        ...mockCart,
+        status: "converted",
+      });
+
+      const result = await getCart();
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("getShoppingCart", () => {
+    it("hides a converted cart from the shopping cart page", async () => {
+      mockClient.carts.get.mockResolvedValue({
+        ...mockCart,
+        status: "converted",
+      });
+
+      const result = await getShoppingCart();
+
+      expect(result).toBeNull();
+    });
+
+    it("keeps explicit converted-cart reads available to checkout", async () => {
+      const convertedCart = { ...mockCart, status: "converted" };
+      mockClient.carts.get.mockResolvedValue(convertedCart);
+
+      const result = await getShoppingCart("cart-1");
+
+      expect(result).toBe(convertedCart);
     });
   });
 
@@ -93,6 +132,20 @@ describe("cart server actions", () => {
         locale: "de",
         country: "de",
       });
+    });
+
+    it("creates a new active cart instead of reusing a converted cart", async () => {
+      const activeCart = { ...mockCart, id: "cart-2" };
+      mockClient.carts.get.mockResolvedValue({
+        ...mockCart,
+        status: "converted",
+      });
+      mockClient.carts.create.mockResolvedValue(activeCart);
+
+      const result = await getOrCreateCart();
+
+      expect(result).toBe(activeCart);
+      expect(mockClient.carts.create).toHaveBeenCalledOnce();
     });
   });
 

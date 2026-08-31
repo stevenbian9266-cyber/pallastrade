@@ -1,3 +1,4 @@
+# PALLAS-CUSTOM: Only active carts belong in the authenticated customer's current-cart list.
 module PallasTrade
   module Api
     module V3
@@ -106,7 +107,7 @@ module PallasTrade
           end
 
           def scope
-            current_store.shopping_carts.where(user: current_user).order(updated_at: :desc)
+            current_store.shopping_carts.active.where(user: current_user).order(updated_at: :desc)
           end
 
           private

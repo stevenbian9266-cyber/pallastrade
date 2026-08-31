@@ -36,8 +36,6 @@ interface PaymentCheckoutModalProps {
   /** 待支付订单：1 笔 → 单笔弹窗；2+ 笔 → 合并支付弹窗 */
   orders: Order[];
   basePath: string;
-  /** 默认会话类支付方式（取自购物车，可空 → 服务端/首个会话类兜底） */
-  defaultPaymentMethodId?: string;
 }
 
 /**
@@ -52,7 +50,6 @@ export function PaymentCheckoutModal({
   onOpenChange,
   orders,
   basePath,
-  defaultPaymentMethodId = "",
 }: PaymentCheckoutModalProps) {
   const t = useTranslations("checkout");
   const tc = useTranslations("common");
@@ -86,22 +83,18 @@ export function PaymentCheckoutModal({
   // 打开弹窗 → 重置状态 + 预选支付方式
   useEffect(() => {
     if (!open) return;
-    const methods = availableMethods;
-    const preset =
-      defaultPaymentMethodId &&
-      methods.some((m) => m.id === defaultPaymentMethodId)
-        ? defaultPaymentMethodId
-        : "";
     const first =
-      methods.find((m) => m.session_required)?.id ?? methods[0]?.id ?? "";
-    setSelectedMethodId(preset || first);
+      availableMethods.find((m) => m.session_required)?.id ??
+      availableMethods[0]?.id ??
+      "";
+    setSelectedMethodId(first);
     setStripeSecret(null);
     setStripeSessionId(null);
     setCombination(null);
     setError(null);
     setProcessing(false);
     setLoading(true);
-  }, [open, defaultPaymentMethodId, availableMethods]);
+  }, [open, availableMethods]);
 
   const createStripeSession = useCallback(
     async (method: PaymentMethod) => {

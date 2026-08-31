@@ -27,8 +27,11 @@ export async function getShoppingCart(
     if (!cartId) return null;
 
     const cart = await getClient().carts.get(cartId, options);
+    const shoppingCart = cart as unknown as ShoppingCart;
+    if (!explicitCartId && shoppingCart.status !== "active") return null;
+
     // 新 Cart 序列化器返回 ShoppingCart 形状（status/items[].selected）
-    return cart as unknown as ShoppingCart;
+    return shoppingCart;
   }, null);
 }
 

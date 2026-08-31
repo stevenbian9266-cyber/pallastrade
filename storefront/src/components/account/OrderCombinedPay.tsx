@@ -1,7 +1,7 @@
 "use client";
 
 import type { Order } from "@pallastrade/sdk";
-import { Loader2, Wallet } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { PaymentCheckoutModal } from "@/components/checkout/PaymentCheckoutModal";
@@ -11,8 +11,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 interface OrderCombinedPayProps {
   orders: Order[];
   basePath: string;
-  /** Default session payment method id (from the customer's cart), may be empty */
-  defaultPaymentMethodId?: string;
 }
 
 /**
@@ -21,15 +19,9 @@ interface OrderCombinedPayProps {
  * 下单链路统一化（PRD-20260830-checkout，场景 C）：点击 Pay selected 打开
  * 收银台弹窗（PaymentCheckoutModal）——1 笔单笔支付，2+ 笔合并支付。
  */
-export function OrderCombinedPay({
-  orders,
-  basePath,
-  defaultPaymentMethodId = "",
-}: OrderCombinedPayProps) {
+export function OrderCombinedPay({ orders, basePath }: OrderCombinedPayProps) {
   const t = useTranslations("orders");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalOrders, setModalOrders] = useState<Order[]>([]);
 
@@ -41,10 +33,7 @@ export function OrderCombinedPay({
       Number(order.amount_due) > 0,
   );
 
-  // PALLAS-CUSTOM (2026-08-29, bugfix): 不再依赖 defaultPaymentMethodId——
-  // 用户可能没有购物车（getCart 返回空），此前导致按钮永远灰色。
-  // 支付方式缺省时由弹窗/服务端选择（payment_combinations API 的 payment_method_id 已可选）。
-  const canPay = payable.length > 0 && selected.size > 0;
+  const canPay = selected.size > 0;
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -57,13 +46,10 @@ export function OrderCombinedPay({
 
   function handlePay() {
     if (!canPay) return;
-    setProcessing(true);
-    setError(null);
     const selectedOrders = payable.filter((o) => selected.has(o.id));
     // 打开收银台弹窗（单笔/合并统一）
     setModalOrders(selectedOrders);
     setModalOpen(true);
-    setProcessing(false);
   }
 
   if (payable.length === 0) return null;
@@ -77,10 +63,7 @@ export function OrderCombinedPay({
             {t("combinedPayHint", { count: payable.length })}
           </p>
         </div>
-        <Button onClick={handlePay} disabled={!canPay || processing} size="sm">
-          {processing ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : null}
+        <Button onClick={handlePay} disabled={!canPay} size="sm">
           {t("paySelected")}
         </Button>
       </div>
@@ -106,18 +89,11 @@ export function OrderCombinedPay({
         </div>
       ) : null}
 
-      {error ? (
-        <p className="mt-2 text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      ) : null}
-
       <PaymentCheckoutModal
         open={modalOpen}
         onOpenChange={setModalOpen}
         orders={modalOrders}
         basePath={basePath}
-        defaultPaymentMethodId={defaultPaymentMethodId}
       />
     </div>
   );

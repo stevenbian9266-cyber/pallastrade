@@ -7,6 +7,24 @@ require 'spec_helper'
 RSpec.describe 'Order serializer parent/child fields', type: :request do
   include_context 'API v3 Store authenticated'
 
+  it 'lists only completed orders owned by the authenticated customer' do
+    owned_order = create(:order, store: store, user: user, state: 'complete', completed_at: Time.current)
+    other_user = create(:user)
+    %w[R764037836 R467638098 R497136204].each do |number|
+      create(:order, number: number, store: store, user: other_user,
+                     state: 'complete', completed_at: Time.current)
+    end
+    create(:order, store: store, user: user, state: 'cart', completed_at: nil)
+
+    get '/api/v3/store/customers/me/orders', headers: headers
+
+    expect(response).to have_http_status(:ok)
+    listed_orders = JSON.parse(response.body).fetch('data')
+    expect(listed_orders.map { |order| order.fetch('id') }).to eq([owned_order.prefixed_id])
+    expect(listed_orders.map { |order| order.fetch('number') })
+      .not_to include('R764037836', 'R467638098', 'R497136204')
+  end
+
   it 'exposes parent/child/single fields for a single (non-split) order' do
     order = create(:order, store: store, user: user, state: 'complete', completed_at: Time.current)
 

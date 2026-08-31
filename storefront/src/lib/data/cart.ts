@@ -1,6 +1,6 @@
 "use server";
 
-import type { Cart, CreateCartParams } from "@pallastrade/sdk";
+import type { Cart, CreateCartParams, ShoppingCart } from "@pallastrade/sdk";
 import { updateTag } from "next/cache";
 import {
   clearCartCookies,
@@ -27,7 +27,11 @@ export async function getCart(explicitCartId?: string): Promise<Cart | null> {
 
   try {
     if (cartId) {
-      return await getClient().carts.get(cartId, { guestToken, token });
+      const cart = await getClient().carts.get(cartId, { guestToken, token });
+      if (!explicitCartId && !isActiveCart(cart)) {
+        return null;
+      }
+      return cart;
     }
 
     // Authenticated user without stored cart ID — find their most recent cart
@@ -35,6 +39,7 @@ export async function getCart(explicitCartId?: string): Promise<Cart | null> {
       const response = await getClient().carts.list({ token });
       if (response.data.length > 0) {
         const cart = response.data[0];
+        if (!isActiveCart(cart)) return null;
         await setCartCookies(cart.id, cart.token);
         return cart;
       }
@@ -46,13 +51,21 @@ export async function getCart(explicitCartId?: string): Promise<Cart | null> {
     // Wrapped in try/catch because clearCartCookies sets cookies, which
     // is not allowed in Server Components (only in Server Actions).
     if (!explicitCartId) {
-      try {
-        await clearCartCookies();
-      } catch {
-        // Ignore — cookie clearing is best-effort
-      }
+      await clearStaleCartCookies();
     }
     return null;
+  }
+}
+
+function isActiveCart(cart: Cart): boolean {
+  return (cart as unknown as ShoppingCart).status === "active";
+}
+
+async function clearStaleCartCookies(): Promise<void> {
+  try {
+    await clearCartCookies();
+  } catch {
+    // Cookie writes are unavailable while rendering Server Components.
   }
 }
 
