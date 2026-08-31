@@ -98,6 +98,24 @@ The session has events: `payment_session.processing`, `payment_session.completed
 
 For most stores, you don't interact with PaymentSession directly — the gateway extension (pallastrade_stripe, pallastrade_adyen) handles creation and completion. You just subscribe to the events if you need to react.
 
+### Stripe PaymentIntent mode (5.6, PRD-20260831-payments)
+
+`pallastrade_stripe` supports two session modes behind `external_data`:
+
+| mode | external_id | client_secret | 用途 |
+|---|---|---|---|
+| Checkout Session（默认） | `cs_…` | `cs_…_secret`（Checkout 跳转） | 托管结账 / 组合支付 / Express Checkout / webhook 异步完成 |
+| `payment_intent` | `pi_…`（直存） | `pi_…_secret`（`confirmCardPayment` 消费） | **前端自绘卡字段**（Stripe 经典 Elements 三字段）active confirm |
+
+- 创建：`POST /orders/:id/payment_sessions` 传 `external_data: { mode: 'payment_intent' }`。
+- 前端 active 流程：`createPaymentSession(mode: payment_intent)` → `elements.getElement(CardNumberElement)` → `stripe.confirmCardPayment(pi_secret, { payment_method: { card } })` → `PATCH /orders/:order_id/payment_sessions/:id/complete`。
+- `complete` 端点（订单域嵌套路由）在会话完成后调用 `carts_complete_service`（Carts::Complete，幂等）——**必须**：webhook `handle_success` 对已完成会话提前返回，若前端 complete 后不驱动订单完成，订单永远停留 pending。
+- webhook `payment_intent.*` 按 `external_id` 直查本地 session（未命中再反查 Checkout Session），兜底 webhook 完成路径不变。
+- 卡数据经 `stripe.createPaymentMethod` 直传 Stripe（PCI SAQ-A），不经过本服务器。
+- ⚠️ Stripe.js v8 已禁止自绘 HTML 卡字段调 `createPaymentMethod({ type: 'card', card: {...} })`——必须用 Elements（CardNumber/CardExpiry/CardCvc）构造 `card: element`。
+- ⚠️ 嵌套路由 controller 解析父资源必须用 `params[:order_id]`（`params[:id]` 是子资源 id）。
+- 相关 bug 教训见 PRD 变更记录 0.2（空购物车竞态：cart 页提交订单后任何本页 server action 完成都会触发 Next.js 自动 refresh → checkout loader redirect 回购物车；支付确认必须放在 or_ 页或 server action 内 redirect）。
+
 ## Payment combinations + splits (数据层, P1)
 
 > P1（2026-08-26）为后续「父子单 / 拆单 / 合并支付」铺数据地基。以下模型已存在但**尚未接入任何业务流程**（拆单/合并支付引擎在 P2/P4+）。

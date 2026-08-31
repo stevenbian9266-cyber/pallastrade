@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing |
+| 状态 | done |
 | 创建日期 | 2026-08-31 |
 | 来源 | bug：商品详情页 → add to cart → checkout → 填地址 → 卡在 Stripe 表单渲染 → 进入购物车为空页面 |
 | 分类 | payments（自动判定） |
@@ -107,13 +107,14 @@
 
 ## 9. 文档同步清单（知识同步门）
 
-- [ ] API 文档：无新端点（复用 `/orders/:id/payment_sessions`，external_data 已有）；`backend/public/api-docs/*.yaml` 视需要补充 mode 说明。
-- [ ] Skill 文档：`ai/skills/pallastrade-payments/SKILL.md` 增加 PaymentIntent 模式说明（doc-impact 规则：stripe gem 改动）。
-- [ ] README / 场景库：如涉及（PRD 关联到 payments 分类，更新 `docs/prd/README.md` 索引）。
-- [ ] 本 PRD 状态更新 + `docs/prd/README.md` 索引。
+- [x] API 文档：无新端点（复用 `/orders/:id/payment_sessions`，external_data 已有）；`backend/public/api-docs/*.yaml` 已评估无需更新（mode 为 external_data 自由字段）。
+- [x] Skill 文档：`ai/skills/pallastrade-payments/SKILL.md` 已增加 PaymentIntent 模式说明（doc-impact 规则：stripe gem 改动）。
+- [x] README / 场景库：`docs/prd/README.md` 索引已登记（PRD 关联到 payments 分类）。
+- [x] 本 PRD 状态更新 + `docs/prd/README.md` 索引。
 
 ## 10. 变更记录
 
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-08-31 | 0.1 | 初稿 | AI |
+| 2026-08-31 | 0.2 | 实施完成。最终方案：①cart 页 Pay Now = 提交订单 + 立即跳 or_ 支付页（?pm= 预选），支付确认在 or_ 页完成（同页支付会触发 Next.js server action 自动 refresh → checkout 页重定向回购物车竞态 = 空购物车根因）②Stripe.js v8 禁原始卡字段（PCI SAQ-A）→ 经典 Elements 三字段自绘表单（视觉等同自绘，仅需 publishable key 即时渲染）③后端 PaymentIntent 模式（pi_ 直存 + webhook 兜底）④修复嵌套路由 find_order（params[:id] 误取 ps_ 会话 id → complete 404）⑤active complete 后驱动 Carts::Complete（webhook 对已 completed 会话提前返回 → 订单否则永远 pending）。E2E 验证：订单 R835036135 全链路 paid 直达 order-placed（无空购物车）。 | AI |
