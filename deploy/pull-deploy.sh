@@ -5,7 +5,7 @@
 #   但服务器出站到 github.com / ghcr.io 实测通畅。
 #
 #   用法: bash deploy/pull-deploy.sh dev       # 部署 dev 栈（dev.pallastrade.cn）
-#         bash deploy/pull-deploy.sh main      # 部署 prod 栈（pallastrade.cn）
+#   ⚠️ 2026-08-31 起只保留 dev；main 分支与 prod 栈已删除（见 README）
 #
 #   cron 安装（每 5 分钟检查一次）：
 #     */5 * * * * /opt/pallastrade/repo/deploy/pull-deploy.sh dev >> /var/log/pallastrade-pull.log 2>&1
@@ -14,20 +14,12 @@ set -euo pipefail
 ENV="${1:-dev}"
 cd /opt/pallastrade/repo
 
-case "$ENV" in
-  main|prod)
-    echo "❌ prod 部署已禁用（2026-08-15 部署规则调整：仅部署 dev）。" >&2
-    exit 1
-    ;;
-  dev)
-    BRANCH="dev"
-    SF_IMG="pallastrade-dev-storefront:latest"
-    ;;
-  *)
-    echo "用法: pull-deploy.sh dev   （prod 已禁用）" >&2
-    exit 1
-    ;;
-esac
+if [ "$ENV" != "dev" ]; then
+  echo "用法: pull-deploy.sh dev   （仅支持 dev）" >&2
+  exit 1
+fi
+BRANCH="dev"
+SF_IMG="pallastrade-dev-storefront:latest"
 
 GHCR_IMG="ghcr.io/stevenbian9266-cyber/pallastrade-storefront:${BRANCH}"
 STATE_FILE="/opt/pallastrade/.pull-deploy-state-${ENV}"

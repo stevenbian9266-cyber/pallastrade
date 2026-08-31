@@ -3,34 +3,27 @@
 > 本手册定义本项目服务器部署与栈切换的**标准机制**，是 dev 部署的唯一权威说明。
 > 服务器：阿里云 ECS `115.29.185.128`（cn-hangzhou-j，2C/3.5G，8G swap），代码目录 `/opt/pallastrade/repo`。
 
-> ## ⛔ 部署规则（2026-08-15 起）
-> **仅部署 dev（dev.pallastrade.cn），不再部署 prod（pallastrade.cn）。**
-> `deploy.sh` / `pull-deploy.sh` / `prod.sh up` 已**硬禁用 prod**（脚本拒绝并提示）。
-> prod 的 compose/镜像/数据库**保留可恢复**，未来恢复需人工解除脚本禁用逻辑。
+> ## ⛔ 部署规则（2026-08-31 起）
+> **仅部署 dev（dev.pallastrade.cn）。**
+> GitHub main 分支、服务器 prod 栈（镜像/数据卷/数据库/配置）已全部删除，仓库脚本与 CI 只保留 dev。
 
 ## 环境与域名
 
 | 环境 | 域名 | backend 端口 | storefront 端口 | 数据库 | 状态 |
 |---|---|---|---|---|---|
 | dev | `dev.pallastrade.cn` | 3102 | 3103 | 独立 PostgreSQL（dev 栈） | ✅ 常驻部署 |
-| prod | `pallastrade.cn` | 3100 | 3101 | 独立 PostgreSQL（prod 栈） | ⛔ 已禁用（保留可恢复） |
-
-> ⚠️ **dev 与 prod 使用相互独立的数据库**。示例数据（如三级分类）必须分别在两个环境创建。
 
 ## 快捷脚本（在 `/opt/pallastrade/repo/deploy/` 内执行）
 
 | 脚本 | 用法 | 说明 |
 |---|---|---|
-| `prod.sh` | `bash prod.sh down\|status` | prod 栈停/查（**up 已禁用**，仅 dev 部署） |
 | `dev.sh` | `bash dev.sh up\|down\|status` | dev 栈启停（down 保留数据卷） |
-| `deploy.sh` | `bash deploy.sh dev` | 全量部署 dev（backend 服务器构建 + storefront 镜像检查 + 启动 + 健康检查；**prod 参数已禁用**） |
+| `deploy.sh` | `bash deploy.sh dev` | 全量部署 dev（backend 服务器构建 + storefront 镜像检查 + 启动 + 健康检查） |
+| `deploy-sf.sh` | `bash deploy-sf.sh` | 仅 storefront 单独构建部署（源码整目录同步 + 特征校验 + 磁盘预检） |
 
-## 单栈策略（强制）
+## 单栈策略
 
-服务器 2C/3.5G 无法承受双栈并行（会 OOM），**任一时刻只允许一个栈运行**：
-
-- **默认态（常驻）：dev 栈运行，prod 栈停止**
-- **prod 已禁用部署（2026-08-15 起）**：不再通过脚本启动 prod 栈
+prod 栈已删除（2026-08-31），服务器仅运行 dev 栈（常驻）。
 
 ## 标准部署流程（任务结束后机制）
 
@@ -48,7 +41,7 @@
      --build-arg NEXT_PUBLIC_TAWK_TO_WIDGET_ID=1jrb1qrcu `
      --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAADhWPvWYVdWLedL2 `
      --build-arg NEXT_PUBLIC_GTM_ID=<GTM-ID，可选> `
-     -t pallastrade-{dev|prod}-storefront:latest .
+     -t pallastrade-dev-storefront:latest .
    ```
 
    > `NEXT_PUBLIC_*` 在构建时内联进 bundle，必须作为 build-arg 传入；tawk.to 两个 ID 与 Turnstile site key（PRD-20260812，公开值）必须带。GTM ID（`NEXT_PUBLIC_GTM_ID`）为可选的公开 ID，供 cookie consent 门控加载（PRD-20260812）。
@@ -57,16 +50,14 @@
    - `docker save` → `tar -czf` → `scp` 到服务器 `/tmp/` → `gunzip | tar -xf` → `docker load`
    - `docker compose -f docker-compose.dev.yml --env-file .env.dev up -d storefront`（recreate 用新镜像）
    - 验证 `https://dev.pallastrade.cn/us/zh`（首页板块 / nav 面板 / 三级分类 / llms.txt / tawk 挂件）
-4. ~~**部署 prod**~~（⛔ 已禁用 2026-08-15：不再部署 prod，配置保留可恢复）
-   - **数据改动无需同步 prod 独立库**（prod 已停用）
 5. **最终状态（本机制默认态）**：dev 栈常驻运行。
 
 ## 环境配置（服务器 `/opt/pallastrade/repo/deploy/`）
 
 | 文件 | 内容 |
 |---|---|
-| `.env.dev` / `.env.prod` | backend 密钥（SECRET_KEY_BASE 等） |
-| `.env.storefront.dev` / `.env.storefront.prod` | storefront 运行时环境（API URL、STORE_LOGO_URL、tawk ID 等） |
+| `.env.dev` | backend 密钥（SECRET_KEY_BASE 等） |
+| `.env.storefront.dev` | storefront 运行时环境（API URL、STORE_LOGO_URL、tawk ID 等） |
 | `.env.storefront.dev.example` 等 | 模板（复制改名填写） |
 
 ## GitHub Actions 自动部署（拉取式 / 方案 A）
@@ -74,7 +65,7 @@
 > ⚠️ 跨境 SSH（GitHub runner 美国 → 阿里云杭州）TCP 22 被阻断，rsync/scp/ssh 推送式部署不可用。
 
 **拉取式机制**：
-1. `deploy.yml`（监听 `[main, dev]` 推送）：runner 构建 storefront 镜像 → **push 到 ghcr.io**（`ghcr.io/stevenbian9266-cyber/pallastrade-storefront:{dev|main}`），不再连接服务器
+1. `deploy.yml`（监听 `[dev]` 推送）：runner 构建 storefront 镜像 → **push 到 ghcr.io**（`ghcr.io/stevenbian9266-cyber/pallastrade-storefront:dev`），不再连接服务器
 2. 服务器 cron 每 5 分钟运行 `deploy/pull-deploy.sh dev`：`git fetch` + `docker pull`，检测到 HEAD 或镜像 digest 变化才执行 `deploy.sh`
 
 **前提（一次性配置）**：
@@ -98,10 +89,9 @@ bash deploy/pull-deploy.sh dev               # 手动触发一次检查
 # 健康检查（服务器上）
 curl -sf http://127.0.0.1:3102/up   # dev backend
 curl -sf http://127.0.0.1:3103/us/zh # dev storefront
-curl -sf http://127.0.0.1:3100/up   # prod backend
 
 # 查看容器
-docker ps | grep pallastrade-{dev,prod}
+docker ps | grep pallastrade-dev
 
 # 内存（单栈策略依据）
 free -m

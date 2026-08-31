@@ -3,12 +3,12 @@ name: Platform CI
 on:
   workflow_call:
   push:
-    branches: [main, dev]
+    branches: [dev]
     paths:
       - 'platform/**'
       - '.github/workflows/platform-ci.yml'
   pull_request:
-    branches: [main, dev]
+    branches: [dev]
     paths:
       - 'platform/**'
       - '.github/workflows/platform-ci.yml'

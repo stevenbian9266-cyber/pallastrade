@@ -3,12 +3,12 @@ name: Storefront CI
 on:
   workflow_call:
   push:
-    branches: [main, dev]
+    branches: [dev]
     paths:
       - 'storefront/**'
       - '.github/workflows/storefront-ci.yml'
   pull_request:
-    branches: [main, dev]
+    branches: [dev]
     paths:
       - 'storefront/**'
       - '.github/workflows/storefront-ci.yml'

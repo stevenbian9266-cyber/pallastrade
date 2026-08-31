@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [dev, main]
+    branches: [dev]
   workflow_dispatch:
 
 concurrency:
@@ -36,15 +36,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            API_URL="https://pallastrade.cn"
-            PUB_KEY="${{ secrets.PALLASTRADE_PUBLISHABLE_KEY_PROD }}"
-            STORE_NAME="${{ vars.STORE_NAME_PROD }}"
-          else
-            API_URL="https://dev.pallastrade.cn"
-            PUB_KEY="${{ secrets.PALLASTRADE_PUBLISHABLE_KEY_DEV }}"
-            STORE_NAME="${{ vars.STORE_NAME_DEV }}"
-          fi
+          API_URL="https://dev.pallastrade.cn"
+          PUB_KEY="${{ secrets.PALLASTRADE_PUBLISHABLE_KEY_DEV }}"
+          STORE_NAME="${{ vars.STORE_NAME_DEV }}"
           docker build -t ghcr.io/${{ github.repository_owner }}/pallastrade-storefront:${{ github.ref_name }} \
             -f storefront/Dockerfile \
             --build-arg PALLASTRADE_API_URL="$API_URL" \

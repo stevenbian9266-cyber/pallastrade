@@ -2,7 +2,7 @@ name: Harness Full
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [main, dev]
+    branches: [dev]
   workflow_dispatch:
 
 concurrency:
@@ -48,7 +48,7 @@ jobs:
       - name: Install root deps
         run: npm ci
       - name: Check knowledge doc sync
-        run: npx harness doc-impact --base origin/main
+        run: npx harness doc-impact --base origin/dev
 
   # ---- AI Freshness Check (runs when ai/ changes) ----
   ai-freshness:

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# PallasTrade dev 栈启停脚本（prod 常驻 + dev 按需）
+# PallasTrade dev 栈启停脚本（2026-08-31 起只保留 dev 栈）
 #   用法: bash deploy/dev.sh up    # 启动 dev 栈（dev.pallastrade.cn）
-#         bash deploy/dev.sh down  # 停止 dev 栈（释放资源，prod 不受影响）
+#         bash deploy/dev.sh down  # 停止 dev 栈（释放资源）
 set -euo pipefail
 
 cd "$(dirname "$0")"
