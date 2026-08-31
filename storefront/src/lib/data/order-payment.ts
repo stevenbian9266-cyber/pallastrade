@@ -11,11 +11,15 @@ import { actionResult } from "./utils";
  * 支付会话挂订单（/orders/:id/payment_sessions）。
  */
 
-/** 创建订单支付会话（session-based 支付方式：Stripe/PayPal/Adyen 等）。 */
+/** 创建订单支付会话（session-based 支付方式：Stripe/PayPal/Adyen 等）。
+ *  PALLAS-CUSTOM (2026-08-31, PRD-20260831-payments-stripe-自绘卡支付表单):
+ *  `mode: 'payment_intent'` 时后端创建 PaymentIntent（返回 `pi_..._secret`），
+ *  供自绘卡字段 `confirmCardPayment` 消费；默认 Checkout Session（PaymentElement）。 */
 export async function createOrderPaymentSession(
   orderId: string,
   paymentMethodId: string,
   externalData?: Record<string, unknown>,
+  mode?: "payment_intent",
 ) {
   return actionResult(async () => {
     const options = await getCartOptions();
@@ -24,6 +28,12 @@ export async function createOrderPaymentSession(
       {
         payment_method_id: paymentMethodId,
         ...(externalData && { external_data: externalData }),
+        ...(mode && {
+          external_data: {
+            ...(externalData || {}),
+            mode,
+          },
+        }),
       },
       options,
     );
@@ -84,5 +94,30 @@ export async function getOrderForCheckout(
     return await getClient().orders.get(orderId, undefined, options);
   } catch {
     return null;
+  }
+}
+
+/** 支付会话的类型（含后端透传的 external_data）。 */
+export interface OrderPaymentSessionLike {
+  id: string;
+  external_data?: Record<string, unknown> | null;
+}
+
+/**
+ * PALLAS-CUSTOM (2026-08-31, PRD-20260831-payments-stripe-自绘卡支付表单):
+ * 从支付会话提取 client_secret（位于 external_data 且 URL 编码 %2F → 解码）。
+ * UnifiedCheckout / OrderPaymentContent / PaymentCheckoutModal 三处共用，
+ * 避免重复解析逻辑（STD-CQ-002）。
+ */
+export function extractSessionClientSecret(
+  session: OrderPaymentSessionLike | null | undefined,
+): string | null {
+  if (!session) return null;
+  const raw = session.external_data?.client_secret as string | undefined;
+  if (!raw) return null;
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
   }
 }

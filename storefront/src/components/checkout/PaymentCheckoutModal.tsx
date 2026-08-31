@@ -9,6 +9,10 @@ import { CircleAlert, Loader2, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  CardPaymentForm,
+  type CardPaymentFormHandle,
+} from "@/components/checkout/CardPaymentForm";
 import type { StripePaymentFormHandle } from "@/components/checkout/StripePaymentForm";
 import { StripePaymentForm } from "@/components/checkout/StripePaymentForm";
 import { Button } from "@/components/ui/button";
@@ -23,6 +27,7 @@ import {
   completeOrder,
   completeOrderPaymentSession,
   createOrderPaymentSession,
+  extractSessionClientSecret,
 } from "@/lib/data/order-payment";
 import {
   completeCombinationSession,
@@ -78,7 +83,10 @@ export function PaymentCheckoutModal({
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const stripeRef = useRef<StripePaymentFormHandle | null>(null);
+  const cardFormRef = useRef<CardPaymentFormHandle | null>(null);
   const requestIdRef = useRef(0);
+
+  const isStripe = selectedMethod?.type === "stripe";
 
   // 打开弹窗 → 重置状态 + 预选支付方式
   useEffect(() => {
@@ -96,6 +104,7 @@ export function PaymentCheckoutModal({
     setLoading(true);
   }, [open, availableMethods]);
 
+  // 组合支付（多笔）仍走 Checkout Session → PaymentElement
   const createStripeSession = useCallback(
     async (method: PaymentMethod) => {
       if (!singleOrder) return;
@@ -114,12 +123,9 @@ export function PaymentCheckoutModal({
         };
         setStripeSessionId(session.id);
         // client_secret 位于 external_data 且 URL 编码（%2F）→ 解码后传给 Stripe
-        const secret = session.external_data?.client_secret as
-          | string
-          | undefined;
-        const stripeSecret = secret ? decodeURIComponent(secret) : undefined;
-        if (stripeSecret) {
-          setStripeSecret(stripeSecret);
+        const secret = extractSessionClientSecret(session);
+        if (secret) {
+          setStripeSecret(secret);
         } else {
           setError(t("failedToInitPayment"));
         }
@@ -132,7 +138,8 @@ export function PaymentCheckoutModal({
     [singleOrder, t],
   );
 
-  // 单笔：打开/切换方式 → 创建订单支付会话（session-based）
+  // 单笔：打开/切换方式 → 自绘卡字段（Stripe）无需预创建会话，表单始终渲染；
+  // 其他 session-based（PayPal/Adyen/组合）保持原自动创建流程。
   useEffect(() => {
     if (!open || !isSingle || !singleOrder || !selectedMethod) return;
     if (!selectedMethod.session_required) {
@@ -142,8 +149,22 @@ export function PaymentCheckoutModal({
       setLoading(false);
       return;
     }
+    if (isStripe) {
+      // Stripe 自绘卡字段：不预创建 PaymentIntent，Pay 时再创建（避免提前转换 cart）
+      setStripeSecret(null);
+      setStripeSessionId(null);
+      setLoading(false);
+      return;
+    }
     createStripeSession(selectedMethod);
-  }, [open, isSingle, singleOrder, selectedMethod, createStripeSession]);
+  }, [
+    open,
+    isSingle,
+    singleOrder,
+    selectedMethod,
+    isStripe,
+    createStripeSession,
+  ]);
 
   // 组合：打开/切换方式 → 创建支付组合并加载（含 payment_session + 成员订单）
   useEffect(() => {
@@ -186,6 +207,10 @@ export function PaymentCheckoutModal({
     stripeRef.current = handle;
   }, []);
 
+  const handleCardReady = useCallback((handle: CardPaymentFormHandle) => {
+    cardFormRef.current = handle;
+  }, []);
+
   const handlePay = async () => {
     if (!selectedMethod || processing) return;
     setProcessing(true);
@@ -193,7 +218,47 @@ export function PaymentCheckoutModal({
     try {
       if (isSingle && singleOrder) {
         // 单笔
-        if (selectedMethod.session_required) {
+        if (selectedMethod.session_required && isStripe) {
+          // Stripe 自绘卡字段（PRD-20260831-payments-stripe-自绘卡支付表单）：
+          // Pay Now → 创建 PaymentIntent 会话 → confirmCardPayment
+          if (!cardFormRef.current?.validate()) {
+            setProcessing(false);
+            return;
+          }
+          const result = await createOrderPaymentSession(
+            singleOrder.id,
+            selectedMethod.id,
+            undefined,
+            "payment_intent",
+          );
+          if (!result.success || !result.session) {
+            const message = "error" in result ? result.error : undefined;
+            setError(message || t("failedToCreateSession"));
+            setProcessing(false);
+            return;
+          }
+          const session = result.session as {
+            id: string;
+            external_data?: Record<string, unknown>;
+          };
+          setStripeSessionId(session.id);
+          // client_secret 位于 external_data 且 URL 编码（%2F）→ 解码后传给 Stripe
+          const secret = extractSessionClientSecret(session);
+          if (!secret) {
+            setError(t("failedToInitPayment"));
+            setProcessing(false);
+            return;
+          }
+          const confirmResult =
+            await cardFormRef.current?.confirmPayment(secret);
+          if (confirmResult?.error) {
+            setError(confirmResult.error);
+            setProcessing(false);
+            return;
+          }
+          await completeOrderPaymentSession(singleOrder.id, session.id);
+          await completeOrder(singleOrder.id);
+        } else if (selectedMethod.session_required) {
           if (!stripeRef.current || !stripeSessionId) {
             setError(t("failedToInitPayment"));
             setProcessing(false);
@@ -249,6 +314,7 @@ export function PaymentCheckoutModal({
     (isSingle ? true : !!combination) &&
     (isSingle
       ? !selectedMethod.session_required ||
+        isStripe ||
         (!!stripeSecret && !!stripeSessionId)
       : !!combination?.payment_session);
 
@@ -332,7 +398,15 @@ export function PaymentCheckoutModal({
           </div>
         ) : null}
 
-        {!loading && stripeSecret ? (
+        {/* 单笔 Stripe：自绘卡字段（PRD-20260831-payments-stripe-自绘卡支付表单）——
+            始终渲染，不依赖 client_secret / js.stripe.com iframe */}
+        {!loading && isSingle && isStripe ? (
+          <div className="rounded-lg border border-gray-200 p-4">
+            <CardPaymentForm onReady={handleCardReady} />
+          </div>
+        ) : null}
+
+        {!loading && !(isSingle && isStripe) && stripeSecret ? (
           <StripePaymentForm
             clientSecret={stripeSecret}
             onReady={handleStripeReady}
@@ -351,7 +425,10 @@ export function PaymentCheckoutModal({
             {processing ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
-            {isSingle && selectedMethod?.session_required && stripeSecret
+            {isSingle &&
+            selectedMethod?.session_required &&
+            !isStripe &&
+            stripeSecret
               ? t("confirmPayment")
               : t("payNow")}
           </Button>

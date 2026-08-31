@@ -19,8 +19,10 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { AddressFormFields } from "@/components/checkout/AddressFormFields";
-import type { StripePaymentFormHandle } from "@/components/checkout/StripePaymentForm";
-import { StripePaymentForm } from "@/components/checkout/StripePaymentForm";
+import {
+  CardPaymentForm,
+  type CardPaymentFormHandle,
+} from "@/components/checkout/CardPaymentForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProductImage } from "@/components/ui/product-image";
@@ -30,6 +32,7 @@ import {
   completeOrder,
   completeOrderPaymentSession,
   createOrderPaymentSession,
+  extractSessionClientSecret,
 } from "@/lib/data/order-payment";
 import {
   submitCartOrder,
@@ -87,9 +90,11 @@ function UnifiedOrderSummary({ cart }: { cart: ShoppingCart }) {
  * 左侧：收件地址 + 商品信息 + 物流方式 + 支付方式选择（选中后显示对应支付表单）；
  * 右侧：订单小结 + Pay Now。
  * 支付流程（同页完成，不跳转独立支付页）：
- *   1) Pay Now（未提交）→ PATCH cart（保存邮箱/地址/物流）→ Carts::Submit 生成 or_ 订单；
- *   2) 会话类支付方式（Stripe）→ 创建订单支付会话 → 同页渲染 StripePaymentForm 填写卡信息；
- *   3) 点确认支付 → Stripe confirm → completeOrderPaymentSession + completeOrder → /order-placed。
+ *   1) Pay Now → PATCH cart（保存邮箱/地址/物流）→ Carts::Submit 生成 or_ 订单；
+ *   2) Stripe（自绘卡字段，PRD-20260831-payments-stripe-自绘卡支付表单）→ 创建
+ *      PaymentIntent 会话（pi_..._secret）→ 自绘卡字段 createPaymentMethod +
+ *      confirmCardPayment 完成支付；支付失败 → 跳 or_ 支付页可重试；
+ *   3) 支付成功 → completeOrderPaymentSession + completeOrder → /order-placed。
  * 非会话类（Check/Store Credit）→ 提交后直接跳完成页（线下收款）。
  * 参考阿里国际站：确认 + 支付同一页面，选择支付方式即显示对应表单。
  */
@@ -121,21 +126,15 @@ export function UnifiedCheckout({
   const [loadingStates, setLoadingStates] = useState(false);
 
   // ── 支付（同页完成）──────────────────────────────────────────────
-  // 提交订单后的 or_ 订单 id；会话类支付方式需创建订单支付会话获取 client_secret
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [stripeSecret, setStripeSecret] = useState<string | null>(null);
-  const [stripeSessionId, setStripeSessionId] = useState<string | null>(null);
+  // 会话类支付方式需创建订单支付会话获取 client_secret；订单 id 存 ref 防重入
   const [payProcessing, setPayProcessing] = useState(false);
-  const stripeRef = useRef<StripePaymentFormHandle | null>(null);
+  const cardFormRef = useRef<CardPaymentFormHandle | null>(null);
   const orderIdRef = useRef<string | null>(null);
-  const preparingRef = useRef(false);
-  const attemptedMethodRef = useRef<string | null>(null);
 
   const selectedMethod =
     paymentMethods.find((m) => m.id === paymentMethodId) ?? paymentMethods[0];
   const isSessionBased = selectedMethod?.session_required === true;
   const isStripe = selectedMethod?.type === "stripe";
-  const orderReady = orderId !== null;
 
   // The checkout route group owns the real desktop sticky sidebar. Publish the
   // summary there instead of nesting another three-column grid inside its main
@@ -194,8 +193,8 @@ export function UnifiedCheckout({
     shippingMethodId.length > 0 &&
     paymentMethodId.length > 0;
 
-  const handleStripeReady = useCallback((handle: StripePaymentFormHandle) => {
-    stripeRef.current = handle;
+  const handleCardReady = useCallback((handle: CardPaymentFormHandle) => {
+    cardFormRef.current = handle;
   }, []);
 
   const submitCartForPayment = useCallback(async (): Promise<string | null> => {
@@ -214,7 +213,6 @@ export function UnifiedCheckout({
     try {
       const order = await submitCartOrder(cart.id);
       orderIdRef.current = order.id;
-      setOrderId(order.id);
       return order.id;
     } catch (error) {
       toast.error(
@@ -224,108 +222,83 @@ export function UnifiedCheckout({
     }
   }, [address, cart.id, email, shippingMethodId]);
 
-  const prepareStripePayment = useCallback(
-    async (method: PaymentMethod, force = false) => {
-      if (preparingRef.current) return;
-      if (!force && attemptedMethodRef.current === method.id) return;
-
-      attemptedMethodRef.current = method.id;
-      preparingRef.current = true;
-      setPayProcessing(true);
-      setStripeSecret(null);
-      setStripeSessionId(null);
-      stripeRef.current = null;
-
-      try {
-        const targetOrderId = await submitCartForPayment();
-        if (!targetOrderId) return;
-
-        const result = await createOrderPaymentSession(
-          targetOrderId,
-          method.id,
-        );
-        if (!result.success || !result.session) {
-          const message = "error" in result ? result.error : undefined;
-          toast.error(message || t("failedToCreateSession"));
-          return;
-        }
-
-        const session = result.session as {
-          id: string;
-          external_data?: Record<string, unknown>;
-        };
-        const rawSecret = session.external_data?.client_secret as
-          | string
-          | undefined;
-        const secret = rawSecret ? decodeURIComponent(rawSecret) : undefined;
-
-        setStripeSessionId(session.id);
-        if (secret) {
-          setStripeSecret(secret);
-        } else {
-          toast.error(t("failedToInitPayment"));
-        }
-      } finally {
-        preparingRef.current = false;
-        setPayProcessing(false);
-      }
-    },
-    [submitCartForPayment, t],
-  );
-
-  // Stripe PaymentElement needs an order-scoped client_secret. As soon as the
-  // checkout details are valid, prepare the order/session so the form appears
-  // without making the customer click Pay once merely to reveal it.
-  useEffect(() => {
-    if (
-      !canSubmit ||
-      !selectedMethod ||
-      selectedMethod.session_required !== true ||
-      selectedMethod.type !== "stripe" ||
-      stripeSecret
-    ) {
-      return;
-    }
-    // Wait for the current field edit to settle before converting the cart.
-    // Without this short debounce, the first character entered in the final
-    // required field could submit a partial address.
-    const preparationTimer = window.setTimeout(() => {
-      void prepareStripePayment(selectedMethod);
-    }, 250);
-    return () => window.clearTimeout(preparationTimer);
-  }, [canSubmit, prepareStripePayment, selectedMethod, stripeSecret]);
-
-  // 确认支付（Stripe）：confirm → 完成会话 + 完成订单 → 完成页
-  const handleConfirmStripePay = async () => {
-    if (!stripeRef.current || !stripeSessionId || !orderId || payProcessing) {
-      return;
-    }
-    setPayProcessing(true);
-    try {
-      const returnUrl = `${window.location.origin}${basePath}/order-placed/${orderId}`;
-      const result = await stripeRef.current.confirmPayment(returnUrl);
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-      await completeOrderPaymentSession(orderId, stripeSessionId);
-      await completeOrder(orderId);
-      router.push(`${basePath}/order-placed/${orderId}`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Payment failed");
-    } finally {
-      setPayProcessing(false);
-    }
-  };
-
+  // Stripe 自绘卡字段（PRD-20260831-payments-stripe-自绘卡支付表单）：
+  // 表单始终渲染（不依赖 client_secret / js.stripe.com），Pay Now 时才
+  // 提交订单 + 创建 PaymentIntent 会话 + confirmCardPayment。
   const handlePayNow = async () => {
     if (!canSubmit || payProcessing || !selectedMethod) return;
 
     if (isSessionBased) {
-      if (stripeSecret && stripeSessionId && orderId) {
-        await handleConfirmStripePay();
-      } else if (isStripe) {
-        await prepareStripePayment(selectedMethod, true);
+      if (isStripe) {
+        // 先本地校验卡字段（纯 HTML 即时反馈）
+        if (!cardFormRef.current?.validate()) return;
+        setPayProcessing(true);
+        try {
+          // 1) 提交订单（cart → or_）
+          const targetOrderId = await submitCartForPayment();
+          if (!targetOrderId) return;
+
+          // 2) 创建 PaymentIntent 会话（mode: payment_intent → pi_..._secret）
+          const result = await createOrderPaymentSession(
+            targetOrderId,
+            selectedMethod.id,
+            undefined,
+            "payment_intent",
+          );
+          if (!result.success || !result.session) {
+            const message = "error" in result ? result.error : undefined;
+            toast.error(message || t("failedToCreateSession"));
+            // 订单已提交（or_），页面不应停留在失效的 cart 页 → 跳 or_ 支付页
+            router.replace(`${basePath}/checkout/${targetOrderId}`);
+            return;
+          }
+          const session = result.session as {
+            id: string;
+            external_data?: Record<string, unknown>;
+          };
+          const secret = extractSessionClientSecret(session);
+          if (!secret) {
+            toast.error(t("failedToInitPayment"));
+            router.replace(`${basePath}/checkout/${targetOrderId}`);
+            return;
+          }
+
+          // 3) 自绘卡字段 → confirmCardPayment
+          const confirmResult =
+            await cardFormRef.current?.confirmPayment(secret);
+          if (confirmResult?.error) {
+            // 支付失败（卡被拒等）→ 订单已提交，跳 or_ 支付页可重试，
+            // 不出现 "Your cart is empty"。
+            toast.error(confirmResult.error);
+            router.replace(
+              `${basePath}/checkout/${targetOrderId}?pm=${selectedMethod.id}`,
+            );
+            return;
+          }
+
+          // 4) 完成会话 + 完成订单 → 完成页
+          await completeOrderPaymentSession(targetOrderId, session.id);
+          await completeOrder(targetOrderId);
+          router.push(`${basePath}/order-placed/${targetOrderId}`);
+        } catch (error) {
+          toast.error(
+            error instanceof Error ? error.message : "Payment failed",
+          );
+        } finally {
+          setPayProcessing(false);
+        }
+        return;
+      }
+
+      // 其他 session-based（PayPal/Adyen 等）：保持提交订单后跳 or_ 支付页
+      setPayProcessing(true);
+      try {
+        const targetOrderId = await submitCartForPayment();
+        if (targetOrderId) {
+          router.push(`${basePath}/checkout/${targetOrderId}`);
+        }
+      } finally {
+        setPayProcessing(false);
       }
       return;
     }
@@ -344,10 +317,7 @@ export function UnifiedCheckout({
   const handlePaymentMethodChange = (methodId: string) => {
     if (methodId === paymentMethodId) return;
     setPaymentMethodId(methodId);
-    setStripeSecret(null);
-    setStripeSessionId(null);
-    stripeRef.current = null;
-    attemptedMethodRef.current = null;
+    cardFormRef.current = null;
   };
 
   return (
@@ -486,23 +456,11 @@ export function UnifiedCheckout({
           {selectedMethod ? (
             <div className="mt-4">
               {isSessionBased && isStripe ? (
-                stripeSecret ? (
-                  <div className="rounded-lg border border-gray-200 p-4">
-                    <StripePaymentForm
-                      clientSecret={stripeSecret}
-                      onReady={handleStripeReady}
-                    />
-                  </div>
-                ) : payProcessing ? (
-                  <div className="flex items-center gap-2 py-6 justify-center text-sm text-gray-500">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {t("loadingPaymentForm")}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500">
-                    {t("enterShippingAddress")}
-                  </p>
-                )
+                // Stripe 自绘卡字段（PRD-20260831-payments-stripe-自绘卡支付表单）：
+                // 纯 HTML 卡字段立即渲染，不依赖 client_secret / js.stripe.com iframe。
+                <div className="rounded-lg border border-gray-200 p-4">
+                  <CardPaymentForm onReady={handleCardReady} />
+                </div>
               ) : isSessionBased ? (
                 // 其他会话类支付方式（PayPal/Adyen 等）：同页支付或跳转由网关决定
                 <p className="text-sm text-gray-500">{t("processing")}</p>
@@ -526,8 +484,6 @@ export function UnifiedCheckout({
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {t("submitting")}
               </>
-            ) : orderReady && isSessionBased && stripeSecret ? (
-              t("confirmPayment")
             ) : (
               t("payNow")
             )}

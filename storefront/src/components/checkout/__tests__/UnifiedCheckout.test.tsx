@@ -39,21 +39,32 @@ vi.mock("@/lib/data/order-payment", () => ({
   completeOrderPaymentSession: (...args: unknown[]) =>
     completeOrderSessionMock(...args),
   completeOrder: (...args: unknown[]) => completeOrderMock(...args),
+  extractSessionClientSecret: (
+    session: {
+      external_data?: Record<string, unknown> | null;
+    } | null,
+  ) => {
+    const raw = session?.external_data?.client_secret as string | undefined;
+    return raw ? decodeURIComponent(raw) : null;
+  },
 }));
 
 const confirmMock = vi.fn();
-vi.mock("@/components/checkout/StripePaymentForm", () => ({
-  StripePaymentForm: ({
-    clientSecret,
+const validateMock = vi.fn().mockReturnValue(true);
+vi.mock("@/components/checkout/CardPaymentForm", () => ({
+  CardPaymentForm: ({
     onReady,
   }: {
-    clientSecret: string;
     onReady: (h: {
-      confirmPayment: (url: string) => Promise<{ error?: string }>;
+      confirmPayment: (secret: string) => Promise<{ error?: string }>;
+      validate: () => boolean;
     }) => void;
   }) => {
-    onReady({ confirmPayment: (url: string) => confirmMock(url) });
-    return <div data-testid="stripe-form" data-secret={clientSecret} />;
+    onReady({
+      confirmPayment: (secret: string) => confirmMock(secret),
+      validate: () => validateMock(),
+    });
+    return <div data-testid="card-payment-form" />;
   },
 }));
 
@@ -194,53 +205,46 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(screen.getAllByText("$19.98").length).toBeGreaterThanOrEqual(2);
   });
 
-  it("prepares the Stripe form as soon as all required fields are filled", async () => {
-    const user = userEvent.setup();
+  it("renders the self-drawn card form immediately when Stripe is selected (no client_secret needed)", () => {
     renderCheckout();
+
+    // Stripe 自绘卡字段表单在未填地址时也始终渲染（PRD-20260831-payments-stripe-自绘卡支付表单）
+    expect(screen.getByTestId("card-payment-form")).toBeInTheDocument();
 
     const payNow = screen.getByRole("button", { name: "payNow" });
     expect(payNow).toBeDisabled();
-
-    await fillRequiredFields(user);
-    await user.type(screen.getByLabelText("email"), "ada@example.com");
-    // 物流方式 radio 选中
-    await user.click(screen.getByRole("radio", { name: /Standard/ }));
-
-    await waitFor(() => expect(updateMock).toHaveBeenCalled());
-    await waitFor(() => expect(submitMock).toHaveBeenCalledWith("cart_1"));
-    expect(await screen.findByTestId("stripe-form")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "confirmPayment" }),
-    ).toBeEnabled();
   });
 
-  it("shows Stripe form without a reveal click, then confirms payment (AC-002)", async () => {
+  it("fills address, clicks Pay Now → submits order → creates PaymentIntent session → confirms payment (AC-002)", async () => {
     const user = userEvent.setup();
     renderCheckout();
 
+    // 1. 表单始终渲染（无需 client_secret / js.stripe.com）
+    expect(screen.getByTestId("card-payment-form")).toBeInTheDocument();
+
     await fillRequiredFields(user);
     await user.type(screen.getByLabelText("email"), "ada@example.com");
     await user.click(screen.getByRole("radio", { name: /Standard/ }));
 
-    // 1. 资料完整后自动 PATCH cart + submit 订单，无需先点 Pay
-    await waitFor(() => {
-      expect(updateMock).toHaveBeenCalledWith(
-        "cart_1",
-        expect.objectContaining({ email: "ada@example.com" }),
-      );
-    });
-    await waitFor(() => expect(submitMock).toHaveBeenCalledWith("cart_1"));
-    // 2. 自动创建订单支付会话 → 同页渲染 Stripe 表单（不跳转）
-    await waitFor(() =>
-      expect(createOrderSessionMock).toHaveBeenCalledWith("or_123", "pm_card"),
-    );
-    await waitFor(() =>
-      expect(screen.getByTestId("stripe-form")).toBeInTheDocument(),
-    );
-    expect(replaceMock).not.toHaveBeenCalled();
+    // 2. 未点 Pay Now 前不自动提交订单 / 不自动创建会话
+    expect(submitMock).not.toHaveBeenCalled();
+    expect(createOrderSessionMock).not.toHaveBeenCalled();
 
-    // 3. 按钮变为确认支付 → 点击 → 完成会话 + 完成订单 → 完成页
-    await user.click(screen.getByRole("button", { name: "confirmPayment" }));
+    // 3. 点 Pay Now → 提交订单 → 创建 PaymentIntent 会话 → confirmCardPayment
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+    await waitFor(() => expect(updateMock).toHaveBeenCalled());
+    await waitFor(() => expect(submitMock).toHaveBeenCalledWith("cart_1"));
+    await waitFor(() =>
+      expect(createOrderSessionMock).toHaveBeenCalledWith(
+        "or_123",
+        "pm_card",
+        undefined,
+        "payment_intent",
+      ),
+    );
+    await waitFor(() => expect(confirmMock).toHaveBeenCalledWith("sec_1"));
+
+    // 4. 完成会话 + 完成订单 → 完成页
     await waitFor(() =>
       expect(completeOrderSessionMock).toHaveBeenCalledWith("or_123", "ps_1"),
     );
@@ -250,6 +254,28 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     await waitFor(() =>
       expect(pushMock).toHaveBeenCalledWith("/us/en/order-placed/or_123"),
     );
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+
+  it("redirects to the or_ payment page when payment fails instead of showing empty cart", async () => {
+    const user = userEvent.setup();
+    confirmMock.mockResolvedValueOnce({ error: "Card declined" });
+    renderCheckout();
+
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    await waitFor(() => expect(submitMock).toHaveBeenCalledWith("cart_1"));
+    await waitFor(() => expect(confirmMock).toHaveBeenCalledWith("sec_1"));
+    // 支付失败 → 跳 or_ 支付页可重试，不出现空购物车
+    await waitFor(() =>
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/us/en/checkout/or_123?pm=pm_card",
+      ),
+    );
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   it("non-session payment (Check) goes straight to the placed page after submit", async () => {
@@ -293,6 +319,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     await fillRequiredFields(user);
     await user.type(screen.getByLabelText("email"), "ada@example.com");
     await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    // 自绘卡字段模式：点 Pay Now 才触发提交（PRD-20260831-payments-stripe-自绘卡支付表单）
+    await user.click(screen.getByRole("button", { name: "payNow" }));
 
     await waitFor(() => expect(updateMock).toHaveBeenCalled());
     expect(submitMock).not.toHaveBeenCalled();

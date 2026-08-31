@@ -86,6 +86,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260815-shipping-补货通知-back-in-stock | shipping | 2026-08-15 | 订阅→补货事件→Resend 邮件 delivered 验证通过 |
 | done | PRD-20260815-catalog-邮件管理整合-email-一级菜单-配置-模板-记录-分类-回复开关 | catalog | 2026-08-15 | REQ-20260815-email-management-integration |
 | approved | PRD-20260829-payments-升级-stripe-支付从-payment-intents-迁移到-checkout-sessions-api-ui_m | payments | 2026-08-29 | （实施时回填） |
+| implementing | PRD-20260831-payments-stripe-自绘卡支付表单-paymentintent-模式 | payments | 2026-08-31 | REQ-20260831-stripe-自绘卡支付表单.md |
 
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 

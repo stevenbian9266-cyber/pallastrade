@@ -1,5 +1,6 @@
 import type { Order } from "@pallastrade/sdk";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrderPaymentContent } from "@/components/checkout/OrderPaymentContent";
 import { CheckoutProvider, CheckoutSummary } from "@/contexts/CheckoutContext";
@@ -27,20 +28,32 @@ vi.mock("@/lib/data/order-payment", () => ({
   completeOrderPaymentSession: (...args: unknown[]) =>
     completeOrderSessionMock(...args),
   completeOrder: (...args: unknown[]) => completeOrderMock(...args),
+  extractSessionClientSecret: (
+    session: {
+      external_data?: Record<string, unknown> | null;
+    } | null,
+  ) => {
+    const raw = session?.external_data?.client_secret as string | undefined;
+    return raw ? decodeURIComponent(raw) : null;
+  },
 }));
 
-vi.mock("@/components/checkout/StripePaymentForm", () => ({
-  StripePaymentForm: ({
-    clientSecret,
+const confirmMock = vi.fn();
+const validateMock = vi.fn().mockReturnValue(true);
+vi.mock("@/components/checkout/CardPaymentForm", () => ({
+  CardPaymentForm: ({
     onReady,
   }: {
-    clientSecret: string;
     onReady: (h: {
-      confirmPayment: (url: string) => Promise<{ error?: string }>;
+      confirmPayment: (secret: string) => Promise<{ error?: string }>;
+      validate: () => boolean;
     }) => void;
   }) => {
-    onReady({ confirmPayment: () => Promise.resolve({}) });
-    return <div data-testid="stripe-form" data-secret={clientSecret} />;
+    onReady({
+      confirmPayment: (secret: string) => confirmMock(secret),
+      validate: () => validateMock(),
+    });
+    return <div data-testid="card-payment-form" />;
   },
 }));
 
@@ -101,11 +114,16 @@ function renderOrderPayment(targetOrder: Order = order) {
 describe("OrderPaymentContent", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // 默认：自动创建 session 返回失败（避免未设置时 undefined.success 报错）
+    confirmMock.mockResolvedValue({});
     createOrderSessionMock.mockResolvedValue({
-      success: false,
-      error: "no session",
+      success: true,
+      session: {
+        id: "ps_1",
+        external_data: { client_secret: "pi_test_abc_secret_xyz%2Fsegment" },
+      },
     });
+    completeOrderSessionMock.mockResolvedValue({ success: true });
+    completeOrderMock.mockResolvedValue({ success: true, order: {} });
   });
 
   it("renders shipping address, payment methods and order summary", () => {
@@ -118,26 +136,44 @@ describe("OrderPaymentContent", () => {
     expect(screen.getByText("Ada Lovelace")).toBeTruthy();
   });
 
-  it("automatically creates a Stripe payment session and shows the card form when Stripe is selected", async () => {
-    createOrderSessionMock.mockResolvedValue({
-      success: true,
-      session: {
-        id: "ps_1",
-        external_data: { client_secret: "cs_test_abc_secret_xyz%2Fsegment" },
-      },
-    });
-
+  it("renders the self-drawn card form immediately when Stripe is selected (no client_secret needed)", () => {
     renderOrderPayment();
 
-    await waitFor(() => {
-      expect(createOrderSessionMock).toHaveBeenCalledWith("or_1", "pm_stripe");
-    });
+    // PRD-20260831-payments-stripe-自绘卡支付表单：表单始终渲染，不预创建会话
+    expect(screen.getByTestId("card-payment-form")).toBeInTheDocument();
+    expect(createOrderSessionMock).not.toHaveBeenCalled();
+  });
 
-    const form = await screen.findByTestId("stripe-form");
-    expect(form).toBeTruthy();
-    // client_secret 解码后传给 StripePaymentForm
-    expect(form.getAttribute("data-secret")).toBe(
-      "cs_test_abc_secret_xyz/segment",
+  it("creates a PaymentIntent session and confirms payment on Pay Now (Stripe)", async () => {
+    const user = userEvent.setup();
+    renderOrderPayment();
+
+    // 表单已渲染
+    expect(screen.getByTestId("card-payment-form")).toBeInTheDocument();
+
+    // 点 Pay → 创建 PaymentIntent 会话 → confirmCardPayment
+    await user.click(screen.getByRole("button", { name: "payAmount" }));
+    await waitFor(() =>
+      expect(createOrderSessionMock).toHaveBeenCalledWith(
+        "or_1",
+        "pm_stripe",
+        undefined,
+        "payment_intent",
+      ),
+    );
+    await waitFor(() =>
+      expect(confirmMock).toHaveBeenCalledWith(
+        "pi_test_abc_secret_xyz/segment",
+      ),
+    );
+
+    // 完成会话 + 完成订单 → 完成页
+    await waitFor(() =>
+      expect(completeOrderSessionMock).toHaveBeenCalledWith("or_1", "ps_1"),
+    );
+    await waitFor(() => expect(completeOrderMock).toHaveBeenCalledWith("or_1"));
+    await waitFor(() =>
+      expect(pushMock).toHaveBeenCalledWith("/us/en/order-placed/or_1"),
     );
   });
 
@@ -149,7 +185,8 @@ describe("OrderPaymentContent", () => {
 
     renderOrderPayment(checkOnlyOrder);
 
-    // Check 非 session：不自动创建 session
+    // Check 非 session：无自绘卡表单、不创建 session
+    expect(screen.queryByTestId("card-payment-form")).not.toBeInTheDocument();
     expect(createOrderSessionMock).not.toHaveBeenCalled();
     // 仍显示支付方式 + Pay 按钮（走 handlePay 线下收款跳转）
     expect(screen.getByText("Check")).toBeTruthy();

@@ -18,8 +18,15 @@ module PallasTradeStripe
       # PALLAS-CUSTOM (2026-08-29, PRD-20260829-payments): sessions now store the
       # `cs_` Checkout Session id. `payment_intent.*` events carry a `pi_` id, so
       # resolve the owning Checkout Session via the Stripe API when needed.
+      #
+      # PALLAS-CUSTOM (2026-08-31, PRD-20260831-payments-stripe-自绘卡支付表单):
+      # PaymentIntent 模式（自绘卡字段）external_id 直存 `pi_` id → 先直查命中，
+      # 未命中再反查 Checkout Session。
       def resolve_payment_session(stripe_id)
         return PallasTrade::PaymentSessions::Stripe.find_by(external_id: stripe_id) if stripe_id.to_s.start_with?('cs_')
+
+        direct = PallasTrade::PaymentSessions::Stripe.find_by(external_id: stripe_id)
+        return direct if direct.present?
 
         gateway = PallasTrade::PaymentMethod.of_type('PallasTradeStripe::Gateway').first
         return nil unless gateway

@@ -11,8 +11,10 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
-import type { StripePaymentFormHandle } from "@/components/checkout/StripePaymentForm";
-import { StripePaymentForm } from "@/components/checkout/StripePaymentForm";
+import {
+  CardPaymentForm,
+  type CardPaymentFormHandle,
+} from "@/components/checkout/CardPaymentForm";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
@@ -20,6 +22,7 @@ import {
   completeOrder,
   completeOrderPaymentSession,
   createOrderPaymentSession,
+  extractSessionClientSecret,
 } from "@/lib/data/order-payment";
 import { extractBasePath } from "@/lib/utils/path";
 
@@ -114,12 +117,8 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
   const selectedMethod =
     paymentMethods.find((m) => m.id === selectedMethodId) ?? paymentMethods[0];
 
-  const [stripeSecret, setStripeSecret] = useState<string | null>(null);
-  const [stripeSessionId, setStripeSessionId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const stripeHandleRef = useRef<StripePaymentFormHandle | null>(null);
-  // 防竞态：支付方式切换时使旧请求失效
-  const requestIdRef = useRef(0);
+  const cardFormRef = useRef<CardPaymentFormHandle | null>(null);
 
   const isPaid = order.state === "paid" || order.state === "completed";
 
@@ -128,47 +127,9 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
     return () => setSummaryContent(null);
   }, [order, setSummaryContent]);
 
-  const handleStripeReady = useCallback((handle: StripePaymentFormHandle) => {
-    stripeHandleRef.current = handle;
+  const handleCardReady = useCallback((handle: CardPaymentFormHandle) => {
+    cardFormRef.current = handle;
   }, []);
-
-  // 选中 session-based Stripe 支付方式 → 自动创建支付会话并同页显示表单
-  // （bugfix 2026-08-31：or_ 订单支付页选择 Stripe 后应直接显示表单，无需先点 Pay Now）
-  useEffect(() => {
-    const method = selectedMethod;
-    if (method?.session_required !== true || method.type !== "stripe") {
-      // 非 Stripe session（PayPal/Adyen）或非 session：保持按钮创建流程
-      setStripeSecret(null);
-      setStripeSessionId(null);
-      return;
-    }
-    if (stripeSecret) return;
-    const requestId = ++requestIdRef.current;
-    (async () => {
-      const result = await createOrderPaymentSession(order.id, method.id);
-      if (requestId !== requestIdRef.current) return;
-      if (result.success && result.session) {
-        const session = result.session as {
-          id: string;
-          external_data?: Record<string, unknown>;
-        };
-        setStripeSessionId(session.id);
-        // client_secret 位于 external_data 且 URL 编码（%2F）→ 解码后传给 Stripe
-        const rawSecret = session.external_data?.client_secret as
-          | string
-          | undefined;
-        const secret = rawSecret ? decodeURIComponent(rawSecret) : undefined;
-        if (secret) {
-          setStripeSecret(secret);
-        } else {
-          toast.error(t("failedToInitPayment"));
-        }
-      } else {
-        const msg = "error" in result ? result.error : undefined;
-        toast.error(msg || t("failedToCreateSession"));
-      }
-    })();
-  }, [order.id, selectedMethod, stripeSecret, t]);
 
   // 已支付 → 直接跳完成页
   useEffect(() => {
@@ -184,8 +145,56 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
       const gatewayType = selectedMethod.type;
       const isSessionBased = selectedMethod.session_required === true;
 
+      if (isSessionBased && gatewayType === "stripe") {
+        // Stripe 自绘卡字段（PRD-20260831-payments-stripe-自绘卡支付表单）：
+        // 表单已渲染；Pay Now → 创建 PaymentIntent 会话 → confirmCardPayment。
+        if (!cardFormRef.current?.validate()) {
+          setProcessing(false);
+          return;
+        }
+        const result = await createOrderPaymentSession(
+          order.id,
+          selectedMethod.id,
+          undefined,
+          "payment_intent",
+        );
+        if (!result.success || !result.session) {
+          toast.error(
+            "error" in result ? result.error : t("failedToCreateSession"),
+          );
+          setProcessing(false);
+          return;
+        }
+        const session = result.session as {
+          id: string;
+          external_data?: Record<string, unknown>;
+        };
+        // client_secret 位于 external_data 且 URL 编码（%2F）→ 解码后传给 Stripe
+        const stripeSecret = extractSessionClientSecret(session);
+
+        if (!stripeSecret) {
+          toast.error(t("failedToInitPayment"));
+          setProcessing(false);
+          return;
+        }
+
+        const confirmResult =
+          await cardFormRef.current?.confirmPayment(stripeSecret);
+        if (confirmResult?.error) {
+          toast.error(confirmResult.error);
+          setProcessing(false);
+          return;
+        }
+
+        // 支付确认成功 → 完成会话 + 完成订单
+        await completeOrderPaymentSession(order.id, session.id);
+        await completeOrder(order.id);
+        router.push(`${basePath}/order-placed/${order.id}`);
+        return;
+      }
+
       if (isSessionBased) {
-        // 创建订单支付会话 → 获取 client_secret（Stripe Checkout Session）
+        // 其他 session-based（PayPal/Adyen）：创建订单支付会话 → 直接完成会话
         const result = await createOrderPaymentSession(
           order.id,
           selectedMethod.id,
@@ -199,20 +208,6 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
           id: string;
           external_data?: Record<string, unknown>;
         };
-        setStripeSessionId(session.id);
-        // client_secret 位于 external_data 且 URL 编码（%2F）→ 解码后传给 Stripe
-        const rawSecret = session.external_data?.client_secret as
-          | string
-          | undefined;
-        const stripeSecret = rawSecret
-          ? decodeURIComponent(rawSecret)
-          : undefined;
-
-        if (gatewayType === "stripe" && stripeSecret) {
-          setStripeSecret(stripeSecret);
-          setProcessing(false);
-          return; // 渲染 StripePaymentForm，用户确认后走 handleStripePay
-        }
         // 其他 session-based（PayPal/Adyen）：直接完成会话（provider 回调驱动）
         await completeOrderPaymentSession(order.id, session.id);
         await completeOrder(order.id);
@@ -222,28 +217,6 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
 
       // 非 session（Check/COD/银行转账）：无在线支付，订单保持 pending（线下收款），
       // 直接跳完成页。
-      router.push(`${basePath}/order-placed/${order.id}`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Payment failed");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleStripePay = async () => {
-    if (!stripeHandleRef.current || !stripeSessionId) return;
-    setProcessing(true);
-    try {
-      const returnUrl = `${window.location.origin}${basePath}/order-placed/${order.id}`;
-      const result = await stripeHandleRef.current.confirmPayment(returnUrl);
-      if (result.error) {
-        toast.error(result.error);
-        setProcessing(false);
-        return;
-      }
-      // 支付确认成功 → 完成会话 + 完成订单
-      await completeOrderPaymentSession(order.id, stripeSessionId);
-      await completeOrder(order.id);
       router.push(`${basePath}/order-placed/${order.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Payment failed");
@@ -297,59 +270,45 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
             {t("paymentMethod")}
           </h2>
 
-          {stripeSecret ? (
-            <div>
-              <StripePaymentForm
-                clientSecret={stripeSecret}
-                onReady={handleStripeReady}
-              />
-              <Button
-                size="lg"
-                className="w-full mt-6"
-                disabled={processing}
-                onClick={handleStripePay}
+          <div className="flex flex-col gap-3">
+            {paymentMethods.map((method) => (
+              <label
+                key={method.id}
+                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-indigo-300"
               >
-                {processing
-                  ? t("processing")
-                  : t("payAmount", {
-                      amount: order.display_total ?? "",
-                    })}
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {paymentMethods.map((method) => (
-                <label
-                  key={method.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-indigo-300"
-                >
-                  <input
-                    type="radio"
-                    name="payment-method"
-                    checked={selectedMethodId === method.id}
-                    onChange={() => setSelectedMethodId(method.id ?? "")}
-                    className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span className="font-medium text-gray-900">
-                    {method.name}
-                  </span>
-                </label>
-              ))}
+                <input
+                  type="radio"
+                  name="payment-method"
+                  checked={selectedMethodId === method.id}
+                  onChange={() => setSelectedMethodId(method.id ?? "")}
+                  className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="font-medium text-gray-900">{method.name}</span>
+              </label>
+            ))}
+          </div>
 
-              <Button
-                size="lg"
-                className="w-full mt-6"
-                disabled={!selectedMethod || processing}
-                onClick={handlePay}
-              >
-                {processing
-                  ? t("processing")
-                  : t("payAmount", {
-                      amount: order.display_total ?? "",
-                    })}
-              </Button>
+          {/* Stripe 自绘卡字段（PRD-20260831-payments-stripe-自绘卡支付表单）：
+              表单始终渲染，不依赖 client_secret / js.stripe.com iframe */}
+          {selectedMethod?.type === "stripe" &&
+          selectedMethod.session_required ? (
+            <div className="mt-4 rounded-lg border border-gray-200 p-4">
+              <CardPaymentForm onReady={handleCardReady} />
             </div>
-          )}
+          ) : null}
+
+          <Button
+            size="lg"
+            className="w-full mt-6"
+            disabled={!selectedMethod || processing}
+            onClick={handlePay}
+          >
+            {processing
+              ? t("processing")
+              : t("payAmount", {
+                  amount: order.display_total ?? "",
+                })}
+          </Button>
         </section>
       </div>
     </div>

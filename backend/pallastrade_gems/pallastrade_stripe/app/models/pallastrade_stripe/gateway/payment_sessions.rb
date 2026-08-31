@@ -12,6 +12,9 @@ module PallasTradeStripe
       end
 
       def create_payment_session(order:, amount: nil, external_data: {})
+        mode = external_data[:mode] || external_data['mode']
+        return create_payment_intent_session(order: order, amount: amount) if mode.to_s == 'payment_intent'
+
         total = amount.presence || order.total_minus_store_credits
         amount_in_cents = PallasTrade::Money.new(total, currency: order.currency).cents
 
@@ -48,16 +51,53 @@ module PallasTradeStripe
         )
       end
 
+      # PALLAS-CUSTOM (2026-08-31, PRD-20260831-payments-stripe-自绘卡支付表单):
+      # 自绘卡字段（自写 number/expiry/cvc）需要 PaymentIntent 的 `pi_..._secret`
+      # 供 `stripe.confirmCardPayment` 消费——Checkout Session 的 `cs_..._secret`
+      # 只能用于 PaymentElement。external_id 存 `pi_` id，`external_data.mode`
+      # 标记为 `payment_intent` 供模型/complete/webhook 区分模式。
+      def create_payment_intent_session(order:, amount: nil)
+        total = amount.presence || order.total_minus_store_credits
+        amount_in_cents = PallasTrade::Money.new(total, currency: order.currency).cents
+
+        raise PallasTrade::Core::GatewayError, I18n.t('pallastrade.stripe.payment_session_errors.zero_amount') if amount_in_cents.zero?
+
+        customer = fetch_or_create_customer(order: order)
+        response = create_payment_intent(amount_in_cents, order, customer_profile_id: customer&.profile_id)
+        payment_intent = response.params
+
+        payment_session_class.create!(
+          order: order,
+          payment_method: self,
+          amount: total,
+          currency: order.currency,
+          status: 'pending',
+          external_id: payment_intent['id'],
+          customer: order.user,
+          customer_external_id: customer&.profile_id,
+          external_data: {
+            'client_secret' => payment_intent['client_secret'],
+            'mode' => 'payment_intent'
+          }.compact
+        )
+      end
+
       # Checkout Sessions are immutable after creation (amount / line items can't
       # be updated in place) — when the amount changes we recreate the Stripe
       # session and rebind the local record. Otherwise just merge external_data.
+      # PaymentIntent-mode sessions (自绘卡字段) keep their mode on recreate.
       def update_payment_session(payment_session:, amount: nil, external_data: {})
         if amount.present? && amount != payment_session.amount
-          replacement = create_payment_session(
-            order: payment_session.order,
-            amount: amount,
-            external_data: external_data
-          )
+          mode = payment_session.external_data&.dig('mode')
+          replacement = if mode.to_s == 'payment_intent'
+                          create_payment_intent_session(order: payment_session.order, amount: amount)
+                        else
+                          create_payment_session(
+                            order: payment_session.order,
+                            amount: amount,
+                            external_data: external_data
+                          )
+                        end
           payment_session.update!(
             external_id: replacement.external_id,
             external_data: replacement.external_data,
@@ -94,10 +134,17 @@ module PallasTradeStripe
       #
       # Does NOT complete the order — that is handled by Carts::Complete
       # (called by the storefront or by the webhook handler).
+      #
+      # PALLAS-CUSTOM (2026-08-31, PRD-20260831-payments-stripe-自绘卡支付表单):
+      # PaymentIntent 模式（external_id 为 `pi_`）直接 retrieve PaymentIntent，
+      # 不再经过 Checkout Session（cs_）解析。
       def complete_payment_session(payment_session:, params: {})
-        stripe_session = retrieve_checkout_session(payment_session.external_id)
-        stripe_pi = stripe_session.payment_intent
-        raise PallasTrade::Core::GatewayError, 'Checkout Session has no PaymentIntent yet' unless stripe_pi
+        stripe_pi = if payment_session.payment_intent_mode?
+                      payment_session.stripe_payment_intent
+                    else
+                      retrieve_checkout_session(payment_session.external_id).payment_intent
+                    end
+        raise PallasTrade::Core::GatewayError, 'Payment session has no PaymentIntent yet' unless stripe_pi
 
         verify_payment_intent_matches!(stripe_pi, payment_session.amount_in_cents, payment_session.currency)
 

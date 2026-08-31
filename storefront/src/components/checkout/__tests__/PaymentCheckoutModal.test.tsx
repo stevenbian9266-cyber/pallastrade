@@ -29,6 +29,14 @@ vi.mock("@/lib/data/order-payment", () => ({
   completeOrderPaymentSession: (...args: unknown[]) =>
     completeOrderSessionMock(...args),
   completeOrder: (...args: unknown[]) => completeOrderMock(...args),
+  extractSessionClientSecret: (
+    session: {
+      external_data?: Record<string, unknown> | null;
+    } | null,
+  ) => {
+    const raw = session?.external_data?.client_secret as string | undefined;
+    return raw ? decodeURIComponent(raw) : null;
+  },
 }));
 
 const createCombinationMock = vi.fn();
@@ -43,7 +51,7 @@ vi.mock("@/lib/data/payment-combination", () => ({
     completeCombinationMock(...args),
 }));
 
-// StripePaymentForm mock：暴露 confirmPayment 供测试驱动
+// StripePaymentForm mock（组合支付）：暴露 confirmPayment 供测试驱动
 const confirmMock = vi.fn();
 vi.mock("@/components/checkout/StripePaymentForm", () => ({
   StripePaymentForm: ({
@@ -59,6 +67,26 @@ vi.mock("@/components/checkout/StripePaymentForm", () => ({
       confirmPayment: (url: string) => confirmMock(url),
     });
     return <div data-testid="stripe-form" data-secret={clientSecret} />;
+  },
+}));
+
+// CardPaymentForm mock（单笔 Stripe 自绘卡字段）
+const cardConfirmMock = vi.fn();
+const cardValidateMock = vi.fn().mockReturnValue(true);
+vi.mock("@/components/checkout/CardPaymentForm", () => ({
+  CardPaymentForm: ({
+    onReady,
+  }: {
+    onReady: (h: {
+      confirmPayment: (secret: string) => Promise<{ error?: string }>;
+      validate: () => boolean;
+    }) => void;
+  }) => {
+    onReady({
+      confirmPayment: (secret: string) => cardConfirmMock(secret),
+      validate: () => cardValidateMock(),
+    });
+    return <div data-testid="card-payment-form" />;
   },
 }));
 
@@ -89,6 +117,9 @@ describe("PaymentCheckoutModal (PRD-20260830-checkout AC-004/005/006/007)", () =
     getCombinationMock.mockReset();
     completeCombinationMock.mockReset();
     confirmMock.mockReset();
+    cardConfirmMock.mockReset();
+    cardValidateMock.mockReset();
+    cardValidateMock.mockReturnValue(true);
     createOrderSessionMock.mockResolvedValue({
       success: true,
       session: { id: "ps_1", external_data: { client_secret: "sec_1" } },
@@ -96,9 +127,10 @@ describe("PaymentCheckoutModal (PRD-20260830-checkout AC-004/005/006/007)", () =
     completeOrderSessionMock.mockResolvedValue({ success: true });
     completeOrderMock.mockResolvedValue({ success: true, order: {} });
     confirmMock.mockResolvedValue({});
+    cardConfirmMock.mockResolvedValue({});
   });
 
-  it("renders amount due + payment method radio + Stripe form for a single order (AC-004/005)", async () => {
+  it("renders amount due + payment method radio + self-drawn card form for a single order (AC-004/005)", async () => {
     render(
       <PaymentCheckoutModal
         open
@@ -112,12 +144,15 @@ describe("PaymentCheckoutModal (PRD-20260830-checkout AC-004/005/006/007)", () =
     expect(screen.getByText("$10.00")).toBeTruthy();
     expect(screen.getByText("Card")).toBeTruthy();
 
+    // PRD-20260831-payments-stripe-自绘卡支付表单：单笔 Stripe 表单始终渲染，
+    // 且不预创建 session（避免提前转换 cart）
     await waitFor(() =>
-      expect(screen.getByTestId("stripe-form")).toBeInTheDocument(),
+      expect(screen.getByTestId("card-payment-form")).toBeInTheDocument(),
     );
+    expect(createOrderSessionMock).not.toHaveBeenCalled();
   });
 
-  it("pays a single order: confirm stripe → complete session → complete order (AC-005)", async () => {
+  it("pays a single order: Pay Now creates PaymentIntent session → confirm card → complete (AC-005)", async () => {
     const user = userEvent.setup();
     render(
       <PaymentCheckoutModal
@@ -129,12 +164,21 @@ describe("PaymentCheckoutModal (PRD-20260830-checkout AC-004/005/006/007)", () =
     );
 
     await waitFor(() =>
-      expect(screen.getByTestId("stripe-form")).toBeInTheDocument(),
+      expect(screen.getByTestId("card-payment-form")).toBeInTheDocument(),
     );
 
-    await user.click(screen.getByRole("button", { name: "confirmPayment" }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
 
-    await waitFor(() => expect(confirmMock).toHaveBeenCalled());
+    // 创建 PaymentIntent 会话（mode: payment_intent）→ confirmCardPayment
+    await waitFor(() =>
+      expect(createOrderSessionMock).toHaveBeenCalledWith(
+        "order_1",
+        "pm_card",
+        undefined,
+        "payment_intent",
+      ),
+    );
+    await waitFor(() => expect(cardConfirmMock).toHaveBeenCalledWith("sec_1"));
     await waitFor(() =>
       expect(completeOrderSessionMock).toHaveBeenCalledWith("order_1", "ps_1"),
     );

@@ -57,9 +57,11 @@ module PallasTradeStripe
         if object_id.to_s.start_with?('cs_')
           PallasTrade::PaymentSessions::Stripe.find_by(payment_method: self, external_id: object_id)
         else
-          # payment_intent.* events carry a `pi_` id; our session stores the `cs_`
-          # id, so resolve the Checkout Session that owns this intent via Stripe.
-          find_session_by_payment_intent(object_id)
+          # payment_intent.* events carry a `pi_` id. Our session may store the
+          # `pi_` id directly (自绘卡字段 PaymentIntent 模式) OR the owning `cs_`
+          # Checkout Session id (PRD-20260829 迁移) — resolve either way.
+          PallasTrade::PaymentSessions::Stripe.find_by(payment_method: self, external_id: object_id) ||
+            find_session_by_payment_intent(object_id)
         end
       return nil unless payment_session
 
