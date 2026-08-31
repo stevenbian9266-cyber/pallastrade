@@ -156,7 +156,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     submitMock.mockResolvedValue({ id: "or_123" });
     createOrderSessionMock.mockResolvedValue({
       success: true,
-      session: { id: "ps_1", client_secret: "sec_1" },
+      session: { id: "ps_1", external_data: { client_secret: "sec_1" } },
     });
     completeOrderSessionMock.mockResolvedValue({ success: true });
     completeOrderMock.mockResolvedValue({ success: true, order: {} });

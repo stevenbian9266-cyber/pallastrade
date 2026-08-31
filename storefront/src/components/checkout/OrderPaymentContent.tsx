@@ -83,12 +83,15 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
         }
         const session = result.session as {
           id: string;
-          client_secret?: string | null;
+          external_data?: Record<string, unknown>;
         };
         setStripeSessionId(session.id);
+        // client_secret 位于 external_data（Stripe Checkout Session secret）
+        const stripeSecret =
+          session.external_data?.client_secret as string | undefined;
 
-        if (gatewayType === "stripe" && session.client_secret) {
-          setStripeSecret(session.client_secret);
+        if (gatewayType === "stripe" && stripeSecret) {
+          setStripeSecret(stripeSecret);
           setProcessing(false);
           return; // 渲染 StripePaymentForm，用户确认后走 handleStripePay
         }

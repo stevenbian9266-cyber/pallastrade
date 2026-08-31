@@ -91,7 +91,7 @@ describe("PaymentCheckoutModal (PRD-20260830-checkout AC-004/005/006/007)", () =
     confirmMock.mockReset();
     createOrderSessionMock.mockResolvedValue({
       success: true,
-      session: { id: "ps_1", client_secret: "sec_1" },
+      session: { id: "ps_1", external_data: { client_secret: "sec_1" } },
     });
     completeOrderSessionMock.mockResolvedValue({ success: true });
     completeOrderMock.mockResolvedValue({ success: true, order: {} });

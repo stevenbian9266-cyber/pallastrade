@@ -185,11 +185,15 @@ export function UnifiedCheckout({
           if (result.success && result.session) {
             const session = result.session as {
               id: string;
-              client_secret?: string | null;
+              external_data?: Record<string, unknown>;
             };
             setStripeSessionId(session.id);
-            if (session.client_secret) {
-              setStripeSecret(session.client_secret);
+            // client_secret 位于 external_data（Stripe Checkout Session secret）
+            const secret = session.external_data?.client_secret as
+              | string
+              | undefined;
+            if (secret) {
+              setStripeSecret(secret);
             } else {
               toast.error(t("failedToInitPayment"));
             }
