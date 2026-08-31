@@ -1,39 +1,24 @@
 # PallasTrade — Copilot Instructions (Auto-Injected Every Session)
 
-<!--
-  This file is automatically injected by GitHub Copilot into EVERY chat session.
-  It is the single most important enforcement file. Rules here CANNOT be skipped.
-  AGENTS.md provides detailed reference; this file provides non-negotiable commands.
--->
+<!-- 强制命令速查。详细规范见 AGENTS.md。本文件规则不可跳过。
+     精简于 2026-08-31（token 优化，见 docs/research/RESEARCH-20260831-harness-token-optimization.md）。 -->
 
 ## ⛔ R0: THE FIRST THING YOU DO — NO EXCEPTIONS
 
-**Before you invoke `create_file`, `replace_string_in_file`, `multi_replace_string_in_file`, or ANY file mutation tool — you MUST first confirm the task uses a valid prefix, start/resume a Harness Task, build context, then open a task-bound Gate.**
+**Before invoking `create_file` / `replace_string_in_file` / `multi_replace_string_in_file` / ANY file mutation tool — MUST first confirm the task uses a valid prefix, start/resume a Harness Task, build context, then open a task-bound Gate.**
 
-### Required Prefix Convention
+### Required Prefix Convention（Harness 自动识别任务类型）
 
-用户输入必须以以下前缀之一开头，Harness 自动识别任务类型：
+| 用户说 | Gate `--type` | 用户说 | Gate `--type` |
+|---|---|---|---|
+| `修复：xxx` | bugfix | `文档：xxx` | docs |
+| `优化：xxx` / `改进：xxx` | feature | `重构：xxx` | refactor |
+| `新增：xxx` / `添加：xxx` | feature | `安全：xxx` | security |
+| `样式：xxx` | style | `测试：xxx` | test |
+| `需求：xxx` | feature | `审计：xxx` | audit |
+| `研究：xxx` / `调研：xxx` | research | — | — |
 
-| 用户说 | AI 理解为 | Gate `--type` |
-|---|---|---|
-| `修复：xxx` | Bug 修复 | `bugfix` |
-| `优化：xxx` / `改进：xxx` | 功能优化 | `feature` |
-| `新增：xxx` / `添加：xxx` | 新功能 | `feature` |
-| `样式：xxx` | 样式调整 | `style` |
-| `需求：xxx` | 泛需求描述 | `feature` |
-| `审计：xxx` | 审计 / 盘点 | `audit` |
-| `研究：xxx` / `调研：xxx` | 研究 / 评估 | `research` |
-| `文档：xxx` | 文档类 | `docs` |
-| `重构：xxx` | 重构 / 清理 | `refactor` |
-| `安全：xxx` | 安全相关 | `security` |
-| `测试：xxx` | 测试相关 | `test` |
-
-**If the user input does NOT start with one of these prefixes**, remind them to add a prefix before proceeding. Do NOT create a gate without a valid prefix.
-
-**无前缀时的处理：**
-- 如果用户输入**明显是提问**（"怎么..."、"什么是..."、"解释..."）→ 直接回答，不触发 gate
-- 如果用户输入**涉及代码修改**但缺前缀 → AI 提醒用户加前缀后再继续
-- 如果用户输入含糊 → AI 用 `vscode_askQuestions` 让用户确认意图（提需求 or 问问题）
+**无前缀**：明显提问→直接答；改代码缺前缀→提醒加前缀；含糊→`vscode_askQuestions` 确认。
 
 ### Start the lifecycle and run the gate
 
@@ -44,159 +29,95 @@ npx harness risk check --task <TASK-ID>
 npx harness gate --task "<prefix：description>" --task-id <TASK-ID>
 ```
 
-The CLI auto-detects the `--type` from the prefix. No need to pass `--type` manually.
+**违规**：未过 gate 就编辑文件 = 流程违规（停止、告知、删改、重开 gate）。
 
-**If you make ANY file edit without first running `harness gate`, you have committed a process violation. Stop immediately. Inform the user. Delete your edits. Start over with the gate.**
-
-### R0 exceptions (the ONLY file operations allowed while gate is active)
+### R0 exceptions（gate 激活期间唯一允许的文件操作）
 
 | Allowed | Directory / Scenario | Reason |
 |---|---|---|
-| ✅ `create_file` / edit | `harness/requirements/` | 需求文档，必须创建才能清 `create-req-doc` check |
-| ✅ `create_file` / edit | `harness/gates/` (gate CLI handles this) | Gate 状态文件 |
-| ✅ Read any file | All directories | 跨层搜索、读 Skill 文件 |
-| 🚫 `create_file` | All other directories | 必须先清 gate |
-| 🚫 `replace_string_in_file` | All other directories | 必须先清 gate |
+| ✅ 编辑 | `harness/requirements/` | 清 `create-req-doc` check |
+| ✅ 编辑 | `harness/gates/` | Gate 状态文件 |
+| ✅ 读任何文件 | 所有目录 | 跨层搜索、读 Skill |
+| 🚫 其他写操作 | — | 必须先清 gate |
 
 ### R0 判断：新建文件还是改已有文件
 
 ```
-Gate cleared 后：
-  改已有文件 → ✅ 直接改
-  必须新增文件才能实现需求 → ✅ 允许，在 REQ doc 中说明原因
-  改已有文件就能实现但 AI 新建了文件 → 🚫 违规。检查是否漏了跨层搜索
+Gate cleared 后：改已有文件 → ✅ 直接改
+  必须新增文件 → ✅ 允许（REQ doc 说明原因）
+  能改已有却新建 → 🚫 违规（先查跨层搜索）
 ```
-
-This rule catches the #1 cause of duplicate code: AI creates a new controller/service
-when one already exists in a gem layer it didn't search.
 
 ## Non-Negotiable Rules
 
-### R1: Pre-Coding Gate
+### R1: Pre-Coding Gate（物理强制）
 
-**Before invoking ANY file creation or file editing tool**, you MUST run:
+改任何文件前 MUST 运行：
 
 ```bash
-npx harness gate --task "<brief description>" --task-id <TASK-ID> [--type feature|bugfix|style|audit|research|docs|refactor|security|test]
+npx harness gate --task "<brief description>" --task-id <TASK-ID>
 ```
 
-This command creates a gate at `harness/gates/GATE-*.json` and outputs a checklist.
+- gate 非 0 退出 → **物理禁止** `create_file` / `replace_string_in_file` / `multi_replace_string_in_file` / 任何修改工具
+- 逐项清：`npx harness gate:clear --gate <GATE-ID> --clear <check-id>`
+- 清完 preparation 才实施；task-bound `verify-test` 不可手工 clear（收集证据 → `knowledge verify` → `evidence verify --task <TASK-ID> --gate <GATE-ID>`）
 
-**If the command exits with any code other than 0**, you are **PHYSICALLY FORBIDDEN** from calling:
-- `create_file`
-- `replace_string_in_file`
-- `multi_replace_string_in_file`
-- Any other file mutation tool
-
-To clear gate checks one at a time:
-```bash
-npx harness gate:clear --gate <GATE-ID> --clear <check-id>
-```
-
-Only proceed to implementation when preparation checks are cleared. A task-bound `verify-test` cannot
-be cleared manually: collect typed evidence, run `knowledge verify`, then run
-`evidence verify --task <TASK-ID> --gate <GATE-ID>`.
-
-### R1-前置：编辑前强制校验（每个回合都必须做）
-
-在调用任何文件修改工具之前，AI MUST 先运行：
+### R1-前置：编辑前强制校验（每回合必做）
 
 ```bash
 npx harness gate:status
 ```
-
-- **exit 0** → 存在有效 gate → 允许继续编辑
-- **exit 1** → 无有效 gate 或未全部清除 → **物理禁止任何文件修改**，必须先创建/处理 gate
-
-此校验在 Copilot 环境下是唯一的机械强制点——如果跳过，等于绕过了整个 gate 机制。
+- **exit 0** → 有有效 gate → 允许编辑
+- **exit 1** → 无有效 gate 或未全清 → **物理禁止修改**，先创建/处理 gate
 
 ### R1-续：同一任务的后续回合
 
-**当在同一需求上继续工作时**（例如"做 P1-6"这种分项实施），先检查 gate 是否仍有效：
-
-```bash
-npx harness gate:status
-```
-
-- 如果 exit 0 → gate 有效；同时运行 `task status --task <TASK-ID>` 确认 worktree 身份后继续编辑
-- 如果 exit 1 → 说明 gate 过期（>24h）或 `verify-test` 未完成，需要处理
-- 如果无活跃 gate → 必须创建新 gate
+先 `gate:status`：exit 0 → gate 有效，同时 `task status --task <TASK-ID>` 确认 worktree 后继续；exit 1 → gate 过期（>24h）或 verify-test 未完，先处理；无活跃 gate → 新建。
 
 ### R2: Skill Files Are NOT Optional
 
-For `feature` and `bugfix` task types, the gate requires reading Skill files.
-**You must actually read them** — not just mark the check as done.
-The requirements document template (`harness/requirements/_TEMPLATE.md`) includes a
-Skill Consultation Evidence Table. Every cell must be filled with a real finding.
+feature/bugfix 类型 gate 要求读的 Skill **必须真读**（REQ 的 Skill Consultation Evidence Table 每格填真实结论，不得跳过）。
 
 ### R3: User Confirmation for New Features
 
-For `feature` type tasks, the gate includes `user-confirmed`.
-You MUST present the requirements document to the user and WAIT for explicit confirmation
-before marking this check as done. Do not proceed without it.
+feature gate 含 `user-confirmed`：呈现需求文档 → **等用户明确确认**（"确认/实施/go ahead/proceed"）→ 才 clear；模糊同意（"ok/看看吧"）不算。
 
-### R4: Cross-Layer Search
+### R4: Cross-Layer Search（6 层，无例外）
 
-Every task requires searching across all 6 layers:
-1. `backend/app/`
-2. `backend/pallastrade_gems/pallastrade_core/app/`
-3. `backend/pallastrade_gems/pallastrade_api/app/`
-4. `backend/pallastrade_gems/pallastrade_admin/app/`
-5. `storefront/src/`
-6. `platform/packages/`
-
-Finding a capability in one layer does NOT mean it exists in others.
-You MUST search each layer independently.
+`backend/app/` → `pallastrade_core/app/` → `pallastrade_api/app/` → `pallastrade_admin/app/` → `storefront/src/` → `platform/packages/`。
+每层独立搜索；找到能力≠他层也有（AP-SEARCH-1/2/3 见 AGENTS.md §2 Step 0）。
 
 ### R5: Anti-Patterns Are BLOCKED
 
-**完整反模式清单（AP-001~AP-009，含 AP-007 / AP-009a / AP-009b）见 `AGENTS.md` §5 摘要表 + 唯一权威 `harness/policies/anti-patterns.json`（CI 机器执行）。** 高频违规速记：
-- AP-001: `style={{ }}` inline styles → Use Tailwind classes
-- AP-002: Raw `fetch()` calls → Use `@pallastrade/sdk`
-- AP-006: Hardcoded hex colors → Use CSS custom properties
+完整清单见 `AGENTS.md` §5 + 唯一权威 `harness/policies/anti-patterns.json`（CI 机器执行）。高频：AP-001 内联样式→Tailwind；AP-002 裸 fetch→SDK；AP-006 硬编码色→设计 token。
 
 ### R6: Verify or Declare — NO SKIPPING
 
-After implementing code changes, the `verify-test` gate check MUST be resolved through fresh typed evidence.
-Run relevant tests with `harness evidence run --task <TASK-ID> --type test -- <command>`; non-code work may
-record a justified review evidence, but must still satisfy the task's risk profile and knowledge assessment.
-
-**最小验证矩阵（按改动类型）与验证证据要求见 `AGENTS.md` §6 — 本文件不再重复。** 核心强制：
-- UI 或后端逻辑变更 "no test needed" 无效 — 必须有浏览器/日志证据
-- 跳过最小检查导致构建损坏 = 流程违规
-- 不允许留下 `verify-test` pending（pending 的 gate 视为无效，不能续作）
-- 禁止手工 clear task-bound `verify-test`；使用 `evidence verify`
+改后 `verify-test` MUST 用 typed evidence 解决：`harness evidence run --task <TASK-ID> --type test -- <cmd>`；非代码工作可记 justified review evidence（须满足 risk profile + knowledge）。
+核心强制（详见 AGENTS.md §6）：UI/后端逻辑 "no test needed" 无效；跳过最小检查致构建损坏=违规；不允许 verify-test pending；禁止手工 clear（用 evidence verify）。
 
 ### R7: user-confirmed Requires Explicit User Action
 
-The `user-confirmed` gate check **MUST NOT be cleared by the AI**. It may only
-be cleared after the user explicitly confirms the requirements document with a
-clear affirmative (e.g., "确认", "实施", "go ahead", "proceed").
-Ambiguous or implicit approval (e.g., "ok", "看看吧") does NOT count — ask
-the user to clarify before proceeding.
+AI **不可自清** `user-confirmed`；须用户明确肯定（"确认/实施/go ahead/proceed"）。模糊（"ok/看看吧"）不算，需澄清。
 
-### R8: PRD-Driven Workflow (一句话需求 → PRD → 实施)
+### R8: PRD-Driven Workflow（一句话需求 → PRD → 实施）
 
-**当用户输入是"一句话需求"（含前缀 `需求：`/`新增：`/`优化：`/`修复：` 等）时，MUST 遵循 `ai/skills/pallastrade-prd/SKILL.md`：**
-
-1. **PRD 生成**：先用 `npx harness prd new --title "<需求>"` 创建骨架（自动分类），再按 `docs/prd/_TEMPLATE.md` 完整扩充（背景/FR/AC/跨层搜索/测试计划/文档同步清单），存到 `docs/prd/{category}/PRD-{date}-{category}-{slug}.md`，更新 `docs/prd/README.md` 索引。
-2. **查重优先（机制自动）**：`harness prd new` 自动扫描已有 PRD 计算标题相似度（>0.3 阻止新建）；命中相似 PRD → **必须 `harness prd update --path <原PRD> --title "<需求>"` 回写原 PRD 完整更新**，不得新建重复 PRD；确属全新需求才 `--force`。同时 6 层跨层搜索（AP-SEARCH 反模式）。
-3. **用户确认**：PRD 需用户明确确认（`approved`）后才能进入实施；PRD 未 approved 不允许开 gate。
-4. **Gate + REQ**：`harness gate`（feature 类型含 `create-prd-doc` + `read-skill-prd` checks）→ 生成 `harness/requirements/REQ-*.md`。
-5. **测试/验收**：PRD 每个 AC 必须映射到测试（测试标注 `# PRD-xxx AC-x`），用 `harness prd verify --id PRD-xxx` 校验。
-6. **接口变更**：同步 `backend/public/api-docs/{store,admin}.yaml` + `platform/docs/api-reference/`，`harness generated:check` 验证。
-7. **知识同步门**：关闭 `verify-test` 前运行 `harness sync-check --id PRD-xxx`，按矩阵逐项处理（Skill / README / Agent 文件 / 样式规范 / 技术规范 / 反模式 / 场景库 / API 文档），结论记录在 PRD §9/§10，然后 `harness sync-check --ack`。
-
-**违反 R8（跳过 PRD / 未确认 / 跳知识同步门）视为流程违规。**
+一句话需求（`需求：`/`新增：`/`优化：`/`修复：` 等）MUST 遵循 `ai/skills/pallastrade-prd/SKILL.md`：
+1. `npx harness prd new --title "<需求>"`（自动分类+查重>0.3 阻止）→ 按 `docs/prd/_TEMPLATE.md` 扩充 → `docs/prd/{cat}/PRD-*.md`，更新 README 索引
+2. 查重优先：命中相似 PRD → `harness prd update` 回写原 PRD，不新建；确属全新才 `--force`；做 6 层跨层搜索
+3. 用户确认（approved）后才能开 gate
+4. gate + REQ（`harness/requirements/REQ-*.md`）
+5. 每 AC 映射测试（标注 `# PRD-xxx AC-x`），`harness prd verify --id PRD-xxx`
+6. 接口变更：同步 `backend/public/api-docs/{store,admin}.yaml` + `platform/docs/api-reference/`，`generated:check`
+7. 知识同步门：`harness sync-check --id PRD-xxx` → 处理 → `--ack`
+**违反 R8 = 流程违规。**
 
 ### R9: 分支策略（dev 开发 → main 生产）
 
-- 日常开发在 `dev` 分支（本地 + 远程），提交/推送均在 `dev`
-- `main` 是生产部署分支：**仅接受 `dev` 合并**，禁止直接向 `main` 推送开发提交
-- 发布流程：`git checkout main && git merge dev && git push origin main`
+- 日常开发在 `dev`（提交/推送均 dev）；`main` 仅接受 dev 合并，禁止直推 main
+- 发布：`git checkout main && git merge dev && git push origin main`
 - **gate 绑定当前分支**：在哪个分支开 gate 就在哪个分支完成提交（切分支前先完成 gate）
 
 ## Reference
 
-For detailed architecture, customization decision tree, and domain-specific guidance,
-see `AGENTS.md` in the repository root.
+For detailed architecture, customization decision tree, and domain-specific guidance, see `AGENTS.md` in the repository root.

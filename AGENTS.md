@@ -126,41 +126,17 @@ may finish an already-running task, but every new Gate must use `--task-id`.
 
 ### � Step -1: MANDATORY Gate (ALL tasks — NO exceptions — enforced by process.exit(1))
 
-**Before you invoke any file creation or edit tool, you MUST run:**
+**Before you invoke any file creation or edit tool, you MUST run**（命令与 copilot-instructions R1 相同）：
 
 ```bash
-npx harness gate --task "<brief description>" --task-id <TASK-ID> [--type feature|bugfix|style]
-```
-
-This creates a gate file at `harness/gates/GATE-*.json` and outputs a checklist.
-The command **always exits with code 1** until every check is cleared via `gate:clear`.
-
-**The AI is physically forbidden from calling `create_file`, `replace_string_in_file`, or `multi_replace_string_in_file` while the active gate's exit code is non-zero.** Check status with:
-
-```bash
+npx harness gate --task "<brief description>" --task-id <TASK-ID>
 npx harness gate:clear --gate <GATE-ID> --clear <check-id>
 ```
 
-Only when all preparation checks are cleared and `gate:clear` exits 0 may the AI proceed to implementation.
-For task-bound Gates, `verify-test` is evidence-controlled and cannot be cleared manually.
-
-**Gate 期间的例外（仅允许以下文件操作）：**
-
-| 允许 | 目录/场景 | 原因 |
-|---|---|---|
-| ✅ `create_file` / 编辑 | `harness/requirements/` | 需求文档，必须创建才能清 `create-req-doc` |
-| ✅ `create_file` / 编辑 | `harness/gates/` | Gate 状态文件 |
-| ✅ 读取任意文件 | 所有目录 | 跨层搜索、读 Skill 文件 |
-| 🚫 其他所有文件操作 | — | 必须先清 gate |
-
-**新建 vs 修改的判断规则：**
-
-```
-Gate cleared 开始编码后：
-  改已有文件 → ✅ 直接改
-  必须新建文件才能实现需求 → ✅ 允许（在 REQ doc 中说明原因）
-  改已有文件就能实现却新建了文件 → 🚫 违规。先检查跨层搜索是否遗漏
-```
+- gate **非 0 退出** → **物理禁止** `create_file` / `replace_string_in_file` / `multi_replace_string_in_file`；清完 preparation 才实施
+- task-bound `verify-test` 证据控制，不可手工 clear
+- **Gate 期间仅允许**：编辑 `harness/requirements/`、`harness/gates/` + 读取任意文件；其他写操作必须先清 gate
+- **新建 vs 修改**：能改已有→直接改；必须新增→REQ 说明原因；能改却新建→🚫 违规（先查跨层搜索）
 
 ### �🔍 Step 0: Mandatory Cross-Layer Search (ALL tasks — NO exceptions)
 
@@ -201,29 +177,17 @@ Skipping this step is the #1 cause of duplicated/conflicting code.
 
 ### ⏸️ Step 2: Confirmation Gate (新功能 / 功能优化 ONLY)
 
-For **新功能** and **功能优化**, after completing Steps 0-1, AI MUST:
+新功能/优化：Steps 0-1 后用 `harness/requirements/_TEMPLATE.md` 创建 REQ（含 Step 0 跨层搜索结果）→ 呈现用户 **WAIT 确认** → 才写代码。Bug/样式：Steps 0-1 足够，但跨层搜索（Step 0）仍强制。
 
-1. **Create a requirements document** using `harness/requirements/_TEMPLATE.md`
-   - Include the cross-layer search results from Step 0
-2. **Save it** as `harness/requirements/REQ-{YYYYMMDD}-{slug}.md`
-3. **Present to user and WAIT for confirmation** before writing ANY code
-4. After user confirms, output design document → Go/No-Go → implementation
-
-For **Bug修复 / 样式调整**, Steps 0-1 are sufficient to proceed — but cross-layer search (Step 0) is still mandatory.
-
-**Violating Step 0 (skipping cross-layer search) or Step 2 (writing code before user confirmation for new features) is a process error.**
+**违反 Step 0（跳过跨层搜索）或 Step 2（用户确认前写代码）= 流程错误。**（user-confirmed 细节见 copilot-instructions R3/R7）
 
 ### 📋 Step 3: PRD-Driven Workflow (一句话需求 → PRD → 实施)
 
-For tasks originating from a **one-line requirement**（一句话需求）, the AI MUST follow the PRD workflow defined in **`ai/skills/pallastrade-prd/SKILL.md`**:
+一句话需求 MUST 遵循 **`ai/skills/pallastrade-prd/SKILL.md`**（命令与 7 步流程见 copilot-instructions R8，此处不重复）：
 
-1. **PRD generation** — expand the one-liner into a detailed PRD at `docs/prd/{category}/PRD-{YYYYMMDD}-{category}-{slug}.md` (template: `docs/prd/_TEMPLATE.md`; category auto-detected via `harness/policies/prd-categories.json`). Update `docs/prd/README.md` index.
-2. **Dedupe first（机制自动）** — `harness prd new` 自动查重（标题相似度 >0.3 阻止新建）；命中相似 PRD → **用 `harness prd update --path <原PRD> --title "<需求>"` 回写原 PRD**（不新建重复 PRD），确属全新需求才 `--force`。再做 6 层跨层搜索（AP-SEARCH）。
-3. **User confirmation** — PRD → `approved` only after explicit user confirmation.
-4. **Task + Gate + REQ** — `harness task start` → `brain context` → `risk check` → task-bound `harness gate --task-id <TASK-ID>` (feature checks include `create-prd-doc` + `read-skill-prd`), then generate REQ at `harness/requirements/REQ-*.md`.
-5. **Tests & acceptance** — every AC in the PRD must map to a test tagged `# PRD-xxx AC-x`; verify with `harness prd verify --id PRD-xxx`.
-6. **API docs** — interface changes MUST sync `backend/public/api-docs/{store,admin}.yaml` + `platform/docs/api-reference/` (verify with `generated:check`).
-7. **Knowledge + Evidence finish** — run `harness sync-check --id PRD-xxx`, resolve every asset in the §7 matrix, record conclusions in PRD §9/§10, then use `knowledge verify` + `evidence verify` to close `verify-test` and `task finish` to complete the task.
+`harness prd new`（自动分类+查重 >0.3 阻止）→ 模板扩充到 `docs/prd/` → 用户确认（approved）→ gate + REQ → AC↔测试映射（`prd verify`）→ 接口文档同步（`generated:check`）→ 知识同步门（`sync-check --ack`）。
+
+**违反 R8（跳过 PRD / 未确认 / 跳知识同步门）视为流程违规。**
 
 ### 🔎 Step 4: Development Supervisor（Harness 0.4+）
 

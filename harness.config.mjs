@@ -133,8 +133,8 @@ export default {
       '.harness-state/**',
       '.harness-cache/**',
     ],
-    maxAssetBytes: 524288,
-    maxContextAssets: 24,
+    maxAssetBytes: 262144,
+    maxContextAssets: 10,
     maxAssets: 20000,
     shardSize: 500,
   },
@@ -153,7 +153,7 @@ export default {
   },
   evidence: {
     autoVerify: true,
-    maxOutputBytes: 262144,
+    maxOutputBytes: 65536,
     // HTH-005: 已注册验证器（证据必须来自注册 verifier 才满足 Gate 的 test 类型）。
     // 按需运行：`npx harness verify <id> --task <TASK-ID>`。
     verifiers: {
@@ -182,6 +182,11 @@ export default {
     apiVersion: '1.0',
     strict: false,
   },
+
+  // ── token 优化（2026-08-31，见 docs/research/RESEARCH-20260831-harness-token-optimization.md §4.1）──
+  // 关闭设计阶段强制产物：非 UI 重构任务不强制 4 设计文档。
+  // 约束不受影响：gate 6 层搜索 + PRD + 反模式 + 证据 + 知识同步仍全部保留。
+  designStage: { enabled: false },
 
   // ⑧ eval / scenarios
   scenarios: 'harness/scenarios/scenarios.json',

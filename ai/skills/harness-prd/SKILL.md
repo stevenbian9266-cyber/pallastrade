@@ -35,3 +35,19 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 
 - gate → 实施 → 测试（AC↔测试映射，`npx harness prd verify --id PRD-xxx`）
 - 文档同步 → evidence → finish
+
+## 5. REQ 简版规范（2026-08-31）
+
+> token 优化（见 docs/research/RESEARCH-20260831-harness-token-optimization.md §5.3）。
+
+**轻量维护任务**（文档/路径修复/小配置，改动 ≤5 文件且无逻辑变更）可走**简版 REQ**：
+
+| 项 | 简版 | 完整版 |
+|---|---|---|
+| Step 0 跨层搜索 | ✅ 必填（6 层结论） | ✅ |
+| Step 1 skill 咨询 | 只填涉及的领域 | 全表 |
+| 需求描述 | 一段话 | 完整 |
+| 验证方案 | ✅ 必填（AC 映射命令） | ✅ + 测试计划 |
+| 用户确认 | ✅ 必填 | ✅ |
+
+判定：改动 ≤5 文件且无逻辑变更 → 简版；否则完整版。核心监督（跨层搜索 + 验证 + 确认）任何版本都保留。

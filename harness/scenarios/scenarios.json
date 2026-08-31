@@ -1048,6 +1048,58 @@
         "securityIsolation": 15,
         "regressionCoverage": 15
       }
+    },
+    {
+      "id": "GS-043",
+      "name": "Converted cart lifecycle and customer order history isolation",
+      "description": "After a cart is submitted, converted cart items must disappear from the current cart and Add to Cart must create/use a new active cart. Account order history and all Pay-selected paths must expose only completed orders owned by the authenticated customer in the current store.",
+      "mustDo": [
+        "Scope authenticated GET /carts to current_store, current JWT customer and active status",
+        "Treat only status=active as the implicit current cart while preserving explicit-ID checkout recovery reads",
+        "Create a new active cart when Add to Cart encounters a converted cart",
+        "Scope GET /customers/me/orders by current_store and current_user.id at query time",
+        "Use order payment_methods in the account cashier modal and add API plus Vitest ownership/lifecycle regressions"
+      ],
+      "mustNotDo": [
+        "Loosen converted-cart mutation authorization to make stale Add to Cart calls pass",
+        "Show converted cart items on the shopping cart page",
+        "Filter account orders by email or only in the frontend",
+        "Load a current cart merely to choose a payment method for an existing order",
+        "Return or pay another customer's order before rejecting it with a UI permission message"
+      ],
+      "scoring": {
+        "activeCartLifecycle": 30,
+        "orderOwnership": 30,
+        "paymentBoundary": 20,
+        "regressionCoverage": 20
+      }
+    },
+    {
+      "id": "GS-044",
+      "name": "Token-frugal harness workflow (host-side optimization)",
+      "description": "降低 harness 流程 token 消耗（docs/research/RESEARCH-20260831-harness-token-optimization.md）。宿主侧约定：designStage 关闭（feature gate 16 项）、注入文件精简、读大文件先 grep、命令输出裁剪、gate:clear 批量、task list 过滤、REQ 简版（轻量任务）。约束不可削弱：gate/6 层搜索/反模式/证据/知识同步/危险操作/前缀档位。",
+      "mustDo": [
+        "读大 SKILL 先 grep_search 定位章节，不全文件读取",
+        "命令输出用 Select-String/Out-String 裁剪，不全文回显",
+        "gate:clear 批量执行（一次清多项）",
+        "task list 用 --json + 过滤避免全量",
+        "轻量任务（改动≤5文件无逻辑变更）用 REQ 简版",
+        "保持约束完整：gate/跨层搜索/反模式/证据/知识同步/危险操作/前缀档位"
+      ],
+      "mustNotDo": [
+        "绕开 gate 或削弱约束以省 token",
+        "为省 token 删减 PRD/REQ 核心监督字段（跨层搜索/AC/验证）",
+        "修改 pallastradeharness 引擎以回避宿主问题",
+        "因瘦身删除 AGENTS.md/copilot-instructions 的 R0-R9 命令或反模式/验证/危险操作章节"
+      ],
+      "scoring": {
+        "frugalReads": 20,
+        "commandTriage": 15,
+        "batchClear": 15,
+        "reqLite": 15,
+        "constraintPreserved": 25,
+        "noEngineHack": 10
+      }
     }
   ]
 }

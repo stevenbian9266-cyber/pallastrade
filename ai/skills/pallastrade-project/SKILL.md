@@ -150,3 +150,14 @@ If you don't have `pallastrade` on your PATH, prefix with the package runner: `n
 - Need to add a new model + API endpoint? See the `pallastrade-resource` skill.
 - Need to extend an existing PallasTrade model/controller? See the `pallastrade-decorators` skill.
 - Need details on a specific PallasTrade concept? Read `node_modules/@pallastrade/docs/dist/developer/` first.
+
+## Token 节俭操作习惯（2026-08-31）
+
+> 降低 harness 流程的 token 消耗（见 docs/research/RESEARCH-20260831-harness-token-optimization.md §4.5）。不削弱任何约束。
+
+1. **读大 SKILL 前先 `grep_search` 定位章节**，不全文件读取（35KB SKILL 只读相关段）
+2. **命令输出裁剪**：`| Select-String` / `| Out-String -Width 160`，不全文回显
+3. **`gate:clear` 批量执行**：`foreach ($c in @(...)) { harness gate:clear ... }` 一次清多项
+4. **`task list` 用 `--json` + 过滤**，避免全量（80+ 任务 6.8KB）
+5. **调查引擎/源码用 `Select-String` 定位**，不用 `read_file` 大段读
+6. **PRD/REQ 写作精简**：只填必要字段，不复制模板示例；轻量任务用 REQ 简版（见 harness-prd skill §5）
