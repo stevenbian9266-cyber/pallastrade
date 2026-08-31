@@ -223,7 +223,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(payNow).toBeDisabled();
   });
 
-  it("fills address, clicks Pay Now → submits order → creates PaymentIntent session → confirms payment (AC-002)", async () => {
+  it("fills address, clicks Pay Now → submits order → redirects to or_ payment page with ?pm= (AC-002)", async () => {
     const user = userEvent.setup();
     renderCheckout();
 
@@ -238,51 +238,21 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(submitMock).not.toHaveBeenCalled();
     expect(createOrderSessionMock).not.toHaveBeenCalled();
 
-    // 3. 点 Pay Now → 提交订单 → 创建 PaymentIntent 会话 → confirmCardPayment
+    // 3. 点 Pay Now → 提交订单 → 立即跳 or_ 支付页（?pm= 预选），
+    //    会话创建 + 支付确认在 or_ 页完成（避免 cart_ 页 server action
+    //    自动 refresh → 重定向回购物车竞态 → 空购物车 bug）
     await user.click(screen.getByRole("button", { name: "payNow" }));
     await waitFor(() => expect(updateMock).toHaveBeenCalled());
     await waitFor(() => expect(submitMock).toHaveBeenCalledWith("cart_1"));
-    await waitFor(() =>
-      expect(createOrderSessionMock).toHaveBeenCalledWith(
-        "or_123",
-        "pm_card",
-        undefined,
-        "payment_intent",
-      ),
-    );
-    await waitFor(() => expect(confirmMock).toHaveBeenCalledWith("sec_1"));
-
-    // 4. 完成会话+订单 → server action 内 redirect 到完成页（确定性导航）
-    await waitFor(() =>
-      expect(completeAndRedirectMock).toHaveBeenCalledWith(
-        "or_123",
-        "ps_1",
-        "/us/en",
-      ),
-    );
-    expect(pushMock).not.toHaveBeenCalled();
-    expect(replaceMock).not.toHaveBeenCalled();
-  });
-
-  it("redirects to the or_ payment page when payment fails instead of showing empty cart", async () => {
-    const user = userEvent.setup();
-    confirmMock.mockResolvedValueOnce({ error: "Card declined" });
-    renderCheckout();
-
-    await fillRequiredFields(user);
-    await user.type(screen.getByLabelText("email"), "ada@example.com");
-    await user.click(screen.getByRole("radio", { name: /Standard/ }));
-    await user.click(screen.getByRole("button", { name: "payNow" }));
-
-    await waitFor(() => expect(submitMock).toHaveBeenCalledWith("cart_1"));
-    await waitFor(() => expect(confirmMock).toHaveBeenCalledWith("sec_1"));
-    // 支付失败 → 跳 or_ 支付页可重试，不出现空购物车
     await waitFor(() =>
       expect(replaceMock).toHaveBeenCalledWith(
         "/us/en/checkout/or_123?pm=pm_card",
       ),
     );
     expect(pushMock).not.toHaveBeenCalled();
+    expect(createOrderSessionMock).not.toHaveBeenCalled();
+    expect(confirmMock).not.toHaveBeenCalled();
+    expect(completeAndRedirectMock).not.toHaveBeenCalled();
   });
 
   it("non-session payment (Check) goes straight to the placed page after submit", async () => {

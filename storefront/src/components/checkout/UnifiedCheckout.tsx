@@ -29,10 +29,6 @@ import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { getCountry } from "@/lib/data/countries";
 import {
-  completeOrderAndRedirectToOrderPlaced,
-  createOrderPaymentSession,
-} from "@/lib/data/order-payment";
-import {
   submitCartOrder,
   updateShoppingCartDetails,
 } from "@/lib/data/shopping-cart";
@@ -43,7 +39,6 @@ import {
   formDataToAddress,
 } from "@/lib/utils/address";
 import { extractBasePath } from "@/lib/utils/path";
-import { extractSessionClientSecret } from "@/lib/utils/stripe";
 
 interface UnifiedCheckoutProps {
   cart: ShoppingCart;
@@ -222,83 +217,27 @@ export function UnifiedCheckout({
   }, [address, cart.id, email, shippingMethodId]);
 
   // Stripe 自绘卡字段（PRD-20260831-payments-stripe-自绘卡支付表单）：
-  // 表单始终渲染（不依赖 client_secret / js.stripe.com），Pay Now 时才
-  // 提交订单 + 创建 PaymentIntent 会话 + confirmCardPayment。
+  // 表单始终渲染（不依赖 client_secret / js.stripe.com），Pay Now 时
+  // 提交订单并立即跳转 or_ 支付页（?pm= 预选），在 or_ 页创建
+  // PaymentIntent 会话 + confirmCardPayment。
+  //
+  // 为什么不在 cart_ 页同页支付：提交订单后（cart → or_），本页后续任何
+  // server action 完成都会触发 Next.js 自动 router.refresh →
+  // CheckoutDataLoader 发现 cart 已转订单 → 重定向回购物车页抢占导航 →
+  // "Your cart is empty" bug。提交后立刻离开本页，refresh 落在 or_ 页上
+  // （订单存在，安全）。
   const handlePayNow = async () => {
     if (!canSubmit || payProcessing || !selectedMethod) return;
 
     if (isSessionBased) {
-      if (isStripe) {
-        // 先本地校验卡字段（纯 HTML 即时反馈）
-        if (!cardFormRef.current?.validate()) return;
-        setPayProcessing(true);
-        try {
-          // 1) 提交订单（cart → or_）
-          const targetOrderId = await submitCartForPayment();
-          if (!targetOrderId) return;
-
-          // 2) 创建 PaymentIntent 会话（mode: payment_intent → pi_..._secret）
-          const result = await createOrderPaymentSession(
-            targetOrderId,
-            selectedMethod.id,
-            undefined,
-            "payment_intent",
-          );
-          if (!result.success || !result.session) {
-            const message = "error" in result ? result.error : undefined;
-            toast.error(message || t("failedToCreateSession"));
-            // 订单已提交（or_），页面不应停留在失效的 cart 页 → 跳 or_ 支付页
-            router.replace(`${basePath}/checkout/${targetOrderId}`);
-            return;
-          }
-          const session = result.session as {
-            id: string;
-            external_data?: Record<string, unknown>;
-          };
-          const secret = extractSessionClientSecret(session);
-          if (!secret) {
-            toast.error(t("failedToInitPayment"));
-            router.replace(`${basePath}/checkout/${targetOrderId}`);
-            return;
-          }
-
-          // 3) 自绘卡字段 → confirmCardPayment
-          const confirmResult =
-            await cardFormRef.current?.confirmPayment(secret);
-          if (confirmResult?.error) {
-            // 支付失败（卡被拒等）→ 订单已提交，跳 or_ 支付页可重试，
-            // 不出现 "Your cart is empty"。
-            toast.error(confirmResult.error);
-            router.replace(
-              `${basePath}/checkout/${targetOrderId}?pm=${selectedMethod.id}`,
-            );
-            return;
-          }
-
-          // 4) 完成会话 + 完成订单 → 由 server action 内 redirect 导航到完成页
-          //    （确定性导航，规避 server action 后自动 refresh 触发 checkout
-          //    页 redirect('/cart') 竞态 → 空购物车 bug）
-          await completeOrderAndRedirectToOrderPlaced(
-            targetOrderId,
-            session.id,
-            basePath,
-          );
-        } catch (error) {
-          toast.error(
-            error instanceof Error ? error.message : "Payment failed",
-          );
-        } finally {
-          setPayProcessing(false);
-        }
-        return;
-      }
-
-      // 其他 session-based（PayPal/Adyen 等）：保持提交订单后跳 or_ 支付页
+      // Stripe / PayPal / Adyen 等会话类：提交订单 → 立即跳 or_ 支付页
       setPayProcessing(true);
       try {
         const targetOrderId = await submitCartForPayment();
         if (targetOrderId) {
-          router.push(`${basePath}/checkout/${targetOrderId}`);
+          router.replace(
+            `${basePath}/checkout/${targetOrderId}?pm=${selectedMethod.id}`,
+          );
         }
       } finally {
         setPayProcessing(false);
