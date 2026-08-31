@@ -33,7 +33,12 @@ module PallasTradeStripe
       # Session, ui_mode: elements) requires an email on the session to
       # confirm — without `customer_email`, `checkout.confirm()` rejects with
       # "An email address is required to confirm this Checkout Session".
-      payload[:customer_email] = order.email if order.email.present?
+      # BUT `customer` and `customer_email` are mutually exclusive params —
+      # Stripe rejects the request if both are set ("You may only specify one
+      # of these parameters"). When a Stripe `customer` exists (logged-in user
+      # via fetch_or_create_customer) it already carries the email, so only
+      # pass `customer_email` for guests (no customer).
+      payload[:customer_email] = order.email if customer.blank? && order.email.present?
       payload[:return_url] = return_url if return_url.present?
       payload[:payment_intent_data][:capture_method] = PallasTradeStripe::Gateway::PaymentIntents::MANUAL_CAPTURE_METHOD if manual_capture?
       payload = payload.deep_merge(ship_address_payload) if shipping_present?

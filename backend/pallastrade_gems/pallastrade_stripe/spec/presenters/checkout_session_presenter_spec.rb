@@ -30,8 +30,18 @@ RSpec.describe PallasTradeStripe::CheckoutSessionPresenter, type: :model do
       expect(payload[:mode]).to eq("payment")
       expect(payload[:ui_mode]).to eq("elements")
       expect(payload[:customer]).to eq("cus_123")
-      expect(payload[:customer_email]).to eq("jane@example.com")
+      # customer 与 customer_email 互斥：存在 customer 时不传 customer_email
+      expect(payload).not_to have_key(:customer_email)
       expect(payload[:return_url]).to eq("https://example.test/confirm")
+    end
+
+    it "passes customer_email when no Stripe customer exists (guest)" do
+      guest = described_class.new(
+        amount_in_cents: 100,
+        order: build(:order, number: "R888", email: "guest@example.com")
+      ).call
+      expect(guest[:customer_email]).to eq("guest@example.com")
+      expect(guest).not_to have_key(:customer)
     end
 
     it "omits customer_email when the order has no email" do
