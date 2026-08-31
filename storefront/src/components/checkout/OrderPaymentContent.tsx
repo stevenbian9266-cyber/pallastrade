@@ -49,12 +49,52 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
   const [stripeSessionId, setStripeSessionId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const stripeHandleRef = useRef<StripePaymentFormHandle | null>(null);
+  // 防竞态：支付方式切换时使旧请求失效
+  const requestIdRef = useRef(0);
 
   const isPaid = order.state === "paid" || order.state === "completed";
 
   const handleStripeReady = useCallback((handle: StripePaymentFormHandle) => {
     stripeHandleRef.current = handle;
   }, []);
+
+  // 选中 session-based Stripe 支付方式 → 自动创建支付会话并同页显示表单
+  // （bugfix 2026-08-31：or_ 订单支付页选择 Stripe 后应直接显示表单，无需先点 Pay Now）
+  useEffect(() => {
+    const method = selectedMethod;
+    if (method?.session_required !== true || method.type !== "stripe") {
+      // 非 Stripe session（PayPal/Adyen）或非 session：保持按钮创建流程
+      setStripeSecret(null);
+      setStripeSessionId(null);
+      return;
+    }
+    if (stripeSecret) return;
+    const requestId = ++requestIdRef.current;
+    (async () => {
+      const result = await createOrderPaymentSession(order.id, method.id);
+      if (requestId !== requestIdRef.current) return;
+      if (result.success && result.session) {
+        const session = result.session as {
+          id: string;
+          external_data?: Record<string, unknown>;
+        };
+        setStripeSessionId(session.id);
+        // client_secret 位于 external_data 且 URL 编码（%2F）→ 解码后传给 Stripe
+        const rawSecret = session.external_data?.client_secret as
+          | string
+          | undefined;
+        const secret = rawSecret ? decodeURIComponent(rawSecret) : undefined;
+        if (secret) {
+          setStripeSecret(secret);
+        } else {
+          toast.error(t("failedToInitPayment"));
+        }
+      } else {
+        const msg = "error" in result ? result.error : undefined;
+        toast.error(msg || t("failedToCreateSession"));
+      }
+    })();
+  }, [order.id, selectedMethod, stripeSecret, t]);
 
   // 已支付 → 直接跳完成页
   useEffect(() => {
@@ -90,7 +130,9 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
         const rawSecret = session.external_data?.client_secret as
           | string
           | undefined;
-        const stripeSecret = rawSecret ? decodeURIComponent(rawSecret) : undefined;
+        const stripeSecret = rawSecret
+          ? decodeURIComponent(rawSecret)
+          : undefined;
 
         if (gatewayType === "stripe" && stripeSecret) {
           setStripeSecret(stripeSecret);
