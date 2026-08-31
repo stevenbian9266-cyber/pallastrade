@@ -31,9 +31,16 @@ module PallasTradeStripe
       end
 
       # sometimes a job is re-tried and creates a double payment record so we need to avoid it!
+      # PALLAS-CUSTOM (2026-08-31, bugfix): after the Checkout Sessions migration
+      # `payment_intent.stripe_id` is the `cs_` Checkout Session id, but
+      # `Payment#response_code` must hold the underlying `pi_` PaymentIntent id —
+      # `Gateway#handle_authorize_or_purchase` and `Gateway#credit` both call
+      # Stripe with `payment.response_code` as a PaymentIntent id ("No such
+      # payment_intent: 'cs_test_...'" otherwise), so the Payment was created
+      # but never `process!`-ed and the order stayed balance_due.
       payment = order.payments.find_or_initialize_by(
         payment_method_id: gateway.id,
-        response_code: payment_intent.stripe_id,
+        response_code: payment_intent.stripe_payment_intent&.id || payment_intent.stripe_id,
         amount: amount
       )
 
