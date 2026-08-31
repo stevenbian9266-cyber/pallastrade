@@ -28,10 +28,14 @@ ARG APK_MIRROR=""
 ARG NPM_REGISTRY=""
 
 # libc6-compat keeps a few native modules happy on Alpine (musl).
+# corepack downloads pnpm@<packageManager> from the npm registry on first `pnpm`
+# invocation; in CN networks that times out, so pre-download via the mirror.
 RUN if [ -n "$APK_MIRROR" ]; then \
       sed -i "s|dl-cdn.alpinelinux.org|$APK_MIRROR|g" /etc/apk/repositories; \
     fi && \
-    apk add --no-cache libc6-compat && corepack enable
+    apk add --no-cache libc6-compat && \
+    if [ -n "$NPM_REGISTRY" ]; then export COREPACK_NPM_REGISTRY="$NPM_REGISTRY"; fi && \
+    corepack enable && corepack prepare pnpm@11.1.1 --activate
 
 # Copy storefront manifests + local file: dependencies (../platform/packages/*)
 COPY storefront/package.json storefront/pnpm-lock.yaml storefront/pnpm-workspace.yaml ./
