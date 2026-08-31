@@ -32,7 +32,6 @@ import {
   completeOrder,
   completeOrderPaymentSession,
   createOrderPaymentSession,
-  extractSessionClientSecret,
 } from "@/lib/data/order-payment";
 import {
   submitCartOrder,
@@ -45,6 +44,7 @@ import {
   formDataToAddress,
 } from "@/lib/utils/address";
 import { extractBasePath } from "@/lib/utils/path";
+import { extractSessionClientSecret } from "@/lib/utils/stripe";
 
 interface UnifiedCheckoutProps {
   cart: ShoppingCart;

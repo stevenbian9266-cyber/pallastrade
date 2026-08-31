@@ -96,28 +96,3 @@ export async function getOrderForCheckout(
     return null;
   }
 }
-
-/** 支付会话的类型（含后端透传的 external_data）。 */
-export interface OrderPaymentSessionLike {
-  id: string;
-  external_data?: Record<string, unknown> | null;
-}
-
-/**
- * PALLAS-CUSTOM (2026-08-31, PRD-20260831-payments-stripe-自绘卡支付表单):
- * 从支付会话提取 client_secret（位于 external_data 且 URL 编码 %2F → 解码）。
- * UnifiedCheckout / OrderPaymentContent / PaymentCheckoutModal 三处共用，
- * 避免重复解析逻辑（STD-CQ-002）。
- */
-export function extractSessionClientSecret(
-  session: OrderPaymentSessionLike | null | undefined,
-): string | null {
-  if (!session) return null;
-  const raw = session.external_data?.client_secret as string | undefined;
-  if (!raw) return null;
-  try {
-    return decodeURIComponent(raw);
-  } catch {
-    return raw;
-  }
-}

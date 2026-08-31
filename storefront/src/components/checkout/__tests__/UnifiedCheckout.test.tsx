@@ -39,6 +39,11 @@ vi.mock("@/lib/data/order-payment", () => ({
   completeOrderPaymentSession: (...args: unknown[]) =>
     completeOrderSessionMock(...args),
   completeOrder: (...args: unknown[]) => completeOrderMock(...args),
+}));
+
+vi.mock("@/lib/utils/stripe", () => ({
+  stripePromise: Promise.resolve(null),
+  normalizeClientSecret: (s: string) => s,
   extractSessionClientSecret: (
     session: {
       external_data?: Record<string, unknown> | null;

@@ -24,3 +24,28 @@ export function normalizeClientSecret(clientSecret: string): string {
     return clientSecret;
   }
 }
+
+/** 支付会话的类型（含后端透传的 external_data）。 */
+export interface PaymentSessionLike {
+  id: string;
+  external_data?: Record<string, unknown> | null;
+}
+
+/**
+ * PALLAS-CUSTOM (2026-08-31, PRD-20260831-payments-stripe-自绘卡支付表单):
+ * 从支付会话提取 client_secret（位于 external_data 且 URL 编码 %2F → 解码）。
+ * 纯函数放非 server 文件（Next.js server action 文件禁止导出非 async 函数），
+ * UnifiedCheckout / OrderPaymentContent / PaymentCheckoutModal 三处共用。
+ */
+export function extractSessionClientSecret(
+  session: PaymentSessionLike | null | undefined,
+): string | null {
+  if (!session) return null;
+  const raw = session.external_data?.client_secret as string | undefined;
+  if (!raw) return null;
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}

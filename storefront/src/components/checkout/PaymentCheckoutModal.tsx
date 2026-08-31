@@ -27,13 +27,13 @@ import {
   completeOrder,
   completeOrderPaymentSession,
   createOrderPaymentSession,
-  extractSessionClientSecret,
 } from "@/lib/data/order-payment";
 import {
   completeCombinationSession,
   createPaymentCombination,
   getPaymentCombination,
 } from "@/lib/data/payment-combination";
+import { extractSessionClientSecret } from "@/lib/utils/stripe";
 
 interface PaymentCheckoutModalProps {
   open: boolean;

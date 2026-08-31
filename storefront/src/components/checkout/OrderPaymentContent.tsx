@@ -22,9 +22,9 @@ import {
   completeOrder,
   completeOrderPaymentSession,
   createOrderPaymentSession,
-  extractSessionClientSecret,
 } from "@/lib/data/order-payment";
 import { extractBasePath } from "@/lib/utils/path";
+import { extractSessionClientSecret } from "@/lib/utils/stripe";
 
 interface OrderPaymentContentProps {
   order: Order;
