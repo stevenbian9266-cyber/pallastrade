@@ -106,3 +106,48 @@ docker ps | grep pallastrade-{dev,prod}
 # 内存（单栈策略依据）
 free -m
 ```
+
+## 部署故障处理（复盘 2026-08-31）
+
+### 1. 磁盘满级联（最常见）
+
+**症状链**：磁盘 <5G → git fetch / docker pull 挂起 → cron 卡死 → 后续所有部署跳过。
+
+- **预防**：`pull-deploy.sh` 与 `deploy-sf.sh` 已内置磁盘预检（<5G 自动 `docker builder prune -f`，仍不足则跳过本轮）
+- **恢复**：`df -h` 确认；`docker builder prune -f`；卡死进程 `pkill -f pull-deploy`
+- **锁泄漏**：flock 锁随进程退出自动释放；残留 `/tmp/pull-deploy-dev.lock` 可安全删除
+
+### 2. storefront 构建超时（corepack）
+
+- **症状**：构建日志 `UND_ERR_CONNECT_TIMEOUT`，deps/builder 阶段首次 pnpm 命令触发
+- **根因**：corepack 按 `package.json` 的 `packageManager` 从 npm 官方源下载 pnpm（服务器直连官方源超时）
+- **修复**：`storefront/Dockerfile` 两阶段均设 `COREPACK_NPM_REGISTRY=https://registry.npmmirror.com` + `corepack prepare`
+- **维护**：`packageManager` 版本升级时同步改 Dockerfile；`deploy-sf.sh` 有特征校验（缺失即中止）
+
+### 3. 禁止在服务器 repo 使用 git pull
+
+服务器分支历史与本地不一致，`git pull` 会冲突。统一使用：
+
+```bash
+cd /opt/pallastrade/repo
+git fetch origin dev -q
+git checkout origin/dev -- <变更文件或目录>
+```
+
+`deploy-sf.sh` 已按此模式整目录同步 `storefront/`。
+
+### 4. 远程命令引号规范
+
+本地 PowerShell → 服务器 SSH 的多层引号极易破坏（`&`、`$`、`{{...}}`、`-o` 均会被 PS 解释）：
+
+- **规则**：复杂命令一律写 `.sh` → `scp` 上传 → `ssh "bash /tmp/x.sh"`
+- **后台任务**：`nohup bash x.sh > /tmp/x.log 2>&1 < /dev/null &`（`< /dev/null` 断开 stdin，防 SSH 会话卡住），然后新开会话 `tail -f /tmp/x.log` 轮询
+
+### 5. 构建期应用层超时是预期
+
+服务器 2C/3.5G，backend 构建（bundle install）期间一切应用层请求超时属正常；**30 分钟内不恢复**才排查 deploy.sh 是否卡死。判定依据：`ps aux | grep 'docker.*build'` 进程存活且未超时。
+
+### 6. 探活端点统一用 `/up`
+
+- backend 健康端点：`/up`（`/health` 不存在，会 404 误判）
+- storefront：`/us/en`（200 正常；`307` 为 locale 重定向，同样视为通过）

@@ -40,6 +40,19 @@ if ! flock -n 9; then
   exit 0
 fi
 
+# 0. 磁盘预检（复盘 2026-08-31：磁盘满 → git fetch/pull 挂起 → 级联故障）
+MIN_FREE_KB=5242880 # 5GB
+AVAIL_KB="$(df -P /opt | awk 'NR==2 {print $4}')"
+if [ "$AVAIL_KB" -lt "$MIN_FREE_KB" ]; then
+  echo "[$(date '+%F %T')] ⚠️ 磁盘可用 ${AVAIL_KB}KB < 5GB，执行 builder prune" >&2
+  docker builder prune -f >/dev/null 2>&1 || true
+  AVAIL_KB="$(df -P /opt | awk 'NR==2 {print $4}')"
+fi
+if [ "$AVAIL_KB" -lt "$MIN_FREE_KB" ]; then
+  echo "[$(date '+%F %T')] ❌ 磁盘仍不足 5GB，跳过本轮（防级联挂起）" >&2
+  exit 0
+fi
+
 echo "=== pull-deploy ($ENV) $(date '+%F %T') ==="
 
 # 1. 拉取代码（60s 超时，防 git fetch 挂起）
