@@ -465,6 +465,41 @@ RSpec.describe PallasTradeStripe::Gateway, type: :model do
     end
   end
 
+  # ── STR-013: Checkout Session retrieve arg passing ───────────────────
+
+  describe "STR-013: Checkout Session retrieve arg passing" do
+    # PALLAS-CUSTOM (2026-08-31, bugfix): stripe gem 18.x `retrieve(id, opts)`
+    # treats the 2nd argument as request options (converted to HTTP headers).
+    # Passing `expand: ['payment_intent']` (an Array) inside those opts made
+    # net-http fail with `undefined method 'strip' for an instance of Array`,
+    # so `complete_payment_session` always errored and no Payment was recorded.
+    # API params must be passed as the first arg hash, exactly like
+    # `PaymentIntent.retrieve({ id:, expand: [...] }, opts)`.
+    it "passes expand as API params and api_key as request options" do
+      fake_session = double("checkout_session", id: "cs_test_1",
+                                               payment_intent: double("payment_intent"))
+      expect(Stripe::Checkout::Session).to receive(:retrieve)
+        .with(
+          hash_including(id: "cs_test_1", expand: ["payment_intent"]),
+          hash_including(api_key: gateway.preferred_secret_key)
+        )
+        .and_return(fake_session)
+
+      expect(gateway.send(:retrieve_checkout_session, "cs_test_1")).to eq(fake_session)
+    end
+
+    it "does not pass arrays inside request options" do
+      expect(Stripe::Checkout::Session).to receive(:retrieve) do |params, opts|
+        expect(params).to be_a(Hash)
+        expect(params[:expand]).to eq(["payment_intent"])
+        expect(opts[:expand]).to be_nil
+        double("checkout_session", id: "cs_test_1", payment_intent: nil)
+      end
+
+      gateway.send(:retrieve_checkout_session, "cs_test_1")
+    end
+  end
+
   # ── Helper ─────────────────────────────────────────────────────────────
 
   def attach_webhook_secret(payment_method, secret)

@@ -74,9 +74,18 @@ module PallasTradeStripe
       end
 
       # Retrieves a Stripe Checkout Session (expanded with its PaymentIntent).
+      #
+      # PALLAS-CUSTOM (2026-08-31, bugfix): stripe gem 18.x `retrieve(id, opts)`
+      # treats the 2nd argument as request options (converted to HTTP headers) —
+      # mixing `expand: ['payment_intent']` (an Array) in there makes net-http
+      # fail with `undefined method 'strip' for an instance of Array`, so
+      # `complete_payment_session` always errored and no Payment was ever
+      # recorded (order stayed balance_due after a successful charge).
+      # API params must be passed as the first arg hash (`{ id:, expand: [...] }`)
+      # exactly like `PaymentIntent.retrieve` / `SetupIntent.retrieve` below.
       def retrieve_checkout_session(session_id)
         send_request do |opts|
-          Stripe::Checkout::Session.retrieve(session_id, opts.merge(expand: ['payment_intent']))
+          Stripe::Checkout::Session.retrieve({ id: session_id, expand: ['payment_intent'] }, opts)
         end
       end
 
