@@ -19,6 +19,12 @@ RSpec.describe 'Order payment sessions (Store API)', type: :request do
     order.reload
   end
 
+  def pending_standard_order(owner: user)
+    order = create(:order_with_line_items, store: store, user: owner, shipment_cost: 0)
+    order.update_columns(state: 'pending', payment_state: nil, completed_at: nil)
+    order.reload
+  end
+
   describe 'POST /api/v3/store/orders/:order_id/payment_sessions' do
     it 'allows the customer to pay an owned completed order with a balance due' do
       order = completed_balance_due_order
@@ -55,6 +61,24 @@ RSpec.describe 'Order payment sessions (Store API)', type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(session.reload).to be_completed
+    end
+
+    # 回归：前端 active complete 后必须驱动订单完成（否则 webhook 对已
+    # completed 会话提前返回 → 订单停留 pending）。
+    it 'completes the order after the nested complete (standard flow)' do
+      order = pending_standard_order
+      create(:payment, order: order, payment_method: payment_method,
+                       amount: order.total, state: 'completed')
+      session = payment_method.create_payment_session(order: order, amount: order.total)
+      session.save!
+
+      patch "/api/v3/store/orders/#{order.prefixed_id}/payment_sessions/#{session.prefixed_id}/complete",
+            headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(session.reload).to be_completed
+      expect(order.reload).to be_completed
+      expect(order.payment_state).to eq('paid')
     end
 
     it 'shows a payment session on the nested show route' do

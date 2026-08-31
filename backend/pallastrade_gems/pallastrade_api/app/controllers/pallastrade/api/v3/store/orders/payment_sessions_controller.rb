@@ -87,6 +87,14 @@ module PallasTrade
                 )
 
                 if @payment_session.errors.empty?
+                  # PALLAS-CUSTOM (2026-08-31, PRD-20260831-payments-stripe):
+                  # 前端 active complete 后必须驱动订单完成——否则 webhook
+                  # handle_success 对已 completed 的会话提前返回，永远不会走到
+                  # Carts::Complete，订单停留 pending。Carts::Complete 幂等，
+                  # 与 webhook 兜底不冲突。
+                  unless @order.completed?
+                    PallasTrade::Dependencies.carts_complete_service.constantize.call(cart: @order)
+                  end
                   render json: serialize_resource(@payment_session.reload)
                 else
                   render_errors(@payment_session.errors)
