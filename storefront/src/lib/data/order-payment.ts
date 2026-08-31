@@ -1,7 +1,6 @@
 "use server";
 
 import type { Order } from "@pallastrade/sdk";
-import { updateTag } from "next/cache";
 import { getCartOptions, getClient } from "@/lib/pallastrade";
 import { actionResult } from "./utils";
 
@@ -37,7 +36,10 @@ export async function createOrderPaymentSession(
       },
       options,
     );
-    updateTag("checkout");
+    // PALLAS-CUSTOM (2026-08-31): 不 updateTag("checkout") —— 提交订单后
+    // cart 已转 or_ 订单，revalidate 会让 checkout 页服务端 redirect('/cart')
+    // 抢先于客户端 router.push（空购物车 bug）。会话创建/完成不改变页面级
+    // 展示数据，无需 revalidate。
     return { session };
   }, "Failed to create payment session");
 }
@@ -56,7 +58,8 @@ export async function completeOrderPaymentSession(
       params,
       options,
     );
-    updateTag("checkout");
+    // PALLAS-CUSTOM (2026-08-31): 不 updateTag("checkout") —— 同 create
+    // 注释，revalidate 会触发 checkout 页 redirect('/cart') 竞态。
     return { session };
   }, "Failed to complete payment session");
 }

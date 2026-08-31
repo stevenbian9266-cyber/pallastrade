@@ -276,14 +276,11 @@ export function UnifiedCheckout({
             return;
           }
 
-          // 4) 支付已成功（Stripe 已扣款）→ 先离开 checkout/cart_ 路由再完成
-          //    订单。若先 await completeOrderPaymentSession，其内部
-          //    updateTag("checkout") 触发的 revalidate 会让 checkout 页检测到
-          //    cart 已转订单并服务端 redirect('/cart')，抢先于本次客户端
-          //    push —— 用户看到空购物车（bug）。先导航走即可确定性规避。
-          router.replace(`${basePath}/order-placed/${targetOrderId}`);
+          // 4) 完成会话 + 完成订单 → 完成页（order-payment 不再 updateTag，
+          //    无 revalidate redirect('/cart') 竞态）
           await completeOrderPaymentSession(targetOrderId, session.id);
           await completeOrder(targetOrderId);
+          router.push(`${basePath}/order-placed/${targetOrderId}`);
         } catch (error) {
           toast.error(
             error instanceof Error ? error.message : "Payment failed",
