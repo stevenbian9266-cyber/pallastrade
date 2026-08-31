@@ -13,7 +13,11 @@ module PallasTrade
             include PallasTrade::Api::V3::OrderResolvable
             include PallasTrade::Api::V3::OrderLock
 
-            before_action :find_order!
+            # PALLAS-CUSTOM: Payment is allowed for an owned completed order that still
+            # has a balance due. The generic :update ability intentionally rejects every
+            # completed order, so resolve through the ownership-scoped :show permission
+            # instead. order_scope still enforces current store + customer/token isolation.
+            before_action :find_order
             before_action :set_payment_session, only: [:show, :update, :complete]
 
             # POST /api/v3/store/orders/:order_id/payment_sessions

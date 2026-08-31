@@ -125,3 +125,8 @@ This plugin is maintained exclusively by Steven Bian. External code
 contributions and pull requests are not accepted. Use the
 [PallasTrade issue tracker](https://github.com/stevenbian9266-cyber/pallastrade/issues)
 for bug reports and feature requests.
+- `harness-standards-audit` — harness-standards-audit 领域（自动注册 2026-08-30）
+- `harness-skill-author` — harness-skill-author 领域（自动注册 2026-08-30）
+- `harness-prd` — harness-prd 领域（自动注册 2026-08-30）
+- `harness-docs` — harness-docs 领域（自动注册 2026-08-30）
+

@@ -14,6 +14,19 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 
 | 文件 | 类别 | 权威角色 | 何时读取 | 更新责任人 |
 |---|---|---|---|---|
+| `ai/skills/pallastrade-performance/SKILL.md` | Skill | 领域知识权威 | 涉及 performance 代码 | AI 维护 |
+| `ai/skills/pallastrade-events-webhooks/SKILL.md` | Skill | 领域知识权威 | 涉及 events 代码 | AI 维护 |
+| `ai/skills/pallastrade-i18n/SKILL.md` | Skill | 领域知识权威 | 涉及 i18n 代码 | AI 维护 |
+| `ai/skills/pallastrade-testing/SKILL.md` | Skill | 领域知识权威 | 涉及 testing 代码 | AI 维护 |
+| `ai/skills/pallastrade-deployment/SKILL.md` | Skill | 领域知识权威 | 涉及 deployment 代码 | AI 维护 |
+| `ai/skills/pallastrade-payments/SKILL.md` | Skill | 领域知识权威 | 涉及 payment 代码 | AI 维护 |
+| `ai/skills/pallastrade-data-model/SKILL.md` | Skill | 领域知识权威 | 涉及 data-model 代码 | AI 维护 |
+| `ai/skills/pallastrade-api-v3/SKILL.md` | Skill | 领域知识权威 | 涉及 api 代码 | AI 维护 |
+| `ai/skills/pallastrade-security/SKILL.md` | Skill | 领域知识权威 | 涉及 security 代码 | AI 维护 |
+| `ai/skills/harness-docs/SKILL.md` | Skill | 领域知识权威 | 涉及 harness-docs 代码 | AI 维护 |
+| `ai/skills/harness-prd/SKILL.md` | Skill | 领域知识权威 | 涉及 harness-prd 代码 | AI 维护 |
+| `ai/skills/harness-skill-author/SKILL.md` | Skill | 领域知识权威 | 涉及 harness-skill-author 代码 | AI 维护 |
+| `ai/skills/harness-standards-audit/SKILL.md` | Skill | 领域知识权威 | 涉及 harness-standards-audit 代码 | AI 维护 |
 | `AGENTS.md`（本文件） | 自动注入 | **导航入口 + 全局规范权威** | 每会话 | 工程负责人 |
 | `.github/copilot-instructions.md` | 自动注入 | 强制命令速查（R0-R8） | 每会话 | 工程负责人 |
 | `backend/CLAUDE.md` | 后端规范 | 后端权威 | 涉及 backend 代码 | 后端维护者 |

@@ -523,7 +523,7 @@ cd packages/sdk && pnpm generate:zod
 cd packages/sdk && pnpm test
 ```
 
-In the monorepo, a Lefthook pre-commit hook runs steps 1–2 automatically whenever `pallastrade/api/app/serializers/**/*.rb` files are committed.
+In the monorepo, a Lefthook pre-commit hook runs steps 1–2 automatically whenever `backend/pallastrade_gems/pallastrade_api/app/serializers/**/*.rb` files are committed.
 
 If you're a SDK consumer (not the maintainer), you don't run this — just `npm update @pallastrade/sdk` to get the latest types.
 

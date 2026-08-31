@@ -2,6 +2,7 @@ import type { Order } from "@pallastrade/sdk";
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrderPaymentContent } from "@/components/checkout/OrderPaymentContent";
+import { CheckoutProvider, CheckoutSummary } from "@/contexts/CheckoutContext";
 
 const pushMock = vi.fn();
 const replaceMock = vi.fn();
@@ -88,6 +89,15 @@ const order = {
   display_amount_due: "$10.00",
 } as unknown as Order;
 
+function renderOrderPayment(targetOrder: Order = order) {
+  return render(
+    <CheckoutProvider>
+      <OrderPaymentContent order={targetOrder} />
+      <CheckoutSummary />
+    </CheckoutProvider>,
+  );
+}
+
 describe("OrderPaymentContent", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -99,11 +109,12 @@ describe("OrderPaymentContent", () => {
   });
 
   it("renders shipping address, payment methods and order summary", () => {
-    render(<OrderPaymentContent order={order} />);
+    renderOrderPayment();
 
     expect(screen.getByText("shippingAddress")).toBeTruthy();
     expect(screen.getByText("paymentMethod")).toBeTruthy();
     expect(screen.getByText("orderSummary")).toBeTruthy();
+    expect(screen.getByTestId("order-payment-summary")).toBeInTheDocument();
     expect(screen.getByText("Ada Lovelace")).toBeTruthy();
   });
 
@@ -116,7 +127,7 @@ describe("OrderPaymentContent", () => {
       },
     });
 
-    render(<OrderPaymentContent order={order} />);
+    renderOrderPayment();
 
     await waitFor(() => {
       expect(createOrderSessionMock).toHaveBeenCalledWith("or_1", "pm_stripe");
@@ -136,7 +147,7 @@ describe("OrderPaymentContent", () => {
       payment_methods: [checkMethod],
     } as unknown as Order;
 
-    render(<OrderPaymentContent order={checkOnlyOrder} />);
+    renderOrderPayment(checkOnlyOrder);
 
     // Check 非 session：不自动创建 session
     expect(createOrderSessionMock).not.toHaveBeenCalled();

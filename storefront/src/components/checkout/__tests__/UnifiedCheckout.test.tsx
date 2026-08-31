@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UnifiedCheckout } from "@/components/checkout/UnifiedCheckout";
+import { CheckoutProvider, CheckoutSummary } from "@/contexts/CheckoutContext";
 
 const pushMock = vi.fn();
 const replaceMock = vi.fn();
@@ -142,6 +143,19 @@ async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("unified-state_abbr"), "LDN");
 }
 
+function renderCheckout(cart: ShoppingCart = makeCart()) {
+  return render(
+    <CheckoutProvider>
+      <UnifiedCheckout
+        cart={cart}
+        shippingMethods={shippingMethods}
+        countries={[]}
+      />
+      <CheckoutSummary />
+    </CheckoutProvider>,
+  );
+}
+
 describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
   beforeEach(() => {
     updateMock.mockReset();
@@ -164,13 +178,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
   });
 
   it("renders shipping address, items, delivery method, payment method and order summary", () => {
-    render(
-      <UnifiedCheckout
-        cart={makeCart()}
-        shippingMethods={shippingMethods}
-        countries={[]}
-      />,
-    );
+    renderCheckout();
 
     expect(screen.getByText("orderConfirmation")).toBeTruthy();
     expect(screen.getByText("shippingAddress")).toBeTruthy();
@@ -178,6 +186,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(screen.getByText("deliveryMethod")).toBeTruthy();
     expect(screen.getByText("paymentMethod")).toBeTruthy();
     expect(screen.getByText("orderSummary")).toBeTruthy();
+    expect(screen.getByTestId("unified-order-summary")).toBeInTheDocument();
     expect(screen.getByText("Awesome Product")).toBeTruthy();
     expect(screen.getByText("Standard")).toBeTruthy();
     expect(screen.getByText("Card")).toBeTruthy();
@@ -185,15 +194,9 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(screen.getAllByText("$19.98").length).toBeGreaterThanOrEqual(2);
   });
 
-  it("keeps Pay Now disabled until all required fields are filled", async () => {
+  it("prepares the Stripe form as soon as all required fields are filled", async () => {
     const user = userEvent.setup();
-    render(
-      <UnifiedCheckout
-        cart={makeCart()}
-        shippingMethods={shippingMethods}
-        countries={[]}
-      />,
-    );
+    renderCheckout();
 
     const payNow = screen.getByRole("button", { name: "payNow" });
     expect(payNow).toBeDisabled();
@@ -203,25 +206,23 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     // 物流方式 radio 选中
     await user.click(screen.getByRole("radio", { name: /Standard/ }));
 
-    await waitFor(() => expect(payNow).toBeEnabled());
+    await waitFor(() => expect(updateMock).toHaveBeenCalled());
+    await waitFor(() => expect(submitMock).toHaveBeenCalledWith("cart_1"));
+    expect(await screen.findByTestId("stripe-form")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "confirmPayment" }),
+    ).toBeEnabled();
   });
 
-  it("submits then shows Stripe form in-page and confirms payment (AC-002)", async () => {
+  it("shows Stripe form without a reveal click, then confirms payment (AC-002)", async () => {
     const user = userEvent.setup();
-    render(
-      <UnifiedCheckout
-        cart={makeCart()}
-        shippingMethods={shippingMethods}
-        countries={[]}
-      />,
-    );
+    renderCheckout();
 
     await fillRequiredFields(user);
     await user.type(screen.getByLabelText("email"), "ada@example.com");
     await user.click(screen.getByRole("radio", { name: /Standard/ }));
-    await user.click(screen.getByRole("button", { name: "payNow" }));
 
-    // 1. PATCH cart + submit 订单
+    // 1. 资料完整后自动 PATCH cart + submit 订单，无需先点 Pay
     await waitFor(() => {
       expect(updateMock).toHaveBeenCalledWith(
         "cart_1",
@@ -229,7 +230,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
       );
     });
     await waitFor(() => expect(submitMock).toHaveBeenCalledWith("cart_1"));
-    // 2. 创建订单支付会话 → 同页渲染 Stripe 表单（不跳转）
+    // 2. 自动创建订单支付会话 → 同页渲染 Stripe 表单（不跳转）
     await waitFor(() =>
       expect(createOrderSessionMock).toHaveBeenCalledWith("or_123", "pm_card"),
     );
@@ -263,13 +264,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
         },
       ],
     } as never);
-    render(
-      <UnifiedCheckout
-        cart={cart}
-        shippingMethods={shippingMethods}
-        countries={[]}
-      />,
-    );
+    renderCheckout(cart);
 
     await fillRequiredFields(user);
     await user.type(screen.getByLabelText("email"), "ada@example.com");
@@ -284,13 +279,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
   });
 
   it("shows a fallback message when no payment methods are available", () => {
-    render(
-      <UnifiedCheckout
-        cart={makeCart({ payment_methods: [] as never })}
-        shippingMethods={shippingMethods}
-        countries={[]}
-      />,
-    );
+    renderCheckout(makeCart({ payment_methods: [] as never }));
 
     expect(screen.getByText("noPaymentMethods")).toBeTruthy();
   });
@@ -299,18 +288,11 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     const user = userEvent.setup();
     updateMock.mockResolvedValue({ success: false, error: "Invalid address" });
 
-    render(
-      <UnifiedCheckout
-        cart={makeCart()}
-        shippingMethods={shippingMethods}
-        countries={[]}
-      />,
-    );
+    renderCheckout();
 
     await fillRequiredFields(user);
     await user.type(screen.getByLabelText("email"), "ada@example.com");
     await user.click(screen.getByRole("radio", { name: /Standard/ }));
-    await user.click(screen.getByRole("button", { name: "payNow" }));
 
     await waitFor(() => expect(updateMock).toHaveBeenCalled());
     expect(submitMock).not.toHaveBeenCalled();

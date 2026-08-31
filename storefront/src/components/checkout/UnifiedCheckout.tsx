@@ -10,7 +10,13 @@ import type {
 import { CreditCard, Loader2, ShoppingBag } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 import { AddressFormFields } from "@/components/checkout/AddressFormFields";
 import type { StripePaymentFormHandle } from "@/components/checkout/StripePaymentForm";
@@ -18,6 +24,7 @@ import { StripePaymentForm } from "@/components/checkout/StripePaymentForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProductImage } from "@/components/ui/product-image";
+import { useCheckout } from "@/contexts/CheckoutContext";
 import { getCountry } from "@/lib/data/countries";
 import {
   completeOrder,
@@ -42,6 +49,39 @@ interface UnifiedCheckoutProps {
   countries: Country[];
 }
 
+function UnifiedOrderSummary({ cart }: { cart: ShoppingCart }) {
+  const t = useTranslations("checkout");
+  const tc = useTranslations("common");
+
+  return (
+    <div data-testid="unified-order-summary">
+      <div className="flex items-center gap-2 mb-4">
+        <ShoppingBag className="w-5 h-5 text-gray-500" />
+        <h2 className="text-lg font-bold text-gray-900">
+          {tc("orderSummary")}
+        </h2>
+      </div>
+
+      <dl className="space-y-4">
+        <div className="flex justify-between">
+          <dt className="text-gray-500">{tc("subtotal")}</dt>
+          <dd className="text-gray-900">{cart.display_item_total}</dd>
+        </div>
+        <div className="flex justify-between border-t border-gray-100 pt-4">
+          <dt className="text-lg font-medium text-gray-900">{tc("total")}</dt>
+          <dd className="text-lg font-bold text-gray-900">
+            {cart.display_item_total}
+          </dd>
+        </div>
+      </dl>
+
+      <p className="mt-3 text-xs text-gray-400">
+        {t("shippingCalculatedAtSubmit")}
+      </p>
+    </div>
+  );
+}
+
 /**
  * 下单链路统一化（PRD-20260830-checkout，场景 A/B）：统一下单页 — 购物车模式。
  * 左侧：收件地址 + 商品信息 + 物流方式 + 支付方式选择（选中后显示对应支付表单）；
@@ -59,11 +99,10 @@ export function UnifiedCheckout({
   countries,
 }: UnifiedCheckoutProps) {
   const t = useTranslations("checkout");
-  const tc = useTranslations("common");
   const router = useRouter();
   const pathname = usePathname();
   const basePath = extractBasePath(pathname);
-  const [isPending, startTransition] = useTransition();
+  const { setSummaryContent } = useCheckout();
 
   const paymentMethods: PaymentMethod[] = cart.payment_methods ?? [];
   const [email, setEmail] = useState(cart.email ?? "");
@@ -88,12 +127,23 @@ export function UnifiedCheckout({
   const [stripeSessionId, setStripeSessionId] = useState<string | null>(null);
   const [payProcessing, setPayProcessing] = useState(false);
   const stripeRef = useRef<StripePaymentFormHandle | null>(null);
+  const orderIdRef = useRef<string | null>(null);
+  const preparingRef = useRef(false);
+  const attemptedMethodRef = useRef<string | null>(null);
 
   const selectedMethod =
     paymentMethods.find((m) => m.id === paymentMethodId) ?? paymentMethods[0];
   const isSessionBased = selectedMethod?.session_required === true;
   const isStripe = selectedMethod?.type === "stripe";
   const orderReady = orderId !== null;
+
+  // The checkout route group owns the real desktop sticky sidebar. Publish the
+  // summary there instead of nesting another three-column grid inside its main
+  // content column.
+  useLayoutEffect(() => {
+    setSummaryContent(<UnifiedOrderSummary cart={cart} />);
+    return () => setSummaryContent(null);
+  }, [cart, setSummaryContent]);
 
   // 国家变更 → 加载州/省
   useEffect(() => {
@@ -148,75 +198,102 @@ export function UnifiedCheckout({
     stripeRef.current = handle;
   }, []);
 
-  // Pay Now（未提交订单时）：保存购物车 + 提交订单 + 准备支付表单
-  const handlePayNow = () => {
-    if (!canSubmit || isPending || payProcessing) return;
-    if (orderReady) {
-      // 订单已提交且会话类表单就绪 → 直接确认支付
-      if (isSessionBased) {
-        handleConfirmStripePay();
-        return;
+  const submitCartForPayment = useCallback(async (): Promise<string | null> => {
+    if (orderIdRef.current) return orderIdRef.current;
+
+    const saveResult = await updateShoppingCartDetails(cart.id, {
+      email: email || undefined,
+      shipping_address: formDataToAddress(address),
+      shipping_method_id: shippingMethodId || undefined,
+    });
+    if (saveResult && "success" in saveResult && !saveResult.success) {
+      toast.error(saveResult.error);
+      return null;
+    }
+
+    try {
+      const order = await submitCartOrder(cart.id);
+      orderIdRef.current = order.id;
+      setOrderId(order.id);
+      return order.id;
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to submit order",
+      );
+      return null;
+    }
+  }, [address, cart.id, email, shippingMethodId]);
+
+  const prepareStripePayment = useCallback(
+    async (method: PaymentMethod, force = false) => {
+      if (preparingRef.current) return;
+      if (!force && attemptedMethodRef.current === method.id) return;
+
+      attemptedMethodRef.current = method.id;
+      preparingRef.current = true;
+      setPayProcessing(true);
+      setStripeSecret(null);
+      setStripeSessionId(null);
+      stripeRef.current = null;
+
+      try {
+        const targetOrderId = await submitCartForPayment();
+        if (!targetOrderId) return;
+
+        const result = await createOrderPaymentSession(
+          targetOrderId,
+          method.id,
+        );
+        if (!result.success || !result.session) {
+          const message = "error" in result ? result.error : undefined;
+          toast.error(message || t("failedToCreateSession"));
+          return;
+        }
+
+        const session = result.session as {
+          id: string;
+          external_data?: Record<string, unknown>;
+        };
+        const rawSecret = session.external_data?.client_secret as
+          | string
+          | undefined;
+        const secret = rawSecret ? decodeURIComponent(rawSecret) : undefined;
+
+        setStripeSessionId(session.id);
+        if (secret) {
+          setStripeSecret(secret);
+        } else {
+          toast.error(t("failedToInitPayment"));
+        }
+      } finally {
+        preparingRef.current = false;
+        setPayProcessing(false);
       }
+    },
+    [submitCartForPayment, t],
+  );
+
+  // Stripe PaymentElement needs an order-scoped client_secret. As soon as the
+  // checkout details are valid, prepare the order/session so the form appears
+  // without making the customer click Pay once merely to reveal it.
+  useEffect(() => {
+    if (
+      !canSubmit ||
+      !selectedMethod ||
+      selectedMethod.session_required !== true ||
+      selectedMethod.type !== "stripe" ||
+      stripeSecret
+    ) {
       return;
     }
-    startTransition(async () => {
-      setPayProcessing(true);
-      // 1. 保存 email/收件地址/物流方式到购物车
-      const saveResult = await updateShoppingCartDetails(cart.id, {
-        email: email || undefined,
-        shipping_address: formDataToAddress(address),
-        shipping_method_id: shippingMethodId || undefined,
-      });
-      if (saveResult && "success" in saveResult && !saveResult.success) {
-        toast.error(saveResult.error);
-        setPayProcessing(false);
-        return;
-      }
-      // 2. 提交订单（Carts::Submit → or_ 订单 pending）
-      try {
-        const order = await submitCartOrder(cart.id);
-        setOrderId(order.id);
-        // 3. 会话类支付方式 → 创建订单支付会话（Stripe 等）
-        if (isSessionBased && selectedMethod) {
-          const result = await createOrderPaymentSession(
-            order.id,
-            selectedMethod.id,
-          );
-          if (result.success && result.session) {
-            const session = result.session as {
-              id: string;
-              external_data?: Record<string, unknown>;
-            };
-            setStripeSessionId(session.id);
-            // client_secret 位于 external_data，且为 URL 编码（%2F）→ 解码后传给 Stripe
-            const secret = session.external_data?.client_secret as
-              | string
-              | undefined;
-            const stripeSecret = secret
-              ? decodeURIComponent(secret)
-              : undefined;
-            if (stripeSecret) {
-              setStripeSecret(stripeSecret);
-            } else {
-              toast.error(t("failedToInitPayment"));
-            }
-          } else {
-            const msg = "error" in result ? result.error : undefined;
-            toast.error(msg || t("failedToCreateSession"));
-          }
-        } else {
-          // 非会话类（Check/Store Credit）：线下收款，直接跳完成页
-          router.push(`${basePath}/order-placed/${order.id}`);
-        }
-      } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Failed to submit order",
-        );
-      } finally {
-        setPayProcessing(false);
-      }
-    });
-  };
+    // Wait for the current field edit to settle before converting the cart.
+    // Without this short debounce, the first character entered in the final
+    // required field could submit a partial address.
+    const preparationTimer = window.setTimeout(() => {
+      void prepareStripePayment(selectedMethod);
+    }, 250);
+    return () => window.clearTimeout(preparationTimer);
+  }, [canSubmit, prepareStripePayment, selectedMethod, stripeSecret]);
 
   // 确认支付（Stripe）：confirm → 完成会话 + 完成订单 → 完成页
   const handleConfirmStripePay = async () => {
@@ -241,227 +318,221 @@ export function UnifiedCheckout({
     }
   };
 
+  const handlePayNow = async () => {
+    if (!canSubmit || payProcessing || !selectedMethod) return;
+
+    if (isSessionBased) {
+      if (stripeSecret && stripeSessionId && orderId) {
+        await handleConfirmStripePay();
+      } else if (isStripe) {
+        await prepareStripePayment(selectedMethod, true);
+      }
+      return;
+    }
+
+    setPayProcessing(true);
+    try {
+      const targetOrderId = await submitCartForPayment();
+      if (targetOrderId) {
+        router.push(`${basePath}/order-placed/${targetOrderId}`);
+      }
+    } finally {
+      setPayProcessing(false);
+    }
+  };
+
+  const handlePaymentMethodChange = (methodId: string) => {
+    if (methodId === paymentMethodId) return;
+    setPaymentMethodId(methodId);
+    setStripeSecret(null);
+    setStripeSessionId(null);
+    stripeRef.current = null;
+    attemptedMethodRef.current = null;
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">
         {t("orderConfirmation")}
       </h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* 左侧 — 订单基础信息 */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* 收件地址信息 */}
-          <section className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">
-              {t("shippingAddress")}
-            </h2>
-            <div className="mb-4">
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t("emailPlaceholder")}
-                aria-label={t("email")}
-              />
-            </div>
-            <AddressFormFields
-              address={address}
-              countries={countries}
-              states={states}
-              loadingStates={loadingStates}
-              onChange={onAddressChange}
-              idPrefix="unified"
+      <div className="space-y-8">
+        {/* 收件地址信息 */}
+        <section className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">
+            {t("shippingAddress")}
+          </h2>
+          <div className="mb-4">
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t("emailPlaceholder")}
+              aria-label={t("email")}
             />
-          </section>
+          </div>
+          <AddressFormFields
+            address={address}
+            countries={countries}
+            states={states}
+            loadingStates={loadingStates}
+            onChange={onAddressChange}
+            idPrefix="unified"
+          />
+        </section>
 
-          {/* 商品信息 */}
+        {/* 商品信息 */}
+        <section className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">{t("items")}</h2>
+          <div className="space-y-4 divide-y divide-gray-100">
+            {cart.items.map((item) => (
+              <div key={item.id} className="flex gap-4 pt-4 first:pt-0">
+                <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                  <ProductImage
+                    src={item.thumbnail_url}
+                    alt={item.name}
+                    fill
+                    className="object-cover"
+                    sizes="64px"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {item.name}
+                  </p>
+                  <p className="text-sm text-gray-500">× {item.quantity}</p>
+                </div>
+                <p className="text-sm font-semibold text-gray-900">
+                  {item.display_amount}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 物流方式 */}
+        {shippingMethods.length > 0 && (
           <section className="bg-white rounded-xl border border-gray-200 p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4">
-              {t("items")}
+              {t("deliveryMethod")}
             </h2>
-            <div className="space-y-4 divide-y divide-gray-100">
-              {cart.items.map((item) => (
-                <div key={item.id} className="flex gap-4 pt-4 first:pt-0">
-                  <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                    <ProductImage
-                      src={item.thumbnail_url}
-                      alt={item.name}
-                      fill
-                      className="object-cover"
-                      sizes="64px"
-                    />
+            <div className="flex flex-col gap-3">
+              {shippingMethods.map((method) => (
+                <label
+                  key={method.id}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-indigo-300"
+                >
+                  <input
+                    type="radio"
+                    name="shipping-method"
+                    checked={shippingMethodId === method.id}
+                    onChange={() => setShippingMethodId(method.id ?? "")}
+                    className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{method.name}</p>
+                    {method.display_estimated_price && (
+                      <p className="text-sm text-gray-500">
+                        {method.display_estimated_price}
+                      </p>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {item.name}
-                    </p>
-                    <p className="text-sm text-gray-500">× {item.quantity}</p>
-                  </div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {item.display_amount}
-                  </p>
-                </div>
+                </label>
               ))}
             </div>
           </section>
+        )}
 
-          {/* 物流方式 */}
-          {shippingMethods.length > 0 && (
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">
-                {t("deliveryMethod")}
-              </h2>
-              <div className="flex flex-col gap-3">
-                {shippingMethods.map((method) => (
-                  <label
-                    key={method.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-indigo-300"
-                  >
-                    <input
-                      type="radio"
-                      name="shipping-method"
-                      checked={shippingMethodId === method.id}
-                      onChange={() => setShippingMethodId(method.id ?? "")}
-                      className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{method.name}</p>
-                      {method.display_estimated_price && (
-                        <p className="text-sm text-gray-500">
-                          {method.display_estimated_price}
-                        </p>
-                      )}
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </section>
+        {/* 支付方式选择 + 对应表单 */}
+        <section className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">
+            {t("paymentMethod")}
+          </h2>
+          {paymentMethods.length === 0 ? (
+            <div className="rounded-sm border bg-gray-50 px-4 py-8 text-center">
+              <CreditCard
+                className="w-10 h-10 text-gray-300 mx-auto mb-3"
+                strokeWidth={1.5}
+              />
+              <p className="text-sm text-gray-500">{t("noPaymentMethods")}</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {paymentMethods.map((method) => (
+                <label
+                  key={method.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:border-indigo-300 ${
+                    paymentMethodId === method.id
+                      ? "border-indigo-400 bg-indigo-50/40"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment-method"
+                    checked={paymentMethodId === method.id}
+                    onChange={() => handlePaymentMethodChange(method.id ?? "")}
+                    className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{method.name}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
           )}
 
-          {/* 支付方式选择 + 对应表单 */}
-          <section className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">
-              {t("paymentMethod")}
-            </h2>
-            {paymentMethods.length === 0 ? (
-              <div className="rounded-sm border bg-gray-50 px-4 py-8 text-center">
-                <CreditCard
-                  className="w-10 h-10 text-gray-300 mx-auto mb-3"
-                  strokeWidth={1.5}
-                />
-                <p className="text-sm text-gray-500">{t("noPaymentMethods")}</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {paymentMethods.map((method) => (
-                  <label
-                    key={method.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:border-indigo-300 ${
-                      paymentMethodId === method.id
-                        ? "border-indigo-400 bg-indigo-50/40"
-                        : "border-gray-200"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment-method"
-                      checked={paymentMethodId === method.id}
-                      onChange={() => setPaymentMethodId(method.id ?? "")}
-                      className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
+          {/* 选中支付方式后的对应表单 */}
+          {selectedMethod ? (
+            <div className="mt-4">
+              {isSessionBased && isStripe ? (
+                stripeSecret ? (
+                  <div className="rounded-lg border border-gray-200 p-4">
+                    <StripePaymentForm
+                      clientSecret={stripeSecret}
+                      onReady={handleStripeReady}
                     />
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{method.name}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            )}
-
-            {/* 选中支付方式后的对应表单 */}
-            {selectedMethod ? (
-              <div className="mt-4">
-                {isSessionBased && isStripe ? (
-                  orderReady ? (
-                    stripeSecret ? (
-                      <div className="rounded-lg border border-gray-200 p-4">
-                        <StripePaymentForm
-                          clientSecret={stripeSecret}
-                          onReady={handleStripeReady}
-                        />
-                      </div>
-                    ) : payProcessing ? (
-                      <div className="flex items-center gap-2 py-6 justify-center text-sm text-gray-500">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        {t("loadingPaymentForm")}
-                      </div>
-                    ) : null
-                  ) : (
-                    <p className="text-sm text-gray-500">
-                      {t("enterShippingAddress")}
-                    </p>
-                  )
-                ) : isSessionBased ? (
-                  // 其他会话类支付方式（PayPal/Adyen 等）：同页支付或跳转由网关决定
-                  <p className="text-sm text-gray-500">{t("processing")}</p>
-                ) : (
-                  // 非会话类（Check/Store Credit）：线下收款说明
-                  <div className="rounded-sm border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-                    {t("manualPaymentInfo")}
                   </div>
-                )}
-              </div>
-            ) : null}
-          </section>
-        </div>
-
-        {/* 右侧 — 订单小结 */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-24">
-            <div className="flex items-center gap-2 mb-4">
-              <ShoppingBag className="w-5 h-5 text-gray-500" />
-              <h2 className="text-lg font-bold text-gray-900">
-                {tc("orderSummary")}
-              </h2>
-            </div>
-
-            <dl className="space-y-4">
-              <div className="flex justify-between">
-                <dt className="text-gray-500">{tc("subtotal")}</dt>
-                <dd className="text-gray-900">{cart.display_item_total}</dd>
-              </div>
-              <div className="flex justify-between border-t border-gray-100 pt-4">
-                <dt className="text-lg font-medium text-gray-900">
-                  {tc("total")}
-                </dt>
-                <dd className="text-lg font-bold text-gray-900">
-                  {cart.display_item_total}
-                </dd>
-              </div>
-            </dl>
-
-            <p className="mt-3 text-xs text-gray-400">
-              {t("shippingCalculatedAtSubmit")}
-            </p>
-
-            <Button
-              size="lg"
-              className="w-full mt-6"
-              disabled={!canSubmit || isPending || payProcessing}
-              onClick={handlePayNow}
-            >
-              {payProcessing || isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("submitting")}
-                </>
-              ) : orderReady && isSessionBased && stripeSecret ? (
-                t("confirmPayment")
+                ) : payProcessing ? (
+                  <div className="flex items-center gap-2 py-6 justify-center text-sm text-gray-500">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {t("loadingPaymentForm")}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    {t("enterShippingAddress")}
+                  </p>
+                )
+              ) : isSessionBased ? (
+                // 其他会话类支付方式（PayPal/Adyen 等）：同页支付或跳转由网关决定
+                <p className="text-sm text-gray-500">{t("processing")}</p>
               ) : (
-                t("payNow")
+                // 非会话类（Check/Store Credit）：线下收款说明
+                <div className="rounded-sm border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                  {t("manualPaymentInfo")}
+                </div>
               )}
-            </Button>
-          </div>
-        </div>
+            </div>
+          ) : null}
+
+          <Button
+            size="lg"
+            className="w-full mt-6"
+            disabled={!canSubmit || payProcessing}
+            onClick={handlePayNow}
+          >
+            {payProcessing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t("submitting")}
+              </>
+            ) : orderReady && isSessionBased && stripeSecret ? (
+              t("confirmPayment")
+            ) : (
+              t("payNow")
+            )}
+          </Button>
+        </section>
       </div>
     </div>
   );
