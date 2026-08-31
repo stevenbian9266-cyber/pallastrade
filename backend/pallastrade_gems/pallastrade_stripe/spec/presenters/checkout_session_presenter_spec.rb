@@ -18,6 +18,7 @@ RSpec.describe PallasTradeStripe::CheckoutSessionPresenter, type: :model do
       :order,
       number: "R123456",
       currency: "USD",
+      email: "jane@example.com",
       ship_address: build(:address, address1: "1 Main St", city: "New York", zipcode: "10001", first_name: "Jane", last_name: "Doe")
     )
   end
@@ -29,7 +30,16 @@ RSpec.describe PallasTradeStripe::CheckoutSessionPresenter, type: :model do
       expect(payload[:mode]).to eq("payment")
       expect(payload[:ui_mode]).to eq("elements")
       expect(payload[:customer]).to eq("cus_123")
+      expect(payload[:customer_email]).to eq("jane@example.com")
       expect(payload[:return_url]).to eq("https://example.test/confirm")
+    end
+
+    it "omits customer_email when the order has no email" do
+      payload = described_class.new(
+        amount_in_cents: 100,
+        order: build(:order, number: "R999", email: nil)
+      ).call
+      expect(payload).not_to have_key(:customer_email)
     end
 
     it "adds a single aggregated line item for the amount" do

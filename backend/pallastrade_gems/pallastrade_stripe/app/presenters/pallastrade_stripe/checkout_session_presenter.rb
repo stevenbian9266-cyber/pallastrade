@@ -29,6 +29,11 @@ module PallasTradeStripe
         }
       }
       payload[:customer] = customer if customer.present?
+      # PALLAS-CUSTOM (2026-08-31, bugfix): Stripe Payment Element (Checkout
+      # Session, ui_mode: elements) requires an email on the session to
+      # confirm — without `customer_email`, `checkout.confirm()` rejects with
+      # "An email address is required to confirm this Checkout Session".
+      payload[:customer_email] = order.email if order.email.present?
       payload[:return_url] = return_url if return_url.present?
       payload[:payment_intent_data][:capture_method] = PallasTradeStripe::Gateway::PaymentIntents::MANUAL_CAPTURE_METHOD if manual_capture?
       payload = payload.deep_merge(ship_address_payload) if shipping_present?
