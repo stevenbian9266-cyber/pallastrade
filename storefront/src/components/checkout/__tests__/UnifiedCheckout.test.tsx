@@ -249,17 +249,20 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     );
     await waitFor(() => expect(confirmMock).toHaveBeenCalledWith("sec_1"));
 
-    // 4. 完成会话 + 完成订单 → 完成页
+    // 4. 支付成功 → 先离开 checkout 路由（replace order-placed）再完成订单，
+    //    规避 revalidate redirect('/cart') 竞态
+    await waitFor(() =>
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/us/en/order-placed/or_123",
+      ),
+    );
     await waitFor(() =>
       expect(completeOrderSessionMock).toHaveBeenCalledWith("or_123", "ps_1"),
     );
     await waitFor(() =>
       expect(completeOrderMock).toHaveBeenCalledWith("or_123"),
     );
-    await waitFor(() =>
-      expect(pushMock).toHaveBeenCalledWith("/us/en/order-placed/or_123"),
-    );
-    expect(replaceMock).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   it("redirects to the or_ payment page when payment fails instead of showing empty cart", async () => {
