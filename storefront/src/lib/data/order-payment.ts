@@ -1,6 +1,7 @@
 "use server";
 
 import type { Order } from "@pallastrade/sdk";
+import { redirect } from "next/navigation";
 import { getCartOptions, getClient } from "@/lib/pallastrade";
 import { actionResult } from "./utils";
 
@@ -62,6 +63,25 @@ export async function completeOrderPaymentSession(
     // 注释，revalidate 会触发 checkout 页 redirect('/cart') 竞态。
     return { session };
   }, "Failed to complete payment session");
+}
+
+/**
+ * 完成订单支付会话 + 完成订单，并由 server action 直接 redirect 到完成页。
+ *
+ * PALLAS-CUSTOM (2026-08-31, PRD-20260831-payments-stripe-自绘卡支付表单):
+ * 支付完成后必须由 server action 内 redirect 导航——Next.js 会在每个 server
+ * action 完成后自动 refresh 当前路由，若此时 cart 已转订单，checkout 页会
+ * 服务端 redirect('/cart') 抢先于客户端 router.push（空购物车 bug）。server
+ * action 内的 redirect 是确定性导航，不会被 refresh 竞态抢占。
+ */
+export async function completeOrderAndRedirectToOrderPlaced(
+  orderId: string,
+  sessionId: string,
+  basePath: string,
+) {
+  const options = await getCartOptions();
+  await getClient().orders.paymentSessions.complete(orderId, sessionId, undefined, options);
+  redirect(`${basePath}/order-placed/${orderId}`);
 }
 
 /**

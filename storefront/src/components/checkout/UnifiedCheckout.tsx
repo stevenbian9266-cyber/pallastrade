@@ -29,8 +29,7 @@ import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { getCountry } from "@/lib/data/countries";
 import {
-  completeOrder,
-  completeOrderPaymentSession,
+  completeOrderAndRedirectToOrderPlaced,
   createOrderPaymentSession,
 } from "@/lib/data/order-payment";
 import {
@@ -276,11 +275,14 @@ export function UnifiedCheckout({
             return;
           }
 
-          // 4) 完成会话 + 完成订单 → 完成页（order-payment 不再 updateTag，
-          //    无 revalidate redirect('/cart') 竞态）
-          await completeOrderPaymentSession(targetOrderId, session.id);
-          await completeOrder(targetOrderId);
-          router.push(`${basePath}/order-placed/${targetOrderId}`);
+          // 4) 完成会话 + 完成订单 → 由 server action 内 redirect 导航到完成页
+          //    （确定性导航，规避 server action 后自动 refresh 触发 checkout
+          //    页 redirect('/cart') 竞态 → 空购物车 bug）
+          await completeOrderAndRedirectToOrderPlaced(
+            targetOrderId,
+            session.id,
+            basePath,
+          );
         } catch (error) {
           toast.error(
             error instanceof Error ? error.message : "Payment failed",

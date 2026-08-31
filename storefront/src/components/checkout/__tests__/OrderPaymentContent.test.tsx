@@ -21,6 +21,7 @@ vi.mock("next/navigation", () => ({
 const createOrderSessionMock = vi.fn();
 const completeOrderSessionMock = vi.fn();
 const completeOrderMock = vi.fn();
+const completeAndRedirectMock = vi.fn();
 
 vi.mock("@/lib/data/order-payment", () => ({
   createOrderPaymentSession: (...args: unknown[]) =>
@@ -28,6 +29,8 @@ vi.mock("@/lib/data/order-payment", () => ({
   completeOrderPaymentSession: (...args: unknown[]) =>
     completeOrderSessionMock(...args),
   completeOrder: (...args: unknown[]) => completeOrderMock(...args),
+  completeOrderAndRedirectToOrderPlaced: (...args: unknown[]) =>
+    completeAndRedirectMock(...args),
 }));
 
 vi.mock("@/lib/utils/stripe", () => ({
@@ -172,14 +175,15 @@ describe("OrderPaymentContent", () => {
       ),
     );
 
-    // 完成会话 + 完成订单 → 完成页
+    // 完成会话 + 完成订单 → server action 内 redirect（确定性导航）
     await waitFor(() =>
-      expect(completeOrderSessionMock).toHaveBeenCalledWith("or_1", "ps_1"),
+      expect(completeAndRedirectMock).toHaveBeenCalledWith(
+        "or_1",
+        "ps_1",
+        "/us/en",
+      ),
     );
-    await waitFor(() => expect(completeOrderMock).toHaveBeenCalledWith("or_1"));
-    await waitFor(() =>
-      expect(pushMock).toHaveBeenCalledWith("/us/en/order-placed/or_1"),
-    );
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   it("keeps the pay-now button flow for non-session methods (Check)", async () => {

@@ -19,8 +19,7 @@ import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import {
-  completeOrder,
-  completeOrderPaymentSession,
+  completeOrderAndRedirectToOrderPlaced,
   createOrderPaymentSession,
 } from "@/lib/data/order-payment";
 import { extractBasePath } from "@/lib/utils/path";
@@ -186,10 +185,13 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
           return;
         }
 
-        // 支付确认成功 → 完成会话 + 完成订单
-        await completeOrderPaymentSession(order.id, session.id);
-        await completeOrder(order.id);
-        router.push(`${basePath}/order-placed/${order.id}`);
+        // 支付确认成功 → 完成会话 + 完成订单 → 由 server action 内 redirect
+        // 导航（确定性，规避自动 refresh 竞态）
+        await completeOrderAndRedirectToOrderPlaced(
+          order.id,
+          session.id,
+          basePath,
+        );
         return;
       }
 
@@ -209,9 +211,11 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
           external_data?: Record<string, unknown>;
         };
         // 其他 session-based（PayPal/Adyen）：直接完成会话（provider 回调驱动）
-        await completeOrderPaymentSession(order.id, session.id);
-        await completeOrder(order.id);
-        router.push(`${basePath}/order-placed/${order.id}`);
+        await completeOrderAndRedirectToOrderPlaced(
+          order.id,
+          session.id,
+          basePath,
+        );
         return;
       }
 
