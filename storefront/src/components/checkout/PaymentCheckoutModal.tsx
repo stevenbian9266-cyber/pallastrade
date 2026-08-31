@@ -120,12 +120,13 @@ export function PaymentCheckoutModal({
           external_data?: Record<string, unknown>;
         };
         setStripeSessionId(session.id);
-        // client_secret 位于 external_data（Stripe Checkout Session secret）
+        // client_secret 位于 external_data 且 URL 编码（%2F）→ 解码后传给 Stripe
         const secret = session.external_data?.client_secret as
           | string
           | undefined;
-        if (secret) {
-          setStripeSecret(secret);
+        const stripeSecret = secret ? decodeURIComponent(secret) : undefined;
+        if (stripeSecret) {
+          setStripeSecret(stripeSecret);
         } else {
           setError(t("failedToInitPayment"));
         }

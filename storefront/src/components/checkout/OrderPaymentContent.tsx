@@ -86,9 +86,11 @@ export function OrderPaymentContent({ order }: OrderPaymentContentProps) {
           external_data?: Record<string, unknown>;
         };
         setStripeSessionId(session.id);
-        // client_secret 位于 external_data（Stripe Checkout Session secret）
-        const stripeSecret =
-          session.external_data?.client_secret as string | undefined;
+        // client_secret 位于 external_data 且 URL 编码（%2F）→ 解码后传给 Stripe
+        const rawSecret = session.external_data?.client_secret as
+          | string
+          | undefined;
+        const stripeSecret = rawSecret ? decodeURIComponent(rawSecret) : undefined;
 
         if (gatewayType === "stripe" && stripeSecret) {
           setStripeSecret(stripeSecret);

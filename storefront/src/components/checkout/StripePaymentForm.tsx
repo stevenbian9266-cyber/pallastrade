@@ -103,8 +103,8 @@ export function StripePaymentForm({
     <CheckoutProvider
       stripe={stripePromise}
       options={{
-        // Stripe's Checkout Session client_secret is returned URL-encoded
-        // (e.g. `%2F`); the SDK handles it as-is — do NOT decode here.
+        // Stripe Checkout Session client_secret 需要标准格式（/ 而非 %2F）。
+        // 后端 external_data 中为 URL 编码值，调用方已 decodeURIComponent 后传入。
         clientSecret,
         elementsOptions: {
           appearance: {
