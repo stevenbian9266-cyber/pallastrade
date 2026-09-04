@@ -40,7 +40,7 @@ Checkout is how an independent active `PallasTrade::Cart` becomes a submitted `P
 > 合并支付成员订单没有本地 payment（资金在组合上）。两个配套点使其可完成：
 
 - **checkout 状态机放行**：`before_transition to: :complete` 在 `payment_required? && payments.valid.empty?` 时，若订单存在**已捕获的 `PaymentSplit`**（`captured_amount > 0`）则放行（无需本地 payment、不再 `process_payments!`）；否则维持原 `no_payment_found` 错误。单订单场景行为不变。
-- **完成入口**：`PaymentCombinations::Complete` 阶段 2 逐个用 `checkout_complete_service`（`PallasTrade::Checkout::Complete`）完成成员订单；失败标 `balance_due` + 入 `CombinationSettleJob` 重试。详见 `pallastrade-payments` SKILL。
+- **完成入口**：`PaymentCombinations::Complete` 阶段 2 经 `Payments::CombinationMemberComplete` 分流（RISK-01, 2026-09-04）：standard-flow 成员走 `Carts::Complete`（pay!+finalize!），legacy 成员走 `checkout_complete_service`（`Checkout::Complete`）；失败标 `balance_due` + 入 `CombinationSettleJob` 重试。详见 `pallastrade-payments` SKILL。
 
 ### 自动拆单 + Buy Now（P5, 2026-08-27，flag 灰度）
 
@@ -295,6 +295,8 @@ end
 - **Cart services:** `PallasTrade::Cart::AddItem`, `PallasTrade::Cart::Recalculate`, etc. in `pallastrade_core/app/services/pallastrade/cart/`.
 
 ## Changelog (CHK-P1-1A Read-only CheckoutView, 2026-09-03)
+
+- RISK-01 (2026-09-04): 组合成员完成 primitive 分流——standard 成员→`Carts::Complete`、legacy 成员→`Checkout::Complete`（`Payments::CombinationMemberComplete`）；修复 standard pending 成员组合支付永不完成（见 pallastrade-payments SKILL changelog）。
 
 - PallasTrade::OrderCheckout::View（只读投影服务）：View.call(order:) → CheckoutView DTO（预加载 + 委托 Order 权威列；零副作用/确定性；不 requote/retax/repricing/不推进状态机/不建表）。
 - CheckoutSerializer（Store v3）：格式化 CheckoutView（金额 major-unit string、display_*、hide_prices 门控；items/fulfillments/addresses 复用现有资源 serializer；discounts/taxes 解释性明细）。

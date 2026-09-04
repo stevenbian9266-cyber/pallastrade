@@ -20,7 +20,7 @@ module PallasTrade
         return if order.completed? || order.canceled?
         return unless combination.succeeded?
 
-        result = PallasTrade::Dependencies.checkout_complete_service.constantize.call(order: order)
+        PallasTrade::Payments::CombinationMemberComplete.call(order: order)
         return if order.reload.completed?
 
         # 仍失败：保持 balance_due（资金已入账，订单待人工介入），不无限重试

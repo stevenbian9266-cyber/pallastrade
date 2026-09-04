@@ -72,7 +72,7 @@ RSpec.describe PallasTrade::Payments::PaymentCombinations::Complete, type: :serv
 
       expect do
         described_class.call(payment_session: session)
-      end.not_to change { combination.reload.payments.count }
+      end.not_to(change { combination.reload.payments.count })
 
       expect(combination.reload.payment_splits.count).to eq(2)
       expect(split1.reload.captured_amount).to eq(share)
@@ -104,6 +104,69 @@ RSpec.describe PallasTrade::Payments::PaymentCombinations::Complete, type: :serv
       expect(order2.reload).not_to be_completed
       expect(order2.payment_state).to eq('balance_due')
       expect(order2.payment_total).to eq(share)
+    end
+  end
+
+  # RISK-01（2026-09-04，TXN-P2-0 §10）：standard-flow 成员必须走 Carts::Complete
+  # （legacy Checkout::Complete 无 from: pending 迁移，无法完成 pending 成员）。
+  describe 'with standard-flow member orders (RISK-01)' do
+    # standard 成员：Carts::Submit 产物等价（state=pending / status=placed），无本地 payment
+    def pending_standard_member(total: 60.0)
+      order = create(:order_with_line_items, store: store, user: user, shipment_cost: 0,
+                                             line_items_price: total)
+      order.update_columns(
+        state: 'pending',
+        status: 'placed',
+        submitted_at: Time.current,
+        completed_at: nil,
+        payment_state: nil,
+        payment_total: 0
+      )
+      PallasTrade::OrderUpdater.new(order).update
+      order.reload
+    end
+
+    let(:order1) { pending_standard_member }
+    let(:order2) { pending_standard_member(total: 40.0) }
+    let!(:combined_amount) { (order1.amount_due + order2.amount_due).to_f }
+    let!(:combination) do
+      create(:payment_combination, store: store, customer: user, amount: combined_amount)
+    end
+    let!(:split1) { create(:payment_split, payment_combination: combination, order: order1, payment: nil) }
+    let!(:split2) { create(:payment_split, payment_combination: combination, order: order2, payment: nil) }
+    let!(:session) do
+      create(:bogus_payment_session, order: order1, payment_method: payment_method,
+                                     amount: combined_amount, payment_combination: combination)
+    end
+
+    it 'completes standard member orders via Carts::Complete (pending → paid + finalize)' do
+      result = described_class.call(payment_session: session)
+      expect(result.success?).to be true
+
+      expect(combination.reload.status).to eq('succeeded')
+      expect(combination.payments.count).to eq(1)
+      expect(combination.payments.first).to be_completed
+      expect(split1.reload.captured_amount).to eq(order1.amount_due.to_f)
+      expect(split2.reload.captured_amount).to eq(order2.amount_due.to_f)
+
+      expect(order1.reload).to be_completed
+      expect(order1.state).to eq('paid')
+      expect(order1.payment_state).to eq('paid')
+      expect(order2.reload).to be_completed
+      expect(order2.state).to eq('paid')
+      expect(order2.payment_state).to eq('paid')
+    end
+
+    it 'is idempotent across repeated calls for standard members' do
+      described_class.call(payment_session: session)
+      completed_at = order1.reload.completed_at
+
+      expect do
+        described_class.call(payment_session: session)
+      end.not_to(change { combination.reload.payments.count })
+
+      expect(order1.reload.completed_at).to eq(completed_at)
+      expect(order1.payments.count).to eq(0) # 资金在组合 payment，成员订单无本地 payment
     end
   end
 end

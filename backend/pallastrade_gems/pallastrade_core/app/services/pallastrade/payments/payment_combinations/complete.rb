@@ -11,9 +11,10 @@ module PallasTrade
       #   1) **先入账支付**（组合事务内）：组合 → succeeded；一个 Payment 挂组合（order_id=nil）
       #      完成；各 PaymentSplit 记账（captured 按比例分摊、payment 回填）；各订单
       #      payment_total / payment_state 更新。此事务提交后资金已安全入账。
-      #   2) **再逐个订单完成**（事务外，每订单独立）：checkout_complete_service 推进订单；
-      #      某订单失败**不回滚已入账支付**，订单标 balance_due + 入 CombinationSettleJob 重试
-      #      （资金始终 >= 订单状态）。
+      #   2) **再逐个订单完成**（事务外，每订单独立）：CombinationMemberComplete 分流——
+      #      standard 成员走 Carts::Complete（pay!+finalize!），legacy 成员走
+      #      Checkout::Complete（COMPATIBILITY）；某订单失败**不回滚已入账支付**，
+      #      订单标 balance_due + 入 CombinationSettleJob 重试（资金始终 >= 订单状态）。
       #
       # 幂等：组合已 succeeded / 订单已完成 → 跳过；Webhook 与前端回调双路径、job 重试均安全。
       #
@@ -26,9 +27,7 @@ module PallasTrade
         def call(combination: nil, payment_session: nil)
           combination ||= payment_session&.payment_combination
           return failure(nil, 'Payment combination not found') if combination.nil?
-          unless combination.pending? || combination.processing? || combination.succeeded?
-            return failure(combination, 'Combination is not payable')
-          end
+          return failure(combination, 'Combination is not payable') unless combination.pending? || combination.processing? || combination.succeeded?
 
           # —— 阶段 1：入账支付（组合事务）——
           combination.with_lock do
@@ -61,12 +60,8 @@ module PallasTrade
             next if order.nil?
 
             captured = captured_share(combination, split)
-            if split.captured_amount.to_f != captured.to_f
-              split.update_column(:captured_amount, captured)
-            end
-            if payment && split.payment_id != payment.id
-              split.update_column(:payment_id, payment.id)
-            end
+            split.update_column(:captured_amount, captured) if split.captured_amount.to_d != captured.to_d
+            split.update_column(:payment_id, payment.id) if payment && split.payment_id != payment.id
 
             order.update_columns(
               payment_total: captured,
@@ -105,12 +100,14 @@ module PallasTrade
           (order.amount_due.to_f / total_unpaid * combination.amount.to_f).round(2)
         end
 
-        # 完成单个成员订单；失败不抛（已入账支付保留），标 balance_due + 入补偿队列
+        # 完成单个成员订单；失败不抛（已入账支付保留），标 balance_due + 入补偿队列。
+        # RISK-01（2026-09-04）：完成 primitive 按 standard/legacy 分流——standard 成员
+        # （pending/paid）必须走 Carts::Complete，legacy Checkout::Complete 无法完成它们。
         def complete_member_order!(combination, split)
           order = split.order
           return if order.nil? || order.completed?
 
-          result = PallasTrade::Dependencies.checkout_complete_service.constantize.call(order: order)
+          PallasTrade::Payments::CombinationMemberComplete.call(order: order)
           return if order.reload.completed?
 
           # 完成失败：不回滚已入账支付；订单标 balance_due + 入队重试

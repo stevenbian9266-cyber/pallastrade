@@ -151,9 +151,10 @@ For an existing Order, start sessions through `PallasTrade::PaymentSessions::Sta
   - 创建组合（`pending → processing`）+ 每成员订单一条 `PaymentSplit`（`payment_id` 为空，支付后回填）+ primary 订单 `PaymentSession`（金额=组合合计，挂组合，`external_data` 含 `payment_combination_id`）。
 - **`PallasTrade::Payments::PaymentCombinations::Complete`**：`(combination: nil, payment_session: nil)`。
   - **阶段 1 入账（组合事务）**：组合 `succeeded`；1 个 `Payment` 挂组合（`order_id=nil`、金额=组合合计、`completed`）；splits 按 `amount_due` 比例记 `captured_amount` + 回填 `payment_id`；各订单 `payment_total`/`payment_state` 更新。
-  - **阶段 2 完成（事务外）**：逐个 `checkout_complete_service` 完成订单；失败**不回滚已入账支付**，订单标 `balance_due` + 入 `CombinationSettleJob` 重试（资金 >= 订单状态）。
+  - **阶段 2 完成（事务外）**：逐个经 **`PallasTrade::Payments::CombinationMemberComplete`** 完成成员订单（RISK-01, 2026-09-04）——standard-flow 成员（Carts::Submit 产物，state=pending/paid）走 **`Carts::Complete`**（pay!+finalize!，其 `complete_standard_order!` 已支持 payment_splits captured>0 放行）；legacy 成员走 `checkout_complete_service`（`Checkout::Complete`，COMPATIBILITY）；失败**不回滚已入账支付**，订单标 `balance_due` + 入 `CombinationSettleJob` 重试（资金 >= 订单状态）。
   - **幂等**：组合 `succeeded` / session `completed` / 订单已完成 → 跳过；Webhook + API 双路径安全。
 - **`PallasTrade::Payments::CombinationSettleJob`**：补偿队列，重试失败成员订单完成（幂等，耗尽保留 `balance_due` 供人工介入）。
+- **`PallasTrade::Payments::CombinationMemberComplete`**（2026-09-04, RISK-01）：组合成员完成 primitive 分流器，`PaymentCombinations::Complete` 阶段 2 与 `CombinationSettleJob` 共用。背景：legacy `Checkout::Complete` 无 `from: pending` 迁移，无法完成 standard-flow pending 成员（否则组合资金已入账但成员永不完成）。见 docs/research/RESEARCH-20260904-txn-p2-0… §10。
 - **Webhook 接线**：`HandleWebhook` 与 Stripe `CompleteOrderFromSessionJob`/`CompleteOrder` 在 session 挂组合时走 `PaymentCombinations::Complete`（单订单流程零改动）。
 - **Store API（P5）**：`POST /api/v3/store/payment_combinations`（创建：order_ids + payment_method_id → 组合 + session）与 `GET /api/v3/store/payment_combinations/:id`（收银台详情）；`payment_sessions#complete` 对挂组合的 session 走 `PaymentCombinations::Complete`。SDK `paymentCombinations.create/get` + Storefront 收银台（`(checkout)/combined-payment/[id]`）+ 账户订单多选（`OrderCombinedPay`）。
 - **配套数据/模型变更**：`payment_splits.payment_id` 改可空（支付前建 split）；`Payment#order` 改 optional（组合支付 `order_id=nil`，`update_order`/`invalidate_old_payments`/`currency` 已有 nil 守卫）；`PaymentCombination#payments` 关联；`OrderUpdater#update_payment_total` 有 `PaymentSplit` 时取 `captured - refunded`；checkout 状态机在订单有已捕获 split 时放行（无需本地 payment）。
@@ -268,6 +269,8 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **Stripe gem:** `https://github.com/stevenbian9266-cyber/pallastrade` — best reference for a real-world payment integration.
 
 ## Changelog (P0 Payment, 2026-09-03)
+
+- RISK-01 (2026-09-04): 组合成员完成 primitive 分流——新增 `Payments::CombinationMemberComplete`（standard 成员→`Carts::Complete`，legacy 成员→`Checkout::Complete`），`PaymentCombinations::Complete` 阶段 2 与 `CombinationSettleJob` 共用；修复账户 2+ 单合并收银台对 standard pending 成员"资金已入账、订单永不完成"缺陷（TXN-P2-0 §10 运行时验证）。
 
 - P0 (2026-09-03, PRD-20260902-payments-p0-foundation-hardening): PaymentSession-Payment 正式 FK(payment_session_id)；Webhook Event Store/Dedup/Retry/Replay(pallastrade_payment_webhook_events)；Express 幂等复用 PaymentSessions::Start(REUSE_WINDOW/operation_key 含 amount)；Cart#express_payment 服务端金额权威；Gateway preferences AR-Encryption(ACTIVE_RECORD_ENCRYPTION_* + rake encrypt_preferences/verify)；AuditLog/Audit.record + ErrorCodes canonical 映射；Legacy=Compatibility Only(payment.legacy_flow.used)。详见 docs/payment/。
 - CHK-P1-3 (2026-09-03): PaymentSessions::Start 新增 quote 作用域 Payment Start Gate（过期自动 Refresh / 就绪拦截 checkout_not_ready；无 quote/legacy/completed 账户补付直通）；新会话 external_data 记录 price_version + quote_refreshed；幂等/reuse/operation_key/reconcile 不变。

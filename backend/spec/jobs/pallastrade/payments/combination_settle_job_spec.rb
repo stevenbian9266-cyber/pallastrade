@@ -46,14 +46,49 @@ RSpec.describe PallasTrade::Payments::CombinationSettleJob, type: :job do
 
       expect do
         described_class.perform_now(combination.id, order1.id)
-      end.not_to change { order1.reload.updated_at }
+      end.not_to(change { order1.reload.updated_at })
     end
 
     it 'skips when the combination is not succeeded' do
       combination.update_column(:status, 'failed')
       expect do
         described_class.perform_now(combination.id, order2.id)
-      end.not_to change { order2.reload.state }
+      end.not_to(change { order2.reload.state })
+    end
+  end
+
+  # RISK-01（2026-09-04，TXN-P2-0 §10）：standard 成员重试走 Carts::Complete
+  describe 'with standard-flow member order (RISK-01)' do
+    def pending_standard_member(total: 50.0)
+      order = create(:order_with_line_items, store: store, user: user, shipment_cost: 0,
+                                             line_items_price: total)
+      order.update_columns(
+        state: 'pending', status: 'placed', submitted_at: Time.current,
+        completed_at: nil, payment_state: nil, payment_total: 0
+      )
+      PallasTrade::OrderUpdater.new(order).update
+      order.reload
+    end
+
+    let(:order_std) { pending_standard_member }
+    let!(:combination) do
+      create(:payment_combination, store: store, customer: user,
+                                   amount: order_std.amount_due.to_f, status: 'succeeded')
+    end
+    let!(:split) do
+      s = create(:payment_split, payment_combination: combination, order: order_std, payment: nil,
+                                 captured_amount: order_std.amount_due.to_f)
+      # 模拟 PaymentCombinations::Complete 阶段 1 已记账：member 订单 payment_total/payment_state
+      # 已由组合入账写列（Carts::Complete 的 process_payments! 守卫依赖 payment_total）
+      order_std.update_columns(payment_total: order_std.amount_due, payment_state: 'paid')
+      s
+    end
+
+    it 'completes a standard pending member via Carts::Complete on retry' do
+      described_class.perform_now(combination.id, order_std.id)
+      expect(order_std.reload).to be_completed
+      expect(order_std.state).to eq('paid')
+      expect(order_std.payment_state).to eq('paid')
     end
   end
 end
