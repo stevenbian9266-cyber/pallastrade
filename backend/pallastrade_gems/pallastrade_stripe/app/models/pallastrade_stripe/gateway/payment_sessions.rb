@@ -194,7 +194,52 @@ module PallasTradeStripe
         end
       end
 
+      # PALLAS-CUSTOM: TXN-P2-3 (PRD-20260904-payments-txn-p2-3)
+      # Read-only provider status contract — authoritative current status for a
+      # PaymentSession WITHOUT mutating local state (no Payment creation, no
+      # transitions). Used by Transactions::PaymentFactResolver to determine the
+      # real money fact when local DB is inconsistent. Pure Stripe retrieve.
+      #
+      # @param payment_session [PallasTrade::PaymentSessions::Stripe]
+      # @return [Hash] { status:, amount_cents:, currency:, provider_reference: }
+      #   status: :paid | :unpaid | :processing | :requires_capture |
+      #           :requires_action | :canceled
+      # @raise [PallasTrade::Core::GatewayError] when no PaymentIntent exists yet
+      # @raise [Stripe::StripeError] on provider/network failure (caller resolves)
+      def fetch_payment_status(payment_session:)
+        stripe_pi = payment_session.stripe_payment_intent
+        raise PallasTrade::Core::GatewayError, 'Payment session has no PaymentIntent yet' unless stripe_pi
+
+        {
+          status: normalized_payment_intent_status(stripe_pi, payment_session),
+          amount_cents: stripe_pi.amount,
+          currency: stripe_pi.currency,
+          provider_reference: payment_session.payment_intent_mode? ? stripe_pi.id : payment_session.external_id
+        }
+      end
+
       private
+
+      # PaymentIntent 模式直接看 PI.status；Checkout Session 模式看
+      # session.payment_status（'paid' | 'unpaid' | 'no_payment_required'）。
+      def normalized_payment_intent_status(stripe_pi, payment_session)
+        if payment_session.payment_intent_mode?
+          case stripe_pi.status
+          when 'succeeded' then :paid
+          when 'canceled' then :canceled
+          when 'processing' then :processing
+          when 'requires_capture' then :requires_capture
+          when 'requires_action' then :requires_action
+          else :unpaid # requires_payment_method / requires_confirmation / 其他未支付态
+          end
+        else
+          case payment_session.checkout_session_payment_status
+          when 'paid', 'no_payment_required' then :paid # paid 或无需支付 = 资金义务已清
+          when 'unpaid' then :unpaid
+          else :processing # 未知/不可用 → 保守在途
+          end
+        end
+      end
 
       def payment_intent_successful?(stripe_pi)
         stripe_pi.status == 'succeeded'

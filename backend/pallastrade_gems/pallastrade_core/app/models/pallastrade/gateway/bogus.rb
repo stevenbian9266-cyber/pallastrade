@@ -116,6 +116,26 @@ module PallasTrade
       payment_session.complete
     end
 
+    # PALLAS-CUSTOM: TXN-P2-3 (PRD-20260904-payments-txn-p2-3)
+    # Deterministic read-only provider status contract (test double). Bogus has
+    # no real provider round-trip — it derives a normalized status from the
+    # local session state so PaymentFactResolver specs are deterministic.
+    def fetch_payment_status(payment_session:)
+      normalized = case payment_session.status.to_s
+                   when 'completed' then :paid
+                   when 'failed' then :failed
+                   when 'canceled' then :canceled
+                   when 'expired' then :expired
+                   else :processing # pending/processing seen as in-flight by the "provider"
+                   end
+      {
+        status: normalized,
+        amount_cents: payment_session.amount_in_cents,
+        currency: payment_session.currency,
+        provider_reference: payment_session.external_id
+      }
+    end
+
     def setup_session_supported?
       true
     end

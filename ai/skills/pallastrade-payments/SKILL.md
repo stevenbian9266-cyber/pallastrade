@@ -270,6 +270,8 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 
 ## Changelog (P0 Payment, 2026-09-03)
 
+- TXN-P2-3 (2026-09-04, PRD-20260904-payments-txn-p2-3): Provider **只读**状态契约 `PaymentMethod#fetch_payment_status(payment_session:)` → 规范化 `{status:, amount_cents:, currency:, provider_reference:}`（基类 NotImplementedError；Stripe 实现复用 retrieve_checkout_session/retrieve_payment_intent，pi_/cs_ 双模式映射 paid/unpaid/processing/requires_capture/requires_action/canceled，零写库零状态变更；Bogus 确定性映射供测试）+ `Transactions::PaymentFactResolver#call(transaction:, provider_query:)` 判定 `paid/unpaid/ambiguous`（reasons/provider_results）。判定语义：本地 completed Payment（金额匹配）short-circuit PAID；session completed 但 Payment 缺失 → provider 权威确认；全部终态失败/无 attempt → unpaid；进行中/待捕获/部分入账/不可达 → ambiguous（不猜，交 manual_review）。P2-4 Recovery/P2-5 Finalize 消费；无 API 面。
+
 - TXN-P2-2 (2026-09-04, PRD-20260904-api-txn-p2-2): PaymentSession 归属 durable CommerceTransaction（`transaction_id` 可空 FK + index，存量 NULL 不回溯）；`Transactions::Start` 复用 PaymentSessions::Start（透明 Refresh 后 expected 传 nil）；session = transaction 的支付 attempt（一 transaction 多 session 语义基础）。
 
 - RISK-01 (2026-09-04): 组合成员完成 primitive 分流——新增 `Payments::CombinationMemberComplete`（standard 成员→`Carts::Complete`，legacy 成员→`Checkout::Complete`），`PaymentCombinations::Complete` 阶段 2 与 `CombinationSettleJob` 共用；修复账户 2+ 单合并收银台对 standard pending 成员"资金已入账、订单永不完成"缺陷（TXN-P2-0 §10 运行时验证）。

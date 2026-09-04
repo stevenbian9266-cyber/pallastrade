@@ -86,6 +86,23 @@ module PallasTrade
       raise ::NotImplementedError, 'You must implement complete_payment_session method for this gateway.'
     end
 
+    # PALLAS-CUSTOM: TXN-P2-3 (PRD-20260904-payments-txn-p2-3)
+    # Read-only provider status contract. Queries the provider for the current
+    # authoritative status of a payment session WITHOUT mutating any local
+    # state (no Payment creation, no state transitions). Consumed by
+    # PallasTrade::Transactions::PaymentFactResolver (money-fact resolution).
+    #
+    # @param payment_session [PallasTrade::PaymentSession]
+    # @return [Hash] normalized status:
+    #   { status: Symbol, amount_cents: Integer, currency: String, provider_reference: String }
+    #   status ∈ :paid | :unpaid | :processing | :requires_capture |
+    #            :requires_action | :canceled | :failed | :expired
+    # @raise [::NotImplementedError] when the gateway has no read-only contract
+    # @raise [PallasTrade::Core::GatewayError] on provider/network failure
+    def fetch_payment_status(payment_session:)
+      raise ::NotImplementedError, 'You must implement fetch_payment_status method for this gateway.'
+    end
+
     # Parses an incoming webhook payload from the payment provider.
     # Override in gateway subclasses to implement provider-specific webhook parsing.
     #
