@@ -1,7 +1,12 @@
 "use server";
 
 import { updateTag } from "next/cache";
-import { getCartOptions, getClient, setCartCookies } from "@/lib/pallastrade";
+import {
+  getCartId,
+  getCartOptions,
+  getClient,
+  setCartCookies,
+} from "@/lib/pallastrade";
 import { actionResult } from "./utils";
 
 /**
@@ -11,7 +16,16 @@ import { actionResult } from "./utils";
 export async function createBuyNowCart(variantId: string, quantity = 1) {
   return actionResult(async () => {
     const options = await getCartOptions();
-    const cart = await getClient().carts.create({}, options);
+    const previousCartId = await getCartId();
+    const cart = await getClient().carts.create(
+      {
+        metadata: {
+          checkout_source: "buy_now",
+          ...(previousCartId && { previous_cart_id: previousCartId }),
+        },
+      },
+      options,
+    );
     // PALLAS-CUSTOM bugfix (2026-08-29): 新 cart 拥有自己的 token。
     // 不能复用 getCartOptions() 的旧 guestToken —— 后端 CartResolvable 用
     // `x-pallastrade-token` 对 cart 做 authorize!(:update)，旧 token 与新 cart

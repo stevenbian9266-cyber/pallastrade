@@ -5,6 +5,7 @@ export const DeliveryMethodSchema = z.object({
   id: z.string(),
   name: z.string(),
   code: z.string().nullable(),
+  display_estimated_price: z.string().nullable(),
 });
 
 export type DeliveryMethod = z.infer<typeof DeliveryMethodSchema>;

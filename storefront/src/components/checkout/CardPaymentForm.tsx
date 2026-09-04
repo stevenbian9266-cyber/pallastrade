@@ -97,9 +97,14 @@ const CardPaymentFormInner = forwardRef<
       setError(t("invalidCardDetails"));
       return false;
     }
+    // PRD 3.6：持卡人姓名为空 → 提示必填
+    if (!cardholderName.trim()) {
+      setError(t("cardholderRequired"));
+      return false;
+    }
     setError(null);
     return true;
-  }, [stripe, elements, t]);
+  }, [stripe, elements, cardholderName, t]);
 
   const confirmPayment = useCallback(
     async (clientSecret: string): Promise<{ error?: string }> => {
@@ -154,6 +159,24 @@ const CardPaymentFormInner = forwardRef<
 
   return (
     <div className="space-y-3" data-testid="card-payment-form">
+      {/* PRD 3.6：支付渠道图标展示（VISA / MasterCard / AMEX，纯装饰） */}
+      <div
+        className="flex items-center gap-2"
+        data-testid="card-brand-badges"
+        aria-hidden="true"
+      >
+        <strong className="rounded border border-blue-700 px-1.5 py-0.5 text-[11px] font-bold italic text-blue-700">
+          VISA
+        </strong>
+        <span className="flex items-center gap-0.5">
+          <span className="h-3.5 w-3.5 rounded-full bg-red-500" />
+          <span className="h-3.5 w-3.5 -ml-1.5 rounded-full bg-amber-400" />
+        </span>
+        <strong className="rounded border border-sky-700 px-1.5 py-0.5 text-[11px] font-bold text-sky-700">
+          AMEX
+        </strong>
+      </div>
+
       <div>
         <label
           htmlFor="card-number"

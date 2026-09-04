@@ -12,8 +12,8 @@ importers:
         specifier: ^1.11.0
         version: 1.13.6
       pallastrade-harness:
-        specifier: ^1.7.0
-        version: 1.7.0
+        specifier: ^1.8.0
+        version: 1.9.0
       promptfoo:
         specifier: ^0.122.0
         version: 0.122.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(@types/json-schema@7.0.15)(@types/node@26.2.0)(pg@8.23.0)(playwright-core@1.62.1)(socks@2.8.9)
@@ -2952,8 +2952,8 @@ packages:
   package-json-from-dist@1.0.1:
     resolution: {integrity: sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==}
 
-  pallastrade-harness@1.7.0:
-    resolution: {integrity: sha512-4XWvhcMY+IuC4ktgMazlZx3gSvummVme805hia+hQ3edSQgfkSTrHUtcKAq6K3AzfkBBZpFmT2hKc+hq7Gkyiw==}
+  pallastrade-harness@1.9.0:
+    resolution: {integrity: sha512-c3YuxASzlsB4IgUBzpldqJWqKNOPRjAsK1LAUBjjVSOTogZPqZvWe1J67UKtBqIf3iE5af2wEidFyrG9GelVkg==}
     engines: {node: '>=22.0.0'}
     hasBin: true
 
@@ -3038,6 +3038,10 @@ packages:
   pgpass@1.0.5:
     resolution: {integrity: sha512-FdW9r/jQZhSeohs1Z3sI1yxFQNFvMcnmfuj4WBMUTxOrAyLMaTcE1aAMBiTlbMNaXvBCQuVi0R7hd8udDSP7ug==}
 
+  pixelmatch@7.2.0:
+    resolution: {integrity: sha512-xhcb4yHu9sM/G7foGzoLtXYcC0zHEaOXXjRKhGup0fw78Nf2Tkiapv4EQyMzrbcmQPsllAI7DbFY2UT7PlI9Pg==}
+    hasBin: true
+
   pkce-challenge@5.0.1:
     resolution: {integrity: sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==}
     engines: {node: '>=16.20.0'}
@@ -3066,6 +3070,10 @@ packages:
     resolution: {integrity: sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBcoQ7F1VuVHpM/XpiC8RcDzBQB8W5+hA8L22THxELzeF+2WcUzvcLg==}
     engines: {node: '>=20'}
     hasBin: true
+
+  pngjs@7.0.0:
+    resolution: {integrity: sha512-LKWqWJRhstyYo9pGvgor/ivk2w94eSjE3RGVuzLGlr3NmD8bf7RcYGze1mNdEHRP6TRP6rMuDHk5t44hnTRyow==}
+    engines: {node: '>=14.19.0'}
 
   postgres-array@2.0.0:
     resolution: {integrity: sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==}
@@ -6757,10 +6765,12 @@ snapshots:
 
   package-json-from-dist@1.0.1: {}
 
-  pallastrade-harness@1.7.0:
+  pallastrade-harness@1.9.0:
     dependencies:
       glob: 13.0.6
       minimatch: 10.2.6
+      pixelmatch: 7.2.0
+      pngjs: 7.0.0
 
   parse-ms@4.0.0: {}
 
@@ -6849,6 +6859,10 @@ snapshots:
       split2: 4.2.0
     optional: true
 
+  pixelmatch@7.2.0:
+    dependencies:
+      pngjs: 7.0.0
+
   pkce-challenge@5.0.1:
     optional: true
 
@@ -6874,6 +6888,8 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.2
     optional: true
+
+  pngjs@7.0.0: {}
 
   postgres-array@2.0.0:
     optional: true

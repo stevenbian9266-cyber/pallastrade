@@ -176,6 +176,61 @@ export default {
         description: 'Order-module specs (shipping address + combined payment + cart regression)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/api/v3/store/customer_order_shipping_address_spec.rb spec/requests/api/v3/store/payment_combinations_controller_spec.rb spec/requests/api/v3/store/carts_controller_spec.rb'],
       },
+      // P0 支付加固（PRD-20260902-payments P0-0..P0-7）：全 P0 相关 spec（幂等/Webhook/FK/金额权威/加密/审计/guardrail）
+      'p0-payment-rspec': {
+        description: 'P0 payment hardening specs (P0-0..P0-7 regression set)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/payment_sessions/start_spec.rb spec/services/pallastrade/payments/handle_webhook_spec.rb spec/services/pallastrade/payments/handle_webhook_combination_spec.rb spec/services/pallastrade/carts/complete_spec.rb spec/models/pallastrade/payment_session_payment_association_spec.rb spec/services/pallastrade_stripe/create_payment_session_association_spec.rb spec/models/pallastrade/payment_webhook_event_spec.rb spec/services/pallastrade/payments/webhook_event_store_spec.rb spec/services/pallastrade/payments/replay_webhook_event_spec.rb spec/jobs/pallastrade/payments/handle_webhook_job_spec.rb spec/serializers/pallastrade/api/v3/cart_serializer_spec.rb spec/models/pallastrade/gateway_preferences_encryption_spec.rb spec/services/pallastrade/payments/error_codes_spec.rb spec/services/pallastrade/audit_spec.rb spec/requests/api/v3/store/cart_payment_sessions_controller_spec.rb spec/requests/api/v3/store/order_payment_sessions_controller_spec.rb spec/requests/pallastrade/api/middleware/request_id_spec.rb'],
+      },
+      // CHK-P1-1A（PRD-20260903-checkout-chk-p1-1a）：只读 CheckoutView 新增 + Order 域回归
+      'chk-p1-1a-rspec': {
+        description: 'CHK-P1-1A checkout-view specs (service/serializer/request + order regression)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/order_checkout/view_spec.rb spec/serializers/pallastrade/api/v3/store/checkout/checkout_serializer_spec.rb spec/requests/api/v3/store/orders/checkout_controller_spec.rb spec/requests/api/v3/store/customer_orders_controller_spec.rb spec/requests/api/v3/store/customer_order_shipping_address_spec.rb spec/requests/api/v3/store/order_payment_sessions_controller_spec.rb spec/requests/api/v3/store/order_serializer_parent_child_spec.rb'],
+      },
+      // CHK-P1-1B（PRD-20260903-checkout-chk-p1-1 §12）：Mutation Facade + 1A + Order 域回归
+      'chk-p1-1b-rspec': {
+        description: 'CHK-P1-1B mutation-facade specs + 1A checkout-view + order regression',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/order_checkout/mutation_facade_spec.rb spec/services/pallastrade/order_checkout/view_spec.rb spec/serializers/pallastrade/api/v3/store/checkout/checkout_serializer_spec.rb spec/requests/api/v3/store/orders/checkout_controller_spec.rb spec/requests/api/v3/store/customer_orders_controller_spec.rb spec/requests/api/v3/store/customer_order_shipping_address_spec.rb spec/requests/api/v3/store/order_payment_sessions_controller_spec.rb spec/requests/api/v3/store/order_serializer_parent_child_spec.rb'],
+      },
+      // CHK-P1-2（PRD-20260903-checkout-chk-p1-1 §12）：Version/Expiration/Recalculate/Refresh + 1A/1B + 回归
+      'chk-p1-2-rspec': {
+        description: 'CHK-P1-2 versioning specs + checkout-view + mutation + order regression',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/order_checkout/versioning_spec.rb spec/services/pallastrade/order_checkout/view_spec.rb spec/services/pallastrade/order_checkout/mutation_facade_spec.rb spec/serializers/pallastrade/api/v3/store/checkout/checkout_serializer_spec.rb spec/requests/api/v3/store/orders/checkout_controller_spec.rb spec/requests/api/v3/store/customer_orders_controller_spec.rb spec/requests/api/v3/store/customer_order_shipping_address_spec.rb spec/requests/api/v3/store/order_payment_sessions_controller_spec.rb spec/requests/api/v3/store/order_serializer_parent_child_spec.rb spec/services/pallastrade/carts/submit_spec.rb'],
+      },
+      // CHK-P1-3（PRD-20260903-checkout-chk-p1-1 §12）：Readiness/Snapshot/Payment Start Gate + 1A/1B/P1-2 + 支付回归
+      'chk-p1-3-rspec': {
+        description: 'CHK-P1-3 readiness/snapshot/start-gate specs + checkout-view + payment regression',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/order_checkout/readiness_spec.rb spec/services/pallastrade/order_checkout/snapshot_spec.rb spec/services/pallastrade/order_checkout/versioning_spec.rb spec/services/pallastrade/order_checkout/view_spec.rb spec/services/pallastrade/order_checkout/mutation_facade_spec.rb spec/services/pallastrade/payment_sessions/start_spec.rb spec/serializers/pallastrade/api/v3/store/checkout/checkout_serializer_spec.rb spec/requests/api/v3/store/orders/checkout_controller_spec.rb spec/requests/api/v3/store/order_payment_sessions_controller_spec.rb spec/requests/api/v3/store/cart_payment_sessions_controller_spec.rb spec/requests/api/v3/store/carts_controller_spec.rb'],
+      },
+      // CHK-P1-4（PRD-20260903-checkout-chk-p1-1 §12）：SDK orders.checkout + storefront CheckoutView 只读消费 + 轻量收编
+      'chk-p1-4-storefront': {
+        description: 'CHK-P1-4 storefront checkout tests (OrderPaymentContent view-driven + checkout/data regression)',
+        command: ['node', 'storefront/node_modules/vitest/vitest.mjs', 'run', '--root', 'storefront', 'src/components/checkout', 'src/lib/data/__tests__/shopping-cart.test.ts', 'src/lib/data/__tests__/checkout.test.ts'],
+      },
+      // CHK-P1-5（PRD-20260903-checkout-chk-p1-1 §12）：Quote-Conflict 409（expected_version/price_version）+ quote 语义回归
+      'chk-p1-5-rspec': {
+        description: 'CHK-P1-5 quote-conflict 409 specs + quote/checkout/payment regression',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/payment_sessions/start_spec.rb spec/requests/api/v3/store/order_payment_sessions_controller_spec.rb spec/requests/api/v3/store/cart_payment_sessions_controller_spec.rb spec/requests/api/v3/store/orders/checkout_controller_spec.rb spec/services/pallastrade/order_checkout/versioning_spec.rb'],
+      },
+      // CHK-P1-4B（PRD-20260903-checkout-chk-p1-1 §12）：Storefront mutation 消费（checkout.update + 编辑 UI + 409）
+      'chk-p1-4b-storefront': {
+        description: 'CHK-P1-4B storefront mutation/409 UI tests (OrderPaymentContent + checkout regression)',
+        command: ['node', 'storefront/node_modules/vitest/vitest.mjs', 'run', '--root', 'storefront', 'src/components/checkout/__tests__/OrderPaymentContent.test.tsx', 'src/components/checkout/__tests__/PaymentCheckoutModal.test.tsx', 'src/components/checkout/__tests__/UnifiedCheckout.test.tsx'],
+      },
+      // CHK-P1-4C（PRD-20260903-checkout-chk-p1-1 §12）：孤儿页移除 + 死代码清理回归
+      'chk-p1-4c-storefront': {
+        description: 'CHK-P1-4C storefront cleanup regression (modal/payment-result/account tests)',
+        command: ['node', 'storefront/node_modules/vitest/vitest.mjs', 'run', '--root', 'storefront', 'src/components/checkout/__tests__/PaymentCheckoutModal.test.tsx', 'src/app/[country]/[locale]/(checkout)/payment-result/[id]/__tests__/page.test.tsx', 'src/components/account/__tests__/OrderCombinedPay.test.tsx', 'src/components/account/__tests__/OrderPayButton.test.tsx'],
+      },
+      // CHK-P1-4C4（PRD-20260903-checkout-chk-p1-1 §12）：legacy 一页式退役回归（checkout 组件 + data + confirm-payment）
+      'chk-p1-4c4-storefront': {
+        description: 'CHK-P1-4C4 legacy one-page retirement regression (checkout components + data + confirm-payment)',
+        command: ['node', 'storefront/node_modules/vitest/vitest.mjs', 'run', '--root', 'storefront', 'src/components/checkout/__tests__', 'src/lib/data/__tests__/checkout.test.ts', 'src/lib/data/__tests__/payment.test.ts', 'src/app/[country]/[locale]/(checkout)/confirm-payment/__tests__'],
+      },
+      // R1（PRD-20260904-r1-contract-generation-infra）：契约生成基建（OpenAPI schema 幂等 + paths $ref 校验 + SDK 类型）
+      'chk-r1-contracts': {
+        description: 'R1 contract generation checks (api-docs idempotency + validate + rubocop)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-lc', 'cd /rails && bundle exec rubocop lib/tasks/api_docs.rake && bundle exec rake api:docs:schemas:check && bundle exec rake api:docs:validate'],
+      },
     },
   },
   plugins: {
@@ -243,11 +298,11 @@ export default {
     ],
   },
 
-  // ⑬ generated:check 生成命令（SDK 类型 / CLI spec）
+  // ⑬ generated:check 生成命令（R1 2026-09-04：单一契约管线 = typelizer SDK 类型 + api-docs OpenAPI schema + platform 副本同步）
+  // contracts.sh 在无 docker/linux 时 SKIP（CI node-only runner 保持 pass），有容器时真实生成（幂等）→ 漂移可被检出。
   generatedCheck: {
     checks: [
-      { name: 'SDK Types', cwd: 'platform', cmd: 'pnpm --filter @pallastrade/sdk generate:types 2>/dev/null || echo "SKIP: sdk types generation not configured"' },
-      { name: 'CLI Admin Spec', cwd: 'platform', cmd: 'pnpm --filter @pallastrade/cli generate:admin-spec 2>/dev/null || echo "SKIP: cli spec generation not configured"' },
+      { name: 'Contracts (SDK types + OpenAPI schemas)', cwd: '.', cmd: 'bash scripts/ci/contracts.sh || echo "SKIP: contracts.sh requires docker+linux (run scripts/ci/contracts.sh on linux or sync manually on Windows)"' },
     ],
   },
 };

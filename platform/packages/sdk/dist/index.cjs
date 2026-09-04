@@ -643,6 +643,30 @@ var StoreClient = class {
       )
     },
     /**
+     * CHK-P1-4 (2026-09-03): Server-driven CheckoutView (OrderCheckout).
+     * GET /api/v3/store/orders/:order_id/checkout — read-only projection of the
+     * Order's current checkout facts (money/items/addresses + version/price_version/
+     * expires_at + ready/missing_requirements). Flat resource (no { data } envelope).
+     */
+    checkout: {
+      get: (orderId, options) => this.request(
+        "GET",
+        `/orders/${orderId}/checkout`,
+        options
+      ),
+      /**
+       * CHK-P1-4B (2026-09-04): update order checkout (mutation facade).
+       * PATCH /api/v3/store/orders/:order_id/checkout — one field set per request:
+       * contact (email), shipping_address (or shipping_address_id) or delivery_rate_id.
+       * Returns the latest CheckoutView. Completed orders are refused.
+       */
+      update: (orderId, params, options) => this.request(
+        "PATCH",
+        `/orders/${orderId}/checkout`,
+        { ...options, body: params }
+      )
+    },
+    /**
      * PRD-20260829-checkout（收货信息独立填写）：更新已下单未支付订单的收货地址。
      * PATCH /api/v3/store/customers/me/orders/:order_id/shipping_address
      * 需 JWT（当前登录用户自己的订单）；返回更新后的 Order。

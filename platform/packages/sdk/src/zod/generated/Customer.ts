@@ -1,7 +1,6 @@
 // This file is auto-generated. Do not edit directly.
 import { z } from 'zod';
 import { AddressSchema } from './Address';
-import { NewsletterSubscriberSchema } from './NewsletterSubscriber';
 
 export const CustomerSchema = z.object({
   id: z.string(),
@@ -16,7 +15,6 @@ export const CustomerSchema = z.object({
   addresses: z.array(AddressSchema),
   default_billing_address: AddressSchema.nullable(),
   default_shipping_address: AddressSchema.nullable(),
-  newsletter_subscriber: NewsletterSubscriberSchema.nullable(),
 });
 
 export type Customer = z.infer<typeof CustomerSchema>;

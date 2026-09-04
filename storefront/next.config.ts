@@ -4,6 +4,14 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin();
 
+// Turbopack on Windows cannot follow pnpm `file:` junction links
+// (node_modules/@pallastrade/sdk → ../platform/packages/sdk), and its
+// `resolveAlias` does not accept absolute Windows paths ("windows imports are
+// not implemented yet"). Workaround: vendor the built SDK dist inside the
+// project and alias to it with a project-root-relative path. Refresh with:
+//   Copy-Item -Recurse -Force ../platform/packages/sdk/dist/* .sdk-vendor/dist/
+//   Copy-Item -Force ../platform/packages/sdk/package.json .sdk-vendor/package.json
+
 const nextConfig: NextConfig = {
   output: "standalone",
   allowedDevOrigins: ["shop.lvh.me", "*.trycloudflare.com", "192.168.33.13"],
@@ -27,6 +35,12 @@ const nextConfig: NextConfig = {
   },
   turbopack: {
     root: __dirname,
+    resolveAlias: {
+      "@pallastrade/sdk/webhooks": "./.sdk-vendor/dist/webhooks.js",
+      "@pallastrade/sdk/zod": "./.sdk-vendor/dist/zod/index.js",
+      "@pallastrade/sdk/types": "./.sdk-vendor/dist/types/index.js",
+      "@pallastrade/sdk": "./.sdk-vendor",
+    },
   },
   cacheComponents: true,
   cacheLife: {

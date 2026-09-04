@@ -2,6 +2,9 @@ import type { AddressParams, ListParams } from '@pallastrade/sdk-core'
 import type {
   Address as AddressType,
   Cart as CartType,
+  Fulfillment as FulfillmentType,
+  LineItem as LineItemType,
+  Order as OrderType,
   PaymentMethod,
 } from './generated'
 
@@ -65,6 +68,73 @@ export interface CheckoutRequirement {
   field: string
   /** Human-readable message describing what's needed */
   message: string
+}
+
+// CHK-P1-4 (2026-09-03): server-side CheckoutView projection —
+// hand-written mirror of PallasTrade::Api::V3::Store::Checkout::CheckoutSerializer
+// (OrderCheckout::CheckoutView). Flat single-resource shape, no { data } envelope.
+// Read-only contract; money = major-unit decimal strings (display_* for UI).
+
+/** Explanatory adjustment detail line (discounts/taxes). */
+export interface CheckoutViewLine {
+  id: string
+  amount: string | null
+  currency: string
+}
+
+export interface CheckoutView {
+  id: string
+  number: string
+  state: string
+  status: string
+  payment_state: string | null
+  shipment_state: string | null
+  email: string | null
+  currency: string
+  submitted_at: string | null
+  completed_at: string | null
+  /** OrderCheckout content version (server increments on recalcs/mutations) */
+  version: number
+  /** Money-input fingerprint (SHA256[0..16]) — quote identity */
+  price_version: string | null
+  /** Quote expiry ISO8601 (null = no quote yet / legacy order) */
+  expires_at: string | null
+  /** Server Readiness: true when all checkout requirements are satisfied */
+  ready: boolean
+  /** Codes of unsatisfied requirements: contact / shipping_address / delivery_rate / balance */
+  missing_requirements: string[]
+  item_total: string | null
+  display_item_total: string | null
+  delivery_total: string | null
+  display_delivery_total: string | null
+  adjustment_total: string | null
+  display_adjustment_total: string | null
+  discount_total: string | null
+  display_discount_total: string | null
+  tax_total: string | null
+  display_tax_total: string | null
+  included_tax_total: string | null
+  display_included_tax_total: string | null
+  additional_tax_total: string | null
+  display_additional_tax_total: string | null
+  total: string | null
+  display_total: string | null
+  amount_due: string | null
+  display_amount_due: string | null
+  items: Array<LineItemType>
+  fulfillments: Array<FulfillmentType>
+  shipping_address: AddressType | null
+  billing_address: AddressType | null
+  discounts: Array<CheckoutViewLine>
+  taxes: Array<CheckoutViewLine>
+}
+
+// CHK-P1-4B (2026-09-04): PATCH /orders/:id/checkout — one field set per request.
+export interface CheckoutUpdateParams {
+  contact?: { email: string }
+  shipping_address?: AddressParams
+  shipping_address_id?: string
+  delivery_rate_id?: string
 }
 
 // Cart warning type — convenience alias for the inline type from the generated Cart
@@ -218,6 +288,13 @@ export interface ShoppingCart {
   shipping_address: AddressType | null
   /** 下单链路统一化（PRD-20260830-checkout）：可选支付方式（store 前端可用） */
   payment_methods?: PaymentMethod[]
+}
+
+/** Result of the standard Cart submit command. The Order remains the top-level
+ * resource for backward compatibility; a successor Cart is returned only when
+ * unselected items remain or Buy Now restores a previous active Cart. */
+export type CartSubmitResult = OrderType & {
+  successor_cart: ShoppingCart | null
 }
 
 // Cart operations

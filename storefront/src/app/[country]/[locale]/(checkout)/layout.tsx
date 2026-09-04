@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ChevronDown, ShoppingBag } from "lucide-react";
+import { ArrowLeft, ChevronDown, ShieldCheck, ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -34,14 +34,23 @@ function CheckoutHeader() {
           loading="eager"
         />
       </Link>
-      <Link
-        href={basePath || "/"}
-        className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
-        aria-label={t("backToStore")}
-      >
-        <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-        {t("backToStore")}
-      </Link>
+      <div className="flex items-center gap-5">
+        <span
+          className="flex items-center gap-1.5 text-[13px] text-gray-600"
+          data-testid="secure-checkout-badge"
+        >
+          <ShieldCheck className="w-4 h-4 text-green-600" aria-hidden="true" />
+          {t("secureCheckout")}
+        </span>
+        <Link
+          href={basePath || "/"}
+          className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+          aria-label={t("backToStore")}
+        >
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+          {t("backToStore")}
+        </Link>
+      </div>
     </header>
   );
 }
@@ -112,6 +121,11 @@ interface CheckoutLayoutProps {
 }
 
 function CheckoutLayoutContent({ children }: CheckoutLayoutProps) {
+  const pathname = usePathname();
+  const isStandaloneResult =
+    pathname.includes("/payment-result/") ||
+    pathname.includes("/order-placed/");
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Mobile header */}
@@ -122,10 +136,16 @@ function CheckoutLayoutContent({ children }: CheckoutLayoutProps) {
       </div>
 
       {/* Mobile summary toggle */}
-      <MobileSummaryToggle />
+      {!isStandaloneResult ? <MobileSummaryToggle /> : null}
 
       {/* Main checkout grid — Shopify proportions */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,640px)_minmax(0,440px)_1fr]">
+      <div
+        className={
+          isStandaloneResult
+            ? "flex-1 grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,720px)_1fr]"
+            : "flex-1 grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,640px)_minmax(0,440px)_1fr]"
+        }
+      >
         {/* Main content area — white bg */}
         <div className="lg:col-start-2 flex flex-col">
           <div className="flex-1 px-5 py-6 lg:pl-10 lg:pr-12 lg:py-10">
@@ -141,11 +161,13 @@ function CheckoutLayoutContent({ children }: CheckoutLayoutProps) {
         </div>
 
         {/* Desktop summary sidebar — Shopify: light gray bg with left border */}
-        <div className="hidden lg:block lg:col-start-3 border-l border-gray-200 bg-gray-50">
-          <div className="sticky top-0 px-10 py-10">
-            <CheckoutSummary />
+        {!isStandaloneResult ? (
+          <div className="hidden lg:block lg:col-start-3 border-l border-gray-200 bg-gray-50">
+            <div className="sticky top-0 px-10 py-10">
+              <CheckoutSummary />
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </div>
   );

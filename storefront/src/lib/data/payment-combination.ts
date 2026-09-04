@@ -1,6 +1,6 @@
 "use server";
 
-import type { AddressParams, PaymentCombination } from "@pallastrade/sdk";
+import type { PaymentCombination } from "@pallastrade/sdk";
 import { updateTag } from "next/cache";
 import { getClient, withAuthRefresh } from "@/lib/pallastrade";
 import { actionResult } from "./utils";
@@ -42,26 +42,6 @@ export async function getPaymentCombination(id: string) {
       );
     });
   }, "Failed to load payment combination");
-}
-
-/**
- * PRD-20260829-checkout（收货信息独立填写）：更新已下单未支付订单的收货地址。
- * PATCH /api/v3/store/customers/me/orders/:order_id/shipping_address
- */
-export async function updateOrderShippingAddress(
-  orderId: string,
-  params: {
-    shipping_address_id?: string;
-    shipping_address?: AddressParams;
-  },
-) {
-  return actionResult(async () => {
-    const order = await withAuthRefresh(async (options) => {
-      return getClient().orders.updateShippingAddress(orderId, params, options);
-    });
-    updateTag("orders");
-    return { order };
-  }, "Failed to update shipping address");
 }
 
 /**

@@ -1,9 +1,19 @@
-import type { Order } from "@pallastrade/sdk";
+import type { CheckoutView, Country, Order } from "@pallastrade/sdk";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrderPaymentContent } from "@/components/checkout/OrderPaymentContent";
 import { CheckoutProvider, CheckoutSummary } from "@/contexts/CheckoutContext";
+
+const getOrderCheckoutMock = vi.fn();
+const updateOrderCheckoutMock = vi.fn();
+vi.mock("@/lib/data/order-checkout", () => ({
+  getOrderCheckout: (...args: unknown[]) => getOrderCheckoutMock(...args),
+  updateOrderCheckout: (...args: unknown[]) => updateOrderCheckoutMock(...args),
+}));
+vi.mock("@/lib/data/countries", () => ({
+  getCountry: async () => ({ states: [] }),
+}));
 
 const pushMock = vi.fn();
 const replaceMock = vi.fn();
@@ -20,7 +30,6 @@ vi.mock("next/navigation", () => ({
 
 const createOrderSessionMock = vi.fn();
 const completeOrderSessionMock = vi.fn();
-const completeOrderMock = vi.fn();
 const completeAndRedirectMock = vi.fn();
 
 vi.mock("@/lib/data/order-payment", () => ({
@@ -28,8 +37,7 @@ vi.mock("@/lib/data/order-payment", () => ({
     createOrderSessionMock(...args),
   completeOrderPaymentSession: (...args: unknown[]) =>
     completeOrderSessionMock(...args),
-  completeOrder: (...args: unknown[]) => completeOrderMock(...args),
-  completeOrderAndRedirectToOrderPlaced: (...args: unknown[]) =>
+  completeOrderPaymentSessionAndRedirectToResult: (...args: unknown[]) =>
     completeAndRedirectMock(...args),
 }));
 
@@ -110,10 +118,87 @@ const order = {
   display_amount_due: "$10.00",
 } as unknown as Order;
 
-function renderOrderPayment(targetOrder: Order = order) {
+// CHK-P1-4: server CheckoutView projection (view 缺失时组件回退 order 快照)。
+const checkoutView = {
+  id: "or_1",
+  number: "R123456",
+  state: "pending",
+  payment_state: "balance_due",
+  email: "ada@example.com",
+  currency: "USD",
+  version: 2,
+  price_version: "abc123def4567890",
+  expires_at: null,
+  ready: true,
+  missing_requirements: [],
+  items: [
+    {
+      id: "line_1",
+      name: "Test Product",
+      quantity: 1,
+      thumbnail_url: null,
+      display_total: "$10.00",
+    },
+  ],
+  display_item_total: "$10.00",
+  display_delivery_total: "0",
+  display_tax_total: null,
+  display_total: "$10.00",
+  display_amount_due: "$10.00",
+  shipping_address: {
+    first_name: "Ada",
+    last_name: "Lovelace",
+    address1: "1 Main St",
+    city: "New York",
+    state_abbr: "NY",
+    postal_code: "10001",
+    country_iso: "US",
+    phone: "555-555-0199",
+  },
+  billing_address: null,
+  discounts: [],
+  taxes: [],
+  fulfillments: [
+    {
+      id: "ship_1",
+      delivery_rates: [
+        {
+          id: "dr_standard",
+          name: "Standard",
+          selected: true,
+          cost: "0",
+          total: "0",
+          display_cost: "$0.00",
+        },
+        {
+          id: "dr_fast",
+          name: "Express",
+          selected: false,
+          cost: "9.99",
+          total: "9.99",
+          display_cost: "$9.99",
+        },
+      ],
+    },
+  ],
+} as unknown as CheckoutView;
+
+const countries = [
+  { iso: "US", name: "United States" },
+] as unknown as Country[];
+
+function renderOrderPayment(
+  targetOrder: Order = order,
+  view?: CheckoutView | null,
+  targetCountries?: Country[],
+) {
   return render(
     <CheckoutProvider>
-      <OrderPaymentContent order={targetOrder} />
+      <OrderPaymentContent
+        order={targetOrder}
+        view={view}
+        countries={targetCountries}
+      />
       <CheckoutSummary />
     </CheckoutProvider>,
   );
@@ -131,7 +216,11 @@ describe("OrderPaymentContent", () => {
       },
     });
     completeOrderSessionMock.mockResolvedValue({ success: true });
-    completeOrderMock.mockResolvedValue({ success: true, order: {} });
+    getOrderCheckoutMock.mockResolvedValue(null);
+    updateOrderCheckoutMock.mockResolvedValue({
+      success: true,
+      view: checkoutView,
+    });
   });
 
   it("renders shipping address, payment methods and order summary", () => {
@@ -199,5 +288,117 @@ describe("OrderPaymentContent", () => {
     expect(createOrderSessionMock).not.toHaveBeenCalled();
     // 仍显示支付方式 + Pay 按钮（走 handlePay 线下收款跳转）
     expect(screen.getByText("Check")).toBeTruthy();
+  });
+
+  // CHK-P1-4 (AC-403): 金额/商品以服务端 CheckoutView 投影为准。
+  it("renders summary money from the CheckoutView projection when provided", () => {
+    const differentView = {
+      ...checkoutView,
+      display_total: "$25.00",
+      display_item_total: "$25.00",
+    } as unknown as CheckoutView;
+
+    renderOrderPayment(order, differentView);
+
+    expect(screen.getByTestId("order-payment-summary")).toBeInTheDocument();
+    // 金额行（小计/总计）取投影值 $25.00；行项目单价仍为 $10.00（投影 items）。
+    expect(screen.getAllByText("$25.00").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("$10.00").length).toBeGreaterThan(0);
+  });
+
+  // CHK-P1-4 (AC-403): ready=false → Pay 禁用 + missing_requirements 提示可见。
+  it("disables Pay and shows the readiness notice when view.ready is false", () => {
+    const notReadyView = {
+      ...checkoutView,
+      ready: false,
+      missing_requirements: ["contact", "shipping_address"],
+    } as unknown as CheckoutView;
+
+    renderOrderPayment(order, notReadyView);
+
+    const notice = screen.getByTestId("checkout-not-ready");
+    expect(notice).toBeInTheDocument();
+    expect(notice.getAttribute("data-missing")).toBe(
+      "contact,shipping_address",
+    );
+    expect(
+      (screen.getByRole("button", { name: "payAmount" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+  });
+
+  // CHK-P1-4: Pay 点击在 !ready 时不创建会话（前端门控 + toast 提示）。
+  it("does not create a session when Pay is clicked while not ready", async () => {
+    const user = userEvent.setup();
+    const notReadyView = {
+      ...checkoutView,
+      ready: false,
+      missing_requirements: ["contact"],
+    } as unknown as CheckoutView;
+
+    renderOrderPayment(order, notReadyView);
+
+    const pay = screen.getByRole("button", {
+      name: "payAmount",
+    }) as HTMLButtonElement;
+    // 禁用态下 userEvent 不触发 onClick；直接断言未创建会话。
+    expect(pay.disabled).toBe(true);
+    await user.click(screen.getByTestId("checkout-not-ready"));
+    expect(createOrderSessionMock).not.toHaveBeenCalled();
+  });
+
+  // CHK-P1-4B (AC-604): 物流 rate 编辑 → PATCH delivery_rate_id。
+  it("saves a delivery-rate change through updateOrderCheckout", async () => {
+    const user = userEvent.setup();
+    renderOrderPayment(order, checkoutView);
+
+    await user.click(screen.getByTestId("edit-delivery"));
+    expect(screen.getByTestId("delivery-editor")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("rate-dr_fast"));
+    await user.click(screen.getByTestId("save-delivery"));
+
+    await waitFor(() =>
+      expect(updateOrderCheckoutMock).toHaveBeenCalledWith("or_1", {
+        delivery_rate_id: "dr_fast",
+      }),
+    );
+  });
+
+  // CHK-P1-4B (AC-603): 地址编辑（countries 提供时）→ PATCH shipping_address。
+  it("opens the address editor and saves through updateOrderCheckout", async () => {
+    const user = userEvent.setup();
+    renderOrderPayment(order, checkoutView, countries);
+
+    await user.click(screen.getByTestId("edit-address"));
+    expect(screen.getByTestId("address-editor")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("save-address"));
+
+    await waitFor(() => {
+      expect(updateOrderCheckoutMock).toHaveBeenCalled();
+      const [, params] = updateOrderCheckoutMock.mock.calls[0];
+      expect(params.shipping_address.country_iso).toBe("US");
+    });
+  });
+
+  // CHK-P1-4B (AC-605): 会话创建返回 checkout_version_conflict → 提示 + 重取 view（不支付）。
+  it("refreshes the view on a checkout_version_conflict session error without paying", async () => {
+    const user = userEvent.setup();
+    createOrderSessionMock.mockResolvedValue({
+      success: false,
+      code: "checkout_version_conflict",
+      error: "quote changed",
+    });
+
+    renderOrderPayment(order, checkoutView);
+
+    await user.click(screen.getByRole("button", { name: "payAmount" }));
+
+    await waitFor(() =>
+      expect(getOrderCheckoutMock).toHaveBeenCalledWith("or_1"),
+    );
+    expect(completeAndRedirectMock).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
   });
 });

@@ -43,6 +43,7 @@ export const CartSchema = z.object({
   store_credit_total: z.string().nullable(),
   display_store_credit_total: z.string().nullable(),
   covered_by_store_credit: z.boolean(),
+  express_payment: z.any(),
   current_step: z.string(),
   completed_steps: z.array(z.string()),
   requirements: z.array(z.object({ step: z.string(), field: z.string(), message: z.string() })),

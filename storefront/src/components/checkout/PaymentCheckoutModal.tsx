@@ -24,7 +24,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  completeOrder,
   completeOrderPaymentSession,
   createOrderPaymentSession,
 } from "@/lib/data/order-payment";
@@ -211,6 +210,15 @@ export function PaymentCheckoutModal({
     cardFormRef.current = handle;
   }, []);
 
+  const navigateToResult = useCallback(
+    (targetId: string, sessionId?: string) => {
+      onOpenChange(false);
+      const query = sessionId ? `?session=${sessionId}` : "";
+      router.push(`${basePath}/payment-result/${targetId}${query}`);
+    },
+    [basePath, onOpenChange, router],
+  );
+
   const handlePay = async () => {
     if (!selectedMethod || processing) return;
     setProcessing(true);
@@ -245,67 +253,68 @@ export function PaymentCheckoutModal({
           // client_secret 位于 external_data 且 URL 编码（%2F）→ 解码后传给 Stripe
           const secret = extractSessionClientSecret(session);
           if (!secret) {
-            setError(t("failedToInitPayment"));
-            setProcessing(false);
+            navigateToResult(singleOrder.id, session.id);
             return;
           }
           const confirmResult =
             await cardFormRef.current?.confirmPayment(secret);
           if (confirmResult?.error) {
-            setError(confirmResult.error);
-            setProcessing(false);
+            await completeOrderPaymentSession(singleOrder.id, session.id);
+            navigateToResult(singleOrder.id, session.id);
             return;
           }
           await completeOrderPaymentSession(singleOrder.id, session.id);
-          await completeOrder(singleOrder.id);
+          navigateToResult(singleOrder.id, session.id);
+          return;
         } else if (selectedMethod.session_required) {
           if (!stripeRef.current || !stripeSessionId) {
             setError(t("failedToInitPayment"));
             setProcessing(false);
             return;
           }
-          const returnUrl = `${window.location.origin}${basePath}/order-placed/${singleOrder.id}`;
+          const returnUrl = `${window.location.origin}${basePath}/payment-result/${singleOrder.id}?session=${stripeSessionId}`;
           const result = await stripeRef.current.confirmPayment(returnUrl);
           if (result.error) {
-            setError(result.error);
-            setProcessing(false);
+            await completeOrderPaymentSession(singleOrder.id, stripeSessionId);
+            navigateToResult(singleOrder.id, stripeSessionId);
             return;
           }
           await completeOrderPaymentSession(singleOrder.id, stripeSessionId);
-          await completeOrder(singleOrder.id);
+          navigateToResult(singleOrder.id, stripeSessionId);
+          return;
         }
         // 非 session 支付方式：无在线支付（线下收款），订单保持 pending
-        onSuccess();
+        navigateToResult(singleOrder.id);
         return;
       }
 
       // 组合
-      const session = combination?.payment_session;
+      if (!combination) {
+        setError(t("paymentError"));
+        setProcessing(false);
+        return;
+      }
+      const session = combination.payment_session;
       if (!session?.order_id || !session?.id) {
         setError(t("paymentError"));
         setProcessing(false);
         return;
       }
       if (stripeRef.current) {
-        const returnUrl = `${window.location.origin}${basePath}/confirm-payment/${session.order_id}?session=${session.id}`;
+        const returnUrl = `${window.location.origin}${basePath}/payment-result/${combination.id}?session=${session.id}`;
         const result = await stripeRef.current.confirmPayment(returnUrl);
         if (result.error) {
-          setError(result.error);
-          setProcessing(false);
+          await completeCombinationSession(session.order_id, session.id);
+          navigateToResult(combination.id, session.id);
           return;
         }
       }
       await completeCombinationSession(session.order_id, session.id);
-      onSuccess();
+      navigateToResult(combination.id, session.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("paymentError"));
       setProcessing(false);
     }
-  };
-
-  const onSuccess = () => {
-    onOpenChange(false);
-    router.refresh();
   };
 
   const comboOrders = combination?.orders ?? [];

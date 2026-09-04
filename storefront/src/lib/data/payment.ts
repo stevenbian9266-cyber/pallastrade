@@ -28,27 +28,6 @@ export async function createCheckoutPaymentSession(
   }, "Failed to create payment session");
 }
 
-/**
- * Creates a direct payment for non-session payment methods
- * (e.g. Check, Cash on Delivery, Bank Transfer).
- */
-export async function createDirectPayment(
-  cartId: string,
-  paymentMethodId: string,
-) {
-  return actionResult(async () => {
-    const options = await getCartOptions();
-    const id = await requireCartId();
-    const payment = await getClient().carts.payments.create(
-      id,
-      { payment_method_id: paymentMethodId },
-      options,
-    );
-    updateTag("checkout");
-    return { payment };
-  }, "Failed to create payment");
-}
-
 export async function completeCheckoutPaymentSession(
   cartId: string,
   sessionId: string,

@@ -4,9 +4,12 @@ import { getConfig } from "./config";
 const DEFAULT_CART_COOKIE = "_pallastrade_cart_token";
 const DEFAULT_ACCESS_TOKEN_COOKIE = "_pallastrade_jwt";
 const DEFAULT_REFRESH_TOKEN_COOKIE = "_pallastrade_refresh_token";
+const DEFAULT_CHECKOUT_TOKEN_COOKIE = "_pallastrade_checkout_token";
+const DEFAULT_CHECKOUT_ORDER_COOKIE = "_pallastrade_checkout_order";
 const CART_TOKEN_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 const ACCESS_TOKEN_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+const CHECKOUT_TOKEN_MAX_AGE = 60 * 60 * 24; // 24 hours
 
 /**
  * Whether the current execution context may write cookies. Next.js allows
@@ -80,6 +83,43 @@ export async function clearCartCookies(): Promise<void> {
   const opts = { maxAge: -1, path: "/" };
   cookieStore.set(getCartCookieName(), "", opts);
   cookieStore.set(getCartIdCookieName(), "", opts);
+}
+
+// --- Checkout authorization -------------------------------------------------
+// A partial checkout can replace the current-cart cookie with a successor Cart.
+// Keep the converted Cart token in a separate HttpOnly cookie so guest users can
+// still complete and view the Order without exposing the token to browser code.
+
+export async function setCheckoutCookies(
+  orderId: string,
+  token: string,
+): Promise<void> {
+  const cookieStore = await cookies();
+  const opts = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: CHECKOUT_TOKEN_MAX_AGE,
+  };
+  cookieStore.set(DEFAULT_CHECKOUT_ORDER_COOKIE, orderId, opts);
+  cookieStore.set(DEFAULT_CHECKOUT_TOKEN_COOKIE, token, opts);
+}
+
+export async function getCheckoutOptions(orderId: string): Promise<{
+  guestToken: string | undefined;
+  token: string | undefined;
+}> {
+  const cookieStore = await cookies();
+  const checkoutOrderId = cookieStore.get(DEFAULT_CHECKOUT_ORDER_COOKIE)?.value;
+  const checkoutToken = cookieStore.get(DEFAULT_CHECKOUT_TOKEN_COOKIE)?.value;
+  const token = await getAccessToken();
+
+  if (checkoutOrderId === orderId && checkoutToken) {
+    return { guestToken: checkoutToken, token };
+  }
+
+  return { guestToken: await getCartToken(), token };
 }
 
 // --- Access Token (JWT) ---

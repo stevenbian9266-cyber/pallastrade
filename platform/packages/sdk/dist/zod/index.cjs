@@ -45,7 +45,8 @@ var DiscountSchema = zod.z.object({
 var DeliveryMethodSchema = zod.z.object({
   id: zod.z.string(),
   name: zod.z.string(),
-  code: zod.z.string().nullable()
+  code: zod.z.string().nullable(),
+  display_estimated_price: zod.z.string().nullable()
 });
 var DeliveryRateSchema = zod.z.object({
   id: zod.z.string(),
@@ -261,6 +262,7 @@ var CartSchema = zod.z.object({
   store_credit_total: zod.z.string().nullable(),
   display_store_credit_total: zod.z.string().nullable(),
   covered_by_store_credit: zod.z.boolean(),
+  express_payment: zod.z.any(),
   current_step: zod.z.string(),
   completed_steps: zod.z.array(zod.z.string()),
   requirements: zod.z.array(zod.z.object({ step: zod.z.string(), field: zod.z.string(), message: zod.z.string() })),
@@ -274,6 +276,21 @@ var CartSchema = zod.z.object({
   payment_methods: zod.z.array(PaymentMethodSchema),
   gift_card: GiftCardSchema.nullable(),
   market: zod.z.lazy(() => MarketSchema).nullable()
+});
+var CartItemSchema = zod.z.object({
+  id: zod.z.string(),
+  variant_id: zod.z.string(),
+  currency: zod.z.string(),
+  quantity: zod.z.number(),
+  selected: zod.z.boolean(),
+  name: zod.z.string(),
+  slug: zod.z.string(),
+  options_text: zod.z.string(),
+  unit_price: zod.z.string().nullable(),
+  display_unit_price: zod.z.string().nullable(),
+  amount: zod.z.string().nullable(),
+  display_amount: zod.z.string().nullable(),
+  thumbnail_url: zod.z.string().nullable()
 });
 var CustomFieldSchema = zod.z.object({
   id: zod.z.string(),
@@ -340,17 +357,6 @@ var CurrencySchema = zod.z.object({
   name: zod.z.string(),
   symbol: zod.z.string()
 });
-var NewsletterSubscriberSchema = zod.z.object({
-  id: zod.z.string(),
-  email: zod.z.string(),
-  created_at: zod.z.string(),
-  updated_at: zod.z.string(),
-  verified: zod.z.boolean(),
-  verified_at: zod.z.string().nullable(),
-  customer_id: zod.z.string().nullable()
-});
-
-// src/zod/generated/Customer.ts
 var CustomerSchema = zod.z.object({
   id: zod.z.string(),
   email: zod.z.string(),
@@ -363,8 +369,7 @@ var CustomerSchema = zod.z.object({
   display_available_store_credit_total: zod.z.string(),
   addresses: zod.z.array(AddressSchema),
   default_billing_address: AddressSchema.nullable(),
-  default_shipping_address: AddressSchema.nullable(),
-  newsletter_subscriber: NewsletterSubscriberSchema.nullable()
+  default_shipping_address: AddressSchema.nullable()
 });
 var DigitalSchema = zod.z.object({
   id: zod.z.string(),
@@ -423,6 +428,15 @@ var MediaSchema = zod.z.object({
   xlarge_url: zod.z.string().nullable(),
   og_image_url: zod.z.string().nullable()
 });
+var NewsletterSubscriberSchema = zod.z.object({
+  id: zod.z.string(),
+  email: zod.z.string(),
+  created_at: zod.z.string(),
+  updated_at: zod.z.string(),
+  verified: zod.z.boolean(),
+  verified_at: zod.z.string().nullable(),
+  customer_id: zod.z.string().nullable()
+});
 var OptionTypeSchema = zod.z.object({
   id: zod.z.string(),
   name: zod.z.string(),
@@ -432,11 +446,6 @@ var OptionTypeSchema = zod.z.object({
 });
 var OrderSchema = zod.z.object({
   id: zod.z.string(),
-  parent_id: zod.z.string().nullable(),
-  children_ids: zod.z.any(),
-  is_parent: zod.z.boolean(),
-  is_child: zod.z.boolean(),
-  is_single: zod.z.boolean(),
   market_id: zod.z.string().nullable(),
   channel_id: zod.z.string().nullable(),
   number: zod.z.string(),
@@ -445,9 +454,18 @@ var OrderSchema = zod.z.object({
   currency: zod.z.string(),
   locale: zod.z.string().nullable(),
   total_quantity: zod.z.number(),
+  parent_id: zod.z.string().nullable(),
+  children_ids: zod.z.array(zod.z.string()),
+  is_parent: zod.z.boolean(),
+  is_child: zod.z.boolean(),
+  is_single: zod.z.boolean(),
+  state: zod.z.string(),
+  status: zod.z.string(),
+  submitted_at: zod.z.string().nullable(),
+  completed_at: zod.z.string().nullable(),
+  cart_id: zod.z.string().nullable(),
   fulfillment_status: zod.z.string().nullable(),
   payment_status: zod.z.string().nullable(),
-  completed_at: zod.z.string().nullable(),
   item_total: zod.z.string().nullable(),
   display_item_total: zod.z.string().nullable(),
   adjustment_total: zod.z.string().nullable(),
@@ -460,14 +478,14 @@ var OrderSchema = zod.z.object({
   display_included_tax_total: zod.z.string().nullable(),
   additional_tax_total: zod.z.string().nullable(),
   display_additional_tax_total: zod.z.string().nullable(),
-  total: zod.z.string().nullable(),
-  display_total: zod.z.string().nullable(),
   gift_card_total: zod.z.string().nullable(),
   display_gift_card_total: zod.z.string().nullable(),
-  amount_due: zod.z.string().nullable(),
-  display_amount_due: zod.z.string().nullable(),
   delivery_total: zod.z.string().nullable(),
   display_delivery_total: zod.z.string().nullable(),
+  total: zod.z.string().nullable(),
+  display_total: zod.z.string().nullable(),
+  amount_due: zod.z.string().nullable(),
+  display_amount_due: zod.z.string().nullable(),
   store_credit_total: zod.z.string().nullable(),
   display_store_credit_total: zod.z.string().nullable(),
   covered_by_store_credit: zod.z.boolean(),
@@ -475,6 +493,7 @@ var OrderSchema = zod.z.object({
   items: zod.z.array(LineItemSchema),
   fulfillments: zod.z.array(FulfillmentSchema),
   payments: zod.z.array(PaymentSchema),
+  payment_methods: zod.z.array(PaymentMethodSchema),
   billing_address: AddressSchema.nullable(),
   shipping_address: AddressSchema.nullable(),
   gift_card: GiftCardSchema.nullable(),
@@ -535,12 +554,12 @@ var PostSchema = zod.z.object({
   slug: zod.z.string(),
   excerpt: zod.z.string().nullable(),
   author: zod.z.string().nullable(),
+  seo_title: zod.z.string().nullable(),
+  seo_description: zod.z.string().nullable(),
   published_at: zod.z.string().nullable(),
   cover_image_url: zod.z.string().nullable(),
   body: zod.z.string().nullable(),
-  body_html: zod.z.string().nullable(),
-  seo_title: zod.z.string().nullable(),
-  seo_description: zod.z.string().nullable()
+  body_html: zod.z.string().nullable()
 });
 var PriceSchema = zod.z.object({
   id: zod.z.string(),
@@ -736,8 +755,67 @@ var ReviewSchema = zod.z.object({
   verified_purchase: zod.z.boolean(),
   created_at: zod.z.string().nullable()
 });
+var ShoppingCartSchema = zod.z.object({
+  id: zod.z.string(),
+  token: zod.z.string(),
+  status: zod.z.string(),
+  email: zod.z.string().nullable(),
+  customer_note: zod.z.string().nullable(),
+  currency: zod.z.string(),
+  locale: zod.z.string().nullable(),
+  item_count: zod.z.number(),
+  converted_at: zod.z.string().nullable(),
+  shipping_method_id: zod.z.string().nullable(),
+  item_total: zod.z.string().nullable(),
+  display_item_total: zod.z.string().nullable(),
+  items: zod.z.array(zod.z.any()),
+  billing_address: AddressSchema.nullable(),
+  shipping_address: AddressSchema.nullable(),
+  payment_methods: zod.z.array(PaymentMethodSchema)
+});
 var StockReservationSchema = zod.z.object({
   id: zod.z.string()
+});
+var StoreCheckoutCheckoutSchema = zod.z.object({
+  id: zod.z.string(),
+  number: zod.z.string(),
+  state: zod.z.string(),
+  status: zod.z.string(),
+  payment_state: zod.z.string().nullable(),
+  shipment_state: zod.z.string().nullable(),
+  email: zod.z.string().nullable(),
+  currency: zod.z.string(),
+  submitted_at: zod.z.string().nullable(),
+  completed_at: zod.z.string().nullable(),
+  version: zod.z.number(),
+  price_version: zod.z.string().nullable(),
+  ready: zod.z.boolean(),
+  missing_requirements: zod.z.array(zod.z.string()),
+  expires_at: zod.z.string().nullable(),
+  item_total: zod.z.string().nullable(),
+  display_item_total: zod.z.string().nullable(),
+  delivery_total: zod.z.string().nullable(),
+  display_delivery_total: zod.z.string().nullable(),
+  adjustment_total: zod.z.string().nullable(),
+  display_adjustment_total: zod.z.string().nullable(),
+  discount_total: zod.z.string().nullable(),
+  display_discount_total: zod.z.string().nullable(),
+  tax_total: zod.z.string().nullable(),
+  display_tax_total: zod.z.string().nullable(),
+  included_tax_total: zod.z.string().nullable(),
+  display_included_tax_total: zod.z.string().nullable(),
+  additional_tax_total: zod.z.string().nullable(),
+  display_additional_tax_total: zod.z.string().nullable(),
+  total: zod.z.string().nullable(),
+  display_total: zod.z.string().nullable(),
+  amount_due: zod.z.string().nullable(),
+  display_amount_due: zod.z.string().nullable(),
+  shipping_address: AddressSchema.nullable(),
+  billing_address: AddressSchema.nullable(),
+  items: zod.z.array(LineItemSchema),
+  fulfillments: zod.z.array(FulfillmentSchema),
+  discounts: zod.z.array(zod.z.object({ id: zod.z.string(), amount: zod.z.string().nullable(), currency: zod.z.string() })),
+  taxes: zod.z.array(zod.z.object({ id: zod.z.string(), amount: zod.z.string().nullable(), currency: zod.z.string() }))
 });
 var StoreCreditSchema = zod.z.object({
   id: zod.z.string(),
@@ -770,6 +848,7 @@ var WishlistSchema = zod.z.object({
 exports.AddressSchema = AddressSchema;
 exports.BackInStockSubscriptionSchema = BackInStockSubscriptionSchema;
 exports.BaseSchema = BaseSchema;
+exports.CartItemSchema = CartItemSchema;
 exports.CartSchema = CartSchema;
 exports.CategorySchema = CategorySchema;
 exports.ChannelSchema = ChannelSchema;
@@ -822,9 +901,11 @@ exports.RefundSchema = RefundSchema;
 exports.ReturnAuthorizationSchema = ReturnAuthorizationSchema;
 exports.ReturnItemSchema = ReturnItemSchema;
 exports.ReviewSchema = ReviewSchema;
+exports.ShoppingCartSchema = ShoppingCartSchema;
 exports.StateSchema = StateSchema;
 exports.StockLocationSchema = StockLocationSchema;
 exports.StockReservationSchema = StockReservationSchema;
+exports.StoreCheckoutCheckoutSchema = StoreCheckoutCheckoutSchema;
 exports.StoreCreditSchema = StoreCreditSchema;
 exports.VariantSchema = VariantSchema;
 exports.WishlistItemSchema = WishlistItemSchema;

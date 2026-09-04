@@ -25,9 +25,10 @@ import {
   expressCheckoutSelectRates,
 } from "@/lib/data/express-checkout-flow";
 import {
-  buildLineItems,
   buildPallasTradeAddress,
   buildShippingRateMap,
+  expressAmount,
+  expressLineItems,
   parseName,
 } from "@/lib/utils/express-checkout";
 import { isStripeConfigured, stripePromise } from "@/lib/utils/stripe";
@@ -73,22 +74,18 @@ function ExpressCheckoutInner({
     onProcessingChangeRef.current?.(value);
   }, []);
 
-  // Sync amount with Elements when cart changes (without remounting).
-  // Must use buildLineItems total (not just item_total) because the cart
-  // may already include tax/discounts from a prior checkout attempt.
-  const cartLineItemsAmount = useMemo(() => {
-    const items = buildLineItems(cart);
-    return items.reduce((sum, item) => sum + item.amount, 0);
-  }, [cart]);
+  // P0-4 (PRD FR-040/041): 金额唯一来自服务端 express_payment.amount（order.amount_due 子单位），
+  // 不同步 Elements 时会显示与实收不一致。随 cart（地址/运费/优惠变化）同步，不重挂载。
+  const elementsAmount = useMemo(() => expressAmount(cart), [cart]);
 
   useEffect(() => {
     if (!elements) return;
     try {
-      elements.update({ amount: cartLineItemsAmount });
+      elements.update({ amount: elementsAmount });
     } catch (_) {
       /* non-fatal */
     }
-  }, [elements, cartLineItemsAmount]);
+  }, [elements, elementsAmount]);
 
   const handleReady = useCallback(
     (event: StripeExpressCheckoutElementReadyEvent) => {
@@ -107,7 +104,7 @@ function ExpressCheckoutInner({
     (event: StripeExpressCheckoutElementClickEvent) => {
       isGooglePayRef.current = event.expressPaymentType === "google_pay";
       event.resolve({
-        lineItems: buildLineItems(cart),
+        lineItems: expressLineItems(cart),
       });
     },
     [cart],
@@ -143,21 +140,12 @@ function ExpressCheckoutInner({
           return;
         }
 
-        const lineItems = buildLineItems(order);
-        const defaultShippingAmount = shippingRates[0]?.amount ?? 0;
-        lineItems.push({ name: t("shipping"), amount: defaultShippingAmount });
-
-        const lineItemsSum = lineItems.reduce(
-          (sum, item) => sum + item.amount,
-          0,
-        );
-
-        // Amount must be updated BEFORE resolve — Stripe validates
-        // that Elements amount >= sum(lineItems).
+        // P0-4: 行项目与金额均来自服务端（express_payment）。运费由 shippingRates
+        // 展示；rate 选定后经 shippingratechange → selectRates 服务端入账，amount 更新。
         if (!elements) throw new Error("Elements not available");
-        elements.update({ amount: lineItemsSum });
+        elements.update({ amount: expressAmount(order) });
 
-        event.resolve({ shippingRates, lineItems });
+        event.resolve({ shippingRates, lineItems: expressLineItems(order) });
       } catch (err) {
         console.error("[ExpressCheckout] shipping address error:", err);
         try {
@@ -167,7 +155,7 @@ function ExpressCheckoutInner({
         }
       }
     },
-    [cart.id, elements, t],
+    [cart.id, elements],
   );
 
   const handleShippingRateChange = useCallback(
@@ -187,12 +175,15 @@ function ExpressCheckoutInner({
           return;
         }
 
-        const lineItems = buildLineItems(result.cart);
-        lineItems.push({ name: t("shipping"), amount: shippingRate.amount });
-        const newAmount = lineItems.reduce((s, i) => s + i.amount, 0);
+        // P0-4: rate 已由服务端选定（selectDeliveryRate）→ cart.amount_due 已含该运费。
+        // 金额取服务端权威 express_payment.amount；shipping 行仅作钱包展示（不参与金额合计）。
+        const lineItems = [
+          ...expressLineItems(result.cart),
+          { name: t("shipping"), amount: shippingRate.amount },
+        ];
 
         if (!elements) throw new Error("Elements not available");
-        elements.update({ amount: newAmount });
+        elements.update({ amount: expressAmount(result.cart) });
 
         event.resolve({ lineItems });
       } catch (_err) {
@@ -490,15 +481,9 @@ function ExpressCheckoutWithElements({
 }: ExpressCheckoutButtonProps) {
   const currency = cart.currency.toLowerCase();
 
-  // Use refs for amount/currency so Elements options stays stable
-  // and doesn't cause remount (which destroys the ExpressCheckoutElement).
-  // Amount updates are handled via elements.update() inside the inner component.
-  // Must use buildLineItems total (not just item_total) because the cart
-  // may already include tax/discounts from a prior checkout attempt.
-  const initialAmountRef = useRef(() => {
-    const items = buildLineItems(cart);
-    return items.reduce((sum, item) => sum + item.amount, 0);
-  });
+  // P0-4 (FR-040/041): 初始 Elements 金额 = 服务端权威 amount（order.amount_due 子单位）。
+  // 后续金额变化走 elements.update()（内层组件）。用 ref 保持 options 稳定、避免重挂载。
+  const initialAmountRef = useRef(() => expressAmount(cart));
   const initialCurrencyRef = useRef(currency);
 
   const options = useMemo(

@@ -15,6 +15,7 @@ vi.mock("@/lib/pallastrade", () => ({
     guestToken: "old-cart-token",
     token: undefined,
   }),
+  getCartId: vi.fn().mockResolvedValue("cart_existing"),
   setCartCookies: vi.fn(),
 }));
 
@@ -49,7 +50,12 @@ describe("createBuyNowCart", () => {
     await createBuyNowCart("variant_1", 1);
 
     expect(mockClient.carts.create).toHaveBeenCalledWith(
-      {},
+      {
+        metadata: {
+          checkout_source: "buy_now",
+          previous_cart_id: "cart_existing",
+        },
+      },
       { guestToken: "old-cart-token", token: undefined },
     );
     // The item must be added with the new cart's own token — reusing the old

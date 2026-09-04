@@ -1,7 +1,6 @@
 "use server";
 
 import type { AddressParams, Cart } from "@pallastrade/sdk";
-import { PallasTradeError } from "@pallastrade/sdk";
 import { updateTag } from "next/cache";
 import { getCartOptions, getClient, requireCartId } from "@/lib/pallastrade";
 import { getCart } from "./cart";
@@ -81,88 +80,4 @@ export async function selectDeliveryRate(
     updateTag("checkout");
     return { cart };
   }, "Failed to select delivery rate");
-}
-
-/**
- * Apply a code to the cart — tries discount code first, then gift card.
- * Single input field on checkout, backend determines the type.
- */
-export async function applyCode(cartId: string, code: string) {
-  const options = await getCartOptions();
-  const id = await requireCartId();
-
-  // Try discount code first (more common)
-  try {
-    const cart = await getClient().carts.discountCodes.apply(id, code, options);
-    updateTag("checkout");
-    updateTag("cart");
-    return { success: true, cart, type: "discount" as const };
-  } catch (discountError) {
-    // Only fall back to gift card if the discount code was not found (422/404).
-    // Network errors, 500s, etc. should surface the backend message directly.
-    const isNotFound =
-      discountError instanceof PallasTradeError &&
-      (discountError.status === 422 || discountError.status === 404);
-
-    if (!isNotFound) {
-      return { success: false, error: errorMessage(discountError) } as const;
-    }
-
-    // Discount code not found — try gift card
-    try {
-      const cart = await getClient().carts.giftCards.apply(id, code, options);
-      updateTag("checkout");
-      updateTag("cart");
-      return { success: true, cart, type: "gift_card" as const };
-    } catch (giftCardError) {
-      // Gift card also failed. If it's a specific error (expired, redeemed, etc.)
-      // show the backend message. If both are just "not found", show the
-      // discount error (the more common scenario).
-      const isGiftCardNotFound =
-        giftCardError instanceof PallasTradeError &&
-        (giftCardError.code === "gift_card_not_found" ||
-          giftCardError.code === "record_not_found");
-
-      return {
-        success: false,
-        error: isGiftCardNotFound
-          ? errorMessage(discountError)
-          : errorMessage(giftCardError),
-      } as const;
-    }
-  }
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : "The entered code is not valid";
-}
-
-export async function removeDiscountCode(cartId: string, code: string) {
-  return actionResult(async () => {
-    const options = await getCartOptions();
-    const id = await requireCartId();
-    const cart = await getClient().carts.discountCodes.remove(
-      id,
-      code,
-      options,
-    );
-    updateTag("checkout");
-    updateTag("cart");
-    return { cart };
-  }, "Failed to remove discount code");
-}
-
-export async function removeGiftCard(cartId: string, giftCardId: string) {
-  return actionResult(async () => {
-    const options = await getCartOptions();
-    const id = await requireCartId();
-    const cart = await getClient().carts.giftCards.remove(
-      id,
-      giftCardId,
-      options,
-    );
-    updateTag("checkout");
-    updateTag("cart");
-    return { cart };
-  }, "Failed to remove gift card");
 }

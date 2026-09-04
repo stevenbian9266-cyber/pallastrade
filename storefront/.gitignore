@@ -10,6 +10,9 @@
 !.yarn/releases
 !.yarn/versions
 
+# local SDK vendor (Turbopack Windows workaround — regenerated, not committed)
+.sdk-vendor
+
 # testing
 /coverage
 

@@ -142,7 +142,7 @@ paths:
                 description: |
                   Provider-dispatched login. The `provider` key selects a configured
                   authentication provider; the remaining fields are forwarded to it.
-                  Required fields depend on the provider 閳?see
+                  Required fields depend on the provider — see
                   [Custom API Authentication](https://pallastrade.cn/docs/developer/how-to/custom-api-authentication).
                 type: object
                 properties:
@@ -237,7 +237,7 @@ paths:
       security:
       - api_key: []
       description: Revokes the submitted refresh token. The refresh token itself is
-        the credential 閳?no Authorization header is required, so a client with an
+        the credential — no Authorization header is required, so a client with an
         expired access JWT can still log out.
       x-codeSamples:
       - lang: javascript
@@ -2276,7 +2276,7 @@ paths:
       description: |
         Associates a guest cart with the currently authenticated user.
         Requires JWT authentication and possession of the cart's token
-        (x-pallastrade-token) 閳?the token authorizes claiming the cart.
+        (x-pallastrade-token) — the token authorizes claiming the cart.
       x-codeSamples:
       - lang: javascript
         label: PallasTrade SDK
@@ -2767,6 +2767,78 @@ paths:
                   message: No payment found
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/carts/{id}/submit":
+    post:
+      summary: Submit cart (standard e-commerce flow, P1)
+      tags:
+      - Carts
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |-
+        Standard-flow cart submit (PRD-20260829-checkout): validates email and
+        selected items, snapshots line items and addresses, creates shipments,
+        selects the shipping rate, converts the cart, and returns the new
+        `or_`-prefixed Order. Replays of the converted cart return the same
+        Order. When only selected items are submitted, `successor_cart` contains
+        the active cart that preserves unselected items. Emits `order.submitted`
+        after commit. The order carries the cart token for payment recovery.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+          const client = createClient({ baseUrl: 'https://your-store.com', publishableKey: '<api-key>' })
+          const result = await client.carts.submit(cartId, { guestToken: cart.token })
+          const { successor_cart: successorCart, ...order } = result
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Prefixed cart ID (cart_...)
+      responses:
+        '200':
+          description: cart submitted or replayed; order and optional successor cart returned
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CartSubmitResult"
+        '422':
+          description: cannot submit (missing email / no selected items / pricing changed)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/shipping_methods":
+    get:
+      summary: List front-end shipping methods (P1)
+      tags:
+      - Shipping
+      security:
+      - api_key: []
+      description: |-
+        Front-end delivery-method list for the order-confirmation page
+        (`display_on` both/front_end). Each item carries
+        `display_estimated_price`; the authoritative shipping cost is computed
+        at order submit.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+          const client = createClient({ baseUrl: 'https://your-store.com', publishableKey: '<api-key>' })
+          const methods = await client.shippingMethods.list()
+      responses:
+        '200':
+          description: shipping methods
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/DeliveryMethod"
   "/api/v3/store/carts/{cart_id}/discount_codes":
     post:
       summary: Apply discount code
@@ -3541,7 +3613,8 @@ paths:
       - api_key: []
         bearer_auth: []
       description: |
-        Applies a gift card to the cart. Gift cards are treated as a payment method, not a discount 閳?        the cart `total` remains unchanged while `amount_due` is reduced.
+        Applies a gift card to the cart. Gift cards are treated as a payment method, not a discount —
+        the cart `total` remains unchanged while `amount_due` is reduced.
 
         For promotion discount codes, use the `POST /carts/{cart_id}/discount_codes` endpoint instead.
       x-codeSamples:
@@ -5622,6 +5695,103 @@ paths:
                 market:
               schema:
                 "$ref": "#/components/schemas/Cart"
+  "/api/v3/store/payment_combinations":
+    post:
+      summary: Create a payment combination (合并支付)
+      tags:
+      - Payment Combinations
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: Combines multiple unpaid orders into a single checkout payment.
+        Amount is server-computed (sum of each unpaid order's amount_due). Returns
+        the combination with its payment session for the checkout (P5, flag-gated).
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const combination = await client.paymentCombinations.create({
+            order_ids: ['or_abc123', 'or_def456'],
+            payment_method_id: 'pm_abc123',
+          }, {
+            token: '<token>',
+          })
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for the authenticated customer (requires login)
+        schema:
+          type: string
+      - name: Idempotency-Key
+        in: header
+        required: false
+        description: Unique key for request idempotency.
+        schema:
+          type: string
+      responses:
+        '201':
+          description: payment combination created
+          content:
+            application/json:
+              example:
+                id: pcom_gbHJdmfrXB
+                status: processing
+                amount: '99.98'
+                currency: USD
+                expires_at:
+                completed_at:
+                payment_session:
+                  id: ps_gbHJdmfrXB
+                  status: pending
+                  amount: '99.98'
+                  currency: USD
+                  external_id: bogus_eb5c77e8a4ddf687caec9273
+                  external_data:
+                    client_secret: bogus_secret_292f452459b9679c
+                  payment_method_id: pm_UkLWZg9DAJ
+                  order_id: or_UkLWZg9DAJ
+              schema:
+                "$ref": "#/components/schemas/PaymentCombination"
+        '422':
+          description: validation failed (e.g. cross-store orders, no unpaid orders)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order_ids:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                  - or_abc123
+                  - or_def456
+                  description: Prefixed order IDs to combine (unpaid orders only)
+                payment_method_id:
+                  type: string
+                  example: pm_abc123
+                  description: Payment method ID
+              required:
+              - order_ids
+              - payment_method_id
   "/api/v3/store/orders/{id}":
     get:
       summary: Get an order
@@ -5868,6 +6038,230 @@ paths:
                   message: Order not found
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/orders/{order_id}/checkout":
+    get:
+      summary: Get order checkout (server-driven CheckoutView, CHK-P1)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      description: |-
+        Read-only server projection of the order's current checkout facts
+        (`OrderCheckout::CheckoutView`): money/items/addresses plus
+        version/price_version/expires_at and ready/missing_requirements.
+        No side effects (no requote/retax/state changes).
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: CheckoutView projection
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Checkout"
+        "404":
+          description: Order not found or not accessible
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+    patch:
+      summary: Update order checkout (mutation facade, CHK-P1)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      description: |-
+        Updates one checkout field set per request: contact (email),
+        shipping_address (or shipping_address_id) or delivery_rate_id.
+        Returns the latest CheckoutView. Does not advance the legacy state
+        machine; refuses completed orders.
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contact:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                shipping_address:
+                  "$ref": "#/components/schemas/Address"
+                shipping_address_id:
+                  type: string
+                delivery_rate_id:
+                  type: string
+              example:
+                delivery_rate_id: dr_example
+      responses:
+        "200":
+          description: Updated CheckoutView
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Checkout"
+        "422":
+          description: Invalid request / checkout not ready
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/orders/{order_id}/payment_sessions":
+    post:
+      summary: Create order payment session (standard flow, P1)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      description: |-
+        Creates a provider payment session for a standard-flow order
+        (`or_`-prefixed, after cart submit). Stripe returns a Checkout Session
+        `client_secret`; the checkout page renders the provider form and then
+        completes the session.
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - payment_method_id
+              properties:
+                payment_method_id:
+                  type: string
+                  description: Prefixed payment method ID (pm_...)
+                amount:
+                  type: string
+                external_data:
+                  type: object
+      responses:
+        '201':
+          description: payment session created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+        '422':
+          description: session could not be created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/orders/{order_id}/payment_sessions/{id}":
+    get:
+      summary: Get order payment session
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: payment session
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+    patch:
+      summary: Update order payment session
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: string
+                external_data:
+                  type: object
+      responses:
+        '200':
+          description: payment session updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
+  "/api/v3/store/orders/{order_id}/payment_sessions/{id}/complete":
+    patch:
+      summary: Complete order payment session (standard flow, P1)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      description: |-
+        Completes the payment session; drives `Carts::Complete` standard branch
+        (`pay!` + `finalize!`) so the order reaches `paid`/`completed`.
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                session_result:
+                  type: string
+                external_data:
+                  type: object
+      responses:
+        '200':
+          description: payment session completed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentSession"
   "/api/v3/store/customers/me/addresses":
     get:
       summary: List customer addresses
@@ -7261,7 +7655,7 @@ paths:
                   example: true
                 turnstile_token:
                   type: string
-                  description: Cloudflare Turnstile human-verification token (cf-turnstile-response). Optional 閳?when the server has TURNSTILE_SECRET_KEY configured this is validated before the account is created, otherwise verification is skipped.
+                  description: Cloudflare Turnstile human-verification token (cf-turnstile-response). Optional — when the server has TURNSTILE_SECRET_KEY configured this is validated before the account is created, otherwise verification is skipped.
                   example: 0.<token>
                 metadata:
                   type: object
@@ -7602,6 +7996,15 @@ paths:
         with `amount_due > 0` are editable; paid/refunded orders are frozen.
         Pass either `shipping_address_id` (a saved address of the current user)
         or an inline `shipping_address`. Returns the refreshed Order.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+          const client = createClient({ baseUrl: 'https://your-store.com', publishableKey: '<api-key>' })
+          const order = await client.orders.updateShippingAddress(orderId, {
+            shipping_address: { first_name: 'Ada', last_name: 'Lovelace', address1: '12 Analytical Engine Way', city: 'New York', postal_code: '10118', country_iso: 'US', state_abbr: 'NY' },
+          }, { token: '<jwt>' })
       parameters:
       - name: order_id
         in: path
@@ -8470,7 +8873,7 @@ paths:
                   symbol: "$"
                 - iso_code: EUR
                   name: Euro
-                  symbol: "閳?
+                  symbol: "€"
               schema:
                 type: object
                 properties:
@@ -9481,7 +9884,7 @@ paths:
           at `redirect_url?token=<verification_token>` and call `POST /newsletter_subscribers/verify`
           when the user clicks it.
         - If the request is authenticated via JWT and the customer's email matches the subscribed email,
-          the subscription is auto-verified and no events are fired 閳?the JWT already proves email
+          the subscription is auto-verified and no events are fired — the JWT already proves email
           ownership, so no confirmation email is needed.
 
         The optional `redirect_url` is where the verification token should land on the storefront. The
@@ -9518,7 +9921,7 @@ paths:
       - name: Authorization
         in: header
         required: false
-        description: Optional Bearer JWT 閳?when present, links the subscription to
+        description: Optional Bearer JWT — when present, links the subscription to
           that customer
         schema:
           type: string
@@ -9580,8 +9983,8 @@ paths:
       description: |
         Submits a contact message (complaint, feedback or general inquiry) from the
         storefront. Guest-accessible. The message is classified by `kind` and surfaced
-        in the admin **Email 閳?Inbox & Feedback** page with a status flow
-        (pending 閳?in_progress 閳?resolved).
+        in the admin **Email → Inbox & Feedback** page with a status flow
+        (pending → in_progress → resolved).
 
         Available `kind` values: `complaint`, `feedback`, `inquiry`.
       x-codeSamples:
@@ -9802,18 +10205,6 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-              - email
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: customer@example.com
   "/api/v3/store/products/{product_id}/reviews":
     get:
       summary: List approved reviews for a product
@@ -10347,7 +10738,8 @@ paths:
       description: |
         Downloads a digital product file using the digital link token.
         The token is provided via the `download_url` field on digital links
-        returned with order line items. No API key or authentication required 閳?        the token itself grants access.
+        returned with order line items. No API key or authentication required —
+        the token itself grants access.
         Each download increments the access counter. Downloads may be limited by
         store settings (number of downloads and/or time-based expiration).
       parameters:
@@ -10554,46 +10946,6 @@ components:
       - token
       - refresh_token
       - user
-    PermissionRule:
-      type: object
-      description: A single permission rule (CanCanCan rule). Rules are applied in
-        order, last-matching-wins.
-      properties:
-        allow:
-          type: boolean
-          description: true for `can`, false for `cannot`
-        actions:
-          type: array
-          items:
-            type: string
-          description: Action names, e.g. ["read", "update"] or ["manage"]
-        subjects:
-          type: array
-          items:
-            type: string
-          description: Subject class names, e.g. ["PallasTrade::Product"] or ["all"]
-        has_conditions:
-          type: boolean
-          description: True if the server-side rule has per-record conditions. The
-            SPA shows the action optimistically and handles 403 from the API.
-      required:
-      - allow
-      - actions
-      - subjects
-      - has_conditions
-    MeResponse:
-      type: object
-      description: Current admin user profile and serialized permissions
-      properties:
-        user:
-          "$ref": "#/components/schemas/AdminUser"
-        permissions:
-          type: array
-          items:
-            "$ref": "#/components/schemas/PermissionRule"
-      required:
-      - user
-      - permissions
     ImportSchemaField:
       type: object
       description: A canonical column of an import type, including per-store custom
@@ -10633,6 +10985,174 @@ components:
       - step
       - field
       - message
+    CheckoutViewLine:
+      type: object
+      description: Explanatory adjustment detail line (discounts/taxes) on a CheckoutView
+      properties:
+        id:
+          type: string
+          example: ad_abc123
+        amount:
+          type: string
+          nullable: true
+          description: Major-unit decimal string
+          example: "5.00"
+        currency:
+          type: string
+          example: USD
+      required:
+      - id
+      - currency
+    Checkout:
+      type: object
+      description: Server-driven CheckoutView projection of an Order (read-only)
+      properties:
+        id:
+          type: string
+          example: order_abc123
+        number:
+          type: string
+          example: R100000001
+        state:
+          type: string
+          example: pending
+        status:
+          type: string
+          example: placed
+        payment_state:
+          type: string
+          nullable: true
+          example: balance_due
+        shipment_state:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+          format: email
+        currency:
+          type: string
+          example: USD
+        submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          type: integer
+          description: OrderCheckout content version (increments on recalcs/mutations)
+          example: 3
+        price_version:
+          type: string
+          nullable: true
+          description: Money-input fingerprint (SHA256 prefix)
+          example: 1a2b3c4d5e6f7890
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Quote expiry
+        ready:
+          type: boolean
+          description: True when all checkout requirements are satisfied
+        missing_requirements:
+          type: array
+          description: Unsatisfied requirement codes (contact/shipping_address/delivery_rate/balance)
+          items:
+            type: string
+          example:
+          - contact
+        item_total:
+          type: string
+          nullable: true
+        display_item_total:
+          type: string
+          nullable: true
+        delivery_total:
+          type: string
+          nullable: true
+        display_delivery_total:
+          type: string
+          nullable: true
+        adjustment_total:
+          type: string
+          nullable: true
+        display_adjustment_total:
+          type: string
+          nullable: true
+        discount_total:
+          type: string
+          nullable: true
+        display_discount_total:
+          type: string
+          nullable: true
+        tax_total:
+          type: string
+          nullable: true
+        display_tax_total:
+          type: string
+          nullable: true
+        included_tax_total:
+          type: string
+          nullable: true
+        display_included_tax_total:
+          type: string
+          nullable: true
+        additional_tax_total:
+          type: string
+          nullable: true
+        display_additional_tax_total:
+          type: string
+          nullable: true
+        total:
+          type: string
+          nullable: true
+        display_total:
+          type: string
+          nullable: true
+        amount_due:
+          type: string
+          nullable: true
+        display_amount_due:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            "$ref": "#/components/schemas/LineItem"
+        fulfillments:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Fulfillment"
+        shipping_address:
+          allOf:
+          - "$ref": "#/components/schemas/Address"
+          nullable: true
+        billing_address:
+          allOf:
+          - "$ref": "#/components/schemas/Address"
+          nullable: true
+        discounts:
+          type: array
+          description: Eligible promotion adjustments (explanatory; total = discount_total)
+          items:
+            "$ref": "#/components/schemas/CheckoutViewLine"
+        taxes:
+          type: array
+          description: Eligible tax adjustments (explanatory; total = tax_total)
+          items:
+            "$ref": "#/components/schemas/CheckoutViewLine"
+      required:
+      - id
+      - number
+      - state
+      - status
+      - currency
+      - version
+      - ready
     CartWarning:
       type: object
       description: A warning about a cart issue (e.g., item removed due to stock change)
@@ -10660,7 +11180,7 @@ components:
       - message
     FulfillmentManifestItem:
       type: object
-      description: An item within a fulfillment 閳?which line item and how many units
+      description: An item within a fulfillment — which line item and how many units
         are in this fulfillment
       properties:
         item_id:
@@ -10716,7 +11236,7 @@ components:
       - type
     PromotionActionCalculator:
       type: object
-      description: The action's nested calculator (when the action carries one 閳?null
+      description: The action's nested calculator (when the action carries one — null
         for actions like `free_shipping`)
       properties:
         type:
@@ -10740,7 +11260,7 @@ components:
       - preference_schema
     PromotionActionLineItem:
       type: object
-      description: One row in a `create_line_items` action 閳?the variant added to
+      description: One row in a `create_line_items` action — the variant added to
         the order and how many
       properties:
         variant_id:
@@ -10927,6 +11447,9 @@ components:
           nullable: true
         covered_by_store_credit:
           type: boolean
+        express_payment:
+          type: object
+          nullable: true
         current_step:
           type: string
         completed_steps:
@@ -11009,6 +11532,7 @@ components:
       - store_credit_total
       - display_store_credit_total
       - covered_by_store_credit
+      - express_payment
       - current_step
       - completed_steps
       - requirements
@@ -11283,10 +11807,14 @@ components:
         code:
           type: string
           nullable: true
+        display_estimated_price:
+          type: string
+          nullable: true
       required:
       - id
       - name
       - code
+      - display_estimated_price
       x-typelizer: true
     DeliveryRate:
       type: object
@@ -11933,20 +12461,18 @@ components:
       properties:
         id:
           type: string
+        product_id:
+          type: string
+          nullable: true
         email:
           type: string
         status:
           type: string
-          enum:
-          - active
-          - notified
-        product_id:
-          type: string
-          nullable: true
         created_at:
           type: string
       required:
       - id
+      - product_id
       - email
       - status
       - created_at
@@ -11958,10 +12484,6 @@ components:
           type: string
         kind:
           type: string
-          enum:
-          - complaint
-          - feedback
-          - inquiry
         name:
           type: string
           nullable: true
@@ -11974,16 +12496,14 @@ components:
           type: string
         status:
           type: string
-          enum:
-          - pending
-          - in_progress
-          - resolved
         created_at:
           type: string
       required:
       - id
       - kind
+      - name
       - email
+      - subject
       - body
       - status
       - created_at
@@ -12042,6 +12562,18 @@ components:
       - option_type_label
       - image_url
       x-typelizer: true
+    CartSubmitResult:
+      allOf:
+      - "$ref": "#/components/schemas/Order"
+      - type: object
+        required:
+        - successor_cart
+        properties:
+          successor_cart:
+            description: Active cart containing unselected items, or the restored regular cart after Buy Now.
+            nullable: true
+            allOf:
+            - "$ref": "#/components/schemas/Cart"
     Order:
       type: object
       properties:
@@ -12067,13 +12599,36 @@ components:
           nullable: true
         total_quantity:
           type: number
+        parent_id:
+          type: string
+          nullable: true
+        children_ids:
+          type: array
+          items:
+            type: string
+        is_parent:
+          type: boolean
+        is_child:
+          type: boolean
+        is_single:
+          type: boolean
+        state:
+          type: string
+        status:
+          type: string
+        submitted_at:
+          type: string
+          nullable: true
+        completed_at:
+          type: string
+          nullable: true
+        cart_id:
+          type: string
+          nullable: true
         fulfillment_status:
           type: string
           nullable: true
         payment_status:
-          type: string
-          nullable: true
-        completed_at:
           type: string
           nullable: true
         item_total:
@@ -12112,28 +12667,28 @@ components:
         display_additional_tax_total:
           type: string
           nullable: true
-        total:
-          type: string
-          nullable: true
-        display_total:
-          type: string
-          nullable: true
         gift_card_total:
           type: string
           nullable: true
         display_gift_card_total:
           type: string
           nullable: true
-        amount_due:
-          type: string
-          nullable: true
-        display_amount_due:
-          type: string
-          nullable: true
         delivery_total:
           type: string
           nullable: true
         display_delivery_total:
+          type: string
+          nullable: true
+        total:
+          type: string
+          nullable: true
+        display_total:
+          type: string
+          nullable: true
+        amount_due:
+          type: string
+          nullable: true
+        display_amount_due:
           type: string
           nullable: true
         store_credit_total:
@@ -12160,6 +12715,10 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/Payment"
+        payment_methods:
+          type: array
+          items:
+            "$ref": "#/components/schemas/PaymentMethod"
         billing_address:
           allOf:
           - "$ref": "#/components/schemas/Address"
@@ -12186,9 +12745,18 @@ components:
       - currency
       - locale
       - total_quantity
+      - parent_id
+      - children_ids
+      - is_parent
+      - is_child
+      - is_single
+      - state
+      - status
+      - submitted_at
+      - completed_at
+      - cart_id
       - fulfillment_status
       - payment_status
-      - completed_at
       - item_total
       - display_item_total
       - adjustment_total
@@ -12201,14 +12769,14 @@ components:
       - display_included_tax_total
       - additional_tax_total
       - display_additional_tax_total
-      - total
-      - display_total
       - gift_card_total
       - display_gift_card_total
-      - amount_due
-      - display_amount_due
       - delivery_total
       - display_delivery_total
+      - total
+      - display_total
+      - amount_due
+      - display_amount_due
       - store_credit_total
       - display_store_credit_total
       - covered_by_store_credit
@@ -12216,6 +12784,7 @@ components:
       - items
       - fulfillments
       - payments
+      - payment_methods
       - billing_address
       - shipping_address
       - gift_card
@@ -12295,6 +12864,37 @@ components:
       - source_id
       - source
       - payment_method
+      x-typelizer: true
+    PaymentCombination:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        currency:
+          type: string
+        expires_at:
+          type: string
+          nullable: true
+        completed_at:
+          type: string
+          nullable: true
+        amount:
+          type: string
+        orders:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Order"
+        payment_session:
+          "$ref": "#/components/schemas/PaymentSession"
+      required:
+      - id
+      - status
+      - currency
+      - expires_at
+      - completed_at
+      - amount
       x-typelizer: true
     PaymentSession:
       type: object
@@ -12428,6 +13028,12 @@ components:
         author:
           type: string
           nullable: true
+        seo_title:
+          type: string
+          nullable: true
+        seo_description:
+          type: string
+          nullable: true
         published_at:
           type: string
           nullable: true
@@ -12440,16 +13046,18 @@ components:
         body_html:
           type: string
           nullable: true
-        seo_title:
-          type: string
-          nullable: true
-        seo_description:
-          type: string
-          nullable: true
       required:
       - id
       - title
       - slug
+      - excerpt
+      - author
+      - seo_title
+      - seo_description
+      - published_at
+      - cover_image_url
+      - body
+      - body_html
       x-typelizer: true
     PriceHistory:
       type: object
@@ -12700,7 +13308,7 @@ components:
           type: string
           nullable: true
         rating:
-          type: integer
+          type: number
         title:
           type: string
           nullable: true
@@ -12711,42 +13319,6 @@ components:
           type: boolean
         created_at:
           type: string
-          format: date-time
-          nullable: true
-      required:
-      - id
-      - product_id
-      - user_name
-      - rating
-      - title
-      - body
-      - verified_purchase
-      - created_at
-      x-typelizer: true
-    Review:
-      type: object
-      properties:
-        id:
-          type: string
-        product_id:
-          type: string
-          nullable: true
-        user_name:
-          type: string
-          nullable: true
-        rating:
-          type: integer
-        title:
-          type: string
-          nullable: true
-        body:
-          type: string
-          nullable: true
-        verified_purchase:
-          type: boolean
-        created_at:
-          type: string
-          format: date-time
           nullable: true
       required:
       - id
@@ -12894,6 +13466,8 @@ components:
       - default_variant_id
       - thumbnail_url
       - tags
+      - average_rating
+      - review_count
       - price
       - original_price
       x-typelizer: true
@@ -13241,4 +13815,276 @@ components:
       - token
       - is_default
       - is_private
+      x-typelizer: true
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: string
+        variant_id:
+          type: string
+        currency:
+          type: string
+        quantity:
+          type: number
+        selected:
+          type: boolean
+        name:
+          type: string
+        slug:
+          type: string
+        options_text:
+          type: string
+        unit_price:
+          type: string
+          nullable: true
+        display_unit_price:
+          type: string
+          nullable: true
+        amount:
+          type: string
+          nullable: true
+        display_amount:
+          type: string
+          nullable: true
+        thumbnail_url:
+          type: string
+          nullable: true
+      required:
+      - id
+      - variant_id
+      - currency
+      - quantity
+      - selected
+      - name
+      - slug
+      - options_text
+      - unit_price
+      - display_unit_price
+      - amount
+      - display_amount
+      - thumbnail_url
+      x-typelizer: true
+    ShoppingCart:
+      type: object
+      properties:
+        id:
+          type: string
+        token:
+          type: string
+        status:
+          type: string
+        email:
+          type: string
+          nullable: true
+        customer_note:
+          type: string
+          nullable: true
+        currency:
+          type: string
+        locale:
+          type: string
+          nullable: true
+        item_count:
+          type: number
+        converted_at:
+          type: string
+          nullable: true
+        shipping_method_id:
+          type: string
+          nullable: true
+        item_total:
+          type: string
+          nullable: true
+        display_item_total:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            type: object
+        billing_address:
+          allOf:
+          - "$ref": "#/components/schemas/Address"
+          nullable: true
+        shipping_address:
+          allOf:
+          - "$ref": "#/components/schemas/Address"
+          nullable: true
+        payment_methods:
+          type: array
+          items:
+            "$ref": "#/components/schemas/PaymentMethod"
+      required:
+      - id
+      - token
+      - status
+      - email
+      - customer_note
+      - currency
+      - locale
+      - item_count
+      - converted_at
+      - shipping_method_id
+      - item_total
+      - display_item_total
+      - items
+      - billing_address
+      - shipping_address
+      - payment_methods
+      x-typelizer: true
+    StoreCheckoutCheckout:
+      type: object
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+        state:
+          type: string
+        status:
+          type: string
+        payment_state:
+          type: string
+          nullable: true
+        shipment_state:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        currency:
+          type: string
+        submitted_at:
+          type: string
+          nullable: true
+        completed_at:
+          type: string
+          nullable: true
+        version:
+          type: number
+        price_version:
+          type: string
+          nullable: true
+        ready:
+          type: boolean
+        missing_requirements:
+          type: object
+        expires_at:
+          type: string
+          nullable: true
+        item_total:
+          type: string
+          nullable: true
+        display_item_total:
+          type: string
+          nullable: true
+        delivery_total:
+          type: string
+          nullable: true
+        display_delivery_total:
+          type: string
+          nullable: true
+        adjustment_total:
+          type: string
+          nullable: true
+        display_adjustment_total:
+          type: string
+          nullable: true
+        discount_total:
+          type: string
+          nullable: true
+        display_discount_total:
+          type: string
+          nullable: true
+        tax_total:
+          type: string
+          nullable: true
+        display_tax_total:
+          type: string
+          nullable: true
+        included_tax_total:
+          type: string
+          nullable: true
+        display_included_tax_total:
+          type: string
+          nullable: true
+        additional_tax_total:
+          type: string
+          nullable: true
+        display_additional_tax_total:
+          type: string
+          nullable: true
+        total:
+          type: string
+          nullable: true
+        display_total:
+          type: string
+          nullable: true
+        amount_due:
+          type: string
+          nullable: true
+        display_amount_due:
+          type: string
+          nullable: true
+        shipping_address:
+          allOf:
+          - "$ref": "#/components/schemas/Address"
+          nullable: true
+        billing_address:
+          allOf:
+          - "$ref": "#/components/schemas/Address"
+          nullable: true
+        items:
+          type: array
+          items:
+            "$ref": "#/components/schemas/LineItem"
+        fulfillments:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Fulfillment"
+        discounts:
+          type: object
+        taxes:
+          type: object
+      required:
+      - id
+      - number
+      - state
+      - status
+      - payment_state
+      - shipment_state
+      - email
+      - currency
+      - submitted_at
+      - completed_at
+      - version
+      - price_version
+      - ready
+      - missing_requirements
+      - expires_at
+      - item_total
+      - display_item_total
+      - delivery_total
+      - display_delivery_total
+      - adjustment_total
+      - display_adjustment_total
+      - discount_total
+      - display_discount_total
+      - tax_total
+      - display_tax_total
+      - included_tax_total
+      - display_included_tax_total
+      - additional_tax_total
+      - display_additional_tax_total
+      - total
+      - display_total
+      - amount_due
+      - display_amount_due
+      - shipping_address
+      - billing_address
+      - items
+      - fulfillments
+      - discounts
+      - taxes
       x-typelizer: true

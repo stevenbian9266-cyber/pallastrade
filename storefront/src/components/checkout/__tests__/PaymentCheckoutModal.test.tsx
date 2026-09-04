@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PaymentCheckoutModal } from "@/components/checkout/PaymentCheckoutModal";
 
 const refreshMock = vi.fn();
+const pushMock = vi.fn();
 const onOpenChangeMock = vi.fn();
 
 // 稳定引用：next-intl 的 t 函数在真实环境跨 render 稳定（避免 effect 依赖抖动）
@@ -16,19 +17,16 @@ vi.mock("next-intl", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: refreshMock, push: vi.fn() }),
+  useRouter: () => ({ refresh: refreshMock, push: pushMock }),
 }));
 
 const createOrderSessionMock = vi.fn();
 const completeOrderSessionMock = vi.fn();
-const completeOrderMock = vi.fn();
-
 vi.mock("@/lib/data/order-payment", () => ({
   createOrderPaymentSession: (...args: unknown[]) =>
     createOrderSessionMock(...args),
   completeOrderPaymentSession: (...args: unknown[]) =>
     completeOrderSessionMock(...args),
-  completeOrder: (...args: unknown[]) => completeOrderMock(...args),
 }));
 
 vi.mock("@/lib/utils/stripe", () => ({
@@ -114,10 +112,10 @@ function order(overrides: Partial<Order> = {}): Order {
 describe("PaymentCheckoutModal (PRD-20260830-checkout AC-004/005/006/007)", () => {
   beforeEach(() => {
     refreshMock.mockReset();
+    pushMock.mockReset();
     onOpenChangeMock.mockReset();
     createOrderSessionMock.mockReset();
     completeOrderSessionMock.mockReset();
-    completeOrderMock.mockReset();
     createCombinationMock.mockReset();
     getCombinationMock.mockReset();
     completeCombinationMock.mockReset();
@@ -130,7 +128,6 @@ describe("PaymentCheckoutModal (PRD-20260830-checkout AC-004/005/006/007)", () =
       session: { id: "ps_1", external_data: { client_secret: "sec_1" } },
     });
     completeOrderSessionMock.mockResolvedValue({ success: true });
-    completeOrderMock.mockResolvedValue({ success: true, order: {} });
     confirmMock.mockResolvedValue({});
     cardConfirmMock.mockResolvedValue({});
   });
@@ -187,12 +184,11 @@ describe("PaymentCheckoutModal (PRD-20260830-checkout AC-004/005/006/007)", () =
     await waitFor(() =>
       expect(completeOrderSessionMock).toHaveBeenCalledWith("order_1", "ps_1"),
     );
-    await waitFor(() =>
-      expect(completeOrderMock).toHaveBeenCalledWith("order_1"),
-    );
-    // 成功 → 关闭弹窗 + 刷新
+    // 成功 → 关闭弹窗 + 服务端权威结果页
     await waitFor(() => expect(onOpenChangeMock).toHaveBeenCalledWith(false));
-    expect(refreshMock).toHaveBeenCalled();
+    expect(pushMock).toHaveBeenCalledWith(
+      "/us/en/payment-result/order_1?session=ps_1",
+    );
   });
 
   it("combines multiple orders: creates combination, shows breakdown + total (AC-006)", async () => {
@@ -294,7 +290,31 @@ describe("PaymentCheckoutModal (PRD-20260830-checkout AC-004/005/006/007)", () =
       ),
     );
     await waitFor(() => expect(onOpenChangeMock).toHaveBeenCalledWith(false));
-    expect(refreshMock).toHaveBeenCalled();
+    expect(pushMock).toHaveBeenCalledWith(
+      "/us/en/payment-result/pcom_1?session=ps_combo",
+    );
+  });
+
+  it("records a rejected single-order attempt and opens the same order result (AC-005/009)", async () => {
+    cardConfirmMock.mockResolvedValue({ error: "card_declined" });
+    const user = userEvent.setup();
+    render(
+      <PaymentCheckoutModal
+        open
+        onOpenChange={onOpenChangeMock}
+        orders={[order()]}
+        basePath="/us/en"
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    await waitFor(() =>
+      expect(completeOrderSessionMock).toHaveBeenCalledWith("order_1", "ps_1"),
+    );
+    expect(pushMock).toHaveBeenCalledWith(
+      "/us/en/payment-result/order_1?session=ps_1",
+    );
   });
 
   it("shows a fallback when no payment methods are available (AC-004)", () => {

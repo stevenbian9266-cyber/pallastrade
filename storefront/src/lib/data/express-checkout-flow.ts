@@ -1,5 +1,9 @@
 "use server";
 
+// P0-7 (FR-070/FR-071): LEGACY / COMPATIBILITY ONLY — Cart 域 Express 支付入口。
+// Canonical = Order 域（submit 后 orders.paymentSessions）。后端已在
+// carts payment_sessions create 记录 payment.legacy_flow.used 用于统计。
+// ⛔ DO NOT ADD NEW PAYMENT FEATURES TO LEGACY FLOW.
 import type { AddressParams, Cart } from "@pallastrade/sdk";
 import {
   getCheckoutOrder,

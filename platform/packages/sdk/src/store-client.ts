@@ -12,8 +12,11 @@ import type {
   Address,
   AuthTokens,
   Cart,
+  CartSubmitResult,
   Category,
   CategoryListParams,
+  CheckoutUpdateParams,
+  CheckoutView,
   CompletePaymentSessionParams,
   CompletePaymentSetupSessionParams,
   Country,
@@ -431,8 +434,8 @@ export class StoreClient {
      * Returns an Order (not Cart). Client should then navigate to /checkout/[orderId].
      * @param cartId - Cart prefixed ID
      */
-    submit: (cartId: string, options?: RequestOptions): Promise<Order> =>
-      this.request<Order>('POST', `/carts/${cartId}/submit`, options),
+    submit: (cartId: string, options?: RequestOptions): Promise<CartSubmitResult> =>
+      this.request<CartSubmitResult>('POST', `/carts/${cartId}/submit`, options),
 
     /**
      * Nested resource: Line items
@@ -728,6 +731,41 @@ export class StoreClient {
         this.request<PaymentSession>(
           'PATCH',
           `/orders/${orderId}/payment_sessions/${sessionId}/complete`,
+          { ...options, body: params },
+        ),
+    },
+
+    /**
+     * CHK-P1-4 (2026-09-03): Server-driven CheckoutView (OrderCheckout).
+     * GET /api/v3/store/orders/:order_id/checkout — read-only projection of the
+     * Order's current checkout facts (money/items/addresses + version/price_version/
+     * expires_at + ready/missing_requirements). Flat resource (no { data } envelope).
+     */
+    checkout: {
+      get: (
+        orderId: string,
+        options?: RequestOptions,
+      ): Promise<CheckoutView> =>
+        this.request<CheckoutView>(
+          'GET',
+          `/orders/${orderId}/checkout`,
+          options,
+        ),
+
+      /**
+       * CHK-P1-4B (2026-09-04): update order checkout (mutation facade).
+       * PATCH /api/v3/store/orders/:order_id/checkout — one field set per request:
+       * contact (email), shipping_address (or shipping_address_id) or delivery_rate_id.
+       * Returns the latest CheckoutView. Completed orders are refused.
+       */
+      update: (
+        orderId: string,
+        params: CheckoutUpdateParams,
+        options?: RequestOptions,
+      ): Promise<CheckoutView> =>
+        this.request<CheckoutView>(
+          'PATCH',
+          `/orders/${orderId}/checkout`,
           { ...options, body: params },
         ),
     },

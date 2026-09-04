@@ -27,6 +27,9 @@ const STRIPE_ZERO_DECIMAL_CURRENCIES = new Set([
  * Convert a monetary amount to the smallest currency unit for Stripe.
  * For most currencies this means multiplying by 100 (e.g. $9.99 → 999).
  * For zero-decimal currencies (JPY, KRW, etc.) the amount is returned as-is.
+ *
+ * P0-4 (PRD FR-041): 本函数是「展示/单位换算」级别——**不是**权威金额来源。
+ * 当 cart.express_payment 存在时，Stripe 金额必须用服务端 amount（见 expressAmount）。
  */
 export function toCents(amount: string | number, currency?: string): number {
   const n = Number(amount);
@@ -47,10 +50,56 @@ export function randomSuffix(): string {
 }
 
 /**
+ * P0-4 (PRD FR-040): 服务端权威 Express 支付负载（CartSerializer#express_payment）。
+ *   amount/currency = 资金权威（order.amount_due 子单位）
+ *   display_total   = 展示
+ *   line_items      = 仅供钱包/UI 展示（不得据此重算扣款金额）
+ */
+export interface ExpressPaymentPayload {
+  amount: number;
+  currency: string;
+  display_total: string | null;
+  line_items: Array<{ name: string; amount: number }>;
+}
+
+/** 服务端权威金额（子单位）；payload 缺失返回 null。 */
+export function serverAmount(cart: Cart): number | null {
+  return cart.express_payment?.amount ?? null;
+}
+
+/**
+ * Express 展示行项目：优先服务端 line_items（子单位、展示级）；
+ * payload 缺失（旧数据 / 无 express 支付能力的实体）退回 legacy buildLineItems。
+ */
+export function expressLineItems(
+  cart: Cart,
+): Array<{ name: string; amount: number }> {
+  if (cart.express_payment) {
+    return cart.express_payment.line_items;
+  }
+  return buildLineItems(cart);
+}
+
+/**
+ * 喂给 Stripe Elements / 钱包的权威金额。
+ * 优先服务端 express_payment.amount；缺失时退回 legacy 加总（保持兼容）。
+ * FR-041：存在服务端负载时**禁止**用 sum(line_items) 决定金额。
+ */
+export function expressAmount(cart: Cart): number {
+  if (cart.express_payment) {
+    return cart.express_payment.amount;
+  }
+  return buildLineItems(cart).reduce((sum, item) => sum + item.amount, 0);
+}
+
+/**
  * Build the line items array for the Stripe payment sheet from a PallasTrade order.
  * NOTE: Shipping is excluded because the Express Checkout Element handles it
  * separately via shippingRates. Including it here would cause the line item
  * total to exceed the Elements amount, triggering an IntegrationError.
+ *
+ * P0-4 (PRD FR-041): 仅作 legacy/fallback 展示来源；有 express_payment 时请用
+ * expressLineItems（服务端展示行）。不要用本函数的结果重算权威金额。
  */
 export function buildLineItems(order: Cart) {
   const currency = order.currency;

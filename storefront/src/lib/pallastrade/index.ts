@@ -20,10 +20,12 @@ export {
   getCartId,
   getCartOptions,
   getCartToken,
+  getCheckoutOptions,
   getRefreshToken,
   requireCartId,
   setAccessToken,
   setCartCookies,
+  setCheckoutCookies,
   setRefreshToken,
 } from "./cookies";
 // JWT helpers (expiry inspection, no signature verification)

@@ -2,6 +2,7 @@
 
 import type { Country, State } from "@pallastrade/sdk";
 import { useTranslations } from "next-intl";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   NativeSelect,
@@ -16,6 +17,10 @@ interface AddressFormFieldsProps {
   loadingStates: boolean;
   onChange: (field: keyof AddressFormData, value: string) => void;
   idPrefix: string;
+  /** PRD 3.3：短信营销订阅（新增地址表单内，可选展示） */
+  showSmsOptIn?: boolean;
+  smsOptIn?: boolean;
+  onSmsOptInChange?: (checked: boolean) => void;
 }
 
 export function AddressFormFields({
@@ -25,6 +30,9 @@ export function AddressFormFields({
   loadingStates,
   onChange,
   idPrefix,
+  showSmsOptIn = false,
+  smsOptIn = false,
+  onSmsOptInChange,
 }: AddressFormFieldsProps) {
   const t = useTranslations("address");
   const tc = useTranslations("common");
@@ -173,6 +181,20 @@ export function AddressFormFields({
         onChange={(e) => onChange("phone", e.target.value)}
         placeholder={t("phone")}
       />
+
+      {/* PRD 3.3：短信营销订阅（新增地址表单内） */}
+      {showSmsOptIn && (
+        <label
+          className="flex items-center gap-2.5 cursor-pointer"
+          data-testid="sms-opt-in"
+        >
+          <Checkbox
+            checked={smsOptIn}
+            onCheckedChange={(checked) => onSmsOptInChange?.(checked === true)}
+          />
+          <span className="text-[13px] text-gray-600">{t("smsOptIn")}</span>
+        </label>
+      )}
     </div>
   );
 }

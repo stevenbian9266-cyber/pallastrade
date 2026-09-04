@@ -72,6 +72,15 @@ describe('carts', () => {
     })
   })
 
+  describe('submit', () => {
+    it('returns the Order and optional successor cart contract', async () => {
+      const result = await client.carts.submit('cart_1', opts)
+
+      expect(result.id).toBe('or_1')
+      expect(result.successor_cart?.id).toBe('cart_1')
+    })
+  })
+
   describe('items', () => {
     it('adds an item to the cart', async () => {
       const result = await client.carts.items.create(

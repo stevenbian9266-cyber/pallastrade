@@ -95,13 +95,22 @@ describe("CardPaymentForm (PRD-20260831-payments-stripe-自绘卡支付表单 AC
       ),
     );
 
-    // 填卡号 + 有效期 + CVC → 校验通过
+    // 填卡号 + 有效期 + CVC 但缺持卡人姓名 → 仍失败（PRD 3.6 持卡人必填）
     await user.type(
       screen.getByTestId("card-number-input"),
       "4242424242424242",
     );
     await user.type(screen.getByTestId("card-expiry-input"), "12/30");
     await user.type(screen.getByTestId("card-cvc-input"), "123");
+    expect(handle?.validate()).toBe(false);
+    await waitFor(() =>
+      expect(screen.getByTestId("card-error").textContent).toBe(
+        "cardholderRequired",
+      ),
+    );
+
+    // 补上持卡人姓名 → 校验通过
+    await user.type(screen.getByTestId("cardholder-name"), "Ada Lovelace");
     expect(handle?.validate()).toBe(true);
   });
 
@@ -142,6 +151,7 @@ describe("CardPaymentForm (PRD-20260831-payments-stripe-自绘卡支付表单 AC
     );
     await user.type(screen.getByTestId("card-expiry-input"), "12/30");
     await user.type(screen.getByTestId("card-cvc-input"), "123");
+    await user.type(screen.getByTestId("cardholder-name"), "Ada Lovelace");
 
     const result = await handle?.confirmPayment("pi_test_secret_123");
     expect(result).toEqual({ error: "Your card was declined." });

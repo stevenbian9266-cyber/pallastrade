@@ -43,7 +43,8 @@ var DiscountSchema = z.object({
 var DeliveryMethodSchema = z.object({
   id: z.string(),
   name: z.string(),
-  code: z.string().nullable()
+  code: z.string().nullable(),
+  display_estimated_price: z.string().nullable()
 });
 var DeliveryRateSchema = z.object({
   id: z.string(),
@@ -259,6 +260,7 @@ var CartSchema = z.object({
   store_credit_total: z.string().nullable(),
   display_store_credit_total: z.string().nullable(),
   covered_by_store_credit: z.boolean(),
+  express_payment: z.any(),
   current_step: z.string(),
   completed_steps: z.array(z.string()),
   requirements: z.array(z.object({ step: z.string(), field: z.string(), message: z.string() })),
@@ -272,6 +274,21 @@ var CartSchema = z.object({
   payment_methods: z.array(PaymentMethodSchema),
   gift_card: GiftCardSchema.nullable(),
   market: z.lazy(() => MarketSchema).nullable()
+});
+var CartItemSchema = z.object({
+  id: z.string(),
+  variant_id: z.string(),
+  currency: z.string(),
+  quantity: z.number(),
+  selected: z.boolean(),
+  name: z.string(),
+  slug: z.string(),
+  options_text: z.string(),
+  unit_price: z.string().nullable(),
+  display_unit_price: z.string().nullable(),
+  amount: z.string().nullable(),
+  display_amount: z.string().nullable(),
+  thumbnail_url: z.string().nullable()
 });
 var CustomFieldSchema = z.object({
   id: z.string(),
@@ -338,17 +355,6 @@ var CurrencySchema = z.object({
   name: z.string(),
   symbol: z.string()
 });
-var NewsletterSubscriberSchema = z.object({
-  id: z.string(),
-  email: z.string(),
-  created_at: z.string(),
-  updated_at: z.string(),
-  verified: z.boolean(),
-  verified_at: z.string().nullable(),
-  customer_id: z.string().nullable()
-});
-
-// src/zod/generated/Customer.ts
 var CustomerSchema = z.object({
   id: z.string(),
   email: z.string(),
@@ -361,8 +367,7 @@ var CustomerSchema = z.object({
   display_available_store_credit_total: z.string(),
   addresses: z.array(AddressSchema),
   default_billing_address: AddressSchema.nullable(),
-  default_shipping_address: AddressSchema.nullable(),
-  newsletter_subscriber: NewsletterSubscriberSchema.nullable()
+  default_shipping_address: AddressSchema.nullable()
 });
 var DigitalSchema = z.object({
   id: z.string(),
@@ -421,6 +426,15 @@ var MediaSchema = z.object({
   xlarge_url: z.string().nullable(),
   og_image_url: z.string().nullable()
 });
+var NewsletterSubscriberSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  verified: z.boolean(),
+  verified_at: z.string().nullable(),
+  customer_id: z.string().nullable()
+});
 var OptionTypeSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -430,11 +444,6 @@ var OptionTypeSchema = z.object({
 });
 var OrderSchema = z.object({
   id: z.string(),
-  parent_id: z.string().nullable(),
-  children_ids: z.any(),
-  is_parent: z.boolean(),
-  is_child: z.boolean(),
-  is_single: z.boolean(),
   market_id: z.string().nullable(),
   channel_id: z.string().nullable(),
   number: z.string(),
@@ -443,9 +452,18 @@ var OrderSchema = z.object({
   currency: z.string(),
   locale: z.string().nullable(),
   total_quantity: z.number(),
+  parent_id: z.string().nullable(),
+  children_ids: z.array(z.string()),
+  is_parent: z.boolean(),
+  is_child: z.boolean(),
+  is_single: z.boolean(),
+  state: z.string(),
+  status: z.string(),
+  submitted_at: z.string().nullable(),
+  completed_at: z.string().nullable(),
+  cart_id: z.string().nullable(),
   fulfillment_status: z.string().nullable(),
   payment_status: z.string().nullable(),
-  completed_at: z.string().nullable(),
   item_total: z.string().nullable(),
   display_item_total: z.string().nullable(),
   adjustment_total: z.string().nullable(),
@@ -458,14 +476,14 @@ var OrderSchema = z.object({
   display_included_tax_total: z.string().nullable(),
   additional_tax_total: z.string().nullable(),
   display_additional_tax_total: z.string().nullable(),
-  total: z.string().nullable(),
-  display_total: z.string().nullable(),
   gift_card_total: z.string().nullable(),
   display_gift_card_total: z.string().nullable(),
-  amount_due: z.string().nullable(),
-  display_amount_due: z.string().nullable(),
   delivery_total: z.string().nullable(),
   display_delivery_total: z.string().nullable(),
+  total: z.string().nullable(),
+  display_total: z.string().nullable(),
+  amount_due: z.string().nullable(),
+  display_amount_due: z.string().nullable(),
   store_credit_total: z.string().nullable(),
   display_store_credit_total: z.string().nullable(),
   covered_by_store_credit: z.boolean(),
@@ -473,6 +491,7 @@ var OrderSchema = z.object({
   items: z.array(LineItemSchema),
   fulfillments: z.array(FulfillmentSchema),
   payments: z.array(PaymentSchema),
+  payment_methods: z.array(PaymentMethodSchema),
   billing_address: AddressSchema.nullable(),
   shipping_address: AddressSchema.nullable(),
   gift_card: GiftCardSchema.nullable(),
@@ -533,12 +552,12 @@ var PostSchema = z.object({
   slug: z.string(),
   excerpt: z.string().nullable(),
   author: z.string().nullable(),
+  seo_title: z.string().nullable(),
+  seo_description: z.string().nullable(),
   published_at: z.string().nullable(),
   cover_image_url: z.string().nullable(),
   body: z.string().nullable(),
-  body_html: z.string().nullable(),
-  seo_title: z.string().nullable(),
-  seo_description: z.string().nullable()
+  body_html: z.string().nullable()
 });
 var PriceSchema = z.object({
   id: z.string(),
@@ -734,8 +753,67 @@ var ReviewSchema = z.object({
   verified_purchase: z.boolean(),
   created_at: z.string().nullable()
 });
+var ShoppingCartSchema = z.object({
+  id: z.string(),
+  token: z.string(),
+  status: z.string(),
+  email: z.string().nullable(),
+  customer_note: z.string().nullable(),
+  currency: z.string(),
+  locale: z.string().nullable(),
+  item_count: z.number(),
+  converted_at: z.string().nullable(),
+  shipping_method_id: z.string().nullable(),
+  item_total: z.string().nullable(),
+  display_item_total: z.string().nullable(),
+  items: z.array(z.any()),
+  billing_address: AddressSchema.nullable(),
+  shipping_address: AddressSchema.nullable(),
+  payment_methods: z.array(PaymentMethodSchema)
+});
 var StockReservationSchema = z.object({
   id: z.string()
+});
+var StoreCheckoutCheckoutSchema = z.object({
+  id: z.string(),
+  number: z.string(),
+  state: z.string(),
+  status: z.string(),
+  payment_state: z.string().nullable(),
+  shipment_state: z.string().nullable(),
+  email: z.string().nullable(),
+  currency: z.string(),
+  submitted_at: z.string().nullable(),
+  completed_at: z.string().nullable(),
+  version: z.number(),
+  price_version: z.string().nullable(),
+  ready: z.boolean(),
+  missing_requirements: z.array(z.string()),
+  expires_at: z.string().nullable(),
+  item_total: z.string().nullable(),
+  display_item_total: z.string().nullable(),
+  delivery_total: z.string().nullable(),
+  display_delivery_total: z.string().nullable(),
+  adjustment_total: z.string().nullable(),
+  display_adjustment_total: z.string().nullable(),
+  discount_total: z.string().nullable(),
+  display_discount_total: z.string().nullable(),
+  tax_total: z.string().nullable(),
+  display_tax_total: z.string().nullable(),
+  included_tax_total: z.string().nullable(),
+  display_included_tax_total: z.string().nullable(),
+  additional_tax_total: z.string().nullable(),
+  display_additional_tax_total: z.string().nullable(),
+  total: z.string().nullable(),
+  display_total: z.string().nullable(),
+  amount_due: z.string().nullable(),
+  display_amount_due: z.string().nullable(),
+  shipping_address: AddressSchema.nullable(),
+  billing_address: AddressSchema.nullable(),
+  items: z.array(LineItemSchema),
+  fulfillments: z.array(FulfillmentSchema),
+  discounts: z.array(z.object({ id: z.string(), amount: z.string().nullable(), currency: z.string() })),
+  taxes: z.array(z.object({ id: z.string(), amount: z.string().nullable(), currency: z.string() }))
 });
 var StoreCreditSchema = z.object({
   id: z.string(),
@@ -765,6 +843,6 @@ var WishlistSchema = z.object({
   items: z.array(WishlistItemSchema).optional()
 });
 
-export { AddressSchema, BackInStockSubscriptionSchema, BaseSchema, CartSchema, CategorySchema, ChannelSchema, ContactMessageSchema, CountrySchema, CreditCardSchema, CurrencySchema, CustomFieldSchema, CustomerSchema, DeliveryMethodSchema, DeliveryRateSchema, DigitalLinkSchema, DigitalSchema, DiscountSchema, FulfillmentSchema, GiftCardBatchSchema, GiftCardSchema, InvitationSchema, LineItemSchema, LocaleSchema, MarketSchema, MediaSchema, NewsletterSubscriberSchema, OptionTypeSchema, OptionValueSchema, OrderSchema, PaymentCombinationSchema, PaymentMethodSchema, PaymentSchema, PaymentSessionSchema, PaymentSetupSessionSchema, PaymentSourceSchema, PolicySchema, PostSchema, PriceHistorySchema, PriceSchema, ProductFilterAvailabilityOptionSchema, ProductFilterAvailabilitySchema, ProductFilterCategoryOptionSchema, ProductFilterCategorySchema, ProductFilterOptionSchema, ProductFilterOptionValueSchema, ProductFilterPriceRangeSchema, ProductFilterSortOptionSchema, ProductFiltersSchema, ProductPublicationSchema, ProductSchema, PromotionSchema, RefundSchema, ReturnAuthorizationSchema, ReturnItemSchema, ReviewSchema, StateSchema, StockLocationSchema, StockReservationSchema, StoreCreditSchema, VariantSchema, WishlistItemSchema, WishlistSchema };
+export { AddressSchema, BackInStockSubscriptionSchema, BaseSchema, CartItemSchema, CartSchema, CategorySchema, ChannelSchema, ContactMessageSchema, CountrySchema, CreditCardSchema, CurrencySchema, CustomFieldSchema, CustomerSchema, DeliveryMethodSchema, DeliveryRateSchema, DigitalLinkSchema, DigitalSchema, DiscountSchema, FulfillmentSchema, GiftCardBatchSchema, GiftCardSchema, InvitationSchema, LineItemSchema, LocaleSchema, MarketSchema, MediaSchema, NewsletterSubscriberSchema, OptionTypeSchema, OptionValueSchema, OrderSchema, PaymentCombinationSchema, PaymentMethodSchema, PaymentSchema, PaymentSessionSchema, PaymentSetupSessionSchema, PaymentSourceSchema, PolicySchema, PostSchema, PriceHistorySchema, PriceSchema, ProductFilterAvailabilityOptionSchema, ProductFilterAvailabilitySchema, ProductFilterCategoryOptionSchema, ProductFilterCategorySchema, ProductFilterOptionSchema, ProductFilterOptionValueSchema, ProductFilterPriceRangeSchema, ProductFilterSortOptionSchema, ProductFiltersSchema, ProductPublicationSchema, ProductSchema, PromotionSchema, RefundSchema, ReturnAuthorizationSchema, ReturnItemSchema, ReviewSchema, ShoppingCartSchema, StateSchema, StockLocationSchema, StockReservationSchema, StoreCheckoutCheckoutSchema, StoreCreditSchema, VariantSchema, WishlistItemSchema, WishlistSchema };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

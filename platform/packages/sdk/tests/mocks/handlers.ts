@@ -229,6 +229,10 @@ export const handlers = [
 
   http.post(`${API_PREFIX}/carts/:cartId/complete`, () => HttpResponse.json(fixtures.order)),
 
+  http.post(`${API_PREFIX}/carts/:cartId/submit`, () =>
+    HttpResponse.json({ ...fixtures.order, successor_cart: fixtures.cart }),
+  ),
+
   // Carts > Items
   http.post(`${API_PREFIX}/carts/:cartId/items`, () => HttpResponse.json(fixtures.cart)),
 
