@@ -1,4 +1,4 @@
-﻿# PallasTrade PRD 文档库
+# PallasTrade PRD 文档库
 
 > 一句话需求 → 详细 PRD → harness 门禁实施 → 测试验收 → 知识同步。本目录为 PRD 统一存放处。
 
@@ -38,8 +38,9 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| done | PRD-20260902-payments-payment-p0-foundation-hardening-paymentsession-payment-正式关联- | payments | 2026-09-02 | REQ-20260902-payment-p0.md |
 | done | PRD-20260831-harness-实施-harness-token-优化-宿主侧 | harness | 2026-08-31 | REQ-20260831-harness-token-optimization-host.md |
-| approved | PRD-20260830-checkout-下单链路规范化统一化-场景a-b统一下单页-场景c收银台弹窗-参考阿里国际站 | checkout | 2026-08-30 | （实施时回填） |
+| approved | PRD-20260830-checkout-下单链路规范化统一化-场景a-b统一下单页-场景c收银台弹窗-参考阿里国际站 | checkout | 2026-08-30 | REQ-20260901-positive-checkout-payment-flow-hardening.md |
 | done | PRD-20260830-other-修复-skill-权威路径 | other | 2026-08-30 | REQ-20260830-fix-skill-authority-paths.md |
 | approved | PRD-20260829-checkout-订单模块-单笔走现有checkout-多笔走组合支付新流程-收货信息独立填写 | checkout | 2026-08-29 | REQ-20260830-order-module-single-combined-payment.md |
 | approved | PRD-20260829-checkout-订单流程标准电商改造-购物车与订单分表-订单确认-提交订单-checkout纯支付-自有化去spree化 | checkout | 2026-08-29 | REQ-20260830-order-flow-standard-ecommerce-p1.md |
@@ -88,6 +89,9 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | approved | PRD-20260829-payments-升级-stripe-支付从-payment-intents-迁移到-checkout-sessions-api-ui_m | payments | 2026-08-29 | （实施时回填） |
 | implementing | PRD-20260831-payments-stripe-自绘卡支付表单-paymentintent-模式 | payments | 2026-08-31 | REQ-20260831-stripe-自绘卡支付表单.md |
 
+| done | PRD-20260903-checkout-chk-p1-1a-read-only-checkoutview | checkout | 2026-09-03 | REQ-20260903-chk-p1-1a.md |
+| done | PRD-20260903-checkout-chk-p1-1-order-checkout-application-layer-checkoutview（1B/2/3/4/4B/4C/4C4/5 实施收口） | checkout | 2026-09-03 | REQ-20260903-chk-p1-{1b,2,3,4,4b,4c,5}.md · REQ-20260904-chk-p1-4c4.md |
+| done | PRD-20260904-r1-contract-generation-infra | api | 2026-09-04 | REQ-20260904-r1-contract-generation.md |
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 
 1. 用户一句话需求 → AI 查重 + 分类 + 生成 PRD（draft）

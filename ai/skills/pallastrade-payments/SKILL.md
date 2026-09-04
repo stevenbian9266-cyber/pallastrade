@@ -98,6 +98,8 @@ The session has events: `payment_session.processing`, `payment_session.completed
 
 For most stores, you don't interact with PaymentSession directly — the gateway extension (pallastrade_stripe, pallastrade_adyen) handles creation and completion. You just subscribe to the events if you need to react.
 
+For an existing Order, start sessions through `PallasTrade::PaymentSessions::Start` (the Store Order payment-session controller already delegates to it). It validates the authoritative amount and store payment method, reuses a matching `pending`/`processing` session, and creates a new attempt only after the previous attempt is terminal. Provider network I/O runs **outside** the Order lock transaction; a second lock reconciles concurrent provider responses to one active local winner. Stripe receives a stable operation-level idempotency key for both Checkout Session and PaymentIntent creation. Do not replace this with a long database transaction around provider I/O or a cache-only request lock.
+
 ### Stripe PaymentIntent mode (5.6, PRD-20260831-payments)
 
 `pallastrade_stripe` supports two session modes behind `external_data`:
@@ -114,7 +116,7 @@ For most stores, you don't interact with PaymentSession directly — the gateway
 - 卡数据经 `stripe.createPaymentMethod` 直传 Stripe（PCI SAQ-A），不经过本服务器。
 - ⚠️ Stripe.js v8 已禁止自绘 HTML 卡字段调 `createPaymentMethod({ type: 'card', card: {...} })`——必须用 Elements（CardNumber/CardExpiry/CardCvc）构造 `card: element`。
 - ⚠️ 嵌套路由 controller 解析父资源必须用 `params[:order_id]`（`params[:id]` 是子资源 id）。
-- 相关 bug 教训见 PRD 变更记录 0.2（空购物车竞态：cart 页提交订单后任何本页 server action 完成都会触发 Next.js 自动 refresh → checkout loader redirect 回购物车；支付确认必须放在 or_ 页或 server action 内 redirect）。
+- 正向 Cart checkout uses the same-origin Storefront `/api/checkout/start` Route Handler for Cart update → idempotent submit → session start, avoiding Server Action RSC refresh. The same Pay click then confirms Stripe and opens `/payment-result/[orderId]?session=...`; no second Pay on an `or_` page is required.
 
 ## Payment combinations + splits (数据层, P1)
 
@@ -264,3 +266,9 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **PaymentSession:** `PallasTrade::PaymentSession` — the 5.4+ redirect-flow wrapper.
 - **Docs:** `node_modules/@pallastrade/docs/dist/developer/core-concepts/payments.md` (the how-to companion is `dist/developer/how-to/custom-payment-method.md`).
 - **Stripe gem:** `https://github.com/stevenbian9266-cyber/pallastrade` — best reference for a real-world payment integration.
+
+## Changelog (P0 Payment, 2026-09-03)
+
+- P0 (2026-09-03, PRD-20260902-payments-p0-foundation-hardening): PaymentSession-Payment 正式 FK(payment_session_id)；Webhook Event Store/Dedup/Retry/Replay(pallastrade_payment_webhook_events)；Express 幂等复用 PaymentSessions::Start(REUSE_WINDOW/operation_key 含 amount)；Cart#express_payment 服务端金额权威；Gateway preferences AR-Encryption(ACTIVE_RECORD_ENCRYPTION_* + rake encrypt_preferences/verify)；AuditLog/Audit.record + ErrorCodes canonical 映射；Legacy=Compatibility Only(payment.legacy_flow.used)。详见 docs/payment/。
+- CHK-P1-3 (2026-09-03): PaymentSessions::Start 新增 quote 作用域 Payment Start Gate（过期自动 Refresh / 就绪拦截 checkout_not_ready；无 quote/legacy/completed 账户补付直通）；新会话 external_data 记录 price_version + quote_refreshed；幂等/reuse/operation_key/reconcile 不变。
+- CHK-P1-5 (2026-09-04): PaymentSessions::Start 可选 expected_version/expected_price_version → 不匹配 409 `checkout_version_conflict`（含 latest{version,price_version,expires_at,amount_due,display_amount_due}）；幂等/reuse/operation_key 不变；409 前端消费留 P1-4B/4C。

@@ -344,3 +344,8 @@ A param name that slips through the filters gets written verbatim to production.
 - **Webhook HMAC:** `pallastrade-events-webhooks` skill.
 - **API scopes:** `pallastrade-api-v3` skill.
 - **Payment data flow:** `pallastrade-payments` skill.
+
+## Changelog (P0 Payment, 2026-09-03)
+
+- P0 (2026-09-03): Gateway PaymentMethod.preferences 启用 Active Record Encryption（encrypts :preferences，ENV ACTIVE_RECORD_ENCRYPTION_* 门控 + support_unencrypted_data dual-read；backfill rake pallastrade:payments:encrypt_preferences）；Masking 不变；凭据轮换建议见 docs/payment/security.md。
+

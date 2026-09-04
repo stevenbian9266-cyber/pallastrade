@@ -232,3 +232,8 @@ Available in models, controllers, jobs, and services. Set automatically by contr
 - **OpenAPI spec:** `node_modules/@pallastrade/docs/dist/api-reference/store.yaml` lists every API field and its type — better than guessing from the model source.
 - **Adding new models / API resources:** use the `pallastrade-resource` skill.
 - **Extending existing PallasTrade models** (add an association, validation, scope, method via decorator): use the `pallastrade-decorators` skill.
+
+## Changelog (P0 Payment, 2026-09-03)
+
+- P0 (2026-09-03): 新表 pallastrade_payment_webhook_events（provider/provider_event_id UNIQUE/status/attempt_count/payload）、pallastrade_audit_logs（actor/resource/request_id/before/after）；pallastrade_payments.payment_session_id FK（P0-1）。
+- CHK-P1-2 (2026-09-03): pallastrade_orders 新增 checkout_version(integer default 0)/price_version(string)/checkout_expires_at(datetime)（lock_version 曾短暂加入后移除——AR locking_column 被 state_machines 占用）。

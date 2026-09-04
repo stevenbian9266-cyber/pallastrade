@@ -5,7 +5,15 @@ description: Use when the user is working on PallasTrade's checkout flow — car
 
 # PallasTrade Checkout
 
-Checkout is how a cart becomes a completed order. In PallasTrade, an Order is the cart (while in cart state) AND the completed transaction (post-complete); the `state` column tracks which phase you're in.
+Checkout is how an independent active `PallasTrade::Cart` becomes a submitted `PallasTrade::Order`, then reaches a server-authoritative payment result. Legacy Order-as-cart routes remain compatibility-only; new positive checkout code must not merge those boundaries.
+
+## Positive checkout saga (2026-09-01)
+
+- `PallasTrade::Carts::Submit` locks the Cart, creates one Order, returns that same Order on a converted-cart replay, and publishes `order.submitted` after commit. Partial checkout creates a successor active Cart for unselected items; Buy Now restores the previously active regular Cart.
+- `PallasTrade::PaymentSessions::Start` validates the Order balance/method, reuses a matching active attempt, performs provider I/O outside database transactions, then reconciles concurrent sessions under a second Order lock. Stripe uses stable attempt keys.
+- Storefront A/B/C use one same-origin `/api/checkout/start` command and one Pay click. The BFF retains a short-lived HttpOnly Order checkout token, switches the current-cart cookie to the successor, and returns recoverable `order_id` after post-submit failures.
+- Account single/multi-order cashier flows never submit a Cart or create an Order. They pay the existing `or_` / `pcom_` target.
+- Success, failure, cancellation and unknown/pending all render at `/payment-result/[targetId]`; query parameters identify a session but never decide success. Retry uses the same Order.
 
 ## Order splitting (P2, 能力层服务)
 
@@ -285,3 +293,16 @@ end
 - **Checkout customization:** `node_modules/@pallastrade/docs/dist/developer/customization/checkout.md`
 - **Order source:** `PallasTrade::Order` and `PallasTrade::Order::Checkout` in the installed `pallastrade_core` gem — the state machine wiring.
 - **Cart services:** `PallasTrade::Cart::AddItem`, `PallasTrade::Cart::Recalculate`, etc. in `pallastrade_core/app/services/pallastrade/cart/`.
+
+## Changelog (CHK-P1-1A Read-only CheckoutView, 2026-09-03)
+
+- PallasTrade::OrderCheckout::View（只读投影服务）：View.call(order:) → CheckoutView DTO（预加载 + 委托 Order 权威列；零副作用/确定性；不 requote/retax/repricing/不推进状态机/不建表）。
+- CheckoutSerializer（Store v3）：格式化 CheckoutView（金额 major-unit string、display_*、hide_prices 门控；items/fulfillments/addresses 复用现有资源 serializer；discounts/taxes 解释性明细）。
+- API：GET /api/v3/store/orders/:order_id/checkout（复用 OrderResolvable；legacy checkout 态订单不暴露）。
+- 未来：CHK-P1-1B（mutation WRAP）、P1-2（version/price_version/expiration）、P1-3（Readiness/Snapshot）——本包字段未预留占位。
+- CHK-P1-1B (2026-09-03): Order Checkout Mutation Facade —— OrderCheckout::{UpdateContact(WRAP Orders::UpdateContactInformation), UpdateAddress(WRAP Orders::UpdateShippingAddress), SelectShipping(WRAP Shipments::Update, 复用 rate 选中/cost/重算)} 均返回最新 CheckoutView；PATCH /store/orders/:order_id/checkout（contact/shipping_address/delivery_rate_id 一类一次；!completed? 守卫）。SelectShipping 不含运费敏感税/price-version（P1-2）。
+- CHK-P1-2 (2026-09-03): orders +checkout_version/price_version/checkout_expires_at（lock_version 因 state_machines locking_column 不可用弃用）；OrderCheckout::{Recalculate(WRAP OrderUpdater.update→price_version 金额指纹+checkout_version+1+expires 初始化), Refresh(recalc+续期→View), Expiration(只读 expired?)}；UpdateAddress/SelectShipping 接 Recalc，UpdateContact 手动 bump；View/API 输出 version/price_version/expires_at。Start Gate 留 P1-3。
+- CHK-P1-3 (2026-09-03): OrderCheckout::{Readiness(只读 ready/missing_requirements 聚合，不复制校验), Snapshot(确定性投影+指纹)}；PaymentSessions::Start quote 作用域 Payment Start Gate（quote-active 订单过期自动 Refresh→quote_refreshed；缺 contact/地址/物流→checkout_not_ready；无 quote/legacy/completed 直通）；新会话 external_data 记 price_version；CheckoutView/API 输出 ready/missing_requirements。409 冲突留后续。
+- CHK-P1-4 (2026-09-03): Storefront 首步只读消费后端 CheckoutView（SDK orders.checkout.get + OrderPaymentContent 投影驱动 + ready 门控）；PATCH mutation 前端消费（4B）与 legacy 收编（4C）留后续。
+- CHK-P1-5 (2026-09-04): Quote-Conflict 409 —— PaymentSessions::Start 可选 `expected_version`/`expected_price_version` 顶层参数（quote-active 订单 Refresh 后比对；任一不匹配 → `checkout_version_conflict` 409 + compact latest quote，不建会话）；不提供则与 P1-3 行为一致。
+- CHK-P1-4B (2026-09-04): Storefront 消费 PATCH /orders/:id/checkout（SDK orders.checkout.update + or_ 页地址/物流编辑）；409 checkout_version_conflict 前端处理（提示+刷新，不自动支付）。

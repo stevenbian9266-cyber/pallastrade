@@ -1025,39 +1025,44 @@
     },
     {
       "id": "GS-042",
-      "name": "Checkout payment form initializes before final Pay and summary uses layout sidebar",
-      "description": "Unified checkout should automatically prepare an order-scoped Stripe session once checkout details are valid, account payment modals should initialize on open, and both checkout variants should publish their summary into the route layout's sticky CheckoutSummary sidebar.",
+      "name": "One-click checkout payment saga and unified result",
+      "description": "Unified checkout renders provider-owned card fields immediately without creating an Order, then one Pay command updates/submits the Cart, starts or reuses an Order session, confirms Stripe, and opens a server-authoritative success/failed/canceled/pending result. Account cashier targets existing Orders only.",
       "mustDo": [
-        "Use storefront server actions and the typed SDK to create order payment sessions",
-        "Render StripePaymentForm automatically after receiving client_secret without requiring a reveal-only Pay click",
+        "Render CardPaymentForm before Pay without creating an Order or PaymentIntent",
+        "Use a same-origin BFF and typed SDK for Cart update → replay-safe submit → Order session start; retain a recoverable order_id after post-submit failures",
+        "Confirm Stripe in the same Pay handler and navigate every outcome to /payment-result/[or_|pcom_]",
+        "Reuse matching active PaymentSessions, call providers outside database transactions, and pass stable Stripe operation keys",
         "Allow an owned completed order with balance_due through the ownership-scoped order payment-session endpoint while keeping other customers' orders hidden",
         "Publish UnifiedCheckout and OrderPaymentContent summaries through CheckoutContext setSummaryContent",
         "Add Vitest component coverage and a Store API request authorization regression spec"
       ],
       "mustNotDo": [
         "Create a browser SDK client or expose server payment credentials",
+        "Redirect a newly submitted Cart to an or_ checkout page that requires a second Pay",
+        "Keep a database transaction open during Stripe/PayPal/Adyen network I/O",
         "Use generic completed-order update permission to gate payment-session creation",
         "Render a second nested desktop summary sidebar inside the checkout layout main column",
         "Remove current-store and current-customer/token order isolation",
         "Skip objective UI and API regression evidence"
       ],
       "scoring": {
-        "formPreinitialized": 25,
-        "paymentAuthorization": 25,
-        "stickySummary": 20,
+        "oneClickSaga": 25,
+        "paymentIdempotency": 25,
+        "paymentAuthorization": 15,
+        "stickySummary": 10,
         "securityIsolation": 15,
-        "regressionCoverage": 15
+        "regressionCoverage": 10
       }
     },
     {
       "id": "GS-043",
       "name": "Converted cart lifecycle and customer order history isolation",
-      "description": "After a cart is submitted, converted cart items must disappear from the current cart and Add to Cart must create/use a new active cart. Account order history and all Pay-selected paths must expose only completed orders owned by the authenticated customer in the current store.",
+      "description": "After a cart is submitted, converted cart items must disappear from the current cart and unselected items must remain in a successor active cart. Account order history and all Pay-selected paths expose only submitted or completed orders owned by the authenticated customer in the current store.",
       "mustDo": [
         "Scope authenticated GET /carts to current_store, current JWT customer and active status",
         "Treat only status=active as the implicit current cart while preserving explicit-ID checkout recovery reads",
-        "Create a new active cart when Add to Cart encounters a converted cart",
-        "Scope GET /customers/me/orders by current_store and current_user.id at query time",
+        "Create or restore an active successor cart containing only unselected items; Buy Now restores the previous regular cart",
+        "Scope GET /customers/me/orders by current_store and current_user.id at query time and include submitted pending-payment orders",
         "Use order payment_methods in the account cashier modal and add API plus Vitest ownership/lifecycle regressions"
       ],
       "mustNotDo": [

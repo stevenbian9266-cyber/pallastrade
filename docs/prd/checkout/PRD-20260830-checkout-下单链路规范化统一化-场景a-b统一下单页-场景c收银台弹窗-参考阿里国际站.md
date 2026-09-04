@@ -7,7 +7,7 @@
 | 来源 | 需求：下单链路规范化统一化-场景A/B统一下单页-场景C收银台弹窗-参考阿里国际站 |
 | 分类 | checkout（自动判定） |
 | 关联 Skill | `pallastrade-checkout`、`pallastrade-storefront`、`pallastrade-api-v3` |
-| 关联 REQ | 实施时回填 |
+| 关联 REQ | `harness/requirements/REQ-20260901-positive-checkout-payment-flow-hardening.md` |
 | 关联 PRD | N/A（全新需求，研究见 `docs/research/RESEARCH-20260830-order-flow-unification-ali-international.md`） |
 | 需求类型 | 优化迭代（下单链路规范化统一化） |
 
@@ -122,3 +122,39 @@
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-08-30 | 0.1 | 初稿（研究 + 用户 4 决策点确认后撰写） | AI |
+| 2026-09-01 | 0.2 | 依据《电商四大下单支付场景业务流程落地规范文档（AI落地版）》补充一次 Pay、业务幂等、统一结果页、待支付订单可见与购物车后继语义；用户明确回复“实施” | AI |
+
+## 11. 2026-09-01 正向关键链路架构增补（v0.2，覆盖冲突旧设计）
+
+### 11.1 四场景统一语义
+
+- 场景 A：PDP Add to Cart → CartDrawer → 统一确认页 → 一次 Pay。
+- 场景 B：PDP Buy Now → 独立 Cart → 统一确认页 → 一次 Pay。
+- 场景 C：购物车勾选商品 → 统一确认页 → 一次 Pay；已下单商品离开活动购物车，未选商品保留。
+- 场景 D：个人中心勾选一笔或多笔既有订单 → 收银台弹窗；禁止调用 Cart submit 或创建新 Order。
+
+### 11.2 新增功能要求
+
+- **FR-009（一次 Pay 编排）**：A/B/C 的 Stripe 表单在确认页直接可见。一次 Pay 在同一用户动作内完成幂等 Cart submit、创建或复用 PaymentSession、浏览器确认支付；不得再跳转到 `or_` 页面要求第二次 Pay。
+- **FR-010（持久化业务幂等）**：`Carts::Submit` 在 Cart 锁内重检状态，converted Cart replay 返回来源 Order；PaymentSession 按订单、支付方式、模式和活动状态复用；渠道创建请求使用稳定操作级幂等键。请求层 `Idempotency-Key` 只作快速重放，不作为唯一正确性保障。
+- **FR-011（统一支付结果）**：成功、失败、取消、处理中统一进入 `/payment-result/[targetId]`；状态以服务端 Order、PaymentSession 或 PaymentCombination 为准。失败重试复用原订单，Continue Shopping 指向商品列表。
+- **FR-012（订单立即可见）**：登录用户提交后的 pending/submitted 订单直接通过 `current_store + current_user` 数据源在个人中心可见；邮件、Webhook、ERP 等事件副作用必须在事务提交后执行，且不得阻塞支付。
+- **FR-013（部分购物车后继）**：购物车仅结算 selected items。原 Cart 转为 converted；存在未选商品时生成后继 active Cart 并迁移未选项，Storefront 更新当前购物车 cookie。Buy Now Cart 不产生无意义后继 Cart。
+
+### 11.3 修订后的验收约束
+
+- AC-001～AC-003：A/B/C 共用统一确认页；地址、商品、物流、支付方式和右侧 sticky Order Summary 齐全，Stripe 表单预渲染。
+- AC-002：用户仅点击一次 Pay；订单至多创建一次，后续失败进入明确结果态，不再出现第二个 Pay 页面。
+- AC-003：C 仅结算选中商品，未选商品仍在后继活动购物车中。
+- AC-004～AC-006：D 单笔/多笔只支付既有订单，分别复用 PaymentSession / PaymentCombination，不创建新订单。
+- AC-007：重复或并发 Cart submit 返回同一 Order；活动 PaymentSession 复用；渠道网络重试不重复创建支付意图。
+- AC-008：submitted/pending 订单立即在当前店铺、当前用户账户中可见，列表、详情和支付均使用服务端归属隔离。
+- AC-009：成功、失败、取消和处理中进入统一结果页；Retry Payment 复用原订单。
+- AC-010：前端 complete、Webhook 和网络重试任意顺序均不重复扣款、不重复创建订单、状态不回退。
+
+### 11.4 架构决策
+
+- 不新增 Order state，不重写支付网关、拆单、组合记账或退款核心。
+- Cart → Order 与 Order → PaymentSession 为两个可恢复阶段，不把外部网关调用包进数据库事务。
+- Storefront 使用同源 BFF Route Handler 启动 checkout，避免 Server Action 完成后的 RSC refresh 抢占已转换 `cart_` 页面；BFF 校验 Origin/CSRF，服务端 SDK 凭证不下发浏览器。
+- `order.submitted` 等事件只承载异步副作用，并在主事务提交后发布；账户订单可见性不依赖事件复制。

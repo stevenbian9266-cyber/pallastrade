@@ -72,7 +72,7 @@ Method name is always `get`, never `show`. The delete method is `delete`, not `d
 
 New `Cart` entity (`pallastrade_carts`) plus order-domain payments:
 
-- `client.carts.submit(cartId, options?)` — `POST /carts/:id/submit`; converts the cart into an `Order` (`or_`-prefixed) and returns it (`Order` type now carries `state`, `status`, `submitted_at`, `cart_id`, `payment_methods`).
+- `client.carts.submit(cartId, options?)` — `POST /carts/:id/submit`; returns `CartSubmitResult`, which is the `or_`-prefixed Order plus required nullable `successor_cart`. A partial checkout activates the successor containing unselected items; a replay returns the same Order. Storefront code must persist the successor token before clearing the converted cart cookie.
 - `client.orders.paymentSessions.create(orderId, { payment_method_id, amount?, external_data? }, options?)` / `.get` / `.complete(orderId, sessionId, { session_result?, external_data? }, options?)` — order-scoped payment sessions (Stripe Checkout `client_secret` etc.).
 - `client.shippingMethods.list(options?)` — `GET /shipping_methods`; `DeliveryMethod` carries `display_estimated_price` for the order-confirmation radio list.
 - Cart line items accept `selected?: boolean` (`UpdateLineItemParams` / `UpdateCartItemParams`) — only selected items are submitted to the order.
@@ -618,3 +618,9 @@ function useCreateCart() {
 - **Admin SDK source status:** the Developer Preview package is described by this Skill, but the former `admin-sdk` package directory is not present under `platform/packages` in the current repository checkout. Do not invent or edit a local source path; verify the released package/current integration branch before proposing source changes.
 - **API protocol details:** see the `pallastrade-api-v3` skill — auth, prefixed IDs, pagination, envelope.
 - **Webhooks delivery side:** see the `pallastrade-events-webhooks` skill — endpoint config, retry logic, payload shape.
+
+## Changelog (P0 Payment, 2026-09-03)
+
+- P0 (2026-09-03): Cart 类型新增 express_payment（typelizer 再生成；platform SDK src+dist 已同步）。
+- R1 (2026-09-04): 契约管线可运行化——`rake typelizer:generate`（docker, ENABLE_TYPELIZER=1）接入 `scripts/ci/contracts.sh` 与 `harness generated:check`；生成类型一次归一化（Cart/Order/DeliveryMethod 等 backend/packages/{sdk,admin-sdk} 刷新并同步 platform/packages/sdk src + zod 派生）；SDK 生成类型以 serializers 为唯一权威（新端点不再手写）。
+

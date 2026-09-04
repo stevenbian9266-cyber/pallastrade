@@ -281,3 +281,8 @@ Meilisearch index wasn't built. Run `bundle exec rake pallastrade:search:reindex
 - **Deployment docs:** `https://pallastrade.cn/docs/developer/deployment` — platform-specific guides.
 - **Env vars:** `.env.example` at the app root, and the Environment Variables page at `https://pallastrade.cn/docs/developer/deployment/environment_variables`.
 - **Sidekiq tuning:** the `pallastrade-performance` skill.
+
+## Changelog (P0 Payment, 2026-09-03)
+
+- P0 (2026-09-03): 需注入 ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY/DETERMINISTIC_KEY/KEY_DERIVATION_SALT（dev compose 已带默认）；部署后跑 rake pallastrade:payments:encrypt_preferences + verify_encrypted_preferences。详见 docs/payment/PAYMENT_P0_COMPLETION_REPORT.md §4。
+
