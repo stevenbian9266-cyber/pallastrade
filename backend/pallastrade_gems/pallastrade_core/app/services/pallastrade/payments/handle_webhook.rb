@@ -51,9 +51,13 @@ module PallasTrade
           payment = payment_session.find_or_create_payment!(metadata)
           payment.confirm! if payment.present? && !payment.completed?
           payment_session.complete if payment_session.can_complete?
-
-          PallasTrade::Dependencies.carts_complete_service.constantize.call(cart: order) unless order.reload.completed?
         end
+
+        # TXN-P2-5 (PRD-20260904-payments-txn-p2-5): 完成收口到 Transaction
+        # Payment Handler——带 commerce_transaction 的会话 → confirm_payment! +
+        # Transactions::Finalize；legacy 无 txn → 原 Carts::Complete 行为
+        # （Strangler）。放在 order 锁外，保持 transaction→order 锁序一致。
+        PallasTrade::Transactions::OnPaymentSuccess.call(payment_session: payment_session.reload)
 
         success(payment_session)
       rescue StandardError => e

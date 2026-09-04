@@ -36,7 +36,7 @@ module PallasTrade
         outcome = plan(transaction)
         return outcome unless outcome == :finalize
 
-        finalize_and_complete(transaction)
+        finalize(transaction)
       end
 
       private
@@ -82,48 +82,15 @@ module PallasTrade
         end
       end
 
-      def finalize_and_complete(transaction)
-        failures = finalize_participants(transaction)
+      # TXN-P2-5：PAID+incomplete 的完成统一收口到 Transactions::Finalize（canonical
+      # orchestration boundary，§56）；Recover 只负责 resolver 判定与资金事实分支。
+      def finalize(transaction)
+        result = PallasTrade::Transactions::Finalize.call(transaction: transaction)
+        return result if result.success?
 
-        transaction.with_lock do
-          tx = transaction.reload
-          # 幂等短路：锁间隙另一进程已完成（参与者完成后 repair/completed）
-          return success(action: :finalized, transaction: tx) if tx.state == 'completed'
-
-          unless failures.empty?
-            tx.update_columns(last_error_class: 'PallasTrade::Transactions::Recover',
-                              last_error_code: 'finalize_failed',
-                              last_error_message: failures.first.to_s)
-            return failure(tx, { code: 'finalize_failed',
-                                 message: 'Some participant orders could not be finalized' })
-          end
-
-          tx.retry_finalizing!
-          tx.complete!
-          success(action: :finalized, transaction: tx.reload)
-        end
-      end
-
-      # 锁外逐参与者 finalize（幂等原语，INV-08）；成功者标记 completion_status。
-      # 单个参与者异常不中断其余参与者；失败汇总写入 last_error（资金不回滚）。
-      def finalize_participants(transaction)
-        transaction.transaction_orders.includes(:order).filter_map do |torder|
-          order = torder.order
-          next if order.nil? || order.completed?
-
-          begin
-            result = PallasTrade::Payments::CombinationMemberComplete.call(order: order)
-          rescue StandardError => e
-            next "order #{order.number || order.id} finalize error: #{e.class}"
-          end
-
-          if result.success? && order.reload.completed?
-            torder.update_column(:completion_status, 'completed') if torder.completion_status != 'completed'
-            nil
-          else
-            "order #{order.number || order.id} finalize failed"
-          end
-        end
+        code = result.error.value[:code] if result.error.respond_to?(:value) && result.error.value.is_a?(Hash)
+        failure(transaction, { code: code.presence || 'finalize_failed',
+                               message: 'Participant finalization failed' })
       end
 
       def all_participants_completed?(transaction)
