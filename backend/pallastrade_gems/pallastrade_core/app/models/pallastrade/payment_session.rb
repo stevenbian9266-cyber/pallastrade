@@ -18,9 +18,12 @@ module PallasTrade
     # keeps the 1:1 session <-> payment contract.
     belongs_to :payment_combination, class_name: 'PallasTrade::PaymentCombination', optional: true
 
+    # P0-1 (2026-09-02): Payment ↔ PaymentSession 正式关联 —— 通过
+    # payments.payment_session_id（而非 response_code ↔ external_id 拼接）。
+    # 一个 PaymentSession 最多产生一个 Payment（业务不变量，见 PRD FR-015）。
     has_one :payment, class_name: 'PallasTrade::Payment',
-            foreign_key: :response_code,
-            primary_key: :external_id
+            inverse_of: :payment_session,
+            dependent: :nullify
 
     validates :order, :payment_method, :external_id, :status, :currency, presence: true
     validates :external_id, uniqueness: { scope: [:order_id, :payment_method_id] }
@@ -84,6 +87,10 @@ module PallasTrade
     # Gateway subclasses can override this in their PaymentSession subclass
     # to handle gateway-specific source creation (credit cards, wallets, etc).
     #
+    # P0-1 (2026-09-02): 创建/查找时显式关联本 session（payment_session_id）。
+    # response_code 仅作为 PSP reference；对 pi_ 模式（external_id 即 PSP id）沿用
+    # external_id 作为 response_code，cs_ 模式由 gateway 覆写解析底层 pi_。
+    #
     # @param metadata [Hash] gateway-specific metadata
     # @return [PallasTrade::Payment] the payment record
     def find_or_create_payment!(metadata = {})
@@ -93,6 +100,7 @@ module PallasTrade
         payment_method: payment_method,
         response_code: external_id,
       ) do |p|
+        p.payment_session = self
         p.amount = amount
         p.skip_source_requirement = true
       end

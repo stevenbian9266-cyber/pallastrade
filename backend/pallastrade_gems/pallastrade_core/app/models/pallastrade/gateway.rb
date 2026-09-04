@@ -2,6 +2,13 @@ module PallasTrade
   class Gateway < PaymentMethod
     FROM_DOLLAR_TO_CENT_RATE = 100.0
 
+    # P0-5 (PRD FR-053, 方案 A): gateway 凭据加密。PaymentMethod.preferences 是
+    # Preferable `serialize Hash/YAML` 的明文列；此处在 Gateway 基类对其加 AR
+    # Encryption（与 GatewayCustomer/WebhookEndpoint 同门控）：未配置
+    # ACTIVE_RECORD_ENCRYPTION_* 时惰性（保持明文，零回归）；配置后新写一律加密。
+    # 只加在 Gateway —— 不误伤 Check/StoreCredit 等非 gateway PaymentMethod。
+    encrypts :preferences if Rails.configuration.active_record.encryption.include?(:primary_key)
+
     delegate :authorize, :purchase, :capture, :void, :credit, to: :provider
 
     validates :type, presence: true, inclusion: { in: :valid_providers_list }

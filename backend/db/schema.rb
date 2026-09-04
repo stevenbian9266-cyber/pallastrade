@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_30_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_03_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -409,6 +409,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_30_000003) do
     t.index ["position"], name: "index_pt_assets_on_position"
     t.index ["viewable_id"], name: "index_assets_on_viewable_id"
     t.index ["viewable_type", "type"], name: "index_assets_on_viewable_type_and_type"
+  end
+
+  create_table "pallastrade_audit_logs", force: :cascade do |t|
+    t.string "action", null: false
+    t.bigint "actor_id"
+    t.string "actor_label"
+    t.string "actor_type"
+    t.jsonb "after"
+    t.jsonb "before"
+    t.datetime "created_at", null: false
+    t.jsonb "metadata"
+    t.datetime "occurred_at", null: false
+    t.string "request_id"
+    t.bigint "resource_id"
+    t.string "resource_prefixed_id"
+    t.string "resource_type"
+    t.datetime "updated_at", null: false
+    t.index ["action"], name: "index_pallastrade_audit_logs_on_action"
+    t.index ["actor_type", "actor_id"], name: "index_pallastrade_audit_logs_on_actor_type_and_actor_id"
+    t.index ["occurred_at"], name: "index_pallastrade_audit_logs_on_occurred_at"
+    t.index ["resource_type", "resource_id"], name: "index_pallastrade_audit_logs_on_resource_type_and_resource_id"
   end
 
   create_table "pallastrade_back_in_stock_subscriptions", force: :cascade do |t|
@@ -1121,6 +1142,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_30_000003) do
     t.bigint "cart_id"
     t.string "channel", default: "pallastrade"
     t.bigint "channel_id"
+    t.datetime "checkout_expires_at"
+    t.integer "checkout_version", default: 0, null: false
     t.datetime "completed_at", precision: nil
     t.boolean "confirmation_delivered", default: false
     t.boolean "considered_risky", default: false
@@ -1144,6 +1167,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_30_000003) do
     t.string "payment_state"
     t.decimal "payment_total", precision: 10, scale: 2, default: "0.0"
     t.bigint "preferred_stock_location_id"
+    t.string "price_version"
     t.jsonb "private_metadata"
     t.decimal "promo_total", precision: 10, scale: 2, default: "0.0"
     t.jsonb "public_metadata"
@@ -1323,6 +1347,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_30_000003) do
     t.index ["payment_id"], name: "index_pallastrade_payment_splits_on_payment_id"
   end
 
+  create_table "pallastrade_payment_webhook_events", force: :cascade do |t|
+    t.string "action"
+    t.integer "attempt_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.string "event_type"
+    t.string "last_error_class"
+    t.string "last_error_message"
+    t.jsonb "payload"
+    t.bigint "payment_method_id", null: false
+    t.bigint "payment_session_id"
+    t.datetime "processed_at"
+    t.datetime "processing_at"
+    t.string "provider", null: false
+    t.datetime "provider_created_at"
+    t.string "provider_event_id", null: false
+    t.datetime "received_at"
+    t.string "status", default: "received", null: false
+    t.datetime "updated_at", null: false
+    t.index ["payment_method_id", "status"], name: "idx_on_payment_method_id_status_5419e3ef9a"
+    t.index ["payment_session_id"], name: "index_pt_payment_webhook_events_on_payment_session_id"
+    t.index ["provider", "provider_event_id"], name: "index_pallastrade_payment_webhook_events_on_provider_event", unique: true
+  end
+
   create_table "pallastrade_payments", force: :cascade do |t|
     t.decimal "amount", precision: 10, scale: 2, default: "0.0", null: false
     t.string "avs_response"
@@ -1333,6 +1380,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_30_000003) do
     t.bigint "order_id"
     t.bigint "payment_combination_id"
     t.bigint "payment_method_id"
+    t.bigint "payment_session_id"
     t.jsonb "private_metadata"
     t.jsonb "public_metadata"
     t.string "response_code"
@@ -1345,6 +1393,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_30_000003) do
     t.index ["order_id"], name: "index_pt_payments_on_order_id"
     t.index ["payment_combination_id"], name: "index_pallastrade_payments_on_payment_combination_id"
     t.index ["payment_method_id"], name: "index_pt_payments_on_payment_method_id"
+    t.index ["payment_session_id"], name: "index_pallastrade_payments_on_payment_session_id"
     t.index ["source_id", "source_type"], name: "index_pt_payments_on_source_id_and_source_type"
   end
 
@@ -2682,6 +2731,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_30_000003) do
   add_foreign_key "pallastrade_payment_splits", "pallastrade_payment_combinations", column: "payment_combination_id"
   add_foreign_key "pallastrade_payment_splits", "pallastrade_payments", column: "payment_id"
   add_foreign_key "pallastrade_payments", "pallastrade_payment_combinations", column: "payment_combination_id"
+  add_foreign_key "pallastrade_payments", "pallastrade_payment_sessions", column: "payment_session_id"
   add_foreign_key "pallastrade_product_translations", "pallastrade_products"
   add_foreign_key "pallastrade_redirects", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_reviews", "pallastrade_products", column: "product_id"

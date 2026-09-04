@@ -1,4 +1,4 @@
-# PALLAS-CUSTOM: Only active carts belong in the authenticated customer's current-cart list.
+# PALLAS-CUSTOM: Scope current carts and return replay-safe submit/successor data.
 module PallasTrade
   module Api
     module V3
@@ -81,13 +81,17 @@ module PallasTrade
           # ★提交订单：校验勾选商品 → 从 Cart 快照创建 Order（state=pending）
           # + Cart → converted。返回 Order（or_ 前缀）供前端跳转 /checkout/[orderId]。
           def submit
-            find_shopping_cart!
+            # `show` ownership is intentional: a converted Cart must remain readable
+            # by its owner so a retried POST can replay the original Order.
+            find_shopping_cart
 
             result = PallasTrade::Carts::Submit.call(cart: @shopping_cart)
 
             if result.success?
               @order = result.value
-              render json: PallasTrade.api.order_serializer.new(@order, params: serializer_params).to_h
+              payload = PallasTrade.api.order_serializer.new(@order, params: serializer_params).to_h
+              payload[:successor_cart] = serialize_successor_cart(@order)
+              render json: payload
             else
               render_service_error(
                 result.error.to_s.presence || 'Could not submit order',
@@ -139,6 +143,16 @@ module PallasTrade
 
           def item_params
             [:variant_id, :quantity, :selected, { metadata: {}, options: {} }]
+          end
+
+          def serialize_successor_cart(order)
+            successor_id = order.metadata.with_indifferent_access[:successor_cart_id]
+            return nil if successor_id.blank?
+
+            successor = current_store.shopping_carts.active.find_by_prefix_id(successor_id)
+            return nil unless successor
+
+            PallasTrade.api.shopping_cart_serializer.new(successor, params: serializer_params).to_h
           end
 
           # Find guest cart (no user) or cart already owned by current user (idempotent).

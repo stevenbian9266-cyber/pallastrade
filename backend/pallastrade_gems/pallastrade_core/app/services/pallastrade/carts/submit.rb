@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# PALLAS-CUSTOM: Make Cart submission replay-safe and preserve unselected items (PRD-20260830 checkout v0.2).
+
 module PallasTrade
   module Carts
     # 订单流程标准电商改造 P1（2026-08-30）：提交订单（提交节点）。
@@ -20,11 +22,23 @@ module PallasTrade
       prepend PallasTrade::ServiceModule::Base
 
       def call(cart:)
-        return failure(cart, 'Cart is not active') unless cart.active?
-        # 游客下单必须提供邮箱（Order 对 email 有必填校验）；登录用户取 user.email
-        return failure(cart, 'Email is required to place an order') if cart.user.nil? && cart.email.blank?
+        created = false
+        order = cart.with_lock do
+          cart.reload
 
-        cart.with_lock do
+          # A request replay can arrive after the first request converted the Cart.
+          # Return the source Order instead of turning a successful checkout into an
+          # error. The Cart row lock serializes concurrent submit requests.
+          unless cart.active?
+            existing_order = cart.orders.order(:id).first
+            return success(existing_order) if cart.converted? && existing_order.present?
+
+            return failure(cart, 'Cart is not active')
+          end
+
+          # 游客下单必须提供邮箱（Order 对 email 有必填校验）；登录用户取 user.email
+          return failure(cart, 'Email is required to place an order') if cart.user.nil? && cart.email.blank?
+
           selected_items = cart.cart_items.selected.includes(:variant).to_a
           return failure(cart, PallasTrade.t(:there_are_no_items_for_this_order)) if selected_items.empty?
 
@@ -35,11 +49,21 @@ module PallasTrade
           order = build_order!(cart, selected_items)
           return failure(order, order.errors.full_messages.to_sentence) if order.errors.any?
 
-          cart.convert!
-          order.publish_event('order.submitted', payload: { order_id: order.prefixed_id })
+          successor_cart = create_or_restore_successor_cart!(cart)
+          if successor_cart.present?
+            order.metadata = order.metadata.merge('successor_cart_id' => successor_cart.prefixed_id)
+            order.save!
+          end
 
-          success(order)
+          cart.convert!
+          created = true
+          order
         end
+
+        # Publish only after the Cart/Order transaction committed. Event consumers
+        # are side effects and must never hide a successfully persisted order.
+        publish_submitted_event(order) if created
+        success(order)
       rescue ActiveRecord::RecordInvalid => e
         failure(e.record, e.record.errors.full_messages.to_sentence)
       end
@@ -111,6 +135,48 @@ module PallasTrade
 
           shipment.selected_shipping_rate_id = rate.id if rate
         end
+      end
+
+      # Normal partial checkout gets a new active Cart containing only the
+      # unselected rows. Buy Now restores the previously active Cart recorded by
+      # the storefront and never mixes its one-off Cart into the regular cart.
+      def create_or_restore_successor_cart!(cart)
+        metadata = cart.metadata.with_indifferent_access
+        if metadata[:checkout_source] == 'buy_now'
+          previous_cart_id = metadata[:previous_cart_id]
+          return if previous_cart_id.blank?
+
+          return cart.store.shopping_carts.active.find_by_prefix_id(previous_cart_id)
+        end
+
+        unselected_items = cart.cart_items.where(selected: false).to_a
+        return if unselected_items.empty?
+
+        successor = cart.store.shopping_carts.create!(
+          user: cart.user,
+          email: cart.email,
+          customer_note: cart.customer_note,
+          currency: cart.currency,
+          locale: cart.locale,
+          shipping_address: cart.shipping_address,
+          billing_address: cart.billing_address,
+          shipping_method: cart.shipping_method,
+          metadata: metadata.except(:checkout_source, :previous_cart_id, :successor_cart_id).merge(
+            predecessor_cart_id: cart.prefixed_id
+          )
+        )
+
+        unselected_items.each { |item| item.update!(cart: successor) }
+        successor
+      end
+
+      def publish_submitted_event(order)
+        order.publish_event('order.submitted', payload: { order_id: order.prefixed_id })
+      rescue StandardError => e
+        Rails.logger.error(
+          "order.submitted publication failed order_id=#{order.prefixed_id} " \
+          "error=#{e.class}: #{e.message}"
+        )
       end
     end
   end

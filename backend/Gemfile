@@ -85,4 +85,7 @@ end
 
 group :development do
   gem 'web-console'
+  # Evented file watcher for dev auto-reload. Without it Rails falls back to
+  # polling FileUpdateChecker, which is very slow on Docker Desktop bind mounts.
+  gem 'listen', '~> 3.0'
 end

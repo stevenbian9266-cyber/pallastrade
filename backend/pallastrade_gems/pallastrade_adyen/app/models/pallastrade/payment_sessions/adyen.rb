@@ -47,10 +47,12 @@ module PallasTrade
 
         return existing_payment if existing_payment.present?
 
+        # P0-1 (2026-09-02): 显式关联 originating PaymentSession。
         order.payments.create!(
           payment_method: payment_method,
           amount: amount,
           response_code: external_id,
+          payment_session: self,
           skip_source_requirement: true
         )
       end

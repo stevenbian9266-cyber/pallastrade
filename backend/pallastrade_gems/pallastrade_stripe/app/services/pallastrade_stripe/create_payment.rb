@@ -44,6 +44,13 @@ module PallasTradeStripe
         amount: amount
       )
 
+      # P0-1 (2026-09-02): 显式关联 originating PaymentSession（payment_intent 即
+      # PaymentSessions::Stripe duck-type）。cs_ 模式下 response_code=pi_ 而
+      # session.external_id=cs_，正式关联不依赖二者相等。
+      if payment_intent.is_a?(PallasTrade::PaymentSession)
+        payment.payment_session = payment_intent
+      end
+
       payment.source = source if source.present?
       payment.stripe_tax_transaction_id = tax_transaction
       payment.stripe_charge_id = stripe_charge&.id

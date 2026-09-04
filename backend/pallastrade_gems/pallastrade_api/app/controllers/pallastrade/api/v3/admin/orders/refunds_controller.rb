@@ -21,6 +21,18 @@ module PallasTrade
                 authorize_resource!(@resource, :create)
 
                 if @resource.save
+                  # P0-6 (PRD FR-064): Refund 敏感操作审计。
+                  PallasTrade::Audit.record(
+                    actor: (respond_to?(:current_admin_user) ? current_admin_user : 'admin'),
+                    action: 'refund',
+                    resource: @resource,
+                    after: {
+                      payment_id: payment.prefixed_id,
+                      amount: @resource.amount.to_s,
+                      reason_id: reason&.prefixed_id,
+                      currency: @resource.currency
+                    }
+                  )
                   render json: serialize_resource(@resource), status: :created
                 else
                   render_validation_error(@resource.errors)

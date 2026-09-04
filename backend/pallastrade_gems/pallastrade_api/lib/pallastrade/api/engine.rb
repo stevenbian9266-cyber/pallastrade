@@ -19,6 +19,12 @@ module PallasTrade
         app.middleware.insert_before Rack::Runtime, PallasTrade::Api::Middleware::RequestSizeLimit
       end
 
+      # P0-6 (FR-063/FR-064): 注入 request_id 到 Thread.current，供 Audit/结构化日志使用。
+      initializer 'PallasTrade.api.request_id' do |app|
+        require_relative 'middleware/request_id'
+        app.middleware.insert_before Rack::Runtime, PallasTrade::Api::Middleware::RequestId
+      end
+
       # Add API event subscribers
       config.after_initialize do
         PallasTrade.subscribers << PallasTrade::WebhookEventSubscriber

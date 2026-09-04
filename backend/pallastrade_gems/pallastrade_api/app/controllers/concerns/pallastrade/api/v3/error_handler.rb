@@ -33,6 +33,8 @@ module PallasTrade
           order_not_found: 'order_not_found',
           order_cannot_complete: 'order_cannot_complete',
           order_cannot_split: 'order_cannot_split',
+          # CHK-P1-5: checkout quote 已变（expected version/price_version 不匹配）→ 409
+          checkout_version_conflict: 'checkout_version_conflict',
 
           # Line item errors
           line_item_not_found: 'line_item_not_found',
@@ -129,7 +131,11 @@ module PallasTrade
             render_service_error(error.value, code: code, status: status)
           elsif error.is_a?(Hash) && error[:code].present? && error[:message].present?
             # P8：结构化业务错误 { code:, message: } → 统一 code + message（黑名单/风控/防刷单等）
-            render_error(code: error[:code], message: error[:message], status: status)
+            # CHK-P1-3：其余键（如 missing_requirements）透传到 details，供客户端结构化消费。
+            # CHK-P1-5：checkout_version_conflict 映射 HTTP 409（quote 已变，客户端重确认）。
+            extra = error.except(:code, :message)
+            conflict_status = error[:code] == ERROR_CODES[:checkout_version_conflict] ? :conflict : status
+            render_error(code: error[:code], message: error[:message], status: conflict_status, details: extra.presence)
           elsif error.is_a?(ActiveModel::Errors)
             render_validation_error(error, code: code)
           elsif error.is_a?(String)
@@ -221,7 +227,6 @@ module PallasTrade
             status: :unprocessable_content
           )
         end
-
 
         private
 

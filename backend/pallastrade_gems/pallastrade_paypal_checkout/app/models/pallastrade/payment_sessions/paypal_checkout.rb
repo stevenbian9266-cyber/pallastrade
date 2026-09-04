@@ -42,11 +42,13 @@ module PallasTrade
 
         source = create_payment_source!
 
+        # P0-1 (2026-09-02): 显式关联 originating PaymentSession。
         order.payments.create!(
           payment_method: payment_method,
           amount: amount,
           response_code: paypal_capture_id,
           source: source,
+          payment_session: self,
           skip_source_requirement: true,
           private_metadata: metadata
         )

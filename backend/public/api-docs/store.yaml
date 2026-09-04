@@ -2779,15 +2779,18 @@ paths:
         Standard-flow cart submit (PRD-20260829-checkout): validates email and
         selected items, snapshots line items and addresses, creates shipments,
         selects the shipping rate, converts the cart, and returns the new
-        `or_`-prefixed Order. Emits `order.submitted`. The order carries the
-        cart's token so the checkout payment page can authorize.
+        `or_`-prefixed Order. Replays of the converted cart return the same
+        Order. When only selected items are submitted, `successor_cart` contains
+        the active cart that preserves unselected items. Emits `order.submitted`
+        after commit. The order carries the cart token for payment recovery.
       x-codeSamples:
       - lang: javascript
         label: PallasTrade SDK
         source: |-
           import { createClient } from '@pallastrade/sdk'
           const client = createClient({ baseUrl: 'https://your-store.com', publishableKey: '<api-key>' })
-          const order = await client.carts.submit(cartId, { guestToken: cart.token })
+          const result = await client.carts.submit(cartId, { guestToken: cart.token })
+          const { successor_cart: successorCart, ...order } = result
       parameters:
       - name: id
         in: path
@@ -2797,11 +2800,11 @@ paths:
         description: Prefixed cart ID (cart_...)
       responses:
         '200':
-          description: cart submitted, order returned
+          description: cart submitted or replayed; order and optional successor cart returned
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Order"
+                "$ref": "#/components/schemas/CartSubmitResult"
         '422':
           description: cannot submit (missing email / no selected items / pricing changed)
           content:
@@ -5767,7 +5770,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Error"
+                "$ref": "#/components/schemas/ErrorResponse"
       requestBody:
         content:
           application/json:
@@ -6033,6 +6036,87 @@ paths:
                 error:
                   code: order_not_found
                   message: Order not found
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/orders/{order_id}/checkout":
+    get:
+      summary: Get order checkout (server-driven CheckoutView, CHK-P1)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      description: |-
+        Read-only server projection of the order's current checkout facts
+        (`OrderCheckout::CheckoutView`): money/items/addresses plus
+        version/price_version/expires_at and ready/missing_requirements.
+        No side effects (no requote/retax/state changes).
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: CheckoutView projection
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Checkout"
+        "404":
+          description: Order not found or not accessible
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+    patch:
+      summary: Update order checkout (mutation facade, CHK-P1)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      description: |-
+        Updates one checkout field set per request: contact (email),
+        shipping_address (or shipping_address_id) or delivery_rate_id.
+        Returns the latest CheckoutView. Does not advance the legacy state
+        machine; refuses completed orders.
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contact:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                shipping_address:
+                  "$ref": "#/components/schemas/Address"
+                shipping_address_id:
+                  type: string
+                delivery_rate_id:
+                  type: string
+              example:
+                delivery_rate_id: dr_example
+      responses:
+        "200":
+          description: Updated CheckoutView
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Checkout"
+        "422":
+          description: Invalid request / checkout not ready
+          content:
+            application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
   "/api/v3/store/orders/{order_id}/payment_sessions":
@@ -10862,46 +10946,6 @@ components:
       - token
       - refresh_token
       - user
-    PermissionRule:
-      type: object
-      description: A single permission rule (CanCanCan rule). Rules are applied in
-        order, last-matching-wins.
-      properties:
-        allow:
-          type: boolean
-          description: true for `can`, false for `cannot`
-        actions:
-          type: array
-          items:
-            type: string
-          description: Action names, e.g. ["read", "update"] or ["manage"]
-        subjects:
-          type: array
-          items:
-            type: string
-          description: Subject class names, e.g. ["PallasTrade::Product"] or ["all"]
-        has_conditions:
-          type: boolean
-          description: True if the server-side rule has per-record conditions. The
-            SPA shows the action optimistically and handles 403 from the API.
-      required:
-      - allow
-      - actions
-      - subjects
-      - has_conditions
-    MeResponse:
-      type: object
-      description: Current admin user profile and serialized permissions
-      properties:
-        user:
-          "$ref": "#/components/schemas/AdminUser"
-        permissions:
-          type: array
-          items:
-            "$ref": "#/components/schemas/PermissionRule"
-      required:
-      - user
-      - permissions
     ImportSchemaField:
       type: object
       description: A canonical column of an import type, including per-store custom
@@ -10941,6 +10985,174 @@ components:
       - step
       - field
       - message
+    CheckoutViewLine:
+      type: object
+      description: Explanatory adjustment detail line (discounts/taxes) on a CheckoutView
+      properties:
+        id:
+          type: string
+          example: ad_abc123
+        amount:
+          type: string
+          nullable: true
+          description: Major-unit decimal string
+          example: "5.00"
+        currency:
+          type: string
+          example: USD
+      required:
+      - id
+      - currency
+    Checkout:
+      type: object
+      description: Server-driven CheckoutView projection of an Order (read-only)
+      properties:
+        id:
+          type: string
+          example: order_abc123
+        number:
+          type: string
+          example: R100000001
+        state:
+          type: string
+          example: pending
+        status:
+          type: string
+          example: placed
+        payment_state:
+          type: string
+          nullable: true
+          example: balance_due
+        shipment_state:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+          format: email
+        currency:
+          type: string
+          example: USD
+        submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          type: integer
+          description: OrderCheckout content version (increments on recalcs/mutations)
+          example: 3
+        price_version:
+          type: string
+          nullable: true
+          description: Money-input fingerprint (SHA256 prefix)
+          example: 1a2b3c4d5e6f7890
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Quote expiry
+        ready:
+          type: boolean
+          description: True when all checkout requirements are satisfied
+        missing_requirements:
+          type: array
+          description: Unsatisfied requirement codes (contact/shipping_address/delivery_rate/balance)
+          items:
+            type: string
+          example:
+          - contact
+        item_total:
+          type: string
+          nullable: true
+        display_item_total:
+          type: string
+          nullable: true
+        delivery_total:
+          type: string
+          nullable: true
+        display_delivery_total:
+          type: string
+          nullable: true
+        adjustment_total:
+          type: string
+          nullable: true
+        display_adjustment_total:
+          type: string
+          nullable: true
+        discount_total:
+          type: string
+          nullable: true
+        display_discount_total:
+          type: string
+          nullable: true
+        tax_total:
+          type: string
+          nullable: true
+        display_tax_total:
+          type: string
+          nullable: true
+        included_tax_total:
+          type: string
+          nullable: true
+        display_included_tax_total:
+          type: string
+          nullable: true
+        additional_tax_total:
+          type: string
+          nullable: true
+        display_additional_tax_total:
+          type: string
+          nullable: true
+        total:
+          type: string
+          nullable: true
+        display_total:
+          type: string
+          nullable: true
+        amount_due:
+          type: string
+          nullable: true
+        display_amount_due:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            "$ref": "#/components/schemas/LineItem"
+        fulfillments:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Fulfillment"
+        shipping_address:
+          allOf:
+          - "$ref": "#/components/schemas/Address"
+          nullable: true
+        billing_address:
+          allOf:
+          - "$ref": "#/components/schemas/Address"
+          nullable: true
+        discounts:
+          type: array
+          description: Eligible promotion adjustments (explanatory; total = discount_total)
+          items:
+            "$ref": "#/components/schemas/CheckoutViewLine"
+        taxes:
+          type: array
+          description: Eligible tax adjustments (explanatory; total = tax_total)
+          items:
+            "$ref": "#/components/schemas/CheckoutViewLine"
+      required:
+      - id
+      - number
+      - state
+      - status
+      - currency
+      - version
+      - ready
     CartWarning:
       type: object
       description: A warning about a cart issue (e.g., item removed due to stock change)
@@ -11235,6 +11447,9 @@ components:
           nullable: true
         covered_by_store_credit:
           type: boolean
+        express_payment:
+          type: object
+          nullable: true
         current_step:
           type: string
         completed_steps:
@@ -11317,6 +11532,7 @@ components:
       - store_credit_total
       - display_store_credit_total
       - covered_by_store_credit
+      - express_payment
       - current_step
       - completed_steps
       - requirements
@@ -11591,10 +11807,14 @@ components:
         code:
           type: string
           nullable: true
+        display_estimated_price:
+          type: string
+          nullable: true
       required:
       - id
       - name
       - code
+      - display_estimated_price
       x-typelizer: true
     DeliveryRate:
       type: object
@@ -12241,20 +12461,18 @@ components:
       properties:
         id:
           type: string
+        product_id:
+          type: string
+          nullable: true
         email:
           type: string
         status:
           type: string
-          enum:
-          - active
-          - notified
-        product_id:
-          type: string
-          nullable: true
         created_at:
           type: string
       required:
       - id
+      - product_id
       - email
       - status
       - created_at
@@ -12266,10 +12484,6 @@ components:
           type: string
         kind:
           type: string
-          enum:
-          - complaint
-          - feedback
-          - inquiry
         name:
           type: string
           nullable: true
@@ -12282,16 +12496,14 @@ components:
           type: string
         status:
           type: string
-          enum:
-          - pending
-          - in_progress
-          - resolved
         created_at:
           type: string
       required:
       - id
       - kind
+      - name
       - email
+      - subject
       - body
       - status
       - created_at
@@ -12350,6 +12562,18 @@ components:
       - option_type_label
       - image_url
       x-typelizer: true
+    CartSubmitResult:
+      allOf:
+      - "$ref": "#/components/schemas/Order"
+      - type: object
+        required:
+        - successor_cart
+        properties:
+          successor_cart:
+            description: Active cart containing unselected items, or the restored regular cart after Buy Now.
+            nullable: true
+            allOf:
+            - "$ref": "#/components/schemas/Cart"
     Order:
       type: object
       properties:
@@ -12375,13 +12599,36 @@ components:
           nullable: true
         total_quantity:
           type: number
+        parent_id:
+          type: string
+          nullable: true
+        children_ids:
+          type: array
+          items:
+            type: string
+        is_parent:
+          type: boolean
+        is_child:
+          type: boolean
+        is_single:
+          type: boolean
+        state:
+          type: string
+        status:
+          type: string
+        submitted_at:
+          type: string
+          nullable: true
+        completed_at:
+          type: string
+          nullable: true
+        cart_id:
+          type: string
+          nullable: true
         fulfillment_status:
           type: string
           nullable: true
         payment_status:
-          type: string
-          nullable: true
-        completed_at:
           type: string
           nullable: true
         item_total:
@@ -12420,28 +12667,28 @@ components:
         display_additional_tax_total:
           type: string
           nullable: true
-        total:
-          type: string
-          nullable: true
-        display_total:
-          type: string
-          nullable: true
         gift_card_total:
           type: string
           nullable: true
         display_gift_card_total:
           type: string
           nullable: true
-        amount_due:
-          type: string
-          nullable: true
-        display_amount_due:
-          type: string
-          nullable: true
         delivery_total:
           type: string
           nullable: true
         display_delivery_total:
+          type: string
+          nullable: true
+        total:
+          type: string
+          nullable: true
+        display_total:
+          type: string
+          nullable: true
+        amount_due:
+          type: string
+          nullable: true
+        display_amount_due:
           type: string
           nullable: true
         store_credit_total:
@@ -12468,6 +12715,10 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/Payment"
+        payment_methods:
+          type: array
+          items:
+            "$ref": "#/components/schemas/PaymentMethod"
         billing_address:
           allOf:
           - "$ref": "#/components/schemas/Address"
@@ -12494,9 +12745,18 @@ components:
       - currency
       - locale
       - total_quantity
+      - parent_id
+      - children_ids
+      - is_parent
+      - is_child
+      - is_single
+      - state
+      - status
+      - submitted_at
+      - completed_at
+      - cart_id
       - fulfillment_status
       - payment_status
-      - completed_at
       - item_total
       - display_item_total
       - adjustment_total
@@ -12509,14 +12769,14 @@ components:
       - display_included_tax_total
       - additional_tax_total
       - display_additional_tax_total
-      - total
-      - display_total
       - gift_card_total
       - display_gift_card_total
-      - amount_due
-      - display_amount_due
       - delivery_total
       - display_delivery_total
+      - total
+      - display_total
+      - amount_due
+      - display_amount_due
       - store_credit_total
       - display_store_credit_total
       - covered_by_store_credit
@@ -12524,6 +12784,7 @@ components:
       - items
       - fulfillments
       - payments
+      - payment_methods
       - billing_address
       - shipping_address
       - gift_card
@@ -12606,46 +12867,34 @@ components:
       x-typelizer: true
     PaymentCombination:
       type: object
-      description: 合并支付组合（P5）——一次支付覆盖多笔未支付订单；金额服务端计算；session 挂 primary order。
       properties:
         id:
           type: string
-          description: Prefixed ID (pcom_…)
         status:
           type: string
-          enum:
-          - pending
-          - processing
-          - succeeded
-          - failed
-          - canceled
-          - expired
-        amount:
-          type: string
-          description: Server-computed total (sum of each unpaid order's amount_due)
         currency:
           type: string
         expires_at:
           type: string
-          format: date-time
           nullable: true
         completed_at:
           type: string
-          format: date-time
           nullable: true
+        amount:
+          type: string
         orders:
           type: array
           items:
             "$ref": "#/components/schemas/Order"
-          description: Member orders (expand=orders)
         payment_session:
           "$ref": "#/components/schemas/PaymentSession"
-          description: Payment session for the checkout (client_secret etc.)
       required:
       - id
       - status
-      - amount
       - currency
+      - expires_at
+      - completed_at
+      - amount
       x-typelizer: true
     PaymentSession:
       type: object
@@ -12779,6 +13028,12 @@ components:
         author:
           type: string
           nullable: true
+        seo_title:
+          type: string
+          nullable: true
+        seo_description:
+          type: string
+          nullable: true
         published_at:
           type: string
           nullable: true
@@ -12791,16 +13046,18 @@ components:
         body_html:
           type: string
           nullable: true
-        seo_title:
-          type: string
-          nullable: true
-        seo_description:
-          type: string
-          nullable: true
       required:
       - id
       - title
       - slug
+      - excerpt
+      - author
+      - seo_title
+      - seo_description
+      - published_at
+      - cover_image_url
+      - body
+      - body_html
       x-typelizer: true
     PriceHistory:
       type: object
@@ -13051,7 +13308,7 @@ components:
           type: string
           nullable: true
         rating:
-          type: integer
+          type: number
         title:
           type: string
           nullable: true
@@ -13062,7 +13319,6 @@ components:
           type: boolean
         created_at:
           type: string
-          format: date-time
           nullable: true
       required:
       - id
@@ -13210,6 +13466,8 @@ components:
       - default_variant_id
       - thumbnail_url
       - tags
+      - average_rating
+      - review_count
       - price
       - original_price
       x-typelizer: true
@@ -13557,4 +13815,276 @@ components:
       - token
       - is_default
       - is_private
+      x-typelizer: true
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: string
+        variant_id:
+          type: string
+        currency:
+          type: string
+        quantity:
+          type: number
+        selected:
+          type: boolean
+        name:
+          type: string
+        slug:
+          type: string
+        options_text:
+          type: string
+        unit_price:
+          type: string
+          nullable: true
+        display_unit_price:
+          type: string
+          nullable: true
+        amount:
+          type: string
+          nullable: true
+        display_amount:
+          type: string
+          nullable: true
+        thumbnail_url:
+          type: string
+          nullable: true
+      required:
+      - id
+      - variant_id
+      - currency
+      - quantity
+      - selected
+      - name
+      - slug
+      - options_text
+      - unit_price
+      - display_unit_price
+      - amount
+      - display_amount
+      - thumbnail_url
+      x-typelizer: true
+    ShoppingCart:
+      type: object
+      properties:
+        id:
+          type: string
+        token:
+          type: string
+        status:
+          type: string
+        email:
+          type: string
+          nullable: true
+        customer_note:
+          type: string
+          nullable: true
+        currency:
+          type: string
+        locale:
+          type: string
+          nullable: true
+        item_count:
+          type: number
+        converted_at:
+          type: string
+          nullable: true
+        shipping_method_id:
+          type: string
+          nullable: true
+        item_total:
+          type: string
+          nullable: true
+        display_item_total:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            type: object
+        billing_address:
+          allOf:
+          - "$ref": "#/components/schemas/Address"
+          nullable: true
+        shipping_address:
+          allOf:
+          - "$ref": "#/components/schemas/Address"
+          nullable: true
+        payment_methods:
+          type: array
+          items:
+            "$ref": "#/components/schemas/PaymentMethod"
+      required:
+      - id
+      - token
+      - status
+      - email
+      - customer_note
+      - currency
+      - locale
+      - item_count
+      - converted_at
+      - shipping_method_id
+      - item_total
+      - display_item_total
+      - items
+      - billing_address
+      - shipping_address
+      - payment_methods
+      x-typelizer: true
+    StoreCheckoutCheckout:
+      type: object
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+        state:
+          type: string
+        status:
+          type: string
+        payment_state:
+          type: string
+          nullable: true
+        shipment_state:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        currency:
+          type: string
+        submitted_at:
+          type: string
+          nullable: true
+        completed_at:
+          type: string
+          nullable: true
+        version:
+          type: number
+        price_version:
+          type: string
+          nullable: true
+        ready:
+          type: boolean
+        missing_requirements:
+          type: object
+        expires_at:
+          type: string
+          nullable: true
+        item_total:
+          type: string
+          nullable: true
+        display_item_total:
+          type: string
+          nullable: true
+        delivery_total:
+          type: string
+          nullable: true
+        display_delivery_total:
+          type: string
+          nullable: true
+        adjustment_total:
+          type: string
+          nullable: true
+        display_adjustment_total:
+          type: string
+          nullable: true
+        discount_total:
+          type: string
+          nullable: true
+        display_discount_total:
+          type: string
+          nullable: true
+        tax_total:
+          type: string
+          nullable: true
+        display_tax_total:
+          type: string
+          nullable: true
+        included_tax_total:
+          type: string
+          nullable: true
+        display_included_tax_total:
+          type: string
+          nullable: true
+        additional_tax_total:
+          type: string
+          nullable: true
+        display_additional_tax_total:
+          type: string
+          nullable: true
+        total:
+          type: string
+          nullable: true
+        display_total:
+          type: string
+          nullable: true
+        amount_due:
+          type: string
+          nullable: true
+        display_amount_due:
+          type: string
+          nullable: true
+        shipping_address:
+          allOf:
+          - "$ref": "#/components/schemas/Address"
+          nullable: true
+        billing_address:
+          allOf:
+          - "$ref": "#/components/schemas/Address"
+          nullable: true
+        items:
+          type: array
+          items:
+            "$ref": "#/components/schemas/LineItem"
+        fulfillments:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Fulfillment"
+        discounts:
+          type: object
+        taxes:
+          type: object
+      required:
+      - id
+      - number
+      - state
+      - status
+      - payment_state
+      - shipment_state
+      - email
+      - currency
+      - submitted_at
+      - completed_at
+      - version
+      - price_version
+      - ready
+      - missing_requirements
+      - expires_at
+      - item_total
+      - display_item_total
+      - delivery_total
+      - display_delivery_total
+      - adjustment_total
+      - display_adjustment_total
+      - discount_total
+      - display_discount_total
+      - tax_total
+      - display_tax_total
+      - included_tax_total
+      - display_included_tax_total
+      - additional_tax_total
+      - display_additional_tax_total
+      - total
+      - display_total
+      - amount_due
+      - display_amount_due
+      - shipping_address
+      - billing_address
+      - items
+      - fulfillments
+      - discounts
+      - taxes
       x-typelizer: true

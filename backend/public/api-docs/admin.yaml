@@ -1578,7 +1578,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/AdminPost'
+                  $ref: '#/components/schemas/Post'
     post:
       summary: Create a blog post
       tags:
@@ -1615,7 +1615,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminPost'
+                $ref: '#/components/schemas/Post'
         '422':
           description: validation error
   "/api/v3/admin/posts/{id}":
@@ -1654,7 +1654,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminPost'
+                $ref: '#/components/schemas/Post'
     patch:
       summary: Update a blog post
       tags:
@@ -1696,7 +1696,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminPost'
+                $ref: '#/components/schemas/Post'
     delete:
       summary: Delete a blog post
       tags:
@@ -22679,6 +22679,8 @@ components:
       - to_path
       - status_code
       - active
+      - title
+      - description
       - created_at
       - updated_at
       x-typelizer: true
@@ -22733,6 +22735,9 @@ components:
       - key
       - name
       - subject
+      - body_html
+      - body_text
+      - placeholders
       - active
       - created_at
       - updated_at
@@ -22761,57 +22766,6 @@ components:
       - key
       - name
       - subject
-    AdminPost:
-      type: object
-      properties:
-        id:
-          type: string
-        title:
-          type: string
-        slug:
-          type: string
-        excerpt:
-          type: string
-          nullable: true
-        author:
-          type: string
-          nullable: true
-        published_at:
-          type: string
-          nullable: true
-        cover_image_url:
-          type: string
-          nullable: true
-        body:
-          type: string
-          nullable: true
-        body_html:
-          type: string
-          nullable: true
-        seo_title:
-          type: string
-          nullable: true
-        seo_description:
-          type: string
-          nullable: true
-        status:
-          type: string
-          enum:
-          - draft
-          - scheduled
-          - published
-        created_at:
-          type: string
-        updated_at:
-          type: string
-      required:
-      - id
-      - title
-      - slug
-      - status
-      - created_at
-      - updated_at
-      x-typelizer: true
     AdminPostInput:
       type: object
       properties:
@@ -22861,15 +22815,11 @@ components:
           nullable: true
         status:
           type: string
-          enum:
-          - sent
-          - failed
         error:
           type: string
           nullable: true
         sent_at:
           type: string
-          nullable: true
         created_at:
           type: string
       required:
@@ -22877,7 +22827,11 @@ components:
       - mailer
       - action
       - to
+      - from
+      - subject
       - status
+      - error
+      - sent_at
       - created_at
       x-typelizer: true
     ContactMessage:
@@ -22887,11 +22841,6 @@ components:
           type: string
         kind:
           type: string
-          enum:
-          - complaint
-          - feedback
-          - inquiry
-          - reply
         name:
           type: string
           nullable: true
@@ -22904,10 +22853,6 @@ components:
           type: string
         status:
           type: string
-          enum:
-          - pending
-          - in_progress
-          - resolved
         created_at:
           type: string
         updated_at:
@@ -22915,7 +22860,9 @@ components:
       required:
       - id
       - kind
+      - name
       - email
+      - subject
       - body
       - status
       - created_at
@@ -23462,6 +23409,9 @@ components:
         code:
           type: string
           nullable: true
+        display_estimated_price:
+          type: string
+          nullable: true
         created_at:
           type: string
         updated_at:
@@ -23470,6 +23420,7 @@ components:
       - id
       - name
       - code
+      - display_estimated_price
       - created_at
       - updated_at
       x-typelizer: true
@@ -24406,13 +24357,36 @@ components:
           nullable: true
         total_quantity:
           type: number
+        parent_id:
+          type: string
+          nullable: true
+        children_ids:
+          type: array
+          items:
+            type: string
+        is_parent:
+          type: boolean
+        is_child:
+          type: boolean
+        is_single:
+          type: boolean
+        state:
+          type: string
+        status:
+          type: string
+        submitted_at:
+          type: string
+          nullable: true
+        completed_at:
+          type: string
+          nullable: true
+        cart_id:
+          type: string
+          nullable: true
         fulfillment_status:
           type: string
           nullable: true
         payment_status:
-          type: string
-          nullable: true
-        completed_at:
           type: string
           nullable: true
         item_total:
@@ -24439,21 +24413,21 @@ components:
           type: string
         display_additional_tax_total:
           type: string
-        total:
-          type: string
-        display_total:
-          type: string
         gift_card_total:
           type: string
         display_gift_card_total:
           type: string
-        amount_due:
-          type: string
-        display_amount_due:
-          type: string
         delivery_total:
           type: string
         display_delivery_total:
+          type: string
+        total:
+          type: string
+        display_total:
+          type: string
+        amount_due:
+          type: string
+        display_amount_due:
           type: string
         store_credit_total:
           type: string
@@ -24477,6 +24451,10 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/Payment"
+        payment_methods:
+          type: array
+          items:
+            "$ref": "#/components/schemas/PaymentMethod"
         billing_address:
           allOf:
           - "$ref": "#/components/schemas/Address"
@@ -24493,8 +24471,6 @@ components:
           allOf:
           - "$ref": "#/components/schemas/Market"
           nullable: true
-        status:
-          type: string
         last_ip_address:
           type: string
           nullable: true
@@ -24504,10 +24480,6 @@ components:
           type: boolean
         store_owner_notification_delivered:
           type: boolean
-        payment_total:
-          type: string
-        display_payment_total:
-          type: string
         metadata:
           type: object
         canceled_at:
@@ -24519,6 +24491,10 @@ components:
         created_at:
           type: string
         updated_at:
+          type: string
+        payment_total:
+          type: string
+        display_payment_total:
           type: string
         preferred_stock_location_id:
           type: string
@@ -24546,10 +24522,6 @@ components:
           "$ref": "#/components/schemas/Channel"
         preferred_stock_location:
           "$ref": "#/components/schemas/StockLocation"
-        payment_methods:
-          type: array
-          items:
-            "$ref": "#/components/schemas/PaymentMethod"
         customer:
           "$ref": "#/components/schemas/Customer"
         approver:
@@ -24580,9 +24552,18 @@ components:
       - currency
       - locale
       - total_quantity
+      - parent_id
+      - children_ids
+      - is_parent
+      - is_child
+      - is_single
+      - state
+      - status
+      - submitted_at
+      - completed_at
+      - cart_id
       - fulfillment_status
       - payment_status
-      - completed_at
       - item_total
       - display_item_total
       - adjustment_total
@@ -24595,31 +24576,30 @@ components:
       - display_included_tax_total
       - additional_tax_total
       - display_additional_tax_total
-      - total
-      - display_total
       - gift_card_total
       - display_gift_card_total
-      - amount_due
-      - display_amount_due
       - delivery_total
       - display_delivery_total
+      - total
+      - display_total
+      - amount_due
+      - display_amount_due
       - store_credit_total
       - display_store_credit_total
       - covered_by_store_credit
       - gift_card
       - market
-      - status
       - last_ip_address
       - considered_risky
       - confirmation_delivered
       - store_owner_notification_delivered
-      - payment_total
-      - display_payment_total
       - metadata
       - canceled_at
       - approved_at
       - created_at
       - updated_at
+      - payment_total
+      - display_payment_total
       - preferred_stock_location_id
       - tags
       - internal_note
@@ -25061,6 +25041,11 @@ components:
           type: array
           items:
             type: string
+        average_rating:
+          type: number
+          nullable: true
+        review_count:
+          type: number
         price:
           allOf:
           - "$ref": "#/components/schemas/Price"
@@ -25145,6 +25130,8 @@ components:
       - default_variant_id
       - thumbnail_url
       - tags
+      - average_rating
+      - review_count
       - price
       - original_price
       - status
@@ -26202,4 +26189,59 @@ components:
       - total_delivery_count
       - successful_delivery_count
       - failed_delivery_count
+      x-typelizer: true
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        excerpt:
+          type: string
+          nullable: true
+        author:
+          type: string
+          nullable: true
+        seo_title:
+          type: string
+          nullable: true
+        seo_description:
+          type: string
+          nullable: true
+        published_at:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+        updated_at:
+          type: string
+        status:
+          type: string
+        cover_image_url:
+          type: string
+          nullable: true
+        body:
+          type: string
+          nullable: true
+        body_html:
+          type: string
+          nullable: true
+      required:
+      - id
+      - title
+      - slug
+      - excerpt
+      - author
+      - seo_title
+      - seo_description
+      - published_at
+      - created_at
+      - updated_at
+      - status
+      - cover_image_url
+      - body
+      - body_html
       x-typelizer: true

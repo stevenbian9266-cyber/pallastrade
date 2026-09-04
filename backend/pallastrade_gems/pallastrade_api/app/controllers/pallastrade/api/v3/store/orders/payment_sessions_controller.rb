@@ -1,3 +1,4 @@
+# PALLAS-CUSTOM: Delegate payment-session create/reuse to the Core idempotent start service.
 module PallasTrade
   module Api
     module V3
@@ -22,20 +23,28 @@ module PallasTrade
 
             # POST /api/v3/store/orders/:order_id/payment_sessions
             def create
-              with_order_lock do
-                payment_method = current_store.payment_methods.find_by_prefix_id!(permitted_params[:payment_method_id])
+              payment_method = current_store.payment_methods.find_by_prefix_id!(permitted_params[:payment_method_id])
+              # CHK-P1-5: 可选 expected_version/expected_price_version —— 客户端所见 quote
+              # 期望值；服务端不匹配 → checkout_version_conflict（409 + compact latest）。
+              result = PallasTrade::PaymentSessions::Start.call(
+                order: @order,
+                payment_method: payment_method,
+                external_data: permitted_params[:external_data] || {},
+                expected_version: permitted_params[:expected_version],
+                expected_price_version: permitted_params[:expected_price_version]
+              )
 
-                @payment_session = payment_method.create_payment_session(
-                  order: @order,
-                  amount: permitted_params[:amount],
-                  external_data: permitted_params[:external_data] || {}
+              if result.success?
+                @payment_session = result.value
+                render json: serialize_resource(@payment_session), status: :created
+              else
+                # CHK-P1-3: 传 ResultError 本体（render_service_error 解包）——
+                # String/AR errors 渲染与之前一致；{code:,message:,missing_requirements:}
+                # 结构化错误（如 checkout_not_ready）渲染 code+details。
+                render_service_error(
+                  result.error.presence || 'Could not start payment session',
+                  code: ERROR_CODES[:validation_error]
                 )
-
-                if @payment_session.persisted?
-                  render json: serialize_resource(@payment_session), status: :created
-                else
-                  render_errors(@payment_session.errors)
-                end
               end
             end
 
@@ -92,9 +101,7 @@ module PallasTrade
                   # handle_success 对已 completed 的会话提前返回，永远不会走到
                   # Carts::Complete，订单停留 pending。Carts::Complete 幂等，
                   # 与 webhook 兜底不冲突。
-                  unless @order.completed?
-                    PallasTrade::Dependencies.carts_complete_service.constantize.call(cart: @order)
-                  end
+                  PallasTrade::Dependencies.carts_complete_service.constantize.call(cart: @order) unless @order.completed?
                   render json: serialize_resource(@payment_session.reload)
                 else
                   render_errors(@payment_session.errors)
@@ -109,7 +116,8 @@ module PallasTrade
             end
 
             def permitted_params
-              params.permit(PallasTrade::PermittedAttributes.payment_session_attributes)
+              params.permit(*(PallasTrade::PermittedAttributes.payment_session_attributes +
+                              [:expected_version, :expected_price_version]))
             end
 
             def complete_params
@@ -120,7 +128,7 @@ module PallasTrade
 
             def set_payment_session
               @payment_session = @order.payment_sessions.find_by_prefix_id(params[:id]) ||
-                                 @order.payment_sessions.find_by!(external_id: params[:id])
+                @order.payment_sessions.find_by!(external_id: params[:id])
             end
 
             def serialize_resource(resource)

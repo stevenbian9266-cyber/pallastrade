@@ -21,6 +21,8 @@ module PallasTrade
                  total: [:string, nullable: true], display_total: [:string, nullable: true],
                  amount_due: [:string, nullable: true], display_amount_due: [:string, nullable: true],
                  shipping_eq_billing_address: :boolean,
+                 express_payment: '{ amount: number, currency: string, display_total: string | null, ' \
+                                   'line_items: Array<{ name: string, amount: number }> } | null',
                  warnings: 'Array<{code: string, message: string, line_item_id?: string, variant_id?: string}>',
                  billing_address: { nullable: true }, shipping_address: { nullable: true },
                  gift_card: { nullable: true }, market: { nullable: true }
@@ -58,6 +60,36 @@ module PallasTrade
 
         attribute :covered_by_store_credit do |order|
           order.covered_by_store_credit?
+        end
+
+        # P0-4 (PRD FR-040): Express 支付金额服务端权威负载。
+        #   amount/currency = 资金权威（order.amount_due 子单位；即会话创建金额）
+        #   display_total   = 展示
+        #   line_items      = 仅供钱包/UI 展示（Subtotal/Discount/Tax；
+        #                     运费由 Express shippingRates 单独处理）
+        # 前端禁止用 sum(line_items) 决定真实扣款金额（FR-041）。
+        # 价格门控（hide_prices）下与其余金额字段一致返回 null。
+        attribute :express_payment do |order|
+          next if params[:hide_prices]
+
+          minor = lambda do |value|
+            return 0 if value.nil?
+
+            PallasTrade::Money.new(value, currency: order.currency).cents
+          end
+
+          line_items = [{ name: 'Subtotal', amount: minor.call(order.item_total) }]
+          discount = order.discount_total.to_d
+          line_items << { name: 'Discount', amount: minor.call(discount) } if discount.negative?
+          tax = order.additional_tax_total.to_d
+          line_items << { name: 'Tax', amount: minor.call(tax) } if tax.positive?
+
+          {
+            amount: minor.call(order.amount_due),
+            currency: order.currency,
+            display_total: order.display_amount_due.to_s,
+            line_items: line_items
+          }
         end
 
         attribute :current_step do |order|

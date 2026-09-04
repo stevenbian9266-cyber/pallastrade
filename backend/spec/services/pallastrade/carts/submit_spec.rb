@@ -54,7 +54,8 @@ RSpec.describe PallasTrade::Carts::Submit, type: :service do
       expect(cart.converted_at).to be_present
     end
 
-    it 'only snapshots selected items' do
+    # PRD-20260830-checkout AC-003
+    it 'only snapshots selected items and preserves unselected items in a successor cart' do
       add_item(quantity: 1, selected: true)
       unselected = create(:variant, product: create(:product, store: store))
       unselected.set_price('USD', 9.99)
@@ -64,6 +65,10 @@ RSpec.describe PallasTrade::Carts::Submit, type: :service do
 
       expect(result).to be_success
       expect(result.value.line_items.map(&:variant_id)).to eq([variant.id])
+      successor = store.shopping_carts.active.find_by_prefix_id!(result.value.metadata[:successor_cart_id])
+      expect(successor.cart_items.map(&:variant_id)).to eq([unselected.id])
+      expect(successor.cart_items.first).not_to be_selected
+      expect(cart.reload.cart_items.map(&:variant_id)).to eq([variant.id])
     end
 
     it 'rejects a cart with no selected items' do
@@ -74,13 +79,16 @@ RSpec.describe PallasTrade::Carts::Submit, type: :service do
       expect(result).to be_failure
     end
 
-    it 'rejects an already-converted cart' do
+    # PRD-20260830-checkout AC-007
+    it 'replays the same order for an already-converted cart' do
       add_item
-      described_class.call(cart: cart)
+      first_order = described_class.call(cart: cart).value
 
       result = described_class.call(cart: cart)
 
-      expect(result).to be_failure
+      expect(result).to be_success
+      expect(result.value).to eq(first_order)
+      expect(cart.orders.count).to eq(1)
     end
 
     it 'snapshots the shipping address onto the order' do

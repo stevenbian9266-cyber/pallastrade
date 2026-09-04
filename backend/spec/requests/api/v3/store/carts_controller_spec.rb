@@ -139,9 +139,43 @@ RSpec.describe 'Store Carts API (standard flow)', type: :request do
       expect(order[:submitted_at]).to be_present
       expect(order[:cart_id]).to eq(cart.prefixed_id)
       expect(order[:items].length).to eq(1)
+      expect(order[:successor_cart]).to be_nil
 
       cart.reload
       expect(cart.status).to eq('converted')
+    end
+
+    # PRD-20260830-checkout AC-007
+    it 'replays the same order when submit is retried after conversion' do
+      cart.update!(shipping_address: create(:address, user: nil), email: 'buyer@example.com')
+      cart.cart_items.create!(variant: variant, quantity: 1, selected: true)
+      token_headers = headers.merge('x-pallastrade-token' => cart.token)
+
+      post "/api/v3/store/carts/#{cart.prefixed_id}/submit", headers: token_headers
+      first_order_id = json_response[:id]
+      post "/api/v3/store/carts/#{cart.prefixed_id}/submit", headers: token_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response[:id]).to eq(first_order_id)
+      expect(cart.orders.count).to eq(1)
+    end
+
+    # PRD-20260830-checkout AC-003
+    it 'returns a successor cart containing only unselected items' do
+      cart.update!(shipping_address: create(:address, user: nil), email: 'buyer@example.com')
+      cart.cart_items.create!(variant: variant, quantity: 1, selected: true)
+      other_product = create(:product_in_stock, store: store)
+      other_product.master.set_price('USD', 8.99)
+      cart.cart_items.create!(variant: other_product.master, quantity: 1, selected: false)
+
+      post "/api/v3/store/carts/#{cart.prefixed_id}/submit", headers: headers.merge('x-pallastrade-token' => cart.token)
+
+      expect(response).to have_http_status(:ok)
+      successor = json_response[:successor_cart]
+      expect(successor[:id]).to start_with('cart_')
+      expect(successor[:status]).to eq('active')
+      expect(successor[:items].map { |item| item[:variant_id] }).to eq([other_product.master.prefixed_id])
+      expect(successor[:items].first[:selected]).to be(false)
     end
 
     it 'fails when no item is selected' do
@@ -188,6 +222,27 @@ RSpec.describe 'Store Carts API (standard flow)', type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response[:id]).to eq(order_id)
       expect(json_response[:payment_status]).to eq('balance_due')
+    end
+  end
+
+  describe 'POST /api/v3/store/orders/:id/payment_sessions' do
+    # PRD-20260830-checkout AC-007
+    it 'reuses the same active payment session for repeated starts' do
+      cart.update!(shipping_address: create(:address, user: nil), email: 'buyer@example.com')
+      cart.cart_items.create!(variant: variant, quantity: 1, selected: true)
+      token_headers = headers.merge('x-pallastrade-token' => cart.token)
+      post "/api/v3/store/carts/#{cart.prefixed_id}/submit", headers: token_headers
+      order_id = json_response[:id]
+      payment_method = create(:bogus_payment_method, store: store, active: true, display_on: 'both')
+      params = { payment_method_id: payment_method.prefixed_id, external_data: { mode: 'payment_intent' } }
+
+      post "/api/v3/store/orders/#{order_id}/payment_sessions", params: params, headers: token_headers
+      first_session_id = json_response[:id]
+      post "/api/v3/store/orders/#{order_id}/payment_sessions", params: params, headers: token_headers
+
+      expect(response).to have_http_status(:created)
+      expect(json_response[:id]).to eq(first_session_id)
+      expect(PallasTrade::Order.find_by_prefix_id!(order_id).payment_sessions.count).to eq(1)
     end
   end
 end

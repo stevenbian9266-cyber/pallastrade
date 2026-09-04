@@ -1,3 +1,4 @@
+# PALLAS-CUSTOM: Apply stable operation keys to Stripe session/intent creation.
 module PallasTradeStripe
   class Gateway < ::PallasTrade::Gateway
     module PaymentSessions
@@ -13,7 +14,9 @@ module PallasTradeStripe
 
       def create_payment_session(order:, amount: nil, external_data: {})
         mode = external_data[:mode] || external_data['mode']
-        return create_payment_intent_session(order: order, amount: amount) if mode.to_s == 'payment_intent'
+        if mode.to_s == 'payment_intent'
+          return create_payment_intent_session(order: order, amount: amount, external_data: external_data)
+        end
 
         total = amount.presence || order.total_minus_store_credits
         amount_in_cents = PallasTrade::Money.new(total, currency: order.currency).cents
@@ -34,7 +37,10 @@ module PallasTradeStripe
           capture_method: stripe_capture_method
         ).call
 
-        stripe_session = send_request { |opts| Stripe::Checkout::Session.create(session_payload, opts) }
+        idempotency_key = external_data[:idempotency_key] || external_data['idempotency_key']
+        stripe_session = send_request(idempotency_key: idempotency_key) do |opts|
+          Stripe::Checkout::Session.create(session_payload, opts)
+        end
 
         payment_session_class.create!(
           order: order,
@@ -46,7 +52,8 @@ module PallasTradeStripe
           customer: order.user,
           customer_external_id: customer&.profile_id,
           external_data: {
-            'client_secret' => stripe_session.client_secret
+            'client_secret' => stripe_session.client_secret,
+            'operation_key' => idempotency_key
           }.compact
         )
       end
@@ -56,14 +63,20 @@ module PallasTradeStripe
       # 供 `stripe.confirmCardPayment` 消费——Checkout Session 的 `cs_..._secret`
       # 只能用于 PaymentElement。external_id 存 `pi_` id，`external_data.mode`
       # 标记为 `payment_intent` 供模型/complete/webhook 区分模式。
-      def create_payment_intent_session(order:, amount: nil)
+      def create_payment_intent_session(order:, amount: nil, external_data: {})
         total = amount.presence || order.total_minus_store_credits
         amount_in_cents = PallasTrade::Money.new(total, currency: order.currency).cents
 
         raise PallasTrade::Core::GatewayError, I18n.t('pallastrade.stripe.payment_session_errors.zero_amount') if amount_in_cents.zero?
 
         customer = fetch_or_create_customer(order: order)
-        response = create_payment_intent(amount_in_cents, order, customer_profile_id: customer&.profile_id)
+        idempotency_key = external_data[:idempotency_key] || external_data['idempotency_key']
+        response = create_payment_intent(
+          amount_in_cents,
+          order,
+          customer_profile_id: customer&.profile_id,
+          idempotency_key: idempotency_key
+        )
         payment_intent = response.params
 
         payment_session_class.create!(
@@ -77,7 +90,8 @@ module PallasTradeStripe
           customer_external_id: customer&.profile_id,
           external_data: {
             'client_secret' => payment_intent['client_secret'],
-            'mode' => 'payment_intent'
+            'mode' => 'payment_intent',
+            'operation_key' => idempotency_key
           }.compact
         )
       end
@@ -90,7 +104,11 @@ module PallasTradeStripe
         if amount.present? && amount != payment_session.amount
           mode = payment_session.external_data&.dig('mode')
           replacement = if mode.to_s == 'payment_intent'
-                          create_payment_intent_session(order: payment_session.order, amount: amount)
+                          create_payment_intent_session(
+                            order: payment_session.order,
+                            amount: amount,
+                            external_data: external_data
+                          )
                         else
                           create_payment_session(
                             order: payment_session.order,

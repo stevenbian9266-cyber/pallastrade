@@ -38,6 +38,11 @@ module PallasTrade
       config.active_record.encryption.key_derivation_salt = ENV['ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT']
     end
 
+    # P0-5 (PRD FR-053): 渐进迁移 dual-read。support_unencrypted_data=true 允许在
+    # backfill 窗口读取历史明文行（spike 实证：关闭时读明文行会抛 Decryption）；
+    # 新写入经 encrypts 一律加密。明文行清零且 CI 校验通过后可收紧为 false。
+    config.active_record.encryption.support_unencrypted_data = true
+
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.1
 

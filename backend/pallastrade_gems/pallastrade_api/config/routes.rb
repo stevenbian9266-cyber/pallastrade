@@ -61,6 +61,9 @@ PallasTrade::Core::Engine.add_routes do
         # Orders (single order lookup, guest-accessible via order token)
         # 订单流程标准电商改造 P1（2026-08-30）：Checkout（纯支付）在订单域创建/完成支付会话。
         resources :orders, only: [:show] do
+          # CHK-P1-1A（2026-09-03）：只读 Order Checkout 投影（Server-driven CheckoutView）。
+          # CHK-P1-1B（2026-09-03）：PATCH —— mutation facade（contact/shipping_address/delivery_rate）。
+          resource :checkout, only: [:show, :update], controller: 'orders/checkout'
           resources :payment_sessions, only: [:create, :show, :update], controller: 'orders/payment_sessions' do
             member do
               patch :complete

@@ -32,6 +32,11 @@ Rails.application.configure do
   # Make code changes take effect immediately without server restart.
   config.enable_reloading = true
 
+  # 事件驱动文件监听（listen gem）。默认轮询 FileUpdateChecker 在
+  # Docker Desktop Windows bind mount 上每次请求 stat 大量文件 → 10-20s/请求。
+  # listen（inotify）改为事件驱动，大幅降低请求延迟。
+  config.file_watcher = ActiveSupport::EventedFileUpdateChecker
+
   # Do not eager load code on boot.
   config.eager_load = false
 

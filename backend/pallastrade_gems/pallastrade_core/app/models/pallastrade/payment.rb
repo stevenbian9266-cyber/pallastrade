@@ -36,15 +36,31 @@ module PallasTrade
     belongs_to :payment_combination, class_name: 'PallasTrade::PaymentCombination', optional: true
     belongs_to :source, polymorphic: true
 
+    # P0-1 (2026-09-02): Payment ↔ PaymentSession 正式关联。
+    # payment_session_id 是内部实体关联（唯一来源）；response_code 仅作 PSP reference，
+    # 不再用于定位 PaymentSession。第一阶段 nullable —— 非 PaymentSession 来源的
+    # Payment（admin 手工支付、legacy 历史数据等）保持 NULL。
+    belongs_to :payment_session, class_name: 'PallasTrade::PaymentSession', optional: true
+
+    # LEGACY_COMPATIBILITY (P0-1): 旧数据在 cs_ 模式（session.external_id=cs_，
+    # payment.response_code=pi_）或未回填历史数据下，无法通过 payment_session_id 关联。
+    # 该方法保留旧 response_code ↔ external_id 拼接查找，仅供兼容读取，禁止新增使用。
+    def legacy_payment_session
+      return payment_session if payment_session.present?
+
+      self.class.unscoped do
+        PallasTrade::PaymentSession
+          .where(external_id: response_code, order_id: order_id, payment_method_id: payment_method_id)
+          .where.not(status: nil)
+          .first
+      end
+    end
+
     has_many :offsets, -> { offset_payment }, class_name: 'PallasTrade::Payment', foreign_key: :source_id
     has_many :log_entries, as: :source
     has_many :state_changes, as: :stateful
     has_many :capture_events, class_name: 'PallasTrade::PaymentCaptureEvent'
     has_many :refunds, inverse_of: :payment
-
-    has_one :payment_session, class_name: 'PallasTrade::PaymentSession',
-            foreign_key: :external_id,
-            primary_key: :response_code
 
     validates :payment_method, presence: true
     validates :source, presence: true, if: :source_required?

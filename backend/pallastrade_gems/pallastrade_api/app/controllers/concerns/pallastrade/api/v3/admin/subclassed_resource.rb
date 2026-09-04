@@ -60,6 +60,9 @@ module PallasTrade
             @resource = find_resource
             authorize_resource!(@resource, :update)
 
+            # P0-6 (FR-064): Gateway 凭据变更审计——保存前快照 password 型偏好值。
+            before_password_secrets = capture_password_secrets(@resource)
+
             permitted = permitted_params_for(@resource.class)
             attrs, preferences, calculator = extract_subclass_params(permitted)
 
@@ -68,6 +71,7 @@ module PallasTrade
             apply_calculator(@resource, calculator) if calculator.present?
 
             if @resource.save
+              audit_gateway_credential_change(@resource, before_password_secrets)
               render json: serialize_resource(@resource)
             else
               render_validation_error(@resource.errors)
@@ -122,6 +126,35 @@ module PallasTrade
 
               resource.set_preference(pref_name, value)
             end
+          end
+
+          # P0-6 (FR-064): Gateway 凭据变更审计——只在 Gateway 且 password 型偏好
+          # 值实际变化时写审计（actor = current_admin_user）；不误伤非 Gateway
+          # 的 subclassed 资源（promotion types 等）。
+          def capture_password_secrets(resource)
+            return unless resource.is_a?(PallasTrade::Gateway) && resource.respond_to?(:password_preference_keys)
+
+            resource.password_preference_keys.to_h do |key|
+              [key.to_sym, resource.preferences[key] || resource.preferences[key.to_s]]
+            end
+          end
+
+          def audit_gateway_credential_change(resource, before_secrets)
+            return unless before_secrets.present?
+
+            changed = before_secrets.filter_map do |key, value|
+              key if value != (resource.preferences[key] || resource.preferences[key.to_s])
+            end
+            return if changed.empty?
+
+            PallasTrade::Audit.record(
+              actor: (respond_to?(:current_admin_user) ? current_admin_user : 'admin'),
+              action: 'gateway_credential_change',
+              resource: resource,
+              before: before_secrets.transform_values { |v| v.present? ? '[set]' : nil },
+              after: changed.to_h { |k| [k.to_s, resource.preferences[k].present? ? '[set]' : nil] },
+              metadata: { changed_keys: changed.map(&:to_s) }
+            )
           end
 
           # Pulls `preferences` and `calculator` out of the permitted
