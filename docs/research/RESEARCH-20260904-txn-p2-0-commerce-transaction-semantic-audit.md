@@ -260,7 +260,7 @@ GET  /api/v3/store/transactions/:id                   # Resume 视图：state/pa
 
 | # | 风险 | 等级 | 缓解 |
 |---|---|---|---|
-| RISK-01 | 组合成员为 standard-flow 订单时 legacy `Checkout::Complete`（next-until-complete）能否完成（pending 无 legacy 迁移路径） | 🔴 高 | TXN-P2-1 前做运行时验证（针对真实 auto-split/组合样本），决定成员完成 primitive |
+| RISK-01 | 组合成员为 standard-flow 订单时 legacy `Checkout::Complete`（next-until-complete）能否完成（pending 无 legacy 迁移路径） | 🔴 高（**已验证**：不能完成 → 现行潜在缺陷） | **2026-09-04 运行时验证结论**：不能。legacy `next` 迁移表无 `from: pending`；对 standard pending 单 `order.next`→false（"State cannot transition via next"），`Checkout::Complete`→failure、订单停留 pending。组合阶段 2 对该成员标 balance_due → `CombinationSettleJob` 永久重试失败 → **钱已入账、订单永不完成**。影响现行账户 2+ 单合并收银台（PaymentCheckoutModal）对 standard `or_` 待支付单。建议独立 bugfix（见 §10）或 TXN-P2-5 优先收敛 |
 | RISK-02 | 父子拆单时序：AutoSplit 在支付完成**之后**拆（源已 completed）→ Transaction 参与者在 finalize 时不存在；拆单后子单归属与金额分摊口径 | 🔴 高 | P2-0 默认"拆单并入父交易"需与 Splitter/PaymentSplit 分摊时序核对；把"拆分时点"作为架构评审项 |
 | RISK-03 | Start 幂等键若含 fingerprint 会被 Refresh 自增破坏 → 双开 transaction | 🟠 中 | identity 不含版本（§5.1）；用 order+目的+active 状态 + 行锁/唯一约束 |
 | RISK-04 | `session.completed?` 短路改造若过度放开 → 重复 finalize | 🟠 中 | 依赖 Transaction state guard + PaymentFactResolver + Finalize 幂等（INV-08） |
@@ -321,6 +321,7 @@ GET  /api/v3/store/transactions/:id                   # Resume 视图：state/pa
 - 只读；未改任何代码/migration/模型；产物仅本文档。
 - 行为断言以 dev 工作树代码（含未提交的 P0/P1）为准；commit 前如需复验可对照 `git diff` 复核。
 - 未做运行时验证（RISK-01/02 需在 TXN-P2-1 前补运行时证据，非本审计范围）。
+  - **更新（2026-09-04）**：RISK-01 运行时验证已补充于 §10（结论：legacy primitive 无法完成 standard pending 成员 → 现行潜在缺陷）；RISK-02 仍未验证（flag 默认关闭）。
 
 ---
 
@@ -328,5 +329,50 @@ GET  /api/v3/store/transactions/:id                   # Resume 视图：state/pa
 
 1. **本审计文档提交架构评审**（用户/架构师）。评审重点：§5 四项冻结决策、§6.11 DB 提案、§6.12 API 提案、RISK-01/02 处置。
 2. 评审通过后，先完成 **P0/P1 收口提交（Entry Gate）**，再开 TXN-P2-1 gate。
-3. TXN-P2-1 前需补：RISK-01（组合成员 standard 完成 primitive 运行时验证）与 RISK-02（拆单时点与分摊口径）的验证记录。
+3. **RISK-01 已于 2026-09-04 完成运行时验证（结论见 §10）**：legacy `Checkout::Complete` 无法完成 standard pending 成员，且为现行潜在缺陷。建议在其进入 P2-5 前先以独立 bugfix（账户 2+ 单合并收银台 standard 成员完成）处置，或由 TXN-P2-5 优先收敛。RISK-02（拆单时点与分摊口径）仍待验证（flag 默认关闭，可延后）。
 4. 期间文档清理项：Skill/注释中 `CombinedPaymentCheckout` 残留引用、术语 P 编号规范（§2）。
+
+---
+
+## 10. 运行时验证补充（2026-09-04）— RISK-01 结论
+
+> Gate：`GATE-2026-09-04T05-51-23`（docs）｜ 方式：dev 容器 rails runner 只读/受限探测（不落库、不改代码）
+
+### 10.1 验证目标
+
+RISK-01：组合成员为 **standard-flow（state=pending）订单**时，legacy `Checkout::Complete`（next-until-complete）能否完成该成员？
+
+### 10.2 验证方法（带超时保护，不持久化）
+
+对 dev 库现存 standard pending 订单（id=13，`or_2KY5XM6frI`，R891788516）执行：
+
+```ruby
+o = PallasTrade::Order.find(13); o.reload
+trans = PallasTrade::Order.next_event_transitions      # 全部 :next 迁移
+Timeout.timeout(5) { o.next }                            # 单次 next 尝试
+Timeout.timeout(5) { PallasTrade::Checkout::Complete.call(order: o.reload) }
+```
+
+### 10.3 运行时输出（原文）
+
+```text
+state=pending standard=true completed_at= amount_due=0.0
+next_event_transitions=[{cart: :address}, {address: :delivery, if: ...}, {address: :payment, if: ...}, ...]   # 仅 legacy cart 链，无 from: pending
+next_result=false state_after=pending errors=["State cannot transition via \"next\""]
+checkout_complete=false state=pending
+```
+
+### 10.4 结论（RISK-01 已定论）
+
+1. `Order.next_event_transitions` 仅覆盖 legacy checkout 状态（cart→address→…→complete），**不存在 `from: pending`**。
+2. 对 standard pending 订单：`order.next` → `false`（无迁移，记录错误 "State cannot transition via next"）；`Checkout::Complete` → **failure，订单停留 pending**（不会挂起——errors 会终止循环，返回失败）。
+3. 因此组合支付 `PaymentCombinations::Complete` 阶段 2 若成员为 standard pending 单：成员完成失败 → 标 `balance_due` → `CombinationSettleJob` 入队 → **每次重试同样失败** → 资金已在组合层入账（succeeded + Payment completed），成员订单**永不完成**。
+4. 覆盖缺口佐证：`payment_combinations_complete_spec.rb` 的成员全部被强制为 legacy `cart` 态（`order.update_columns(state: 'cart')`），**无任何 standard 成员用例**——现行验证矩阵未覆盖该路径。
+5. 可达性：现行账户多选收银台 `OrderCombinedPay` + `PaymentCheckoutModal`（2+ 笔 → 组合）对 **standard `or_` 待支付单**（`payment_status=balance_due` 且非子订单）开放 → **现行潜在缺陷**（"钱成功、单没完成"的真实实例，独立于 P2 也存在）。
+6. 不变量确认：单笔账户支付走订单域 session（or_ → `Carts::Complete` standard 分支）不受影响；缺陷仅限 **2+ 笔组合路径对 standard 成员**。
+
+### 10.5 处置建议（供决策）
+
+- **短期**（P0/P1 收口后优先）：独立 bugfix——`PaymentCombinations::Complete` 阶段 2 对 standard 成员改用 `Carts::Complete`（其 `complete_standard_order!` 已支持"payment_splits captured>0 即放行"），legacy 成员维持 `Checkout::Complete`；补 standard 成员 spec。
+- **中期**（P2）：即 §5.4 / TXN-P2-5 `Transactions::Finalize` 的 strangler 收敛目标——该 bugfix 与 P2-5 方向一致，建议 bugfix 先行并作为 P2-5 的基线用例。
+- 影响面核对：组合"先入账后完成/失败补偿"原则（P4 教训）不受影响，仅成员完成 primitive 需要按 `standard_flow?` 分流。
