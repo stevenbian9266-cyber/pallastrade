@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| approved | PRD-20260904-payments-txn-p2-4-recovery-engine-recovery-required-权威状态解析-recover | payments | 2026-09-04 | REQ-20260904-txn-p2-4.md |
 | approved | PRD-20260904-payments-txn-p2-3-payment-fact-resolver-provider-只读状态契约-资金事实判定 | payments | 2026-09-04 | REQ-20260904-txn-p2-3.md |
 | approved | PRD-20260904-api-txn-p2-2-transactions-start-resume-事务启动幂等-quote-consent-sess | api | 2026-09-04 | REQ-20260904-txn-p2-2.md |
 | approved | PRD-20260904-checkout-txn-p2-1-commercetransaction-core-transactions-transaction_o | checkout | 2026-09-04 | REQ-20260904-txn-p2-1.md |

@@ -83,6 +83,19 @@ module PallasTrade
       event :manual_review do
         transition recovery_required: :manual_review
       end
+      # TXN-P2-4 (PRD-20260904-payments-txn-p2-4): recovery 出口——
+      # UNPAID 复位重试支付；PAID+订单未完成 → 重试 finalize；
+      # PAID+订单已完成 → 修复状态至 completed（不重复 finalize）。
+      # payment_confirmed → payment_pending 仍物理禁止（INV-02）。
+      event :retry_payment do
+        transition recovery_required: :payment_pending
+      end
+      event :retry_finalizing do
+        transition recovery_required: :finalizing
+      end
+      event :repair_completed do
+        transition recovery_required: :completed
+      end
 
       after_transition to: :payment_pending,    do: :mark_payment_started
       after_transition to: :payment_confirmed,  do: :mark_payment_confirmed
@@ -134,7 +147,8 @@ module PallasTrade
 
     # 业务安全 bang 方法（非 bang 事件返回 false 时抛域错误，参考 PaymentCombination）
     %i[start_payment confirm_payment begin_finalizing complete cancel
-       mark_recovery_required manual_review].each do |event|
+       mark_recovery_required manual_review retry_payment retry_finalizing
+       repair_completed].each do |event|
       define_method("#{event}!") do
         unless public_send(event)
           raise InvalidTransitionError.new(
