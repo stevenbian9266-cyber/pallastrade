@@ -235,5 +235,7 @@ Available in models, controllers, jobs, and services. Set automatically by contr
 
 ## Changelog (P0 Payment, 2026-09-03)
 
+- TXN-P2-1 (2026-09-04, PRD-20260904-checkout-txn-p2-1): 新表 pallastrade_commerce_transactions（txn_，state/purpose/checkout_version/price_version/snapshot_fingerprint/snapshot_data jsonb/amount/currency/payment_combination_id 可空/生命周期时间戳/recovery_attempts/last_error_*）+ pallastrade_transaction_orders（transaction_id+order_id 唯一，role primary|participant，amount_snapshot，completion_status pending|completed|failed）。CommerceTransaction 为 durable 编排上下文（非 payment aggregate；snapshot 为 immutable 证据非价格源）；状态机 created→payment_pending→payment_confirmed→finalizing→completed（+canceled/recovery_required/manual_review；禁止 payment_confirmed→payment_pending）。**无 lock_version 列**（同上 CHK-P1-2 教训）。
+
 - P0 (2026-09-03): 新表 pallastrade_payment_webhook_events（provider/provider_event_id UNIQUE/status/attempt_count/payload）、pallastrade_audit_logs（actor/resource/request_id/before/after）；pallastrade_payments.payment_session_id FK（P0-1）。
 - CHK-P1-2 (2026-09-03): pallastrade_orders 新增 checkout_version(integer default 0)/price_version(string)/checkout_expires_at(datetime)（lock_version 曾短暂加入后移除——AR locking_column 被 state_machines 占用）。

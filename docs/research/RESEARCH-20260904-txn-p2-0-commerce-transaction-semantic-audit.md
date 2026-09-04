@@ -311,11 +311,11 @@ GET  /api/v3/store/transactions/:id                   # Resume 视图：state/pa
 
 | Entry Gate 项（P2 源 §45） | 现状 | 结论 |
 |---|---|---|
-| P0 baseline green | P0 报告收尾，coverage-gate 归 CI | ⚠️ 未完全收口 |
-| P1 baseline green | CHK-P1-1A..5/4C4 已实施 | ⚠️ 全部在 dev **工作树未提交** |
-| P0/P1 migrations settled | 是（无未决 migration） | ✅ |
-| P0/P1 PRD status closed/accepted | 部分 draft 标记残留 | ⚠️ 需正式收口 |
-| working tree/branch 可审计 | dev 有大量未提交文件 + 多个 open task | ⚠️ 需先收口 |
+| P0 baseline green | P0/R1 已提交（238559e/fadef19，P0 报告收口） | ✅ |
+| P1 baseline green | CHK-P1-1A..5/4B/4C4 已实施并提交（238559e/f99c4cd） | ✅ |
+| P0/P1 migrations settled | 是 | ✅ |
+| P0/P1 PRD status closed/accepted | fadef19 已收口索引（draft→done） | ✅ |
+| working tree/branch 可审计 | dev 干净（仅未跟踪的 `豆包梳理业务需求/` 需求草稿） | ✅ |
 
 **本审计限制**：
 - 只读；未改任何代码/migration/模型；产物仅本文档。
@@ -328,7 +328,7 @@ GET  /api/v3/store/transactions/:id                   # Resume 视图：state/pa
 ## 9. 下一步（停止点）
 
 1. **本审计文档提交架构评审**（用户/架构师）。评审重点：§5 四项冻结决策、§6.11 DB 提案、§6.12 API 提案、RISK-01/02 处置。
-2. 评审通过后，先完成 **P0/P1 收口提交（Entry Gate）**，再开 TXN-P2-1 gate。
+2. **2026-09-04 进展**：Entry Gate 已满足（P0/P1/R1 已提交）；四项冻结决策经用户「实施/确认/自主决定」批准；RISK-01 运行时验证 + bugfix 完成（0e306fa/e03b9f4/64f92b5）；**TXN-P2-1 已开（PRD-20260904-checkout-txn-p2-1 approved，进行中）**。
 3. **RISK-01 已于 2026-09-04 完成运行时验证（结论见 §10）**：legacy `Checkout::Complete` 无法完成 standard pending 成员，且为现行潜在缺陷。建议在其进入 P2-5 前先以独立 bugfix（账户 2+ 单合并收银台 standard 成员完成）处置，或由 TXN-P2-5 优先收敛。RISK-02（拆单时点与分摊口径）仍待验证（flag 默认关闭，可延后）。
 4. 期间文档清理项：Skill/注释中 `CombinedPaymentCheckout` 残留引用、术语 P 编号规范（§2）。
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_03_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_04_070000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -508,6 +508,38 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_03_150000) do
     t.index ["store_id", "code"], name: "index_pt_channels_on_store_id_and_code", unique: true
     t.index ["store_id"], name: "index_pt_channels_default_per_store", unique: true, where: "(\"default\" = true)"
     t.index ["store_id"], name: "index_pt_channels_on_store_id"
+  end
+
+  create_table "pallastrade_commerce_transactions", force: :cascade do |t|
+    t.decimal "amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.datetime "canceled_at"
+    t.integer "checkout_version"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.string "currency", null: false
+    t.bigint "customer_id"
+    t.datetime "finalizing_at"
+    t.string "last_error_class"
+    t.string "last_error_code"
+    t.string "last_error_message"
+    t.datetime "manual_review_at"
+    t.bigint "payment_combination_id"
+    t.datetime "payment_confirmed_at"
+    t.string "price_version"
+    t.string "purpose", null: false
+    t.integer "recovery_attempts", default: 0, null: false
+    t.datetime "recovery_required_at"
+    t.jsonb "snapshot_data", default: {}
+    t.string "snapshot_fingerprint"
+    t.datetime "started_at"
+    t.string "state", default: "created", null: false
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_pallastrade_commerce_transactions_on_customer_id"
+    t.index ["payment_combination_id"], name: "idx_on_payment_combination_id_4fdcc3be7b"
+    t.index ["state"], name: "index_pallastrade_commerce_transactions_on_state"
+    t.index ["store_id", "state"], name: "index_pallastrade_commerce_transactions_on_store_id_and_state"
+    t.index ["store_id"], name: "index_pallastrade_commerce_transactions_on_store_id"
   end
 
   create_table "pallastrade_contact_messages", force: :cascade do |t|
@@ -2509,6 +2541,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_03_150000) do
     t.index ["active"], name: "index_pt_trackers_on_active"
   end
 
+  create_table "pallastrade_transaction_orders", force: :cascade do |t|
+    t.decimal "amount_snapshot", precision: 10, scale: 2
+    t.string "completion_status", default: "pending", null: false
+    t.datetime "created_at", null: false
+    t.bigint "order_id", null: false
+    t.string "role", default: "participant", null: false
+    t.bigint "transaction_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["order_id"], name: "index_pallastrade_transaction_orders_on_order_id"
+    t.index ["transaction_id", "order_id"], name: "idx_on_transaction_id_order_id_84b7733fc4", unique: true
+    t.index ["transaction_id"], name: "index_pallastrade_transaction_orders_on_transaction_id"
+  end
+
   create_table "pallastrade_user_identities", force: :cascade do |t|
     t.string "access_token"
     t.datetime "created_at", null: false
@@ -2712,6 +2757,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_03_150000) do
   add_foreign_key "pallastrade_back_in_stock_subscriptions", "pallastrade_products", column: "product_id"
   add_foreign_key "pallastrade_back_in_stock_subscriptions", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_carts", "pallastrade_shipping_methods", column: "shipping_method_id"
+  add_foreign_key "pallastrade_commerce_transactions", "pallastrade_payment_combinations", column: "payment_combination_id"
+  add_foreign_key "pallastrade_commerce_transactions", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_commerce_transactions", "pallastrade_users", column: "customer_id"
   add_foreign_key "pallastrade_contact_messages", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_email_logs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_email_templates", "pallastrade_stores", column: "store_id"
@@ -2741,4 +2789,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_03_150000) do
   add_foreign_key "pallastrade_store_translations", "pallastrade_stores"
   add_foreign_key "pallastrade_taxon_translations", "pallastrade_taxons"
   add_foreign_key "pallastrade_taxonomy_translations", "pallastrade_taxonomies"
+  add_foreign_key "pallastrade_transaction_orders", "pallastrade_commerce_transactions", column: "transaction_id"
+  add_foreign_key "pallastrade_transaction_orders", "pallastrade_orders", column: "order_id"
 end

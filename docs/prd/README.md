@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| approved | PRD-20260904-checkout-txn-p2-1-commercetransaction-core-transactions-transaction_o | checkout | 2026-09-04 | REQ-20260904-txn-p2-1.md |
 | done | PRD-20260902-payments-payment-p0-foundation-hardening-paymentsession-payment-正式关联- | payments | 2026-09-02 | REQ-20260902-payment-p0.md |
 | done | PRD-20260831-harness-实施-harness-token-优化-宿主侧 | harness | 2026-08-31 | REQ-20260831-harness-token-optimization-host.md |
 | approved | PRD-20260830-checkout-下单链路规范化统一化-场景a-b统一下单页-场景c收银台弹窗-参考阿里国际站 | checkout | 2026-08-30 | REQ-20260901-positive-checkout-payment-flow-hardening.md |

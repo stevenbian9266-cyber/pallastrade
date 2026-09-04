@@ -296,6 +296,8 @@ end
 
 ## Changelog (CHK-P1-1A Read-only CheckoutView, 2026-09-03)
 
+- TXN-P2-1 (2026-09-04, PRD-20260904-checkout-txn-p2-1): CommerceTransaction/TransactionOrder 数据层（durable orchestration context，TXN-P2-0 §5/§6.11）；不接支付流（TXN-P2-2 起）。
+
 - RISK-01 (2026-09-04): 组合成员完成 primitive 分流——standard 成员→`Carts::Complete`、legacy 成员→`Checkout::Complete`（`Payments::CombinationMemberComplete`）；修复 standard pending 成员组合支付永不完成（见 pallastrade-payments SKILL changelog）。
 
 - PallasTrade::OrderCheckout::View（只读投影服务）：View.call(order:) → CheckoutView DTO（预加载 + 委托 Order 权威列；零副作用/确定性；不 requote/retax/repricing/不推进状态机/不建表）。
