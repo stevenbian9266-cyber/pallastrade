@@ -270,6 +270,8 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 
 ## Changelog (P0 Payment, 2026-09-03)
 
+- TXN-P2-2 (2026-09-04, PRD-20260904-api-txn-p2-2): PaymentSession 归属 durable CommerceTransaction（`transaction_id` 可空 FK + index，存量 NULL 不回溯）；`Transactions::Start` 复用 PaymentSessions::Start（透明 Refresh 后 expected 传 nil）；session = transaction 的支付 attempt（一 transaction 多 session 语义基础）。
+
 - RISK-01 (2026-09-04): 组合成员完成 primitive 分流——新增 `Payments::CombinationMemberComplete`（standard 成员→`Carts::Complete`，legacy 成员→`Checkout::Complete`），`PaymentCombinations::Complete` 阶段 2 与 `CombinationSettleJob` 共用；修复账户 2+ 单合并收银台对 standard pending 成员"资金已入账、订单永不完成"缺陷（TXN-P2-0 §10 运行时验证）。
 
 - P0 (2026-09-03, PRD-20260902-payments-p0-foundation-hardening): PaymentSession-Payment 正式 FK(payment_session_id)；Webhook Event Store/Dedup/Retry/Replay(pallastrade_payment_webhook_events)；Express 幂等复用 PaymentSessions::Start(REUSE_WINDOW/operation_key 含 amount)；Cart#express_payment 服务端金额权威；Gateway preferences AR-Encryption(ACTIVE_RECORD_ENCRYPTION_* + rake encrypt_preferences/verify)；AuditLog/Audit.record + ErrorCodes canonical 映射；Legacy=Compatibility Only(payment.legacy_flow.used)。详见 docs/payment/。

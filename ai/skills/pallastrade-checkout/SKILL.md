@@ -296,6 +296,8 @@ end
 
 ## Changelog (CHK-P1-1A Read-only CheckoutView, 2026-09-03)
 
+- TXN-P2-2 (2026-09-04, PRD-20260904-api-txn-p2-2): Transactions::{Start,Resume} 服务——durable CommerceTransaction 启动编排（quote 同意：过期自动 Refresh→商业事实变→quote_changed/checkout_not_ready；order.with_lock 内幂等复用 active txn 或终态拒绝 transaction_not_payable；snapshot 冻结 + TransactionOrder primary；委托 PaymentSessions::Start + attach session.transaction_id）+ 只读 Resume 聚合。API：POST /orders/:order_id/transactions + GET /store/transactions/:id（见 pallastrade-api-v3 changelog）。store.yaml/SDK 随 R1/TXN-P2-6。
+
 - TXN-P2-1 (2026-09-04, PRD-20260904-checkout-txn-p2-1): CommerceTransaction/TransactionOrder 数据层（durable orchestration context，TXN-P2-0 §5/§6.11）；不接支付流（TXN-P2-2 起）。
 
 - RISK-01 (2026-09-04): 组合成员完成 primitive 分流——standard 成员→`Carts::Complete`、legacy 成员→`Checkout::Complete`（`Payments::CombinationMemberComplete`）；修复 standard pending 成员组合支付永不完成（见 pallastrade-payments SKILL changelog）。

@@ -29,6 +29,10 @@ module PallasTrade
                                   foreign_key: :transaction_id, dependent: :destroy,
                                   inverse_of: :commerce_transaction
     has_many :orders, through: :transaction_orders, source: :order
+    # TXN-P2-2: transaction 的支付 attempt 会话（1 ── N；legacy/历史 NULL 不回溯）
+    has_many :payment_sessions, class_name: 'PallasTrade::PaymentSession',
+                                foreign_key: :transaction_id, dependent: :nullify,
+                                inverse_of: :commerce_transaction
 
     validates :store, :currency, :purpose, presence: true
     validates :purpose, inclusion: { in: PURPOSES }

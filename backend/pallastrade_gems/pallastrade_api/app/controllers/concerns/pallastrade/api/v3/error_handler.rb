@@ -35,6 +35,9 @@ module PallasTrade
           order_cannot_split: 'order_cannot_split',
           # CHK-P1-5: checkout quote 已变（expected version/price_version 不匹配）→ 409
           checkout_version_conflict: 'checkout_version_conflict',
+          # TXN-P2-2: 交易启动 quote 商业事实变化（服务端权威）→ 409；终态交易不可再启动新支付 → 409
+          quote_changed: 'quote_changed',
+          transaction_not_payable: 'transaction_not_payable',
 
           # Line item errors
           line_item_not_found: 'line_item_not_found',
@@ -133,8 +136,14 @@ module PallasTrade
             # P8：结构化业务错误 { code:, message: } → 统一 code + message（黑名单/风控/防刷单等）
             # CHK-P1-3：其余键（如 missing_requirements）透传到 details，供客户端结构化消费。
             # CHK-P1-5：checkout_version_conflict 映射 HTTP 409（quote 已变，客户端重确认）。
+            # TXN-P2-2：quote_changed / transaction_not_payable 同属状态冲突 → 409。
+            conflict_codes = [
+              ERROR_CODES[:checkout_version_conflict],
+              ERROR_CODES[:quote_changed],
+              ERROR_CODES[:transaction_not_payable]
+            ]
             extra = error.except(:code, :message)
-            conflict_status = error[:code] == ERROR_CODES[:checkout_version_conflict] ? :conflict : status
+            conflict_status = conflict_codes.include?(error[:code]) ? :conflict : status
             render_error(code: error[:code], message: error[:message], status: conflict_status, details: extra.presence)
           elsif error.is_a?(ActiveModel::Errors)
             render_validation_error(error, code: code)

@@ -69,7 +69,12 @@ PallasTrade::Core::Engine.add_routes do
               patch :complete
             end
           end
+          # TXN-P2-2（2026-09-04）：启动 durable CommerceTransaction（单订单）。
+          resources :transactions, only: [:create], controller: 'orders/transactions'
         end
+
+        # TXN-P2-2（2026-09-04）：交易 Resume 读模型（owner 作用域）。
+        resources :transactions, only: [:show], controller: 'transactions'
 
         # Payment combinations (P5, 2026-08-27): 合并支付发起 + 详情（flag 灰度）
         resources :payment_combinations, only: [:create, :show]

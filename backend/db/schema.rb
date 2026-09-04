@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_04_070000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_04_080000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1311,6 +1311,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_04_070000) do
     t.bigint "payment_combination_id"
     t.bigint "payment_method_id", null: false
     t.string "status", null: false
+    t.bigint "transaction_id"
     t.string "type", null: false
     t.datetime "updated_at", null: false
     t.index ["customer_id"], name: "index_pt_payment_sessions_on_customer_id"
@@ -1322,6 +1323,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_04_070000) do
     t.index ["payment_combination_id"], name: "index_pallastrade_payment_sessions_on_payment_combination_id"
     t.index ["payment_method_id"], name: "index_pt_payment_sessions_on_payment_method_id"
     t.index ["status"], name: "index_pt_payment_sessions_on_status"
+    t.index ["transaction_id"], name: "index_pallastrade_payment_sessions_on_transaction_id"
     t.index ["type"], name: "index_pt_payment_sessions_on_type"
   end
 
@@ -2772,6 +2774,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_04_070000) do
   add_foreign_key "pallastrade_orders", "pallastrade_payment_combinations", column: "payment_combination_id"
   add_foreign_key "pallastrade_payment_combinations", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_payment_combinations", "pallastrade_users", column: "customer_id"
+  add_foreign_key "pallastrade_payment_sessions", "pallastrade_commerce_transactions", column: "transaction_id"
   add_foreign_key "pallastrade_payment_sessions", "pallastrade_payment_combinations", column: "payment_combination_id"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_payment_methods", column: "payment_method_id"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_users", column: "user_id"

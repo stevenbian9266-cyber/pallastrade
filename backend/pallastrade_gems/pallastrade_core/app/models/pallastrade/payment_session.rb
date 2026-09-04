@@ -22,8 +22,13 @@ module PallasTrade
     # payments.payment_session_id（而非 response_code ↔ external_id 拼接）。
     # 一个 PaymentSession 最多产生一个 Payment（业务不变量，见 PRD FR-015）。
     has_one :payment, class_name: 'PallasTrade::Payment',
-            inverse_of: :payment_session,
-            dependent: :nullify
+                      inverse_of: :payment_session,
+                      dependent: :nullify
+
+    # TXN-P2-2 (PRD-20260904-api-txn-p2-2): session 归属 CommerceTransaction
+    # （可空；存量/legacy NULL，不回溯）——session = transaction 的支付 attempt。
+    belongs_to :commerce_transaction, class_name: 'PallasTrade::CommerceTransaction',
+                                      foreign_key: :transaction_id, optional: true
 
     validates :order, :payment_method, :external_id, :status, :currency, presence: true
     validates :external_id, uniqueness: { scope: [:order_id, :payment_method_id] }
@@ -93,12 +98,12 @@ module PallasTrade
     #
     # @param metadata [Hash] gateway-specific metadata
     # @return [PallasTrade::Payment] the payment record
-    def find_or_create_payment!(metadata = {})
+    def find_or_create_payment!(_metadata = {})
       return payment if payment.present?
 
       order.payments.find_or_create_by!(
         payment_method: payment_method,
-        response_code: external_id,
+        response_code: external_id
       ) do |p|
         p.payment_session = self
         p.amount = amount
