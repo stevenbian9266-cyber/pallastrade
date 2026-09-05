@@ -136,3 +136,10 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 - 禁止创建重复 PRD（`harness prd new` 自动查重；相似 PRD 必须用 `harness prd update` 回写原文档）
 - 禁止跳过分层测试或知识同步门
 - 禁止在 PRD 未 done 时关闭 gate（verify-test 前置）
+
+## 11. 变更记录
+
+| 日期 | 变更 | 操作者 |
+|---|---|---|
+| 2026-09-05 | 同步 `docs/prd/_TEMPLATE.md` 变更说明：P2 收口包（PRD-20260905-other-txn-p2-closure）沿用模板扩展章节结构（元数据表/背景/FR/AC/跨层/测试/同步清单/变更记录）；分类语义微调记录于 PRD 元数据 | AI |
+
