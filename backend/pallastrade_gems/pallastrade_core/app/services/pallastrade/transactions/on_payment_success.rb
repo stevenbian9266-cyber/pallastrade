@@ -27,10 +27,18 @@ module PallasTrade
         return failure(nil, 'Payment session not found') if payment_session.nil?
 
         if payment_session.payment_combination.present?
-          result = PallasTrade::Payments::PaymentCombinations::Complete.call(payment_session: payment_session)
-          return result unless result.success?
+          transaction = payment_session.commerce_transaction
+          if transaction.nil?
+            # legacy 无 txn 组合 → Complete 适配器（Strangler：行为不变）
+            result = PallasTrade::Payments::PaymentCombinations::Complete.call(payment_session: payment_session)
+            return result unless result.success?
 
-          return success(mode: :combination, transaction: payment_session.commerce_transaction)
+            return success(mode: :combination, transaction: nil)
+          end
+
+          # txn 化组合：confirm_payment!（AC-2009）→ Finalize（组合分支自含入账 Settlement
+          # + 成员完成；资金失败/成员失败 → recovery_required，INV-03）
+          return confirm_and_finalize(transaction)
         end
 
         transaction = payment_session.commerce_transaction

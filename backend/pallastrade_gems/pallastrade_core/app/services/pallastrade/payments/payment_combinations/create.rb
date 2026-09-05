@@ -28,9 +28,7 @@ module PallasTrade
           return failure(orders, 'Primary order must be a member order') unless orders.include?(primary_order)
 
           return failure(orders, 'Orders must belong to the same store') if orders.map(&:store_id).uniq.many?
-          if customer.present? && orders.any? { |o| o.user_id != customer.id }
-            return failure(orders, 'Orders must belong to the same customer')
-          end
+          return failure(orders, 'Orders must belong to the same customer') if customer.present? && orders.any? { |o| o.user_id != customer.id }
 
           currencies = orders.map(&:currency).uniq
           return failure(orders, 'Orders must share the same currency') if currencies.many?
@@ -67,10 +65,44 @@ module PallasTrade
             )
             session.update!(payment_combination: combination)
 
+            # TXN-P2 (2026-09-05)：组合即建 durable CommerceTransaction（combined_payment）
+            # ——每 unpaid 成员一笔 TransactionOrder（primary 首单=primary，其余 participant），
+            # 绑定 session.transaction_id 与 txn.payment_combination；PSP 成功后的入账/成员
+            # 完成统一经 OnPaymentSuccess → Transactions::Finalize（组合分支）。
+            wrap_in_transaction!(combination, primary_order, unpaid, session)
+
             combination.reload
           end
 
           success(combination)
+        end
+
+        private
+
+        # durable CommerceTransaction 包装（purpose=combined_payment）。
+        # 幂等安全：Create 每次新组合 → 新 txn；无 quote 快照（订单已提交、金额服务端算）。
+        def wrap_in_transaction!(combination, primary_order, unpaid, session)
+          transaction = PallasTrade::CommerceTransaction.create!(
+            store: combination.store,
+            customer: combination.customer,
+            payment_combination: combination,
+            currency: combination.currency,
+            amount: combination.amount,
+            purpose: 'combined_payment'
+          )
+
+          unpaid.each do |order|
+            PallasTrade::TransactionOrder.create!(
+              commerce_transaction: transaction,
+              order: order,
+              role: order == primary_order ? 'primary' : 'participant',
+              amount_snapshot: order.amount_due,
+              completion_status: 'pending'
+            )
+          end
+
+          session.update!(transaction_id: transaction.id)
+          transaction.start_payment! # created → payment_pending
         end
       end
     end

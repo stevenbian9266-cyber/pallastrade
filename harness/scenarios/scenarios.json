@@ -1175,6 +1175,30 @@
         "traceVisibility": 20,
         "regressionGreen": 20
       }
+    },
+    {
+      "id": "GS-048",
+      "name": "PaymentCombination txn 化：组合收敛 Transactions::Finalize/Recover",
+      "description": "组合支付收口到 durable CommerceTransaction（combined_payment）：Create 建 txn+每成员 TransactionOrder+session 绑定；PSP 成功经 OnPaymentSuccess→Finalize（组合分支：幂等 Settlement 入账+成员完成）；成员失败→recovery_required（Recover/sweeper 收尾）；Complete/SettleJob 降为 legacy 适配器。",
+      "mustDo": [
+        "组合创建即建 durable txn（每成员 TransactionOrder，role primary/participant，amount_snapshot）并绑定 session.transaction_id",
+        "组合 PSP 成功收敛 OnPaymentSuccess → Finalize（入账 Settlement 幂等 + 成员 CombinationMemberComplete；组合单 Payment + splits 回填不变）",
+        "资金已入账但成员未全完成 → recovery_required（INV-03），不再 SettleJob；Recover/Admin/sweeper 幂等收尾",
+        "legacy 非 txn 组合走 Complete 适配器（行为不变，Strangler）",
+        "p0-payment-rspec + 组合全套（49）回归绿"
+      ],
+      "mustNotDo": [
+        "txn 路径双写：同一组合两次入账/重复 Payment/splits（Settlement 幂等短路）",
+        "PSP success + local incomplete 停留在 finalizing（必须 recovery_required）",
+        "移除 legacy Complete/SettleJob 破坏存量组合",
+        "客户端/API 请求面变更（Create 返回仍 combination）"
+      ],
+      "scoring": {
+        "settlementIdempotent": 30,
+        "recoveryCoverage": 25,
+        "legacyAdapterPreserved": 25,
+        "regressionGreen": 20
+      }
     }
   ]
 }

@@ -35,12 +35,15 @@ module PallasTrade
       # `PallasTrade::Payment#confirm!` honors the payment method's `auto_capture?` setting:
       # auto_capture → complete! + capture_event; otherwise → pend! (auth-only, payment_state=balance_due).
       def handle_success(payment_session, order, metadata)
-        # P4 (2026-08-27): 组合支付（session 挂 PaymentCombination）走统一组合完成——
-        # 先入账（payment + splits + 各订单 payment_state）再逐个订单完成，失败进补偿队列。
+        # P4 (2026-08-27): 组合支付（session 挂 PaymentCombination）走统一组合完成。
+        # TXN-P2 (2026-09-05): 收敛到 Transaction Payment Handler——txn 化组合经
+        # confirm_payment! + Finalize（组合分支：入账 Settlement + 成员完成，失败→recovery）；
+        # legacy 无 txn 组合 → PaymentCombinations::Complete 适配器（Strangler）。
         if payment_session.payment_combination.present?
-          return PallasTrade::Payments::PaymentCombinations::Complete.call(
-            payment_session: payment_session
-          )
+          result = PallasTrade::Transactions::OnPaymentSuccess.call(payment_session: payment_session.reload)
+          return result unless result.success?
+
+          return success(payment_session)
         end
 
         order.with_lock do

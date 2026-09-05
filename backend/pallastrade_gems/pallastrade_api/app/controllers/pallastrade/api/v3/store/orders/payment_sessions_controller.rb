@@ -82,10 +82,12 @@ module PallasTrade
                   return
                 end
 
-                # P5 (2026-08-27): 组合支付会话完成 → 走 PaymentCombinations::Complete
-                # （先入账支付 → 逐个完成所有成员订单），与 Webhook 路径收敛到同一服务。
+                # P5 (2026-08-27): 组合支付会话完成 → 统一组合完成。
+                # TXN-P2 (2026-09-05): 收敛到 Transaction Payment Handler——txn 化组合
+                # （session.commerce_transaction 存在）走 confirm_payment! + Finalize（组合分支
+                # 自含入账 Settlement+成员完成）；legacy 无 txn 组合仍走 Complete 适配器。
                 if @payment_session.payment_combination.present?
-                  PallasTrade::Payments::PaymentCombinations::Complete.call(payment_session: @payment_session)
+                  PallasTrade::Transactions::OnPaymentSuccess.call(payment_session: @payment_session.reload)
                   render json: serialize_resource(@payment_session.reload)
                   return
                 end

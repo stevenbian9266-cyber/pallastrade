@@ -88,5 +88,42 @@ RSpec.describe PallasTrade::Payments::PaymentCombinations::Create, type: :servic
       expect(result.failure?).to be true
       expect(result.error.to_s).to include('No unpaid orders')
     end
+
+    # TXN-P2 组合 txn 化（PRD-20260905-checkout-paymentcombination-txn-化）AC-1：
+    # 组合创建即建 durable CommerceTransaction（combined_payment）+ 每成员 TransactionOrder +
+    # session.transaction_id / txn.payment_combination 回填 + payment_pending。
+    it 'AC-1 wraps the combination in a durable CommerceTransaction' do
+      result = call(orders: [order1, order2])
+
+      expect(result.success?).to be true
+      combination = result.value
+      txn = combination.commerce_transaction
+
+      expect(txn).to be_present
+      expect(txn.purpose).to eq('combined_payment')
+      expect(txn.amount).to eq(combination.amount)
+      expect(txn.currency).to eq('USD')
+      expect(txn.state).to eq('payment_pending')
+      expect(txn.payment_combination).to eq(combination)
+      expect(txn.transaction_orders.map(&:order)).to contain_exactly(order1, order2)
+
+      roles = txn.transaction_orders.to_h { |to| [to.order_id, to.role] }
+      expect(roles[order1.id]).to eq('primary')
+      expect(roles[order2.id]).to eq('participant')
+
+      session = order1.reload.payment_sessions.last
+      expect(session.commerce_transaction).to eq(txn)
+    end
+
+    it 'AC-1 excludes paid orders from transaction participants (membership mirror)' do
+      paid = unpaid_order
+      paid.update_column(:payment_total, paid.total) # outstanding 0
+
+      result = call(orders: [order1, paid])
+      expect(result.success?).to be true
+      combination = result.value
+
+      expect(combination.commerce_transaction.transaction_orders.map(&:order)).to contain_exactly(order1)
+    end
   end
 end

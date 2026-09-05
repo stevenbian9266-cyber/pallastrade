@@ -35,8 +35,12 @@ module PallasTrade
     # P5 (2026-08-27): 组合支付会话（挂 primary order，组合一个会话）
     has_many :payment_sessions, class_name: 'PallasTrade::PaymentSession',
                                 inverse_of: :payment_combination
+    # TXN-P2 (2026-09-05): durable CommerceTransaction 包装（FK 在 commerce_transactions.payment_combination_id）
+    has_one :commerce_transaction, class_name: 'PallasTrade::CommerceTransaction',
+                                   inverse_of: :payment_combination
 
     extend PallasTrade::DisplayMoney
+
     money_methods :amount
 
     validates :store, :currency, presence: true

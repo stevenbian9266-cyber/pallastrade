@@ -7,10 +7,12 @@ module PallasTradeStripe
     attr_reader :payment_intent
 
     def call
-      # P4 (2026-08-27): 组合支付（session 挂 PaymentCombination）走统一组合完成：
-      # 先入账支付再逐个订单完成，部分失败进补偿队列，不回滚已入账资金。
+      # P4 (2026-08-27): 组合支付（session 挂 PaymentCombination）走统一组合完成。
+      # TXN-P2 (2026-09-05): 收敛到 Transaction Payment Handler——txn 化组合经
+      # confirm_payment! + Finalize（组合分支：入账 Settlement + 成员完成，失败→recovery）；
+      # legacy 无 txn 组合 → PaymentCombinations::Complete 适配器（Strangler）。
       if payment_intent.payment_combination.present?
-        PallasTrade::Payments::PaymentCombinations::Complete.call(payment_session: payment_intent)
+        PallasTrade::Transactions::OnPaymentSuccess.call(payment_session: payment_intent.reload)
         return payment_intent.order.reload
       end
 
@@ -44,6 +46,7 @@ module PallasTradeStripe
     private
 
     # we need to perform this for quick checkout orders which do not have these fields filled
+    # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def add_customer_information(order, charge)
       return order if charge.blank?
 
@@ -67,8 +70,8 @@ module PallasTradeStripe
       order.bill_address.quick_checkout = true # skipping some validations
 
       # sometimes google pay doesn't provide name (geez)
-      first_name = billing_details.name&.split(' ')&.first || order.ship_address&.first_name || order.user&.first_name
-      last_name = billing_details.name&.split(' ')&.last || order.ship_address&.last_name || order.user&.last_name
+      first_name = billing_details.name&.split&.first || order.ship_address&.first_name || order.user&.first_name
+      last_name = billing_details.name&.split&.last || order.ship_address&.last_name || order.user&.last_name
 
       order.bill_address.first_name ||= first_name
       order.bill_address.last_name ||= last_name
@@ -99,6 +102,7 @@ module PallasTradeStripe
 
       order
     end
+    # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
     def copy_bill_info_to_user(order)
       user = order.user
