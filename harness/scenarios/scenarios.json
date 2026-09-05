@@ -1105,6 +1105,29 @@
         "constraintPreserved": 25,
         "noEngineHack": 10
       }
+    },
+    {
+      "id": "GS-045",
+      "name": "TXN-P2-6 契约快照与 transaction-first 契约演进",
+      "description": "对新增 Store serializer（CommerceTransaction，P2 收口）运行 R1 契约生成（ENABLE_TYPELIZER=1 rake api:docs:generate → backend/packages/sdk + backend/public/api-docs），使 store.yaml schemas / SDK store TS types 与 serializer 无漂移；后续 SDK client 方法与 storefront 迁移须在生成契约上消费 transaction-first（Start/Resume），不手工分叉 SDK 生成物。",
+      "mustDo": [
+        "新增/修改 Store serializer 后运行 api:docs:generate（含 typelizer + schemas）并提交生成产物",
+        "api:docs:schemas:check / api:docs:validate / api:docs:check 全绿且幂等",
+        "store.yaml paths 手维护、schemas typelizer 自动；SDK types 由生成而非手工改",
+        "交易启动/恢复消费走 transaction-first（orders/transactions + store/transactions）"
+      ],
+      "mustNotDo": [
+        "手工编辑 backend/packages/sdk/src/types/generated 或 zod/generated",
+        "跳过生成导致 store.yaml/schemas:check 漂移",
+        "在不生成 SDK 类型的情况下让 storefront 直连 transaction 端点",
+        "把 platform/packages/sdk 生成副本与 backend/packages/sdk 弄出双轨分叉"
+      ],
+      "scoring": {
+        "contractGenerated": 30,
+        "driftFree": 25,
+        "generatedNotHandEdited": 25,
+        "transactionFirst": 20
+      }
     }
   ]
 }
