@@ -6262,6 +6262,316 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/PaymentSession"
+  "/api/v3/store/orders/{order_id}/transactions":
+    post:
+      summary: Start or reuse a durable CommerceTransaction (transaction-first, P2)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      description: |-
+        Starts (or idempotently reuses) a durable CommerceTransaction for a
+        standard-flow order (`or_`-prefixed, after cart submit). The backend
+        freezes the quote snapshot (checkout_version / price_version /
+        snapshot_fingerprint / amount), binds any newly created PaymentSession
+        as the transaction's payment attempt, and returns the payment execution
+        (`ps_` session) for the provider UI. Requires the checkout to be READY
+        and — when a quote exists — consent to the latest commercial terms.
+
+        Business conflicts return 409: `checkout_not_ready`, `quote_changed`,
+        `transaction_not_payable` (INV-07: never silently carry an unconfirmed
+        price change into the transaction). `checkout_version_conflict` may also
+        surface from the underlying Payment Start gate.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const started = await client.orders.transactions.create(
+            'or_abc123',
+            {
+              payment_method_id: 'pm_abc123',
+              external_data: { mode: 'payment_intent' },
+              // expected_checkout_version: 3,   // optional quote consent
+              // expected_price_version: 'pv_1', // optional quote consent
+            },
+            { token: '<token>' },
+          )
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - payment_method_id
+              properties:
+                payment_method_id:
+                  type: string
+                  description: Prefixed payment method ID (pm_...)
+                purpose:
+                  type: string
+                  enum:
+                  - purchase
+                  - balance_collection
+                  - combined_payment
+                  description: Transaction purpose (defaults to purchase)
+                external_data:
+                  type: object
+                  description: Opaque data passed through to the payment provider start
+                expected_checkout_version:
+                  type: integer
+                  description: Client-visible checkout content version (quote consent)
+                expected_price_version:
+                  type: string
+                  description: Client-visible money fingerprint (quote consent)
+      responses:
+        '201':
+          description: durable transaction started or reused with its payment execution
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                    - id
+                    - type
+                    - attributes
+                    properties:
+                      id:
+                        type: string
+                        description: Prefixed transaction ID (txn_...)
+                      type:
+                        type: string
+                        enum:
+                        - transaction
+                      attributes:
+                        type: object
+                        required:
+                        - state
+                        - purpose
+                        - currency
+                        - amount
+                        properties:
+                          state:
+                            type: string
+                          purpose:
+                            type: string
+                          currency:
+                            type: string
+                          amount:
+                            type: string
+                          checkout_version:
+                            type: integer
+                            nullable: true
+                          price_version:
+                            type: string
+                            nullable: true
+                          snapshot_fingerprint:
+                            type: string
+                            nullable: true
+                          completed_at:
+                            type: string
+                            nullable: true
+                      payment_execution:
+                        type: object
+                        nullable: true
+                        description: Payment attempt session (ps_...) for the provider UI; null for non-session methods
+                        required:
+                        - id
+                        - type
+                        - status
+                        - amount
+                        - currency
+                        properties:
+                          id:
+                            type: string
+                          type:
+                            type: string
+                            enum:
+                            - payment_session
+                          status:
+                            type: string
+                          amount:
+                            type: string
+                          currency:
+                            type: string
+                          external_data:
+                            type: object
+                            nullable: true
+        '409':
+          description: 'Checkout not ready / quote changed / transaction not payable (checkout_not_ready | quote_changed | transaction_not_payable | checkout_version_conflict)'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '422':
+          description: invalid request or non-recoverable business error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/transactions/{id}":
+    get:
+      summary: Resume a durable CommerceTransaction (authenticated customer)
+      tags:
+      - Transactions
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |-
+        Returns the transaction resume read model for the authenticated
+        customer's own transaction: state, purpose, snapshot fingerprint,
+        participants (orders), payment session attempts and recovery/completion
+        summary. The frontend uses this instead of composing Order + Payment
+        + PaymentSession locally to infer transaction state (P2 §44).
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          const resume = await client.transactions.get('txn_abc123', {
+            token: '<token>',
+          })
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Bearer customer JWT
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: transaction resume read model
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                    - id
+                    - state
+                    - purpose
+                    - currency
+                    - amount
+                    properties:
+                      id:
+                        type: string
+                      type:
+                        type: string
+                        enum:
+                        - transaction
+                      state:
+                        type: string
+                      purpose:
+                        type: string
+                      currency:
+                        type: string
+                      amount:
+                        type: string
+                      snapshot_fingerprint:
+                        type: string
+                        nullable: true
+                      participants:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            order_id:
+                              type: string
+                              nullable: true
+                            role:
+                              type: string
+                            amount_snapshot:
+                              type: object
+                              nullable: true
+                            completion_status:
+                              type: string
+                            completed:
+                              type: boolean
+                      payment_sessions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            status:
+                              type: string
+                            amount:
+                              type: object
+                              nullable: true
+                            currency:
+                              type: string
+                            external_id:
+                              type: string
+                            completed:
+                              type: boolean
+                      recovery:
+                        type: object
+                        properties:
+                          attempts:
+                            type: integer
+                          last_error_code:
+                            type: string
+                            nullable: true
+                          last_error_class:
+                            type: string
+                            nullable: true
+                          last_error_message:
+                            type: string
+                            nullable: true
+                      completion:
+                        type: object
+                        properties:
+                          completed_at:
+                            type: string
+                            nullable: true
+                          participants_completed:
+                            type: integer
+                          participants_total:
+                            type: integer
+        '404':
+          description: transaction not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
   "/api/v3/store/customers/me/addresses":
     get:
       summary: List customer addresses
