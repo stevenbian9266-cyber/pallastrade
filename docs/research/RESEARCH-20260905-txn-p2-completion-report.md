@@ -3,7 +3,7 @@
 > Commerce Transaction Orchestration & Recovery —— P2 后端核心交付 + Storefront/API 迁移收口报告。
 > 对应 `豆包梳理业务需求/P2 — Commerce Transaction Orchestration & Recovery.md` §65 产物清单。
 > 分支：`dev`。每工作包均经 Harness feature gate（task→brain→risk→gate→REQ→evidence→commit）。
-> 更新：2026-09-05 —— TXN-P2-6 三包、P2-7 slice2（Admin+sweeper）、store.yaml 端点 paths 全部完成并推送 dev（HEAD `d8fb881`）。
+> 更新：2026-09-05 —— TXN-P2-6 三包、P2-7 slice2（Admin+sweeper）、store.yaml 端点 paths、组合（PaymentCombination）txn 化 全部完成并推送 dev（HEAD `44b97c8`）。
 
 ## 1. 交付清单（commit 时间线，dev）
 
@@ -23,6 +23,7 @@
 | `40840b8` | TXN-P2-6 轮3 storefront | checkout/start BFF + `order-payment` action transaction-first（`payment_execution`=session，PATCH complete 不变）；`quote_changed` 409 映射；SDK dist 重建（hash `index-D4oztWwf`）；scenarios GS-046 + storefront SKILL/README 同步 |
 | `fe0672d` | TXN-P2-7 slice2（Admin + sweeper） | Admin Transactions 资源页（Orders→Transactions：index 汇总卡 + show trace + recover enqueue RecoverJob；PermissionRegistry `:transactions`）；保守 `RecoverSweeperJob`（sidekiq-cron */5，仅 recovery_required 自动，manual_review/stuck 计数+warn）；`Store has_many :commerce_transactions`；GS-047；双语 i18n/nav_validate |
 | `d8fb881` | 文档（API paths） | store.yaml 补交易端点 paths：`POST /orders/{order_id}/transactions`（201 data+payment_execution / 409 quote 码）+ `GET /transactions/{id}`（bearer auth resume）；validate 80 schemas clean |
+| `44b97c8` | PaymentCombination txn 化 | 组合创建即建 durable txn（combined_payment + 每成员 TransactionOrder + session 绑定）；`PaymentCombinations::Settlement`（幂等入账 primitive）；`Transactions::Finalize` 组合分支（入账+成员完成；失败→recovery_required）；`OnPaymentSuccess`/orders#complete/webhook/stripe 收敛；`Complete`/`SettleJob` 降为 legacy 适配器；GS-048；组合全套 49 specs |
 
 ## 2. 冻结决策（TXN-P2-0，见 RESEARCH-20260904-txn-p2-0）
 
@@ -50,14 +51,13 @@
 
 ## 5. Remaining / 后续（明确记录）
 
-> 更新于 2026-09-05：**TXN-P2-6 三包**（c202121/bf2e296/40840b8）、**P2-7 slice2 Admin+sweeper+最小 metrics**（fe0672d）、**store.yaml 交易端点 paths**（d8fb881）均已完成。
-> 注：账户单笔支付 `PaymentCheckoutModal` 复用 `createOrderPaymentSession`（已随轮3 transaction-first），资金入口已统一；账户态 resume 读模型与组合 txn 化为后续设计项。
+> 更新于 2026-09-05：**TXN-P2-6 三包**（c202121/bf2e296/40840b8）、**P2-7 slice2**（fe0672d）、**store.yaml paths**（d8fb881）、**PaymentCombination txn 化**（44b97c8）均已完成。
+> 注：账户单笔支付与组合支付均已在 durable transaction 编排内（组合现经 Settlement/Finalize 收口）；遗留 resume 读模型与 dev 冒烟为可选后续。
 
 | 项 | 阻塞/前置 | 备注 |
 |---|---|---|
-| 组合（PaymentCombination）txn 化 | 后续 combined strategy | 组合 adapter 保持（RISK-01 / P2-5 Strangler）；会话仍挂组合非 txn |
-| storefront 账户态 Resume（transactions.get 消费） | 需订单→交易读取面（如 order 关联 active txn id）或订单页联查 | 后端 resume 端点已按 txn id（customer auth）；账户单笔支付已完成 transaction-first（共享 action） |
-| dev 站冒烟 | 本地全栈 + Stripe 沙箱 | Admin Transactions 页 / Stripe 卡支付 transaction-first 实测 |
+| storefront 账户态 Resume（transactions.get 消费） | 需订单→交易读取面（如 order 关联 active txn）或订单页联查 | 功能缺口小（重试/收口已由 transaction-first + payment-result 覆盖）；UI 为可选增强 |
+| dev 站冒烟 | 本地全栈 + Stripe 沙箱 | Admin Transactions / Stripe 卡支付 / 组合支付实测 |
 
 ## 6. Rollback / 兼容
 
