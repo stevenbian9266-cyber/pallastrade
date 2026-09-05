@@ -112,8 +112,31 @@ module PallasTrade
       payment_session.update(attrs)
     end
 
+    # PALLAS-CUSTOM: bugfix (2026-09-05, 冒烟发现) —— 单订单 txn 直接 complete 死循环。
+    # Stripe/PayPal 的 complete_payment_session 都会先落账本地 Payment（find_or_create_payment!），
+    # 唯独 Bogus 只 complete 会话不建 Payment；标准流程订单（Carts::Submit 产物）在
+    # Transactions::Finalize 里要求已存在 completed Payment（否则 no_payment_found →
+    # recovery_required，且无 webhook 兜底 → Recover/Sweeper 也无法收尾）。
+    # 对齐 Settlement primitive 配方：带 skip_source_requirement 直接从 checkout complete!
+    # （Bogus 无真实 source；不调 started_processing!——processing→complete 会再次要求 source）。
     def complete_payment_session(payment_session:, params: {})
-      payment_session.complete
+      order = payment_session.order
+      unless order
+        payment_session.complete
+        return
+      end
+
+      order.with_lock do
+        payment_session.reload
+        unless payment_session.completed?
+          payment = payment_session.find_or_create_payment!
+          if payment.present? && !payment.completed?
+            payment.skip_source_requirement = true
+            payment.complete!
+          end
+          payment_session.complete unless payment_session.completed?
+        end
+      end
     end
 
     # PALLAS-CUSTOM: TXN-P2-3 (PRD-20260904-payments-txn-p2-3)
