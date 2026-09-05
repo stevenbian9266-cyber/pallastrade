@@ -31,7 +31,7 @@ export default {
 
   // ③ 知识同步规则（doc-impact）— 镜像 AGENTS.md §7
   docImpact: {
-    base: 'origin/main',
+    base: 'origin/dev',
     rules: [
       { codeGlob: /^backend\/app\/models\/.*\.rb$/, docs: ['ai/skills/pallastrade-catalog/SKILL.md', 'ai/skills/pallastrade-data-model/SKILL.md'], anyOf: true, label: 'Model change' },
       { codeGlob: /^backend\/app\/controllers\/.*\/api\/v3\/.*\.rb$/, docs: ['backend/public/api-docs/store.yaml', 'backend/public/api-docs/admin.yaml', 'platform/docs/api-reference/store.yaml', 'platform/docs/api-reference/admin.yaml'], anyOf: true, label: 'API endpoint change → API docs sync' },

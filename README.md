@@ -14,8 +14,8 @@ ai/           PallasTrade AI 开发能力
 harness/      项目规范、场景、需求和治理策略
 ```
 
-各目录共享根 Git Commit 和统一发布 Tag。日常开发在 `dev`，验证后合并到生产分支
-`main`；组件目录不得包含独立 Git 元数据。
+各目录共享根 Git Commit 和统一发布 Tag。日常开发与发布均在 `dev`（远程仅 dev，无
+main/prod）；组件目录不得包含独立 Git 元数据。
 
 ## AI 开发生命周期
 

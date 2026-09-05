@@ -69,12 +69,12 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 - 冲突裁决顺序：`harness/policies/anti-patterns.json` > 本文件 §5/§6 > 各层 CLAUDE.md > skill 细节
 - 新增规范文件 → 必须登记到 §0.1；修改权威文件 → 按 §7 知识同步矩阵更新指针文件
 
-### 0.4 分支策略
+### 0.4 分支策略（dev-only，2026-09-05）
 
-- 日常开发在 `dev`（本地 + 远程），提交/推送均在 `dev`；`main` 为生产部署分支，**仅接受 `dev` 合并**，禁止直接向 `main` 推送开发提交
-- 发布流程：`dev` 推入 → CI 验证（所有组件 workflow 监听 `[main, dev]`）→ `dev` 合并 `main` → 推送 `main`（部署/打 Tag）
+- 远程仓库仅 `dev`（无 `main`、无 prod 服务器）；日常开发在 `dev`（本地 + 远程），提交/推送均在 `dev`；**发布 = 直接 push `dev`**（无 dev→main 合并）
+- 发布流程：`dev` 推入 → CI 验证（所有组件 workflow 监听 `[dev]`）→ 服务器拉取式部署（pull-deploy.sh dev）
 - **gate 绑定当前分支**：在哪个分支开 gate，就在哪个分支完成提交；切分支前先完成 gate
-- 详见 `scripts/release/README.md` §分支策略
+- 详见 `scripts/release/README.md` §分支策略（dev-only）与 `deploy/README.md`
 
 ---
 
@@ -268,7 +268,7 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | UI component / style | + `harness e2e dashboard` or `harness e2e storefront` | ≤15 min |
 | Payment logic | + payment sandbox gate | ≤30 min |
 | AI Skill file (`ai/skills/`) | + `harness eval ai --check-freshness` | ≤2 min |
-| Any change | `harness doc-impact --base origin/main` — checks knowledge docs are synced | ≤1 min |
+| Any change | `harness doc-impact --base origin/dev` — checks knowledge docs are synced | ≤1 min |
 
 ### Verification Evidence Required
 
@@ -313,7 +313,7 @@ Before clearing `verify-test`, provide objective evidence:
 | `AGENTS.md` / `CLAUDE.md` (modified) | Run `harness docs:check` to verify no broken references |
 | Any file (framework version upgrade) | ALL Skill files — `harness eval ai --check-freshness` |
 
-**CI command**: `harness doc-impact --base origin/main` checks your PR against this table. If any required doc update is missing, the PR is blocked with status `docs-required`.
+**CI command**: `harness doc-impact --base origin/dev` checks your PR against this table. If any required doc update is missing, the PR is blocked with status `docs-required`.
 
 **Knowledge sync gate**: for PRD-driven tasks, before closing `verify-test`, run `harness sync-check --id PRD-xxx` — it lists every knowledge asset (Skill / README / Agent files / style & technical standards / anti-patterns / scenarios) the change may require updating. Resolve each (update, or record "已评估，无需更新" in PRD §9/§10), then confirm with `harness sync-check --ack`.
 
@@ -327,7 +327,7 @@ These commands are intercepted by safety hooks at the tool-call level, not the p
 - `DROP TABLE pallastrade_*` / `DROP DATABASE`
 - `DELETE FROM pallastrade_orders` (and similar mass deletes on core tables)
 - `PallasTrade::Order.delete_all` / `PallasTrade::Order.destroy_all`
-- `git push --force origin main` / `git push --force origin master`
+- `git push --force origin dev`
 - Writing secrets (`sk_live_...`, `AKIA...`, `ghp_...`) into source files
 
 **Bypass**: Set `PALLASTRADE_HOOKS_DISABLE=1` and run the command manually in a terminal (not through the AI tool invocation). This is for emergencies only.

@@ -4,7 +4,7 @@ A Rails application pre-configured with [PallasTrade Commerce](https://pallastra
 
 ## Quick Start
 
-If you want a full project scaffold (this backend + a Next.js storefront + the `pallastrade` CLI), use [`create-pallastrade-app`](https://github.com/stevenbian9266-cyber/pallastrade/tree/main/platform/packages/create-pallastrade-app):
+If you want a full project scaffold (this backend + a Next.js storefront + the `pallastrade` CLI), use [`create-pallastrade-app`](https://github.com/stevenbian9266-cyber/pallastrade/tree/dev/platform/packages/create-pallastrade-app):
 
 ```bash
 npx create-pallastrade-app my-store
@@ -17,7 +17,7 @@ If you want **just this backend** (e.g. to fork and customize it on its own), cl
 Development is Docker-based: the only thing you need on your host is Docker (Docker Desktop, OrbStack, or any compatible runtime). No Ruby, no Postgres, no Redis on the host.
 
 ```bash
-git clone --branch main --single-branch https://github.com/stevenbian9266-cyber/pallastrade.git my-store
+git clone --branch dev --single-branch https://github.com/stevenbian9266-cyber/pallastrade.git my-store
 cd my-store/backend
 cp .env.example .env
 # Edit .env and set SECRET_KEY_BASE — generate one with:

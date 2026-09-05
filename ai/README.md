@@ -73,7 +73,7 @@ Invoked by Claude (not the user) for multi-step PallasTrade work that benefits f
 
 | Hook | What it does |
 |---|---|
-| `PreToolUse` on `Bash` | Blocks destructive database commands (`rake db:drop`, `PallasTrade::Model.delete_all`, raw `DROP TABLE pallastrade_*`, force-push to main/master). |
+| `PreToolUse` on `Bash` | Blocks destructive database commands (`rake db:drop`, `PallasTrade::Model.delete_all`, raw `DROP TABLE pallastrade_*`, force-push to dev). |
 | `PostToolUse` on `Edit`/`Write`/`MultiEdit` | Warns when an edit adds a hardcoded secret (Stripe live keys, AWS access keys, GitHub PATs, OpenAI/Anthropic keys). |
 
 Hooks honor `PALLASTRADE_HOOKS_DISABLE=1` as an escape hatch. Like the slash commands, they require the Claude Code plugin install path below — `npx skills add` installs skills, but not subagent, commands or hooks (the `${CLAUDE_PLUGIN_ROOT}` path resolution that hooks need only works under the plugin install).
@@ -111,7 +111,7 @@ See [`vercel-labs/skills`](https://github.com/vercel-labs/skills) for the full a
 If you can't use `npx skills`:
 
 ```bash
-git clone --branch main --single-branch https://github.com/stevenbian9266-cyber/pallastrade.git
+git clone --branch dev --single-branch https://github.com/stevenbian9266-cyber/pallastrade.git
 mkdir -p .claude/skills .claude/agents
 cp -R pallastrade/ai/skills/* .claude/skills/
 cp -R pallastrade/ai/agents/* .claude/agents/

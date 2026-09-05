@@ -15,8 +15,8 @@ pre-commit:
 pre-push:
   commands:
     biome-ci:
-      # No glob filter: biome ci scopes itself via --changed --since=main to
-      # validate the whole branch diff vs main. A glob would skip the check
+      # No glob filter: biome ci scopes itself via --changed --since=dev to
+      # validate the whole branch diff vs dev. A glob would skip the check
       # whenever a push touched zero TS files (e.g. Ruby-only follow-up push),
       # missing TS issues from earlier commits already in the branch.
-      run: pnpm exec biome ci --changed --since=main --no-errors-on-unmatched --files-ignore-unknown=true
+      run: pnpm exec biome ci --changed --since=dev --no-errors-on-unmatched --files-ignore-unknown=true

@@ -30,7 +30,7 @@ gem 'pallastrade_emails'  # optional
 Or use the Rails application template:
 
 ```bash
-rails new my_store -m https://raw.githubusercontent.com/stevenbian9266-cyber/pallastrade/main/pallastrade/template.rb
+rails new my_store -m https://raw.githubusercontent.com/stevenbian9266-cyber/pallastrade/dev/pallastrade/template.rb
 ```
 
 ## Running Tests

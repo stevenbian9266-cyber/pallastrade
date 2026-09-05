@@ -112,10 +112,10 @@ AI **不可自清** `user-confirmed`；须用户明确肯定（"确认/实施/go
 7. 知识同步门：`harness sync-check --id PRD-xxx` → 处理 → `--ack`
 **违反 R8 = 流程违规。**
 
-### R9: 分支策略（dev 开发 → main 生产）
+### R9: 分支策略（dev-only，2026-09-05）
 
-- 日常开发在 `dev`（提交/推送均 dev）；`main` 仅接受 dev 合并，禁止直推 main
-- 发布：`git checkout main && git merge dev && git push origin main`
+- 远程仓库仅 `dev`（无 `main`、无 prod 服务器）；所有提交/推送均在 `dev`
+- 发布：push `dev` 即触发 CI 与服务器拉取式部署（pull-deploy.sh dev）；无 dev→main 合并流程
 - **gate 绑定当前分支**：在哪个分支开 gate 就在哪个分支完成提交（切分支前先完成 gate）
 
 ## Reference

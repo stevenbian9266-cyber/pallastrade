@@ -22,8 +22,8 @@ if (!tagPattern.test(tag ?? '')) {
   process.exit(1)
 }
 
-if (git('branch', '--show-current') !== 'main') {
-  throw new Error('Release tags can only be created from main.')
+if (git('branch', '--show-current') !== 'dev') {
+  throw new Error('Release tags can only be created from dev.')
 }
 if (git('status', '--porcelain')) {
   throw new Error('Release tags require a clean working tree.')
