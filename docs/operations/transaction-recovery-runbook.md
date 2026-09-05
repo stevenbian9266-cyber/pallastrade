@@ -66,3 +66,25 @@ bundle exec rake "pallastrade:transactions:recover[txn_xxx]"
 
 - Admin transaction inspection UI / metrics / alerts / 自动 stuck sweeper：
   待 Admin resource 基建与可观测组件就绪后接入（P2 收尾项）。
+
+## 8. Admin Transactions（slice2, 2026-09-05）
+
+后台 **Orders → Transactions**（需 Orders 管理权限或 PermissionRegistry `transactions` read）：
+
+- **列表** `/admin/transactions`：当前 store 的交易（分页/按 state 搜索），顶部 metrics 汇总卡
+  （recovery_required / manual_review / stuck=payment_confirmed|finalizing 超 1h）。
+- **详情** `/admin/transactions/txn_xxx`：trace 读模型（时间戳/attempts/last_error/参与者/会话）。
+- **恢复**：仅 `recovery_required` / `finalizing` 显示 "Run recovery" 按钮 → enqueue
+  `Transactions::RecoverJob`（异步；resolver 判定后分支）。`manual_review` 无按钮（人工，AC-2014）。
+
+## 9. 自动 stuck sweeper（slice2, 2026-09-05）
+
+sidekiq-cron `*/5 * * * *` 调度 `PallasTrade::Transactions::RecoverSweeperJob`（host
+`config/sidekiq_schedule.rb` 条目 `transaction_recovery_sweeper`）：
+
+- **自动**：`recovery_required` 交易 enqueue `RecoverJob`（幂等，resolver 判定后分支）。
+- **不自动**：`manual_review` 与 stuck `payment_confirmed`/`finalizing`（>1h）——仅计数并
+  `warn` 日志告警（metrics 最小集），走 Admin/rake 人工介入（AC-2014 / INV-04）。
+- 重复调度安全：Recover 幂等（with_lock + 状态守卫 + attempts 计数）。
+
+手动触发：`PallasTrade::Transactions::RecoverSweeperJob.perform_now` 或等下一个 cron。

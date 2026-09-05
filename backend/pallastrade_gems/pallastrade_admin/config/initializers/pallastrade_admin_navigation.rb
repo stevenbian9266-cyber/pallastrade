@@ -77,6 +77,14 @@ Rails.application.config.after_initialize do
               position: 20,
               active: -> { controller_name == 'checkouts' || (@order.present? && !@order.completed?) },
               if: -> { can?(:manage, :checkouts) }
+
+    # TXN-P2-7 slice2: durable CommerceTransaction inspection + manual recovery
+    orders.add :transactions,
+              label: 'admin.orders.transactions',
+              url: :admin_transactions_path,
+              position: 30,
+              active: -> { controller_name == 'transactions' },
+              if: -> { can?(:read, PallasTrade::CommerceTransaction) || can?(:manage, PallasTrade::Order) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns

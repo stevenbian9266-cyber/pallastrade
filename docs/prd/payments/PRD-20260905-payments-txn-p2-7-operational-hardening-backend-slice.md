@@ -4,10 +4,10 @@
 |---|---|
 | 状态 | approved |
 | 创建日期 | 2026-09-05 |
-| 来源 | P2 源文档 §58（TXN-P2-7 Operational Hardening）——本轮后端切片；Admin UI/metrics/alerts 为后续（前置：Admin resource 基建/可观测） |
+| 来源 | P2 源文档 §58（TXN-P2-7 Operational Hardening）——slice1 后端切片已完成；**slice2（2026-09-05 回写）：Admin transaction inspection UI + 保守自动 stuck sweeper + 最小 metrics/alerts**（用户选「完整资源页/保守 sweeper/最小集」） |
 | 分类 | payments（交易运维域） |
-| 关联 REQ | REQ-20260905-txn-p2-7.md |
-| 需求类型 | 新功能（后端运维强化：读模型/scope/rake/ops runbook；无 API 面） |
+| 关联 REQ | REQ-20260905-txn-p2-7.md（slice1）；REQ-20260905-txn-p2-7-admin-sweeper.md（slice2） |
+| 需求类型 | 新功能（Admin 资源 + 定时 sweeper） |
 
 ## 1. 背景与目标
 
@@ -46,9 +46,53 @@
 ### FR-704：范围边界
 - Admin UI/metrics/alerts/自动 sweeper：延后（REQ 记录）；不新增迁移/API/SDK；无状态机改动。
 
+---
+
+# Slice 2 — Admin transaction inspection UI + 保守 sweeper（2026-09-05 回写）
+
+## S2 背景
+slice1 已交付 scope/trace/rake/runbook。slice2 落地 §58 剩余：Admin transaction inspection UI、自动 stuck sweeper、最小 metrics/alerts。设计决策（用户确认）：**保守 sweeper**（仅 recovery_required 自动；manual_review/stuck 只列示+日志）；**完整 Admin 资源页**（sidebar 菜单 + index 汇总卡 + show trace + recover 按钮 + 权限 + 双语）；**最小 metrics/alerts**（index 汇总卡计数 + sweeper 结构化日志；不新建通知通道）。
+
+## S2 FR/AC
+
+### FR-711：Admin transactions 资源页（镜像 email_logs/contact_messages）
+- `PallasTrade::Admin::TransactionsController < ResourceController`：model_class=CommerceTransaction；store 作用域；index（汇总卡 + render_table）+ show（trace + page_actions）+ 成员动作 `recover`（POST，enqueue `Transactions::RecoverJob` 后 flash+redirect）。
+- 路由 `resources :transactions, only: [:index, :show] do member { post :recover } end`；sidebar Orders 组子项；tables 注册（link_to_action: :show）；PermissionRegistry `:transactions`（read/update，store_id）；双语 nav label/flash。
+- AC-711：GET /admin/transactions 渲染当前 store 交易列表（含汇总卡计数）。
+- AC-712：GET /admin/transactions/:txn 渲染 trace（时间戳/attempts/error/participants/sessions）。
+- AC-713：POST recover：仅 recovery_required/finalizing 显示按钮并 enqueue RecoverJob（异步）；非可恢复态不显示按钮；manual_review 无按钮。
+- AC-714：非 SuperUser 经 PermissionRegistry read/update 授权可读/恢复（store 数据域）。
+
+### FR-712：保守自动 stuck sweeper（sidekiq-cron）
+- `PallasTrade::Transactions::RecoverSweeperJob`：每 store 扫 `recovery_required` → enqueue RecoverJob；`manual_review` + stuck（payment_confirmed/finalizing > 阈值）只计数 + 结构化日志（metrics）；不自动处理（INV-04/AC-2014）。
+- host `config/sidekiq_schedule.rb` 增 cron 条目（*/5，可调）。
+- AC-721：recovery_required 交易被 enqueue RecoverJob。
+- AC-722：manual_review 与 stuck 交易不被自动 recover，仅计入日志。
+- AC-723：跑多次幂等（Recover 幂等 + enqueue 不重复处理）。
+
+### FR-713：最小 metrics/alerts
+- Admin index 顶部汇总卡：recovery_required / manual_review / stuck(payment_confirmed|finalizing>1h) 计数（按当前 store）。
+- sweeper 每次运行 Rails logger 结构化行（counts by category + store）。
+- AC-731：汇总卡计数正确；sweeper 日志含类别计数。
+
+## S2 测试计划
+- `backend/spec/jobs/pallastrade/transactions/recover_sweeper_job_spec.rb`（AC-721/722/723）
+- `backend/spec/requests/pallastrade/admin/transactions_spec.rb`（AC-711/712/713）
+- 回归：p0-payment-rspec + chk-p1-5（无支付行为变更，防回归）
+
+## S2 知识同步
+- payments SKILL changelog（TXN-P2-7 slice2）；data-model SKILL（Store has_many commerce_transactions 若加）；scenarios.json 新场景；runbook 补 sweeper/Admin 用法。
+
 ## 4. 变更记录
 
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-05 | 0.1 | 定稿 approved（用户选 A 推进 P2-7 后端切片） | AI |
 | 2026-09-05 | 0.2 | 实施完成：needs_attention scope + trace + rake list/recover + ops runbook；模型 spec 9 examples 0 failures；rake 注册验证；新增文件 rubocop 0 | AI |
+| 2026-09-05 | 0.3 | slice2 回写：Admin transactions 资源页 + 保守 sweeper + 最小 metrics（用户确认三项决策）；REQ-20260905-txn-p2-7-admin-sweeper.md | AI |
+
+## 回写记录（harness prd update）
+
+| 日期 | 来源 | 操作者 |
+|---|---|---|
+| 2026-09-05 | 需求：TXN-P2-7 完整——Admin transaction inspection UI + 保守自动 stuck sweeper + 最小 metrics（slice 2） | AI |

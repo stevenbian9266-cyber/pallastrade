@@ -48,6 +48,11 @@ Rails.application.config.after_initialize do
                model_class: PallasTrade::Review,
                actions: %w[read update destroy],
                data_fields: %w[store_id])
+  # TXN-P2-7 slice2: durable CommerceTransaction 运维查看/恢复（Admin Transactions）
+  reg.register(:transactions,
+               model_class: PallasTrade::CommerceTransaction,
+               actions: %w[read update],
+               data_fields: %w[store_id])
   reg.register(:developers,
                model_class: nil,
                actions: %w[read create update destroy],

@@ -1152,6 +1152,29 @@
         "quoteConsentPreserved": 25,
         "baselineGreen": 15
       }
+    },
+    {
+      "id": "GS-047",
+      "name": "TXN-P2-7 slice2 交易运维：Admin inspection + 保守 sweeper",
+      "description": "CommerceTransaction 运维收口：Admin Transactions 资源页（Orders→Transactions，store 作用域 index+metrics 汇总卡、show trace、recover 按钮 enqueue RecoverJob）与保守自动 stuck sweeper（sidekiq-cron RecoverSweeperJob：仅 recovery_required 自动 enqueue RecoverJob，manual_review/stuck 仅计数+warn）。",
+      "mustDo": [
+        "Admin transactions 仅经 PermissionRegistry（read/update，store_id）+ SuperUser 放行；store 作用域查询",
+        "recover 仅 recovery_required/finalizing（Recover::RECOVERABLE_STATES）且 enqueue（异步，resolver 判定）",
+        "manual_review/stuck payment_confirmed/finalizing 永不自动恢复（AC-2014/INV-04），sweeper 只计数+warn",
+        "sweeper 重复调度安全（Recover 幂等）；metrics = Admin 汇总卡 + sweeper 结构化日志",
+        "nav/tables/i18n 双语（en+zh-CN）经 nav_validate"
+      ],
+      "mustNotDo": [
+        "sweeper 自动处理 manual_review 或对未知资金事实猜分支",
+        "Admin 绕过 store 作用域或 PermissionRegistry 裸授权",
+        "破坏 p0-payment/chk-p1-5 回归（支付行为不变）"
+      ],
+      "scoring": {
+        "humanInTheLoop": 35,
+        "storeScopedAndAuthorized": 25,
+        "traceVisibility": 20,
+        "regressionGreen": 20
+      }
     }
   ]
 }

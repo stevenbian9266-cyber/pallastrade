@@ -458,6 +458,15 @@ en:
       orders:
         add_user_to_this_order: Add customer to this order
         all_orders: All Orders
+        transactions: Transactions
+        transactions_needs_attention: Needs attention
+        transactions_recovery_required: Recovery required
+        transactions_manual_review: Manual review
+        transactions_stuck: Stuck
+        transaction_recovery_queued: Recovery job queued for this transaction.
+        transaction_not_recoverable: This transaction cannot be recovered automatically.
+        transaction_recover: Run recovery
+        transactions_help: Durable CommerceTransaction orchestration. Recovery-required and manual-review transactions need attention; payment_confirmed/finalizing older than 1h are stuck. Run recovery only from recovery_required/finalizing.
         parent_filter: Order type
         parent_orders: Parent orders
         child_orders: Child orders

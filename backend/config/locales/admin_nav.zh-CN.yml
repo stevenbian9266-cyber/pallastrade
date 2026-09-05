@@ -9,6 +9,7 @@ zh-CN:
       orders:
         all_orders: 全部订单
         orders_to_fulfill: 待发货订单
+        transactions: 交易
       products:
         products_list: 商品列表
         categories: 分类

@@ -316,6 +316,12 @@ PallasTrade::Core::Engine.add_routes do
         post :resolve
       end
     end
+    # TXN-P2-7 slice2: durable CommerceTransaction inspection + manual recovery
+    resources :transactions, only: [:index, :show] do
+      member do
+        post :recover
+      end
+    end
     get '/emails', to: 'emails#show', as: :emails
     patch '/emails', to: 'emails#update'
     post '/emails/test_send', to: 'emails#test_send', as: :emails_test_send

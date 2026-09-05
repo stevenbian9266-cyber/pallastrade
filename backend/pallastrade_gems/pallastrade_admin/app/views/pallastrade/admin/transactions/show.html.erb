@@ -1,0 +1,57 @@
+<% content_for(:title, PallasTrade.t('admin.orders.transactions')) %>
+<% content_for :page_title do %>
+  <%= @object.prefixed_id %>
+<% end %>
+<%= content_for(:page_actions) do %>
+  <% if PallasTrade::Transactions::Recover::RECOVERABLE_STATES.include?(@object.state) %>
+    <%= button_to PallasTrade.t('admin.orders.transaction_recover'),
+                  PallasTrade.recover_admin_transaction_path(@object),
+                  method: :post, class: 'btn btn-danger' %>
+  <% end %>
+  <%= link_to PallasTrade.t('actions.back'), PallasTrade.admin_transactions_path, class: 'btn btn-outline' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= @object.prefixed_id %></h5>
+    <span class="badge <%= @object.state == 'manual_review' ? 'badge-warning' : (@object.state == 'recovery_required' ? 'badge-danger' : 'badge-info') %>"><%= @object.state %></span>
+    <span class="text-sm text-gray-500 ml-2"><%= @object.purpose %> · <%= @object.currency %> <%= @object.amount %></span>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div><dt class="text-sm text-gray-500">Snapshot fingerprint</dt><dd><%= @object.snapshot_fingerprint.presence || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Checkout version</dt><dd><%= @object.checkout_version.presence || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Started at</dt><dd><%= @object.started_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Payment confirmed at</dt><dd><%= @object.payment_confirmed_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Finalizing at</dt><dd><%= @object.finalizing_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Completed at</dt><dd><%= @object.completed_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Recovery required at</dt><dd><%= @object.recovery_required_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Manual review at</dt><dd><%= @object.manual_review_at&.iso8601 || '—' %></dd></div>
+    </dl>
+  </div>
+</div>
+
+<% trace = @object.trace %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">Recovery</h5>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div><dt class="text-sm text-gray-500">Attempts</dt><dd><%= trace[:recovery_attempts] %></dd></div>
+      <div><dt class="text-sm text-gray-500">Last error</dt><dd><%= [trace[:last_error_code], trace[:last_error_message]].compact.join(' — ').presence || '—' %></dd></div>
+    </dl>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">Participants & payment sessions</h5>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div><dt class="text-sm text-gray-500">Participants (completed / total)</dt><dd><%= trace.dig(:participants, :completed) %> / <%= trace.dig(:participants, :total) %> (<%= trace.dig(:participants, :roles).map { |role, n| "#{role}=#{n}" }.join(', ') %>)</dd></div>
+      <div><dt class="text-sm text-gray-500">Payment sessions (total)</dt><dd><%= trace.dig(:payment_sessions, :total) %> · <%= trace.dig(:payment_sessions, :by_status).map { |st, n| "#{st}=#{n}" }.join(', ') %></dd></div>
+    </dl>
+  </div>
+</div>

@@ -2453,6 +2453,64 @@ Rails.application.config.after_initialize do
                                          default: true,
                                          position: 60
 
+  # TXN-P2-7 slice2: durable CommerceTransaction inspection (store-scoped, read + show action)
+  PallasTrade.admin.tables.register(:transactions,
+    model_class: PallasTrade::CommerceTransaction,
+    link_to_action: :show,
+    search_param: :state_cont,
+    row_actions: true,
+    row_actions_edit: false,
+    row_actions_delete: false,
+    new_resource: false)
+
+  PallasTrade.admin.tables.transactions.add :prefixed_id,
+                                           label: :id,
+                                           type: :string,
+                                           sortable: false,
+                                           filterable: false,
+                                           default: true,
+                                           position: 10
+
+  PallasTrade.admin.tables.transactions.add :state,
+                                           label: :state,
+                                           type: :string,
+                                           sortable: true,
+                                           filterable: true,
+                                           default: true,
+                                           position: 20
+
+  PallasTrade.admin.tables.transactions.add :purpose,
+                                           label: :purpose,
+                                           type: :string,
+                                           sortable: true,
+                                           filterable: true,
+                                           default: true,
+                                           position: 30
+
+  PallasTrade.admin.tables.transactions.add :amount,
+                                           label: :amount,
+                                           type: :number,
+                                           sortable: true,
+                                           filterable: false,
+                                           default: true,
+                                           position: 40
+
+  PallasTrade.admin.tables.transactions.add :recovery_attempts,
+                                           label: :recovery_attempts,
+                                           type: :number,
+                                           sortable: true,
+                                           filterable: false,
+                                           default: true,
+                                           position: 50
+
+  PallasTrade.admin.tables.transactions.add :updated_at,
+                                           label: :updated_at,
+                                           type: :datetime,
+                                           sortable: true,
+                                           filterable: false,
+                                           default: true,
+                                           position: 60
+
   # Blog posts (CMS)
   PallasTrade.admin.tables.register(:posts, model_class: PallasTrade::Post, search_param: :title_or_slug_or_author_cont, row_actions: true)
 

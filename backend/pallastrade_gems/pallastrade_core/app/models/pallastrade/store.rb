@@ -99,6 +99,8 @@ module PallasTrade
     has_many :checkouts, -> { incomplete }, class_name: 'PallasTrade::Order', inverse_of: :store
     has_many :orders, class_name: 'PallasTrade::Order'
     has_many :line_items, through: :orders, class_name: 'PallasTrade::LineItem'
+    # TXN-P2-7 slice2 (2026-09-05): durable CommerceTransaction 运维/Admin 集合。
+    has_many :commerce_transactions, class_name: 'PallasTrade::CommerceTransaction', inverse_of: :store
     has_many :digital_links, through: :line_items, class_name: 'PallasTrade::DigitalLink'
     has_many :shipments, through: :orders, class_name: 'PallasTrade::Shipment'
     has_many :payments, through: :orders, class_name: 'PallasTrade::Payment'
@@ -179,9 +181,9 @@ module PallasTrade
     validates :customer_support_email, email: { allow_blank: true }
     # FIXME: we should remove this condition in v5
     if !ENV['pallastrade_DISABLE_DB_CONNECTION'] &&
-       connected? &&
-       table_exists? &&
-       connection.column_exists?(:pallastrade_stores, :new_order_notifications_email)
+        connected? &&
+        table_exists? &&
+        connection.column_exists?(:pallastrade_stores, :new_order_notifications_email)
       validates :new_order_notifications_email, email: { allow_blank: true }
     end
     validates :mailer_logo, content_type: Rails.application.config.active_storage.web_image_content_types
@@ -371,24 +373,24 @@ module PallasTrade
     #
     # @return [ActiveRecord::Relation<PallasTrade::Country>]
     def countries_with_shipping_coverage
-      zone_ids = PallasTrade::Zone
-                 .joins(:shipping_methods)
-                 .select(:id)
+      zone_ids = PallasTrade::Zone.
+                 joins(:shipping_methods).
+                 select(:id)
 
-      country_zone_country_ids = PallasTrade::ZoneMember
-                                 .where(zone_id: zone_ids, zoneable_type: 'PallasTrade::Country')
-                                 .select(:zoneable_id)
+      country_zone_country_ids = PallasTrade::ZoneMember.
+                                 where(zone_id: zone_ids, zoneable_type: 'PallasTrade::Country').
+                                 select(:zoneable_id)
 
-      state_zone_country_ids = PallasTrade::State
-                               .where(id: PallasTrade::ZoneMember
-                                          .where(zone_id: zone_ids, zoneable_type: 'PallasTrade::State')
-                                          .select(:zoneable_id))
-                               .select(:country_id)
+      state_zone_country_ids = PallasTrade::State.
+                               where(id: PallasTrade::ZoneMember.
+                                          where(zone_id: zone_ids, zoneable_type: 'PallasTrade::State').
+                                          select(:zoneable_id)).
+                               select(:country_id)
 
-      PallasTrade::Country
-        .where(id: country_zone_country_ids)
-        .or(PallasTrade::Country.where(id: state_zone_country_ids))
-        .order(:name)
+      PallasTrade::Country.
+        where(id: country_zone_country_ids).
+        or(PallasTrade::Country.where(id: state_zone_country_ids)).
+        order(:name)
     end
 
     # Returns the default stock location for the store or creates a new one if it doesn't exist
@@ -448,7 +450,7 @@ module PallasTrade
     def ensure_default_exists_and_is_unique
       if default
         PallasTrade::Store.where.not(id: id).update_all(default: false)
-      elsif PallasTrade::Store.where(default: true).count.zero?
+      elsif PallasTrade::Store.where(default: true).none?
         self.default = true
       end
     end
