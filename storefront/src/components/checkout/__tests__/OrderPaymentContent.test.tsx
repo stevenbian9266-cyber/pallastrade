@@ -401,4 +401,25 @@ describe("OrderPaymentContent", () => {
     expect(completeAndRedirectMock).not.toHaveBeenCalled();
     expect(pushMock).not.toHaveBeenCalled();
   });
+
+  // TXN-P2-6 轮3 (AC-5): transactions.create 的 quote_changed（409）与既有
+  // checkout_version_conflict 同语义 → 提示 + 重取 view（不自动支付，INV-07）。
+  it("refreshes the view on a quote_changed transaction error without paying", async () => {
+    const user = userEvent.setup();
+    createOrderSessionMock.mockResolvedValue({
+      success: false,
+      code: "quote_changed",
+      error: "quote changed",
+    });
+
+    renderOrderPayment(order, checkoutView);
+
+    await user.click(screen.getByRole("button", { name: "payAmount" }));
+
+    await waitFor(() =>
+      expect(getOrderCheckoutMock).toHaveBeenCalledWith("or_1"),
+    );
+    expect(completeAndRedirectMock).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
 });

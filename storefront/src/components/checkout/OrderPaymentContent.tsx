@@ -252,9 +252,14 @@ export function OrderPaymentContent({
   }, [isPaid, order.id, basePath, router]);
 
   // CHK-P1-4B: 会话创建失败处理——quote 已变（409）→ 提示 + 刷新 view（不自动支付）。
+  // TXN-P2-6 轮3: transaction-first 后 transactions.create 的 quote 冲突码为
+  // quote_changed / checkout_version_conflict（P1-5），同一映射（INV-07）。
   const handleSessionCreateError = useCallback(
     async (result: { success: false; code?: string; error: string }) => {
-      if (result.code === "checkout_version_conflict") {
+      if (
+        result.code === "checkout_version_conflict" ||
+        result.code === "quote_changed"
+      ) {
         toast.error(t("quoteUpdated"));
         await refreshView();
         return;

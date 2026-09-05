@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| approved | PRD-20260905-checkout-txn-p2-6-轮3-storefront-transaction-first-迁移-checkout-start-b | checkout | 2026-09-05 | REQ-20260905-txn-p2-6-storefront-transaction-first.md |
 | approved | PRD-20260905-payments-txn-p2-6-contract-snapshot | payments | 2026-09-05 | REQ-20260905-txn-p2-6-contract-snapshot.md |
 | approved | PRD-20260905-other-txn-p2-closure-report-and-store-serializer | other | 2026-09-05 | REQ-20260905-txn-p2-closure.md |
 | approved | PRD-20260905-payments-txn-p2-7-operational-hardening-backend-slice | payments | 2026-09-05 | REQ-20260905-txn-p2-7.md |

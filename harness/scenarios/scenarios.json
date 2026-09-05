@@ -1128,6 +1128,30 @@
         "generatedNotHandEdited": 25,
         "transactionFirst": 20
       }
+    },
+    {
+      "id": "GS-046",
+      "name": "TXN-P2-6 轮3 storefront transaction-first 迁移",
+      "description": "storefront 订单域支付入口从 payment-session-first 迁移到 transaction-first（P2 §42/§57）：checkout/start BFF 与 lib/data/order-payment 的会话创建改走 SDK orders.transactions.create（后端 Transactions::Start 冻结快照 + 绑定 payment execution），payment_execution 作为会话供 Provider UI；PATCH complete 仍走 orders.paymentSessions.complete；quote 冲突（quote_changed/checkout_version_conflict）提示并刷新 view 不自动支付；Provider UI 独立。",
+      "mustDo": [
+        "storefront 会话创建入口调用 orders.transactions.create（payment-session-first → transaction-first）",
+        "session = transactions.create 返回的 payment_execution（payment attempt，AC-2006）",
+        "PATCH complete 继续走 orders.paymentSessions.complete",
+        "SDK dist 重建后 storefront 解析新 client 方法（pnpm --filter @pallastrade/sdk build + 提交 dist）",
+        "409 quote_changed / checkout_version_conflict → 前端提示 + refreshView（INV-07，不自动支付）"
+      ],
+      "mustNotDo": [
+        "storefront 直连 paymentSessions.create 绕过 durable transaction",
+        "直连 SDK 生成物之外的裸 fetch transaction 端点（AP-002）",
+        "quote 冲突时静默带入新价格（INV-07）",
+        "破坏 P0/P1 Checkout baseline（Stripe PaymentIntent 自绘卡流 / 会话跳转）"
+      ],
+      "scoring": {
+        "transactionFirst": 35,
+        "providerUIIndependent": 25,
+        "quoteConsentPreserved": 25,
+        "baselineGreen": 15
+      }
     }
   ]
 }

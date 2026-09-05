@@ -4,7 +4,7 @@ import { PATCH, POST } from "@/app/api/checkout/start/route";
 
 const updateMock = vi.fn();
 const submitMock = vi.fn();
-const createSessionMock = vi.fn();
+const createTransactionMock = vi.fn();
 const completeSessionMock = vi.fn();
 const setCartCookiesMock = vi.fn();
 const clearCartCookiesMock = vi.fn();
@@ -14,8 +14,10 @@ vi.mock("@/lib/pallastrade", () => ({
   getClient: () => ({
     carts: { update: updateMock, submit: submitMock },
     orders: {
+      transactions: {
+        create: createTransactionMock,
+      },
       paymentSessions: {
-        create: createSessionMock,
         complete: completeSessionMock,
       },
     },
@@ -70,14 +72,28 @@ describe("checkout start BFF (PRD-20260830-checkout AC-002/003/007)", () => {
       number: "R1",
       successor_cart: { id: "cart_2", token: "successor-token" },
     });
-    createSessionMock.mockResolvedValue({
-      id: "ps_1",
-      external_data: { client_secret: "pi_secret" },
+    createTransactionMock.mockResolvedValue({
+      id: "txn_1",
+      state: "payment_pending",
+      purpose: "purchase",
+      currency: "usd",
+      amount: "100.00",
+      checkout_version: 1,
+      price_version: "pv_1",
+      snapshot_fingerprint: "fp_1",
+      completed_at: null,
+      payment_execution: {
+        id: "ps_1",
+        status: "pending",
+        amount: "100.00",
+        currency: "usd",
+        external_data: { client_secret: "pi_secret" },
+      },
     });
     completeSessionMock.mockResolvedValue({ id: "ps_1", status: "completed" });
   });
 
-  it("submits once, starts the Order session, and activates the successor cart", async () => {
+  it("submits once, starts the durable transaction, and activates the successor cart", async () => {
     const response = await POST(checkoutRequest());
     const body = await response.json();
 
@@ -88,7 +104,8 @@ describe("checkout start BFF (PRD-20260830-checkout AC-002/003/007)", () => {
       expect.any(Object),
     );
     expect(submitMock).toHaveBeenCalledTimes(1);
-    expect(createSessionMock).toHaveBeenCalledWith(
+    expect(createTransactionMock).toHaveBeenCalledTimes(1);
+    expect(createTransactionMock).toHaveBeenCalledWith(
       "or_1",
       {
         payment_method_id: "pm_card",
@@ -103,13 +120,14 @@ describe("checkout start BFF (PRD-20260830-checkout AC-002/003/007)", () => {
     );
     expect(body).toMatchObject({
       order: { id: "or_1" },
+      transaction: { id: "txn_1", state: "payment_pending" },
       session: { id: "ps_1" },
     });
     expect(body.order).not.toHaveProperty("successor_cart");
   });
 
-  it("returns the created order id when session startup fails", async () => {
-    createSessionMock.mockRejectedValue(new Error("provider unavailable"));
+  it("returns the created order id when transaction startup fails", async () => {
+    createTransactionMock.mockRejectedValue(new Error("provider unavailable"));
 
     const response = await POST(checkoutRequest());
 

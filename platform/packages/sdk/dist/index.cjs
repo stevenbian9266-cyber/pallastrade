@@ -382,6 +382,16 @@ var StoreClient = class {
     }
   };
   // ============================================
+  // Transactions (TXN-P2-6): durable CommerceTransaction resume
+  // ============================================
+  transactions = {
+    /**
+     * Get transaction resume by prefixed ID (owner scoped).
+     * Returns state / participants / payment sessions / recovery / completion.
+     */
+    get: (id, options) => this.request("GET", `/transactions/${id}`, options)
+  };
+  // ============================================
   // Carts
   // ============================================
   carts = {
@@ -614,6 +624,18 @@ var StoreClient = class {
       params: getParams(params)
     }),
     /**
+     * TXN-P2-6 (2026-09-05): durable CommerceTransaction start (transaction-first).
+     * Starts/reuses an active transaction with frozen quote snapshot and returns
+     * the transaction plus its payment execution (ps_ session for provider UI).
+     * 409 business errors: checkout_not_ready / quote_changed / transaction_not_payable.
+     */
+    transactions: {
+      create: (orderId, params, options) => this.request("POST", `/orders/${orderId}/transactions`, {
+        ...options,
+        body: params
+      })
+    },
+    /**
      * P1 (2026-08-30): Nested payment sessions — Checkout 纯支付在订单域创建/完成支付会话。
      * 与 legacy `carts.paymentSessions`（Order 同表购物车）不同，标准流程订单是正式 Order。
      */
@@ -649,22 +671,17 @@ var StoreClient = class {
      * expires_at + ready/missing_requirements). Flat resource (no { data } envelope).
      */
     checkout: {
-      get: (orderId, options) => this.request(
-        "GET",
-        `/orders/${orderId}/checkout`,
-        options
-      ),
+      get: (orderId, options) => this.request("GET", `/orders/${orderId}/checkout`, options),
       /**
        * CHK-P1-4B (2026-09-04): update order checkout (mutation facade).
        * PATCH /api/v3/store/orders/:order_id/checkout — one field set per request:
        * contact (email), shipping_address (or shipping_address_id) or delivery_rate_id.
        * Returns the latest CheckoutView. Completed orders are refused.
        */
-      update: (orderId, params, options) => this.request(
-        "PATCH",
-        `/orders/${orderId}/checkout`,
-        { ...options, body: params }
-      )
+      update: (orderId, params, options) => this.request("PATCH", `/orders/${orderId}/checkout`, {
+        ...options,
+        body: params
+      })
     },
     /**
      * PRD-20260829-checkout（收货信息独立填写）：更新已下单未支付订单的收货地址。

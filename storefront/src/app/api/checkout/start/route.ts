@@ -1,7 +1,7 @@
 import type {
   AddressParams,
   Order,
-  PaymentSession,
+  OrderTransactionStart,
   ShoppingCart,
 } from "@pallastrade/sdk";
 import type { NextRequest } from "next/server";
@@ -36,6 +36,9 @@ interface CheckoutCompleteBody {
 }
 
 type CartSubmitResult = Order & { successor_cart: ShoppingCart | null };
+
+/** TXN-P2-6 (轮3): transactions.create 返回的 payment execution（ps_ 会话）。 */
+type PaymentExecution = NonNullable<OrderTransactionStart["payment_execution"]>;
 
 function sameOrigin(request: NextRequest): boolean {
   const origin = request.headers.get("origin");
@@ -119,22 +122,30 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       await clearCartCookies();
     }
 
-    let session: PaymentSession | null = null;
+    // TXN-P2-6 (轮3, P2 §42/§57): payment-session-first → transaction-first。
+    // 会话创建由 orders.transactions.create 承担（后端 Transactions::Start：
+    // quote 同意/幂等/快照冻结 + PaymentSessions::Start 绑定 transaction_id）；
+    // 返回的 payment_execution 即该 transaction 的支付 attempt（ps_，AC-2006）。
+    // PATCH complete 仍走 orders.paymentSessions.complete（下方保持不变）。
+    let session: PaymentExecution | null = null;
+    let transaction: { id: string; state: string } | null = null;
     if (method.session_required) {
-      session = await client.orders.paymentSessions.create(
+      const started = await client.orders.transactions.create(
         submittedOrder.id,
         {
           payment_method_id: method.id,
-          external_data: body.payment_mode
-            ? { mode: body.payment_mode }
-            : undefined,
+          ...(body.payment_mode
+            ? { external_data: { mode: body.payment_mode } }
+            : {}),
         },
         await getCheckoutOptions(submittedOrder.id),
       );
+      transaction = { id: started.id, state: started.state };
+      session = started.payment_execution;
     }
 
     const { successor_cart: _successorCart, ...order } = submittedOrder;
-    return NextResponse.json({ order, session });
+    return NextResponse.json({ order, transaction, session });
   } catch (error) {
     return errorResponse(error, submitted?.id);
   }
