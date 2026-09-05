@@ -21,6 +21,12 @@ module PallasTrade
 
     PURPOSES = %w[purchase balance_collection combined_payment].freeze
 
+    # TXN-P2-7 (PRD-20260905-payments-txn-p2-7): stuck / needs-attention 语义。
+    # 显式"需处理"态恒包含；payment_confirmed/finalizing 超过阈值（默认 1h）
+    # 视为卡住（finalize/sweep 未见进展）。
+    NEEDS_ATTENTION_STATES = %w[recovery_required manual_review].freeze
+    STUCK_STATES = %w[payment_confirmed finalizing].freeze
+
     belongs_to :store, class_name: 'PallasTrade::Store'
     belongs_to :customer, class_name: PallasTrade.user_class.to_s, optional: true
     belongs_to :payment_combination, class_name: 'PallasTrade::PaymentCombination', optional: true
@@ -131,6 +137,51 @@ module PallasTrade
               where(state: %w[created payment_pending])
       scope = scope.where(purpose: purpose) if purpose.present?
       scope.order(id: :desc).first
+    end
+
+    # TXN-P2-7：需要运维关注的交易（stuck visibility）。
+    # @param stuck_after [ActiveSupport::Duration] payment_confirmed/finalizing 卡住阈值
+    # @return [ActiveRecord::Relation]
+    def self.needs_attention(stuck_after: 1.hour)
+      stuck_before = Time.current - stuck_after
+      where(state: NEEDS_ATTENTION_STATES).
+        or(where(state: STUCK_STATES).where(arel_table[:updated_at].lt(stuck_before)))
+    end
+
+    # TXN-P2-7：交易 trace 读模型（§58 transaction trace）——聚合时间戳/attempt/
+    # last_error/参与者/会话摘要。只读、零副作用。
+    # @return [Hash]
+    def trace
+      participants = transaction_orders.includes(:order).to_a
+      sessions = payment_sessions.to_a
+      {
+        prefixed_id: prefixed_id,
+        state: state,
+        purpose: purpose,
+        currency: currency,
+        amount: amount.to_s,
+        snapshot_fingerprint: snapshot_fingerprint,
+        started_at: started_at&.iso8601,
+        payment_confirmed_at: payment_confirmed_at&.iso8601,
+        finalizing_at: finalizing_at&.iso8601,
+        completed_at: completed_at&.iso8601,
+        recovery_required_at: recovery_required_at&.iso8601,
+        manual_review_at: manual_review_at&.iso8601,
+        canceled_at: canceled_at&.iso8601,
+        recovery_attempts: recovery_attempts,
+        last_error_class: last_error_class,
+        last_error_code: last_error_code,
+        last_error_message: last_error_message,
+        participants: {
+          total: participants.size,
+          completed: participants.count { |to| to.order.present? && to.order.completed? },
+          roles: participants.map(&:role).tally
+        },
+        payment_sessions: {
+          total: sessions.size,
+          by_status: sessions.group_by(&:status).transform_values(&:size)
+        }
+      }
     end
 
     # 记录一次恢复尝试的失败元数据（TXN-P2-4 使用；幂等计数）。

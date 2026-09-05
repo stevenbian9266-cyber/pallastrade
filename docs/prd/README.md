@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| approved | PRD-20260905-payments-txn-p2-7-operational-hardening-backend-slice | payments | 2026-09-05 | REQ-20260905-txn-p2-7.md |
 | approved | PRD-20260904-payments-txn-p2-5-unified-finalization-transactions-finalize-onpaymentsuccess | payments | 2026-09-04 | REQ-20260904-txn-p2-5.md |
 | approved | PRD-20260904-payments-txn-p2-4-recovery-engine-recovery-required-权威状态解析-recover | payments | 2026-09-04 | REQ-20260904-txn-p2-4.md |
 | approved | PRD-20260904-payments-txn-p2-3-payment-fact-resolver-provider-只读状态契约-资金事实判定 | payments | 2026-09-04 | REQ-20260904-txn-p2-3.md |

@@ -68,4 +68,67 @@ RSpec.describe PallasTrade::CommerceTransaction, type: :model do
       expect(tx.recovery_required_at).to be_present
     end
   end
+
+  describe 'operational hardening (TXN-P2-7)' do
+    describe '.needs_attention' do
+      it 'AC-701 recovery_required / manual_review are always included' do
+        recovery = make_recovery_required
+        manual = make_recovery_required
+        manual.manual_review!
+
+        expect(described_class.needs_attention).to include(recovery, manual)
+      end
+
+      it 'AC-702 payment_confirmed older than threshold is included; fresh one is not' do
+        stale = make_transaction
+        stale.start_payment!
+        stale.confirm_payment!
+        stale.update_columns(updated_at: 2.hours.ago)
+
+        fresh = make_transaction
+        fresh.start_payment!
+        fresh.confirm_payment!
+
+        relation = described_class.needs_attention
+        expect(relation).to include(stale)
+        expect(relation).not_to include(fresh)
+      end
+
+      it 'AC-703 terminal / pending / created are excluded and stuck_after param applies' do
+        created = make_transaction
+        pending = make_transaction
+        pending.start_payment!
+        completed = make_transaction
+        completed.update_columns(state: 'completed', completed_at: Time.current)
+
+        relation = described_class.needs_attention
+        expect(relation).not_to include(created, pending, completed)
+
+        stale = make_transaction
+        stale.start_payment!
+        stale.confirm_payment!
+        stale.update_columns(updated_at: 2.hours.ago)
+        expect(described_class.needs_attention(stuck_after: 3.hours)).not_to include(stale)
+      end
+    end
+
+    describe '#trace' do
+      it 'AC-711 aggregates timestamps / attempts / error / participants / sessions' do
+        tx = make_recovery_required
+        tx.update_columns(recovery_attempts: 2, last_error_code: 'finalize_failed',
+                          last_error_message: 'boom')
+
+        trace = tx.trace
+
+        expect(trace[:state]).to eq('recovery_required')
+        expect(trace[:amount]).to eq('100.0')
+        expect(trace[:recovery_required_at]).to be_present
+        expect(trace[:recovery_attempts]).to eq(2)
+        expect(trace[:last_error_code]).to eq('finalize_failed')
+        expect(trace[:last_error_message]).to eq('boom')
+        expect(trace[:participants]).to eq(total: 0, completed: 0, roles: {})
+        expect(trace[:payment_sessions]).to eq(total: 0, by_status: {})
+      end
+    end
+  end
 end
