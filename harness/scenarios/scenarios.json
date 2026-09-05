@@ -1199,6 +1199,34 @@
         "legacyAdapterPreserved": 25,
         "regressionGreen": 20
       }
+    },
+    {
+      "id": "GS-049",
+      "name": "P3 库存预留生命周期：StockReservation 接入 CommerceTransaction（RESERVED→COMMITTED/RELEASED/EXPIRED）",
+      "description": "P3（PRD-20260905-shipping-库存事务集成与预留生命周期）：StockReservation 由硬删式软分配升级为持久生命周期（reserved/committed/released/expired + 时间戳/release_reason/commerce_transaction_id），接入 CommerceTransaction：Start 冻结 Snapshot V2 后 PaymentSession 前 Reserve；canonical finalize 物理扣减成功后 Commit（事实确认，不二次扣减）；取消/过期按状态迁移 Release/Expire；PAID 恢复经 InventoryFactResolver 决策（released/expired/ambiguous→manual_review）。7 条策略已冻结（INVENTORY_AUTHORITY/RESERVATION_IDENTITY/RESERVATION_LIFECYCLE/RESERVATION_TIMING/RESERVATION_TTL_POLICY/INVENTORY_RECOVERY_POLICY/COMMIT_SEMANTICS）。",
+      "mustDo": [
+        "StockItem.count_on_hand + StockMovement 是唯一物理库存权威；Reservation 只软分配（RESERVED），绝不改 count_on_hand；物理扣减仅发生在 canonical Order#finalize! → Shipment/InventoryUnit → StockMovement",
+        "COMMIT = canonical physical consumption 成功后的 Reservation 事实确认（RESERVED→COMMITTED，幂等），绝不二次扣减；接线点：Carts::Complete finalize 后 + Transactions::Finalize 兜底 commit(transaction:)",
+        "时序：Start（Snapshot V2 冻结）→ ReserveInventory（每参与者 Reserve→bind commerce_transaction_id→demand 校验）→ PaymentSessions::Start → canonical Finalize → COMMITTED；reserve 失败在 PSP 副作用前返回，组合 created-this-attempt 补偿 release",
+        "生命周期状态迁移而非删除：Release = RESERVED→RELEASED（保留 evidence，release_reason）；Orders::Cancel 在取消决策时点捕获 release_allowed（未支付才释放）；ExpireJob cron 只把 RESERVED 且超过 TTL 的置 EXPIRED；reservation validity ≥ active payment window",
+        "恢复：InventoryFactResolver 只读判定 NOT_REQUIRED/UNRESERVED/RESERVED/COMMITTED/RELEASED/EXPIRED/AMBIGUOUS；PAID 且参与者未完成且事实为 released/expired/ambiguous → manual_review（不猜/不重复扣），RESERVED/COMMITTED 维持 finalize/repair",
+        "错误码透传：Start 终态/库存失败 → INSUFFICIENT_STOCK / INVENTORY_CHANGED / INVENTORY_RECOVERY_REQUIRED；storefront 经 SDK/BFF 消费错误码，不自判库存",
+        "pallastrade-checkout / pallastrade-data-model / pallastrade-events-webhooks skill changelog 已同步 inventory.* 事件（FR-053/054）；全量 backend 747 examples 0 failures"
+      ],
+      "mustNotDo": [
+        "Commit 时再扣一次 physical stock（双重扣减；物理扣减只属于 canonical finalize/StockMovement）",
+        "PAID（资金已入账）后执行普通 Release（丢已付款订单的库存事实；应走 InventoryFact/Recover）",
+        "Reservation 用 hard delete 丢弃 transaction evidence（必须状态迁移 + release_reason）",
+        "允许过期 Reservation 继续支撑 PaymentSession / reservation validity 无保护短于 active payment window",
+        "Storefront 自行硬编码判断库存或用裸 fetch 绕过 @pallastrade/sdk（AP-002）"
+      ],
+      "scoring": {
+        "commitNoDoubleDecrement": 30,
+        "recoveryManualReview": 25,
+        "reservationEvidence": 20,
+        "ttlPaymentWindowGuard": 15,
+        "regressionGreen": 10
+      }
     }
   ]
 }
