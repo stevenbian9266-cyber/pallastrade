@@ -60,6 +60,77 @@ export type {
   WishlistItem,
 } from './generated'
 
+// TXN-P2-6 (2026-09-05): durable CommerceTransaction store type (generated from
+// CommerceTransactionSerializer via typelizer; alias keeps SDK naming unprefixed).
+export type { default as CommerceTransaction } from './generated/StoreCommerceTransaction'
+
+// Start result = transaction attributes + payment execution (ps_ session)
+export interface OrderTransactionStart {
+  id: string
+  state: string
+  purpose: string
+  currency: string
+  amount: string
+  checkout_version: number | null
+  price_version: string | null
+  snapshot_fingerprint: string | null
+  completed_at: string | null
+  /** payment attempt session (ps_)*/
+  payment_execution: {
+    id: string
+    status: string
+    amount: string
+    currency: string
+    external_data?: Record<string, unknown> | null
+  } | null
+}
+
+/** Start payload for orders.transactions.create */
+export interface CreateOrderTransactionParams {
+  payment_method_id: string
+  purpose?: 'purchase' | 'balance_collection' | 'combined_payment'
+  external_data?: Record<string, unknown>
+  expected_checkout_version?: number
+  expected_price_version?: string
+}
+
+/** GET /transactions/:id resume read model */
+export interface TransactionResume {
+  id: string
+  type?: string
+  state: string
+  purpose: string
+  currency: string
+  amount: string
+  snapshot_fingerprint: string | null
+  participants: Array<{
+    order_id: string | null
+    role: string
+    amount_snapshot: unknown
+    completion_status: string
+    completed: boolean
+  }>
+  payment_sessions: Array<{
+    id: string
+    status: string
+    amount: unknown
+    currency: string
+    external_id: string
+    completed: boolean
+  }>
+  recovery: {
+    attempts: number
+    last_error_code: string | null
+    last_error_class: string | null
+    last_error_message: string | null
+  }
+  completion: {
+    completed_at: string | null
+    participants_completed: number
+    participants_total: number
+  }
+}
+
 // Checkout requirement — a single unsatisfied checkout prerequisite
 export interface CheckoutRequirement {
   /** Checkout step this requirement belongs to (e.g. "address", "payment") */

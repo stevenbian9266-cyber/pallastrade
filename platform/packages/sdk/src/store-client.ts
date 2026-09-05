@@ -21,6 +21,7 @@ import type {
   CompletePaymentSetupSessionParams,
   Country,
   CreateCartParams,
+  CreateOrderTransactionParams,
   CreatePaymentCombinationParams,
   CreatePaymentParams,
   CreatePaymentSessionParams,
@@ -36,6 +37,7 @@ import type {
   NewsletterSubscriber,
   Order,
   OrderListParams,
+  OrderTransactionStart,
   Payment,
   PaymentCombination,
   PaymentSession,
@@ -50,6 +52,7 @@ import type {
   RequestPasswordResetParams,
   ResetPasswordParams,
   StoreCredit,
+  TransactionResume,
   UpdateCartParams,
   UpdateLineItemParams,
   UpdateOrderShippingAddressParams,
@@ -364,6 +367,19 @@ export class StoreClient {
           params: getParams(params),
         }),
     },
+  }
+
+  // ============================================
+  // Transactions (TXN-P2-6): durable CommerceTransaction resume
+  // ============================================
+
+  readonly transactions = {
+    /**
+     * Get transaction resume by prefixed ID (owner scoped).
+     * Returns state / participants / payment sessions / recovery / completion.
+     */
+    get: (id: string, options?: RequestOptions): Promise<TransactionResume> =>
+      this.request<TransactionResume>('GET', `/transactions/${id}`, options),
   }
 
   // ============================================
@@ -688,6 +704,24 @@ export class StoreClient {
       }),
 
     /**
+     * TXN-P2-6 (2026-09-05): durable CommerceTransaction start (transaction-first).
+     * Starts/reuses an active transaction with frozen quote snapshot and returns
+     * the transaction plus its payment execution (ps_ session for provider UI).
+     * 409 business errors: checkout_not_ready / quote_changed / transaction_not_payable.
+     */
+    transactions: {
+      create: (
+        orderId: string,
+        params: CreateOrderTransactionParams,
+        options?: RequestOptions,
+      ): Promise<OrderTransactionStart> =>
+        this.request<OrderTransactionStart>('POST', `/orders/${orderId}/transactions`, {
+          ...options,
+          body: params,
+        }),
+    },
+
+    /**
      * P1 (2026-08-30): Nested payment sessions — Checkout 纯支付在订单域创建/完成支付会话。
      * 与 legacy `carts.paymentSessions`（Order 同表购物车）不同，标准流程订单是正式 Order。
      */
@@ -742,15 +776,8 @@ export class StoreClient {
      * expires_at + ready/missing_requirements). Flat resource (no { data } envelope).
      */
     checkout: {
-      get: (
-        orderId: string,
-        options?: RequestOptions,
-      ): Promise<CheckoutView> =>
-        this.request<CheckoutView>(
-          'GET',
-          `/orders/${orderId}/checkout`,
-          options,
-        ),
+      get: (orderId: string, options?: RequestOptions): Promise<CheckoutView> =>
+        this.request<CheckoutView>('GET', `/orders/${orderId}/checkout`, options),
 
       /**
        * CHK-P1-4B (2026-09-04): update order checkout (mutation facade).
@@ -763,11 +790,10 @@ export class StoreClient {
         params: CheckoutUpdateParams,
         options?: RequestOptions,
       ): Promise<CheckoutView> =>
-        this.request<CheckoutView>(
-          'PATCH',
-          `/orders/${orderId}/checkout`,
-          { ...options, body: params },
-        ),
+        this.request<CheckoutView>('PATCH', `/orders/${orderId}/checkout`, {
+          ...options,
+          body: params,
+        }),
     },
 
     /**
