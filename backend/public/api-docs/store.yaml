@@ -14088,3 +14088,78 @@ components:
       - discounts
       - taxes
       x-typelizer: true
+    StoreCommerceTransaction:
+      type: object
+      properties:
+        id:
+          type: string
+        state:
+          type: string
+        purpose:
+          type: string
+        currency:
+          type: string
+        amount:
+          type: string
+        checkout_version:
+          type: number
+          nullable: true
+        price_version:
+          type: string
+          nullable: true
+        snapshot_fingerprint:
+          type: string
+          nullable: true
+        recovery_attempts:
+          type: number
+        last_error_class:
+          type: string
+          nullable: true
+        last_error_code:
+          type: string
+          nullable: true
+        last_error_message:
+          type: string
+          nullable: true
+        started_at:
+          type: string
+          nullable: true
+        payment_confirmed_at:
+          type: string
+          nullable: true
+        finalizing_at:
+          type: string
+          nullable: true
+        completed_at:
+          type: string
+          nullable: true
+        recovery_required_at:
+          type: string
+          nullable: true
+        manual_review_at:
+          type: string
+          nullable: true
+        canceled_at:
+          type: string
+          nullable: true
+      required:
+      - id
+      - state
+      - purpose
+      - currency
+      - amount
+      - checkout_version
+      - price_version
+      - snapshot_fingerprint
+      - recovery_attempts
+      - last_error_class
+      - last_error_code
+      - last_error_message
+      - started_at
+      - payment_confirmed_at
+      - finalizing_at
+      - completed_at
+      - recovery_required_at
+      - manual_review_at
+      - canceled_at
+      x-typelizer: true
