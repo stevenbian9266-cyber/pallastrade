@@ -55,3 +55,50 @@
     </dl>
   </div>
 </div>
+
+<%# INV-P3-7 (FR-052): Inventory panel —— Inventory Fact + Reservation 详情（只读）。 %>
+<% inventory_resolver = PallasTrade::Transactions::InventoryFactResolver.call(transaction: @object) %>
+<% inventory_verdict = inventory_resolver.success? ? inventory_resolver.value[:verdict] : :ambiguous %>
+<% inventory_reasons = inventory_resolver.success? ? inventory_resolver.value[:reasons] : [] %>
+<% reservations = PallasTrade::StockReservation.where(commerce_transaction_id: @object.id)
+                                                .or(PallasTrade::StockReservation.where(order_id: @object.transaction_orders.select(:order_id)))
+                                                .order(:id) %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">Inventory</h5>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div><dt class="text-sm text-gray-500">Inventory fact</dt><dd><%= inventory_verdict %><%= " (#{inventory_reasons.join(', ')})" if inventory_reasons.any? %></dd></div>
+      <div><dt class="text-sm text-gray-500">Reservations</dt><dd><%= reservations.count %></dd></div>
+    </dl>
+    <% if reservations.any? %>
+      <table class="table w-full mt-4 text-sm">
+        <thead>
+          <tr>
+            <th>State</th><th>Line item</th><th>Stock item</th><th>Qty</th>
+            <th>Expires</th><th>Reserved</th><th>Committed</th><th>Released</th><th>Expired</th><th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% reservations.each do |r| %>
+            <tr>
+              <td><%= r.state %></td>
+              <td><%= r.line_item&.prefixed_id %></td>
+              <td><%= r.stock_item&.prefixed_id %></td>
+              <td><%= r.quantity %></td>
+              <td><%= r.expires_at&.iso8601 || '—' %></td>
+              <td><%= r.reserved_at&.iso8601 || '—' %></td>
+              <td><%= r.committed_at&.iso8601 || '—' %></td>
+              <td><%= r.released_at&.iso8601 || '—' %></td>
+              <td><%= r.expired_at&.iso8601 || '—' %></td>
+              <td><%= r.release_reason || '—' %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-sm text-gray-500 mt-2">—</p>
+    <% end %>
+  </div>
+</div>

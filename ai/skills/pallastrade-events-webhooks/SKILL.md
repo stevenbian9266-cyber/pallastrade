@@ -508,6 +508,20 @@ Almost always one of:
 3. **Timestamp window too narrow.** Some clocks drift; 5 minutes is reasonable.
 4. **String `==` instead of timing-safe compare** — usually still produces the right boolean, but if you're seeing intermittent fails check this.
 
+## Inventory domain events (INV-P3, 2026-09-05)
+
+`PallasTrade::StockReservation`（生命周期状态化，见 pallastrade-data-model skill）在以下时点发布
+`inventory.*` 事件（payload：id/state/order_id/commerce_transaction_id/stock_item_id/line_item_id/
+quantity/release_reason；复用既有 Events/audit_logs 通道，不新建 Audit Engine）：
+
+- `inventory.reserved`（after_create / RESERVED）
+- `inventory.committed`（RESERVED → COMMITTED，canonical physical consumption 成功后的事实确认）
+- `inventory.released`（RESERVED → RELEASED，含 release_reason）
+- `inventory.expired`（RESERVED → EXPIRED，ExpireJob TTL 到期）
+
+订阅方可用于审计落库、指标（payment_confirmed→committed 时延等）、告警；StockMovement 事件仍见上文
+`stock_movement.created/updated/deleted`。
+
 ## Where to read further
 
 - **Subscriber base class:** `PallasTrade::Subscriber` source.

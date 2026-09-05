@@ -17,10 +17,10 @@ module PallasTrade
           # Pessimistic lock + fresh read of count_on_hand. The lock serializes
           # concurrent checkouts and we use the locked rows below so we never
           # check stock against a stale association cache.
-          locked_stock_items = PallasTrade::StockItem
-            .where(id: targets.map { |_, si| si.id })
-            .lock
-            .index_by(&:id)
+          locked_stock_items = PallasTrade::StockItem.
+                               where(id: targets.map { |_, si| si.id }).
+                               lock.
+                               index_by(&:id)
 
           held = held_by_others(locked_stock_items.keys, order.id)
           existing = validate_only ? {} : existing_reservations_for(targets)
@@ -36,7 +36,9 @@ module PallasTrade
                 line_item,
                 PallasTrade.t(
                   :insufficient_stock_for_reservation,
+                  # rubocop:disable Style/FormatStringToken -- I18n 模板插值（%{...}），非 Kernel#format
                   default: '%{item} has only %{available} available',
+                  # rubocop:enable Style/FormatStringToken
                   item: line_item.variant.name,
                   available: [available, 0].max
                 )
@@ -47,7 +49,7 @@ module PallasTrade
             next if validate_only
 
             reservation = existing[[stock_item.id, line_item.id]] ||
-                          PallasTrade::StockReservation.new(stock_item: stock_item, line_item: line_item)
+              PallasTrade::StockReservation.new(stock_item: stock_item, line_item: line_item)
             reservation.order = order
             reservation.quantity = line_item.quantity
             reservation.expires_at = expires_at
@@ -80,7 +82,7 @@ module PallasTrade
       def select_stock_item(variant)
         # 只选"非 backorderable 且实际有库存"的 stock_item——backorderable 的会在
         # build_targets 被跳过（oversell 不需要 reservation），若用 available?
-        #（= in_stock? || backorderable?）做 detect，会选中 backorderable 的
+        # （= in_stock? || backorderable?）做 detect，会选中 backorderable 的
         # stock_item 然后被跳过，导致该 variant 永远不进 targets
         # （seed 默认 location backorderable_default=true 时会复现此问题）。
         variant.stock_items.detect do |si|
@@ -91,25 +93,29 @@ module PallasTrade
       def held_by_others(stock_item_ids, exclude_order_id)
         return {} if stock_item_ids.empty?
 
-        PallasTrade::StockReservation
-          .active
-          .where(stock_item_id: stock_item_ids)
-          .where.not(order_id: exclude_order_id)
-          .group(:stock_item_id)
-          .sum(:quantity)
+        PallasTrade::StockReservation.
+          active.
+          where(stock_item_id: stock_item_ids).
+          where.not(order_id: exclude_order_id).
+          group(:stock_item_id).
+          sum(:quantity)
       end
 
       # One SELECT for all (stock_item_id, line_item_id) pairs we need to
       # upsert. Returns a hash keyed by [stock_item_id, line_item_id].
+      #
+      # INV-P3-1：只复用 state=reserved 的行——终态（COMMITTED/RELEASED/EXPIRED）历史行
+      # 不允许被复活更新（须新建 RESERVED 行；唯一性由 partial unique index 保证）。
       def existing_reservations_for(targets)
         return {} if targets.empty?
 
         stock_item_ids = targets.map { |_, si| si.id }
         line_item_ids = targets.map { |li, _| li.id }
 
-        PallasTrade::StockReservation
-          .where(stock_item_id: stock_item_ids, line_item_id: line_item_ids)
-          .index_by { |r| [r.stock_item_id, r.line_item_id] }
+        PallasTrade::StockReservation.
+          reserved.
+          where(stock_item_id: stock_item_ids, line_item_id: line_item_ids).
+          index_by { |r| [r.stock_item_id, r.line_item_id] }
       end
     end
   end

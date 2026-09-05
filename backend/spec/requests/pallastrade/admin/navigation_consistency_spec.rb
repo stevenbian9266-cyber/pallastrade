@@ -98,7 +98,8 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
     end
 
     it '主区模块子菜单完整（Orders / Products / Customers / Promotions / Reports / Blog / Returns）' do
-      expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders])
+      # TXN-P2-7: Orders 下新增 durable CommerceTransaction 检视项（:transactions）
+      expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders transactions])
       expect(sidebar.find(:products).children.map(&:key)).to eq(%i[products_list price_lists stock translations taxonomies options])
       expect(sidebar.find(:customers).children.map(&:key)).to eq(%i[customers_list customer_groups newsletter_subscribers])
       expect(sidebar.find(:promotions).children.map(&:key)).to eq(%i[promotions_list gift_cards])

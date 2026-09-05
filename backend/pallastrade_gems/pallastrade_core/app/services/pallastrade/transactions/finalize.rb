@@ -63,13 +63,20 @@ module PallasTrade
 
         # 锁外逐参与者 finalize（provider/长操作不占交易行锁）
         failures = finalize_participants(transaction)
+        unless failures.empty?
+          transaction.reload
+          return record_recovery_failure(transaction, 'finalize_failed', failures.first.to_s)
+        end
+
+        # INV-P3-3 (FR-026/AC-3011/AC-3015): physical consumption 已全部成功
+        # （逐参与者 Carts::Complete finalize→StockMovement 后已 Commit），此处做交易级
+        # commit 兜底：仍 RESERVED 且归属本交易的行 → COMMITTED（幂等；绝无第二套扣减）。
+        PallasTrade::StockReservations::Commit.call(transaction: transaction)
 
         transaction.with_lock do
           tx = transaction.reload
           # 幂等短路：锁间隙另一进程已完成
           return success(action: :finalized, transaction: tx) if tx.state == 'completed'
-
-          return record_recovery_failure(tx, 'finalize_failed', failures.first.to_s) unless failures.empty?
 
           tx.complete!
           success(action: :finalized, transaction: tx.reload)

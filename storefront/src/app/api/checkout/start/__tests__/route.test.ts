@@ -1,3 +1,4 @@
+import { PallasTradeError } from "@pallastrade/sdk";
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PATCH, POST } from "@/app/api/checkout/start/route";
@@ -134,6 +135,29 @@ describe("checkout start BFF (PRD-20260830-checkout AC-002/003/007)", () => {
     expect(response.status).toBe(502);
     expect(await response.json()).toMatchObject({ order_id: "or_1" });
     expect(setCheckoutCookiesMock).toHaveBeenCalledWith("or_1", "cart-token");
+  });
+
+  it("forwards the backend inventory error code and status (INV-P3-6)", async () => {
+    createTransactionMock.mockRejectedValue(
+      new PallasTradeError(
+        {
+          error: {
+            code: "INSUFFICIENT_STOCK",
+            message: "Required inventory could not be reserved",
+          },
+        },
+        422,
+      ),
+    );
+
+    const response = await POST(checkoutRequest());
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "INSUFFICIENT_STOCK",
+      error: "Required inventory could not be reserved",
+      order_id: "or_1",
+    });
   });
 
   it("rejects a cross-origin checkout command before touching the cart", async () => {

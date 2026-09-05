@@ -129,6 +129,17 @@ module PallasTrade
       order.with_lock do
         payment_session.reload
         unless payment_session.completed?
+          order.reload
+          remaining = order.total - order.payment_total
+          if remaining <= 0
+            # PALLAS-CUSTOM (2026-09-05): 已全额入账（payment_total 已覆盖 total，
+            # 例如 legacy 已捕获 Payment 后再次 complete 同一/新会话）→ 不重复建
+            # Payment（Payment#amount 校验 max_amount=remaining=0 会 422；
+            # P0-0 幂等 + 防重复扣款），仅完成会话，订单完成由 OnPaymentSuccess 驱动。
+            payment_session.complete unless payment_session.completed?
+            next
+          end
+
           payment = payment_session.find_or_create_payment!
           if payment.present? && !payment.completed?
             payment.skip_source_requirement = true

@@ -21,6 +21,10 @@ module PallasTrade
 
     PURPOSES = %w[purchase balance_collection combined_payment].freeze
 
+    # INV-P3-2: Snapshot schema 版本 —— V1 = P2 最小快照；V2 = + inventory demand evidence。
+    # 新 Transaction 写 V2；历史 V1 保持 immutable（snapshot_frozen 后禁止覆写）。
+    CURRENT_SNAPSHOT_SCHEMA_VERSION = 2
+
     # TXN-P2-7 (PRD-20260905-payments-txn-p2-7): stuck / needs-attention 语义。
     # 显式"需处理"态恒包含；payment_confirmed/finalizing 超过阈值（默认 1h）
     # 视为卡住（finalize/sweep 未见进展）。
@@ -39,6 +43,10 @@ module PallasTrade
     has_many :payment_sessions, class_name: 'PallasTrade::PaymentSession',
                                 foreign_key: :transaction_id, dependent: :nullify,
                                 inverse_of: :commerce_transaction
+    # INV-P3-1: transaction 归属的库存预留（可空 FK；ownership/trace，非第二套物理库存）
+    has_many :stock_reservations, class_name: 'PallasTrade::StockReservation',
+                                  foreign_key: :commerce_transaction_id,
+                                  inverse_of: :commerce_transaction
 
     validates :store, :currency, :purpose, presence: true
     validates :purpose, inclusion: { in: PURPOSES }
@@ -113,16 +121,43 @@ module PallasTrade
     end
 
     # 冻结 immutable snapshot（TXN-P2-2 Start 调用；本包提供原语）。
+    # INV-P3-2: 新快照写 CURRENT_SNAPSHOT_SCHEMA_VERSION（V2）；已冻结快照禁止覆写。
     # @raise [SnapshotAlreadyFrozen] 已冻结时
-    def snapshot!(checkout_version:, price_version:, fingerprint:, data:)
+    def snapshot!(checkout_version:, price_version:, fingerprint:, data:,
+                  schema_version: self.class::CURRENT_SNAPSHOT_SCHEMA_VERSION)
       raise SnapshotAlreadyFrozen if snapshot_frozen?
 
       update!(
         checkout_version: checkout_version,
         price_version: price_version,
         snapshot_fingerprint: fingerprint,
-        snapshot_data: data
+        snapshot_data: data,
+        snapshot_schema_version: schema_version
       )
+    end
+
+    # INV-P3-2: V1 兼容 demand resolver —— 历史 V1 snapshot（无 inventory demand）在
+    # Resume/Recovery 需要 demand 时，从 TransactionOrder → Order → line_items 现场解析；
+    # 不写回旧 snapshot（FR-015）。
+    # @return [Array<Hash>] 每参与者的 inventory demand（与 V2 snapshot 同构）
+    def resolved_inventory_demand
+      transaction_orders.includes(:order).filter_map do |torder|
+        order = torder.order
+        next if order.nil?
+
+        demand = order.line_items.filter_map do |li|
+          {
+            line_item_id: li.prefixed_id,
+            variant_id: li.variant&.prefixed_id,
+            quantity: li.quantity,
+            stock_requirement: PallasTrade::Stock::InventoryRequirement.required?(li) ? 'REQUIRED' : 'NOT_REQUIRED'
+          }
+        end
+        {
+          order_id: order.prefixed_id,
+          inventory_demand: demand
+        }
+      end
     end
 
     def snapshot_frozen?

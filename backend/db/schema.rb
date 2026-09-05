@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_04_080000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_05_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -531,6 +531,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_04_080000) do
     t.datetime "recovery_required_at"
     t.jsonb "snapshot_data", default: {}
     t.string "snapshot_fingerprint"
+    t.integer "snapshot_schema_version", default: 1, null: false
     t.datetime "started_at"
     t.string "state", default: "created", null: false
     t.bigint "store_id", null: false
@@ -2198,18 +2199,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_04_080000) do
   end
 
   create_table "pallastrade_stock_reservations", force: :cascade do |t|
+    t.bigint "commerce_transaction_id"
+    t.datetime "committed_at"
     t.datetime "created_at", null: false
+    t.datetime "expired_at"
     t.datetime "expires_at", null: false
     t.bigint "line_item_id", null: false
     t.bigint "order_id", null: false
     t.integer "quantity", null: false
+    t.string "release_reason"
+    t.datetime "released_at"
+    t.datetime "reserved_at"
+    t.string "state", default: "reserved", null: false
     t.bigint "stock_item_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["commerce_transaction_id"], name: "idx_on_commerce_transaction_id_7bdfe4f2ee"
     t.index ["expires_at"], name: "index_pt_stock_reservations_on_expires_at"
     t.index ["line_item_id"], name: "index_pt_stock_reservations_on_line_item_id"
     t.index ["order_id"], name: "index_pt_stock_reservations_on_order_id"
     t.index ["stock_item_id", "expires_at"], name: "index_pt_stock_reservations_on_stock_item_id_and_expires_at"
-    t.index ["stock_item_id", "line_item_id"], name: "idx_stock_reservations_item_line_item", unique: true
+    t.index ["stock_item_id", "line_item_id"], name: "idx_stock_reservations_active_reserved_unique", unique: true, where: "((state)::text = 'reserved'::text)"
+    t.index ["stock_item_id", "state", "expires_at"], name: "idx_stock_reservations_item_state_expires"
   end
 
   create_table "pallastrade_stock_transfers", force: :cascade do |t|
@@ -2789,6 +2799,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_04_080000) do
   add_foreign_key "pallastrade_reviews", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_reviews", "pallastrade_users", column: "user_id"
   add_foreign_key "pallastrade_role_permissions", "pallastrade_roles", column: "role_id"
+  add_foreign_key "pallastrade_stock_reservations", "pallastrade_commerce_transactions", column: "commerce_transaction_id"
   add_foreign_key "pallastrade_store_translations", "pallastrade_stores"
   add_foreign_key "pallastrade_taxon_translations", "pallastrade_taxons"
   add_foreign_key "pallastrade_taxonomy_translations", "pallastrade_taxonomies"

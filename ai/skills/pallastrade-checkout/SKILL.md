@@ -296,6 +296,8 @@ end
 
 ## Changelog (CHK-P1-1A Read-only CheckoutView, 2026-09-03)
 
+- INV-P3 (2026-09-05, PRD-20260905-shipping-库存事务集成与预留生命周期-p3): Reserve-before-payment 交易化——Transactions::Start 在 Snapshot V2 冻结后经 `Transactions::ReserveInventory`（StockReservationAdapter，InventoryRequirement REQUIRED/NOT_REQUIRED policy；幂等/悲观锁/created-this-attempt 组合补偿）全部 RESERVED 后才 PaymentSessions::Start（失败 INSUFFICIENT_STOCK/INVENTORY_CHANGED，无 session/PSP 副作用）；`Transactions::Finalize` 成功后交易级 Commit 兜底；`Carts::Complete` finalize（canonical 物理扣减）后由 Release（硬删）改为 **Commit（COMMITTED 事实确认）**；`Orders::Cancel` 对未支付订单取消后释放 RESERVED→RELEASED（PAID/进行中 attempt 禁止）；Storefront BFF 透传库存错误码。legacy `stock_reservation_strategy` order/payment 保留兼容（不影响 txn-first Reserve）。
+
 - TXN-P2-2 (2026-09-04, PRD-20260904-api-txn-p2-2): Transactions::{Start,Resume} 服务——durable CommerceTransaction 启动编排（quote 同意：过期自动 Refresh→商业事实变→quote_changed/checkout_not_ready；order.with_lock 内幂等复用 active txn 或终态拒绝 transaction_not_payable；snapshot 冻结 + TransactionOrder primary；委托 PaymentSessions::Start + attach session.transaction_id）+ 只读 Resume 聚合。API：POST /orders/:order_id/transactions + GET /store/transactions/:id（见 pallastrade-api-v3 changelog）。store.yaml/SDK 随 R1/TXN-P2-6。
 
 - TXN-P2-1 (2026-09-04, PRD-20260904-checkout-txn-p2-1): CommerceTransaction/TransactionOrder 数据层（durable orchestration context，TXN-P2-0 §5/§6.11）；不接支付流（TXN-P2-2 起）。

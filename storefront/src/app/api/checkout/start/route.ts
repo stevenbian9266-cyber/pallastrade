@@ -1,8 +1,9 @@
-import type {
-  AddressParams,
-  Order,
-  OrderTransactionStart,
-  ShoppingCart,
+import {
+  type AddressParams,
+  type Order,
+  type OrderTransactionStart,
+  PallasTradeError,
+  type ShoppingCart,
 } from "@pallastrade/sdk";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -55,7 +56,22 @@ function sameOrigin(request: NextRequest): boolean {
   }
 }
 
+/**
+ * INV-P3-6 (FR-049/050): 透传后端结构化业务错误码（INSUFFICIENT_STOCK /
+ * INVENTORY_CHANGED / RESERVATION_EXPIRED / INVENTORY_RECOVERY_REQUIRED /
+ * quote_changed / transaction_not_payable 等）与后端 HTTP 状态；Storefront 不自行
+ * 判断库存，只消费 Server 权威 code/message（订单保持安全可重试）。
+ */
 function errorResponse(error: unknown, orderId?: string): NextResponse {
+  if (error instanceof PallasTradeError) {
+    const body: Record<string, unknown> = {
+      error: error.message,
+      code: error.code,
+    };
+    if (orderId) body.order_id = orderId;
+    return NextResponse.json(body, { status: error.status || 422 });
+  }
+
   console.error("checkout orchestration failed", error);
   return NextResponse.json(
     {

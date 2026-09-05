@@ -57,7 +57,13 @@ module PallasTrade
           end
         end
 
-        # ③ 支付执行（P0 结构：provider I/O 在锁外；交易锁已释放）
+        # ③ 库存门（INV-P3-2，AC-3001/3002）：Reserve before PaymentSession。
+        # Snapshot 已冻结 → 全部 REQUIRED inventory 成功 RESERVED → 才允许支付；
+        # 失败返回 INSUFFICIENT_STOCK / INVENTORY_CHANGED，不创建 PaymentSession / PSP side effect。
+        inventory_gate = PallasTrade::Transactions::ReserveInventory.call(transaction: tx)
+        return inventory_gate unless inventory_gate.success?
+
+        # ④ 支付执行（P0 结构：provider I/O 在锁外；交易锁已释放）
         # 透明 Refresh 后以最新 quote 为准，不把客户端 stale expected 带入会话。
         session_result = PallasTrade::PaymentSessions::Start.call(
           order: order,
@@ -115,6 +121,8 @@ module PallasTrade
 
       # Payment Start Policy：交易处于 payment_confirmed/finalizing/recovery_required/
       # manual_review/completed 时禁止静默启动新支付（资金事实不可逆，INV-02/04）。
+      # INV-P3-6 (FR-049)：recovery_required/manual_review 对前端暴露
+      # INVENTORY_RECOVERY_REQUIRED（PAID 交易需恢复，非可重试支付错误）。
       def terminal_transaction_for(order, purpose)
         blocker = PallasTrade::CommerceTransaction.
                   joins(:transaction_orders).
@@ -124,9 +132,20 @@ module PallasTrade
                   order(id: :desc).first
         return nil if blocker.nil?
 
+        code = if %w[recovery_required manual_review].include?(blocker.state)
+                 'INVENTORY_RECOVERY_REQUIRED'
+               else
+                 'transaction_not_payable'
+               end
+        message = if code == 'INVENTORY_RECOVERY_REQUIRED'
+                    'Transaction requires recovery; use recovery instead of starting a new payment'
+                  else
+                    'Transaction is not payable in its current state'
+                  end
+
         failure(order, {
-                  code: 'transaction_not_payable',
-                  message: 'Transaction is not payable in its current state; use recovery instead',
+                  code: code,
+                  message: message,
                   transaction_id: blocker.prefixed_id,
                   state: blocker.state
                 })
@@ -141,16 +160,24 @@ module PallasTrade
           amount: order.amount_due
         )
         snapshot = PallasTrade::OrderCheckout::Snapshot.call(order: order)
+        # INV-P3-2: Snapshot V2 —— 含 inventory demand evidence（FR-013/014）。
+        # demand = immutable 需求证据；实时可用性仍以 Inventory Domain 为准（FR-015/INV-I12）。
         transaction.snapshot!(
           checkout_version: order.checkout_version,
           price_version: order.price_version,
           fingerprint: snapshot&.fingerprint,
+          schema_version: PallasTrade::CommerceTransaction::CURRENT_SNAPSHOT_SCHEMA_VERSION,
           data: {
+            schema_version: PallasTrade::CommerceTransaction::CURRENT_SNAPSHOT_SCHEMA_VERSION,
             order_id: order.prefixed_id,
             number: order.number,
             state: order.state,
             amount_due: order.amount_due.to_s,
-            participant_orders: [{ order_id: order.prefixed_id, allocated_amount: order.amount_due.to_s }]
+            participant_orders: [{
+              order_id: order.prefixed_id,
+              allocated_amount: order.amount_due.to_s,
+              inventory_demand: inventory_demand_for(order)
+            }]
           }
         )
         PallasTrade::TransactionOrder.create!(
@@ -160,6 +187,19 @@ module PallasTrade
           amount_snapshot: order.amount_due
         )
         transaction
+      end
+
+      # INV-P3-2: 参与者的 inventory demand evidence（REQUIRED/NOT_REQUIRED × quantity）。
+      def inventory_demand_for(order)
+        order.line_items.filter_map do |li|
+          required = PallasTrade::Stock::InventoryRequirement.required?(li)
+          {
+            line_item_id: li.prefixed_id,
+            variant_id: li.variant&.prefixed_id,
+            quantity: li.quantity,
+            stock_requirement: required ? 'REQUIRED' : 'NOT_REQUIRED'
+          }
+        end
       end
 
       def attach_session(session, transaction)

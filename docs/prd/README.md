@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| draft | PRD-20260905-shipping-库存事务集成与预留生命周期-p3-stockreservation-接入-commercetransaction-res | shipping | 2026-09-05 | （实施时回填） |
 | approved | PRD-20260905-checkout-paymentcombination-txn-化-组合交易收敛到-transactions-finalize-recov | checkout | 2026-09-05 | REQ-20260905-paymentcombination-txn.md |
 | approved | PRD-20260905-checkout-txn-p2-6-轮3-storefront-transaction-first-迁移-checkout-start-b | checkout | 2026-09-05 | REQ-20260905-txn-p2-6-storefront-transaction-first.md |
 | approved | PRD-20260905-payments-txn-p2-6-contract-snapshot | payments | 2026-09-05 | REQ-20260905-txn-p2-6-contract-snapshot.md |

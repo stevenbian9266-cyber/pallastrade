@@ -72,6 +72,20 @@ module PallasTrade
             tx.manual_review!
             success(action: :manual_review, transaction: tx.reload)
           else # :paid
+            # INV-P3-5 (FR-043/044/FR-042): PAID + inventory fact 决策——
+            # RELEASED（critical inconsistency）/ EXPIRED / AMBIGUOUS（含 PARTIAL 组合）
+            # → manual_review（不猜、不重复扣库存）；RESERVED/COMMITTED/NOT_REQUIRED/
+            # UNRESERVED → 维持既有 finalize/repair 语义。
+            unless all_participants_completed?(tx)
+              inventory = PallasTrade::Transactions::InventoryFactResolver.call(transaction: tx)
+              inv_verdict = inventory.success? ? inventory.value[:verdict] : :ambiguous
+              if %i[released expired ambiguous].include?(inv_verdict)
+                tx.mark_recovery_required! if tx.state == 'finalizing'
+                tx.manual_review!
+                return success(action: :manual_review, transaction: tx.reload, inventory_fact: inv_verdict)
+              end
+            end
+
             if all_participants_completed?(tx)
               tx.repair_completed!
               return success(action: :repair_completed, transaction: tx.reload)

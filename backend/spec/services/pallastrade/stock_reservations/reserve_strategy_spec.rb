@@ -74,11 +74,16 @@ RSpec.describe PallasTrade::StockReservations::Reserve, type: :service do
     end
 
     it 'AC-005 completes checkout under :payment strategy (payment-triggered reservation does not break completion)' do
-      # :payment 模式 cart 操作只校验（不建 reservation），Carts::Complete 支付确认后 Reserve → Release
+      # :payment 模式 cart 操作只校验（不建 reservation），Carts::Complete 支付确认后
+      # Reserve → finalize（物理扣减）→ INV-P3-1/3 Commit（COMMITTED，不再硬删除）
       result = PallasTrade::Carts::Complete.call(cart: cart)
 
       expect(result.success?).to be true
       expect(cart.reload).to be_completed
+      rows = PallasTrade::StockReservation.where(order: cart)
+      expect(rows.count).to eq(1)
+      expect(rows.first.state).to eq('committed')
+      expect(rows.first.committed_at).to be_present
     end
   end
 end

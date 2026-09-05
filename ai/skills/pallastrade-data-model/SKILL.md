@@ -235,6 +235,8 @@ Available in models, controllers, jobs, and services. Set automatically by contr
 
 ## Changelog (P0 Payment, 2026-09-03)
 
+- INV-P3 (2026-09-05, PRD-20260905-shipping-库存事务集成与预留生命周期-p3): pallastrade_stock_reservations 生命周期状态化（state default 'reserved' + reserved/committed/released/expired_at + release_reason + commerce_transaction_id 可空 FK；唯一约束改 partial unique WHERE state='reserved'；索引 (stock_item_id,state,expires_at)）；StockReservation 状态机 RESERVED→COMMITTED（canonical physical consumption 后的事实确认，不改 count_on_hand）/RELEASED/EXPIRED，Release/Expire 不再硬删除；commerce_transactions +snapshot_schema_version（V2：snapshot_data.schema_version + participant inventory_demand evidence）；**无 lock_version**（沿用 with_lock+state guard，与 CommerceTransaction 一致）。
+
 - TXN-P2-1 (2026-09-04, PRD-20260904-checkout-txn-p2-1): 新表 pallastrade_commerce_transactions（txn_，state/purpose/checkout_version/price_version/snapshot_fingerprint/snapshot_data jsonb/amount/currency/payment_combination_id 可空/生命周期时间戳/recovery_attempts/last_error_*）+ pallastrade_transaction_orders（transaction_id+order_id 唯一，role primary|participant，amount_snapshot，completion_status pending|completed|failed）。CommerceTransaction 为 durable 编排上下文（非 payment aggregate；snapshot 为 immutable 证据非价格源）；状态机 created→payment_pending→payment_confirmed→finalizing→completed（+canceled/recovery_required/manual_review；禁止 payment_confirmed→payment_pending）。**无 lock_version 列**（同上 CHK-P1-2 教训）。
 
 - P0 (2026-09-03): 新表 pallastrade_payment_webhook_events（provider/provider_event_id UNIQUE/status/attempt_count/payload）、pallastrade_audit_logs（actor/resource/request_id/before/after）；pallastrade_payments.payment_session_id FK（P0-1）。

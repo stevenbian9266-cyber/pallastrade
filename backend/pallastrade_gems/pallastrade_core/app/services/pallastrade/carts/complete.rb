@@ -32,7 +32,7 @@ module PallasTrade
 
           # Order lifecycle P8 (2026-08-28): 锁库存 :payment 模式——支付确认后真正锁定
           # （cart 操作阶段只校验不落 reservation，见 StockReservations::Reserve validate_only）。
-          if payment_reservation_strategy? && cart.payment_total.to_f > 0
+          if payment_reservation_strategy? && cart.payment_total.to_f.positive?
             reserve_result = PallasTrade::StockReservations::Reserve.call(order: cart)
             return failure(cart, reserve_result.error) if reserve_result.failure?
           end
@@ -40,7 +40,9 @@ module PallasTrade
           advance_to_complete!(cart)
 
           if cart.reload.complete?
-            PallasTrade::StockReservations::Release.call(order: cart)
+            # INV-P3-1/3：finalize 已真实扣减库存（canonical physical consumption），
+            # 此处把 reservation 标记为 COMMITTED（事实确认），不再硬删除。
+            PallasTrade::StockReservations::Commit.call(order: cart)
             # Order lifecycle P5 (2026-08-27): 自动拆单（flag 灰度）——支付确认后按策略拆分，
             # 失败不影响订单完成（AutoSplit 内部 rescue）。默认 [] 关闭，零行为变化。
             PallasTrade::Carts::AutoSplit.call(order: cart)
@@ -58,14 +60,14 @@ module PallasTrade
       def complete_standard_order!(order)
         # 合并支付成员订单（P4）：资金已由组合经 PaymentSplit 入账，无需本地 payment。
         if order.payment_required? && order.payments.valid.empty? &&
-           order.payment_splits.none? { |s| s.captured_amount.to_f.positive? }
+            order.payment_splits.none? { |s| s.captured_amount.to_f.positive? }
           return failure(order, PallasTrade.t(:no_payment_found))
         end
 
         process_payments!(order) if order.payment_required?
         return failure(order, order.errors.full_messages.to_sentence) if order.errors.any?
 
-        if payment_reservation_strategy? && order.payment_total.to_f > 0
+        if payment_reservation_strategy? && order.payment_total.to_f.positive?
           reserve_result = PallasTrade::StockReservations::Reserve.call(order: order)
           return failure(order, reserve_result.error) if reserve_result.failure?
         end
@@ -74,7 +76,9 @@ module PallasTrade
         order.pay! unless order.state == 'paid'
         order.finalize!
 
-        PallasTrade::StockReservations::Release.call(order: order) if order.payment_total.to_f > 0
+        # INV-P3-1/3：finalize 已通过 Shipment/StockMovement 真实扣减库存（physical
+        # consumption），reservation 标记 COMMITTED（消费事实确认）——不再硬删除。
+        PallasTrade::StockReservations::Commit.call(order: order) if order.payment_total.to_f.positive?
         PallasTrade::Carts::AutoSplit.call(order: order)
 
         success(order)
