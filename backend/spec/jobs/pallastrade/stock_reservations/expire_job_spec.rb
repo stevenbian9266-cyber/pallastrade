@@ -53,4 +53,41 @@ RSpec.describe PallasTrade::StockReservations::ExpireJob, type: :job do
     expect(active.reload.state).to eq('reserved')
     expect(committed.reload.state).to eq('committed')
   end
+
+  # INV-P3 审计收口 D2 (2026-09-05, AC-3011/AC-3024): 已捕获支付/已完成的订单不自动过期——
+  # Reservation 保留 RESERVED 至 canonical Finalize 的 Commit，避免“物理已消费却停留 EXPIRED”竞态。
+  it 'keeps past-TTL RESERVED rows on paid orders (D2 — survives until Commit/Recover)' do
+    order.update_columns(payment_total: order.total)
+    due = make_reservation(0, expires_at: 1.minute.ago)
+
+    described_class.perform_now
+
+    expect(due.reload.state).to eq('reserved')
+    expect(PallasTrade::StockReservation.reserved.where(order: order).count).to eq(1)
+  end
+
+  it 'keeps past-TTL RESERVED rows on completed orders (D2)' do
+    order.update_columns(state: 'complete', completed_at: Time.current)
+    due = make_reservation(0, expires_at: 1.minute.ago)
+
+    described_class.perform_now
+
+    expect(due.reload.state).to eq('reserved')
+  end
+
+  # INV-P3 审计收口 D1 (2026-09-05): 过期逐行走状态机 expire! → 发布 inventory.expired 审计事件
+  # （原 update_all 批量旁路状态机，事件缺失）。断言事件总线收到 inventory.expired。
+  it 'publishes inventory.expired when expiring a row (D1/FR-053)' do
+    due = make_reservation(0, expires_at: 1.minute.ago)
+    published = []
+    allow(PallasTrade::Events).to receive(:publish) do |name, *_args|
+      published << name
+    end
+
+    described_class.perform_now
+
+    expect(due.reload.state).to eq('expired')
+    expect(due.reload.expired_at).to be_present
+    expect(published).to include('inventory.expired')
+  end
 end

@@ -380,7 +380,9 @@ module PallasTrade
           PallasTrade::InvitationEmailSubscriber,
           PallasTrade::AdminUserEmailSubscriber,
           PallasTrade::ProductMetricsSubscriber,
-          PallasTrade::BackInStockSubscriber
+          PallasTrade::BackInStockSubscriber,
+          # INV-P3 D3 (2026-09-05): payment_session.processing refreshes order RESERVED TTL
+          PallasTrade::PaymentSessionReservationSubscriber
         ]
 
         # Pre-load authentication strategy classes to avoid reflection at request time

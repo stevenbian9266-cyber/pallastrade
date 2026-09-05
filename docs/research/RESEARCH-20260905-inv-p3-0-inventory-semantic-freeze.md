@@ -356,3 +356,20 @@ S8 INV-P3-7 Operational：Admin inventory 面板 + inventory.* 审计 + trace + 
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-05 | 0.1 | INV-P3-0 只读审计：20 产物 + 7 策略冻结提案 | AI |
+
+---
+
+## 审计收口（2026-09-05，bugfix task TASK-20260905143300-08830526 / gate GATE-2026-09-05T14-33-21）
+
+针对实施后审计发现 D1–D7 的落实记录：
+
+- **D2（ExpireJob 竞态）**：`StockReservations::ExpireJob` 增加守护——`joins(:order).where.not(pallastrade_orders: { id: guarded })`，对**已捕获支付/已完成订单**（`payment_total>0 OR completed_at 非空 OR state∈[paid,complete]`）的 RESERVED 行不按 TTL 过期，保留至 canonical Finalize 的 `Commit`/Recover；消除“物理已消费但行停留 EXPIRED（终态不可转 COMMITTED）”竞态（AC-3011/3024）。
+- **D3（TTL/3DS 支付窗口，FR-039/AC-3020）**：新增订阅者 `PallasTrade::PaymentSessionReservationSubscriber`（core `app/subscribers/`，注册进 core engine `PallasTrade.subscribers`），监听 `payment_session.processing` → `StockReservations::Extend(order:, transaction: session.commerce_transaction)` 刷新 RESERVED TTL。配合 `Transactions::Start` 每次 (re)reserve 刷新，覆盖 Start 之后 payment confirm 之前的长时间 PSP/3DS 窗口；超出窗口仍由 ExpireJob 兜底过期 → PAID 侧 InventoryFact/Recover manual_review 安全收口。注意：`payment_sessions` 表外键列为 `transaction_id`（非 commerce_transaction_id），订阅者解析事件用 `find_by_param`（无 prefixed_id 列）。
+- **D1（FR-053 事件缺口）**：ExpireJob 由 `update_all` 批量改回**逐行走状态机 `expire!`**（with_lock + state guard）→ after_transition 触发 `touch_expired_at` + 发布 `inventory.expired`（原批量路径旁路状态机导致过期审计事件缺失）。expired_at 语义=流转为 EXPIRED 的时点（backfill 时以 expires_at 近似）。
+- **D6（RV-I03 exactly-once）**：新增 `spec/services/pallastrade/transactions/recover_inventory_exactly_once_spec.rb`——真实链路（pending standard order + shipment/shipping method → ReserveInventory reserve+bind → bogus 支付完成 + recovery_required → Recover finalize 物理扣减 1 → COMMITTED），断言 StockMovement 恰 1 条、count_on_hand 5→4、COMMITTED 恰 1 行；重复 Recover（not_recoverable）与重复 Finalize（completed 短路）后仍 1 条/1 行。
+- **D7（Release PAID guard，AC-3017/INV-I09）**：`StockReservations::Release` 增加服务层防御——涉及订单 paid/completed 时返回 failure `reservation_release_blocked_paid`（可 `allow_paid: true` 显式放行）；不改变现有调用点（Orders::Cancel 已前置 release_allowed、cart_legacy/empty 仅未付）。
+- **D5（AC 映射）**：新/改测试补 AC 标注（recover_inventory_exactly_once AC-3009..3015/3024；subscriber AC-3020；release guard AC-3017；expire D1/D2 AC-3011/3018/3024）。全量 28 项标注收口留待后续专项（本文档 S6/S8 记录与 PRD §5 表仍是权威映射源）。
+- **D4（文档-代码口径）**：InventoryFactResolver 的 COMMITTED 判定以**代码为准**——verdict=committed 不强制要求订单已完成（`reasons` 携带 order_completed/order_incomplete；只有 committed+reserved 混合才折叠 AMBIGUOUS），避免 PAID+COMMITTED+incomplete 被误送 manual_review。本段即对齐说明。
+
+验证：P3 域回归（stock_reservations/transactions/jobs/models/cancel/complete）96 examples 0 failures + 新增/修改 spec 16 examples 0 failures；RuboCop（lint 范围 7 文件）0；engine.rb 仅注册一行（该文件存量非 lint 范围）。
+

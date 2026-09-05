@@ -50,4 +50,35 @@ RSpec.describe PallasTrade::StockReservations::Release, type: :service do
     expect(committed.reload.state).to eq('committed')
     expect(PallasTrade::StockReservation.reserved.where(order: order).count).to eq(0)
   end
+
+  # INV-P3 审计收口 D7 (2026-09-05): PAID 防御 guard —— 已捕获支付/完成订单禁止普通 Release（AC-3017/INV-I09）
+  it 'blocks release on a paid order (D7/INV-I09) unless allow_paid: true' do
+    order.update_columns(payment_total: order.total)
+    r1 = create(:stock_reservation, order: order, line_item: line_items[0], stock_item: stock_item_a, quantity: 1)
+
+    result = described_class.call(order: order, reason: 'should_block')
+
+    expect(result.failure?).to be true
+    expect(result.error.value[:code]).to eq('reservation_release_blocked_paid')
+    expect(r1.reload.state).to eq('reserved')
+
+    forced = described_class.call(order: order, reason: 'forced_after_refund', allow_paid: true)
+    expect(forced.success?).to be true
+    expect(r1.reload.state).to eq('released')
+    expect(r1.reload.release_reason).to eq('forced_after_refund')
+  end
+
+  it 'blocks release for a transaction whose participant order is paid (D7)' do
+    order.update_columns(state: 'complete', completed_at: Time.current)
+    create(:stock_reservation, order: order, line_item: line_items[0], stock_item: stock_item_a, quantity: 1)
+    tx = PallasTrade::CommerceTransaction.create!(store: store, purpose: 'purchase',
+                                                  currency: order.currency.to_s, amount: order.total)
+    PallasTrade::TransactionOrder.create!(commerce_transaction: tx, order: order,
+                                          role: 'primary', amount_snapshot: order.total)
+
+    result = described_class.call(transaction: tx, reason: 'x')
+
+    expect(result.failure?).to be true
+    expect(result.error.value[:code]).to eq('reservation_release_blocked_paid')
+  end
 end
