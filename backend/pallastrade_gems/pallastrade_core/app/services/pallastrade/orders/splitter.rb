@@ -151,7 +151,7 @@ module PallasTrade
         return if line_items_total.zero?
 
         payments.each do |payment|
-          paid = payment.amount - payment.refunds.sum(:amount)
+          paid = payment.amount - payment.refunds.succeeded.sum(:amount)
           next if paid <= 0
 
           children.each do |child|

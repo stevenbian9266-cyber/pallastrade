@@ -6,9 +6,10 @@ module PallasTrade
       class RefundSerializer < BaseSerializer
         typelize amount: [:string, nullable: true], transaction_id: [:string, nullable: true],
                  payment_id: [:string, nullable: true], refund_reason_id: [:string, nullable: true],
-                 reimbursement_id: [:string, nullable: true]
+                 reimbursement_id: [:string, nullable: true], state: :string
 
-        attributes :transaction_id
+        # REV-P6-1：退款生命周期状态（requested/processing/succeeded/failed/ambiguous/manual_review/canceled）
+        attributes :transaction_id, :state
 
         attribute :amount do |refund|
           refund.amount&.to_s

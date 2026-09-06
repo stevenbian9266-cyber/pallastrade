@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-# review 批2 (bugfix A6, 2026-09-06): Refund perform! 对 payment 行加锁 + 锁内重校验已退额度。
-# 两条并发 Refund 都会在 create validation（amount <= credit_allowed，非原子）通过；
-# 真实网关调用前以 payment 行锁串行化，后到者看到并发方已占额度 → raise → 该 Refund 创建
-# 回滚 → 防双退。回归：锁内校验拒绝超额；正常退款不受影响。
+# REV-P6-1 (PRD-20260906-payments-rev-p6-1-durable-refund-lifecycle-foundation):
+# 并发防双退由「Refund create 校验（amount <= refundable_capacity，含 in-flight）+
+# Refunds::Execute claim 的 payment 锁内重校验」共同保证（AC-R61-08，替代原 bugfix A6 的
+# after_create perform! raise-回滚语义——失败不再回滚，改持久化 FAILED durable 行）。
 require 'rails_helper'
 
 RSpec.describe PallasTrade::Refund, type: :model do
@@ -21,18 +21,26 @@ RSpec.describe PallasTrade::Refund, type: :model do
                      payment_session: session, source: nil, skip_source_requirement: true)
   end
 
-  it 'bugfix A6: perform! re-validates credit allowed under the payment lock (blocks double refund)' do
+  it 'REV-P6-1: claim re-validates capacity under the payment lock (blocks double refund)' do
     payment = captured_payment(amount: 100)
-    r1 = create(:refund, payment: payment, amount: 60, transaction_id: nil) # 真实 bogus credit
+    r1 = create(:refund, payment: payment, amount: 60, transaction_id: nil, state: 'requested')
+    PallasTrade::Refunds::Execute.call(refund: r1, raise_on_failure: true)
+    r1.reload
     expect(r1.transaction_id).to be_present
+    expect(r1).to be_succeeded
     expect(payment.reload.credit_allowed.to_f).to eq(40.0)
 
-    # 模拟并发窗口：第二条 refund 的 create validation 通过（旧额度视图），真实网关调用前
-    # perform! 在 payment 锁内重校验发现额度已被 r1 占用 → raise → 创建回滚（不落库）。
-    r2 = build(:refund, payment: payment, amount: 60, transaction_id: nil)
-    expect { r2.save(validate: false) }.to raise_error(PallasTrade::Core::GatewayError, /exceeds/)
-    expect(r2).not_to be_persisted
-    expect(PallasTrade::Refund.count).to eq(1)
+    # 模拟并发竞态窗口：第二条 refund 绕过 create 校验直接落库（requested），
+    # Execute claim 在 payment 锁内重校验发现额度已被 r1 占用 → CAPACITY_EXCEEDED →
+    # FAILED durable 行（raise_on_failure 保留旧调用方 raise 语义）。
+    r2 = build(:refund, payment: payment, amount: 60, transaction_id: nil, state: 'requested')
+    r2.save!(validate: false)
+
+    expect { PallasTrade::Refunds::Execute.call(refund: r2, raise_on_failure: true) }
+      .to raise_error(PallasTrade::Core::GatewayError, /exceeds/)
+    expect(r2.reload).to be_failed
+    expect(r2.last_error_code).to eq('CAPACITY_EXCEEDED')
     expect(payment.reload.credit_allowed.to_f).to eq(40.0)
   end
 end
+

@@ -8,36 +8,48 @@ module PallasTrade
 
             # POST /api/v3/admin/orders/:order_id/refunds
             def create
+              error_rendered = false
+
               with_order_lock do
                 payment = @parent.payments.accessible_by(current_ability, :update).find_by_prefix_id!(params[:payment_id])
                 reason = PallasTrade::RefundReason.accessible_by(current_ability, :show).find_by_prefix_id!(params[:refund_reason_id]) if params[:refund_reason_id].present?
                 reason ||= PallasTrade::RefundReason.accessible_by(current_ability, :show).first
 
-                @resource = payment.refunds.build(
+                refund = payment.refunds.build(
                   amount: params[:amount],
                   reason: reason,
                   transaction_id: nil
                 )
-                authorize_resource!(@resource, :create)
+                authorize_resource!(refund, :create)
 
-                if @resource.save
-                  # P0-6 (PRD FR-064): Refund 敏感操作审计。
-                  PallasTrade::Audit.record(
-                    actor: (respond_to?(:current_admin_user) ? current_admin_user : 'admin'),
-                    action: 'refund',
-                    resource: @resource,
-                    after: {
-                      payment_id: payment.prefixed_id,
-                      amount: @resource.amount.to_s,
-                      reason_id: reason&.prefixed_id,
-                      currency: @resource.currency
-                    }
-                  )
-                  render json: serialize_resource(@resource), status: :created
-                else
-                  render_validation_error(@resource.errors)
+                unless refund.save
+                  error_rendered = true
+                  render_validation_error(refund.errors)
+                  next
                 end
+
+                @resource = refund
+                # P0-6 (PRD FR-064): Refund 敏感操作审计。
+                PallasTrade::Audit.record(
+                  actor: (respond_to?(:current_admin_user) ? current_admin_user : 'admin'),
+                  action: 'refund',
+                  resource: refund,
+                  after: {
+                    payment_id: payment.prefixed_id,
+                    amount: refund.amount.to_s,
+                    reason_id: reason&.prefixed_id,
+                    currency: refund.currency
+                  }
+                )
               end
+              return if error_rendered
+
+              # REV-P6-1：durable Refund(requested) 已提交 → 锁外显式执行（provider I/O 不在
+              # order/payment lock/长事务内，REV-INV-03）。失败不再 500——行持久化 failed/ambiguous，
+              # 响应携带 state 与 last_error_message（FR-R61-406）。
+              result = PallasTrade::Refunds::Execute.call(refund: @resource)
+              @resource = result.value
+              render json: serialize_resource(@resource.reload), status: :created
             end
 
             protected

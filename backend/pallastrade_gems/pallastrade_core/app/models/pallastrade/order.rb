@@ -439,14 +439,15 @@ module PallasTrade
     end
 
     def refunds_total
-      refunds.loaded? ? refunds.sum(&:amount) : refunds.sum(:amount)
+      # REV-P6-1：仅 SUCCEEDED 退款计入资金事实（failed/ambiguous 不减少已收金额）
+      refunds.loaded? ? refunds.to_a.select(&:succeeded?).sum(&:amount) : refunds.succeeded.sum(:amount)
     end
 
     # Checks if the order is partially refunded
     # @return [Boolean]
     def partially_refunded?
       return false if item_count.zero?
-      return false if payment_state.in?(%w[void failed]) || refunds.empty?
+      return false if payment_state.in?(%w[void failed]) || refunds.succeeded.empty?
 
       refunds_total < total_minus_store_credits - additional_tax_total.abs
     end

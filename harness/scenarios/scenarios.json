@@ -1492,6 +1492,34 @@
         "stringOnlyToast": 25,
         "versionedNginx": 15
       }
+    },
+    {
+      "id": "GS-059",
+      "name": "REV-P6-1 Durable Refund Lifecycle：Refund = durable execution aggregate（requested→processing→succeeded/failed/ambiguous），闭合 orphan PSP refund",
+      "description": "REV-P6-1（PRD-20260906-payments-rev-p6-1-durable-refund-lifecycle-foundation）：Refund 由 successful-refund-only row 升级为带状态机（requested/processing/succeeded/failed/ambiguous/manual_review/canceled）的 Durable Refund Execution Aggregate；删除 after_create :perform!「create 即 PSP 副作用」；新增 Refunds::Execute（claim 锁内重校验 capacity→provider I/O→三态持久化，ApplySuccess 独立可重放）；Payment#refundable_capacity = amount − succeeded − active(requested/processing/ambiguous)，failed/canceled 释放；仅 refund.succeeded → PostRefund（REFUND_SUCCEEDED）；历史 backfill state=succeeded（transaction_id 存在）不猜 ownership。",
+      "mustDo": [
+        "任何 PSP refund 副作用前本地必有 durable Refund row（AC-6001）；Refund 创建失败不得调用 PSP（AC-6002）",
+        "provider I/O 不在 payment/order 长锁内（Admin API 入口落库后锁外执行，REV-INV-03）；同 Refund 所有 retry 用同一 provider_idempotency_key（AC-6004）",
+        "requested/processing/ambiguous 占用 refundable capacity（AC-6007/6008）；FAILED 释放（AC-6009）；并发 partial refund 不超付",
+        "timeout/未知结果 → ambiguous，不自动创建第二笔 Refund（AC-6005）；明确拒绝 → failed durable 留痕（不 raise 回滚）",
+        "PSP success + 本地投影失败 → durable row 保持 processing/ambiguous（可 ApplySuccess 重放，AC-6006 底座）",
+        "仅 SUCCEEDED 触发 REFUND_SUCCEEDED journal posting（AC-6013/6014）；非 succeeded 不误入账",
+        "P0-P5 baseline 全绿（AC-6030~6035）；新增 lifecycle/capacity/execute spec + 受影响 refund/gateway/reimbursement/P4 posting spec 全绿"
+      ],
+      "mustNotDo": [
+        "保留 after_create :perform! / create 内同步 PSP（REV-INV-03 反例）",
+        "ambiguous 结果自动重退或猜 FAILED 再退一次（REV-INV-04/16）",
+        "failed/canceled/requested 退款减少 payment_total 或产生 REFUND_SUCCEEDED ledger entry",
+        "Refund 失败 raise 回滚丢弃 durable 记录（无本地 owner 的 orphan PSP refund）",
+        "回退 CommerceTransaction/Payment 或建 ReverseTransaction/第二套 Refund ownership"
+      ],
+      "scoring": {
+        "durableBeforePSP": 30,
+        "capacityAndIdempotency": 25,
+        "failedAmbiguousDurable": 20,
+        "journalGuard": 15,
+        "regressionGreen": 10
+      }
     }
   ]
 }

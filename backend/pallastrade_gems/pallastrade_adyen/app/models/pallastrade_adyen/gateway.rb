@@ -87,6 +87,9 @@ module PallasTradeAdyen
           refunder_id: payment.order.canceler_id
         )
 
+        # REV-P6-1：durable 落库（requested）后显式执行；失败按旧语义 raise。
+        PallasTrade::Refunds::Execute.call(refund: refund, raise_on_failure: true)
+
         # PallasTrade::Refund#response has the response from the `credit` action
         # For the authorization ID we need to use the payment.response_code
         # Otherwise we'll overwrite the payment authorization with the refund ID

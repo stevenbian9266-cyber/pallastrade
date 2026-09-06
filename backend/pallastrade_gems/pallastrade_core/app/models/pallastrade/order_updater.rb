@@ -72,7 +72,7 @@ module PallasTrade
       if split
         order.payment_total = split.captured_amount - split.refunded_amount
       else
-        order.payment_total = payments.completed.includes(:refunds).inject(0) { |sum, payment| sum + payment.amount - payment.refunds.sum(:amount) }
+        order.payment_total = payments.completed.includes(:refunds).inject(0) { |sum, payment| sum + payment.amount - payment.refunds.succeeded.sum(:amount) }
       end
     end
 

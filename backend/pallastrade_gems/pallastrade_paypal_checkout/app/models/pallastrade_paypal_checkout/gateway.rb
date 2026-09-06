@@ -171,6 +171,9 @@ module PallasTradePaypalCheckout
             refunder_id: payment.order.canceler_id
           )
 
+          # REV-P6-1：durable 落库（requested）后显式执行；失败按旧语义 raise。
+          PallasTrade::Refunds::Execute.call(refund: refund, raise_on_failure: true)
+
           success(payment.response_code, refund.response.params)
         else
           response = client.payments.void_payment({

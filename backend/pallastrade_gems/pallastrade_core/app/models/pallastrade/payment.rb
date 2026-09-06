@@ -201,9 +201,14 @@ module PallasTrade
       offsets.sum(:amount)
     end
 
-    def credit_allowed
-      amount - (offsets_total.abs + refunds.sum(:amount))
+    # REV-P6-1：可退额度（refundable capacity，REV-INV-06 / AC-6007/6008/6009）
+    #   = amount − offsets − Σ SUCCEEDED − Σ ACTIVE(requested/processing/ambiguous) refunds
+    # failed/canceled/manual_review 不占用 capacity（AC-6009）。
+    # credit_allowed 保留为兼容别名（历史语义：全部 refund 行=成功行 → 值不变）。
+    def refundable_capacity
+      amount - (offsets_total.abs + refunds.capacity_consuming.sum(:amount))
     end
+    alias credit_allowed refundable_capacity
 
     def can_credit?
       credit_allowed > 0

@@ -10,6 +10,20 @@ module PallasTrade
 
     publishes_lifecycle_events
 
+    # REV-P6-1 —— Durable Refund Execution Aggregate（PRD-REV-P6-1；源文档 REV-P6 §8-11/§56）
+    # 语义：Refund Request ≠ Provider Execution ≠ Refund Financial Fact（REV-INV-01）。
+    # state 生命周期见源 §9/§10：requested → processing → succeeded/failed/ambiguous → manual_review。
+    STATES = %w[requested processing succeeded failed ambiguous manual_review canceled].freeze
+    # in-flight 状态（占用 refundable capacity，REV-INV-06 / AC-6007/6008/6009）
+    ACTIVE_STATES = %w[requested processing ambiguous].freeze
+    # 计入可退额度的状态（succeeded 为已发生资金事实）
+    CAPACITY_STATES = (ACTIVE_STATES + %w[succeeded]).freeze
+    TERMINAL_STATES = %w[succeeded failed manual_review canceled].freeze
+    IDEMPOTENCY_PREFIX = 'refund'
+
+    # 非法状态迁移（REV-P6-1）
+    class InvalidTransitionError < StandardError; end
+
     with_options inverse_of: :refunds do
       belongs_to :payment
       belongs_to :reimbursement, optional: true
@@ -17,28 +31,86 @@ module PallasTrade
     belongs_to :reason, class_name: 'PallasTrade::RefundReason', foreign_key: :refund_reason_id
     belongs_to :refunder, class_name: PallasTrade.admin_user_class.to_s, optional: true
 
+    # REV-P6-1 ownership（可空；创建时可证明才填充——payment→payment_session→commerce_transaction，
+    # payment→payment_combination→commerce_transaction，或组合 target split/order。禁止事后猜填，AC-6029）
+    belongs_to :commerce_transaction, class_name: 'PallasTrade::CommerceTransaction', optional: true
+    belongs_to :target_order, class_name: 'PallasTrade::Order', optional: true
+    belongs_to :payment_split, class_name: 'PallasTrade::PaymentSplit', optional: true
+
     has_many :log_entries, as: :source
 
     with_options presence: true do
       validates :payment, :reason
-      # can't require this on create because the perform! in after_create needs to run first
-      validates :transaction_id, on: :update
+      # REV-P6-1：transaction_id 仅在 SUCCEEDED 时必需（apply_success! 内保证）；
+      # failed/ambiguous 行合法地无 provider reference，不再强制 on :update。
       validates :amount, numericality: { greater_than: 0, allow_nil: true }
     end
     validate :amount_is_less_than_or_equal_to_allowed_amount, on: :create, if: :amount
+    validates :state, inclusion: { in: STATES }
 
-    after_create :perform!
-    after_create :create_log_entry
+    before_create :assign_lifecycle_defaults
 
+    scope :active, -> { where(state: ACTIVE_STATES) }
+    scope :capacity_consuming, -> { where(state: CAPACITY_STATES) }
+    scope :succeeded, -> { where(state: 'succeeded') }
+    scope :failed, -> { where(state: 'failed') }
+    scope :ambiguous, -> { where(state: 'ambiguous') }
     scope :non_reimbursement, -> { where(reimbursement_id: nil) }
 
     attr_reader :response
 
     delegate :currency, to: :payment
 
+    # REV-P6-1：状态迁移事件（commit 后发布）→ FinancialLedger::PostRefund 接线。
+    after_commit :publish_state_event, on: :update
+
+    # REV-P6-1 状态机（源 §9/§10）。succeeded/failed/manual_review/canceled 为终态；
+    # ambiguous 不允许自动重复退款（REV-INV-04）——只允许同 idempotency key 的确定性解决。
+    state_machine :state, initial: :requested do
+      state :requested
+      state :processing
+      state :succeeded
+      state :failed
+      state :ambiguous
+      state :manual_review
+      state :canceled
+
+      event :start_processing do
+        transition requested: :processing
+      end
+      event :succeed do
+        transition %i[requested processing ambiguous] => :succeeded
+      end
+      event :fail do
+        transition %i[requested processing ambiguous] => :failed
+      end
+      event :mark_ambiguous do
+        transition %i[requested processing] => :ambiguous
+      end
+      event :mark_manual_review do
+        transition %i[processing ambiguous] => :manual_review
+      end
+      # 仅允许 PSP side effect 尚未开始时撤销请求（源 §9）
+      event :cancel_request do
+        transition requested: :canceled
+      end
+      # REV-P6-6 预留：provider 重查/人工裁决后的回退执行（同一 provider_idempotency_key）
+      event :retry_execution do
+        transition %i[failed ambiguous] => :processing
+      end
+
+      after_transition to: :processing,    do: :stamp_processing
+      after_transition to: :succeeded,     do: :stamp_succeeded
+      after_transition to: :failed,        do: :stamp_failed
+      after_transition to: :ambiguous,     do: :stamp_ambiguous
+      after_transition to: :manual_review, do: :stamp_manual_review
+      after_transition to: :canceled,      do: :stamp_canceled
+    end
+
     # P7 (2026-08-28)：payment.order 在组合支付场景为 nil → 从 reimbursement 链推导目标订单
+    # REV-P6-1：优先用创建时冻结的 target_order（ownership），其次 legacy 推导。
     def order
-      payment.order || reimbursement_target_order
+      target_order || payment.order || reimbursement_target_order
     end
 
     def amount=(amount)
@@ -52,7 +124,7 @@ module PallasTrade
 
     class << self
       def total_amount_reimbursed_for(reimbursement)
-        reimbursement.refunds.to_a.sum(&:amount)
+        reimbursement.refunds.succeeded.to_a.sum(&:amount)
       end
     end
 
@@ -77,6 +149,71 @@ module PallasTrade
       target.present? && !target.canceled?
     end
 
+    # REV-P6-1：稳定 provider idempotency key（源 §17，REV-INV-05）。
+    # prefixed_id 依赖持久化 id（DB 分配）→ 持久化后才有值；Execute claim 时落库。
+    #
+    # @return [String, nil]
+    def execution_idempotency_key
+      return nil unless id.present?
+
+      "#{IDEMPOTENCY_PREFIX}:#{prefixed_id}:execute"
+    end
+
+    # REV-P6-1：ApplySuccess —— provider 权威成功后本地投影（单事务、幂等、可重放）。
+    # 完成：state→succeeded + provider reference 持久化 + PaymentSplit.refunded_amount /
+    # Order 投影 + 时间戳 + audit（log entry）。由 Refunds::Execute 在 provider I/O 之后调用。
+    #
+    # @return [Boolean]
+    def apply_success!(authorization:, response: nil)
+      return true if succeeded?
+
+      self.transaction_id = authorization
+      @response = response
+      raise InvalidTransitionError, "Refund #{prefixed_id} cannot succeed from state=#{state}" unless can_succeed?
+
+      succeed!
+      update_order
+      create_success_log_entry
+      true
+    end
+
+    # REV-P6-1：明确失败持久化（不 raise 回滚，AC-6002/6009；capacity 释放由 scope 语义表达）
+    def record_failure!(code:, message:)
+      self.last_error_code = code
+      self.last_error_message = message.to_s.truncate(2000)
+      return true if %w[failed canceled manual_review].include?(state)
+
+      raise InvalidTransitionError, "Refund #{prefixed_id} cannot fail from state=#{state}" unless can_fail?
+
+      fail!
+      true
+    end
+
+    # REV-P6-1：未知结果持久化（REV-INV-04/16）——不释放 capacity、不自动重退。
+    def record_ambiguous!(code:, message:)
+      self.last_error_code = code
+      self.last_error_message = message.to_s.truncate(2000)
+      return true if %w[ambiguous failed canceled manual_review].include?(state)
+
+      raise InvalidTransitionError, "Refund #{prefixed_id} cannot go ambiguous from state=#{state}" unless can_mark_ambiguous?
+
+      mark_ambiguous!
+      true
+    end
+
+    # REV-P6-1：人工复核（provider contract 无法自动确定真实资金结果时，源 §10）
+    # 注意：不能命名为 mark_manual_review!（与 state_machine bang 事件重名 → 自递归）
+    def enter_manual_review!(code: nil, message: nil)
+      self.last_error_code = code if code
+      self.last_error_message = message.to_s.truncate(2000) if message
+      return true if manual_review?
+
+      raise InvalidTransitionError, "Refund #{prefixed_id} cannot go manual_review from state=#{state}" unless can_mark_manual_review?
+
+      mark_manual_review!
+      true
+    end
+
     private
 
     # P7：组合支付退款的目标订单 = reimbursement → customer_return/return_items → inventory_unit.order
@@ -85,66 +222,46 @@ module PallasTrade
         reimbursement&.return_items&.first&.inventory_unit&.order
     end
 
-    # attempts to perform the refund.
-    # raises an error if the refund fails.
-    # review 批2 (bugfix A6): perform! 内对 payment 行加锁 + 锁内重校验已退额度 —— 两条并发
-    # Refund 都会在 create validation（amount <= credit_allowed）通过（非原子），真实网关调用
-    # 前以 payment 行锁串行化，后到者看到并发方已占额度 → raise → 该 Refund 创建回滚 → 防双退。
-    # 排除自身 id：本 refund 已 INSERT（after_create），refunds 重查会含自己。
-    def perform!
-      return true if transaction_id.present?
+    def assign_lifecycle_defaults
+      self.requested_at ||= Time.current
+      # provider_idempotency_key 依赖持久化 id → 在 Execute claim 时写入（execution_idempotency_key）
+    end
 
-      payment.with_lock do
-        already_refunded = payment.refunds.where.not(id: id).sum(:amount).to_d
-        allowed = payment.amount.to_d - already_refunded
-        if amount.to_d > allowed
-          raise Core::GatewayError, 'Refund amount exceeds the payment credit allowed'
-        end
+    def publish_state_event
+      return unless state_previously_changed?
 
-        credit_cents = PallasTrade::Money.new(amount.to_f, currency: currency).amount_in_cents
-
-        @response = process!(credit_cents)
-
-        self.transaction_id = @response.authorization
-        update_columns(transaction_id: transaction_id)
-        update_order
+      case state
+      when 'succeeded' then publish_event('refund.succeeded')
+      when 'failed' then publish_event('refund.failed')
+      when 'ambiguous' then publish_event('refund.ambiguous')
       end
     end
 
-    # return a payment response object if successful or else raise an error
-    def process!(credit_cents)
-      refund_total_in_cents = calculate_refund_amount(credit_cents)
-
-      response = if payment.payment_method.payment_profiles_supported?
-                   payment.payment_method.credit(refund_total_in_cents, payment.source, payment.transaction_id, originator: self)
-                 else
-                   payment.payment_method.credit(refund_total_in_cents, payment.transaction_id, originator: self)
-                 end
-
-      if response.success?
-        track_order_as_refunded(refund_total_in_cents)
-      else
-        Rails.logger.error(PallasTrade.t(:gateway_error) + "  #{response.to_yaml}")
-        text = response.params['message'] || response.params['response_reason_text'] || response.message
-        raise Core::GatewayError, text
-      end
-
-      response
-    rescue PallasTrade::PaymentConnectionError => e
-      Rails.logger.error(PallasTrade.t(:gateway_error) + "  #{e.inspect}")
-      raise Core::GatewayError, PallasTrade.t(:unable_to_connect_to_gateway)
+    def stamp_processing
+      self.processing_at = Time.current
     end
 
-    def calculate_refund_amount(credit_cents)
-      # Overwrite this for more complex calculations
-      credit_cents
+    def stamp_succeeded
+      self.succeeded_at = Time.current
     end
 
-    def track_order_as_refunded(credit_cents)
-      # You can track refunds here
+    def stamp_failed
+      self.failed_at = Time.current
     end
 
-    def create_log_entry
+    def stamp_ambiguous
+      self.ambiguous_at = Time.current
+    end
+
+    def stamp_manual_review
+      # manual_review 不新增专用时间列；以 updated_at 为准
+    end
+
+    def stamp_canceled
+      # canceled 不新增专用时间列；以 updated_at 为准
+    end
+
+    def create_success_log_entry
       log_entries.create!(details: @response.to_yaml)
     end
 
@@ -154,14 +271,15 @@ module PallasTrade
       end
     end
 
+    # REV-P6-1：本地成功投影（apply_success! 内调用；与 succeed 同事务）
+    # 组合退款只更新目标 PaymentSplit.refunded_amount（P4 语义），不碰兄弟单。
     def update_order
       if payment.order
         payment.order.updater.update
       elsif payment.payment_combination.present?
-        # P7：组合支付退款——只更新对应子订单 PaymentSplit.refunded_amount（P4 语义），不碰兄弟单
-        target_order = reimbursement_target_order
+        target_order = self.target_order || reimbursement_target_order
         if target_order
-          split = target_order.payment_splits.where(payment_id: payment.id).first
+          split = self.payment_split || target_order.payment_splits.where(payment_id: payment.id).first
           split&.update_columns(refunded_amount: split.refunded_amount.to_f + amount.to_f)
           target_order.updater.update
         end

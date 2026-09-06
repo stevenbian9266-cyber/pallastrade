@@ -34,7 +34,15 @@ module PallasTrade
         reason: PallasTrade::RefundReason.return_processing_reason
       )
 
-      simulate ? refund.readonly! : refund.save!
+      if simulate
+        refund.readonly!
+      else
+        refund.save!
+        # REV-P6-1：durable 落库(requested) 后显式执行；沿用旧语义——执行失败 raise
+        # （raise_on_failure: true），由 reimbursement 域标记 errored。
+        # （v1 兼容边界：本链仍可能在外层事务内同步执行，完整拆链 = REV-P6-2/4/5。）
+        PallasTrade::Refunds::Execute.call(refund: refund, raise_on_failure: true)
+      end
       refund
     end
 

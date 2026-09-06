@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_06_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_06_174000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1885,20 +1885,40 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_06_150000) do
   end
 
   create_table "pallastrade_refunds", force: :cascade do |t|
+    t.datetime "ambiguous_at"
     t.decimal "amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.integer "attempt_count", default: 0, null: false
+    t.bigint "commerce_transaction_id"
     t.datetime "created_at", null: false
+    t.datetime "failed_at"
+    t.string "last_error_code"
+    t.string "last_error_message"
+    t.integer "lock_version", default: 0, null: false
     t.bigint "payment_id"
+    t.bigint "payment_split_id"
     t.jsonb "private_metadata"
+    t.datetime "processing_at"
+    t.string "provider_idempotency_key"
     t.jsonb "public_metadata"
     t.bigint "refund_reason_id"
     t.bigint "refunder_id"
     t.bigint "reimbursement_id"
+    t.datetime "requested_at"
+    t.string "state", default: "requested", null: false
+    t.datetime "succeeded_at"
+    t.bigint "target_order_id"
     t.string "transaction_id"
     t.datetime "updated_at", null: false
+    t.index ["commerce_transaction_id"], name: "index_pallastrade_refunds_on_commerce_transaction_id"
+    t.index ["payment_id", "state"], name: "idx_refunds_payment_state"
     t.index ["payment_id"], name: "index_pt_refunds_on_payment_id"
+    t.index ["payment_split_id"], name: "index_pallastrade_refunds_on_payment_split_id"
+    t.index ["provider_idempotency_key"], name: "idx_refunds_provider_idempotency_key_unique", unique: true, where: "(provider_idempotency_key IS NOT NULL)"
     t.index ["refund_reason_id"], name: "index_refunds_on_refund_reason_id"
     t.index ["refunder_id"], name: "index_pt_refunds_on_refunder_id"
     t.index ["reimbursement_id"], name: "index_pt_refunds_on_reimbursement_id"
+    t.index ["state"], name: "idx_refunds_state"
+    t.index ["target_order_id"], name: "index_pallastrade_refunds_on_target_order_id"
   end
 
   create_table "pallastrade_reimbursement_credits", force: :cascade do |t|
@@ -2838,6 +2858,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_06_150000) do
   add_foreign_key "pallastrade_payments", "pallastrade_payment_sessions", column: "payment_session_id"
   add_foreign_key "pallastrade_product_translations", "pallastrade_products"
   add_foreign_key "pallastrade_redirects", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_refunds", "pallastrade_commerce_transactions", column: "commerce_transaction_id"
+  add_foreign_key "pallastrade_refunds", "pallastrade_orders", column: "target_order_id"
+  add_foreign_key "pallastrade_refunds", "pallastrade_payment_splits", column: "payment_split_id"
   add_foreign_key "pallastrade_reviews", "pallastrade_products", column: "product_id"
   add_foreign_key "pallastrade_reviews", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_reviews", "pallastrade_users", column: "user_id"

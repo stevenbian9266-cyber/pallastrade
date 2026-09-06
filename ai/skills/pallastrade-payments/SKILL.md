@@ -329,12 +329,39 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **事件接线（engine.rb subscribers.concat 注册）**：
   - `FinancialLedger::PaymentPaidSubscriber` ← `payment.paid`（`Payment::CustomEvents` after_commit on update
     state→completed 发布——提交后触发，ledger 失败不逆转支付 P4 §16）。
-  - `FinancialLedger::RefundCreatedSubscriber` ← `refund.created`（`publishes_lifecycle_events` after_commit；
-    Refund 创建提交 = perform! 成功，失败 raise 回滚）。
+  - `FinancialLedger::RefundSucceededSubscriber` ← `refund.succeeded`（REV-P6-1 起；Refund state 迁移
+    succeeded 的 after_commit 发布——Refund 创建=REQUESTED 不再隐含成功，见下文 REV-P6-1 章节）。
   - subscriber 默认 async（SubscriberJob）；posting 幂等（idempotency_key）→ 重试不重复；异常 rescue →
     Rails.logger（不阻断资金流）。payload id 支持 prefixed（py_/re_ → find_by_param）或 raw integer 双模式。
 - **覆盖**：single / balance collection（独立 txn → 独立 entry）/ combination（1 Payment → 1 cash entry；
   PaymentSplit **不**产生额外 entry，ORDER_ALLOCATION 归 FIN-P4-4）；multiple partial refunds → N 独立 entries。
+
+## Refund Durable Lifecycle（REV-P6-1, 2026-09-06；PRD-20260906-payments-rev-p6-1-durable-refund-lifecycle-foundation）
+
+> **Refund = Durable Refund Execution Aggregate**（不再是 successful-refund-only row）。语义（REV-INV-01）：
+> `Refund Request ≠ Provider Execution ≠ Refund Financial Fact`。源规格：`豆包梳理业务需求/P6 — Refund,
+> Cancellation & Dispute Orchestration.md`（REV-P6，编号与内部拆单域 P5/P6/P7 不同）。
+
+- **生命周期**：`requested → processing → succeeded | failed | ambiguous → manual_review`（+ requested→canceled）。
+  常量 `Refund::STATES / ACTIVE_STATES(requested,processing,ambiguous) / CAPACITY_STATES(+succeeded) /
+  TERMINAL_STATES`。**删除 `after_create :perform!`**（create 即 PSP 副作用反模式）。
+- **Refunds::Execute**（`services/pallastrade/refunds/execute.rb`，v1 同步）：claim（payment 锁内重校验
+  capacity、排除自身 → requested→processing + 写 `provider_idempotency_key`(`refund:<prefixed_id>:execute`)）→
+  provider I/O（携带稳定 idempotency key）→ 三态持久化：`apply_success!`（succeeded+transaction_id+split/order
+  投影+audit，单事务可重放）/ `record_failure!`（failed+last_error）/ `record_ambiguous!`（ambiguous）。
+  终态幂等不重复执行；`raise_on_failure: true` 保留 legacy（reimbursement/gateway cancel）raise 语义。
+- **Capacity**：`Payment#refundable_capacity`（alias `credit_allowed`）= amount − offsets − Σ SUCCEEDED −
+  Σ ACTIVE(requested/processing/ambiguous)；failed/canceled 释放。资金汇总（order_updater/order refunds_total/
+  splitter/bogus financial details）只统计 `succeeded`。
+- **接线**：Admin `POST /orders/:id/refunds` → durable 落库(requested) → 锁外 `Refunds::Execute`（响应带
+  state/last_error）；Stripe/Adyen/PayPal gateway `cancel` 对 completed payment 的自动退款与 reimbursement
+  `create_refund` 均改为「save(requested) → Execute(raise_on_failure: true)」。
+- **Journal 守卫**：仅 `refund.succeeded` → PostRefund（REFUND_SUCCEEDED）；非 succeeded 不产生 ledger entry。
+  `ResolveRefund` 需 `transaction_id.present? && refund.succeeded?` 才 CONFIRMED。
+- **历史数据**：backfill transaction_id 存在→succeeded；NULL→manual_review（不猜）；ownership 只填可证明。
+- **边界（后续包）**：async Job/Sweeper/ReverseCommerce::Recover=REV-P6-2/6；combination split active
+  reservation=REV-P6-3；Cancellation Orchestrator=REV-P6-4；Return inspection=REV-P6-5；reimbursement 链事务
+  拆解同属后续包（v1 中其 Execute 仍可能在外层事务内）。
 
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 

@@ -177,7 +177,7 @@ module PallasTrade
     def fetch_financial_details(payment_session:)
       settled = payment_session.status.to_s == 'completed'
       payment = payment_session.payment
-      refunds = payment ? payment.refunds.to_a : []
+      refunds = payment ? payment.refunds.succeeded.to_a : []
       refund_total = refunds.sum { |r| r.amount.to_d }
       {
         provider: 'bogus',

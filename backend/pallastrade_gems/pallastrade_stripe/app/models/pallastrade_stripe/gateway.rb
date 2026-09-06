@@ -144,7 +144,13 @@ module PallasTradeStripe
           payment_intent: payment_intent_id
         }
         originator = gateway_options[:originator]
-        base_idempotency_key = "pallastrade-refund-#{originator.id}" if originator&.id
+        # REV-P6-1：优先使用 Refund 稳定 provider_idempotency_key（REV-INV-05）；
+        # legacy fallback：refund id 派生（跨 retry 稳定）。
+        base_idempotency_key = if originator.respond_to?(:provider_idempotency_key) && originator.provider_idempotency_key.present?
+                                 originator.provider_idempotency_key
+                               else
+                                 "pallastrade-refund-#{originator.id}" if originator&.id
+                               end
 
         response = send_request(idempotency_key: stripe_idempotency_key(base_idempotency_key, 'credit')) do |opts|
           Stripe::Refund.create(payload, opts)
@@ -199,6 +205,9 @@ module PallasTradeStripe
             reason: PallasTrade::RefundReason.order_canceled_reason,
             refunder_id: payment.order.canceler_id
           )
+
+          # REV-P6-1：durable 落库（requested）后显式执行；失败按旧语义 raise（raise_on_failure）。
+          PallasTrade::Refunds::Execute.call(refund: refund, raise_on_failure: true)
 
           # PallasTrade::Refund#response has the response from the `credit` action
           # For the authorization ID we need to use the payment.response_code (the payment intent ID)

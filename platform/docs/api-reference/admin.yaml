@@ -15772,7 +15772,12 @@ paths:
       - api_key: []
         bearer_auth: []
       description: |-
-        Creates a refund for a payment on the order. The refund is automatically processed via the payment gateway.
+        Creates a refund for a payment on the order and processes it via the payment gateway.
+
+        **REV-P6-1 lifecycle:** the refund is first persisted durably as `requested`, then executed
+        synchronously; the response carries the terminal `state` (`succeeded`/`failed`/`ambiguous`/…)
+        plus error details when the gateway rejected the refund. A failed or ambiguous refund row is
+        kept for audit/recovery — it does not disappear.
 
         **Required scope:** `write_refunds` (for API-key authentication).
       x-codeSamples:

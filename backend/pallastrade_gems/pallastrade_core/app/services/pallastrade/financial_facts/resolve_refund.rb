@@ -53,7 +53,7 @@ module PallasTrade
           effective_at: refund.created_at
         }
 
-        if refund.transaction_id.present?
+        if refund.transaction_id.present? && refund.succeeded?
           fact(base, PallasTrade::FinancialFact::REFUND_SUCCEEDED, PallasTrade::FinancialFact::CONFIRMED,
                refund.amount, currency_of(refund), [:refund_provider_reference_present], nil)
         else
