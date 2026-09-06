@@ -1520,6 +1520,31 @@
         "journalGuard": 15,
         "regressionGreen": 10
       }
+    },
+    {
+      "id": "GS-060",
+      "name": "REV-P6-2 Refund Execution Orchestration：Refunds::Request + async ExecuteJob，provider I/O 彻底移出 DB tx",
+      "description": "REV-P6-2（PRD-20260906-payments-rev-p6-2-refund-execution-orchestration）：退款发起与资金执行解耦——Refunds::Request（capacity 校验 → durable requested → enqueue ExecuteJob）为唯一发起入口；ExecuteJob（Sidekiq）async 执行 Refunds::Execute；Admin refunds#create 与 Stripe/Adyen/PayPal gateway cancel 自动退款改为 async（201 state=requested / 立即成功，退款后台执行）；reimbursement 退货链本包保留同步（REV-P6-5）；Recover/Sweeper 归 REV-P6-6。",
+      "mustDo": [
+        "任何 PSP 副作用前 durable requested 已落库，且只由 ExecuteJob 调 Refunds::Execute（生产无 request/业务事务内同步 PSP 退款路径）",
+        "ExecuteJob 幂等：终态（processing/succeeded/failed/ambiguous/manual_review/canceled）不重复执行；重试不产生第二笔 PSP 退款",
+        "Admin create 返回 201 + state=requested，GET /orders/:id/refunds 可观测终态/失败",
+        "gateway cancel（completed）登记 durable 退款请求并立即成功，不再链内同步 PSP / 不回滚取消链",
+        "backend-rspec 全量 + P0-P5 baseline 绿"
+      ],
+      "mustNotDo": [
+        "在 Admin/取消/业务事务内同步 gateway.credit（REV-INV-03）",
+        "ExecuteJob 失败后依赖 sidekiq 自动重试再次执行 PSP（顶层 rescue 不 re-raise；恢复归 REV-P6-6）",
+        "ambiguous 结果自动重退或猜 FAILED 再退一次",
+        "reimbursement 链破坏性半成品 async（本包保留 REV-P6-1 同步语义，完整编排 REV-P6-5）"
+      ],
+      "scoring": {
+        "asyncOnlyExecutor": 30,
+        "jobIdempotency": 25,
+        "adminAsyncContract": 20,
+        "gatewayCancelDurable": 15,
+        "regressionGreen": 10
+      }
     }
   ]
 }

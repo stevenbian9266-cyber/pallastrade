@@ -15774,10 +15774,11 @@ paths:
       description: |-
         Creates a refund for a payment on the order and processes it via the payment gateway.
 
-        **REV-P6-1 lifecycle:** the refund is first persisted durably as `requested`, then executed
-        synchronously; the response carries the terminal `state` (`succeeded`/`failed`/`ambiguous`/…)
-        plus error details when the gateway rejected the refund. A failed or ambiguous refund row is
-        kept for audit/recovery — it does not disappear.
+        **REV-P6-2 async lifecycle:** the refund is durably persisted as `requested`, then executed
+        asynchronously in a background job (`Refunds::ExecuteJob`). The response carries
+        `state: "requested"`; poll `GET /api/v3/admin/orders/{order_id}/refunds` for the terminal
+        state (`succeeded`/`failed`/`ambiguous`/…). A failed or ambiguous refund row is kept for
+        audit/recovery.
 
         **Required scope:** `write_refunds` (for API-key authentication).
       x-codeSamples:
@@ -15824,16 +15825,16 @@ paths:
             application/json:
               example:
                 id: re_UkLWZg9DAJ
-                state: succeeded
-                transaction_id: BGS-3353f826ff36
+                state: requested
+                transaction_id:
                 amount: '5.0'
                 payment_id: py_UkLWZg9DAJ
                 refund_reason_id: rr_UkLWZg9DAJ
                 reimbursement_id:
                 last_error_message:
                 requested_at: '2026-07-11T15:38:00.820Z'
-                processing_at: '2026-07-11T15:38:00.820Z'
-                succeeded_at: '2026-07-11T15:38:01.000Z'
+                processing_at:
+                succeeded_at:
                 failed_at:
                 ambiguous_at:
                 metadata: {}

@@ -363,6 +363,21 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   reservation=REV-P6-3；Cancellation Orchestrator=REV-P6-4；Return inspection=REV-P6-5；reimbursement 链事务
   拆解同属后续包（v1 中其 Execute 仍可能在外层事务内）。
 
+## Refund Execution Orchestration（REV-P6-2, 2026-09-06；PRD-20260906-payments-rev-p6-2-refund-execution-orchestration）
+
+> **执行主路径 async 化**：发起与资金执行彻底解耦（源文档 REV-P6 §12/§16/§57）。
+
+- `Refunds::Request`（唯一发起入口）：capacity 校验 → durable `Refund(requested)` 落库（ownership 可证明冻结）
+  → enqueue `Refunds::ExecuteJob`；自身绝不调 PSP。
+- `Refunds::ExecuteJob`（Sidekiq，`queue_as PallasTrade.queues.default`）：async 调 `Refunds::Execute`
+  （raise_on_failure: false）；claim 幂等（仅 requested→processing）→ 重试不重复退款；顶层 rescue 后不
+  re-raise（避免 sidekiq 重试二次 PSP）；ambiguous 不自动重退（REV-P6-6 收敛）。
+- **入口 async 化**：Admin `POST /orders/:id/refunds` → 201 + `state=requested`（轮询 GET list 观测终态）；
+  Stripe/Adyen/PayPal gateway `cancel`（completed payment）→ `Refunds::Request`（不再链内同步 PSP/不再 raise
+  回滚取消链）。
+- **边界**：reimbursement/returns 退货链本包保留同步执行（REV-P6-1 `create_refund` 语义），完整 async 编排
+  归 REV-P6-5（Return orchestration）；Recover/Sweeper 归 REV-P6-6。
+
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 
 > **ORDER_ALLOCATION = 组合资金对成员订单的归属投影（immutable journal fact），不是额外 cash inflow**

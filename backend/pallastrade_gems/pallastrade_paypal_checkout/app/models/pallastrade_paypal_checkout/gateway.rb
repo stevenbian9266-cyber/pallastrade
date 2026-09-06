@@ -165,16 +165,13 @@ module PallasTradePaypalCheckout
           amount = payment.credit_allowed
           return success(authorization, {}) if amount.zero?
 
-          refund = payment.refunds.create!(
-            amount: amount,
+          # REV-P6-2：登记 durable 退款请求并异步执行（Request → ExecuteJob）；不链内同步 PSP。
+          PallasTrade::Refunds::Request.call(
+            payment: payment, amount: amount,
             reason: PallasTrade::RefundReason.order_canceled_reason,
-            refunder_id: payment.order.canceler_id
+            refunder_id: payment.order&.canceler_id
           )
-
-          # REV-P6-1：durable 落库（requested）后显式执行；失败按旧语义 raise。
-          PallasTrade::Refunds::Execute.call(refund: refund, raise_on_failure: true)
-
-          success(payment.response_code, refund.response.params)
+          success(payment.response_code, {})
         else
           response = client.payments.void_payment({
             'authorization_id' => authorization,

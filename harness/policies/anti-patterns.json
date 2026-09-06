@@ -98,6 +98,16 @@
       "fileGlob": "storefront/src/**/*.{ts,tsx}",
       "message": "API failure caught and converted to empty collection. This collapses 'unknown state' (API down) into 'known state' (empty result), which can cause downstream logic to incorrectly redirect, retry, or render invalid states.",
       "fix": "Change `.catch(() => [])` to `.catch(() => null)`, then handle `null` separately: show degraded UI or skip the operation."
+    },
+    {
+      "id": "AP-010",
+      "name": "refund-create-side-effect",
+      "severity": "error",
+      "pattern": "after_create\\s+:perform!|Refunds::Execute\\.call\\s*\\(refund:",
+      "fileGlob": "backend/pallastrade_gems/**/app/**/*.rb",
+      "excludeGlob": "**/spec/**|**/jobs/**|**/execute.rb",
+      "message": "REV-P6: Refund 资金副作用必须在 durable Refund 落库后由后台 Refunds::ExecuteJob 执行（REV-INV-03）。禁止 after_create :perform! 或业务事务内同步调用 Refunds::Execute——会造成 orphan PSP refund / 长锁内 provider I/O。",
+      "fix": "发起退款一律走 `Refunds::Request`（durable requested + enqueue ExecuteJob）；执行入口只保留 Refunds::ExecuteJob → Refunds::Execute。"
     }
   ]
 }

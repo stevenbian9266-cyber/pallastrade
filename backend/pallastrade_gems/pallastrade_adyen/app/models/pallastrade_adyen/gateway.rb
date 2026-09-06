@@ -81,19 +81,13 @@ module PallasTradeAdyen
         # Don't create a refund if the payment is for a shipment, we will create a refund for the whole shipping cost instead
         return success(transaction_id, {}) if payment.respond_to?(:for_shipment?) && payment.for_shipment?
 
-        refund = payment.refunds.create!(
-          amount: amount,
+        # REV-P6-2：登记 durable 退款请求并异步执行（Request → ExecuteJob）；不链内同步 PSP。
+        PallasTrade::Refunds::Request.call(
+          payment: payment, amount: amount,
           reason: PallasTrade::RefundReason.order_canceled_reason,
-          refunder_id: payment.order.canceler_id
+          refunder_id: payment.order&.canceler_id
         )
-
-        # REV-P6-1：durable 落库（requested）后显式执行；失败按旧语义 raise。
-        PallasTrade::Refunds::Execute.call(refund: refund, raise_on_failure: true)
-
-        # PallasTrade::Refund#response has the response from the `credit` action
-        # For the authorization ID we need to use the payment.response_code
-        # Otherwise we'll overwrite the payment authorization with the refund ID
-        success(transaction_id, refund.response.params)
+        success(transaction_id, {})
       else
         payment.void!
         success(transaction_id, {})

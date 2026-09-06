@@ -255,6 +255,7 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | AP-008 | Copying Gem view files to Host App for modification | Modify the Gem source file directly in `pallastrade_gems/pallastrade_admin/app/views/`. Add `# PALLAS-CUSTOM:` comment. Host App `backend/app/views/` is for new modules only. | `anti-patterns.json` AP-008 |
 | AP-009a | `redirect('/hardcoded-path')` (hardcoded string) without a self-redirect guard → infinite loop. **Guard-aware**: dynamic targets (template literals / variables) and redirects guarded by a condition (`if (target !== currentPath)`, pathname rewrite) are exempt | Add guard: `if (target !== currentPath) { redirect(target); }`, or use a dynamic/template-literal target | `anti-patterns.json` AP-009a (guard-aware) |
 | AP-009b | `.catch(() => [])` collapses unknown→empty → triggers loop | Return `null` on API failure; handle unknown state explicitly with degraded UI | `anti-patterns.json` AP-009b |
+| AP-010 | `after_create :perform!` / 业务事务内同步 `Refunds::Execute`（资金副作用发生在 durable 行之前或长 DB 锁内） | 退款一律走 `Refunds::Request`（durable requested）→ `Refunds::ExecuteJob` 后台执行 | `anti-patterns.json` AP-010 |
 
 ---
 

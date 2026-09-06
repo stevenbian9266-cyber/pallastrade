@@ -44,11 +44,10 @@ module PallasTrade
               end
               return if error_rendered
 
-              # REV-P6-1：durable Refund(requested) 已提交 → 锁外显式执行（provider I/O 不在
-              # order/payment lock/长事务内，REV-INV-03）。失败不再 500——行持久化 failed/ambiguous，
-              # 响应携带 state 与 last_error_message（FR-R61-406）。
-              result = PallasTrade::Refunds::Execute.call(refund: @resource)
-              @resource = result.value
+              # REV-P6-2：durable Refund(requested) 已提交 → enqueue ExecuteJob（异步执行；
+              # provider I/O 只发生在后台 Job，REV-INV-03）。响应 201 + state=requested；
+              # 终态/失败经 GET /orders/:id/refunds 观测（FR-R62-301 / AC-R62-07）。
+              PallasTrade::Refunds::ExecuteJob.perform_later(@resource.id)
               render json: serialize_resource(@resource.reload), status: :created
             end
 
