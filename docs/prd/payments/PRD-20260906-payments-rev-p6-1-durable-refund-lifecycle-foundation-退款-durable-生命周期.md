@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | verifying |
+| 状态 | done |
 | 创建日期 | 2026-09-06 |
 | 来源 | 需求：REV-P6-1 Durable Refund Lifecycle Foundation（退款 durable 生命周期基础，闭合 orphan PSP refund） |
 | 分类 | payments（自动判定，关键词：退款/refund） |
