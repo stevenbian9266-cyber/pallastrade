@@ -30,5 +30,22 @@ namespace :pallastrade do
         exit 1
       end
     end
+
+    # review 批2 (bugfix B1): manual_review 出口 —— 人工核对 provider 事实后重开自动恢复
+    # 闭环（manual_review → recovery_required），随后可用 recover / sweeper 自动接管。
+    # Usage: rake pallastrade:transactions:reopen_review[txn_xxx]
+    desc 'Reopen automatic recovery after manual review. Usage: rake pallastrade:transactions:reopen_review[txn_xxx]'
+    task :reopen_review, [:id] => :environment do |_task, args|
+      id = args[:id].to_s.strip
+      abort 'usage: rake pallastrade:transactions:reopen_review[<txn_ prefixed id>]' if id.empty?
+
+      tx = PallasTrade::CommerceTransaction.find_by_prefix_id!(id)
+      unless tx.state == 'manual_review'
+        abort "reopen_review requires state=manual_review (current: #{tx.state})"
+      end
+
+      tx.reopen_review!
+      puts "reopened #{tx.prefixed_id}: manual_review → recovery_required (run transactions:recover to continue)"
+    end
   end
 end

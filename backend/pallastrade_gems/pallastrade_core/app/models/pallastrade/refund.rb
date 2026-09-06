@@ -87,16 +87,28 @@ module PallasTrade
 
     # attempts to perform the refund.
     # raises an error if the refund fails.
+    # review 批2 (bugfix A6): perform! 内对 payment 行加锁 + 锁内重校验已退额度 —— 两条并发
+    # Refund 都会在 create validation（amount <= credit_allowed）通过（非原子），真实网关调用
+    # 前以 payment 行锁串行化，后到者看到并发方已占额度 → raise → 该 Refund 创建回滚 → 防双退。
+    # 排除自身 id：本 refund 已 INSERT（after_create），refunds 重查会含自己。
     def perform!
       return true if transaction_id.present?
 
-      credit_cents = PallasTrade::Money.new(amount.to_f, currency: currency).amount_in_cents
+      payment.with_lock do
+        already_refunded = payment.refunds.where.not(id: id).sum(:amount).to_d
+        allowed = payment.amount.to_d - already_refunded
+        if amount.to_d > allowed
+          raise Core::GatewayError, 'Refund amount exceeds the payment credit allowed'
+        end
 
-      @response = process!(credit_cents)
+        credit_cents = PallasTrade::Money.new(amount.to_f, currency: currency).amount_in_cents
 
-      self.transaction_id = @response.authorization
-      update_columns(transaction_id: transaction_id)
-      update_order
+        @response = process!(credit_cents)
+
+        self.transaction_id = @response.authorization
+        update_columns(transaction_id: transaction_id)
+        update_order
+      end
     end
 
     # return a payment response object if successful or else raise an error

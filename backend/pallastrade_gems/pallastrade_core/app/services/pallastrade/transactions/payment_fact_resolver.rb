@@ -77,10 +77,16 @@ module PallasTrade
         end
       end
 
-      # provider 只读确认：只针对没有本地 completed Payment、且仍可能入账的 attempt
+      # provider 只读确认：针对“本地无终态结论”的 attempt —— 无本地 payment、或本地
+      # payment in-flight（pending/processing/checkout，未 completed 也非终态失败）。
+      # review 批2 (bugfix A2): 原实现要求 session.payment.nil?，导致 manual-capture/
+      # 落账中的 session（payment 存在但未 completed）被跳过 provider 查询 → 被当
+      # all_failed/unpaid → Recover.retry_payment! → 客户端可再 charge → 双扣窗口。
+      # 本地 completed 已由 full/short_local_payment 处理；本地终态失败视为已了结。
       def provider_paid?(sessions, provider_query)
         candidates = sessions.select do |session|
-          CONFIRMABLE_STATUSES.include?(session.status) && session.external_id.present? && session.payment.nil?
+          CONFIRMABLE_STATUSES.include?(session.status) && session.external_id.present? &&
+            !locally_completed_payment?(session) && !locally_terminal_negative?(session)
         end
         return false if candidates.empty?
 
@@ -111,16 +117,31 @@ module PallasTrade
         @reasons << :provider_unavailable
       end
 
-      # 是否仍有"未了结"的 attempt：终态失败被本地确认，或 provider 已确认未支付
+      # 是否仍有“未了结”的 attempt：终态失败被本地确认，或 provider 已确认未支付。
+      # review 批2 (bugfix A2): 原实现 `next false if session.payment.present?` 把 in-flight
+      # payment（pending/processing/checkout）当作已了结 → 全这样时误判 :unpaid。
+      # 现在仅本地 completed / 本地终态失败 / session 终态失败 算已了结；
+      # 其余（无 payment 或 in-flight）→ provider 未确认终态未付 = 未了结 → ambiguous。
       def unsettled_attempt?(sessions)
         sessions.any? do |session|
           next false if TERMINAL_NEGATIVE_STATUSES.include?(session.status)
-          next false if session.payment.present?
+          next false if locally_terminal_negative?(session)
+          next false if locally_completed_payment?(session)
 
           @provider_results.none? do |result|
             result[:session_id] == session.prefixed_id && PROVIDER_TERMINAL_STATUSES.include?(result[:status])
           end
         end
+      end
+
+      def locally_completed_payment?(session)
+        payment = session.payment
+        payment.present? && payment.completed?
+      end
+
+      def locally_terminal_negative?(session)
+        payment = session.payment
+        payment.present? && %w[failed void invalid].include?(payment.state)
       end
 
       def amount_enough?(paid, expected)

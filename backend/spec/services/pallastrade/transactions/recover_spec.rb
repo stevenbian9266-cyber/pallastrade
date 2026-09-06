@@ -94,6 +94,24 @@ RSpec.describe PallasTrade::Transactions::Recover, type: :service do
       expect(tx.reload).to be_completed
     end
 
+    # review 批2 (bugfix B5): Recover 从 finalizing 进入（合法 RECOVERABLE_STATES）+ 参与者已全部
+    # 完成（崩溃窗口：Finalize 成员完成后、complete! 前进程死亡）→ 先归一化 recovery_required
+    # 再 repair_completed!，不得因非法迁移抛 InvalidTransitionError 炸出 plan（不写 last_error）。
+    it 'bugfix B5: recover from finalizing with all participants completed → repair_completed' do
+      order = completed_order
+      tx = attach_transaction(order)
+      settle!(order, tx)
+      tx.start_payment!
+      tx.confirm_payment!
+      tx.begin_finalizing! # 成员完成但 txn 未 complete（崩溃窗口）
+
+      result = recover(tx)
+
+      expect(result).to be_success
+      expect(result.value[:action]).to eq(:repair_completed)
+      expect(tx.reload).to be_completed
+    end
+
     it 'AC-414 AMBIGUOUS (provider pending) → manual_review' do
       order = pending_order
       tx = attach_transaction(order)

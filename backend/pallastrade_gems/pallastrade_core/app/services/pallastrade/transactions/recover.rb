@@ -87,6 +87,11 @@ module PallasTrade
             end
 
             if all_participants_completed?(tx)
+              # review 批2 (bugfix B5): Recover 可从 finalizing 进入（RECOVERABLE_STATES），但
+              # repair_completed! 只允许 recovery_required→completed；finalizing 先归一化
+              # （与 ambiguous 分支一致），否则 InvalidTransitionError 从 plan 炸出（不写
+              # last_error、RecoverJob 也不重试）→ txn 永停 finalizing。
+              tx.mark_recovery_required! if tx.state == 'finalizing'
               tx.repair_completed!
               return success(action: :repair_completed, transaction: tx.reload)
             end

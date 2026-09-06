@@ -154,6 +154,39 @@ RSpec.describe PallasTrade::Transactions::PaymentFactResolver, type: :service do
       expect(result.value[:reasons]).to include(:short_payment)
     end
 
+    # review 批2 (bugfix A2): 本地 in-flight Payment（未 completed、非终态失败）不得被静默
+    # 当 all_failed/unpaid（否则 Recover.retry_payment → 可二次 charge）。provider 不可达
+    # → ambiguous（manual_review）；provider 已 paid → paid（不重试）。
+    it 'bugfix A2: local in-flight payment + provider unavailable → ambiguous (NOT unpaid)' do
+      tx = make_transaction
+      session = make_session(tx, status: 'processing')
+      create(:payment, order: order, payment_method: payment_method, amount: 10,
+                       state: 'pending', payment_session: session,
+                       source: nil, skip_source_requirement: true)
+      allow_any_instance_of(PallasTrade::Gateway::Bogus).
+        to receive(:fetch_payment_status).and_raise(PallasTrade::Core::GatewayError, 'down')
+
+      result = resolve(tx)
+      expect(result).to be_success
+      expect(result.value[:verdict]).to eq(:ambiguous)
+      expect(result.value[:reasons]).to include(:provider_unavailable)
+    end
+
+    it 'bugfix A2: local in-flight payment + provider paid → paid (no double-charge retry)' do
+      tx = make_transaction
+      session = make_session(tx, status: 'processing')
+      create(:payment, order: order, payment_method: payment_method, amount: 10,
+                       state: 'pending', payment_session: session,
+                       source: nil, skip_source_requirement: true)
+      allow_any_instance_of(PallasTrade::Gateway::Bogus).
+        to receive(:fetch_payment_status).and_return(provider_result(:paid))
+
+      result = resolve(tx)
+      expect(result).to be_success
+      expect(result.value[:verdict]).to eq(:paid)
+      expect(result.value[:reasons]).to include(:provider_confirmed)
+    end
+
     it 'returns failure for a nil transaction' do
       result = described_class.call(transaction: nil)
       expect(result).to be_failure

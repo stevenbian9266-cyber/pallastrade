@@ -67,6 +67,23 @@ RSpec.describe PallasTrade::CommerceTransaction, type: :model do
       expect(tx.manual_review_at).to be_present
     end
 
+    # review 批2 (bugfix B1): manual_review 出口 —— 人工核对后显式重开自动恢复闭环。
+    it 'bugfix B1: manual_review reopens to recovery_required via reopen_review' do
+      tx = build_tx
+      tx.start_payment!
+      tx.confirm_payment!
+      tx.mark_recovery_required!
+      tx.manual_review!
+      expect(tx.state).to eq('manual_review')
+
+      tx.reopen_review!
+      expect(tx.state).to eq('recovery_required')
+
+      # 仅 manual_review 可 reopen（幂等边界：非 manual_review 调用即非法迁移）
+      expect { tx.reopen_review! }.to raise_error(PallasTrade::CommerceTransaction::InvalidTransitionError)
+      expect(tx.state).to eq('recovery_required')
+    end
+
     it 'AC-206 publishes transition audit events' do
       tx = build_tx
       allow(tx).to receive(:publish_event).and_call_original

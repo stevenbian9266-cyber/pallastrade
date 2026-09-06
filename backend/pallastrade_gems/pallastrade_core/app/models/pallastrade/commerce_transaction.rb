@@ -97,6 +97,12 @@ module PallasTrade
       event :manual_review do
         transition recovery_required: :manual_review
       end
+      # review 批2 (bugfix B1): manual_review 出口 —— 人工核对 provider 事实后显式重开
+      # 自动恢复闭环（manual_review → recovery_required → Recover/RecoverSweeper/admin
+      # recover 自动接管）。此前 manual_review 无任何出向迁移，只能 console 改状态。
+      event :reopen_review do
+        transition manual_review: :recovery_required
+      end
       # TXN-P2-4 (PRD-20260904-payments-txn-p2-4): recovery 出口——
       # UNPAID 复位重试支付；PAID+订单未完成 → 重试 finalize；
       # PAID+订单已完成 → 修复状态至 completed（不重复 finalize）。
@@ -234,7 +240,7 @@ module PallasTrade
     # 业务安全 bang 方法（非 bang 事件返回 false 时抛域错误，参考 PaymentCombination）
     %i[start_payment confirm_payment begin_finalizing complete cancel
        mark_recovery_required manual_review retry_payment retry_finalizing
-       repair_completed].each do |event|
+       repair_completed reopen_review].each do |event|
       define_method("#{event}!") do
         unless public_send(event)
           raise InvalidTransitionError.new(

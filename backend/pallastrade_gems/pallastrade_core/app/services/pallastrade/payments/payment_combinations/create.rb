@@ -41,6 +41,14 @@ module PallasTrade
 
           combination = nil
           PallasTrade::PaymentCombination.transaction do
+            # review 批2 (bugfix A1): active 守卫 —— 锁成员订单（按 id 排序防死锁）串行化
+            # 同订单集并发创建；任一未支付成员已属 active（pending/processing）组合或有
+            # active 交易（created/payment_pending）→ 拒绝。对齐 Transactions::Start 的
+            # active_for_order 复用语义，防并发双击/超时重试建双组合双 session 双扣。
+            lock_member_orders(unpaid)
+            guard = active_guard_for(unpaid)
+            return guard unless guard.nil?
+
             combination = PallasTrade::PaymentCombination.create!(
               store: store, customer: customer, currency: currencies.first, amount: amount
             )
@@ -78,6 +86,40 @@ module PallasTrade
         end
 
         private
+
+        # 按 id 排序锁全部成员订单（死锁避免），串行化同订单集的并发组合创建。
+        def lock_member_orders(orders)
+          ids = orders.map(&:id).sort
+          PallasTrade::Order.where(id: ids).lock.order(:id).load
+        end
+
+        # 任一成员已属 active 组合（pending/processing）或已有 active 交易
+        # （created/payment_pending，含自己上次失败残留）→ 返回 failure；无冲突返回 nil。
+        def active_guard_for(orders)
+          combo_ids = PallasTrade::PaymentSplit.where(order_id: orders.map(&:id))
+                                               .where.not(payment_combination_id: nil)
+                                               .distinct.pluck(:payment_combination_id)
+          if combo_ids.any?
+            active = PallasTrade::PaymentCombination.where(id: combo_ids)
+                                                    .where(status: %w[pending processing])
+                                                    .first
+            if active
+              return failure(orders, 'One or more orders already belong to an active payment combination')
+            end
+          end
+
+          has_active_txn = false
+          txn_ids = PallasTrade::TransactionOrder.where(order_id: orders.map(&:id))
+                                                 .pluck(:transaction_id).compact
+          if txn_ids.any?
+            has_active_txn = PallasTrade::CommerceTransaction.where(id: txn_ids)
+                                                            .where(state: %w[created payment_pending])
+                                                            .exists?
+          end
+          return failure(orders, 'One or more orders already have an active payment transaction') if has_active_txn
+
+          nil
+        end
 
         # durable CommerceTransaction 包装（purpose=combined_payment）。
         # 幂等安全：Create 每次新组合 → 新 txn；无 quote 快照（订单已提交、金额服务端算）。

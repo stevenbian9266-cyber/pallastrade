@@ -125,5 +125,19 @@ RSpec.describe PallasTrade::Payments::PaymentCombinations::Create, type: :servic
 
       expect(combination.commerce_transaction.transaction_orders.map(&:order)).to contain_exactly(order1)
     end
+
+    # review 批2 (bugfix A1): active 组合守卫 —— 同一批未支付订单已属 processing 组合
+    # （或已有 active txn）时拒绝再次创建，防并发双击/重试建双组合双 session 双扣。
+    it 'bugfix A1: rejects a second active combination for the same orders' do
+      first = call(orders: [order1, order2])
+      expect(first.success?).to be true
+
+      result = call(orders: [order1, order2])
+      expect(result.failure?).to be true
+      expect(result.error.to_s).to match(/active payment combination/)
+      expect(PallasTrade::PaymentCombination.count).to eq(1)
+      expect(PallasTrade::PaymentSession.count).to eq(1)
+      expect(PallasTrade::CommerceTransaction.count).to eq(1)
+    end
   end
 end
