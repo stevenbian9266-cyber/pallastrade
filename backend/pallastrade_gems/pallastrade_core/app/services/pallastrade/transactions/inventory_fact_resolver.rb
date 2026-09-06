@@ -43,7 +43,18 @@ module PallasTrade
       private
 
       def fact(verdict, reasons, items)
-        { verdict: verdict, reasons: reasons, items: items }
+        # CORE-P5-3: 统一 Result contract 超集（P5 §12；status/evidence 供跨 resolver 聚合，
+        # 旧消费方 verdict/reasons/items 键保持兼容，零语义变更）
+        {
+          verdict: verdict,
+          reasons: reasons,
+          items: items,
+          status: PallasTrade::Facts.certainty_for(:inventory, verdict),
+          reason_code: reasons.map(&:to_s).join(','),
+          evidence: reasons.map(&:to_s),
+          observed_at: Time.current.iso8601,
+          source: 'inventory_fact_resolver'
+        }
       end
 
       def required_demand(orders)

@@ -153,7 +153,19 @@ module PallasTrade
       end
 
       def verdict(state, reasons, provider_results)
-        { verdict: state, reasons: reasons.uniq, provider_results: provider_results }
+        reasons = reasons.uniq
+        # CORE-P5-3: 统一 Result contract 超集（P5 §12；status/evidence 供跨 resolver 聚合，
+        # 旧消费方 verdict/reasons/provider_results 键保持兼容，零语义变更）
+        {
+          verdict: state,
+          reasons: reasons,
+          provider_results: provider_results,
+          status: PallasTrade::Facts.certainty_for(:payment, state),
+          reason_code: reasons.map(&:to_s).join(','),
+          evidence: reasons.map(&:to_s),
+          observed_at: Time.current.iso8601,
+          source: 'payment_fact_resolver'
+        }
       end
     end
   end
