@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | verifying |
+| 状态 | done |
 | 创建日期 | 2026-09-06 |
 | 来源 | 需求：REV-P6-2 Refund Execution Orchestration（Refunds::Request + async ExecuteJob，provider I/O 彻底移出 DB tx） |
 | 分类 | payments（自动判定，关键词：退款/refund） |
