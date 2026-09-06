@@ -192,6 +192,21 @@ module PallasTrade
       }
     end
 
+    # PALLAS-CUSTOM: FIN-P4-6 (PRD-20260906-payments-fin-p4-6)
+    # Deterministic read-only provider refund-details contract (test double).
+    def fetch_refund_details(refund:)
+      if refund.transaction_id.blank?
+        raise PallasTrade::Core::GatewayError, 'Refund has no provider refund reference'
+      end
+
+      {
+        provider_refund_reference: refund.transaction_id,
+        amount: refund.amount.to_d,
+        currency: refund.currency.to_s,
+        status: 'succeeded'
+      }
+    end
+
     def setup_session_supported?
       true
     end

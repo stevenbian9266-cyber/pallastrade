@@ -382,6 +382,39 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - 不改 Payment/Refund/session state machine、Journal、PaymentFactResolver/fetch_payment_status 路径；快照 VO
   不落表（P4-6 决定 reconciliation 持久化形态）；无 migration/API。
 
+## Source Reconciliation（FIN-P4-6, 2026-09-06；P4 V2 拆包第 6 包）
+
+> **源级只读核对（第一层）**：local Payment/Refund ↔ PSP 财务明细逐单比对，输出 transient `SourceResult`
+> 判定，**零本地写 / 零 provider mutation / 绝不自动 charge/refund**（P4 §44/AC-4023/4024——纯函数可重跑）。
+> 落库/聚合/上报（P4-7/8）之前本包只回答「这一单对得上吗」。
+
+- `Reconciliations::SourceResult`：transient 只读 VO。`STATUSES` = `PENDING MATCHED MISMATCH NEEDS_ATTENTION
+  NOT_APPLICABLE UNSUPPORTED`（`const_set` 字符串常量）；`ATTRIBUTES` 白名单（source_type/source_id/status/
+  reasons[]/local_amount/local_currency/provider_gross_amount/provider_currency/provider_settlement_status/
+  provider_payment_reference/provider_charge_reference/provider_error/observed_at）；`to_h/as_json`；构造后 freeze。
+  ⚠️ **构造端一律传 `SourceResult::XXX` 字符串常量，勿裸传 symbol**（谓词按 `status == 'MATCHED'` 字符串比较）。
+- `Reconciliations::ReconcilePayment.call(payment:)`：`payment.payment_method` 分类——StoreCredit/Check →
+  `NOT_APPLICABLE`；无 `fetch_financial_details` 实现（`CaptureEvidencePolicy.implements_financial_details?`，
+  method owner）→ `UNSUPPORTED`（PROVIDER_CONTRACT_UNSUPPORTED）；无 `payment_session` 锚点 → `NEEDS_ATTENTION`
+  （UNLINKED_LEGACY_PAYMENT，不猜）。local captured 判定**唯一入口** = `CaptureEvidencePolicy`
+  （FIN-INV-02，禁裸 payment.completed?）。provider `fetch_financial_details` 异常（GatewayError/StripeError）
+  → `NEEDS_ATTENTION`（PROVIDER_UNAVAILABLE，捕获不 raise，可重跑）。比对：币种 → CURRENCY_MISMATCH；
+  金额（round 2）→ AMOUNT_MISMATCH；否则 MATCHED。local captured 而 provider 未 settled → `PENDING`
+  （SETTLEMENT_PENDING，AC-4020 不误报）；local 未 captured 而 provider settled → `NEEDS_ATTENTION`
+  （LOCAL_PAYMENT_MISSING）；两侧一致未结算（authorization-only）→ MATCHED。
+- `Reconciliations::ReconcileRefund.call(refund:)`：StoreCredit/Check → NOT_APPLICABLE；无
+  `fetch_refund_details` 实现（`self.implements_refund_details?` method owner）→ UNSUPPORTED；本地
+  `refund.transaction_id` blank → NEEDS_ATTENTION（UNLINKED_LEGACY_PAYMENT）；provider status ≠ succeeded →
+  PENDING（SETTLEMENT_PENDING）；币种/金额比对 → CURRENCY_MISMATCH/REFUND_MISMATCH/MATCHED。
+- `PaymentMethod#fetch_refund_details(refund:)`：base 只读契约（default raise），镜像 fetch_refund_details。
+- `PallasTradeStripe::Gateway`：`retrieve_refund(refund_id)`（Stripe::Refund.retrieve 只读）+
+  `fetch_refund_details(refund:)`（re_ → Refund，amount cents→元 /100，currency/status 归一；transaction_id
+  blank → GatewayError）。
+- `PallasTrade::Gateway::Bogus#fetch_refund_details`：确定性替身（transaction_id blank → GatewayError；
+  否则 amount/currency/succeeded）——spec 确定性。
+- 不改任何 state machine / Journal / Payment / Refund / session；SourceResult 不落表（P4-7/8 决定持久化）；
+  无 migration/API/UI。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.
@@ -391,6 +424,13 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **Stripe gem:** `https://github.com/stevenbian9266-cyber/pallastrade` — best reference for a real-world payment integration.
 
 ## Changelog (P0 Payment, 2026-09-03)
+
+- FIN-P4-6 (2026-09-06, PRD-20260906-payments-fin-p4-6): Source Reconciliation——`Reconciliations::{SourceResult,
+  ReconcilePayment, ReconcileRefund}` 只读源级核对（local captured 判定 = CaptureEvidencePolicy；六态
+  PENDING/MATCHED/MISMATCH/NEEDS_ATTENTION/NOT_APPLICABLE/UNSUPPORTED；provider 异常捕获不 raise）+ 
+  `PaymentMethod#fetch_refund_details` base 契约 + Stripe `retrieve_refund`/`fetch_refund_details`
+  （re_ → Refund，cents→元）+ `Gateway::Bogus` 确定性替身。零写/零 mutation/幂等可重跑；SourceResult 不落表
+  （P4-7/8 持久化）；无 migration/API。详见上文 §Source Reconciliation。
 
 - FIN-P4-5 (2026-09-06, PRD-20260906-payments-fin-p4-5): Stripe Provider Financial Facts——`fetch_financial_details` 只读契约（core base + Stripe cs_/pi_ 双模式：PI→Charge→BalanceTransaction→Refunds 归一，fee/net 从 BT、ch_/txn_/re_ refs 补齐 P4 §33；+retrieve_balance_transaction）+ `Gateway::Bogus` 确定性替身 + `FinancialFacts::ProviderFinancialDetails` VO + `provider_reconciliation_capability` 翻转（Stripe/Bogus→SUPPORTED）。fee/net=reconciliation fact 不进 Journal；快照不落表（P4-6）；无 migration/API。详见上文 §Stripe Provider Financial Facts。
 

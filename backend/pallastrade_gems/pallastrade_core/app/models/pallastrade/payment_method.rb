@@ -124,6 +124,19 @@ module PallasTrade
       raise ::NotImplementedError, 'You must implement fetch_financial_details method for this gateway.'
     end
 
+    # PALLAS-CUSTOM: FIN-P4-6 (PRD-20260906-payments-fin-p4-6)
+    # Read-only provider refund-details contract — authoritative financial facts for a single
+    # Refund (P4 §37: local Refund ↔ provider Refund; amount/currency/reference check). No local
+    # writes, no provider mutation. Consumed by Reconciliations::ReconcileRefund.
+    #
+    # @param refund [PallasTrade::Refund]
+    # @return [Hash] { provider_refund_reference:, amount:, currency:, status: }
+    # @raise [::NotImplementedError] when the gateway has no read-only refund contract
+    # @raise [PallasTrade::Core::GatewayError] when refund has no provider reference / on provider failure
+    def fetch_refund_details(refund:)
+      raise ::NotImplementedError, 'You must implement fetch_refund_details method for this gateway.'
+    end
+
     # Parses an incoming webhook payload from the payment provider.
     # Override in gateway subclasses to implement provider-specific webhook parsing.
     #

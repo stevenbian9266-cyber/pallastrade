@@ -258,6 +258,34 @@ module PallasTradeStripe
       send_request { |opts| Stripe::BalanceTransaction.retrieve(balance_transaction_id, opts) }
     end
 
+    # PALLAS-CUSTOM: FIN-P4-6 (PRD-20260906-payments-fin-p4-6)
+    # Read-only retrieval of a Stripe Refund.
+    def retrieve_refund(refund_id)
+      send_request { |opts| Stripe::Refund.retrieve(refund_id, opts) }
+    end
+
+    # PALLAS-CUSTOM: FIN-P4-6 (PRD-20260906-payments-fin-p4-6)
+    # Read-only provider refund-details contract — normalized financial facts for a single
+    # Refund (P4 §37). Resolves the local Refund's transaction_id (re_) to the Stripe Refund
+    # and returns { provider_refund_reference:, amount:, currency:, status: } (amount in major units).
+    #
+    # @param refund [PallasTrade::Refund]
+    # @return [Hash]
+    # @raise [PallasTrade::Core::GatewayError] when the refund has no provider reference
+    # @raise [Stripe::StripeError] on provider/network failure
+    def fetch_refund_details(refund:)
+      refund_id = refund.transaction_id
+      raise PallasTrade::Core::GatewayError, 'Refund has no provider refund reference' if refund_id.blank?
+
+      stripe_refund = retrieve_refund(refund_id)
+      {
+        provider_refund_reference: stripe_refund.id,
+        amount: stripe_refund.amount.to_d / 100,
+        currency: stripe_refund.currency.to_s,
+        status: stripe_refund.status
+      }
+    end
+
     def create_ephemeral_key(customer_id)
       protect_from_error do
         response = send_request { |opts| Stripe::EphemeralKey.create({ customer: customer_id }, opts.merge(stripe_version: Stripe.api_version)) }

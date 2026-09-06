@@ -1368,6 +1368,40 @@
         "bogusDeterministic": 10,
         "regressionGreen": 10
       }
+    },
+    {
+      "id": "GS-055",
+      "name": "P4-6 Source Reconciliation：Payment/Refund ↔ PSP 源级只读核对（六态 SourceResult）",
+      "description": "FIN-P4-6（PRD-20260906-payments-fin-p4-6）：Reconciliations::{SourceResult,ReconcilePayment,ReconcileRefund} 只读源级核对。SourceResult transient VO（STATUSES=PENDING/MATCHED/MISMATCH/NEEDS_ATTENTION/NOT_APPLICABLE/UNSUPPORTED const_set 字符串常量；ATTRIBUTES 白名单；谓词 matched?/mismatch?/pending?/needs_attention?/not_applicable?/unsupported?；freeze）。ReconcilePayment：StoreCredit/Check→NOT_APPLICABLE；无 fetch_financial_details（implements_financial_details? method-owner）→UNSUPPORTED；session nil→NEEDS_ATTENTION/UNLINKED_LEGACY_PAYMENT；local captured 判定唯一入口=CaptureEvidencePolicy；provider 异常捕获→NEEDS_ATTENTION/PROVIDER_UNAVAILABLE 不 raise；币种/金额比对→CURRENCY_MISMATCH/AMOUNT_MISMATCH/MATCHED；settlement pending→PENDING 不误报；local 未 captured+provider settled→LOCAL_PAYMENT_MISSING。ReconcileRefund：transaction_id blank→UNLINKED_LEGACY_PAYMENT；provider status≠succeeded→PENDING；REFUND_MISMATCH/CURRENCY_MISMATCH/MATCHED；implements_refund_details?。PaymentMethod#fetch_refund_details base 契约 + Stripe retrieve_refund（re_→Refund cents→元）+ Bogus 确定性替身。零本地写/零 provider mutation/绝无自动 charge/refund/幂等可重跑；SourceResult 不落表（P4-7/8）；无 migration/API/UI；全量 backend-rspec 0 failures",
+      "mustDo": [
+        "六态 SourceResult + reasons 原因码（§39/§42 对齐），构造端用字符串常量",
+        "local captured 判定经 CaptureEvidencePolicy（FIN-INV-02，禁裸 payment.completed?）",
+        "settlement pending → PENDING+SETTLEMENT_PENDING（AC-4020 不误报 MISMATCH）",
+        "provider 异常（GatewayError/StripeError）→ NEEDS_ATTENTION+PROVIDER_UNAVAILABLE 捕获不 raise，可重跑",
+        "StoreCredit/Check → NOT_APPLICABLE；无契约 legacy → UNSUPPORTED（非 MISMATCH）",
+        "Refund 本地 transaction_id blank → NEEDS_ATTENTION/UNLINKED_LEGACY_PAYMENT",
+        "Stripe fetch_refund_details 归一（re_ 引用、amount cents→元、currency/status）；transaction_id blank→GatewayError",
+        "只读：零本地写、零 Payment/Refund 变更、零 provider mutation、绝无自动 charge/refund、重跑同结果"
+      ],
+      "mustNotDo": [
+        "构造 SourceResult 传 symbol 状态（谓词按字符串常量比较 → 恒 false）",
+        "用 payment.completed? 裸判 local captured（必须 CaptureEvidencePolicy）",
+        "provider 异常外抛破坏 reconcile 幂等性（必须捕获为 PROVIDER_UNAVAILABLE 结果）",
+        "把 settlement pending 报成 MISMATCH 或自动补记",
+        "对 legacy 无契约 provider 报 MISMATCH（必须 UNSUPPORTED）",
+        "在 FIN-P4-6 落 reconciliation 快照表或自动 charge/refund（P4-7/8/§44）",
+        "Refund 无 provider 引用时猜 provider 侧（必须 UNLINKED_LEGACY_PAYMENT）"
+      ],
+      "scoring": {
+        "sixStateSourceResult": 20,
+        "captureEvidenceSingleEntry": 15,
+        "pendingNoFalseAlarm": 15,
+        "providerErrorCaptureIdempotent": 15,
+        "notApplicableUnsupportedRouting": 10,
+        "refundContractNormalization": 10,
+        "readOnlyZeroMutation": 10,
+        "regressionGreen": 5
+      }
     }
   ]
 }
