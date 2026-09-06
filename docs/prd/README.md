@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| done | PRD-20260906-payments-fin-p4-8-repair-legacy-operations | payments | 2026-09-06 | REQ-20260906-fin-p4-8.md |
 | done | PRD-20260906-payments-fin-p4-7-transaction-reconciliation | payments | 2026-09-06 | REQ-20260906-fin-p4-7.md |
 | done | PRD-20260906-payments-fin-p4-6-source-reconciliation | payments | 2026-09-06 | REQ-20260906-fin-p4-6.md |
 | done | PRD-20260906-payments-fin-p4-5-stripe-provider-financial-facts | payments | 2026-09-06 | REQ-20260906-fin-p4-5.md |

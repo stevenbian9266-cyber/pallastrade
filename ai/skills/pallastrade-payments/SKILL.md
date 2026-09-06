@@ -451,6 +451,36 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - 不改任何 state machine / Journal / Payment / Refund / Transaction；结果 transient 不落表（P4-8 决定持久化）；
   SourceResult additive 字段向后兼容；无 migration/API/UI。
 
+## Repair / Legacy / Operations（FIN-P4-8, 2026-09-06；P4 V2 拆包第 8 包 / 收官）
+
+> **运维闭环**：Journal 缺记补记（repair）、reconciliation 周期重跑（sweeper）+ 手动重跑（rake）、
+> 受控 backfill（三类语义 §50）、legacy 无法证明数据处置（不猜）。**绝不重新 Payment/Refund、绝不改任何
+> state machine、绝不自动 charge/refund/倒退 transaction state**（§44/§46/INV-08/09/12）。
+
+- `FinancialLedger::RepairTransaction.call(transaction:)`：Journal 幂等补记原语（§49）。
+  - 枚举 txn 可达 payments/refunds/splits；按 journal-missing 检测（复用 P4-7 语义）分区：
+    已存在（already_present）vs 缺失（补记）。
+  - 修复委托既有幂等编排：captured payments 缺 CASH_CAPTURED → `PostPayment`；succeeded refunds
+    （transaction_id present）缺 REFUND_SUCCEEDED → `PostRefund`；settled combination splits
+    （combination.succeeded + captured>0）缺 ORDER_ALLOCATION → `PostAllocation`。
+  - 不可证明源（无 transaction_id 的 refund 等）不修不猜；输出
+    `success({ repaired: [entries], already_present: [{source_type, source_id}], skipped: [...] })`。
+  - 幂等（Post idempotency key + already_present 检测）；唯一写 = Journal。
+- `Reconciliations::ReconcileSweeperJob`（sidekiq-cron 周期，参考 RecoverSweeperJob **保守自动**）：
+  - 扫描 completed/payment_confirmed/finalizing txn → 逐个 `ReconcileTransaction`（只读）→ 统计
+    status_counts（结构化 metrics `event=reconciliations.sweeper`）。
+  - **自动（安全子集）**：journal-missing → enqueue `FinancialLedger::RepairTransactionJob`（幂等补记）。
+  - **绝不自动**：mismatch/needs_attention/pending → 仅计数 + warn（§44/§46 人工裁决）。
+- `rake pallastrade:reconciliations:*`（core `lib/tasks/reconciliations.rake`）：
+  `list_needs_attention`（实时 reconcile 状态 TSV）／`reconcile[txn_xxx]`（手动只读重跑）／
+  `repair[txn_xxx]`（幂等补记）／`backfill[store_id?]`。
+- **Backfill 三类**（§50/AC-4025）：PROVABLE（payment/provider ref/evidence/currency 可证明 → 补 journal）／
+  PARTIALLY_PROVABLE（缺 provider settlement → 只补本地、reconcile PENDING/UNSUPPORTED 如实）／
+  UNPROVABLE（无法证明 → 不写不猜、保留 legacy）。
+- 范围外（P4-8 记入 PRD 供后续）：Admin Financial View UI / Financial Timeline / `finance.*` audit 目录全量；
+  本包聚焦 core ops 原语 + sweeper metrics 日志 + runbook。
+- 运维手册：`docs/operations/financial-reconciliation-runbook.md`。无 migration/schema/API。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.
@@ -460,6 +490,13 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **Stripe gem:** `https://github.com/stevenbian9266-cyber/pallastrade` — best reference for a real-world payment integration.
 
 ## Changelog (P0 Payment, 2026-09-03)
+
+- FIN-P4-8 (2026-09-06, PRD-20260906-payments-fin-p4-8): Repair/Legacy/Operations——`FinancialLedger::
+  RepairTransaction`（Journal 幂等补记，委托 PostPayment/Refund/Allocation；绝不重 Payment/Refund）+
+  `Reconciliations::ReconcileSweeperJob`（保守自动：journal-missing 自动 repair、mismatch/attention 仅
+  warn）+ `RepairTransactionJob` + `reconciliations.rake`（list/reconcile/repair/backfill 三类 §50）+
+  `docs/operations/financial-reconciliation-runbook.md`。无 migration；admin UI/timeline/audit 目录范围外。
+  详见上文 §Repair / Legacy / Operations。
 
 - FIN-P4-7 (2026-09-06, PRD-20260906-payments-fin-p4-7): Transaction Reconciliation——`Reconciliations::
   {ReconcileTransaction, TransactionResult, TransactionFinancialSummary}` 交易级只读聚合与核对（local 面权威 =

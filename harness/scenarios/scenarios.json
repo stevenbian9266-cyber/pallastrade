@@ -1437,6 +1437,39 @@
         "sixStateSynthesisPriority": 10,
         "readOnlyIdempotent": 10
       }
+    },
+    {
+      "id": "GS-057",
+      "name": "P4-8 Repair/Legacy/Operations：Journal 幂等补记 + 保守 reconcile sweeper + backfill 三类 + legacy 不猜",
+      "description": "FIN-P4-8（PRD-20260906-payments-fin-p4-8）：运维闭环收官。FinancialLedger::RepairTransaction（Journal 幂等补记 §49）：枚举 txn 可达 payments/refunds/splits 按 journal-missing 分区（already_present vs 缺失），修复委托 PostPayment/PostRefund/PostAllocation 幂等原语；绝不重新 Payment/Refund/改 state/自动 charge（INV-08/09）。Reconciliations::ReconcileSweeperJob（sidekiq-cron 保守自动，参考 RecoverSweeperJob）：扫描 completed/payment_confirmed/finalizing → 逐个 ReconcileTransaction（只读）统计 status_counts（event=reconciliations.sweeper metrics）；journal-missing 自动 enqueue RepairTransactionJob（幂等安全 §44）；mismatch/needs_attention/pending 绝不自动动资金，仅 warn（§46 人工）。reconciliations.rake：list_needs_attention/reconcile[txn]/repair[txn]/backfill[store]。Backfill 三类（§50/AC-4025）：PROVABLE→补 journal；PARTIALLY_PROVABLE→只补本地+PENDING/UNSUPPORTED 如实；UNPROVABLE→不写不猜保留 legacy。无 migration（legacy 处置沿用既有 journal/UNSUPPORTED 语义）；admin UI/timeline/audit 目录范围外；全量 backend-rspec 0 failures",
+      "mustDo": [
+        "RepairTransaction 幂等补记：captured payment 缺 CASH_CAPTURED / succeeded refund 缺 REFUND_SUCCEEDED / settled combination splits 缺 ORDER_ALLOCATION → 补记（委托既有幂等原语）",
+        "repair 绝不重新 Payment/Refund/改任何 state machine/自动 charge（INV-08/09/12，唯一写 = Journal）",
+        "repair 幂等：重复运行不重复 entry；already_present 统计正确；不可证明源（无 provider reference 等）不修不猜",
+        "ReconcileSweeperJob 保守自动：journal-missing → 自动 enqueue RepairTransactionJob；mismatch/needs_attention → 仅 warn 不自动动资金（§44/§46）",
+        "sweeper 输出结构化 metrics（event/reconciliations.sweeper/store_id/status_counts/needs_human）；重复运行无副作用",
+        "rake list_needs_attention/reconcile/repair/backfill 存在且可执行",
+        "backfill 三类：PROVABLE 补 journal；PARTIALLY 只补本地 + PENDING/UNSUPPORTED 如实；UNPROVABLE 不写不猜（AC-4025）",
+        "全链路只读/幂等：零自动 charge/refund、零新 Payment/Refund、零 transaction state 倒退"
+      ],
+      "mustNotDo": [
+        "repair/sweeper/backfill 触发重新 Payment/Refund/charge 或倒退 transaction state（INV-08/09 必须禁止）",
+        "sweeper 对 mismatch/needs_attention/provider 冲突自动动资金（§46 必须人工，仅 journal-missing 自动）",
+        "refund 无 provider reference 等不可证明源被 repair（必须不修不猜）",
+        "backfill UNPROVABLE 猜 captured/ownership/currency 或写半套事实（AC-4025/§50 必须保留 legacy）",
+        "在 FIN-P4-8 做 Admin Financial View UI / Financial Timeline / finance.* audit 目录（范围外）或加 migration",
+        "repair 绕过既有幂等 Post 原语直接 create entry（必须委托 PostPayment/PostRefund/PostAllocation）",
+        "重复 repair/sweeper 产生重复 Journal entry（幂等性破坏）"
+      ],
+      "scoring": {
+        "idempotentJournalRepair": 20,
+        "noRepaymentNoCharge": 20,
+        "conservativeSweeperAutoOnlyJournalMissing": 20,
+        "sweeperMetricsLog": 10,
+        "backfillThreeWay": 10,
+        "rakeOpsTooling": 10,
+        "unprovableNoGuess": 10
+      }
     }
   ]
 }
