@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_06_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_06_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1230,7 +1230,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_06_000001) do
     t.decimal "non_taxable_adjustment_total", precision: 10, scale: 2, default: "0.0", null: false
     t.string "number", limit: 32
     t.bigint "parent_id"
-    t.bigint "payment_combination_id"
     t.string "payment_state"
     t.decimal "payment_total", precision: 10, scale: 2, default: "0.0"
     t.bigint "preferred_stock_location_id"
@@ -1269,7 +1268,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_06_000001) do
     t.index ["market_id"], name: "index_pt_orders_on_market_id"
     t.index ["number"], name: "index_pt_orders_on_number", unique: true
     t.index ["parent_id"], name: "index_pallastrade_orders_on_parent_id"
-    t.index ["payment_combination_id"], name: "index_pallastrade_orders_on_payment_combination_id"
     t.index ["preferred_stock_location_id"], name: "index_pt_orders_on_preferred_stock_location_id"
     t.index ["ship_address_id"], name: "index_pt_orders_on_ship_address_id"
     t.index ["split_from_id"], name: "index_pallastrade_orders_on_split_from_id"
@@ -1462,7 +1460,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_06_000001) do
     t.index ["order_id"], name: "index_pt_payments_on_order_id"
     t.index ["payment_combination_id"], name: "index_pallastrade_payments_on_payment_combination_id"
     t.index ["payment_method_id"], name: "index_pt_payments_on_payment_method_id"
-    t.index ["payment_session_id"], name: "index_pallastrade_payments_on_payment_session_id"
+    t.index ["payment_session_id"], name: "idx_pallastrade_payments_session_unique", unique: true, where: "(payment_session_id IS NOT NULL)"
     t.index ["source_id", "source_type"], name: "index_pt_payments_on_source_id_and_source_type"
   end
 
@@ -2822,7 +2820,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_06_000001) do
   add_foreign_key "pallastrade_orders", "pallastrade_carts", column: "cart_id"
   add_foreign_key "pallastrade_orders", "pallastrade_orders", column: "parent_id"
   add_foreign_key "pallastrade_orders", "pallastrade_orders", column: "split_from_id"
-  add_foreign_key "pallastrade_orders", "pallastrade_payment_combinations", column: "payment_combination_id"
   add_foreign_key "pallastrade_payment_combinations", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_payment_combinations", "pallastrade_users", column: "customer_id"
   add_foreign_key "pallastrade_payment_sessions", "pallastrade_commerce_transactions", column: "transaction_id"

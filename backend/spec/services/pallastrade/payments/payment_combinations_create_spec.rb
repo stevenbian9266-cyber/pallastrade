@@ -139,5 +139,19 @@ RSpec.describe PallasTrade::Payments::PaymentCombinations::Create, type: :servic
       expect(PallasTrade::PaymentSession.count).to eq(1)
       expect(PallasTrade::CommerceTransaction.count).to eq(1)
     end
+
+    # review 批3b-1 (A3): 已带记账分摊（combination=nil accounting split，captured>0）的订单
+    # 再入组合 → 同 order 双 split 分叉 + last-wins 虚高 outstanding → 可重复扣款，拒绝。
+    it 'bugfix A3: rejects an order that already has a captured accounting split' do
+      PallasTrade::PaymentSplit.create!(payment_combination: nil, order: order2,
+                                        currency: 'USD', authorized_amount: 0,
+                                        captured_amount: 20, refunded_amount: 0)
+
+      result = call(orders: [order1, order2])
+      expect(result.failure?).to be true
+      expect(result.error.to_s).to match(/accounting split/)
+      expect(PallasTrade::PaymentCombination.count).to eq(0)
+      expect(PallasTrade::PaymentSession.count).to eq(0)
+    end
   end
 end

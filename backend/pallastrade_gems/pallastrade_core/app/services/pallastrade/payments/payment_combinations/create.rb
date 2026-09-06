@@ -95,7 +95,19 @@ module PallasTrade
 
         # 任一成员已属 active 组合（pending/processing）或已有 active 交易
         # （created/payment_pending，含自己上次失败残留）→ 返回 failure；无冲突返回 nil。
+        # review 批3b-1 (A3): 已带记账分摊（combination=nil accounting split，captured>0）的
+        # 订单（拆单产物）再入组合 → 同 order 双 split 分叉 + OrderUpdater last-wins 虚高
+        # outstanding → 可重复扣款窗口。拒绝（需先结算/合并 accounting split）。
         def active_guard_for(orders)
+          accounting = PallasTrade::PaymentSplit.where(order_id: orders.map(&:id))
+                                                .where(payment_combination_id: nil)
+                                                .where('captured_amount > 0')
+                                                .exists?
+          if accounting
+            return failure(orders,
+                           'One or more orders have an outstanding accounting split; settle or merge it before combining')
+          end
+
           combo_ids = PallasTrade::PaymentSplit.where(order_id: orders.map(&:id))
                                                .where.not(payment_combination_id: nil)
                                                .distinct.pluck(:payment_combination_id)
