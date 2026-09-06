@@ -44,6 +44,7 @@ import { Input } from "@/components/ui/input";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { getCountry } from "@/lib/data/countries";
+import { normalizeErrorMessage } from "@/lib/errors";
 import {
   type AddressFormData,
   addressToFormData,
@@ -358,11 +359,14 @@ export function UnifiedCheckout({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ cart_id: cart.id, code, kind: "discount" }),
         });
-        const data = (await res.json()) as { cart?: Cart; error?: string };
+        const data = (await res.json()) as {
+          cart?: Cart;
+          error?: unknown;
+        };
         if (!res.ok || !data.cart) {
           return {
             success: false,
-            error: data.error ?? tcoupon("applyFailed"),
+            error: normalizeErrorMessage(data.error, tcoupon("applyFailed")),
           };
         }
         setDiscountCart(data.cart);
@@ -382,11 +386,14 @@ export function UnifiedCheckout({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ cart_id: cart.id, code, kind: "discount" }),
         });
-        const data = (await res.json()) as { cart?: Cart; error?: string };
+        const data = (await res.json()) as {
+          cart?: Cart;
+          error?: unknown;
+        };
         if (!res.ok || !data.cart) {
           return {
             success: false,
-            error: data.error ?? tcoupon("applyFailed"),
+            error: normalizeErrorMessage(data.error, tcoupon("applyFailed")),
           };
         }
         setDiscountCart(data.cart);
@@ -410,11 +417,14 @@ export function UnifiedCheckout({
             kind: "gift_card",
           }),
         });
-        const data = (await res.json()) as { cart?: Cart; error?: string };
+        const data = (await res.json()) as {
+          cart?: Cart;
+          error?: unknown;
+        };
         if (!res.ok || !data.cart) {
           return {
             success: false,
-            error: data.error ?? tcoupon("applyFailed"),
+            error: normalizeErrorMessage(data.error, tcoupon("applyFailed")),
           };
         }
         setDiscountCart(data.cart);
@@ -597,7 +607,7 @@ export function UnifiedCheckout({
           id: string;
           external_data?: Record<string, unknown>;
         } | null;
-        error?: string;
+        error?: unknown;
       };
       const targetOrderId = result.order?.id ?? result.order_id;
       if (targetOrderId) orderIdRef.current = targetOrderId;
@@ -606,7 +616,9 @@ export function UnifiedCheckout({
         if (targetOrderId) {
           router.replace(`${basePath}/payment-result/${targetOrderId}`);
         } else {
-          toast.error(result.error ?? t("checkoutError"));
+          // 统一错误信封 { error: { code, message } }：先归一化为字符串再展示，
+          // 禁止把对象直传 toast（曾触发 React error #31 整页崩溃，bugfix 2026-09-06）。
+          toast.error(normalizeErrorMessage(result.error, t("checkoutError")));
         }
         return;
       }

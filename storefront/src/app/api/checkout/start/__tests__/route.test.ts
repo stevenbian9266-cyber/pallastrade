@@ -133,7 +133,10 @@ describe("checkout start BFF (PRD-20260830-checkout AC-002/003/007)", () => {
     const response = await POST(checkoutRequest());
 
     expect(response.status).toBe(502);
-    expect(await response.json()).toMatchObject({ order_id: "or_1" });
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "checkout_failed" },
+      order_id: "or_1",
+    });
     expect(setCheckoutCookiesMock).toHaveBeenCalledWith("or_1", "cart-token");
   });
 
@@ -154,8 +157,10 @@ describe("checkout start BFF (PRD-20260830-checkout AC-002/003/007)", () => {
 
     expect(response.status).toBe(422);
     await expect(response.json()).resolves.toMatchObject({
-      code: "INSUFFICIENT_STOCK",
-      error: "Required inventory could not be reserved",
+      error: {
+        code: "INSUFFICIENT_STOCK",
+        message: "Required inventory could not be reserved",
+      },
       order_id: "or_1",
     });
   });

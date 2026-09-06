@@ -57,6 +57,25 @@ function sameOrigin(request: NextRequest): boolean {
 }
 
 /**
+ * 统一错误信封（与后端 v3 error envelope 对齐，见 pallastrade-api-v3 skill）：
+ *   { error: { code: string, message: string }, order_id?: string }
+ * order_id 保留在顶层供前端失败恢复导航（订单安全可重试）。
+ * 前端 UI 一律经 `lib/errors.ts#normalizeErrorMessage` 取 message，禁止直传对象。
+ */
+function errorBody(
+  code: string,
+  message: string,
+  orderId?: string,
+): { error: { code: string; message: string }; order_id?: string } {
+  const body: { error: { code: string; message: string }; order_id?: string } =
+    {
+      error: { code, message },
+    };
+  if (orderId) body.order_id = orderId;
+  return body;
+}
+
+/**
  * INV-P3-6 (FR-049/050): 透传后端结构化业务错误码（INSUFFICIENT_STOCK /
  * INVENTORY_CHANGED / RESERVATION_EXPIRED / INVENTORY_RECOVERY_REQUIRED /
  * quote_changed / transaction_not_payable 等）与后端 HTTP 状态；Storefront 不自行
@@ -64,20 +83,19 @@ function sameOrigin(request: NextRequest): boolean {
  */
 function errorResponse(error: unknown, orderId?: string): NextResponse {
   if (error instanceof PallasTradeError) {
-    const body: Record<string, unknown> = {
-      error: error.message,
-      code: error.code,
-    };
-    if (orderId) body.order_id = orderId;
-    return NextResponse.json(body, { status: error.status || 422 });
+    return NextResponse.json(
+      errorBody(error.code || "checkout_failed", error.message, orderId),
+      { status: error.status || 422 },
+    );
   }
 
   console.error("checkout orchestration failed", error);
   return NextResponse.json(
-    {
-      error: "Checkout could not be completed. Your order is safe to retry.",
-      ...(orderId && { order_id: orderId }),
-    },
+    errorBody(
+      "checkout_failed",
+      "Checkout could not be completed. Your order is safe to retry.",
+      orderId,
+    ),
     { status: orderId ? 502 : 422 },
   );
 }
@@ -90,7 +108,7 @@ function errorResponse(error: unknown, orderId?: string): NextResponse {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!sameOrigin(request)) {
     return NextResponse.json(
-      { error: "Invalid checkout origin" },
+      errorBody("invalid_checkout_origin", "Invalid checkout origin"),
       { status: 403 },
     );
   }
@@ -100,7 +118,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body = (await request.json()) as CheckoutStartBody;
     if (!body.cart_id || !body.payment_method_id || !body.checkout) {
       return NextResponse.json(
-        { error: "Invalid checkout request" },
+        errorBody("invalid_request", "Invalid checkout request"),
         { status: 400 },
       );
     }
@@ -117,7 +135,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
     if (!method) {
       return NextResponse.json(
-        { error: "Payment method is not available" },
+        errorBody(
+          "payment_method_unavailable",
+          "Payment method is not available",
+        ),
         { status: 422 },
       );
     }
@@ -171,7 +192,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 export async function PATCH(request: NextRequest): Promise<NextResponse> {
   if (!sameOrigin(request)) {
     return NextResponse.json(
-      { error: "Invalid checkout origin" },
+      errorBody("invalid_checkout_origin", "Invalid checkout origin"),
       { status: 403 },
     );
   }
@@ -180,7 +201,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     const body = (await request.json()) as CheckoutCompleteBody;
     if (!body.order_id || !body.session_id) {
       return NextResponse.json(
-        { error: "Invalid payment completion request" },
+        errorBody("invalid_request", "Invalid payment completion request"),
         { status: 400 },
       );
     }

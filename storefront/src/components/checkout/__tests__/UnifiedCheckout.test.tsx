@@ -1,6 +1,7 @@
 import type { ShoppingCart } from "@pallastrade/sdk";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UnifiedCheckout } from "@/components/checkout/UnifiedCheckout";
 import { CheckoutProvider, CheckoutSummary } from "@/contexts/CheckoutContext";
@@ -301,6 +302,32 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(pushMock).not.toHaveBeenCalled();
     expect(replaceMock).not.toHaveBeenCalled();
+  });
+
+  // ── bugfix 2026-09-06：BFF/后端错误对象不得直传 toast（React error #31 整页崩）──
+  it("normalizes a structured BFF error body { error: { code, message } } to a string toast", async () => {
+    const user = userEvent.setup();
+    const toastErrorSpy = vi
+      .spyOn(toast, "error")
+      .mockImplementation(() => "0");
+    fetchMock.mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        error: { code: "route_not_found", message: "API endpoint not found" },
+      }),
+    });
+
+    renderCheckout();
+
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(toastErrorSpy).toHaveBeenCalledWith("API endpoint not found");
+    expect(replaceMock).not.toHaveBeenCalled();
+    toastErrorSpy.mockRestore();
   });
 
   // ── PRD v1.1（Checkout页面.md）新增对齐测试 ─────────────────────────

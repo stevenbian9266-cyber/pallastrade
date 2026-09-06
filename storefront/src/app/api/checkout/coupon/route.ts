@@ -32,11 +32,18 @@ function sameOrigin(request: NextRequest): boolean {
  * Order summary 折扣码模块). Keeps SDK credentials + guest cart tokens
  * server-side. Returns the refreshed full Cart so the summary can re-render
  * Subtotal / Discount / Total / TOTAL SAVINGS.
+ *
+ * 错误统一为结构化信封 { error: { code, message } }（与后端 v3 envelope 对齐）；
+ * 前端经 lib/errors.ts#normalizeErrorMessage 取 message。
  */
+function errorBody(code: string, message: string) {
+  return { error: { code, message } };
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!sameOrigin(request)) {
     return NextResponse.json(
-      { error: "Invalid checkout origin" },
+      errorBody("invalid_checkout_origin", "Invalid checkout origin"),
       { status: 403 },
     );
   }
@@ -45,7 +52,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body = (await request.json()) as CouponBody;
     if (!body.cart_id || !body.code || !body.kind) {
       return NextResponse.json(
-        { error: "Invalid coupon request" },
+        errorBody("invalid_request", "Invalid coupon request"),
         { status: 400 },
       );
     }
@@ -65,13 +72,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ cart });
   } catch (error) {
     console.error("coupon apply failed", error);
-    const message =
+    const isNotFound =
       error instanceof Error && "status" in error
         ? (error as Error & { status?: number }).status === 404
+        : false;
+    return NextResponse.json(
+      errorBody(
+        isNotFound ? "coupon_not_found" : "coupon_apply_failed",
+        isNotFound
           ? "Invalid coupon code"
-          : "Could not apply coupon. Please try again."
-        : "Could not apply coupon. Please try again.";
-    return NextResponse.json({ error: message }, { status: 422 });
+          : "Could not apply coupon. Please try again.",
+      ),
+      { status: 422 },
+    );
   }
 }
 
@@ -79,7 +92,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
   if (!sameOrigin(request)) {
     return NextResponse.json(
-      { error: "Invalid checkout origin" },
+      errorBody("invalid_checkout_origin", "Invalid checkout origin"),
       { status: 403 },
     );
   }
@@ -88,7 +101,7 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
     const body = (await request.json()) as CouponBody;
     if (!body.cart_id) {
       return NextResponse.json(
-        { error: "Invalid coupon request" },
+        errorBody("invalid_request", "Invalid coupon request"),
         { status: 400 },
       );
     }
@@ -113,7 +126,7 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     console.error("coupon remove failed", error);
     return NextResponse.json(
-      { error: "Failed to remove coupon code" },
+      errorBody("coupon_remove_failed", "Failed to remove coupon code"),
       { status: 422 },
     );
   }

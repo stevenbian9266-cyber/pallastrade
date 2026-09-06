@@ -1470,6 +1470,28 @@
         "rakeOpsTooling": 10,
         "unprovableNoGuess": 10
       }
+    },
+    {
+      "id": "GS-058",
+      "name": "Storefront checkout BFF /api routing + error contract",
+      "description": "Pay Now must hit storefront BFF /api/checkout/* on Next (not Rails); BFF errors follow { error: { code, message } }; UI toasts only strings",
+      "mustDo": [
+        "Route /api/checkout/* and /api/webhooks/pallastrade/* to Next (nginx default /api → Next, /api/v3 → Rails)",
+        "BFF error bodies use { error: { code, message } } envelope",
+        "Normalize error to string via lib/errors.ts before toast/JSX",
+        "Keep nginx conf versioned in deploy/nginx and sync via sync-and-smoke.sh"
+      ],
+      "mustNotDo": [
+        "Add /api/* → Rails catch-all that swallows storefront BFF routes",
+        "Pass object/unknown directly to toast.error or JSX (React error #31)",
+        "Hand-edit /etc/nginx server conf (drift)"
+      ],
+      "scoring": {
+        "bffRoutesHitNext": 30,
+        "structuredErrorEnvelope": 30,
+        "stringOnlyToast": 25,
+        "versionedNginx": 15
+      }
     }
   ]
 }

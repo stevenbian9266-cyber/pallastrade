@@ -83,6 +83,13 @@ if [ "$NEW_IMG_ID" != "none" ]; then
 fi
 timeout 900 bash deploy/deploy.sh "$ENV" || echo "⚠️ deploy.sh 超时/失败（exit=$?），状态可能未完成" >&2
 
+# 4.1 nginx 权威配置同步（仓库版本化）+ 路由归属 smoke test（2026-09-06 根治：
+#     /api/v3 → Rails、其余 /api → Next BFF。失败则不记录状态，下轮 cron 重试）
+if ! timeout 120 bash deploy/nginx/sync-and-smoke.sh "$ENV"; then
+  echo "❌ nginx 同步/smoke 失败，不记录状态（下轮自动重试）" >&2
+  exit 1
+fi
+
 # 5. 记录状态
 mkdir -p "$(dirname "$STATE_FILE")"
 printf '%s\n%s\n' "$NEW_HEAD" "$NEW_IMG_ID" > "$STATE_FILE"

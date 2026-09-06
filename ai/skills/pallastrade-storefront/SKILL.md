@@ -287,6 +287,8 @@ New Cart entity (`pallastrade_carts`, independent table — see `pallastrade-dat
 
 Keys: cart items use `selected`; submitted Orders get short-lived HttpOnly checkout-token cookies because the current-cart cookie may switch to a successor. Totals always come from the API (`display_*` fields). Result text lives under `paymentResult.*` in all five locales.
 
+**BFF 错误契约 + `/api` 路由所有权（bugfix 2026-09-06）**：storefront BFF（`app/api/checkout/start`、`app/api/checkout/coupon`、`app/api/webhooks/pallastrade`）错误统一为后端 v3 envelope `{ error: { code, message } }`（顶层 `order_id` 保留供失败恢复）。**UI 展示前一律经 `lib/errors.ts#normalizeErrorMessage` 归一化为字符串**，禁止把 unknown/object 直传 sonner `toast.error` 或 JSX——否则 sonner 渲染对象触发 React error #31 → global-error 整页崩溃（本 bug 现场根因）。nginx 反代所有权：`/api/v3/* → Rails`，其余 `/api/* → Next`（storefront BFF 默认即达）；权威配置版本化于 `deploy/nginx/dev.pallastrade.cn.conf`，由 pull-deploy 在每次部署后经 `deploy/nginx/sync-and-smoke.sh` 原子同步并做路由归属 smoke。**不要在 BFF 手工加 `location /api/xxx` 例外——默认已进 Next。**
+
 #### Account orders: single vs combined payment (2026-08-29, PRD-20260829-checkout 订单模块；2026-08-30 改收银台弹窗)
 
 - **`OrderCombinedPay`** (`components/account/OrderCombinedPay.tsx`) opens **`PaymentCheckoutModal`** on Pay selected: **1** unpaid order → 单笔弹窗（`Orders::PaymentSessions`）；**2+** → 组合弹窗（弹窗内 `POST /payment_combinations` + 各单分摊 + `PaymentCombinations::Complete`）。弹窗打开/切换支付方式即创建 session 并直接显示 `StripePaymentForm`，不需要先点 Pay 揭示表单。个人中心订单列表只消费 ownership-scoped `GET /customers/me/orders` 的结果，不按 email 做前端补偿过滤，也不读取当前 cart 来决定订单支付方式；弹窗从订单自己的 `payment_methods` 选择，服务端仍按当前 store + JWT customer 验证每一笔订单。个人中心订单可能是 `completed_at` 已有但仍 `balance_due`；order payment-session API 必须按 ownership-scoped show 权限解析，不能复用排除 completed order 的普通 `:update` 权限。不再跳 `/combined-payment/[pcom_id]` 两步页。

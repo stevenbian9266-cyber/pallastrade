@@ -20,6 +20,26 @@
 | `dev.sh` | `bash dev.sh up\|down\|status` | dev 栈启停（down 保留数据卷） |
 | `deploy.sh` | `bash deploy.sh dev` | 全量部署 dev（backend 服务器构建 + storefront 镜像检查 + 启动 + 健康检查） |
 | `deploy-sf.sh` | `bash deploy-sf.sh` | 仅 storefront 单独构建部署（源码整目录同步 + 特征校验 + 磁盘预检） |
+| `nginx/sync-and-smoke.sh` | `bash nginx/sync-and-smoke.sh dev` | 原子同步 nginx 权威配置到服务器 + 路由归属 smoke test（pull-deploy 自动调用，也可手动跑） |
+
+## Nginx 反向代理（版本化，2026-09-06 起勿手工改）
+
+权威配置在仓库 `deploy/nginx/dev.pallastrade.cn.conf`，服务器 `/etc/nginx/sites-enabled/dev.pallastrade.cn` 由
+`deploy/nginx/sync-and-smoke.sh` 在每次 pull-deploy 部署后**原子同步**（`nginx -t` 失败自动回滚 + reload），
+并跑路由归属 smoke（Next BFF 命中 Next、Rails `/api/v3` 命中 Rails）。**请勿再手工编辑服务器上的 nginx 文件**——
+改动应改仓库配置后随 dev 推送自动生效。
+
+**`/api` 路由所有权（根治规则，禁止回退为 `/api/* → Rails` 一条通吃）**：
+
+| 路径 | 归属 | 端口 |
+|---|---|---|
+| `/api/v3/*` | Rails（唯一对外 API namespace，`rails routes` 盘点确认） | 3102 |
+| 其余 `/api/*`（`/api/checkout/*`、`/api/webhooks/pallastrade/*`、未来任何 Next BFF） | storefront Next | 3103 |
+| `/admin` `/admin_user` `/assets` `/rails/active_storage` | Rails | 3102 |
+| `/`（默认） | storefront Next | 3103 |
+
+> 背景：2026-09-06 bugfix——checkout Pay Now 打 storefront BFF `/api/checkout/start` 被 nginx `/api/* → Rails`
+> 错发到后端返回 404，前端把 `{ code, message }` 错误对象直传 toast 触发 React error #31 整页崩溃。
 
 ## 单栈策略
 
