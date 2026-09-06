@@ -117,6 +117,19 @@ RSpec.describe PallasTrade::Reconciliations::ReconcileTransaction, type: :servic
     expect(result.value.reasons).to include('JOURNAL_POSTING_MISSING')
   end
 
+  # bugfix C3 (FIN-P4 review 批1): reversed（有意冲销）的 CASH_CAPTURED 不得再报
+  # JOURNAL_POSTING_MISSING —— 否则 sweep→repair 对同一被冲销 fact 无限空转。
+  it 'bugfix C3: reversed CASH_CAPTURED entry is not flagged JOURNAL_POSTING_MISSING' do
+    txn = make_transaction(amount: 100)
+    payment = captured_payment(txn: txn, amount: 100)
+    entry = make_entry(txn: txn, entry_type: 'CASH_CAPTURED', amount: 100.0, payment: payment)
+    entry.mark_reversed! # Reverse 原语状态（append-only 冲销）
+
+    result = reconcile!(txn)
+    expect(result.value).not_to be_needs_attention
+    expect(result.value.reasons).not_to include('JOURNAL_POSTING_MISSING')
+  end
+
   it 'AC-4P7-06 allocation mismatch on a combination txn → MISMATCH + ALLOCATION_MISMATCH' do
     combo = create(:payment_combination, store: store, currency: 'USD', amount: 100, status: 'succeeded')
     txn = make_transaction(amount: 100, purpose: 'combined_payment', combo: combo)

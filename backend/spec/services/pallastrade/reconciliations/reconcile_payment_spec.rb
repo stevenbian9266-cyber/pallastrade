@@ -142,6 +142,26 @@ RSpec.describe PallasTrade::Reconciliations::ReconcilePayment, type: :service do
     expect(result.value.reasons).to eq(['UNLINKED_LEGACY_PAYMENT'])
   end
 
+  # bugfix C2 (FIN-P4 review 批1): 组合 Payment（Settlement 新建路径无 payment_session_id）
+  # 经 combination.payment_sessions fallback 解析 session → 不再误报 UNLINKED_LEGACY_PAYMENT。
+  it 'combination payment w/o payment_session_id falls back to combination session → MATCHED' do
+    pm = bogus_pm
+    combo = create(:payment_combination, store: store, customer: create(:user),
+                                         currency: 'USD', amount: 100, status: 'succeeded')
+    session = create(:bogus_payment_session, order: order, payment_method: pm, status: 'completed',
+                                             amount: 100, currency: 'USD')
+    session.update!(payment_combination: combo)
+    payment = create(:payment, order: nil, payment_combination: combo, payment_method: pm,
+                               amount: 100, state: 'completed',
+                               source: nil, skip_source_requirement: true)
+
+    result = reconcile!(payment)
+    expect(result).to be_success
+    expect(result.value).to be_matched
+    expect(result.value.reasons).to eq([])
+    expect(result.value.local_amount).to eq(100.0)
+  end
+
   it 'nil payment → failure' do
     expect(described_class.call(payment: nil)).to be_failure
   end

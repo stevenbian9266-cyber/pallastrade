@@ -61,6 +61,23 @@ RSpec.describe PallasTrade::FinancialLedger::RepairTransaction, type: :service d
     expect(PallasTrade::FinancialLedgerEntry.count).to eq(1)
   end
 
+  # bugfix C3 (FIN-P4 review 批1): 已被 Reverse 冲销的 fact 不得被 repair 再补记——
+  # reversed 条目保留原 idempotency_key，若仍按 active 判定缺失会无限 no-op repair。
+  it 'bugfix C3: a reversed CASH_CAPTURED entry is NOT re-repaired (terminates no-op loop)' do
+    txn = make_transaction
+    payment = captured_payment(txn: txn, amount: 100)
+    entry = PallasTrade::FinancialLedgerEntry.create!(
+      commerce_transaction: txn, entry_type: 'CASH_CAPTURED', amount: 100.0, currency: 'USD',
+      idempotency_key: "spec-c3-#{SecureRandom.hex(6)}", effective_at: Time.current, payment: payment
+    )
+    entry.mark_reversed!
+
+    result = repair!(txn)
+    expect(result).to be_success
+    expect(result.value[:repaired]).to eq([])
+    expect(PallasTrade::FinancialLedgerEntry.count).to eq(1)
+  end
+
   it 'AC-4P8-02 repairs a missing REFUND_SUCCEEDED entry for a succeeded refund' do
     txn = make_transaction
     payment = captured_payment(txn: txn, amount: 100)

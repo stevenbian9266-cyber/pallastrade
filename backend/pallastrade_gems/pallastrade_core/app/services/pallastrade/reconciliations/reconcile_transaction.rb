@@ -130,8 +130,12 @@ module PallasTrade
 
         # 1. Journal 缺失：本地 captured payment 证据存在但 journal 无对应 CASH_CAPTURED entry
         #    （INV-09/12 不猜、不自动 repair——repair 归 P4-8）。仅当有 captured payment 时核对。
-        posted_payment_ids = entries.where(entry_type: 'CASH_CAPTURED').pluck(:payment_id).compact
-        captured_without_posting = captured_payments(payments).reject { |p| posted_payment_ids.include?(p.id) }
+        #    FIN-P4 review 批1 (bugfix C3): 判定用全量 entry（含 reversed）——reversed = 有意冲销
+        #    （append-only），同 fact 不再重建，避免 sweep→repair 无限空转。
+        journal_payment_ids = PallasTrade::FinancialLedgerEntry.by_transaction(transaction)
+                                                               .where(entry_type: 'CASH_CAPTURED')
+                                                               .pluck(:payment_id).compact
+        captured_without_posting = captured_payments(payments).reject { |p| journal_payment_ids.include?(p.id) }
         reasons << 'JOURNAL_POSTING_MISSING' if captured_without_posting.any?
 
         # 2. allocation vs captured（组合场景有 ORDER_ALLOCATION 语义时才核对）

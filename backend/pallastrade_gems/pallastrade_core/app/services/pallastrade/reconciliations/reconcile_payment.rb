@@ -31,7 +31,11 @@ module PallasTrade
       private
 
       def reconcile(payment, pm)
+        # FIN-P4 review 批1 (bugfix C2): 组合 Payment（Settlement 新建路径）不绑 payment_session_id，
+        # 但其 PaymentCombination 与 PaymentSession 1:1（payment_combination.payment_sessions）。
+        # fallback 到组合的 session，否则每笔健康组合 txn 都误报 UNLINKED_LEGACY_PAYMENT 假阳性。
         session = payment.payment_session
+        session ||= payment.payment_combination&.payment_sessions&.first
         verdict = PallasTrade::FinancialFacts::CaptureEvidencePolicy.call(payment: payment).value
         local_captured = verdict[:verdict] == :captured
         local_amount = local_captured ? verdict[:captured_amount] : nil

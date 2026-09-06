@@ -145,6 +145,13 @@ module PallasTrade
             payment.skip_source_requirement = true
             payment.complete!
           end
+          # PALLAS-CUSTOM: FIN-P4 review 批1 (bugfix C4) —— completed 现金必须有 capture evidence
+          # （对齐 processing.rb confirm!/purchase!），否则 CaptureEvidencePolicy 对本地 captured
+          # 判定要求 completed + capture_event → Bogus 恒 ambiguous → CASH_CAPTURED 永不入 Journal。
+          # 幂等：已存在 event 不重复；存量 completed 无 event（legacy）补写自愈。
+          if payment.present? && payment.completed? && payment.capture_events.none?
+            payment.capture_events.create!(amount: payment.amount)
+          end
           payment_session.complete unless payment_session.completed?
         end
       end

@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# PALLAS-CUSTOM: FIN-P4 review 批1 (2026-09-06, bugfix C1) —— 组合 Payment after_commit 崩溃修复。
+# 组合支付（PaymentCombinations::Settlement）的 Payment 挂组合、order_id=nil；complete! 提交后
+# after_commit 触发，`order.paid?` 对 nil order 抛 NoMethodError，异常从 Settlement 冒出并中断
+# Transactions::Finalize（成员订单完成前）。
 module PallasTrade
   class Payment < PallasTrade.base_class
     # Publishes custom payment events beyond basic lifecycle events.
@@ -26,7 +30,7 @@ module PallasTrade
 
       def publish_payment_paid_event
         publish_event('payment.paid')
-        publish_order_paid_event if order.paid?
+        publish_order_paid_event if order&.paid?
       end
 
       def publish_order_paid_event

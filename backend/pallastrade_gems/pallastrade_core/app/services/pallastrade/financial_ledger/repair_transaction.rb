@@ -86,22 +86,28 @@ module PallasTrade
 
       # ---- journal-missing 检测（复用 P4-7 语义；返回 [缺失集, 已存在集]）-----
 
+      # FIN-P4 review 批1 (bugfix C3): missing 判定不再限定 state='posted' —— journal 有**任何**
+      # entry（含 reversed）即视为已处理，避免「Reverse 冲销后 repair 无限空转」：
+      # Reverse 保留原 idempotency_key，若仍按 active 判定缺失，Repair 会反复对同一被冲销的
+      # fact 补记（Post 幂等命中 reversed 原条目）→ 每轮 sweep 都 JOURNAL_POSTING_MISSING。
+      # reversed 条目 = 有意冲销（append-only 语义），同 fact 不再重建；与 partition_allocations
+      # （本就全量判定）一致。
       def partition_captures(payments, transaction)
-        posted_ids = PallasTrade::FinancialLedgerEntry.active
-                                                       .by_transaction(transaction)
-                                                       .where(entry_type: 'CASH_CAPTURED')
-                                                       .pluck(:payment_id).compact
+        entry_payment_ids = PallasTrade::FinancialLedgerEntry.by_transaction(transaction)
+                                                             .where(entry_type: 'CASH_CAPTURED')
+                                                             .pluck(:payment_id).compact
         captured = captured_payments(payments)
-        [captured.reject { |p| posted_ids.include?(p.id) }, captured.select { |p| posted_ids.include?(p.id) }]
+        [captured.reject { |p| entry_payment_ids.include?(p.id) },
+         captured.select { |p| entry_payment_ids.include?(p.id) }]
       end
 
       def partition_refunds(refunds, transaction)
-        posted_ids = PallasTrade::FinancialLedgerEntry.active
-                                                       .by_transaction(transaction)
-                                                       .where(entry_type: 'REFUND_SUCCEEDED')
-                                                       .pluck(:refund_id).compact
+        entry_refund_ids = PallasTrade::FinancialLedgerEntry.by_transaction(transaction)
+                                                            .where(entry_type: 'REFUND_SUCCEEDED')
+                                                            .pluck(:refund_id).compact
         provable = refunds.select { |r| r.transaction_id.present? }
-        [provable.reject { |r| posted_ids.include?(r.id) }, provable.select { |r| posted_ids.include?(r.id) }]
+        [provable.reject { |r| entry_refund_ids.include?(r.id) },
+         provable.select { |r| entry_refund_ids.include?(r.id) }]
       end
 
       def partition_allocations(splits, transaction)

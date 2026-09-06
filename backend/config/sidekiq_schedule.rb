@@ -23,5 +23,13 @@ PALLAS_CART_SCHEDULE = [
     class: 'PallasTrade::StockReservations::ExpireJob',
     cron: '*/5 * * * *',
     queue: 'default'
+  },
+  # FIN-P4 review 批1 (2026-09-06, bugfix C6): 注册 reconciliation sweeper —— 自动 reconcile +
+  # journal-missing 幂等补记闭环（此前仅在手动 rake，部署中从不运行）。保守：仅 enqueue 补记。
+  {
+    name: 'financial_reconcile_sweeper',
+    class: 'PallasTrade::Reconciliations::ReconcileSweeperJob',
+    cron: '*/10 * * * *',
+    queue: 'default'
   }
 ].freeze

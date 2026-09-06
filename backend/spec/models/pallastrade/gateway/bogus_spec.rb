@@ -78,6 +78,11 @@ RSpec.describe PallasTrade::Gateway::Bogus, type: :model do
       payment_method.complete_payment_session(payment_session: session.reload)
       expect(session.reload.status).to eq('completed')
       expect(order.payments.count).to eq(1)
+      # bugfix C4 (FIN-P4 review 批1): completed 现金必写 capture evidence 且幂等
+      # （重复 complete 不重复 event）——否则 CaptureEvidencePolicy 判 ambiguous、journal 恒缺现金。
+      payment = session.reload.payment
+      expect(payment.capture_events.count).to eq(1)
+      expect(payment.capture_events.first.amount.to_f).to eq(order.total.to_f)
     end
   end
 end
