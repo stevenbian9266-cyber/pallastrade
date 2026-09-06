@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_06_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_06_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -541,6 +541,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_06_090000) do
     t.index ["state"], name: "index_pallastrade_commerce_transactions_on_state"
     t.index ["store_id", "state"], name: "index_pallastrade_commerce_transactions_on_store_id_and_state"
     t.index ["store_id"], name: "index_pallastrade_commerce_transactions_on_store_id"
+    t.check_constraint "amount >= 0::numeric", name: "pt_commerce_transactions_amount_non_negative"
   end
 
   create_table "pallastrade_contact_messages", force: :cascade do |t|
@@ -1412,6 +1413,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_06_090000) do
     t.index ["payment_combination_id", "order_id"], name: "index_pt_payment_splits_on_combination_and_order", unique: true
     t.index ["payment_combination_id"], name: "index_pallastrade_payment_splits_on_payment_combination_id"
     t.index ["payment_id"], name: "index_pallastrade_payment_splits_on_payment_id"
+    t.check_constraint "authorized_amount >= 0::numeric", name: "pt_payment_splits_authorized_non_negative"
+    t.check_constraint "captured_amount >= 0::numeric", name: "pt_payment_splits_captured_non_negative"
+    t.check_constraint "refunded_amount >= 0::numeric", name: "pt_payment_splits_refunded_non_negative"
   end
 
   create_table "pallastrade_payment_webhook_events", force: :cascade do |t|
@@ -2586,7 +2590,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_06_090000) do
   end
 
   create_table "pallastrade_transaction_orders", force: :cascade do |t|
-    t.decimal "amount_snapshot", precision: 10, scale: 2
+    t.decimal "amount_snapshot", precision: 10, scale: 2, null: false
     t.string "completion_status", default: "pending", null: false
     t.datetime "created_at", null: false
     t.bigint "order_id", null: false
@@ -2596,6 +2600,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_06_090000) do
     t.index ["order_id"], name: "index_pallastrade_transaction_orders_on_order_id"
     t.index ["transaction_id", "order_id"], name: "idx_on_transaction_id_order_id_84b7733fc4", unique: true
     t.index ["transaction_id"], name: "index_pallastrade_transaction_orders_on_transaction_id"
+    t.check_constraint "amount_snapshot >= 0::numeric", name: "pt_transaction_orders_amount_snapshot_non_negative"
   end
 
   create_table "pallastrade_user_identities", force: :cascade do |t|
