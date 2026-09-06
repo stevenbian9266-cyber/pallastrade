@@ -38,6 +38,10 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| done | PRD-20260906-payments-fin-p4-4-allocation-integrity | payments | 2026-09-06 | REQ-20260906-fin-p4-4.md |
+| done | PRD-20260906-payments-fin-p4-3-payment-refund-posting | payments | 2026-09-06 | REQ-20260906-fin-p4-3.md |
+| done | PRD-20260905-payments-fin-p4-2-immutable-financial-journal | payments | 2026-09-05 | REQ-20260906-fin-p4-2.md |
+| done | PRD-20260905-payments-fin-p4-1-支付资金账本-commercetransaction-级-immutable-financial-jo | payments | 2026-09-05 | REQ-20260906-fin-p4-1.md |
 | draft | PRD-20260905-shipping-库存事务集成与预留生命周期-p3-stockreservation-接入-commercetransaction-res | shipping | 2026-09-05 | （实施时回填） |
 | approved | PRD-20260905-checkout-paymentcombination-txn-化-组合交易收敛到-transactions-finalize-recov | checkout | 2026-09-05 | REQ-20260905-paymentcombination-txn.md |
 | approved | PRD-20260905-checkout-txn-p2-6-轮3-storefront-transaction-first-迁移-checkout-start-b | checkout | 2026-09-05 | REQ-20260905-txn-p2-6-storefront-transaction-first.md |

@@ -139,6 +139,24 @@ PallasTrade::Order.complete                  # named scope — NOT equivalent: d
 - `OrderUpdater#update_payment_total`：订单存在有效 `PaymentSplit` 时取 `captured - refunded`（组合/拆单成员订单的已付金额以 split 为准，因为组合 payment 不在 order.payments 里）。
 - 服务层（Create/Complete/SettleJob/Webhook 分支）见 `pallastrade-payments` SKILL。
 
+## Immutable Financial Journal 表（FIN-P4-2, 2026-09-06）
+
+`pallastrade_financial_ledger_entries`（迁移 `20260906000001`，CommerceTransaction 先例直接放
+`backend/db/migrate/`）——CommerceTransaction 级不可变资金账本：`commerce_transaction_id` NOT NULL FK；
+可空 source FK `order_id/payment_id/refund_id/payment_combination_id/payment_split_id`；`entry_type`；带符号
+`amount decimal(10,2)`；`currency`；`idempotency_key` UNIQUE；`reversal_of_id` 自引用（partial UNIQUE
+WHERE state='posted'）；`state`(posted/reversed)；`effective_at`(事实时间)/`recorded_at`(入账时间，DB 默认
+now)；`provider/provider_reference` 预留。模型 `PallasTrade::FinancialLedgerEntry`（`fle_`，append-only +
+ImmutableError）。posting 输入 = `FinancialFact`（见 pallastrade-payments SKILL §Immutable Financial Journal）。
+
+## Financial Fact（FIN-P4-1, 2026-09-06；transient value object，非 DB aggregate）
+
+`PallasTrade::FinancialFact`（`models/pallastrade/financial_fact.rb`）是**不落库**的只读值对象——
+非 AR、无表、无 migration。它标准化「Payment/Refund → 资金事实」语义（status/fact_type/
+instrument_class/ownership/命名纪律见 `pallastrade-payments` SKILL §Financial Fact Resolution）。
+CommerceTransaction/Payment/Refund/PaymentSplit 仍是唯一持久化资金与分摊载体；FinancialFact 是
+FIN-P4-2 Immutable Financial Journal 之前的语义契约层，不替代任何现有模型。
+
 ## Checkout-side models
 
 ```

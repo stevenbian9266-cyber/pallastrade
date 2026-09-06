@@ -260,6 +260,105 @@ By default, PallasTrade captures the **outstanding balance** at checkout. If you
 
 The webhook arrived before the storefront's redirect-back, OR the PaymentSession TTL expired. Stripe's webhook is the source of truth — always trust it over the redirect-back. The `pallastrade_stripe` gem handles this; if you're writing custom, idempotency keys are essential.
 
+## Financial Fact Resolution（FIN-P4-1, 2026-09-06；P4 V2 拆包第 1 包）
+
+> **Payment.state ≠ 现金事实**。在写 Financial Journal（FIN-P4-2）之前，任何消费方必须经
+> `PallasTrade::FinancialFacts::ResolvePayment / ResolveRefund` 解析为标准只读 `FinancialFact`
+> （transient Value Object，不落库）——**禁止在各服务复制裸 `payment.completed?` 判定**（FIN-INV-02）。
+
+- `PallasTrade::FinancialFact`：字段 `fact_type / status / amount / currency / instrument_class /
+  commerce_transaction_id / order_id / payment_id / refund_id / payment_session_id /
+  payment_combination_id / payment_split_id / provider / provider_payment_reference / provider_refund_reference /
+  effective_at / evidence / reason_code`。
+  - `status`：`CONFIRMED / AUTHORIZED_ONLY / UNPAID / AMBIGUOUS / NOT_APPLICABLE / UNSUPPORTED`
+  - `fact_type`：`CASH_CAPTURED / STORE_CREDIT_APPLIED / OFFLINE_PAYMENT_RECORDED / REFUND_SUCCEEDED /
+    ORDER_ALLOCATION / NONE`（`ORDER_ALLOCATION` 于 FIN-P4-4 激活——组合资金归属投影，非 cash）
+- `FinancialFacts::InstrumentClassifier`：`PSP_CASH / STORE_CREDIT / OFFLINE / UNKNOWN`（基于 payment_method
+  类型与 `provider_class` 鸭子类型；未知绝不默认 PSP_CASH）。
+- `FinancialFacts::CaptureEvidencePolicy`：PSP captured 判定唯一入口（本地只读、不发 provider 请求）——
+  - auto-capture / manual-capture 成功：`payment.completed?` **且** `PaymentCaptureEvent` 存在 → `:captured`
+  - 组合支付（Settlement 直接 `complete!`，**无 capture event**）：`completed` 且 combination `succeeded` → `:captured`
+  - manual authorization：`pending` → `:authorized_only`（≠ captured）；`processing` → `:ambiguous`
+  - `completed` 无 evidence / 证据冲突 → `:ambiguous`；`failed/void/invalid/checkout` → `:unpaid`
+- `FinancialFacts::OwnershipResolver`：Payment/Refund → CommerceTransaction 可靠归属（显式 context →
+  `PaymentSession.transaction_id` → `PaymentCombination.commerce_transaction`）。**禁止用 `response_code`/
+  `pi_`/`cs_` 等 PSP reference 推断 txn**（`commerce_transaction_id` = txn_ 命名纪律）。
+- `FinancialFacts::ResolvePayment / ResolveRefund`：编排 classify → ownership → amount/currency → evidence →
+  FinancialFact（**只读、零副作用**、无 provider 网络查询、无 Journal 写入）。支持 1 txn N payment facts、
+  short payment、multiple/partial refunds、`AMBIGUOUS` 不猜。
+- `FinancialFacts::RetryPaymentSafetyPolicy`：旧 attempt 仍存在可权威确认 provider space（session `external_id` /
+  payment `response_code`）时，新 charge 前必须先 provider verification（P2 `PaymentFactResolver` 已具备）。
+- Adyen/PayPal legacy：本包无 captured predicate → `UNSUPPORTED/AMBIGUOUS`；provider reconciliation 能力
+  （`CaptureEvidencePolicy.provider_reconciliation_capability`）对真实 PSP 在 FIN-P4-5 前一律
+  `PROVIDER_RECONCILIATION_UNSUPPORTED`，不得当作 reconciliation PASS。
+
+## Immutable Financial Journal（FIN-P4-2, 2026-09-06；P4 V2 拆包第 2 包）
+
+> **Journal = CommerceTransaction 级不可变资金账本**（`pallastrade_financial_ledger_entries`）。
+> posting 输入**唯一合法来源是 FIN-P4-1 的 `PallasTrade::FinancialFact`**（CONFIRMED + 激活 entry_type +
+> 可解析 txn）——禁止在 posting 路径重新判断 `payment.completed?`（FR-4P1-40 / FIN-INV-02）。
+
+- `PallasTrade::FinancialLedgerEntry`（`fle_`）：`commerce_transaction_id` 必填（P4 §12 命名纪律）+
+  可空 source FK（order/payment/refund/payment_combination/payment_split）+ `entry_type` + 带符号 `amount` +
+  `currency` + `idempotency_key`(UNIQUE) + `reversal_of_id` + `state`(posted/reversed) + `effective_at`/`recorded_at`。
+  - **append-only（FIN-INV-01/07）**：amount/currency/source/entry_type/ownership 创建后禁原地改
+    （`ImmutableError`；before_update + update_columns 双层拦截）；唯一原地变化 = reversal 状态流转
+    （`mark_reversed!` 写 state/reversed_at 白名单）。
+  - entry_type 与 `FinancialFact::FACT_TYPES` 同名单对齐：激活 CASH_CAPTURED / STORE_CREDIT_APPLIED /
+    OFFLINE_PAYMENT_RECORDED / REFUND_SUCCEEDED / ORDER_ALLOCATION（FIN-P4-4 激活）；PSP_FEE/PSP_NET_SETTLEMENT
+    （FIN-P4-5）仍预留不激活。
+  - `Post` 回填 `payment_split`（FIN-P4-4 split-aware posting）——ORDER_ALLOCATION 溯源。
+- `FinancialLedger::Post.call(financial_fact:, idempotency_key:)`：幂等 posting 原语——门禁（CONFIRMED +
+  激活 type + txn 可解析）→ 查 key → 命中返回既有；insert；`RecordNotUnique` 竞态 rescue 重查返回。
+- `FinancialLedger::Reverse.call(entry:)`：append-only 冲销——生成 amount 相反 + `reversal_of` 指向原 entry
+  的新 entry（`reversal:<原key>` 幂等 key），原 entry → reversed；已 reversed / 已有 active reversal 拒绝
+  （DB partial UNIQUE on reversal_of WHERE state='posted' 兜底）。reversal 本身可再被 reverse（恢复语义）。
+- 范围：本包不接 Payment/Refund 事件挂钩（FIN-P4-3）；不填 PSP fee/net（FIN-P4-5）；无 API/UI。
+
+## Payment/Refund Posting（FIN-P4-3, 2026-09-06；P4 V2 拆包第 3 包）
+
+> **业务接线**：payment captured / refund succeeded **自动、恰好一次**进入 Journal。FIN-P4-1
+> Fact 解析 + FIN-P4-2 `Post` 原语已冻结，本包只做编排 + 事件订阅（**无 migration/API**）。
+
+- **编排**：`FinancialLedger::PostPayment.call(payment:)` = `ResolvePayment` → 门禁
+  （`FinancialLedger::Post.postable?(fact)` = CONFIRMED + 激活 entry_type + 可解析 txn + amount/currency）
+  → `Post` → `success({ entry:, fact:, skipped: false })`；不可 post（AMBIGUOUS/UNSUPPORTED/无 txn）→
+  `success({ entry: nil, skipped: true, reason: })`（不猜、不部分记录）。`PostRefund.call(refund:)` 同构
+  （ResolveRefund → REFUND_SUCCEEDED）。**只读边界**：不创建/更新 Payment/Refund/Transaction，唯一写 =
+  LedgerEntry。
+- **事件接线（engine.rb subscribers.concat 注册）**：
+  - `FinancialLedger::PaymentPaidSubscriber` ← `payment.paid`（`Payment::CustomEvents` after_commit on update
+    state→completed 发布——提交后触发，ledger 失败不逆转支付 P4 §16）。
+  - `FinancialLedger::RefundCreatedSubscriber` ← `refund.created`（`publishes_lifecycle_events` after_commit；
+    Refund 创建提交 = perform! 成功，失败 raise 回滚）。
+  - subscriber 默认 async（SubscriberJob）；posting 幂等（idempotency_key）→ 重试不重复；异常 rescue →
+    Rails.logger（不阻断资金流）。payload id 支持 prefixed（py_/re_ → find_by_param）或 raw integer 双模式。
+- **覆盖**：single / balance collection（独立 txn → 独立 entry）/ combination（1 Payment → 1 cash entry；
+  PaymentSplit **不**产生额外 entry，ORDER_ALLOCATION 归 FIN-P4-4）；multiple partial refunds → N 独立 entries。
+
+## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
+
+> **ORDER_ALLOCATION = 组合资金对成员订单的归属投影（immutable journal fact），不是额外 cash inflow**
+> （FIN-INV-05/AC-4013）。`CASH_CAPTURED` = 资金流入；`ORDER_ALLOCATION` = 这笔资金如何归属不同 Order。
+> 恒等式（P4 §23/AC-4014）：`Σ active ORDER_ALLOCATION == Σ PaymentSplit.captured_amount`（per combination）。
+
+- `FinancialFacts::ResolveAllocation.call(split:)`：只读 resolver——split → ORDER_ALLOCATION fact
+  （order_id/payment_split_id/amount=split.captured_amount/currency + combination.commerce_transaction ownership；
+  CONFIRMED）。不可证明（无组合 / 组合无 txn（legacy）/ captured=0）→ AMBIGUOUS + reason_code
+  （`split_without_combination`/`combination_without_commerce_transaction`/`split_not_captured`）——不猜。
+- `FinancialLedger::PostAllocation.call(split:)`：编排——Resolve → 门禁 → Post。幂等 key **显式稳定**
+  `fact:ORDER_ALLOCATION:<txn_id>:<split_id>`（不含 effective_at 时刻 → 事件重放/retry 不重复）。
+- `FinancialLedger::PostCombinationAllocations.call(combination:)`：组合批量（逐 split 独立；硬失败 → failure
+  供 job 重试——已成功条目幂等跳过）。
+- `FinancialLedger::AllocationIntegrity.call(combination:)`：只读恒等式 `{ allocation_total,
+  split_captured_total, balanced? }`（active 集合；reversal 语义：原 entry → reversed 排除、冲销 entry active
+  计入——未补记则 balanced?=false 如实暴露不一致，补记归 P4-8）。
+- **接线**：`FinancialLedger::PaymentCombinationSucceededSubscriber` ← `payment_combination.succeeded`
+  （after_transition；Settlement 锁内先写 splits captured 再 succeed!——async job 提交后读最终值）→
+  PostCombinationAllocations（engine.rb 注册）。
+- 不改 OrderUpdater/PaymentSplit/Settlement/Carts 行为；ORDER_ALLOCATION 不参与任何 cash/gross 聚合
+  （按 entry_type 过滤天然隔离，AC-4013）。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.
@@ -269,6 +368,26 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **Stripe gem:** `https://github.com/stevenbian9266-cyber/pallastrade` — best reference for a real-world payment integration.
 
 ## Changelog (P0 Payment, 2026-09-03)
+
+- FIN-P4-4 (2026-09-06, PRD-20260906-payments-fin-p4-4): Allocation Integrity——FinancialFact 扩展
+  `payment_split_id` + `ORDER_ALLOCATION`；`FinancialFacts::ResolveAllocation` + `FinancialLedger::PostAllocation`
+  （显式稳定幂等 key）/`PostCombinationAllocations`/`AllocationIntegrity`（Σ active ORDER_ALLOCATION == Σ split.captured）；
+  `PaymentCombinationSucceededSubscriber` 接线（payment_combination.succeeded）。ORDER_ALLOCATION = 归属投影非 cash
+  （AC-4013）；无 migration（payment_split_id 列 P4-2 已建）。详见上文 §Allocation Integrity。
+
+- FIN-P4-3 (2026-09-06, PRD-20260906-payments-fin-p4-3): Payment/Refund Posting 接线——`FinancialLedger::{PostPayment,PostRefund}` 编排（Resolve → 门禁 `Post.postable?` → 幂等 Post；不可 post → skipped success 不猜）+ `PaymentPaidSubscriber`(payment.paid after_commit)/`RefundCreatedSubscriber`(refund.created lifecycle after_commit) 注册 core engine.rb；posting 恒在资金事务提交后、幂等可重试、失败不逆转支付。无 migration/API；splits/ORDER_ALLOCATION 归 P4-4。详见上文 §Payment/Refund Posting。
+
+- FIN-P4-2 (2026-09-06, PRD-20260905-payments-fin-p4-2): Immutable Financial Journal——新表
+  `pallastrade_financial_ledger_entries` + `FinancialLedgerEntry`（append-only/ImmutableError/幂等 key/reversal
+  自引用/state）+ `FinancialLedger::{Post,Reverse}` 原语（输入 = FIN-P4-1 FinancialFact，不判断 payment.state）。
+  本包不接业务接线（P4-3）；详见上文 §Immutable Financial Journal。无 API/UI。
+
+- FIN-P4-1 (2026-09-06, PRD-20260905-payments-fin-p4-1): Financial Fact Resolution 只读语义层——
+  `PallasTrade::FinancialFact`（Value Object）+ `FinancialFacts::{InstrumentClassifier, CaptureEvidencePolicy,
+  OwnershipResolver, ResolvePayment, ResolveRefund, RetryPaymentSafetyPolicy}`。Payment.state 不再直接等于现金事实：
+  manual authorize(pending)→AUTHORIZED_ONLY、completed+capture_event 或组合 succeeded→CASH_CAPTURED、
+  证据缺失→AMBIGUOUS、StoreCredit/Check→非 PSP fact；禁 PSP reference 推断 CommerceTransaction；
+  FIN-P4-2 Journal 唯一 posting input contract（详见上文 §Financial Fact Resolution）。无 migration/API。
 
 - TXN-P2-7 (2026-09-05, PRD-20260905-payments-txn-p2-7): Operational Hardening 后端切片——`CommerceTransaction.needs_attention(stuck_after:)`（recovery_required/manual_review 恒含 ＋ payment_confirmed/finalizing 超龄 stuck）+ `#trace`（时间戳/attempts/last_error/participants/sessions 摘要读模型）＋ rake `pallastrade:transactions:{list_needs_attention,recover[id]}`（manual recovery tooling，委托 Transactions::Recover）＋ `docs/operations/transaction-recovery-runbook.md`。
 - TXN-P2-7 slice2 (2026-09-05, PRD-20260905-payments-txn-p2-7, REQ-20260905-txn-p2-7-admin-sweeper): Admin Transactions 资源页（Orders → Transactions：index store 作用域列表 + metrics 汇总卡 recovery_required/manual_review/stuck、show trace、recover 按钮→enqueue `RecoverJob`；controller 镜像 email_logs/contact_messages；PermissionRegistry `:transactions` read/update）＋ 保守自动 sweeper `Transactions::RecoverSweeperJob`（sidekiq-cron */5：仅 recovery_required 自动 enqueue RecoverJob；manual_review/stuck 只计数+warn 日志，人工介入，AC-2014/INV-04）+ `Store has_many :commerce_transactions` + host schedule 条目。

@@ -382,7 +382,12 @@ module PallasTrade
           PallasTrade::ProductMetricsSubscriber,
           PallasTrade::BackInStockSubscriber,
           # INV-P3 D3 (2026-09-05): payment_session.processing refreshes order RESERVED TTL
-          PallasTrade::PaymentSessionReservationSubscriber
+          PallasTrade::PaymentSessionReservationSubscriber,
+          # FIN-P4-3 (2026-09-06): payment.paid / refund.created → FinancialLedger posting
+          PallasTrade::FinancialLedger::PaymentPaidSubscriber,
+          PallasTrade::FinancialLedger::RefundCreatedSubscriber,
+          # FIN-P4-4 (2026-09-06): payment_combination.succeeded → ORDER_ALLOCATION posting
+          PallasTrade::FinancialLedger::PaymentCombinationSucceededSubscriber
         ]
 
         # Pre-load authentication strategy classes to avoid reflection at request time

@@ -390,6 +390,14 @@ DO test:
 - **Real factories, not stubs**, unless the stubbed thing is external (HTTP, Stripe API).
 - **Don't reset instance variables** to paper over broken test infrastructure — fix the shared setup.
 
+### Payment capture critical-path testing rule（FIN-P4-1, 2026-09-06）
+
+- 禁止只用 factory 造 `state: 'completed'` 覆盖全部 capture 资金测试；
+- 至少一条 manual-capture 测试**真实经过** `Payment#capture!`（或 `confirm!`）模型方法路径
+  （网关网络调用可 stub，但状态迁移/capture event 必须走真实代码）；
+- Stripe auto / manual authorize / manual capture 语义必须分离断言（AUTHORIZED_ONLY ≠ captured，
+  见 pallastrade-payments SKILL §Financial Fact Resolution）。
+
 ## Where to read further
 
 - **PallasTrade's own factories:** `bundle show pallastrade_core`/lib/pallastrade/testing_support/factories/ — read these to discover available traits.

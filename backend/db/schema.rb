@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_05_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_06_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -743,6 +743,40 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_000002) do
     t.index ["number"], name: "index_pt_exports_on_number", unique: true
     t.index ["store_id"], name: "index_pt_exports_on_store_id"
     t.index ["user_id"], name: "index_pt_exports_on_user_id"
+  end
+
+  create_table "pallastrade_financial_ledger_entries", force: :cascade do |t|
+    t.decimal "amount", precision: 10, scale: 2, null: false
+    t.bigint "commerce_transaction_id", null: false
+    t.datetime "created_at", null: false
+    t.string "currency", null: false
+    t.datetime "effective_at", null: false
+    t.string "entry_type", null: false
+    t.string "idempotency_key", null: false
+    t.jsonb "metadata", default: {}
+    t.bigint "order_id"
+    t.bigint "payment_combination_id"
+    t.bigint "payment_id"
+    t.bigint "payment_split_id"
+    t.string "provider"
+    t.string "provider_reference"
+    t.datetime "recorded_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.bigint "refund_id"
+    t.bigint "reversal_of_id"
+    t.datetime "reversed_at"
+    t.string "state", default: "posted", null: false
+    t.datetime "updated_at", null: false
+    t.index ["commerce_transaction_id", "entry_type"], name: "idx_on_commerce_transaction_id_entry_type_7a34e245bf"
+    t.index ["commerce_transaction_id"], name: "idx_on_commerce_transaction_id_2ec979de8c"
+    t.index ["idempotency_key"], name: "index_pallastrade_financial_ledger_entries_on_idempotency_key", unique: true
+    t.index ["order_id"], name: "index_pallastrade_financial_ledger_entries_on_order_id"
+    t.index ["payment_combination_id"], name: "idx_on_payment_combination_id_5ef4a0473f"
+    t.index ["payment_id"], name: "index_pallastrade_financial_ledger_entries_on_payment_id"
+    t.index ["payment_split_id"], name: "index_pallastrade_financial_ledger_entries_on_payment_split_id"
+    t.index ["refund_id"], name: "index_pallastrade_financial_ledger_entries_on_refund_id"
+    t.index ["reversal_of_id"], name: "idx_pallastrade_fin_ledger_active_reversal", unique: true, where: "((state)::text = 'posted'::text)"
+    t.index ["reversal_of_id"], name: "index_pallastrade_financial_ledger_entries_on_reversal_of_id"
+    t.index ["state"], name: "index_pallastrade_financial_ledger_entries_on_state"
   end
 
   create_table "pallastrade_gateway_customers", force: :cascade do |t|
@@ -2775,6 +2809,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_000002) do
   add_foreign_key "pallastrade_contact_messages", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_email_logs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_email_templates", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_financial_ledger_entries", "pallastrade_commerce_transactions", column: "commerce_transaction_id"
+  add_foreign_key "pallastrade_financial_ledger_entries", "pallastrade_financial_ledger_entries", column: "reversal_of_id"
+  add_foreign_key "pallastrade_financial_ledger_entries", "pallastrade_orders", column: "order_id"
+  add_foreign_key "pallastrade_financial_ledger_entries", "pallastrade_payment_combinations", column: "payment_combination_id"
+  add_foreign_key "pallastrade_financial_ledger_entries", "pallastrade_payment_splits", column: "payment_split_id"
+  add_foreign_key "pallastrade_financial_ledger_entries", "pallastrade_payments", column: "payment_id"
+  add_foreign_key "pallastrade_financial_ledger_entries", "pallastrade_refunds", column: "refund_id"
   add_foreign_key "pallastrade_menu_configs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_option_type_translations", "pallastrade_option_types"
   add_foreign_key "pallastrade_option_value_translations", "pallastrade_option_values"

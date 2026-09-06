@@ -1227,6 +1227,118 @@
         "ttlPaymentWindowGuard": 15,
         "regressionGreen": 10
       }
+    },
+    {
+      "id": "GS-050",
+      "name": "P4-1 资金事实解析：Payment.completed ≠ captured（FinancialFacts::ResolvePayment/ResolveRefund）",
+      "description": "FIN-P4-1（PRD-20260905-payments-fin-p4-1）：Payment/Refund 经 PallasTrade::FinancialFacts::ResolvePayment/ResolveRefund 解析为标准只读 FinancialFact——manual authorize(pending)→AUTHORIZED_ONLY、completed+capture_event 或组合 succeeded→CASH_CAPTURED、completed 无 evidence→AMBIGUOUS、StoreCredit/Check 不伪装 PSP cash、1 txn 支持 N payment facts、multiple/partial refunds 每笔独立 fact；禁 PSP reference 推断 CommerceTransaction（commerce_transaction_id 命名纪律）；全量新增 financial_facts spec + P0-P3 回归 0 failures",
+      "mustDo": [
+        "FinancialFact 解析经统一 Resolver（instrument classify → ownership → amount/currency → capture evidence），禁止复制裸 payment.completed? 判定",
+        "manual-capture 至少一条测试真实经过 Payment#capture!/confirm! 模型方法路径",
+        "组合支付只产生 1 个 cash fact（splits 是 allocation，非第二笔 cash）",
+        "证据不足/冲突 → AMBIGUOUS/UNSUPPORTED，不猜；StoreCredit→STORE_CREDIT_APPLIED、Check→OFFLINE_PAYMENT_RECORDED",
+        "pallastrade-payments / pallastrade-data-model / pallastrade-testing skill changelog 已同步（FIN-P4-1）"
+      ],
+      "mustNotDo": [
+        "把 Payment.state（completed/pending）直接当 PSP CASH_CAPTURED 判定",
+        "用 response_code/pi_/cs_ 推断 CommerceTransaction ownership",
+        "Resolver 创建/更新 Payment/Refund/Transaction 或调用 capture/refund/credit（只读边界）",
+        "StoreCredit/offline/legacy 无 captured predicate 却输出 CONFIRMED CASH_CAPTURED",
+        "在 P4-1 建 financial_journal_entries 表或 posting（FIN-P4-2 范围）"
+      ],
+      "scoring": {
+        "manualAuthorizeVsCaptured": 25,
+        "evidencePolicyAmbiguous": 20,
+        "storeCreditOfflineNotPspCash": 15,
+        "ownershipNoPspRefInference": 15,
+        "readOnlyBoundary": 15,
+        "regressionGreen": 10
+      }
+    },
+    {
+      "id": "GS-051",
+      "name": "P4-2 Immutable Financial Journal：不可变资金账本（FinancialLedgerEntry + 幂等 Posting + Reversal）",
+      "description": "FIN-P4-2（PRD-20260905-payments-fin-p4-2）：FinancialLedgerEntry（append-only/ImmutableError/idempotency_key UNIQUE/reversal 自引用/state posted|reversed）+ FinancialLedger::Post（输入 = FIN-P4-1 CONFIRMED FinancialFact；幂等重放/并发 RecordNotUnique 兜底/门禁拒绝 AMBIGUOUS 与未激活 entry_type）+ FinancialLedger::Reverse（追加冲销、原 entry→reversed、重复保护 partial UNIQUE）；无业务接线（P4-3）；无 API/UI；全量 backend-rspec 0 failures",
+      "mustDo": [
+        "Journal posting 输入必须是 FIN-P4-1 FinancialFact（CONFIRMED + 激活 entry_type + 可解析 txn），禁止从 payment.state 重新判定",
+        "amount/currency/source/entry_type/ownership 不可变：update/update_columns → ImmutableError（append-only）",
+        "同一 idempotency_key 重复/并发 Post 只产生一条 entry（UNIQUE + RecordNotUnique 兜底）",
+        "错误事实用 Reverse 追加冲销（amount 相反 + reversal_of 指向原 entry + 原 entry→reversed），不原地改",
+        "pallastrade-payments / pallastrade-data-model skill changelog 已同步（FIN-P4-2）"
+      ],
+      "mustNotDo": [
+        "update 已创建 Ledger entry 的金额/币种/来源（破坏审计/对账历史）",
+        "同一原 entry 产生多条有效 reversal 或对已 reversed entry 再冲销",
+        "对 AMBIGUOUS/UNSUPPORTED/无 txn 的 fact 做 posting（不猜、不产生部分记录）",
+        "在 P4-2 接 Payment/Refund 事件挂钩（P4-3 范围）或填 PSP fee/net（P4-5）",
+        "给 ledger 引入含糊 transaction_id 字段（必须 commerce_transaction_id）"
+      ],
+      "scoring": {
+        "appendOnlyImmutable": 25,
+        "postIdempotency": 20,
+        "reversalCorrection": 20,
+        "factOnlyPostingInput": 15,
+        "gateRefuseAmbiguous": 10,
+        "regressionGreen": 10
+      }
+    },
+    {
+      "id": "GS-052",
+      "name": "P4-3 Payment/Refund Posting：资金事实入账接线（PostPayment/PostRefund + payment.paid/refund.created subscribers）",
+      "description": "FIN-P4-3（PRD-20260906-payments-fin-p4-3）：FinancialLedger::PostPayment/PostRefund 编排（ResolvePayment/ResolveRefund → 门禁 Post.postable? → 幂等 FinancialLedger::Post；AMBIGUOUS/UNSUPPORTED/无 txn → skipped success 不猜不部分记录）；PaymentPaidSubscriber(payment.paid after_commit)/RefundCreatedSubscriber(refund.created lifecycle after_commit) 注册 core engine.rb；posting 恒在资金事务提交后（P4 §16 ledger 失败不逆转支付）、幂等可重试、异常 rescue 不阻断资金流；payload py_/re_ prefixed 或 raw id 双模式；combination 1 Payment→1 cash entry（splits 归 P4-4）；无 migration/API；全量 backend-rspec 0 failures",
+      "mustDo": [
+        "payment captured（真实 confirm!/capture!）→ 恰好 1 条 CASH_CAPTURED entry（PostPayment 幂等）",
+        "store credit/offline completed → STORE_CREDIT_APPLIED/OFFLINE_PAYMENT_RECORDED entry（非 PSP cash）",
+        "successful refund → 独立 REFUND_SUCCEEDED entry；partial refunds 各自独立（不聚合）",
+        "payment.paid/refund.created 事件（均 after_commit）→ subscriber 产生 entry；重复触发幂等同一条",
+        "balance collection 独立 txn → 独立 entry；combination → 1 cash entry（splits 不产生，P4-4）",
+        "AMBIGUOUS/UNSUPPORTED/无 txn → 不产生 entry（不猜）；posting 失败不影响 Payment/Refund（rescue + 日志）"
+      ],
+      "mustNotDo": [
+        "在 PostPayment/PostRefund 重抄 payment.completed? 判定（posting 输入必须 FIN-P4-1 FinancialFact，FR-4P1-40）",
+        "创建/更新 Payment/Refund/Transaction 或改任何 state machine（只读边界）",
+        "在 FIN-P4-3 处理 split allocation（ORDER_ALLOCATION 归 FIN-P4-4）或 PSP fee/net（FIN-P4-5）",
+        "用 Payment#response_code/pi_/cs_ 推断 CommerceTransaction ownership",
+        "subscriber 同步阻断资金流或未注册（unregistered subscriber 是 silent no-op）"
+      ],
+      "scoring": {
+        "postOrchestrationSkipNotGuess": 20,
+        "eventWiringAfterCommit": 20,
+        "postIdempotency": 15,
+        "instrumentFaithfulPosting": 15,
+        "refundIndependentEntries": 10,
+        "readOnlyBoundary": 10,
+        "regressionGreen": 10
+      }
+    },
+    {
+      "id": "GS-053",
+      "name": "P4-4 Allocation Integrity：PaymentSplit → ORDER_ALLOCATION 不可变入账 + split/allocation 恒等式",
+      "description": "FIN-P4-4（PRD-20260906-payments-fin-p4-4）：FinancialFact +payment_split_id/+ORDER_ALLOCATION；FinancialFacts::ResolveAllocation（split→ORDER_ALLOCATION CONFIRMED：order/split/captured/currency + combination.commerce_transaction ownership；无组合/无 txn/captured=0→AMBIGUOUS 不猜）；FinancialLedgerEntry 激活 ORDER_ALLOCATION + Post 回填 payment_split；PostAllocation（显式稳定幂等 key fact:ORDER_ALLOCATION:txn:split，重放/retry 不重复）/PostCombinationAllocations/AllocationIntegrity（Σ active ORDER_ALLOCATION == Σ split.captured）；PaymentCombinationSucceededSubscriber（payment_combination.succeeded after_transition → async 提交后 post）；ORDER_ALLOCATION=归属投影非 cash（AC-4013 类型隔离）；不改 OrderUpdater；无 migration；全量 backend-rspec 0 failures",
+      "mustDo": [
+        "组合 Settlement succeed → 每 captured>0 split 恰好 1 条 ORDER_ALLOCATION（order_id+payment_split_id+amount=captured）",
+        "Σ active ORDER_ALLOCATION == Σ split.captured_amount（exact-paid 与 short-payment 均 balanced）",
+        "ORDER_ALLOCATION 不增加 cash/gross 聚合（entry_type 隔离，AC-4013）",
+        "payment_combination.succeeded 事件 → subscriber 产生 entries；重复触发幂等（稳定 key 不依赖时刻）",
+        "冲销：原 entry→reversed 排除、冲销 entry active 计入；未补记 → balanced?=false 如实暴露",
+        "不可 post（无组合/legacy 无 txn/captured=0）→ 不产生 entry（不猜）"
+      ],
+      "mustNotDo": [
+        "把 ORDER_ALLOCATION 当 cash inflow 计入任何聚合（双账 FIN-INV-05）",
+        "改 OrderUpdater/PaymentSplit/Settlement/Carts 行为（只读边界：唯一写 = LedgerEntry）",
+        "在 FIN-P4-4 填 PSP fee/net（FIN-P4-5）或 legacy splitter split backfill（P4-8）",
+        "用 Payment#response_code 等 PSP reference 推断 allocation txn ownership",
+        "重复 posting 因 effective_at 变化产生重复 allocation（必须显式稳定 key）"
+      ],
+      "scoring": {
+        "allocationNotCashTypedIsolation": 20,
+        "sumInvariantBalanced": 20,
+        "stableIdempotencyKey": 15,
+        "eventWiringAfterCommit": 15,
+        "reversalActiveSemantics": 10,
+        "skipNoGuess": 10,
+        "regressionGreen": 10
+      }
     }
   ]
 }
