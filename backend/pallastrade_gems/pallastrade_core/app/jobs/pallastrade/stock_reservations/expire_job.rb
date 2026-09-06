@@ -34,11 +34,30 @@ module PallasTrade
       end
 
       # D2：带支付/完成证据的订单 → 其 RESERVED 行不参与 TTL 过期（保留至 Commit/Recover）。
+      # review 批3 (bugfix B6): 进行中 PSP 窗口（PaymentSession pending/processing，或
+      # CommerceTransaction created/payment_pending）的订单同样受保护 —— Stripe hosted
+      # Checkout/3DS 重定向期间本地无 processing 事件、TTL 不续期，若 TTL 到期把行转 EXPIRED
+      # （终态）而客户随后付款成功 → Commit 无法标 COMMITTED → 静默「EXPIRED + 已消费」不一致。
       def guarded_order_ids
         PallasTrade::Order.where(
           'payment_total > 0 OR completed_at IS NOT NULL OR state IN (?)',
           %w[paid complete]
+        ).or(
+          PallasTrade::Order.where(id: active_payment_order_ids)
         ).select(:id)
+      end
+
+      # B6：有进行中支付意图的订单（active PSP session pending/processing，或 active txn
+      # created/payment_pending）。僵尸 pending session 的清理归 PaymentSession 生命周期管理
+      # （非本 Job 职责）；此处保证合法支付窗口内不丢预留。
+      def active_payment_order_ids
+        session_order_ids = PallasTrade::PaymentSession.active
+                                                       .where.not(order_id: nil)
+                                                       .distinct.pluck(:order_id)
+        txn_order_ids = PallasTrade::TransactionOrder.where(
+          transaction_id: PallasTrade::CommerceTransaction.where(state: %w[created payment_pending]).select(:id)
+        ).distinct.pluck(:order_id)
+        (session_order_ids + txn_order_ids).uniq
       end
     end
   end

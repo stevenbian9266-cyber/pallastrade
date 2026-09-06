@@ -55,6 +55,26 @@ RSpec.describe PallasTrade::Payments::HandleWebhook, type: :service do
     expect(order2.reload).to be_completed
   end
 
+  # review 批3 (bugfix D9): 组合分支 completed? 早期短路 —— 重复 webhook 不再进入
+  # OnPaymentSuccess（对齐单订单分支语义）。行为断言：已 completed session 重放不产生
+  # 任何新副作用（无重复 payment / 状态不重推）。
+  it 'bugfix D9: repeated webhook on an already-completed combination session short-circuits' do
+    first = described_class.call(payment_method: payment_method, action: :captured,
+                                 payment_session: session, metadata: {})
+    expect(first.success?).to be true
+    expect(session.reload.status).to eq('completed')
+    expect(combination.reload.status).to eq('succeeded')
+
+    payments_before = PallasTrade::Payment.count
+    second = described_class.call(payment_method: payment_method, action: :captured,
+                                  payment_session: session.reload, metadata: {})
+    expect(second.success?).to be true
+    expect(PallasTrade::Payment.count).to eq(payments_before)
+    expect(combination.reload.status).to eq('succeeded')
+    expect(combination.payments.count).to eq(1)
+    expect(combination.payment_splits.sum { |s| s.captured_amount.to_f }).to eq(combined_amount)
+  end
+
   it 'AC-007 leaves single-order webhook flow untouched (no combination)' do
     plain = unpaid_order
     plain_session = create(:bogus_payment_session, order: plain, payment_method: payment_method)

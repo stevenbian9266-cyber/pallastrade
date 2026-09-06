@@ -75,6 +75,33 @@ RSpec.describe PallasTrade::StockReservations::ExpireJob, type: :job do
     expect(due.reload.state).to eq('reserved')
   end
 
+  # review 批3 (bugfix B6): 进行中 PSP 窗口（session pending/processing 或 txn
+  # created/payment_pending）的订单不受 TTL 过期 —— Stripe/3DS 重定向期间本地无
+  # processing 事件、TTL 不续期，防迟到支付成功后行已 EXPIRED（终态）静默不一致。
+  it 'keeps past-TTL RESERVED rows while a payment session is pending (B6 PSP window)' do
+    pm = create(:bogus_payment_method, store: store, active: true)
+    create(:bogus_payment_session, order: order, payment_method: pm, status: 'pending',
+                                   amount: 30, currency: 'USD')
+    due = make_reservation(0, expires_at: 1.minute.ago)
+
+    described_class.perform_now
+
+    expect(due.reload.state).to eq('reserved')
+  end
+
+  it 'keeps past-TTL RESERVED rows while a transaction is payment_pending (B6)' do
+    tx = PallasTrade::CommerceTransaction.create!(store: store, purpose: 'purchase',
+                                                  currency: 'USD', amount: 30)
+    PallasTrade::TransactionOrder.create!(commerce_transaction: tx, order: order,
+                                          role: 'primary', amount_snapshot: 30)
+    tx.start_payment!
+    due = make_reservation(0, expires_at: 1.minute.ago)
+
+    described_class.perform_now
+
+    expect(due.reload.state).to eq('reserved')
+  end
+
   # INV-P3 审计收口 D1 (2026-09-05): 过期逐行走状态机 expire! → 发布 inventory.expired 审计事件
   # （原 update_all 批量旁路状态机，事件缺失）。断言事件总线收到 inventory.expired。
   it 'publishes inventory.expired when expiring a row (D1/FR-053)' do

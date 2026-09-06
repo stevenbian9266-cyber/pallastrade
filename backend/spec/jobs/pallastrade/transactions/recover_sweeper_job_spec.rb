@@ -58,6 +58,16 @@ RSpec.describe PallasTrade::Transactions::RecoverSweeperJob, type: :job do
         not_to have_enqueued_job(PallasTrade::Transactions::RecoverJob)
     end
 
+    # review 批3 (bugfix D5): attempts 封顶 —— recovery_attempts >= 5 不再自动 enqueue
+    # （避免每 5 分钟无限 provider 轮询），转人工/告警接管。
+    it 'bugfix D5: recovery_required with attempts at/over cap is not auto-enqueued' do
+      tx = make_transaction(state: 'recovery_required')
+      tx.update_columns(recovery_attempts: 5)
+
+      expect { described_class.perform_now }.
+        not_to have_enqueued_job(PallasTrade::Transactions::RecoverJob)
+    end
+
     it 'AC-722 fresh stuck-eligible states are not auto-recovered either (threshold)' do
       make_transaction(state: 'finalizing') # fresh — below threshold
 

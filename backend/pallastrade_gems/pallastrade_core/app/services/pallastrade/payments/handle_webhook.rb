@@ -40,6 +40,10 @@ module PallasTrade
         # confirm_payment! + Finalize（组合分支：入账 Settlement + 成员完成，失败→recovery）；
         # legacy 无 txn 组合 → PaymentCombinations::Complete 适配器（Strangler）。
         if payment_session.payment_combination.present?
+          # review 批3 (bugfix D9): 组合分支同样加 session.completed? 早期短路（对齐单订单
+          # 分支 :52-56）——重复 webhook/并发下减少对 OnPaymentSuccess 下游幂等的依赖。
+          return success(payment_session) if payment_session.reload.completed?
+
           result = PallasTrade::Transactions::OnPaymentSuccess.call(payment_session: payment_session.reload)
           return result unless result.success?
 

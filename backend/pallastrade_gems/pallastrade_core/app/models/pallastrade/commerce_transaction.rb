@@ -30,6 +30,11 @@ module PallasTrade
     # 视为卡住（finalize/sweep 未见进展）。
     NEEDS_ATTENTION_STATES = %w[recovery_required manual_review].freeze
     STUCK_STATES = %w[payment_confirmed finalizing].freeze
+    # review 批3 (bugfix B4): created/payment_pending 超龄（stale）覆盖 —— 组合孤儿 txn（成员
+    # 已全部完成但 txn 停 payment_pending，如 PSP webhook 丢失）与库存门失败遗留的 created
+    # 交易此前不在任何 needs-attention/sweeper 覆盖内，完全不可见。默认 24h 兜底
+    # （正常等待支付的窗口远大于 stuck 的 1h 阈值，避免把正在支付的单子过早报警）。
+    STALE_STATES = %w[created payment_pending].freeze
 
     belongs_to :store, class_name: 'PallasTrade::Store'
     belongs_to :customer, class_name: PallasTrade.user_class.to_s, optional: true
@@ -182,11 +187,14 @@ module PallasTrade
 
     # TXN-P2-7：需要运维关注的交易（stuck visibility）。
     # @param stuck_after [ActiveSupport::Duration] payment_confirmed/finalizing 卡住阈值
+    # @param stale_after [ActiveSupport::Duration] created/payment_pending 超龄阈值（B4）
     # @return [ActiveRecord::Relation]
-    def self.needs_attention(stuck_after: 1.hour)
+    def self.needs_attention(stuck_after: 1.hour, stale_after: 24.hours)
       stuck_before = Time.current - stuck_after
+      stale_before = Time.current - stale_after
       where(state: NEEDS_ATTENTION_STATES).
-        or(where(state: STUCK_STATES).where(arel_table[:updated_at].lt(stuck_before)))
+        or(where(state: STUCK_STATES).where(arel_table[:updated_at].lt(stuck_before))).
+        or(where(state: STALE_STATES).where(arel_table[:updated_at].lt(stale_before)))
     end
 
     # TXN-P2-7：交易 trace 读模型（§58 transaction trace）——聚合时间戳/attempt/

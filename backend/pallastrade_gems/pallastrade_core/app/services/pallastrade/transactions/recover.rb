@@ -63,8 +63,10 @@ module PallasTrade
 
           case resolution.value[:verdict]
           when :unpaid
-            return failure(tx, { code: 'commerce_transaction_unpaid_in_finalizing' }) if tx.state == 'finalizing'
-
+            # review 批3 (bugfix B3): finalizing+UNPAID 是矛盾态（provider 权威已确认未付但
+            # txn 停在 finalize）——先归一化 recovery_required（与 ambiguous 分支一致）再
+            # retry_payment，不再只报错把 txn 永久卡 finalizing（RecoverSweeper 不处理 finalizing）。
+            tx.mark_recovery_required! if tx.state == 'finalizing'
             tx.retry_payment!
             success(action: :retry_payment, transaction: tx.reload)
           when :ambiguous

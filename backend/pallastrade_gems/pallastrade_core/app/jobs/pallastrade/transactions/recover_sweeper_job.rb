@@ -19,6 +19,10 @@ module PallasTrade
     class RecoverSweeperJob < PallasTrade::BaseJob
       queue_as PallasTrade.queues.default
 
+      # review 批3 (bugfix D5): attempts 封顶 —— recovery_required 达到该次数的交易不再自动
+      # enqueue RecoverJob（避免每 5 分钟无限 provider 只读轮询），转人工/告警接管。
+      MAX_AUTO_RECOVERY_ATTEMPTS = 5
+
       # @param threshold_hours [Integer] stuck（payment_confirmed/finalizing）判定阈值
       # @param store_id [Integer, nil] 限定单店（默认全店扫描）
       def perform(threshold_hours: 1, store_id: nil)
@@ -37,7 +41,14 @@ module PallasTrade
         # reorder(:id)：find_each 需要 PK 稳定序，避免默认序触发的 Rails 告警。
         recovery = base.where(state: 'recovery_required').reorder(:id)
         recovery_count = recovery.count
+        capped = 0
         recovery.find_each do |tx|
+          # review 批3 (bugfix D5): attempts >= 封顶 → 停止自动 enqueue（人工/告警接管），
+          # 避免顽固 recovery_required 无限 provider 轮询。
+          if tx.recovery_attempts.to_i >= MAX_AUTO_RECOVERY_ATTEMPTS
+            capped += 1
+            next
+          end
           PallasTrade::Transactions::RecoverJob.perform_later(tx.prefixed_id)
         end
 
@@ -50,6 +61,7 @@ module PallasTrade
           event: 'transactions.recover_sweeper',
           store_id: store.id,
           recovery_required_enqueued: recovery_count,
+          recovery_capped: capped,
           manual_review: manual_review_count,
           stuck_payment_confirmed: stuck_counts['payment_confirmed'] || 0,
           stuck_finalizing: stuck_counts['finalizing'] || 0,
@@ -58,10 +70,10 @@ module PallasTrade
         Rails.logger.info(log_payload.to_json)
 
         # alerts（最小集）：不新建通知通道，存在需人工项时提升为 warn 日志
-        if manual_review_count.positive? || stuck_counts.values.any? { |v| v.to_i.positive? }
+        if manual_review_count.positive? || capped.positive? || stuck_counts.values.any? { |v| v.to_i.positive? }
           Rails.logger.warn(
             "[TXN-P2-7] transactions need human attention (store #{store.id}): " \
-            "manual_review=#{manual_review_count} stuck=#{stuck_counts.inspect} " \
+            "manual_review=#{manual_review_count} capped=#{capped} stuck=#{stuck_counts.inspect} " \
             '— use Admin Transactions or rake pallastrade:transactions:recover[id]'
           )
         end

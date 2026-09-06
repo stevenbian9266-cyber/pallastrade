@@ -110,6 +110,25 @@ RSpec.describe PallasTrade::CommerceTransaction, type: :model do
         stale.update_columns(updated_at: 2.hours.ago)
         expect(described_class.needs_attention(stuck_after: 3.hours)).not_to include(stale)
       end
+
+      # review 批3 (bugfix B4): created/payment_pending 超龄（stale_after 默认 24h）纳入
+      # attention —— 组合孤儿 txn（成员完成但停 payment_pending）与库存门失败遗留 created
+      # 此前完全不可见；正常等待支付的 fresh pending 不受影响。
+      it 'bugfix B4: stale created/payment_pending (24h+) are included; fresh ones are not' do
+        stale_pending = make_transaction
+        stale_pending.start_payment!
+        stale_pending.update_columns(updated_at: 25.hours.ago)
+
+        stale_created = make_transaction
+        stale_created.update_columns(updated_at: 25.hours.ago)
+
+        fresh_pending = make_transaction
+        fresh_pending.start_payment!
+
+        relation = described_class.needs_attention
+        expect(relation).to include(stale_pending, stale_created)
+        expect(relation).not_to include(fresh_pending)
+      end
     end
 
     describe '#trace' do

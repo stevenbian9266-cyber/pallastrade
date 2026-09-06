@@ -112,6 +112,26 @@ RSpec.describe PallasTrade::Transactions::Recover, type: :service do
       expect(tx.reload).to be_completed
     end
 
+    # review 批3 (bugfix B3): finalizing+UNPAID 是矛盾态（provider 权威确认未付但 txn 卡
+    # finalize）——归一化 recovery_required 后 retry_payment，不再只报错把 txn 永久卡 finalizing。
+    it 'bugfix B3: finalizing + UNPAID → retry_payment (normalized, not stuck)' do
+      order = pending_order
+      tx = attach_transaction(order)
+      tx.start_payment!
+      tx.confirm_payment!
+      tx.begin_finalizing!
+      # provider 权威已确认未支付（session 终态取消，无本地 payment）
+      create(:bogus_payment_session, order: order, payment_method: payment_method,
+                                     status: 'canceled', amount: order.total,
+                                     currency: order.currency.to_s, commerce_transaction: tx)
+
+      result = recover(tx)
+
+      expect(result).to be_success
+      expect(result.value[:action]).to eq(:retry_payment)
+      expect(tx.reload).to be_payment_pending
+    end
+
     it 'AC-414 AMBIGUOUS (provider pending) → manual_review' do
       order = pending_order
       tx = attach_transaction(order)
