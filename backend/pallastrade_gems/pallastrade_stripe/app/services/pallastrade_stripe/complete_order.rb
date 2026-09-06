@@ -37,7 +37,11 @@ module PallasTradeStripe
         end
 
         # complete the order
-        PallasTrade::Dependencies.checkout_complete_service.constantize.call(order: order) unless order.completed?
+        unless order.completed?
+          # CORE-P5-8: legacy Stripe 回调单订单完成计数（legacy handler 路径）
+          PallasTrade::OperationalMetrics.legacy('provider_callback', provider: 'stripe', order_id: order.prefixed_id)
+          PallasTrade::Dependencies.checkout_complete_service.constantize.call(order: order)
+        end
       end
 
       order.reload

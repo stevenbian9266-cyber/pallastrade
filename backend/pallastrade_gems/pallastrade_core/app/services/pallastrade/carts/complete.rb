@@ -26,6 +26,9 @@ module PallasTrade
 
           return complete_standard_order!(cart) if cart.standard_flow?
 
+          # CORE-P5-8: 仅 legacy 分支计数（standard 分支 = canonical，不产生 legacy 计数噪声）
+          PallasTrade::OperationalMetrics.legacy('carts_complete', order_id: cart.prefixed_id)
+
           process_payments!(cart) if cart.payment_required?
 
           return failure(cart, cart.errors.full_messages.to_sentence) if cart.errors.any?

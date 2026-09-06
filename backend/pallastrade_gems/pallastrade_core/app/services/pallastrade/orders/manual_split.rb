@@ -59,6 +59,8 @@ module PallasTrade
       # 给子订单 shipment 选 shipping rate 重复计运费（运费已保留在父订单）。
       # 此处手动派生 shipment_total / shipment_state / payment_total / payment_state / total。
       def finalize_completed_child!(child)
+        # CORE-P5-8: 直写完成（绕过状态机/事件）只能原位打点计数
+        PallasTrade::OperationalMetrics.legacy('manual_split_complete', order_id: child.prefixed_id)
         child.update_columns(
           state: 'complete',
           completed_at: child.completed_at.presence || Time.current

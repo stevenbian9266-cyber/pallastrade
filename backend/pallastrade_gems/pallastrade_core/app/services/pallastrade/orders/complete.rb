@@ -27,6 +27,9 @@ module PallasTrade
 
         return failure(order, order.errors.full_messages.to_sentence) if order.errors.any?
 
+        # CORE-P5-8: admin legacy 完成尝试计数（admin/B2B next-until 路径）
+        PallasTrade::OperationalMetrics.legacy('orders_complete', order_id: order.prefixed_id)
+
         advance_to_complete!(order)
 
         if order.reload.complete?

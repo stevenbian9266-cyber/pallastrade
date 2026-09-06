@@ -572,6 +572,8 @@ require 'pallastrade/webhooks'
 require 'pallastrade/risk'
 require 'pallastrade/risk/blacklist_rule'
 require 'pallastrade/risk/order_frequency_rule'
+# CORE-P5-8 (2026-09-06): 运营观测埋点 helper（legacy 使用计数 / 事件级计数 JSON 行）
+require 'pallastrade/operational_metrics'
 
 require 'pallastrade/core/partials'
 require 'pallastrade/core/controller_helpers/auth'

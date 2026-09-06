@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| approved | PRD-20260906-admin-core-p5-8-operational-hardening-legacy-路径使用计数-运营指标埋点 | admin | 2026-09-06 | REQ-20260906-cp5-8-operational-hardening.md |
 | done | PRD-20260906-payments-fin-p4-8-repair-legacy-operations | payments | 2026-09-06 | REQ-20260906-fin-p4-8.md |
 | done | PRD-20260906-payments-fin-p4-7-transaction-reconciliation | payments | 2026-09-06 | REQ-20260906-fin-p4-7.md |
 | done | PRD-20260906-payments-fin-p4-6-source-reconciliation | payments | 2026-09-06 | REQ-20260906-fin-p4-6.md |

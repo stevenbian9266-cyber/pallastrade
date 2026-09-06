@@ -29,6 +29,8 @@ module PallasTradePaypalCheckout
         paypal_order.create_payment!
 
         # complete the order in PallasTrade
+        # CORE-P5-8: legacy PayPal capture 完成计数
+        PallasTrade::OperationalMetrics.legacy('provider_callback', provider: 'paypal', order_id: order.prefixed_id)
         PallasTrade::Dependencies.checkout_complete_service.constantize.call(order: order)
       end
 

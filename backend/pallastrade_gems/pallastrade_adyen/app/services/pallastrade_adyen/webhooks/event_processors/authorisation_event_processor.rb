@@ -37,7 +37,11 @@ module PallasTradeAdyen
             if event.success?
               payment_session&.complete
               payment.confirm!
-              PallasTrade::Dependencies.checkout_complete_service.constantize.call(order: order) unless order.completed?
+              # CORE-P5-8: legacy Adyen authorisation 完成计数
+              unless order.completed?
+                PallasTrade::OperationalMetrics.legacy('provider_callback', provider: 'adyen', order_id: order.prefixed_id)
+                PallasTrade::Dependencies.checkout_complete_service.constantize.call(order: order)
+              end
             else
               payment.failure!
               payment_session&.refuse

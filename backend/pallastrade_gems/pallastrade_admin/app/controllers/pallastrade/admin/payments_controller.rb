@@ -37,6 +37,8 @@ module PallasTrade
 
         # Transition order as far as it will go.
         while @order.next; end
+        # CORE-P5-8: admin 收付款推进 legacy 订单完成计数
+        PallasTrade::OperationalMetrics.legacy('admin_payment_complete', order_id: @order.prefixed_id, action: 'create') if @order.complete?
         # If "@order.next" didn't trigger payment processing already (e.g. if the order was
         # already complete) then trigger it manually now
 
@@ -62,6 +64,8 @@ module PallasTrade
           flash[:success] = PallasTrade.t(:payment_updated)
           # move order to next state if possible
           while @order.next; end
+          # CORE-P5-8: admin capture 推进 legacy 订单完成计数
+          PallasTrade::OperationalMetrics.legacy('admin_payment_complete', order_id: @order.prefixed_id, action: 'capture') if @order.complete?
         else
           flash[:error] = @payment.errors.full_messages.to_sentence
         end

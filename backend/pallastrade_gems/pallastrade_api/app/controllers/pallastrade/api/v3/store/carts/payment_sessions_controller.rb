@@ -80,6 +80,13 @@ module PallasTrade
                   return
                 end
 
+                # CORE-P5-8: cart 域（compat）session complete = legacy 支付完成入口计数
+                PallasTrade::OperationalMetrics.legacy(
+                  'payment_completion',
+                  entry_point: 'cart_domain_complete',
+                  payment_session_id: @payment_session.prefixed_id
+                )
+
                 # P5 (2026-08-27): 组合支付会话完成 → 走 PaymentCombinations::Complete
                 # （先入账支付 → 逐个完成所有成员订单），与 Webhook 路径收敛到同一服务。
                 if @payment_session.payment_combination.present?

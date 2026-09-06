@@ -10,6 +10,18 @@ RSpec.describe PallasTrade::Orders::ManualSplit, type: :service do
   let(:order) { create(:order_ready_to_ship, store: store, line_items_count: 3, line_items_price: 10, shipment_cost: 0) }
 
   describe '#call' do
+    # CORE-P5-8 FR-006/AC-006：源订单 completed 时子订单直写完成 → 打 legacy.manual_split_complete.calls
+    it 'AC-006 (CORE-P5-8) emits legacy.manual_split_complete.calls when child is force-completed' do
+      ids = order.line_items.map(&:id)
+      logged = []
+      allow(Rails.logger).to receive(:info) { |msg| logged << msg }
+
+      result = described_class.call(order: order, groups: { manual: [ids[0]] })
+
+      expect(result.success?).to be true
+      expect(logged.join("\n")).to include('legacy.manual_split_complete.calls')
+    end
+
     it 'AC-001 splits completed order into a completed child with own shipment (totals conserved)' do
       ids = order.line_items.map(&:id)
 

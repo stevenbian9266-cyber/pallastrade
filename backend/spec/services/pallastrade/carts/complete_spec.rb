@@ -70,4 +70,19 @@ RSpec.describe PallasTrade::Carts::Complete, type: :service do
     expect(order.reload.completed_at).to be_nil
     expect(order.state).to eq('pending')
   end
+
+  # CORE-P5-8 FR-003/AC-003：standard 分支（canonical）不得产生 legacy 计数噪声
+  it 'does not emit legacy.carts_complete.calls for standard flow' do
+    order = pending_standard_order
+    create(:payment, order: order, payment_method: payment_method,
+                     amount: order.total, state: 'completed')
+    logged = []
+    allow(Rails.logger).to receive(:info) { |msg| logged << msg }
+
+    result = described_class.call(cart: order)
+
+    expect(result).to be_success
+    expect(order.reload).to be_completed
+    expect(logged.join("\n")).not_to include('legacy.carts_complete.calls')
+  end
 end
