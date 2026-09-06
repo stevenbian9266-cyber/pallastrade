@@ -54,17 +54,24 @@ module PallasTrade
         line_item&.order_id == order.id ? line_item.id : nil
       end
 
-      # 源订单 completed → 子订单补为 completed + 建 shipment 迁移 inventory_units。
-      # 注意：不调 OrderUpdater#update_shipments——它会对 completed 子订单 refresh_rates，
-      # 给子订单 shipment 选 shipping rate 重复计运费（运费已保留在父订单）。
-      # 此处手动派生 shipment_total / shipment_state / payment_total / payment_state / total。
+      # CORE-P5-2（2026-09-07）：ManualSplit 子单完成收口 —— 受控原语 + 完成事件 trace。
+      #
+      # 为何不走 Order#finalize!（canonical finalization）：子订单由已支付/已完成的父单
+      # 拆出，物理库存已在父单 finalize! 时真实扣减（StockMovement），子单无本地 payment
+      # （资金经 PaymentSplit 在组合/父单侧入账，P4 语义）。此处只补 order-level 完成态
+      # （state/completed_at）与派生态（totals/shipment/state），**不重走** finalize! 的
+      # 库存/支付/事件副作用（避免重复扣减与重复计费）。完成即发布
+      # `order.split_child.completed`（事件总线 EventLogSubscriber 自动落 JSON trace；
+      # 未来 P6 退款/审计可订阅此事件作为子单完成锚点）。
       def finalize_completed_child!(child)
-        # CORE-P5-8: 直写完成（绕过状态机/事件）只能原位打点计数
-        PallasTrade::OperationalMetrics.legacy('manual_split_complete', order_id: child.prefixed_id)
+        return if child.completed? # CORE-P5-2: 幂等保护（重入/重复拆单不重复完成）
+
         child.update_columns(
           state: 'complete',
           completed_at: child.completed_at.presence || Time.current
         )
+        # CORE-P5-8: 直写完成（绕过状态机/事件）只能原位打点计数
+        PallasTrade::OperationalMetrics.legacy('manual_split_complete', order_id: child.prefixed_id)
         build_child_shipment!(child)
         child.shipments.reload
 
@@ -80,6 +87,18 @@ module PallasTrade
         child.update_columns(
           shipment_state: derive_shipment_state(child),
           payment_state: derive_payment_state(child)
+        )
+        publish_split_child_completed(child)
+      end
+
+      # CORE-P5-2: 子单完成事件（payload 含 child/parent prefixed id 与来源）
+      def publish_split_child_completed(child)
+        parent = child.split_from || child.parent
+        child.publish_event(
+          'order.split_child.completed',
+          id: child.prefixed_id,
+          parent_order_id: parent&.prefixed_id,
+          source: 'admin_manual_split'
         )
       end
 

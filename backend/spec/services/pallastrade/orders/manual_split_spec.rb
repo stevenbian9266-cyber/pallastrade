@@ -10,6 +10,28 @@ RSpec.describe PallasTrade::Orders::ManualSplit, type: :service do
   let(:order) { create(:order_ready_to_ship, store: store, line_items_count: 3, line_items_price: 10, shipment_cost: 0) }
 
   describe '#call' do
+    # CORE-P5-2（2026-09-07）：子单直写完成发布 order.split_child.completed 事件（trace）
+    it 'AC (CORE-P5-2) publishes order.split_child.completed for force-completed children' do
+      ids = order.line_items.map(&:id)
+      published = []
+      allow_any_instance_of(PallasTrade::Order).to receive(:publish_event) do |_instance, name, payload = nil|
+        published << [name, payload] if name == 'order.split_child.completed'
+        nil
+      end
+
+      result = described_class.call(order: order, groups: { manual: [ids[0]] })
+
+      expect(result.success?).to be true
+      child = result.value.first
+      expect(child).to be_completed
+      expect(child.completed_at).to be_present
+
+      event = published.find { |(name, _)| name == 'order.split_child.completed' }
+      expect(event).to be_present
+      expect(event[1]).to include(id: child.prefixed_id, source: 'admin_manual_split')
+      expect(event[1][:parent_order_id]).to eq(order.prefixed_id)
+    end
+
     # CORE-P5-8 FR-006/AC-006：源订单 completed 时子订单直写完成 → 打 legacy.manual_split_complete.calls
     it 'AC-006 (CORE-P5-8) emits legacy.manual_split_complete.calls when child is force-completed' do
       ids = order.line_items.map(&:id)
