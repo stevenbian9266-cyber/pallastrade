@@ -415,6 +415,42 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - 不改任何 state machine / Journal / Payment / Refund / session；SourceResult 不落表（P4-7/8 决定持久化）；
   无 migration/API/UI。
 
+## Transaction Reconciliation（FIN-P4-7, 2026-09-06；P4 V2 拆包第 7 包）
+
+> **交易级只读聚合与核对（第二层）**：对一个 `CommerceTransaction` 聚合 Journal + Allocation + Provider Source
+> Reconciliations，输出 `TransactionResult` + `TransactionFinancialSummary`，**零本地写 / 零 provider mutation /
+> 零自动资金动作 / 绝无自动 charge/refund/倒退 transaction state**（§44/§46/AC-4023/INV-09/11——纯函数可重跑）。
+> 支持 1 Transaction → N successful payments（INV-04/RV-F03）。落库/Admin/Repair（P4-8）之前本包只回答
+> 「这单交易财务上对得上吗」。
+
+- `Reconciliations::TransactionResult`：transient 只读 VO。六态 `STATUSES`（const_set 字符串常量）+ 谓词；
+  `ATTRIBUTES`（transaction_id/status/reasons[]/summary/source_reconciliations[]/provider_gross_amount/
+  provider_currency/provider_fee/provider_net/observed_at）；freeze。⚠️ 构造端一律字符串常量（P4-6 教训）。
+- `Reconciliations::TransactionFinancialSummary`：transient 只读 VO（§25）。`CORE_ATTRIBUTES`（commercial_amount/
+  cash_captured/store_credit_applied/offline_payment_recorded/refund_total/allocation_total/currency/
+  provider_fee/provider_net/reconciliation_status）+ `DERIVED` 方法（gross_value_received = cash+store_credit+
+  offline；net_customer_value = gross−refund；unallocated_amount = cash−allocation）；`short_paid?`/`overpaid?`
+  （AC-4016 short-paid 合法业务态，非 ledger error）；`to_h/as_json` 含 derived；freeze。⚠️ derived 不进构造参数
+  （重建用 `CORE_ATTRIBUTES`），否则 unknown-key。
+- `Reconciliations::ReconcileTransaction.call(transaction:)`：只读编排。
+  - **local 面权威 = immutable Journal**（FIN-P4-2）：`FinancialLedgerEntry.active.by_transaction(txn)` 按
+    entry_type 聚合（CASH_CAPTURED→cash / STORE_CREDIT_APPLIED / OFFLINE_PAYMENT_RECORDED / REFUND_SUCCEEDED→
+    refund_total abs / ORDER_ALLOCATION→allocation）。不从 Payment 现算 cash（避免与 immutable ledger 分歧）。
+  - **provider 面复用 P4-6**：枚举 txn 可达 payments（`txn.payment_sessions.includes(:payment)` + 组合
+    `txn.payment_combination.payments`）与 refunds（payment.refunds），逐个调 `ReconcilePayment`/`ReconcileRefund`
+    → 聚合 provider gross/fee/net 与源级状态。P4-6 `SourceResult` 已 additive 增 `provider_fee/provider_net`
+    （builder 从已 fetch 的 provider hash 提取，零额外 provider 调用）。
+  - **核对矩阵（§38）**：allocation vs captured（有 ORDER_ALLOCATION 或组合）→ ALLOCATION_MISMATCH；refund vs
+    captured（refund > cash+store_credit）→ REFUND_MISMATCH；over-collect（cash > commercial）→
+    COMMERCIAL_AMOUNT_MISMATCH；short-paid **合法不 alarm**（AC-4016）。
+  - **Journal 缺失检测**：captured payments（CaptureEvidencePolicy verdict=captured）无对应 CASH_CAPTURED
+    entry → NEEDS_ATTENTION + JOURNAL_POSTING_MISSING（INV-09/12 不猜，repair 归 P4-8）。
+  - **状态合成优先级**：NEEDS_ATTENTION（journal missing/源级 attention）> MISMATCH（源级 mismatch/本地
+    reasons）> PENDING（settlement pending §43/AC-4020 不误报）> UNSUPPORTED（全源无契约 §41 不误报
+    mismatch）> NOT_APPLICABLE（无 PSP / 无财务活动）> MATCHED。
+- 不改任何 state machine / Journal / Payment / Refund / Transaction；结果 transient 不落表（P4-8 决定持久化）；
+  SourceResult additive 字段向后兼容；无 migration/API/UI。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.
@@ -424,6 +460,12 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **Stripe gem:** `https://github.com/stevenbian9266-cyber/pallastrade` — best reference for a real-world payment integration.
 
 ## Changelog (P0 Payment, 2026-09-03)
+
+- FIN-P4-7 (2026-09-06, PRD-20260906-payments-fin-p4-7): Transaction Reconciliation——`Reconciliations::
+  {ReconcileTransaction, TransactionResult, TransactionFinancialSummary}` 交易级只读聚合与核对（local 面权威 =
+  immutable Journal by_transaction 按 entry_type 聚合；provider 面复用 P4-6 逐源；§38 核对矩阵 + 六态合成 +
+  JOURNAL_POSTING_MISSING/short-paid 语义；SourceResult additive +provider_fee/provider_net）。零写零 mutation
+  幂等；不落表（P4-8）；无 migration/API。详见上文 §Transaction Reconciliation。
 
 - FIN-P4-6 (2026-09-06, PRD-20260906-payments-fin-p4-6): Source Reconciliation——`Reconciliations::{SourceResult,
   ReconcilePayment, ReconcileRefund}` 只读源级核对（local captured 判定 = CaptureEvidencePolicy；六态

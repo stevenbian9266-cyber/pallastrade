@@ -24,6 +24,7 @@ module PallasTrade
         local_amount local_currency
         provider_gross_amount provider_currency provider_settlement_status
         provider_payment_reference provider_charge_reference
+        provider_fee provider_net
         provider_error observed_at
       ].freeze
 
@@ -34,6 +35,8 @@ module PallasTrade
         raise ArgumentError, "Unknown SourceResult attributes: #{unknown.join(', ')}" if unknown.any?
 
         ATTRIBUTES.each { |a| instance_variable_set("@#{a}", attrs.fetch(a, nil)) }
+        @provider_fee = @provider_fee&.to_d&.round(2)
+        @provider_net = @provider_net&.to_d&.round(2)
         freeze
       end
 

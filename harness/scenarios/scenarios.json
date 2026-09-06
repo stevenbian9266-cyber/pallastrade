@@ -1402,6 +1402,41 @@
         "readOnlyZeroMutation": 10,
         "regressionGreen": 5
       }
+    },
+    {
+      "id": "GS-056",
+      "name": "P4-7 Transaction Reconciliation：CommerceTransaction 级财务聚合与核对（Journal 权威 + §38 核对矩阵）",
+      "description": "FIN-P4-7（PRD-20260906-payments-fin-p4-7）：Reconciliations::{ReconcileTransaction,TransactionResult,TransactionFinancialSummary} 交易级只读聚合。local 面权威 = immutable Journal（FinancialLedgerEntry.active.by_transaction 按 entry_type 聚合 CASH_CAPTURED/STORE_CREDIT_APPLIED/OFFLINE_PAYMENT_RECORDED/REFUND_SUCCEEDED/ORDER_ALLOCATION；不从 Payment 现算 cash）；provider 面复用 P4-6 逐 payment/refund（source 枚举 = txn.payment_sessions→payment + 组合 txn.payment_combination.payments）。§38 核对：allocation vs captured→ALLOCATION_MISMATCH；refund vs captured→REFUND_MISMATCH；over-collect→COMMERCIAL_AMOUNT_MISMATCH；short-paid 合法不 alarm（AC-4016）；Journal 缺失（captured payment 无 CASH_CAPTURED entry）→NEEDS_ATTENTION/JOURNAL_POSTING_MISSING（INV-09/12 不猜）。六态合成优先级 NEEDS_ATTENTION>MISMATCH>PENDING(settlement,AC-4020)>UNSUPPORTED(legacy §41)>NOT_APPLICABLE>MATCHED。TransactionFinancialSummary：§25 字段 + derived（gross=cash+store_credit+offline；net=gross−refund；unallocated=cash−allocation）+ short_paid?/overpaid?。SourceResult additive provider_fee/provider_net（零额外 provider 调用）。零写零 mutation/幂等/绝不自动资金动作/不落表（P4-8）；无 migration/API；全量 backend-rspec 0 failures",
+      "mustDo": [
+        "local 金额唯一权威 = immutable Journal by_transaction（按 entry_type 聚合，非 Payment 现算）",
+        "exact-paid（single/combination/multi-payment）：commercial == Σ CASH_CAPTURED == Σ ORDER_ALLOCATION → MATCHED（AC-4014/4015/INV-04）",
+        "short payment：cash < commercial → 不 alarm、summary short_paid? 如实暴露（AC-4016）",
+        "Journal 缺失：captured payment 无 CASH_CAPTURED entry → NEEDS_ATTENTION + JOURNAL_POSTING_MISSING（不猜、不自动 repair）",
+        "§38 矩阵：ALLOCATION_MISMATCH/REFUND_MISMATCH/COMMERCIAL_AMOUNT_MISMATCH 如实暴露",
+        "provider 面复用 P4-6（SourceResult 聚合 gross/fee/net）；legacy 全 UNSUPPORTED 不误报 MISMATCH；无 PSP → NOT_APPLICABLE",
+        "partial refund → refund_total/net 正确且逐笔保留（RV-F05）",
+        "六态合成优先级正确 + 只读：零写、零 state 变更、零 Journal/Payment/Refund 创建、零自动资金动作、重复执行同结果"
+      ],
+      "mustNotDo": [
+        "从 Payment/Split 现算 local cash 绕开 immutable Journal（必须 by_transaction 聚合）",
+        "把 short-paid 报成 MISMATCH/ledger error（AC-4016 合法业务态）",
+        "Journal 缺失时猜/自动 repair/自动 posting（必须 NEEDS_ATTENTION + JOURNAL_POSTING_MISSING，repair 归 P4-8）",
+        "legacy（Adyen/PayPal）交易误报 MISMATCH（必须 UNSUPPORTED）",
+        "settlement pending 误报 MISMATCH（必须 PENDING，AC-4020）",
+        "把 allocation 语义强加于非组合交易（无 ORDER_ALLOCATION/无组合时不做 allocation 核对）",
+        "reconcile 触发任何写库/state/自动 charge/refund/倒退 transaction（INV-09/11，必须纯函数）",
+        "在 FIN-P4-7 落 summary/reconciliation 快照表或做 repair/backfill（P4-8）"
+      ],
+      "scoring": {
+        "journalAuthoritativeAggregation": 20,
+        "exactPaidMatched": 15,
+        "shortPaidNoFalseAlarm": 10,
+        "journalMissingDetection": 15,
+        "checkMatrixReasons": 10,
+        "sourceReuseProviderAggregation": 10,
+        "sixStateSynthesisPriority": 10,
+        "readOnlyIdempotent": 10
+      }
     }
   ]
 }

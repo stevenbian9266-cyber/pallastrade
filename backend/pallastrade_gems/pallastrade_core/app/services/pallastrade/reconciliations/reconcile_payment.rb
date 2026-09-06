@@ -100,6 +100,8 @@ module PallasTrade
           provider_settlement_status: provider&.dig(:settlement_status),
           provider_payment_reference: provider&.dig(:provider_payment_reference),
           provider_charge_reference: provider&.dig(:provider_charge_reference),
+          provider_fee: provider&.dig(:fee_amount),
+          provider_net: provider&.dig(:net_amount),
           provider_error: provider_error&.message,
           observed_at: Time.current
         )
