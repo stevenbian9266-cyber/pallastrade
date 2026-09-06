@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| done | PRD-20260906-payments-fin-p4-5-stripe-provider-financial-facts | payments | 2026-09-06 | REQ-20260906-fin-p4-5.md |
 | done | PRD-20260906-payments-fin-p4-4-allocation-integrity | payments | 2026-09-06 | REQ-20260906-fin-p4-4.md |
 | done | PRD-20260906-payments-fin-p4-3-payment-refund-posting | payments | 2026-09-06 | REQ-20260906-fin-p4-3.md |
 | done | PRD-20260905-payments-fin-p4-2-immutable-financial-journal | payments | 2026-09-05 | REQ-20260906-fin-p4-2.md |

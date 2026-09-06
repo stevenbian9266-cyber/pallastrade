@@ -47,15 +47,25 @@ module PallasTrade
         LOCAL_CAPTURE_RESOLUTION_TYPES.include?(payment_method.type)
       end
 
-      # provider reconciliation capability（FR-4P1-32~35）。本包未实现任何 PSP financial
-      # reconciliation（FIN-P4-5 才做）→ 真实 PSP 一律 UNSUPPORTED，StoreCredit/Offline 为 NOT_APPLICABLE。
+      # provider reconciliation capability（FR-4P1-32~35 / FIN-P4-5）。
+      # FIN-P4-5 实现 fetch_financial_details 后：实现了该只读财务明细契约的 gateway
+      # （Stripe / Bogus）→ SUPPORTED；StoreCredit/Check 无 PSP → NOT_APPLICABLE；
+      # 其余真实 PSP（Adyen/PayPal/未知）未实现 → UNSUPPORTED（不误报，P4 §40/§41）。
       # @return [String] PROVIDER_RECONCILIATION_SUPPORTED / PROVIDER_RECONCILIATION_UNSUPPORTED / NOT_APPLICABLE
       def self.provider_reconciliation_capability(payment_method)
         return 'NOT_APPLICABLE' if payment_method.nil?
         return 'NOT_APPLICABLE' if payment_method.is_a?(PallasTrade::PaymentMethod::StoreCredit)
         return 'NOT_APPLICABLE' if payment_method.is_a?(PallasTrade::PaymentMethod::Check)
 
-        'PROVIDER_RECONCILIATION_UNSUPPORTED'
+        implements_financial_details?(payment_method) ? 'PROVIDER_RECONCILIATION_SUPPORTED' : 'PROVIDER_RECONCILIATION_UNSUPPORTED'
+      end
+
+      # capability 与实现存在性一致：fetch_financial_details 的 method owner 非 base
+      # PaymentMethod（base 只 raise NotImplementedError）= 真实现。
+      def self.implements_financial_details?(payment_method)
+        return false unless payment_method.respond_to?(:fetch_financial_details)
+
+        payment_method.method(:fetch_financial_details).owner != PallasTrade::PaymentMethod
       end
 
       private

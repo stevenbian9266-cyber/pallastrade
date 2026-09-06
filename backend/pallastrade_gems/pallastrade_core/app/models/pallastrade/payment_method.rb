@@ -103,6 +103,27 @@ module PallasTrade
       raise ::NotImplementedError, 'You must implement fetch_payment_status method for this gateway.'
     end
 
+    # PALLAS-CUSTOM: FIN-P4-5 (PRD-20260906-payments-fin-p4-5)
+    # Read-only provider financial-details contract (P4 §30/§31). Queries the provider for
+    # authoritative financial facts of a payment session WITHOUT mutating any local state
+    # (no Payment creation, no state transitions) and returns a normalized Hash that
+    # `PallasTrade::FinancialFacts::ProviderFinancialDetails.from_hash` can consume.
+    #
+    # Output fields (P4 §31): provider_payment_reference (pi_…), provider_charge_reference (ch_…),
+    #   provider_balance_transaction_reference (txn_…), provider_refund_references (re_…[]),
+    #   gross_amount/gross_currency, refund_total/refund_currency, fee_amount/fee_currency,
+    #   net_amount/net_currency, settlement_status, observed_at, raw_reference.
+    #   fee/net/refund_total are nullable when not provable (un-captured / no balance transaction) — no guessing.
+    # Consumed by FIN-P4-6 Source Reconciliation. fee/net are reconciliation facts, never Journal entries.
+    #
+    # @param payment_session [PallasTrade::PaymentSession]
+    # @return [Hash] normalized financial details (see above)
+    # @raise [::NotImplementedError] when the gateway has no read-only financial-details contract
+    # @raise [PallasTrade::Core::GatewayError] on provider/network failure
+    def fetch_financial_details(payment_session:)
+      raise ::NotImplementedError, 'You must implement fetch_financial_details method for this gateway.'
+    end
+
     # Parses an incoming webhook payload from the payment provider.
     # Override in gateway subclasses to implement provider-specific webhook parsing.
     #

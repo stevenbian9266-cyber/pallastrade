@@ -1339,6 +1339,35 @@
         "skipNoGuess": 10,
         "regressionGreen": 10
       }
+    },
+    {
+      "id": "GS-054",
+      "name": "P4-5 Stripe Provider Financial Facts：fetch_financial_details 归一快照（PI/Charge/BalanceTransaction/Refund）",
+      "description": "FIN-P4-5（PRD-20260906-payments-fin-p4-5）：PaymentMethod#fetch_financial_details 只读契约（base default raise，镜像 fetch_payment_status）；PallasTradeStripe::Gateway 实现（cs_/pi_ 双模式→PI→latest_charge ch_→BalanceTransaction txn_(fee/net)→Refunds re_；金额 cents→元归一；settlement_status settled 仅当 PI succeeded，未捕获 fee/net nil 不猜）；retrieve_balance_transaction；Gateway::Bogus 确定性替身（completed→settled/fee0/net；本地 refunds 派生）；FinancialFacts::ProviderFinancialDetails transient VO（白名单 from_hash/freeze）；provider_reconciliation_capability 翻转（Stripe/Bogus→SUPPORTED；Adyen/PayPal→UNSUPPORTED；StoreCredit/Check→NOT_APPLICABLE）；fee/net=reconciliation fact 不进 Journal；快照不落表（P4-6）；只读零副作用；无 migration/API；全量 backend-rspec 0 failures",
+      "mustDo": [
+        "Stripe cs_ 与 pi_ 模式 succeeded → 归一 snapshot（pi_/ch_/txn_/re_ refs + gross + fee/net + refund_total + settlement=settled）",
+        "PI.latest_charge 支持 string id 与已展开对象双形态（Charge 引用全路径 P4 §33）",
+        "非 settled intent → settlement_status 如实、fee/net nil（不猜）",
+        "Bogus 确定性替身 + ProviderFinancialDetails VO 白名单/freeze",
+        "capability 与实现一致：Stripe/Bogus SUPPORTED、legacy UNSUPPORTED、StoreCredit/Check NOT_APPLICABLE",
+        "只读：查询零本地写、零 Payment/Refund 创建、零 Stripe mutation；fee/net 不进 Journal"
+      ],
+      "mustNotDo": [
+        "用 Stripe 整数 cents 误当金额（必须 /100 归一 major unit）",
+        "把未捕获/无 BT 的 fee/net 猜成 0（必须 nil）",
+        "capability 标 SUPPORTED 但无 fetch_financial_details 实现",
+        "把 fee/net 写入 Journal（PSP_FEE/PSP_NET_SETTLEMENT RESERVED 不变，reconciliation fact）",
+        "在 FIN-P4-5 做 reconciliation verdict 或 ProviderFinancialSnapshot 落表（P4-6）"
+      ],
+      "scoring": {
+        "normalizedFinancialSnapshot": 20,
+        "readOnlyZeroSideEffect": 20,
+        "chargeRefFullPath": 15,
+        "capabilityConsistent": 15,
+        "noGuessNullableFeeNet": 10,
+        "bogusDeterministic": 10,
+        "regressionGreen": 10
+      }
     }
   ]
 }

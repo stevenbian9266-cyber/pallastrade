@@ -252,6 +252,12 @@ module PallasTradeStripe
       send_request { |opts| Stripe::Charge.retrieve(charge_id, opts) }
     end
 
+    # PALLAS-CUSTOM: FIN-P4-5 (PRD-20260906-payments-fin-p4-5)
+    # Read-only retrieval of a Stripe BalanceTransaction (fee/net authority).
+    def retrieve_balance_transaction(balance_transaction_id)
+      send_request { |opts| Stripe::BalanceTransaction.retrieve(balance_transaction_id, opts) }
+    end
+
     def create_ephemeral_key(customer_id)
       protect_from_error do
         response = send_request { |opts| Stripe::EphemeralKey.create({ customer: customer_id }, opts.merge(stripe_version: Stripe.api_version)) }

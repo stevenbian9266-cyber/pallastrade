@@ -112,6 +112,7 @@ RSpec.describe PallasTrade::PaymentSessions::Stripe, type: :model do
     describe "#stripe_payment_intent" do
       it "retrieves the PaymentIntent directly (not via Checkout Session)" do
         allow(gateway).to receive(:retrieve_payment_intent).with("pi_test_789").and_return(fake_payment_intent)
+        allow(gateway).to receive(:retrieve_checkout_session) # spy：断言 pi_ 模式不触碰 Checkout Session
 
         expect(pi_session.stripe_payment_intent.id).to eq("pi_test_456")
         expect(gateway).to have_received(:retrieve_payment_intent).with("pi_test_789")

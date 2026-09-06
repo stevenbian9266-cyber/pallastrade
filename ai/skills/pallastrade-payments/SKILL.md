@@ -289,8 +289,8 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - `FinancialFacts::RetryPaymentSafetyPolicy`：旧 attempt 仍存在可权威确认 provider space（session `external_id` /
   payment `response_code`）时，新 charge 前必须先 provider verification（P2 `PaymentFactResolver` 已具备）。
 - Adyen/PayPal legacy：本包无 captured predicate → `UNSUPPORTED/AMBIGUOUS`；provider reconciliation 能力
-  （`CaptureEvidencePolicy.provider_reconciliation_capability`）对真实 PSP 在 FIN-P4-5 前一律
-  `PROVIDER_RECONCILIATION_UNSUPPORTED`，不得当作 reconciliation PASS。
+  （`CaptureEvidencePolicy.provider_reconciliation_capability`）——FIN-P4-5 起 Stripe/Bogus（已实现
+  `fetch_financial_details`）为 `PROVIDER_RECONCILIATION_SUPPORTED`，Adyen/PayPal 仍 UNSUPPORTED。
 
 ## Immutable Financial Journal（FIN-P4-2, 2026-09-06；P4 V2 拆包第 2 包）
 
@@ -359,6 +359,29 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - 不改 OrderUpdater/PaymentSplit/Settlement/Carts 行为；ORDER_ALLOCATION 不参与任何 cash/gross 聚合
   （按 entry_type 过滤天然隔离，AC-4013）。
 
+## Stripe Provider Financial Facts（FIN-P4-5, 2026-09-06；P4 V2 拆包第 5 包）
+
+> **只读 provider 财务明细**：`fetch_payment_status`（P2/P3）回答「paid 没有」；`fetch_financial_details`
+> （本包）回答「财务明细是什么」——PI/Charge/BalanceTransaction/Refund 归一快照，供 FIN-P4-6 Source
+> Reconciliation。fee/net 是 **Reconciliation Fact，不进 Journal**（P4 §35；PSP_FEE/PSP_NET_SETTLEMENT RESERVED
+> 不变）。
+
+- `PaymentMethod#fetch_financial_details(payment_session:)`：只读契约（base default raise
+  NotImplementedError，镜像 fetch_payment_status）。
+- `PallasTradeStripe::Gateway#fetch_financial_details`：cs_/pi_ 双模式 → PI → latest_charge（ch_；string id 或
+  已展开对象双形态 P4 §33）→ BalanceTransaction（txn_；fee/net）→ Refunds（re_[]；refund_total）。金额
+  cents→decimal（元）归一；settlement_status（`settled` 仅当 PI succeeded 且可算 fee/net；未捕获 → 如实
+  status、fee/net nil 不猜）。新增 `retrieve_balance_transaction`（gateway 只读）。
+- `PallasTrade::Gateway::Bogus#fetch_financial_details`：确定性替身（completed → settled/gross/fee 0/net；
+  pending → processing + nil fee；本地 refunds 派生 refund_total）——P4-6 spec 确定性。
+- `FinancialFacts::ProviderFinancialDetails`：transient 只读 VO（白名单 from_hash/freeze；gross/refund/fee/net/
+  settlement/refs/observed_at/raw_reference；可空不猜）。
+- `CaptureEvidencePolicy.provider_reconciliation_capability`：以 `fetch_financial_details` 实现存在性判定
+  （method owner ≠ base PaymentMethod）——Stripe/Bogus → SUPPORTED；Adyen/PayPal → UNSUPPORTED；
+  StoreCredit/Check → NOT_APPLICABLE。
+- 不改 Payment/Refund/session state machine、Journal、PaymentFactResolver/fetch_payment_status 路径；快照 VO
+  不落表（P4-6 决定 reconciliation 持久化形态）；无 migration/API。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.
@@ -368,6 +391,8 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **Stripe gem:** `https://github.com/stevenbian9266-cyber/pallastrade` — best reference for a real-world payment integration.
 
 ## Changelog (P0 Payment, 2026-09-03)
+
+- FIN-P4-5 (2026-09-06, PRD-20260906-payments-fin-p4-5): Stripe Provider Financial Facts——`fetch_financial_details` 只读契约（core base + Stripe cs_/pi_ 双模式：PI→Charge→BalanceTransaction→Refunds 归一，fee/net 从 BT、ch_/txn_/re_ refs 补齐 P4 §33；+retrieve_balance_transaction）+ `Gateway::Bogus` 确定性替身 + `FinancialFacts::ProviderFinancialDetails` VO + `provider_reconciliation_capability` 翻转（Stripe/Bogus→SUPPORTED）。fee/net=reconciliation fact 不进 Journal；快照不落表（P4-6）；无 migration/API。详见上文 §Stripe Provider Financial Facts。
 
 - FIN-P4-4 (2026-09-06, PRD-20260906-payments-fin-p4-4): Allocation Integrity——FinancialFact 扩展
   `payment_split_id` + `ORDER_ALLOCATION`；`FinancialFacts::ResolveAllocation` + `FinancialLedger::PostAllocation`

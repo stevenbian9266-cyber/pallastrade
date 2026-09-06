@@ -155,18 +155,40 @@ module PallasTrade
     # no real provider round-trip — it derives a normalized status from the
     # local session state so PaymentFactResolver specs are deterministic.
     def fetch_payment_status(payment_session:)
-      normalized = case payment_session.status.to_s
-                   when 'completed' then :paid
-                   when 'failed' then :failed
-                   when 'canceled' then :canceled
-                   when 'expired' then :expired
-                   else :processing # pending/processing seen as in-flight by the "provider"
-                   end
       {
-        status: normalized,
+        status: normalized_bogus_status(payment_session),
         amount_cents: payment_session.amount_in_cents,
         currency: payment_session.currency,
         provider_reference: payment_session.external_id
+      }
+    end
+
+    # PALLAS-CUSTOM: FIN-P4-5 (PRD-20260906-payments-fin-p4-5)
+    # Deterministic read-only provider financial-details contract (test double).
+    # Bogus has no real provider round-trip — it derives a normalized financial
+    # snapshot from the local session/payment/refund state.
+    def fetch_financial_details(payment_session:)
+      settled = payment_session.status.to_s == 'completed'
+      payment = payment_session.payment
+      refunds = payment ? payment.refunds.to_a : []
+      refund_total = refunds.sum { |r| r.amount.to_d }
+      {
+        provider: 'bogus',
+        provider_payment_reference: payment_session.external_id,
+        provider_charge_reference: "ch_bogus_#{payment_session.external_id}",
+        provider_balance_transaction_reference: settled ? "txn_bogus_#{payment_session.external_id}" : nil,
+        provider_refund_references: refunds.map { |r| "re_bogus_#{r.id}" },
+        gross_amount: payment_session.amount.to_d,
+        gross_currency: payment_session.currency,
+        refund_total: refunds.any? ? refund_total : nil,
+        refund_currency: payment_session.currency,
+        fee_amount: settled ? 0.0 : nil,
+        fee_currency: settled ? payment_session.currency : nil,
+        net_amount: settled ? payment_session.amount.to_d : nil,
+        net_currency: settled ? payment_session.currency : nil,
+        settlement_status: settled ? 'settled' : normalized_bogus_status(payment_session).to_s,
+        observed_at: Time.current,
+        raw_reference: nil
       }
     end
 
@@ -208,6 +230,18 @@ module PallasTrade
     end
 
     private
+
+    # Shared status normalization for the deterministic provider contracts
+    # (fetch_payment_status / fetch_financial_details).
+    def normalized_bogus_status(payment_session)
+      case payment_session.status.to_s
+      when 'completed' then :paid
+      when 'failed' then :failed
+      when 'canceled' then :canceled
+      when 'expired' then :expired
+      else :processing # pending/processing seen as in-flight by the "provider"
+      end
+    end
 
     def generate_authorization
       "BGS-#{SecureRandom.hex(6)}"

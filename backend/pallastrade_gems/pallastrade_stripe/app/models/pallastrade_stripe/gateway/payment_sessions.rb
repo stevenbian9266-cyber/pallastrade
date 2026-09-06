@@ -218,7 +218,127 @@ module PallasTradeStripe
         }
       end
 
+      # PALLAS-CUSTOM: FIN-P4-5 (PRD-20260906-payments-fin-p4-5)
+      # Read-only provider financial-details contract (P4 §30/§31) — authoritative
+      # financial snapshot for a PaymentSession WITHOUT mutating local state.
+      # Resolves PI → latest Charge → BalanceTransaction → Refunds and normalizes:
+      #   provider_payment_reference (pi_), provider_charge_reference (ch_),
+      #   provider_balance_transaction_reference (txn_), provider_refund_references (re_[]),
+      #   gross_amount/gross_currency, refund_total/refund_currency, fee_amount/fee_currency,
+      #   net_amount/net_currency, settlement_status, observed_at, raw_reference.
+      # Amounts normalized to decimal (major units). fee/net only when settled (BalanceTransaction
+      # present) — otherwise nil (no guessing). fee/net are reconciliation facts, never Journal entries.
+      #
+      # @param payment_session [PallasTrade::PaymentSessions::Stripe]
+      # @return [Hash] normalized financial details
+      # @raise [PallasTrade::Core::GatewayError] when no PaymentIntent exists yet
+      # @raise [Stripe::StripeError] on provider/network failure (caller resolves)
+      def fetch_financial_details(payment_session:)
+        stripe_pi = payment_session.stripe_payment_intent
+        raise PallasTrade::Core::GatewayError, 'Payment session has no PaymentIntent yet' unless stripe_pi
+
+        settlement = financial_settlement_status(stripe_pi, payment_session)
+        charge = resolve_charge(stripe_pi)
+        charge_ref = charge_id(charge)
+
+        details = {
+          provider: 'stripe',
+          provider_payment_reference: stripe_pi.id,
+          provider_charge_reference: charge_ref,
+          provider_balance_transaction_reference: nil,
+          provider_refund_references: [],
+          gross_amount: amount_from_cents(charge ? charge.amount : stripe_pi.amount),
+          gross_currency: (charge&.currency || stripe_pi.currency).to_s,
+          refund_total: nil,
+          refund_currency: nil,
+          fee_amount: nil,
+          fee_currency: nil,
+          net_amount: nil,
+          net_currency: nil,
+          settlement_status: settlement,
+          observed_at: Time.current,
+          raw_reference: stripe_pi.id
+        }
+
+        return details unless settlement == 'settled' && charge.present?
+
+        balance_transaction = resolve_balance_transaction(charge)
+        if balance_transaction.present?
+          details[:provider_balance_transaction_reference] = balance_transaction.id
+          details[:fee_amount] = amount_from_cents(balance_transaction.fee)
+          details[:fee_currency] = balance_transaction.currency.to_s
+          details[:net_amount] = amount_from_cents(balance_transaction.net)
+          details[:net_currency] = balance_transaction.currency.to_s
+        end
+
+        refunds = fetch_charge_refunds(charge)
+        if refunds.any?
+          details[:provider_refund_references] = refunds.map(&:id)
+          details[:refund_total] = refunds.sum { |r| amount_from_cents(r.amount) }
+          details[:refund_currency] = charge.currency.to_s
+        end
+
+        details
+      end
+
       private
+
+      # settled 仅当资金已捕获且可算 fee/net（PI succeeded）。否则映射为 provider 状态字符串
+      # （closed enum，对齐 ProviderFinancialDetails::SETTLEMENT_STATUSES）。
+      def financial_settlement_status(stripe_pi, payment_session)
+        return 'settled' if payment_intent_successful?(stripe_pi)
+
+        if payment_session.payment_intent_mode?
+          case stripe_pi.status
+          when 'canceled' then 'canceled'
+          when 'processing' then 'processing'
+          when 'requires_capture' then 'requires_capture'
+          when 'requires_action' then 'requires_action'
+          else 'unpaid'
+          end
+        else
+          case payment_session.checkout_session_payment_status
+          when 'unpaid' then 'unpaid'
+          else 'processing'
+          end
+        end
+      end
+
+      # PI.latest_charge 支持 string id（常规）或已展开对象（respond_to :id）双形态（P4 §33）。
+      def resolve_charge(stripe_pi)
+        latest = stripe_pi.latest_charge
+        return nil if latest.blank?
+        return latest if latest.respond_to?(:id)
+
+        retrieve_charge(latest)
+      end
+
+      def charge_id(charge)
+        charge&.respond_to?(:id) ? charge.id : nil
+      end
+
+      # charge.balance_transaction 支持 string id（常规 retrieve）或已展开对象（respond_to :id）。
+      def resolve_balance_transaction(charge)
+        bt = charge.balance_transaction
+        return nil if bt.blank?
+        return bt if bt.respond_to?(:id)
+
+        retrieve_balance_transaction(bt)
+      end
+
+      # Stripe Charge 未展开时 refunds 子资源需显式 list（权威）。
+      def fetch_charge_refunds(charge)
+        return [] unless charge.present?
+
+        send_request { |opts| Stripe::Refund.list({ charge: charge.id, limit: 100 }, opts) }.data.to_a
+      end
+
+      # Stripe 整数 cents → decimal（元）归一。
+      def amount_from_cents(cents)
+        return nil if cents.nil?
+
+        cents.to_d / 100
+      end
 
       # PaymentIntent 模式直接看 PI.status；Checkout Session 模式看
       # session.payment_status（'paid' | 'unpaid' | 'no_payment_required'）。
