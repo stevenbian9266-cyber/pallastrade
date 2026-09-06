@@ -1,6 +1,5 @@
 "use server";
 
-import type { Order } from "@pallastrade/sdk";
 import { updateTag } from "next/cache";
 import { getCartOptions, getClient, requireCartId } from "@/lib/pallastrade";
 import { getCart } from "./cart";
@@ -48,38 +47,21 @@ export async function completeCheckoutPaymentSession(
 }
 
 /**
- * Completes the order. Treats 403 and 422 as success:
- * - 403 = cart already completed (e.g. webhook handler completed it)
- * - 422 = state_lock_version conflict (concurrent request)
+ * Completes the order by reading server-side truth.
  *
- * When the order was already completed (403/422), fetch it from the API
- * so the caller always gets the order data for caching on the thank-you page.
+ * CORE-P5-5 (2026-09-06): POST /carts/:id/complete route is gone (404 — replaced by
+ * Carts::Submit + orders-domain payment_sessions.complete). Order completion is now
+ * server-driven (webhook / Transactions::OnPaymentSuccess); the client must NOT call
+ * the dead endpoint. We read server truth instead: a completed order comes back as an
+ * Order, anything else (still in flight / unknown) as null — the payment-result page
+ * polls and decides the final state.
  */
 export async function completeCheckoutOrder(cartId: string) {
-  try {
-    const options = await getCartOptions();
-    const order: Order = await getClient().carts.complete(cartId, options);
-    updateTag("checkout");
-    updateTag("cart");
-    return { success: true as const, order };
-  } catch (error: unknown) {
-    if (error && typeof error === "object" && "status" in error) {
-      const status = (error as { status: number }).status;
-      if (status === 403 || status === 422) {
-        // Order already completed — try to fetch it so the thank-you page
-        // can cache and display it without a second round-trip.
-        const completedOrder = await getOrder(cartId).catch(() => null);
-        updateTag("checkout");
-        updateTag("cart");
-        return { success: true as const, order: completedOrder };
-      }
-    }
-    return {
-      success: false as const,
-      error:
-        error instanceof Error ? error.message : "Failed to complete order",
-    };
-  }
+  // getOrder never raises (withFallback → null on error).
+  const completedOrder = await getOrder(cartId);
+  updateTag("checkout");
+  updateTag("cart");
+  return { success: true as const, order: completedOrder };
 }
 
 /**

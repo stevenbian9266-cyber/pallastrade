@@ -437,8 +437,12 @@ export class StoreClient {
       this.request<Cart>('PATCH', `/carts/${cartId}/associate`, options),
 
     /**
-     * Complete the cart and finalize the purchase.
-     * Returns an Order (not Cart).
+     * @deprecated CORE-P5-5 (2026-09-06): the backend route `POST /carts/:id/complete`
+     * no longer exists (404). Order placement now happens via `carts.submit`, followed by
+     * orders-domain payment sessions (`orders.paymentSessions.complete`); final order
+     * completion is server-driven (webhook / `Transactions::OnPaymentSuccess`). This
+     * client method is kept only for backwards compatibility and will be removed on the
+     * next SDK release — new code must not call it.
      * @param cartId - Cart prefixed ID
      */
     complete: (cartId: string, options?: RequestOptions): Promise<Order> =>

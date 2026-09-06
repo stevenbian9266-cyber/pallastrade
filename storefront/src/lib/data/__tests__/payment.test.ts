@@ -4,11 +4,13 @@ const mockClient = {
   carts: {
     get: vi.fn(),
     list: vi.fn(),
-    complete: vi.fn(),
     paymentSessions: {
       create: vi.fn(),
       complete: vi.fn(),
     },
+  },
+  orders: {
+    get: vi.fn(),
   },
 };
 
@@ -135,62 +137,25 @@ describe("payment server actions", () => {
   });
 
   describe("completeCheckoutOrder", () => {
-    it("returns success with order", async () => {
-      mockClient.carts.complete.mockResolvedValue(mockOrder);
+    it("returns success with the completed order (server truth)", async () => {
+      mockClient.orders.get.mockResolvedValue(mockOrder);
 
       const result = await completeCheckoutOrder("cart-1");
 
-      expect(mockClient.carts.complete).toHaveBeenCalledWith("cart-1", {
-        guestToken: "order-token-123",
-        token: undefined,
-      });
+      expect(mockClient.orders.get).toHaveBeenCalled();
       expect(result).toEqual({ success: true, order: mockOrder });
     });
 
-    it("treats 403 as success (order already completed)", async () => {
-      const pallastradeError = Object.assign(new Error("Not authorized"), {
-        status: 403,
-      });
-      mockClient.carts.complete.mockRejectedValue(pallastradeError);
+    it("returns success with null when the order is not yet completed", async () => {
+      mockClient.orders.get.mockRejectedValue(new Error("Not found"));
 
       const result = await completeCheckoutOrder("cart-1");
 
       expect(result).toEqual({ success: true, order: null });
     });
 
-    it("treats 422 as success (state_lock_version conflict)", async () => {
-      const pallastradeError = Object.assign(
-        new Error("Unprocessable Content"),
-        {
-          status: 422,
-        },
-      );
-      mockClient.carts.complete.mockRejectedValue(pallastradeError);
-
-      const result = await completeCheckoutOrder("cart-1");
-
-      expect(result).toEqual({ success: true, order: null });
-    });
-
-    it("returns error on non-403 failure", async () => {
-      mockClient.carts.complete.mockRejectedValue(
-        new Error("Payment required"),
-      );
-
-      const result = await completeCheckoutOrder("cart-1");
-
-      expect(result).toEqual({ success: false, error: "Payment required" });
-    });
-
-    it("returns fallback message for non-Error throws", async () => {
-      mockClient.carts.complete.mockRejectedValue("unexpected");
-
-      const result = await completeCheckoutOrder("cart-1");
-
-      expect(result).toEqual({
-        success: false,
-        error: "Failed to complete order",
-      });
+    it("no longer references the dead carts.complete endpoint", () => {
+      expect(mockClient.carts).not.toHaveProperty("complete");
     });
   });
 
@@ -222,10 +187,10 @@ describe("payment server actions", () => {
         order: { id: "cart-1", current_step: "complete" },
       });
       expect(mockClient.carts.paymentSessions.complete).not.toHaveBeenCalled();
-      expect(mockClient.carts.complete).not.toHaveBeenCalled();
+      expect(mockClient.orders.get).not.toHaveBeenCalled();
     });
 
-    it("completes payment session then completes the order", async () => {
+    it("completes payment session then reads order server truth", async () => {
       mockClient.carts.get.mockResolvedValue({
         id: "cart-1",
         current_step: "payment",
@@ -234,16 +199,29 @@ describe("payment server actions", () => {
         id: "session-1",
         status: "completed",
       });
-      mockClient.carts.complete.mockResolvedValue(mockOrder);
+      mockClient.orders.get.mockResolvedValue(mockOrder);
 
       const result = await confirmPaymentAndCompleteCart("cart-1", "session-1");
 
       expect(mockClient.carts.paymentSessions.complete).toHaveBeenCalled();
-      expect(mockClient.carts.complete).toHaveBeenCalledWith("cart-1", {
-        guestToken: "order-token-123",
-        token: undefined,
-      });
+      expect(mockClient.orders.get).toHaveBeenCalled();
       expect(result).toEqual({ success: true, order: mockOrder });
+    });
+
+    it("returns success with null order when order fetch finds nothing yet", async () => {
+      mockClient.carts.get.mockResolvedValue({
+        id: "cart-1",
+        current_step: "payment",
+      });
+      mockClient.carts.paymentSessions.complete.mockResolvedValue({
+        id: "session-1",
+        status: "completed",
+      });
+      mockClient.orders.get.mockRejectedValue(new Error("Not found"));
+
+      const result = await confirmPaymentAndCompleteCart("cart-1", "session-1");
+
+      expect(result).toEqual({ success: true, order: null });
     });
 
     it("returns error when payment session fails", async () => {
@@ -262,7 +240,7 @@ describe("payment server actions", () => {
         success: false,
         error: "Payment was not successful. Please try again.",
       });
-      expect(mockClient.carts.complete).not.toHaveBeenCalled();
+      expect(mockClient.orders.get).not.toHaveBeenCalled();
     });
 
     it("skips session completion when no session ID provided", async () => {
@@ -270,66 +248,33 @@ describe("payment server actions", () => {
         id: "cart-1",
         current_step: "payment",
       });
-      mockClient.carts.complete.mockResolvedValue(mockOrder);
+      mockClient.orders.get.mockResolvedValue(mockOrder);
 
       const result = await confirmPaymentAndCompleteCart("cart-1");
 
       expect(mockClient.carts.paymentSessions.complete).not.toHaveBeenCalled();
-      expect(mockClient.carts.complete).toHaveBeenCalledWith("cart-1", {
-        guestToken: "order-token-123",
-        token: undefined,
-      });
+      expect(mockClient.orders.get).toHaveBeenCalled();
       expect(result).toEqual({ success: true, order: mockOrder });
     });
 
     it("returns success when cart is not found (already completed by webhook)", async () => {
       mockClient.carts.get.mockRejectedValue(new Error("Not found"));
+      mockClient.orders.get.mockRejectedValue(new Error("Not found"));
 
       const result = await confirmPaymentAndCompleteCart("cart-1", "session-1");
 
-      expect(mockClient.carts.complete).not.toHaveBeenCalled();
+      expect(mockClient.orders.get).toHaveBeenCalled();
       expect(result).toEqual({ success: true, order: null });
     });
 
-    it("returns error when complete throws non-403 error", async () => {
-      mockClient.carts.get.mockResolvedValue({
-        id: "cart-1",
-        current_step: "payment",
-      });
-      mockClient.carts.complete.mockRejectedValue(
-        new Error("Order cannot be completed"),
-      );
-
-      const result = await confirmPaymentAndCompleteCart("cart-1");
-
-      expect(result).toEqual({
-        success: false,
-        error: "Order cannot be completed",
-      });
-    });
-
-    it("treats 403 from complete as success (order already completed)", async () => {
-      mockClient.carts.get.mockResolvedValue({
-        id: "cart-1",
-        current_step: "payment",
-      });
-      const pallastradeError = Object.assign(new Error("Not authorized"), {
-        status: 403,
-      });
-      mockClient.carts.complete.mockRejectedValue(pallastradeError);
-
-      const result = await confirmPaymentAndCompleteCart("cart-1");
-
-      expect(result).toEqual({ success: true, order: null });
-    });
-
-    it("returns success when getCart throws (cart may have been completed)", async () => {
+    it("returns success with null when getCart throws (order state unknown)", async () => {
       mockClient.carts.get.mockRejectedValue("unexpected");
+      mockClient.orders.get.mockRejectedValue(new Error("Not found"));
 
       const result = await confirmPaymentAndCompleteCart("cart-1");
 
-      // getCart() returns null on error (clears stale cookies),
-      // so confirmPaymentAndCompleteCart treats it as already completed
+      // getCart() returns null on error (clears stale cookies), so the flow reads
+      // order server truth (null → pending/unknown; payment-result decides final state)
       expect(result).toEqual({ success: true, order: null });
     });
   });
