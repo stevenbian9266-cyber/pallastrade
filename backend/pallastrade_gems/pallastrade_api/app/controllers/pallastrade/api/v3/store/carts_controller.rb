@@ -15,6 +15,13 @@ module PallasTrade
           skip_before_action :set_resource
           prepend_before_action :require_authentication!, only: [:index, :associate]
 
+          # 客户 cart 列表仅用于“恢复最近购物车”（storefront getCart / requireCartId
+          # 无 cookie 兜底）。弃购窗口内无活动的 active cart 视为已弃购——不返回，
+          # 避免把历史遗留 active cart（含旧商品）重新挂回用户会话：结算后 cookie
+          # 被清空、返回商城时购物车“凭空出现非本人添加商品”（bugfix 2026-09-06）。
+          # 窗口对齐 legacy 弃购阈值（AbandonedCarts::SendNotificationsJob 默认 24h）。
+          CART_RESTORE_ACTIVITY_WINDOW = 24.hours
+
           # GET /api/v3/store/carts/:id
           # Returns shopping cart by prefixed ID (cart_xxx).
           def show
@@ -111,7 +118,11 @@ module PallasTrade
           end
 
           def scope
-            current_store.shopping_carts.active.where(user: current_user).order(updated_at: :desc)
+            current_store.shopping_carts.active.
+              where(user: current_user).
+              where('last_activity_at IS NULL OR last_activity_at >= ?',
+                    CART_RESTORE_ACTIVITY_WINDOW.ago).
+              order(updated_at: :desc)
           end
 
           private

@@ -14,7 +14,8 @@ module PallasTrade
                  where(store_id: current_store.id, customer_id: current_user.id).
                  find_by_prefix_id!(params[:id])
             result = PallasTrade::Transactions::Resume.call(transaction: tx)
-            render json: { data: resume_payload(result.value) }
+            # 扁平单资源响应（bugfix 2026-09-06）：与 SDK TransactionResume 扁平类型对齐。
+            render json: resume_payload(result.value)
           rescue ActiveRecord::RecordNotFound
             render json: {
               error: { code: 'record_not_found', message: 'Transaction not found' }

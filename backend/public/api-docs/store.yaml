@@ -6344,76 +6344,66 @@ paths:
               schema:
                 type: object
                 required:
-                - data
+                - id
+                - state
+                - purpose
+                - currency
+                - amount
+                description: Flat single-resource shape (bugfix 2026-09-06) — matches the rest of the Store API and the SDK OrderTransactionStart type
                 properties:
-                  data:
+                  id:
+                    type: string
+                    description: Prefixed transaction ID (txn_...)
+                  type:
+                    type: string
+                    enum:
+                    - transaction
+                  state:
+                    type: string
+                  purpose:
+                    type: string
+                  currency:
+                    type: string
+                  amount:
+                    type: string
+                  checkout_version:
+                    type: integer
+                    nullable: true
+                  price_version:
+                    type: string
+                    nullable: true
+                  snapshot_fingerprint:
+                    type: string
+                    nullable: true
+                  completed_at:
+                    type: string
+                    nullable: true
+                  payment_execution:
                     type: object
+                    nullable: true
+                    description: Payment attempt session (ps_...) for the provider UI; null for non-session methods
                     required:
                     - id
                     - type
-                    - attributes
+                    - status
+                    - amount
+                    - currency
                     properties:
                       id:
                         type: string
-                        description: Prefixed transaction ID (txn_...)
                       type:
                         type: string
                         enum:
-                        - transaction
-                      attributes:
-                        type: object
-                        required:
-                        - state
-                        - purpose
-                        - currency
-                        - amount
-                        properties:
-                          state:
-                            type: string
-                          purpose:
-                            type: string
-                          currency:
-                            type: string
-                          amount:
-                            type: string
-                          checkout_version:
-                            type: integer
-                            nullable: true
-                          price_version:
-                            type: string
-                            nullable: true
-                          snapshot_fingerprint:
-                            type: string
-                            nullable: true
-                          completed_at:
-                            type: string
-                            nullable: true
-                      payment_execution:
+                        - payment_session
+                      status:
+                        type: string
+                      amount:
+                        type: string
+                      currency:
+                        type: string
+                      external_data:
                         type: object
                         nullable: true
-                        description: Payment attempt session (ps_...) for the provider UI; null for non-session methods
-                        required:
-                        - id
-                        - type
-                        - status
-                        - amount
-                        - currency
-                        properties:
-                          id:
-                            type: string
-                          type:
-                            type: string
-                            enum:
-                            - payment_session
-                          status:
-                            type: string
-                          amount:
-                            type: string
-                          currency:
-                            type: string
-                          external_data:
-                            type: object
-                            nullable: true
         '409':
           description: 'Checkout not ready / quote changed / transaction not payable (checkout_not_ready | quote_changed | transaction_not_payable | checkout_version_conflict)'
           content:
@@ -6479,93 +6469,89 @@ paths:
               schema:
                 type: object
                 required:
-                - data
+                - id
+                - state
+                - purpose
+                - currency
+                - amount
+                description: Flat single-resource shape (bugfix 2026-09-06) — matches the SDK TransactionResume type
                 properties:
-                  data:
+                  id:
+                    type: string
+                  type:
+                    type: string
+                    enum:
+                    - transaction
+                  state:
+                    type: string
+                  purpose:
+                    type: string
+                  currency:
+                    type: string
+                  amount:
+                    type: string
+                  snapshot_fingerprint:
+                    type: string
+                    nullable: true
+                  participants:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        order_id:
+                          type: string
+                          nullable: true
+                        role:
+                          type: string
+                        amount_snapshot:
+                          type: object
+                          nullable: true
+                        completion_status:
+                          type: string
+                        completed:
+                          type: boolean
+                  payment_sessions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        status:
+                          type: string
+                        amount:
+                          type: object
+                          nullable: true
+                        currency:
+                          type: string
+                        external_id:
+                          type: string
+                        completed:
+                          type: boolean
+                  recovery:
                     type: object
-                    required:
-                    - id
-                    - state
-                    - purpose
-                    - currency
-                    - amount
                     properties:
-                      id:
-                        type: string
-                      type:
-                        type: string
-                        enum:
-                        - transaction
-                      state:
-                        type: string
-                      purpose:
-                        type: string
-                      currency:
-                        type: string
-                      amount:
-                        type: string
-                      snapshot_fingerprint:
+                      attempts:
+                        type: integer
+                      last_error_code:
                         type: string
                         nullable: true
-                      participants:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            order_id:
-                              type: string
-                              nullable: true
-                            role:
-                              type: string
-                            amount_snapshot:
-                              type: object
-                              nullable: true
-                            completion_status:
-                              type: string
-                            completed:
-                              type: boolean
-                      payment_sessions:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                            status:
-                              type: string
-                            amount:
-                              type: object
-                              nullable: true
-                            currency:
-                              type: string
-                            external_id:
-                              type: string
-                            completed:
-                              type: boolean
-                      recovery:
-                        type: object
-                        properties:
-                          attempts:
-                            type: integer
-                          last_error_code:
-                            type: string
-                            nullable: true
-                          last_error_class:
-                            type: string
-                            nullable: true
-                          last_error_message:
-                            type: string
-                            nullable: true
-                      completion:
-                        type: object
-                        properties:
-                          completed_at:
-                            type: string
-                            nullable: true
-                          participants_completed:
-                            type: integer
-                          participants_total:
-                            type: integer
+                      last_error_class:
+                        type: string
+                        nullable: true
+                      last_error_message:
+                        type: string
+                        nullable: true
+                  completion:
+                    type: object
+                    properties:
+                      completed_at:
+                        type: string
+                        nullable: true
+                      participants_completed:
+                        type: integer
+                      participants_total:
+                        type: integer
         '404':
           description: transaction not found
           content:

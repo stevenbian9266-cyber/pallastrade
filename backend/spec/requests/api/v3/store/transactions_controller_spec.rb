@@ -19,16 +19,17 @@ RSpec.describe 'Store transactions resume (TXN-P2-2)', type: :request do
       post "/api/v3/store/orders/#{order.prefixed_id}/transactions",
            params: { payment_method_id: payment_method.prefixed_id },
            headers: headers
-      tx_id = JSON.parse(response.body).dig('data', 'id')
+      tx_id = JSON.parse(response.body)['id']
 
       get "/api/v3/store/transactions/#{tx_id}", headers: headers
 
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
-      expect(body.dig('data', 'id')).to eq(tx_id)
-      expect(body.dig('data', 'state')).to eq('payment_pending')
-      expect(body.dig('data', 'participants', 0, 'role')).to eq('primary')
-      expect(body.dig('data', 'payment_sessions', 0, 'id')).to start_with('ps_')
+      # 扁平单资源响应（bugfix 2026-09-06：与 SDK TransactionResume 对齐）
+      expect(body['id']).to eq(tx_id)
+      expect(body['state']).to eq('payment_pending')
+      expect(body.dig('participants', 0, 'role')).to eq('primary')
+      expect(body.dig('payment_sessions', 0, 'id')).to start_with('ps_')
     end
 
     it 'hides another customer transaction (404)' do

@@ -27,7 +27,11 @@ module PallasTrade
               )
 
               if result.success?
-                render json: { data: transaction_payload(result.value[:transaction], result.value[:payment_session]) },
+                # 扁平单资源响应（与 store API 其余端点一致）：SDK request 不做
+                # { data: ... } 信封解包，包信封会让 `payment_execution` 在顶层
+                # 不可见 → 前端拿不到 client_secret，静默跳过 confirm（bugfix
+                # 2026-09-06：Pay Now 卡 payment-result）。
+                render json: transaction_payload(result.value[:transaction], result.value[:payment_session]),
                        status: :created
               else
                 render_service_error(result.error)
@@ -44,20 +48,20 @@ module PallasTrade
               )
             end
 
+            # 扁平单资源形状（bugfix 2026-09-06）：对齐 SDK OrderTransactionStart
+            # （store-client.ts transactions.create 直接读顶层 id/state/payment_execution）。
             def transaction_payload(transaction, session)
               {
                 id: transaction.prefixed_id,
                 type: 'transaction',
-                attributes: {
-                  state: transaction.state,
-                  purpose: transaction.purpose,
-                  currency: transaction.currency,
-                  amount: transaction.amount.to_s,
-                  checkout_version: transaction.checkout_version,
-                  price_version: transaction.price_version,
-                  snapshot_fingerprint: transaction.snapshot_fingerprint,
-                  completed_at: transaction.completed_at&.iso8601
-                },
+                state: transaction.state,
+                purpose: transaction.purpose,
+                currency: transaction.currency,
+                amount: transaction.amount.to_s,
+                checkout_version: transaction.checkout_version,
+                price_version: transaction.price_version,
+                snapshot_fingerprint: transaction.snapshot_fingerprint,
+                completed_at: transaction.completed_at&.iso8601,
                 payment_execution: session_payload(session)
               }
             end

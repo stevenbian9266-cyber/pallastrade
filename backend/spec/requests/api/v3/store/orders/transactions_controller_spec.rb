@@ -25,9 +25,11 @@ RSpec.describe 'Order transactions (Store API, TXN-P2-2)', type: :request do
 
       expect(response).to have_http_status(:created)
       body = JSON.parse(response.body)
-      expect(body.dig('data', 'id')).to start_with('txn_')
-      expect(body.dig('data', 'attributes', 'state')).to eq('payment_pending')
-      expect(body.dig('data', 'payment_execution', 'id')).to start_with('ps_')
+      # 扁平单资源响应（bugfix 2026-09-06：与 SDK OrderTransactionStart 对齐）
+      expect(body['id']).to start_with('txn_')
+      expect(body['state']).to eq('payment_pending')
+      expect(body.dig('payment_execution', 'id')).to start_with('ps_')
+      expect(body.dig('payment_execution', 'external_data', 'client_secret')).to be_present
     end
 
     it 'AC-207 does not expose another customer order (404)' do
@@ -45,7 +47,7 @@ RSpec.describe 'Order transactions (Store API, TXN-P2-2)', type: :request do
       post "/api/v3/store/orders/#{order.prefixed_id}/transactions",
            params: { payment_method_id: payment_method.prefixed_id },
            headers: headers
-      tx_id = JSON.parse(response.body).dig('data', 'id')
+      tx_id = JSON.parse(response.body)['id']
       tx = PallasTrade::CommerceTransaction.find_by_prefix_id!(tx_id)
       tx.update_column(:state, 'completed') # 终态（绕过状态机直达）
 

@@ -45,6 +45,20 @@ RSpec.describe 'Store Carts API (standard flow)', type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response[:data].map { |item| item[:id] }).to eq([active_cart.prefixed_id])
     end
+
+    # bugfix 2026-09-06：弃购窗口（24h）内无活动的 active cart 不再返回——
+    # 否则结算清 cookie 后返回商城会“凭空出现”历史遗留购物车商品。
+    it 'excludes stale active carts with no activity inside the abandonment window' do
+      fresh = store.shopping_carts.create!(user: user, currency: 'USD', locale: 'en')
+      fresh.touch_last_activity!
+      stale = store.shopping_carts.create!(user: user, currency: 'USD', locale: 'en')
+      stale.update_column(:last_activity_at, 2.days.ago)
+
+      get '/api/v3/store/carts', headers: bearer_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response[:data].map { |item| item[:id] }).to eq([fresh.prefixed_id])
+    end
   end
 
   describe 'GET /api/v3/store/carts/:id (payment methods)' do
