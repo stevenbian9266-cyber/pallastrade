@@ -162,10 +162,13 @@ export default function AccountLayout({
   const isAuthPage = authPagePaths.has(pathname);
   const isMainAccountPage = pathname === `${basePath}/account`;
 
-  // Redirect to login if not authenticated and trying to access protected sub-pages
+  // Redirect to login if not authenticated and trying to access protected sub-pages.
+  // 携带 redirect 回跳：登录成功后可回到用户原本想访问的账户页（含我的订单）。
   useEffect(() => {
     if (!loading && !isAuthenticated && !isAuthPage && !isMainAccountPage) {
-      router.replace(`${basePath}/account`);
+      router.replace(
+        `${basePath}/account?redirect=${encodeURIComponent(pathname)}`,
+      );
     }
   }, [
     loading,
@@ -173,6 +176,7 @@ export default function AccountLayout({
     isAuthPage,
     isMainAccountPage,
     basePath,
+    pathname,
     router,
   ]);
 

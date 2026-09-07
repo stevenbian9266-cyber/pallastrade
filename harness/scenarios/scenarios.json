@@ -1575,8 +1575,8 @@
     },
     {
       "id": "GS-062",
-      "name": "标准流程订单正向履约打通 + 前台订单历史会话门控（REQ-20260907）",
-      "description": "REQ-20260907-order-standard-fulfillment-and-storefront-visibility：标准流程（Carts::Submit，state=pending→paid）订单此前无法后台发货——Order#can_ship? 只认 legacy state=='complete'，shipment 卡 pending、Order 标准状态机（paid→processing→shipped）无驱动者。修复：Order#can_ship? 对 standard paid/processing 返回 true；ShipmentHandler（ship 唯一同步汇聚点，覆盖 admin Rails/API/Fulfillments::Create）末尾调 Order#advance_standard_fulfillment!（全部发货→ship!→shipped；部分→process!→processing）；Order#refresh_fulfillment_states! 幂等派生（pending→ready），挂 admin OrdersController#show 与 Shipments::Update；storefront account/orders 增加 requireAccountSession 门控（未登录/过期 → redirect /account?redirect=…），消除 401 被 withFallback 吞成空列表的误导空态。legacy 零回归。",
+      "name": "标准流程订单正向履约打通 + 前台订单历史账户会话门控（REQ-20260907）",
+      "description": "REQ-20260907-order-standard-fulfillment-and-storefront-visibility：标准流程（Carts::Submit，state=pending→paid）订单此前无法后台发货——Order#can_ship? 只认 legacy state=='complete'，shipment 卡 pending、Order 标准状态机（paid→processing→shipped）无驱动者。修复：Order#can_ship? 对 standard paid/processing 返回 true；ShipmentHandler（ship 唯一同步汇聚点，覆盖 admin Rails/API/Fulfillments::Create）末尾调 Order#advance_standard_fulfillment!（全部发货→ship!→shipped；部分→process!→processing）；Order#refresh_fulfillment_states! 幂等派生（pending→ready），挂 admin OrdersController#show 与 Shipments::Update；前台账户区会话门控在 account/layout.tsx（client）统一实现（匿名/过期 → /account?redirect= 回跳，登录后正常展示 ownership 订单；不在 Server Component 用服务端 redirect 门控——Next 16 直连不产 307）。legacy 零回归。",
       "mustDo": [
         "在架构内接线既有 Shipment 状态机/ShipmentHandler/Order 标准状态机，不得加临时 bypass",
         "standard paid/processing 订单 shipment 可派生 ready 且可发货；发货后 order 推进 processing（部分）或 shipped（全部），幂等",

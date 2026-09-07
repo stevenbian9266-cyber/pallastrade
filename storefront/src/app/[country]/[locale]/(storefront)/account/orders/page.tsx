@@ -5,7 +5,6 @@ import { getTranslations } from "next-intl/server";
 import { OrderCombinedPay } from "@/components/account/OrderCombinedPay";
 import { OrderList } from "@/components/account/OrderList";
 import { Button } from "@/components/ui/button";
-import { requireAccountSession } from "@/lib/account-session";
 import { getOrders } from "@/lib/data/orders";
 
 interface OrdersPageProps {
@@ -21,9 +20,9 @@ export default async function OrdersPage({ params }: OrdersPageProps) {
   });
   const basePath = `/${country}/${locale}`;
 
-  // 账户会话门控：未登录/会话过期 → 跳转登录（带 redirect 回跳），避免 401 被
-  // 静默吞成空列表而误报「没有订单」。
-  await requireAccountSession(basePath, `${basePath}/account/orders`);
+  // 账户区鉴权由 account/layout.tsx（客户端）统一门控：未登录/会话过期 →
+  // router.replace(/account?redirect=…)，本页仅服务已登录用户；数据来自
+  // ownership-scoped GET /customers/me/orders（后端已验证含全部所属订单）。
 
   const response = await getOrders({ limit: 50 });
   const orders = response.data;
