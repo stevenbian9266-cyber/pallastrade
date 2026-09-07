@@ -401,6 +401,32 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **边界**：Admin 对组合 child 订单的取支付路径（route 层 `@parent.payments` 不含组合 payment）与完整
   async 退货链编排归 REV-P6-5/6-8；Recover/Sweeper 归 REV-P6-6。
 
+## Cancellation Orchestration（REV-P6-4, 2026-09-07；PRD-20260907-payments-rev-p6-4-cancellation-orchestration）
+
+> **「是否退款」业务决策从 Gateway/state 副作用上收到 `Orders::Cancel`（=Cancellation Orchestrator）**
+> （源文档 REV-P6 §30-38/§59/RV-R06/R07；RISK-REV-04）。REV-P6-2 后 gateway cancel 已 durable 化，
+> 但 `Order#after_cancel` 仍无条件 `payments.completed.each(&:cancel!)` → 取消即隐式全退——本包修正。
+
+- **决策矩阵**：`Orders::Cancel` 在 `order.cancel!` **之前**、事务内按取消时点 payment fact 决策：
+  UNPAID → 无退款（保留 void/release，INV-P3-4）；PAID → 默认对每笔可退 PSP completed payment 经
+  `Refunds::Request(..., enqueue: false)` 建 durable `Refund(requested)`（金额 = `refund_amount ||`
+  `credit_allowed`，`refund_amount` 仅限单笔可退 PSP；reason=`RefundReason.order_canceled_reason`），
+  事务提交后统一 `ExecuteJob.perform_later`（不事务内入队，避免回滚孤儿入队）。`refund_payments` 三态：
+  nil=auto（PAID 默认退）/ true / false（显式不退款，AC-R64-03）。
+- **`Order#after_cancel`（FR-R64-102）**：删除 PSP completed `each(&:cancel!)` 隐式退款。保留：
+  store credit completed `cancel!`（店内账户 credit-back，非 PSP）、gift-card 覆盖时 store credit `void!`、
+  incomplete 非 store credit `void_transaction!`、store credit pending `void!`、shipment cancel（restock
+  REUSE）、updater/webhook/event。Order=canceled + PSP Refund=requested/processing 为合法并存态（§35）。
+- **幂等**：重复取消 → `cancel!` InvalidTransition → failure，不产生第二笔 Refund；建单失败整体回滚
+  （不留半取消）。
+- **API**：`PATCH /api/v3/admin/orders/:id/cancel`（+ legacy admin）透传
+  reason/note/refund_payments/refund_amount/restock_items/notify_customer；不传 = 旧语义（PAID 默认退）。
+  服务内 coalesce：reason blank→'other'、restock_items/notify_customer nil→false。
+- **fresh query**：编排与 after_cancel 走 `Payment.where(order_id:)`（避免 association 空 target 缓存——
+  `Payment#invalidate_old_payments` 会把空 target 缓存到 order 实例导致 scope 读陈旧空集）。
+- **边界**：组合（combination-level）完整取消编排 + OrderCancellation 状态机扩展归 REV-P6-5/6-8 与
+  REV-P6-0 DB audit；Stripe UNPAID 失败/过期 webhook `order.cancel!` 行为不变（无 completed → 无退款）。
+
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 
 > **ORDER_ALLOCATION = 组合资金对成员订单的归属投影（immutable journal fact），不是额外 cash inflow**

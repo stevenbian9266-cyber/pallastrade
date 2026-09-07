@@ -62,10 +62,27 @@ module PallasTrade
           end
 
           # PATCH /api/v3/admin/orders/:id/cancel
+          # REV-P6-4（FR-R64-103）：透传取消决策参数到 Cancellation Orchestrator
+          # （Orders::Cancel）。refund_payments 三态：缺省=auto（PAID 默认退款，兼容旧行为）、
+          # true=退款、false=显式不退款；refund_amount 仅在单笔可退 PSP 支付时有效。
           def cancel
             with_order_lock do
-              @resource.canceled_by(try_pallastrade_current_user)
-              render json: serialize_resource(@resource.reload)
+              cast = ->(key) { params.key?(key) ? ActiveModel::Type::Boolean.new.cast(params[key]) : nil }
+              result = @resource.canceled_by(
+                try_pallastrade_current_user,
+                nil,
+                reason: params[:reason],
+                note: params[:note],
+                refund_payments: cast.call(:refund_payments),
+                refund_amount: params[:refund_amount],
+                restock_items: cast.call(:restock_items),
+                notify_customer: cast.call(:notify_customer)
+              )
+              if result.success?
+                render json: serialize_resource(@resource.reload)
+              else
+                render_validation_error(@resource.errors.presence || result.error)
+              end
             end
           end
 

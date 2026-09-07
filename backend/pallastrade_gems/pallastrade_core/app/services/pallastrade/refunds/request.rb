@@ -28,9 +28,13 @@ module PallasTrade
       # @param commerce_transaction [PallasTrade::CommerceTransaction, nil] ownership（可证明才传）
       # @param target_order [PallasTrade::Order, nil] ownership：组合退款目标子订单（可证明才传）
       # @param payment_split [PallasTrade::PaymentSplit, nil] ownership：组合退款目标 split（可证明才传）
+      # @param enqueue [Boolean] 默认 true 入队 ExecuteJob；false 仅落库 durable requested
+      #   （供编排器在自身事务内建行、事务提交后再统一入队——避免事务回滚导致孤儿入队，
+      #   见 REV-P6-4 Orders::Cancel Cancellation Orchestrator）
       # @return [PallasTrade::ServiceModule::Result] success(value=refund, requested)
       def call(payment:, amount:, reason: nil, refunder_id: nil, reimbursement: nil,
-               commerce_transaction: nil, target_order: nil, payment_split: nil)
+               commerce_transaction: nil, target_order: nil, payment_split: nil,
+               enqueue: true)
         refund = payment.refunds.build(amount: amount, reason: reason, reimbursement: reimbursement)
         refund.refunder_id = refunder_id if refunder_id
         refund.commerce_transaction = commerce_transaction if commerce_transaction
@@ -41,7 +45,7 @@ module PallasTrade
           return failure(refund)
         end
 
-        enqueue_execution(refund)
+        enqueue_execution(refund) if enqueue
         success(refund)
       end
 

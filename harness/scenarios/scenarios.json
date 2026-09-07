@@ -1596,6 +1596,33 @@
         "storefrontGate": 15,
         "legacyRegressionGreen": 15
       }
+    },
+    {
+      "id": "GS-063",
+      "name": "REV-P6-4 Cancellation Orchestration：取消退款决策上收 Orders::Cancel，after_cancel 移除隐式 PSP 退款",
+      "description": "REV-P6-4（PRD-20260907-payments-rev-p6-4-cancellation-orchestration）：Orders::Cancel 升级为 Cancellation Orchestrator——UNPAID → 无退款（void/release，INV-P3-4）；PAID → 在 order.cancel! 前事务内按 durable intent 经 Refunds::Request(enqueue:false) 建 Refund(requested)，提交后 ExecuteJob；refund_payments 三态（nil=auto 默认退/true/false 显式不退），refund_amount 仅限单笔可退 PSP；Order#after_cancel 删除 payments.completed.each(&:cancel!) 隐式退款（RISK-REV-04），保留 store credit/void/shipment restock；重复取消不产生第二笔 Refund；admin cancel API 透传决策参数。",
+      "mustDo": [
+        "PAID 取消默认（auto）产生 durable Refund(requested)（金额=credit_allowed 或 refund_amount≤credit），且只在事务提交后 enqueue ExecuteJob（RV-R07 / AC-R64-02/04）",
+        "UNPAID 取消无 Refund、reservation 正确 RELEASE（RV-R06 / AC-R64-01）",
+        "refund_payments=false → 无 Refund、payment 保持 completed、order canceled 合法（§35 / AC-R64-03）",
+        "after_cancel 不再隐式 cancel PSP completed payment（无 state 副作用退款）；store credit/void/restock 语义保留（FR-R64-102 / AC-R64-07）",
+        "重复取消幂等，不产生第二笔 Refund（AC-R64-05）；refund 建单失败整体回滚（不留半取消）",
+        "admin API cancel 透传 reason/refund_payments/refund_amount 等并落 OrderCancellation audit（AC-R64-06）；P0-P5 baseline + backend-rspec 全量绿"
+      ],
+      "mustNotDo": [
+        "在 after_cancel/state 回调内隐式对 PSP completed payment 建退款（RISK-REV-04 反例）",
+        "取消事务内直接调 PSP 或事务内 enqueue ExecuteJob（回滚孤儿入队）",
+        "refund_payments=false 仍产生退款；refund_amount 在多笔可退 PSP 上按每笔扣（不可证明不猜）",
+        "COMMITTED/PAID 订单取消错误 RELEASE reservation（INV-I09）"
+      ],
+      "scoring": {
+        "decisionUpstream": 25,
+        "noSideEffectRefund": 25,
+        "explicitNoRefund": 15,
+        "idempotentCancel": 15,
+        "apiPassthrough": 10,
+        "regressionGreen": 10
+      }
     }
   ]
 }

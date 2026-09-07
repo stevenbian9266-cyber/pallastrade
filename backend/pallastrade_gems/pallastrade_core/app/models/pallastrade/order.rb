@@ -1135,9 +1135,11 @@ module PallasTrade
     #
     # @param user [PallasTrade.user_class, nil] the user who canceled the order
     # @param canceled_at [Time, nil] the time of cancellation (defaults to current time)
+    # @param opts [Hash] REV-P6-4：透传 reason/note/refund_payments/refund_amount/
+    #   restock_items/notify_customer 到 Orchestrator（向后兼容：不传=旧行为）
     # @return [PallasTrade::ServiceModule::Result]
-    def canceled_by(user, canceled_at = nil)
-      PallasTrade.order_cancel_service.call(order: self, canceler: user, canceled_at: canceled_at)
+    def canceled_by(user, canceled_at = nil, **opts)
+      PallasTrade.order_cancel_service.call(order: self, canceler: user, canceled_at: canceled_at, **opts)
     end
 
     # Approves the order and records the approver.
@@ -1339,14 +1341,23 @@ module PallasTrade
 
       shipments.each(&:cancel!)
 
-      # payments fully covered by gift card won't be refunded
-      # we want to only void the payment
+      # REV-P6-4（FR-R64-102）：PSP completed payment 的退款不再由本 state 副作用隐式触发
+      # （Gateway 不决定业务退款语义，RISK-REV-04）。PAID 退款由 Cancellation Orchestrator
+      # （Orders::Cancel）按 durable OrderCancellation intent 显式建 Refund(requested) 并
+      # 异步执行（Refunds::Request → ExecuteJob）。这里只处理非 PSP 店内账户与未完成支付：
+      #   - store credit（店内账户，非外部资金）：completed 退回账户（同步 credit-back，保持原语义）；
+      #     gift card 全额覆盖场景仍只 void 不退回（历史语义）。
+      #   - incomplete 非 store credit：void 未完成授权。
+      #   - store credit pending：void。
+      # Order = canceled 且 PSP Refund = processing/requested 为合法并存态（源 §35）。
+      # 注：走 fresh query（Payment#invalidate_old_payments 可能把空 target 缓存到本实例）。
+      payments_for_cancel = -> { PallasTrade::Payment.where(order_id: id) }
       if gift_card.present? && covered_by_store_credit?
-        payments.completed.store_credits.each(&:void!)
+        payments_for_cancel.call.valid.completed.store_credits.each(&:void!)
       else
-        payments.completed.each(&:cancel!)
-        payments.incomplete.not_store_credits.each(&:void_transaction!)
-        payments.store_credits.pending.each(&:void!)
+        payments_for_cancel.call.valid.completed.store_credits.each(&:cancel!)
+        payments_for_cancel.call.incomplete.not_store_credits.each(&:void_transaction!)
+        payments_for_cancel.call.store_credits.pending.each(&:void!)
       end
 
       update_with_updater!

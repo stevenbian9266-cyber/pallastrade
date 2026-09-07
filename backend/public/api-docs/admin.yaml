@@ -9922,7 +9922,17 @@ paths:
       - api_key: []
         bearer_auth: []
       description: |-
-        Cancels a completed order.
+        Cancels an order.
+
+        **REV-P6-4 Cancellation Orchestration:** the refund decision is made by the
+        Cancellation Orchestrator (`Orders::Cancel`) from the durable cancellation intent,
+        not by the payment gateway. For paid orders a durable `Refund(requested)` is created
+        (executed asynchronously via `Refunds::ExecuteJob`); pass `refund_payments: false` to
+        cancel without refunding (order canceled + payment stays completed is a legal state).
+        `refund_amount` is honored only for orders with a single refundable PSP payment.
+        Optional body params: `reason`, `note`, `refund_payments`, `refund_amount`,
+        `restock_items`, `notify_customer`. Omitting `refund_payments` keeps the legacy default
+        (paid orders are refunded).
 
         **Required scope:** `write_orders` (for API-key authentication).
       x-codeSamples:
@@ -9936,10 +9946,13 @@ paths:
             secretKey: 'sk_xxx',
           })
 
-          const order = await client.orders.cancel('or_UkLWZg9DAJ')
+          const order = await client.orders.cancel('or_UkLWZg9DAJ', {
+            reason: 'staff',
+            refund_payments: false,
+          })
       - lang: bash
         label: PallasTrade CLI
-        source: pallastrade api patch /orders/{id}/cancel -d '{ ... }'
+        source: pallastrade api patch /orders/{id}/cancel -d '{"reason":"staff","refund_payments":false}'
       parameters:
       - name: x-pallastrade-api-key
         in: header
@@ -9958,6 +9971,34 @@ paths:
         description: Order ID
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Cancellation reason (customer/declined/fraud/inventory/staff/other/expired)
+                note:
+                  type: string
+                  description: Staff-facing note
+                refund_payments:
+                  type: boolean
+                  description: >-
+                    REV-P6-4 refund decision. Omit (auto): paid orders get a durable
+                    requested refund (legacy default). false: cancel without refunding.
+                refund_amount:
+                  type: string
+                  description: >-
+                    Partial refund amount (only for orders with a single refundable
+                    PSP payment; capped at the payment's remaining credit).
+                restock_items:
+                  type: boolean
+                  description: Return inventory on cancel (hint; physical restock follows shipment/manifest semantics)
+                notify_customer:
+                  type: boolean
+                  description: Hint for order.canceled subscribers
       responses:
         '200':
           description: order canceled
