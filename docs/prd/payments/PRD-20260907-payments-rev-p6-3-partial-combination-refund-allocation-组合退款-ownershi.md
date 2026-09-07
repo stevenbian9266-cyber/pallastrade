@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | verifying |
+| 状态 | done |
 | 创建日期 | 2026-09-07 |
 | 来源 | 需求：REV-P6-3 Partial/Combination Refund Allocation（组合退款 ownership 冻结 + 分摊 authority 审计冻结） |
 | 分类 | payments（自动判定，关键词：退款/refund） |
@@ -181,4 +181,5 @@
 |---|---|---|---|
 | 2026-09-07 | 0.1 | 初稿（依据 REV-P6 §58/§26-29 + 2026-09-07 分摊代码审计） | AI |
 | 2026-09-07 | 0.2 | 实施：controller 可选冻结参数（预检失败立即渲染返回，勿依赖 save 前 errors）；`amount_within_frozen_split_limit` 创建期上限；admin serializer + admin.yaml×2 + skills + GS-061；新增 `refund_combination_allocation_spec.rb`（AC-R63-01~05：组合冻结投影/兄弟不变/上限拒绝/多笔 partial/第二成员单）与 `refunds_controller_spec.rb`（FR-R63-101：参数冻结/归属拒绝/超限 422/扁平响应断言）。AC-R63-04 多笔独立 fact 由模型 spec 顺序 partial + 既有 resolve_refund 覆盖（未另建 financial_facts spec）；无新 Calculator（REUSE 冻结）。 | AI |
+| 2026-09-07 | 0.3 | 验证完成：commit `23128ab`，gate 16/16 finished，提交前+提交后全量 backend-rspec 绿（EVD-…050445/…053154），recovery manual-only，`doc-impact` 通过，push dev 发布。 | AI |
 
