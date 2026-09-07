@@ -32,6 +32,12 @@ module PallasTrade
             order.updater.update_shipment_state
             order.updater.persist_totals
           end
+
+          # 标准流程（正向链路）：paid/processing 订单在任意 fulfillment 变更（含填写
+          # 物流号）后即时派生 shipment 状态（pending→ready）与 order.shipment_state。
+          # 幂等：只重算可派生差异，不改已 shipped/canceled 行、不推进 Order 状态机。
+          order = shipment.order
+          order.refresh_fulfillment_states! if order.standard_flow? && order.state.in?(%w[paid processing])
         end
         success(shipment)
       end

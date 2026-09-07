@@ -812,6 +812,10 @@ module PallasTrade
     end
 
     def can_ship?
+      # 标准流程（Carts::Submit 创建，state ∈ STANDARD_STATES）：paid/processing 即具备履约
+      # 条件（资金已收、可开始/继续发货）；legacy checkout 订单维持原 complete 语义。
+      return true if standard_flow? && state.in?(%w[paid processing])
+
       complete? || resumed? || awaiting_return? || returned?
     end
 
@@ -850,6 +854,47 @@ module PallasTrade
       shipments.each { |shipment| shipment.update!(self) if shipment.persisted? }
       updater.update_shipment_state
       save!
+    end
+
+    # 标准流程（正向链路）履约派生刷新 —— paid/processing 订单即具备履约条件，
+    # 将 shipments 重算到 `Shipment#determine_state`（pending→ready 等），并刷新
+    # 派生 `shipment_state`。幂等：不改动已 shipped/canceled 行、不推进 Order 标准
+    # 状态机（状态推进由履约事件驱动 `advance_standard_fulfillment!`）。
+    # 用于：admin 打开订单详情（治愈存量卡 pending）、`Shipments::Update` 后即时派生。
+    def refresh_fulfillment_states!
+      return self unless standard_flow?
+      return self unless state.in?(%w[paid processing])
+
+      shipments.each do |shipment|
+        desired = shipment.determine_state(self)
+        shipment.update_columns(state: desired, updated_at: Time.current) if desired != shipment.state
+      end
+      updater.update_shipment_state
+      save! if changed?
+      self
+    end
+
+    # 标准流程（正向链路）履约状态推进 —— 在 shipment 发货（shipment.shipped）后调用：
+    #   全部 shipment 已发货 → `ship!`（paid|processing → shipped）
+    #   仅部分发货         → `process!`（paid → processing，开始履约）
+    # 幂等：仅标准流程 paid/processing 订单生效；状态已超前（shipped/completed）或
+    # 逆向态（canceled 等）直接跳过；不推进 completed（交付确认另行治理，逆向链路契约不变）。
+    def advance_standard_fulfillment!
+      return false unless standard_flow?
+      return false unless state.in?(%w[paid processing])
+
+      shipments.reload
+      if fully_shipped?
+        ship! unless state == 'shipped' # paid|processing → shipped（全部发货）
+      elsif state == 'paid'
+        process!                       # paid → processing（部分发货/开始履约）
+      end
+
+      updater.update_shipment_state
+      save! if changed?
+      true
+    rescue StateMachines::InvalidTransition
+      false
     end
 
     # Helper methods for checkout steps

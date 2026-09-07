@@ -7,6 +7,8 @@ module PallasTrade
 
       before_action :initialize_order_events
       before_action :load_order, only: %i[show edit cancel resend destroy split split_create parent_order_returns parent_order_returns_create]
+      # 标准流程订单（正向链路）：详情打开即派生 shipment 就绪状态（见方法注释）。
+      before_action :refresh_standard_fulfillment_states, only: :show
       before_action :load_order_items, only: %i[show split]
       before_action :load_user, only: [:index]
 
@@ -152,6 +154,17 @@ module PallasTrade
       end
 
       private
+
+      # 标准流程订单（正向链路）履约派生刷新：state=paid/processing 的订单在支付成功后
+      # 即具备履约条件，进入后台详情时按当前状态将 shipments 重算（pending→ready 等，
+      # 幂等，不改 shipped/canceled、不推进状态机）。用于治愈存量"已支付但 shipment 卡
+      # pending"的订单——打开即显示可发货状态，无需临时数据修复。
+      def refresh_standard_fulfillment_states
+        return unless @order&.standard_flow?
+        return unless %w[paid processing].include?(@order.state)
+
+        @order.refresh_fulfillment_states!
+      end
 
       def scope
         base_scope = current_store.orders.accessible_by(current_ability, :index)

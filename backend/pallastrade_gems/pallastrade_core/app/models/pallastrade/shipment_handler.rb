@@ -22,6 +22,10 @@ module PallasTrade
       @shipment.process_order_payments if PallasTrade::Config[:auto_capture_on_dispatch]
       @shipment.touch :shipped_at
       update_order_shipment_state
+      # 标准流程（正向链路）：shipment 已发货 → 推进 Order 标准状态机
+      # （paid→processing 部分发货 / →shipped 全部发货）。ship 是唯一同步汇聚点，
+      # 覆盖 admin Rails / admin API / Fulfillments::Create 三条发货路径。
+      @shipment.order.advance_standard_fulfillment!
     end
 
     protected

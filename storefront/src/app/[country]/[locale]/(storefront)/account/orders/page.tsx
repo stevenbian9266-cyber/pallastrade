@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { OrderCombinedPay } from "@/components/account/OrderCombinedPay";
 import { OrderList } from "@/components/account/OrderList";
 import { Button } from "@/components/ui/button";
+import { requireAccountSession } from "@/lib/account-session";
 import { getOrders } from "@/lib/data/orders";
 
 interface OrdersPageProps {
@@ -19,6 +20,10 @@ export default async function OrdersPage({ params }: OrdersPageProps) {
     namespace: "orders",
   });
   const basePath = `/${country}/${locale}`;
+
+  // 账户会话门控：未登录/会话过期 → 跳转登录（带 redirect 回跳），避免 401 被
+  // 静默吞成空列表而误报「没有订单」。
+  await requireAccountSession(basePath, `${basePath}/account/orders`);
 
   const response = await getOrders({ limit: 50 });
   const orders = response.data;

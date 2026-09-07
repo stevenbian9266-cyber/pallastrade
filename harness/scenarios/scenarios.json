@@ -1572,6 +1572,30 @@
         "authorityAuditFreeze": 10,
         "regressionGreen": 5
       }
+    },
+    {
+      "id": "GS-062",
+      "name": "标准流程订单正向履约打通 + 前台订单历史会话门控（REQ-20260907）",
+      "description": "REQ-20260907-order-standard-fulfillment-and-storefront-visibility：标准流程（Carts::Submit，state=pending→paid）订单此前无法后台发货——Order#can_ship? 只认 legacy state=='complete'，shipment 卡 pending、Order 标准状态机（paid→processing→shipped）无驱动者。修复：Order#can_ship? 对 standard paid/processing 返回 true；ShipmentHandler（ship 唯一同步汇聚点，覆盖 admin Rails/API/Fulfillments::Create）末尾调 Order#advance_standard_fulfillment!（全部发货→ship!→shipped；部分→process!→processing）；Order#refresh_fulfillment_states! 幂等派生（pending→ready），挂 admin OrdersController#show 与 Shipments::Update；storefront account/orders 增加 requireAccountSession 门控（未登录/过期 → redirect /account?redirect=…），消除 401 被 withFallback 吞成空列表的误导空态。legacy 零回归。",
+      "mustDo": [
+        "在架构内接线既有 Shipment 状态机/ShipmentHandler/Order 标准状态机，不得加临时 bypass",
+        "standard paid/processing 订单 shipment 可派生 ready 且可发货；发货后 order 推进 processing（部分）或 shipped（全部），幂等",
+        "存量卡 pending 的已支付标准订单无需数据迁移：后台打开/发货保存即派生修复",
+        "storefront 订单历史匿名/过期跳登录（redirect 回跳），登录态正常展示 ownership 订单；单笔详情保留 guest token 单查",
+        "补 RSpec（标准履约推进 + legacy 零回归）+ storefront SKILL/scenarios 同步"
+      ],
+      "mustNotDo": [
+        "为修 bug 直接改存量数据或绕状态机写 state 列（无迁移、无临时钩子）",
+        "破坏 legacy（state=complete）订单既有发货/取消/售后语义",
+        "把未登录 401 静默当作“无订单”的空态误导用户"
+      ],
+      "scoring": {
+        "inArchitectureFulfillment": 30,
+        "stateMachineAdvance": 25,
+        "derivedRefresh": 15,
+        "storefrontGate": 15,
+        "legacyRegressionGreen": 15
+      }
     }
   ]
 }
