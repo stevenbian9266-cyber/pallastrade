@@ -1,4 +1,7 @@
-"use server";
+// 注意：本模块是「渲染期服务端守卫」，刻意【不加】"use server"——
+// 若注册为 server action，在 Server Component 渲染期间调用时 redirect()
+// 不会按渲染期语义抛出 NEXT_REDIRECT 形成 HTTP 跳转（仅 action 请求边界生效）。
+// 本文件只被服务端页面 import，禁止在客户端组件 import。
 
 import { redirect } from "next/navigation";
 import { getAccessToken } from "@/lib/pallastrade/cookies";
