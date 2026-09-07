@@ -46,6 +46,8 @@ module PallasTrade
       validates :amount, numericality: { greater_than: 0, allow_nil: true }
     end
     validate :amount_is_less_than_or_equal_to_allowed_amount, on: :create, if: :amount
+    # REV-P6-3：冻结 payment_split 时 amount 不得超 split 可退额度（captured − refunded，AC-6011/6012）
+    validate :amount_within_frozen_split_limit, on: :create, if: -> { payment_split.present? && amount.present? }
     validates :state, inclusion: { in: STATES }
 
     before_create :assign_lifecycle_defaults
@@ -271,8 +273,17 @@ module PallasTrade
       end
     end
 
-    # REV-P6-1：本地成功投影（apply_success! 内调用；与 succeed 同事务）
-    # 组合退款只更新目标 PaymentSplit.refunded_amount（P4 语义），不碰兄弟单。
+    # REV-P6-3：冻结组合 split 的退款上限 = split.credit_allowed（captured − refunded，AC-6011）
+    def amount_within_frozen_split_limit
+      return if amount.to_d <= payment_split.credit_allowed.to_d
+
+      errors.add(:amount, :greater_than_allowed)
+    end
+
+    # REV-P6-3：本地成功投影（apply_success! 内调用；与 succeed 同事务）
+    # 组合退款：优先命中创建时冻结的 payment_split/target_order（REV-P6-3 冻结语义，消除
+    # Reimbursement 链推导歧义 RISK-REV-05）；legacy（无冻结）才走 reimbursement_target_order
+    # fallback。只更新目标 split，不碰兄弟单（P4/P7 语义）。
     def update_order
       if payment.order
         payment.order.updater.update

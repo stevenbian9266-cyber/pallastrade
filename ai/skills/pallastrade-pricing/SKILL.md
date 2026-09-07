@@ -219,6 +219,18 @@ The display price uses the variant's Price for `PallasTrade::Current.currency`. 
 
 `order.line_items.first.price` is the *frozen* price at the time the item was added. If the storefront PDP shows a different (newer) price, it's because the Variant's Price changed after the customer added to cart. This is intentional — cart contents don't auto-update.
 
+## Refund/Return allocation authorities（审计冻结，2026-09-07 REV-P6-3）
+
+> 退款/退货金额与税/费分摊的唯一权威实现（**REUSE，禁止另起 Calculator**）。审计冻结于 REV-P6-3
+> （PRD-20260907-payments-rev-p6-3-partial-combination-refund-allocation，源 `豆包…/P6` §26-29）。
+
+- **REFUND_AMOUNT_AUTHORITY** = `PallasTrade::Calculator::Returns::DefaultRefundAmount`：退款金额 = 按
+  退货数量加权的行金额 + 订单级 non-tax 调整（shipping/promo 等）按该行占订单金额比例分摊。
+- **REFUND_TAX_ALLOCATION_POLICY** = `ReimbursementTaxCalculator`：税额按行 `pre_tax`/`refunded`
+  占比分摊；只分摊实际退的行。
+- 行级 cap：不超行可退金额；refund 总额再受 `payment.credit_allowed` 与冻结 split
+  `captured − refunded` 双门禁约束（见 pallastrade-payments skill REV-P6-3）。
+
 ## Where to read further
 
 - **Core concepts:** `node_modules/@pallastrade/docs/dist/developer/core-concepts/pricing.md`

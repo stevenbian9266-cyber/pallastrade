@@ -17,6 +17,15 @@ module PallasTrade
                      :requested_at, :processing_at, :succeeded_at, :failed_at, :ambiguous_at,
                      created_at: :iso8601, updated_at: :iso8601
 
+          # REV-P6-3 (FR-R63-102)：组合退款冻结 ownership —— payment_split_id / target_order_id
+          attribute :payment_split_id do |refund|
+            refund.payment_split&.prefixed_id
+          end
+
+          attribute :target_order_id do |refund|
+            refund.target_order&.prefixed_id
+          end
+
           attribute :requested_at do |refund|
             refund.requested_at&.iso8601
           end

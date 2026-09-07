@@ -378,6 +378,29 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **边界**：reimbursement/returns 退货链本包保留同步执行（REV-P6-1 `create_refund` 语义），完整 async 编排
   归 REV-P6-5（Return orchestration）；Recover/Sweeper 归 REV-P6-6。
 
+## Partial / Combination Refund Allocation（REV-P6-3, 2026-09-07；PRD-20260907-payments-rev-p6-3-partial-combination-refund-allocation）
+
+> **组合/部分退款 ownership 创建即冻结**（源文档 REV-P6 §58/§26-29）。消灭 Reimbursement 链推导歧义
+> （RISK-REV-05）：一旦冻结，`update_order` 只投影冻结的 split/order，不再猜测兄弟单。
+
+- **冻结**：Admin `POST /orders/:id/refunds` 可选 `payment_split_id` / `target_order_id`（prefixed，作用域内
+  校验归属：split 必须属于该 payment 且带 order；target 必须 ∈ 组合 orders 或 = payment 自身订单，否则 422
+  且不落库）。预检失败立即渲染返回（勿依赖 save 前 errors —— `valid?` 会清空预加错误）。
+- **投影**：`Refund#update_order` 组合分支 `split = self.payment_split || target_order.payment_splits…
+  （fallback）`——冻结列优先；无冻结 legacy 走 reimbursement_target_order fallback（行为不变）。
+  成功只更新目标 split `refunded_amount`，兄弟 split 不动。
+- **上限（双门禁，取严格者）**：全局 `payment.credit_allowed`（REV-P6-1）+ 冻结 split 上限
+  `amount_within_frozen_split_limit`（`split.credit_allowed = captured − refunded`，创建期校验，超限拒绝且
+  不 enqueue）。多笔 partial 顺序扣减，逐笔校验剩余 split 额度。
+- **serializer**：admin refund（扁平 JSON）暴露 `payment_split_id` / `target_order_id`（只回显冻结列，
+  不做链推导回填）。
+- **分摊 authority（审计冻结，REUSE——本次无新 Calculator）**：REFUND_AMOUNT_AUTHORITY =
+  `Calculator::Returns::DefaultRefundAmount`（按退货数量加权行金额 + 订单级 non-tax 调整按行占比）；
+  REFUND_TAX_ALLOCATION_POLICY = `ReimbursementTaxCalculator`（pre_tax/refunded %）；SHIPPING/PROMOTION 走
+  订单级 non-tax 调整按行占比。权威记录见 `pallastrade-pricing` skill。
+- **边界**：Admin 对组合 child 订单的取支付路径（route 层 `@parent.payments` 不含组合 payment）与完整
+  async 退货链编排归 REV-P6-5/6-8；Recover/Sweeper 归 REV-P6-6。
+
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 
 > **ORDER_ALLOCATION = 组合资金对成员订单的归属投影（immutable journal fact），不是额外 cash inflow**

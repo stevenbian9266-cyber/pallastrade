@@ -15780,6 +15780,12 @@ paths:
         state (`succeeded`/`failed`/`ambiguous`/…). A failed or ambiguous refund row is kept for
         audit/recovery.
 
+        **REV-P6-3 combination freeze (optional):** pass `payment_split_id` (and optionally
+        `target_order_id`) to freeze ownership at creation for split/combination payments. The
+        refund amount must not exceed the frozen split's remaining credit
+        (`captured − refunded`); over-limit is rejected with `422`. Response echoes
+        `payment_split_id` / `target_order_id`.
+
         **Required scope:** `write_refunds` (for API-key authentication).
       x-codeSamples:
       - lang: javascript
@@ -15796,6 +15802,8 @@ paths:
             payment_id: 'pay_UkLWZg9DAJ',
             amount: '5.00',
             refund_reason_id: 'refrsn_UkLWZg9DAJ',
+            payment_split_id: 'split_UkLWZg9DAJ',
+            target_order_id: 'or_UkLWZg9DAJ',
           })
       - lang: bash
         label: PallasTrade CLI
@@ -15831,6 +15839,8 @@ paths:
                 payment_id: py_UkLWZg9DAJ
                 refund_reason_id: rr_UkLWZg9DAJ
                 reimbursement_id:
+                payment_split_id:
+                target_order_id:
                 last_error_message:
                 requested_at: '2026-07-11T15:38:00.820Z'
                 processing_at:
@@ -15858,6 +15868,18 @@ paths:
                 refund_reason_id:
                   type: string
                   description: Refund reason ID
+                payment_split_id:
+                  type: string
+                  description: >-
+                    REV-P6-3: optional PaymentSplit ID to freeze as the refund
+                    target for split/combination payments. Must belong to the
+                    same payment.
+                target_order_id:
+                  type: string
+                  description: >-
+                    REV-P6-3: optional target order ID (the frozen split's
+                    member order, or the payment's own order for single orders)
+                    to freeze as the refund target.
   "/api/v3/admin/locales":
     get:
       summary: List supported locales
@@ -25372,6 +25394,12 @@ components:
           type: string
           nullable: true
         reimbursement_id:
+          type: string
+          nullable: true
+        payment_split_id:
+          type: string
+          nullable: true
+        target_order_id:
           type: string
           nullable: true
         metadata:

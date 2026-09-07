@@ -1545,6 +1545,33 @@
         "gatewayCancelDurable": 15,
         "regressionGreen": 10
       }
+    },
+    {
+      "id": "GS-061",
+      "name": "REV-P6-3 Partial/Combination Refund Allocation：组合退款 ownership 创建即冻结，冻结 split 上限双门禁",
+      "description": "REV-P6-3（PRD-20260907-payments-rev-p6-3-partial-combination-refund-allocation）：Admin POST /orders/:id/refunds 可选 payment_split_id/target_order_id 创建即冻结 ownership（作用域内归属校验，跨 payment/跨 store 422 不落库）；Refund#update_order 组合分支优先冻结 split（无冻结 legacy reimbursement fallback 不变）；冻结 split 上限 = captured − refunded（创建期校验，超限拒绝且不 enqueue，与 payment 全局 capacity 双门禁取严格者）；多笔 partial 顺序扣减；成功投影只更新冻结 split、兄弟 split 不动；admin serializer 暴露 payment_split_id/target_order_id（只回显冻结列）。分摊 authority（DefaultRefundAmount / ReimbursementTaxCalculator / 订单级 non-tax 分摊）审计冻结 REUSE——无新 Calculator。",
+      "mustDo": [
+        "创建期冻结：payment_split_id 必须属于该 payment（AC-6011）；target_order 必须 ∈ 组合 orders 或 = payment 自身订单，否则 422 且不落库",
+        "冻结 split 上限 = split.captured − refunded；超限拒绝且不 enqueue（AC-6011）；全局 capacity 与 split 上限双门禁取严格者",
+        "成功投影只更新冻结 split.refunded_amount，兄弟 split 不动（AC-6008/6012）",
+        "多笔 partial 顺序扣减，逐笔校验剩余 split 额度（AC-6012）；无冻结 legacy reimbursement fallback 行为不变（AC-6010）",
+        "admin serializer/API 文档暴露 payment_split_id/target_order_id（只回显冻结列，无链推导回填）",
+        "分摊 authority 只读审计冻结（DefaultRefundAmount/ReimbursementTaxCalculator），写入 pricing skill，无新 Calculator；backend-rspec 全量 + P0-P5 baseline 绿"
+      ],
+      "mustNotDo": [
+        "无冻结/伪造归属的 update_order 猜测兄弟单投影（RISK-REV-05）",
+        "绕过冻结 split 上限只查 payment 全局 capacity（超 split 未退部分退款）",
+        "另起新分摊 Calculator 或改动 DefaultRefundAmount/ReimbursementTaxCalculator 金额语义",
+        "serializer 回填推导 target_order（只回显冻结列）"
+      ],
+      "scoring": {
+        "freezeOnCreate": 25,
+        "splitCapDoubleGate": 25,
+        "frozenProjectionOnly": 20,
+        "partialSequential": 15,
+        "authorityAuditFreeze": 10,
+        "regressionGreen": 5
+      }
     }
   ]
 }

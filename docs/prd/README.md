@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| verifying | PRD-20260907-payments-rev-p6-3-partial-combination-refund-allocation-组合退款-ownershi | payments | 2026-09-07 | REQ-20260907-rev-p6-3-partial-combination-refund-allocation.md |
 | done | PRD-20260906-payments-rev-p6-2-refund-execution-orchestration-refunds-request-asyn | payments | 2026-09-06 | REQ-20260906-rev-p6-2-refund-execution.md |
 | done | PRD-20260906-payments-rev-p6-1-durable-refund-lifecycle-foundation-退款-durable-生命周期 | payments | 2026-09-06 | REQ-20260906-rev-p6-1-durable-refund-lifecycle.md |
 | approved | PRD-20260906-admin-core-p5-8-operational-hardening-legacy-路径使用计数-运营指标埋点 | admin | 2026-09-06 | REQ-20260906-cp5-8-operational-hardening.md |

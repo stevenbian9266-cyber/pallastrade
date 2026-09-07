@@ -22,6 +22,38 @@ module PallasTrade
                 )
                 authorize_resource!(refund, :create)
 
+                # REV-P6-3 (FR-R63-101/102)：组合退款创建即冻结 ownership —— 可选
+                # payment_split_id / target_order_id。冻结 split 时 amount 上限由
+                # Refund 校验 amount_within_frozen_split_limit（split.captured − refunded）
+                # 强制执行（FR-R63-103 / AC-6011）。预检失败立即渲染返回（勿依赖
+                # save 前的 errors —— valid? 会清空预加错误）。
+                combination = payment.payment_combination
+                if params[:payment_split_id].present?
+                  split = PallasTrade::PaymentSplit.accessible_by(current_ability, :update).find_by_prefix_id(params[:payment_split_id])
+                  if split && split.payment_id == payment.id && split.order_id.present?
+                    refund.payment_split = split
+                    refund.target_order ||= split.order
+                  else
+                    refund.errors.add(:payment_split, :invalid)
+                    error_rendered = true
+                    render_validation_error(refund.errors)
+                    next
+                  end
+                end
+                if params[:target_order_id].present?
+                  target_order = PallasTrade::Order.accessible_by(current_ability, :update).find_by_prefix_id(params[:target_order_id])
+                  in_combination = combination && combination.orders.where(id: target_order&.id).exists?
+                  is_single_order = target_order&.id == payment.order_id
+                  if in_combination || is_single_order
+                    refund.target_order = target_order
+                  else
+                    refund.errors.add(:target_order, :invalid)
+                    error_rendered = true
+                    render_validation_error(refund.errors)
+                    next
+                  end
+                end
+
                 unless refund.save
                   error_rendered = true
                   render_validation_error(refund.errors)
@@ -38,7 +70,9 @@ module PallasTrade
                     payment_id: payment.prefixed_id,
                     amount: refund.amount.to_s,
                     reason_id: reason&.prefixed_id,
-                    currency: refund.currency
+                    currency: refund.currency,
+                    payment_split_id: refund.payment_split&.prefixed_id,
+                    target_order_id: refund.target_order&.prefixed_id
                   }
                 )
               end
