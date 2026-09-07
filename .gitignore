@@ -28,3 +28,6 @@ Thumbs.db
 
 # Temporary debug/utility scripts (local-only, never commit)
 /tmp-toy/
+
+# 本地业务梳理/设计文档（不纳入仓库）
+/豆包梳理业务需求/
