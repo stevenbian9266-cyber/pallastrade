@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | verifying |
+| 状态 | done |
 | 创建日期 | 2026-09-07 |
 | 来源 | 需求：REV-P6-4 Cancellation Orchestration（取消业务决策上收：UNPAID void / PAID durable refund + cancel + restock） |
 | 分类 | payments（自动判定） |
@@ -118,3 +118,4 @@
 |---|---|---|---|
 | 2026-09-07 | 0.1 | 初稿（依据源 REV-P6 §30-38/§59/RV-R06/R07 + 2026-09-07 取消路径审计） | AI |
 | 2026-09-07 | 0.2 | 实施：`Orders::Cancel`=Orchestrator（payment fact 决策 + 事务内 `Refunds::Request(enqueue:false)` + 提交后 ExecuteJob；refund_payments 三态；refund_amount 单笔限）；`after_cancel` 移除 PSP completed 隐式 cancel（store credit/void/restock 保留，fresh query）；API v3 cancel 透传 + `canceled_by` 桥接 + 服务 coalesce（reason/restock/notify）；`Refunds::Request` 加 enqueue 参数；新增 orchestration spec（6）与 orders_cancel request spec（3），回归组（cancel_inventory/refunds/组合/refunds controller）31 绿；admin.yaml×2 + payments skill REV-P6-4 + GS-063。 | AI |
+| 2026-09-07 | 0.3 | 验证完成：commit `1149ff2`，gate 16/16 finished，提交前+提交后全量 backend-rspec 绿（EVD-…163204/…165357），recovery manual-only，doc-impact 通过，push dev 发布。 | AI |
