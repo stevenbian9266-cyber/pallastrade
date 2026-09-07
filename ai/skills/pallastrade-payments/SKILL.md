@@ -427,6 +427,24 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **边界**：组合（combination-level）完整取消编排 + OrderCancellation 状态机扩展归 REV-P6-5/6-8 与
   REV-P6-0 DB audit；Stripe UNPAID 失败/过期 webhook `order.cancel!` 行为不变（无 completed → 无退款）。
 
+## Return Restock Decision & Exactly-Once Restock（REV-P6-5, 2026-09-07；PRD-20260907-shipping-rev-p6-5-return-restock）
+
+> **Restock 是退货域的库存事实（与 Refund 分离，源 REV-P6 §39-42）**：Inspection/Acceptance → Restock
+> Decision → exactly-once StockMovement(+)。REV-P6-5 收敛退货 restock（不再 receive 即入库）。
+
+- **决策时机**：`ReturnItem` restock 从 `reception→received`（`process_inventory_unit!`）移到
+  `acceptance→accepted`（`after_transition to: :accepted → restock_if_needed`）；`process_inventory_unit!` 只保留
+  `inventory_unit.return!`。auto-accept（eligible）与手动 `accept!` 都 restock；`rejected`/`manual_intervention_required`
+  未决不 restock（修复坏品提前入库）。
+- **exactly-once**：`stock_movements.return_item_id`（可空）+ partial unique（not null）为退货 restock 的稳定幂等键
+  （originator=RA 一对多不可作键）；重复/重试/并发 → `RecordNotUnique` 幂等跳过。迁移
+  `20260908000000_add_return_item_to_pallastrade_stock_movements.rb`。REUSE：仍走 `StockMovement` 唯一写入通道。
+- **Restock Fact（REV-P6-6 消费源）**：`Returns::RestockFact.resolve` → RESTOCKED / NOT_REQUIRED /
+  NOT_RESTOCKABLE / PENDING / AMBIGUOUS；证据 = ReturnItem（accepted/restock_eligible?）+ StockMovement
+  （return_item_id）；只读派生不持久化、存量不猜。
+- **边界**：reimbursement 链完整 async 拆链与 ReverseCommerce::Recover（含 Restock 收敛）归 REV-P6-6/6-8；
+  Shipment cancel / OrderInventory restock 通道不改。
+
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 
 > **ORDER_ALLOCATION = 组合资金对成员订单的归属投影（immutable journal fact），不是额外 cash inflow**

@@ -1623,6 +1623,32 @@
         "apiPassthrough": 10,
         "regressionGreen": 10
       }
+    },
+    {
+      "id": "GS-064",
+      "name": "REV-P6-5 Return Restock Decision & Exactly-Once Restock：acceptance 后 restock + Restock Fact + movement DB 幂等",
+      "description": "REV-P6-5（PRD-20260907-shipping-rev-p6-5-return-restock-decision-exactly-once-restock-accept）：ReturnItem restock 触发从 receive 移到 acceptance（accepted）后（after_transition to accepted → restock_if_needed；process_inventory_unit! 只保留 inventory_unit.return!），rejected/manual_intervention_required 未决不 restock（修复坏品提前入库，源 §39/§40）；stock_movements.return_item_id（可空）+ partial unique = 退货 restock 稳定幂等键（originator=RA 一对多不可作键），重复/重试/并发 → RecordNotUnique 幂等跳过（§42 one logical restock → at most one positive movement）；Returns::RestockFact 只读 resolver 五态（RESTOCKED/NOT_REQUIRED/NOT_RESTOCKABLE/PENDING/AMBIGUOUS）供 REV-P6-6 消费；REUSE 现有 StockMovement 通道；无数据 backfill（存量不猜）。",
+      "mustDo": [
+        "可售退货 receive→auto accept→restock，movement 带 return_item_id（AC-R65-01，与旧行为一致）",
+        "manual_intervention_required 未决不 restock；手动 accept 后才 restock；rejected 永不 restock（AC-R65-02）",
+        "同一 return_item 重复/重试 restock → 仅 1 条正向 movement（DB partial unique 兜底）（AC-R65-03）",
+        "RestockFact 五态可判定、只读不写（AC-R65-04）",
+        "REUSE：仍走 StockMovement 唯一写入通道；Shipment cancel/OrderInventory 不改；存量不 backfill",
+        "回归：returns/admin RA/stock/reimbursement/recover_inventory_exactly_once/refunds；P0-P5 baseline + backend-rspec 全量绿"
+      ],
+      "mustNotDo": [
+        "在 receive/未决阶段提前 restock（§39/§40 反例：坏品先入库）",
+        "以 originator（RA，一对多）作 restock 幂等键；缺失 return_item_id 的正向 movement 无 DB 兜底",
+        "另起第二套 Restock 算法/通道（§38 REUSE）",
+        "对存量数据猜填 restock 事实（不可证明不猜）；reimbursement async 拆链不得在本包半吊子落地（归 REV-P6-6/6-8）"
+      ],
+      "scoring": {
+        "decisionAtAcceptance": 25,
+        "dbExactlyOnce": 25,
+        "restockFactResolver": 20,
+        "noPrematureRestock": 15,
+        "regressionGreen": 15
+      }
     }
   ]
 }

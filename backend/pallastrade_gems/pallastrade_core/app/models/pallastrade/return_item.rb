@@ -34,6 +34,10 @@ module PallasTrade
     has_many :exchange_inventory_units, class_name: 'PallasTrade::InventoryUnit',
                                         foreign_key: :original_return_item_id,
                                         inverse_of: :original_return_item
+    # REV-P6-5：退货 restock 的正向 movements（return_item_id 幂等键，源 §41/§42）
+    has_many :stock_movements, class_name: 'PallasTrade::StockMovement',
+                               foreign_key: :return_item_id,
+                               inverse_of: :return_item
     belongs_to :exchange_variant, class_name: 'PallasTrade::Variant'
     belongs_to :preferred_reimbursement_type, class_name: 'PallasTrade::ReimbursementType'
     belongs_to :override_reimbursement_type, class_name: 'PallasTrade::ReimbursementType'
@@ -131,6 +135,10 @@ module PallasTrade
       end
 
       after_transition any => any, do: :persist_acceptance_status_errors
+      # REV-P6-5（FR-R65-101）：restock 在 acceptance 决策（accepted）后触发，而非 receive
+      # （源 §39/§40：Inspection/Acceptance → Restock Decision）。auto-accept（eligible）与手动
+      # accept 都覆盖；rejected/manual 未决不 restock。DB partial unique 保证 exactly-once。
+      after_transition to: :accepted, do: :restock_if_needed
     end
 
     def self.from_inventory_unit(inventory_unit)
@@ -197,13 +205,23 @@ module PallasTrade
 
     def process_inventory_unit!
       inventory_unit.return!
-      if should_restock?
-        PallasTrade::StockMovement.create!(
-          stock_item_id: stock_item.id,
-          quantity: inventory_unit.quantity,
-          originator: return_authorization
-        )
-      end
+    end
+
+    # REV-P6-5：restock（StockMovement(+)）—— 仅 accepted 后触发；幂等由
+    # stock_movements.return_item_id partial unique 保证（重复/重试/并发 → RecordNotUnique 跳过，
+    # 源 §42 one logical restock → at most one positive movement）。REUSE：仍走 StockMovement
+    # 唯一写入通道（after_create adjust_count_on_hand），不建第二套 Restock（源 §38）。
+    def restock_if_needed
+      return unless restock_eligible?
+
+      PallasTrade::StockMovement.create!(
+        stock_item_id: stock_item.id,
+        quantity: inventory_unit.quantity,
+        originator: return_authorization,
+        return_item_id: id
+      )
+    rescue ActiveRecord::RecordNotUnique
+      # 已 restock（幂等）；忽略
     end
 
     # This logic is also present in the customer return. The reason for the
@@ -269,6 +287,11 @@ module PallasTrade
     end
 
     def should_restock?
+      restock_eligible?
+    end
+
+    # REV-P6-5：公开 restock 决策条件（RestockFact resolver 复用，源 §41 证据）
+    def restock_eligible?
       resellable? && variant.should_track_inventory? && stock_item && PallasTrade::Config[:restock_inventory]
     end
 
@@ -283,5 +306,8 @@ module PallasTrade
     def publish_return_item_given_event
       publish_event('return_item.given')
     end
+
+    # REV-P6-5：restock_eligible? 供 RestockFact resolver 等外部只读消费（源 §41）
+    public :restock_eligible?
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_06_174000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_08_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2248,9 +2248,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_06_174000) do
     t.bigint "originator_id"
     t.string "originator_type"
     t.integer "quantity", default: 0
+    t.bigint "return_item_id"
     t.bigint "stock_item_id"
     t.datetime "updated_at", null: false
     t.index ["originator_id", "originator_type"], name: "index_stock_movements_on_originator_id_and_originator_type"
+    t.index ["return_item_id"], name: "idx_stock_movements_return_item_unique", unique: true, where: "(return_item_id IS NOT NULL)"
     t.index ["stock_item_id"], name: "index_pt_stock_movements_on_stock_item_id"
   end
 
@@ -2865,6 +2867,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_06_174000) do
   add_foreign_key "pallastrade_reviews", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_reviews", "pallastrade_users", column: "user_id"
   add_foreign_key "pallastrade_role_permissions", "pallastrade_roles", column: "role_id"
+  add_foreign_key "pallastrade_stock_movements", "pallastrade_return_items", column: "return_item_id"
   add_foreign_key "pallastrade_stock_reservations", "pallastrade_commerce_transactions", column: "commerce_transaction_id"
   add_foreign_key "pallastrade_store_translations", "pallastrade_stores"
   add_foreign_key "pallastrade_taxon_translations", "pallastrade_taxons"

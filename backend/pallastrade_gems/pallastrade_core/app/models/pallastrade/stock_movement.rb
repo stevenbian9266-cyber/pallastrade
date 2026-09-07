@@ -14,6 +14,10 @@ module PallasTrade
 
     belongs_to :stock_item, class_name: 'PallasTrade::StockItem', inverse_of: :stock_movements
     belongs_to :originator, polymorphic: true
+    # REV-P6-5：退货 restock 的稳定幂等键（可空；partial unique 见 migration）——
+    # 同一 return_item 至多一条正向 movement（源 §42）。originator=ReturnAuthorization 为一对多，
+    # 不可作唯一键，故以 return_item_id 承担 exactly-once。
+    belongs_to :return_item, class_name: 'PallasTrade::ReturnItem', optional: true, inverse_of: :stock_movements
 
     after_create :update_stock_item_quantity
 
