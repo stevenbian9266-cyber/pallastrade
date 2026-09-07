@@ -38,7 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
-| verifying | PRD-20260907-shipping-rev-p6-5-return-restock-decision-exactly-once-restock-accept | shipping | 2026-09-07 | REQ-20260907-rev-p6-5-return-restock-exactly-once.md |
+| done | PRD-20260907-shipping-rev-p6-5-return-restock-decision-exactly-once-restock-accept | shipping | 2026-09-07 | REQ-20260907-rev-p6-5-return-restock-exactly-once.md |
 | done | PRD-20260907-payments-rev-p6-4-cancellation-orchestration-取消业务决策上收-unpaid-void-pai | payments | 2026-09-07 | REQ-20260907-rev-p6-4-cancellation-orchestration.md |
 | done | PRD-20260907-payments-rev-p6-3-partial-combination-refund-allocation-组合退款-ownershi | payments | 2026-09-07 | REQ-20260907-rev-p6-3-partial-combination-refund-allocation.md |
 | done | PRD-20260906-payments-rev-p6-2-refund-execution-orchestration-refunds-request-asyn | payments | 2026-09-06 | REQ-20260906-rev-p6-2-refund-execution.md |

@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | verifying |
+| 状态 | done |
 | 创建日期 | 2026-09-07 |
 | 来源 | 需求：REV-P6-5 Return Restock Decision & Exactly-Once Restock（acceptance 后 restock + Restock Fact + movement DB 幂等） |
 | 分类 | shipping（关键词命中；库存/履约域） |
@@ -99,3 +99,4 @@
 |---|---|---|---|
 | 2026-09-07 | 0.1 | 初稿（依据源 §39-42/§60 + 2026-09-08 退货/restock 测绘） | AI |
 | 2026-09-08 | 0.2 | 实施：ReturnItem restock 移至 acceptance（restock_if_needed + public restock_eligible?）；process_inventory_unit! 只保留 inventory return；stock_movements.return_item_id + partial unique（migration 20260908000000）；Returns::RestockFact 五态 resolver；新增 spec 9 例绿（return_item_restock + restock_fact）；回归 151（ai_models 为测试库污染，重置后单独绿）；payments skill REV-P6-5 + GS-064 + REQ + README。 | AI |
+| 2026-09-08 | 0.3 | 验证完成：commit `2b6d1e8`，gate finished，提交前+提交后全量 backend-rspec 绿（EVD-…223917/…230107），recovery manual-only，doc-impact 通过，push dev 发布。 | AI |
