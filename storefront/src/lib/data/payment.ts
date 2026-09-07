@@ -130,10 +130,15 @@ export async function confirmPaymentAndCompleteCart(
     }
 
     const result = await completeCheckoutOrder(cartId);
-    if (result.success) {
+    if (result.order) {
       return { success: true, order: result.order };
     }
-    return { success: false, error: result.error };
+    // CORE-P5-5：completeCheckoutOrder 恒 success（无失败分支）；order 为 null =
+    // 订单仍在处理/未知，统一按确认失败提示（终态由支付结果页轮询决定）。
+    return {
+      success: false,
+      error: "Failed to confirm payment. Please try again.",
+    };
   } catch (error) {
     return {
       success: false,

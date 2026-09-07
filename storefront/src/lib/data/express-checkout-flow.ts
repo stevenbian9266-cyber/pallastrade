@@ -131,8 +131,10 @@ export async function expressCheckoutFinalize(
     }
 
     const orderResult = await completeCheckoutOrder(cartId);
-    if (!orderResult.success) {
-      throw new Error(orderResult.error);
+    if (!orderResult.order) {
+      // CORE-P5-5：完成由服务端驱动，completeCheckoutOrder 不再返回失败分支；
+      // order 为 null = 订单仍在处理/未知 → 按失败抛错，由 actionResult 归一化。
+      throw new Error("Failed to finalize order");
     }
 
     return { order: orderResult.order };
