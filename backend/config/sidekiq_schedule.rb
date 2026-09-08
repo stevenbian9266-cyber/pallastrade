@@ -40,5 +40,14 @@ PALLAS_CART_SCHEDULE = [
     cron: '*/5 * * * *',
     queue: 'default',
     args: [{ 'requested_hours' => 1, 'processing_hours' => 6 }]
+  },
+  # REV-P6-8i (2026-09-09): 注册 reverse commerce recover sweeper —— 周期扫描 restock-AMBIGUOUS
+  # （accepted+eligible+无 StockMovement）订单并 enqueue 幂等 ReverseCommerce::RecoverJob（capped 防风暴）。
+  {
+    name: 'reverse_commerce_recover_sweeper',
+    class: 'PallasTrade::ReverseCommerce::RecoverSweeperJob',
+    cron: '*/5 * * * *',
+    queue: 'default',
+    args: [{ 'max_enqueues' => 20 }]
   }
 ].freeze
