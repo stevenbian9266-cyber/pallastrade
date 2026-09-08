@@ -1848,6 +1848,32 @@
         "isolatedRescue": 15,
         "regressionGreen": 10
       }
+    },
+    {
+      "id": "GS-073",
+      "name": "REV-P6-8f OrderCancellation 组合级取消编排：split-aware 取消退款 + CombinationCancel + Admin API",
+      "description": "PRD-20260908-payments-rev-p6-8f-combination-level-cancel-orchestration（源 REV-P6 §27-28/§30-35/§45）：succeeded 组合成员取消的资金语义收敛——Orders::Cancel split-aware（combination_member_split：无本地 PSP → 组合 Payment + 冻结 PaymentSplit durable Refund(requested) enqueue:false）+ Orders::CombinationCancel 编排器（整组/子集、skip already_canceled/not_cancellable、单成员 rescue 隔离、幂等、Result 聚合）+ Admin POST /api/v3/admin/payment_combinations/:id/cancel（current_store + pcom_ + {data}）。不改 combo/txn 状态机（PAID 不走 cancel 态）。",
+      "mustDo": [
+        "PAID 组合成员 auto 取消 → 组合 Payment + 冻结 split durable Refund(requested, full credit) + canceled + enqueue（AC-R68F-01）",
+        "refund_payments=false 不建 Refund；refund_amount 超 split credit 建单失败回滚不取消（AC-R68F-02）",
+        "CombinationCancel 双成员 → 双 canceled + 双 split Refund，聚合 canceled=2（AC-R68F-03）",
+        "已取消 skip(already_canceled)/不可取消 skip(not_cancellable)；重复调用幂等不重复建（AC-R68F-04/06）",
+        "非 succeeded → failure；member_ids 子集；无效子集 failure（AC-R68F-05）",
+        "Admin 端点 200 {data} 聚合 + 跨店 404 + 非 succeeded 422（AC-R68F-07）",
+        "单成员失败隔离 failed 聚合不中断（AC-R68F-08）；非组合单订单取消行为不变 + 全量 backend-rspec ×2 + quick check + doc-impact"
+      ],
+      "mustNotDo": [
+        "状态机加 PAID cancel 态（combo/txn 保持 pre-payment 语义）",
+        "事务内同步 Refunds::Execute（AP-010）或直接改 split.refunded_amount（唯一写点 update_order）",
+        "Rails Admin 组合可视化/OrderCancellation 状态机化/组合级取消事件（后续）"
+      ],
+      "scoring": {
+        "splitAwareRefund": 30,
+        "orchestrationResult": 25,
+        "idempotentSkip": 20,
+        "apiEndpoint": 15,
+        "regressionGreen": 10
+      }
     }
   ]
 }

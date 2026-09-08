@@ -430,6 +430,21 @@ It doesn't — Webhooks 2.0 uses the same prefixed IDs as the API. If you're see
 - **错误**：`order_cannot_split`（已取消/无行项目/重复拆单/跨店/已发货行项目），`code + message` 无裸 422。
 - **编排**：`PallasTrade::Orders::ManualSplit`（复用 P2 `Splitter`，见 `pallastrade-checkout` SKILL「手动拆单」）。
 
+### 组合级取消端点（REV-P6-8f, 2026-09-08）
+
+`POST /api/v3/admin/payment_combinations/:id/cancel`（Admin API，scope `write_orders`）——succeeded 组合的
+组合级取消编排（`PallasTrade::Orders::CombinationCancel`）：
+
+- **前置**：组合必须 `status=succeeded`（pre-payment 取消仍是 `PaymentCombination#cancel`）；非 succeeded → 422。
+- **参数**（均可选）：`member_ids`（`order_` prefixed id 数组，缺省=全部未取消成员）、`reason`/`note`/
+  `refund_payments`（三态，缺省 auto）、`restock_items`/`notify_customer`。
+- **资金语义**：每个 PAID 组合成员无本地 PSP payment —— `Orders::Cancel` split-aware 在组合 Payment +
+  冻结 `PaymentSplit` 上建 durable `Refund(requested)`（`payment_split_id`/`target_order_id`），异步 ExecuteJob。
+- **响应**：`{ data: { id: pcom_…, type: 'payment_combination', attributes: { status, members:
+  {total,canceled,skipped,failed}, canceled[]/skipped[]/failed[] } } }`（只暴露 prefixed id + 单号，无整型 PK）。
+- **错误**：404（跨店/不存在）、403（无 `:cancel` 权限）、422（非 succeeded / 无有效成员）。
+- 幂等：重复调用只处理仍未取消成员（skip already_canceled），不重复建 Refund。
+
 ## Where to read further
 
 - **OpenAPI specs:** `node_modules/@pallastrade/docs/dist/api-reference/store.yaml` (Store API) and `admin.yaml` (Admin API) — every endpoint, parameter, response schema. Authoritative.

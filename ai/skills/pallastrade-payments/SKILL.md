@@ -578,7 +578,32 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   `Refunds::Recover.call(refund:)`（fresh/terminal no-op 幂等）；**单条 rescue 不中断整单**。
 - rake `pallastrade:reverse_commerce:{recover[order_id], list_ambiguous[store_id]}`（core
   `lib/tasks/reverse_commerce.rake`）+ runbook `docs/operations/reverse-commerce-recover-runbook.md`。
-- 边界：Journal/Reconcile 修复派发（P4 sweeper 已拥有）、取消意图恢复/组合级编排、自动调度 → 后续。
+- 边界：Journal/Reconcile 修复派发（P4 sweeper 已拥有）、取消意图恢复、自动调度 → 后续。（组合级取消编排
+  已由 REV-P6-8f 落地，见下节。）
+
+## OrderCancellation 组合级取消编排（REV-P6-8f, 2026-09-08；PRD-20260908-payments-rev-p6-8f-combination-level-cancel-orchestration）
+
+> 源 REV-P6 §27-28/§30-35/§45：succeeded 组合成员取消的**资金语义收敛**——修复 REV-P6-4 后「PAID 组合
+> 成员取消零退款」（组合资金在组合 Payment order_id=nil + PaymentSplit 上，成员无本地 PSP payment 行），
+> 并提供组合级取消编排入口。不改 CommerceTransaction/PaymentCombination 状态机（PAID 不走 cancel 态）。
+
+- **split-aware 取消退款（Orders::Cancel，FR-R68F-101）**：`combination_member_split(order)`——订单无本地
+  可退 PSP payment 且存在 succeeded 组合 split（payment 回填 + credit>0）→ 视为单一可退源；auto 取消建
+  `Refunds::Request(payment: 组合 payment, payment_split: split, target_order: order, enqueue:false)`
+  （冻结 ownership；split 上限 `amount_within_frozen_split_limit` + 组合 Payment capacity 双门禁）→ 提交后
+  ExecuteJob。refund_payments=false/refund_amount 语义沿用单订单。**修复前**:`completed_refundable_payments`
+  = `Payment.where(order_id:)` 对成员返回空 → 白取消（库存 restock 但资金滞留）。
+- **`Orders::CombinationCancel`（FR-R68F-102，新编排器）**：`(combination:, canceler:, member_ids: nil,
+  reason/note/restock_items/refund_payments/notify_customer)` → Result 聚合 `{members:{total,canceled,
+  skipped,failed}, canceled[], skipped[{reason}], failed[{error}]}`。前置守卫：非 succeeded → failure（pre-payment
+  取消仍是 PaymentCombination#cancel）。逐成员复用 Orders::Cancel（幂等/allow_cancel? 守卫在编排层显式裁决：
+  已取消→skip(already_canceled)、不可取消→skip(not_cancellable)）；单成员异常 rescue 不中断整组合；重复调用幂等。
+- **Admin API（FR-R68F-103）**：`POST /api/v3/admin/payment_combinations/:id/cancel`（scope `write_orders`；
+  member_ids 子集可空；current_store 作用域 + `pcom_` prefixed id；authorize `:cancel`——order_management 权限集
+  增 `can :cancel, PaymentCombination, &:succeeded?`）；响应 `{data:{id,type,attributes{status,members,
+  canceled[],skipped[],failed[]}}}`（只暴露 prefixed id，无整型 PK）。退款终态经既有 refunds 端点观测。
+- **边界**：Rails Admin 组合可视化/退款聚合展示（G6 另开）；OrderCancellation 状态机化与取消意图恢复；组合级
+  `payment_combination.*` 取消事件（无订阅者，先复用每成员 order.canceled）。
 
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 

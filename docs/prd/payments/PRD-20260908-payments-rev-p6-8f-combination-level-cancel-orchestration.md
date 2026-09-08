@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | draft |
+| 状态 | done |
 | 创建日期 | 2026-09-08 |
 | 来源 | 需求：REV-P6-8f OrderCancellation 组合级取消编排（split-aware 取消退款 + CombinationCancel 编排器 + Admin API） |
 | 分类 | payments（语义归属；组合资金/取消编排） |
@@ -122,12 +122,13 @@ settlement 成本）；断言行级 + enqueue（assert_enqueued_with ExecuteJob�
 spec、refund/request/8a-8e、reconcile、quick check + 全量 ×2 + doc-impact + generated:check。
 
 ## 9. 文档同步清单
-- [ ] payments skill（REV-P6-8f 节：split-aware 取消 + CombinationCancel + API）；scenarios GS-073；
+- [x] payments skill（REV-P6-8f 节：split-aware 取消 + CombinationCancel + API）；scenarios GS-073；api-v3 skill 端点节；
   PRD/REQ/README；admin.yaml（接口变更）+ generated:check；doc-impact。
-- [ ] 边界记录：状态机不加 PAID cancel 态、Rails Admin 组合可视化、OrderCancellation 状态机化、组合事件 →
+- [x] 边界记录：状态机不加 PAID cancel 态、Rails Admin 组合可视化、OrderCancellation 状态机化、组合事件 →
   后续。
 
 ## 10. 变更记录
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-08 | 0.1 | 初稿（依据跨层调研：G1 零退款 + G2 无入口 + G3 无 API；FR-R64-106 边界落地） | AI |
+| 2026-09-08 | 1.0 | done：实施完成（commit 7347234）——split-aware Orders::Cancel + CombinationCancel + Admin API + admin.yaml；spec 14/14、回归 68 例、全量 backend-rspec ×2 绿、quick check/generated:check/doc-impact 过 | AI |
