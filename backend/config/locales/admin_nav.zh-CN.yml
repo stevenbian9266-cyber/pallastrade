@@ -22,6 +22,8 @@ zh-CN:
         refunds_mark_review_failed: 无法将该退款移入人工复核。
         payment_combinations: 组合支付
         payment_combinations_help: 组合支付可视化（只读）——查看合并支付的成员分摊（已收/已退/可退余额）、逐分摊退款、组合支付本身及其 durable 交易。退款展示真实 durable 状态；取消/退款操作在 Admin API 与订单页。
+        payments_ops: 支付
+        payments_ops_help: 支付运维（只读）——本店 completed PSP 支付（含组合支付）。打开任一支付运行 Provider 退款配对（OrphanPairing）：matched / 孤儿（Provider 独有退款，含只读金额）/ 本地缺 Provider 的退款。全程零写入、不自动退款。
       products:
         products_list: 商品列表
         categories: 分类

@@ -137,6 +137,21 @@ module PallasTrade
       raise ::NotImplementedError, 'You must implement fetch_refund_details method for this gateway.'
     end
 
+    # PALLAS-CUSTOM: REV-P6-8h (PRD-20260908-payments-rev-p6-8h-orphan-amounts-payment-ops)
+    # Read-only per-provider-refund amount contract for ORPHAN (provider-only) refunds: given a
+    # provider refund reference (e.g. Stripe re_…), return { amount:, currency: } in major units.
+    # Base returns nil — capability is detected by method owner != PaymentMethod (same pattern as
+    # CaptureEvidencePolicy#implements_financial_details?), so gateways without real orphan
+    # semantics (e.g. Bogus, whose references are locally derived) naturally degrade to nil.
+    # Never mutates provider/local state. Implementations raise provider errors for the caller
+    # to degrade per item (OrphanPairing rescues per orphan).
+    #
+    # @param provider_reference [String] provider refund id
+    # @return [Hash, nil] { amount:, currency: } or nil when not supported/not provable
+    def provider_refund_amount(provider_reference)
+      nil
+    end
+
     # Parses an incoming webhook payload from the payment provider.
     # Override in gateway subclasses to implement provider-specific webhook parsing.
     #

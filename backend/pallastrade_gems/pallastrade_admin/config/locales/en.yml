@@ -479,6 +479,8 @@ en:
         refunds_mark_review_failed: Unable to move this refund to manual review.
         payment_combinations: Payment Combinations
         payment_combinations_help: Combined-payment visibility (read-only) — every PaymentCombination with its member PaymentSplits (captured / refunded / credit), per-split refunds, the combination payment and its durable commerce transaction. Refunds show their real durable state. Cancellation / refund actions belong to the Admin API and order pages.
+        payments_ops: Payments
+        payments_ops_help: Payment operations (read-only) — completed PSP payments of this store (including combined payments). Open a payment to run the read-only provider refund pairing (OrphanPairing) which reports matched, orphans (provider-only refunds, with read-only amounts) and local refunds missing on the provider. Nothing is written or auto-refunded.
         parent_filter: Order type
         parent_orders: Parent orders
         child_orders: Child orders

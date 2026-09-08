@@ -291,6 +291,20 @@ module PallasTradeStripe
       }
     end
 
+    # PALLAS-CUSTOM: REV-P6-8h (PRD-20260908-payments-rev-p6-8h-orphan-amounts-payment-ops)
+    # Read-only amount for an ORPHAN (provider-only) refund by provider reference — no local Refund
+    # row needed (ReconcileRefund/fetch_refund_details require a local row with transaction_id).
+    # @param provider_reference [String] e.g. 're_…'
+    # @return [Hash] { amount:, currency: } (amount in major units)
+    # @raise [Stripe::StripeError] on provider/network failure (caller degrades per orphan)
+    def provider_refund_amount(provider_reference)
+      stripe_refund = retrieve_refund(provider_reference)
+      {
+        amount: stripe_refund.amount.to_d / 100,
+        currency: stripe_refund.currency.to_s
+      }
+    end
+
     def create_ephemeral_key(customer_id)
       protect_from_error do
         response = send_request { |opts| Stripe::EphemeralKey.create({ customer: customer_id }, opts.merge(stripe_version: Stripe.api_version)) }

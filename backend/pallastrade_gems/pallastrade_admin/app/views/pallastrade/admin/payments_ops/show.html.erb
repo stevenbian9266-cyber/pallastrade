@@ -1,0 +1,105 @@
+<% content_for(:title, @payment.prefixed_id) %>
+<% content_for :page_title do %>
+  <%= @payment.prefixed_id %>
+<% end %>
+<% content_for(:page_actions) do %>
+  <%= link_to PallasTrade.t('actions.back'), PallasTrade.admin_payments_path, class: 'btn btn-outline' %>
+<% end %>
+
+<%# REV-P6-8h: Payment Ops —— 只读。show 在线跑 OrphanPairing（含孤儿金额）；异常降级 nil 不 500。 %>
+<% payment = @payment %>
+<% pairing = @pairing %>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= payment.prefixed_id %></h5>
+    <span class="text-sm text-gray-500 ml-2"><%= format('%.2f', payment.amount.to_f) %> <%= payment.currency.to_s.upcase %></span>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div><dt class="text-sm text-gray-500">State</dt><dd><%= payment.state %></dd></div>
+      <div><dt class="text-sm text-gray-500">Method</dt><dd><%= payment.payment_method&.name.presence || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Credit (refundable)</dt><dd><%= format('%.2f', payment.credit_allowed.to_f) %></dd></div>
+      <div><dt class="text-sm text-gray-500">Order</dt>
+        <dd><%= payment.order ? link_to(payment.order.number, PallasTrade.edit_admin_order_path(payment.order)) : '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Combination</dt>
+        <dd><% if payment.payment_combination %><%= link_to payment.payment_combination.prefixed_id, PallasTrade.admin_payment_combination_path(payment.payment_combination) %><% else %>—<% end %></dd></div>
+      <div><dt class="text-sm text-gray-500">Created at</dt><dd><%= payment.created_at&.iso8601 || '—' %></dd></div>
+    </dl>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">Provider refund pairing (OrphanPairing)</h5>
+    <% if pairing %>
+      <span class="badge <%= pairing.needs_attention? ? 'badge-warning' : 'badge-success' %> ml-2"><%= pairing.status %></span>
+    <% else %>
+      <span class="badge badge-secondary ml-2">degraded</span>
+    <% end %>
+  </div>
+  <div class="card-body">
+    <% if pairing.nil? %>
+      <p class="text-sm text-gray-500">Pairing unavailable (provider/network error — read-only check degraded).</p>
+    <% else %>
+      <dl class="grid grid-cols-2 gap-4 mb-3">
+        <div><dt class="text-sm text-gray-500">Status</dt><dd><%= pairing.status %></dd></div>
+        <div><dt class="text-sm text-gray-500">Reasons</dt><dd><%= pairing.reasons.any? ? pairing.reasons.join(', ') : '—' %></dd></div>
+        <div><dt class="text-sm text-gray-500">Provider refund references</dt><dd><%= pairing.provider_refund_references.any? ? pairing.provider_refund_references.join(', ') : '—' %></dd></div>
+        <div><dt class="text-sm text-gray-500">Observed at</dt><dd><%= pairing.observed_at&.iso8601 || '—' %></dd></div>
+      </dl>
+
+      <h6 class="text-sm font-semibold mb-2">Matched</h6>
+      <% if pairing.matched.any? %>
+        <table class="table table-sm mb-4">
+          <thead><tr><th>Provider reference</th><th>Local refund</th></tr></thead>
+          <tbody>
+            <% pairing.matched.each do |m| %>
+              <tr>
+                <td><%= m[:provider_id] %></td>
+                <td><%= m[:refund_id] %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-sm text-gray-500 mb-4">—</p>
+      <% end %>
+
+      <h6 class="text-sm font-semibold mb-2">Orphans (provider-only — amount read-only)</h6>
+      <% if pairing.orphans.any? %>
+        <table class="table table-sm mb-4">
+          <thead><tr><th>Provider reference</th><th>Amount</th><th>Currency</th></tr></thead>
+          <tbody>
+            <% pairing.orphans.each do |o| %>
+              <tr>
+                <td><%= o[:provider_id] %></td>
+                <td><%= o[:amount] ? format('%.2f', o[:amount].to_f) : '—' %></td>
+                <td><%= o[:currency] || '—' %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-sm text-gray-500 mb-4">—</p>
+      <% end %>
+
+      <h6 class="text-sm font-semibold mb-2">Local refunds not on provider</h6>
+      <% if pairing.local_unmatched.any? %>
+        <table class="table table-sm">
+          <thead><tr><th>Local transaction id</th><th>Refund</th></tr></thead>
+          <tbody>
+            <% pairing.local_unmatched.each do |u| %>
+              <tr>
+                <td><%= u[:transaction_id] %></td>
+                <td><%= u[:refund_id] %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-sm text-gray-500">—</p>
+      <% end %>
+    <% end %>
+  </div>
+</div>

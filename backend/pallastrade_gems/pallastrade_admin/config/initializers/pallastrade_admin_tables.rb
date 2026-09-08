@@ -2651,6 +2651,84 @@ Rails.application.config.after_initialize do
                                                     default: true,
                                                     position: 60
 
+  # REV-P6-8h: Payment Ops —— completed PSP payments（含组合 payment）只读列表
+  PallasTrade.admin.tables.register(:payments,
+    model_class: PallasTrade::Payment,
+    link_to_action: :show,
+    row_actions: true,
+    row_actions_edit: false,
+    row_actions_delete: false,
+    new_resource: false)
+
+  PallasTrade.admin.tables.payments.add :prefixed_id,
+                                        label: :id,
+                                        type: :string,
+                                        sortable: false,
+                                        filterable: false,
+                                        default: true,
+                                        position: 10
+
+  PallasTrade.admin.tables.payments.add :state,
+                                        label: :state,
+                                        type: :status,
+                                        sortable: false,
+                                        filterable: true,
+                                        default: true,
+                                        position: 20
+
+  PallasTrade.admin.tables.payments.add :method,
+                                        label: :payment_method,
+                                        type: :string,
+                                        sortable: false,
+                                        filterable: false,
+                                        default: true,
+                                        position: 30,
+                                        method: ->(payment) { payment.payment_method&.name.presence || '—' }
+
+  PallasTrade.admin.tables.payments.add :amount,
+                                        label: :amount,
+                                        type: :string,
+                                        sortable: false,
+                                        filterable: false,
+                                        default: true,
+                                        position: 40,
+                                        method: ->(payment) { "#{format('%.2f', payment.amount.to_f)} #{payment.currency}" }
+
+  PallasTrade.admin.tables.payments.add :credit_allowed,
+                                        label: :credit_allowed,
+                                        type: :string,
+                                        sortable: false,
+                                        filterable: false,
+                                        default: true,
+                                        position: 50,
+                                        method: ->(payment) { format('%.2f', payment.credit_allowed.to_f) }
+
+  PallasTrade.admin.tables.payments.add :order,
+                                        label: :order_number,
+                                        type: :string,
+                                        sortable: false,
+                                        filterable: false,
+                                        default: true,
+                                        position: 60,
+                                        method: ->(payment) { payment.order&.number || '—' }
+
+  PallasTrade.admin.tables.payments.add :combination,
+                                        label: :combination,
+                                        type: :string,
+                                        sortable: false,
+                                        filterable: false,
+                                        default: true,
+                                        position: 70,
+                                        method: ->(payment) { payment.payment_combination&.prefixed_id || '—' }
+
+  PallasTrade.admin.tables.payments.add :created_at,
+                                        label: :created_at,
+                                        type: :datetime,
+                                        sortable: true,
+                                        filterable: false,
+                                        default: false,
+                                        position: 80
+
   # Blog posts (CMS)
   PallasTrade.admin.tables.register(:posts, model_class: PallasTrade::Post, search_param: :title_or_slug_or_author_cont, row_actions: true)
 

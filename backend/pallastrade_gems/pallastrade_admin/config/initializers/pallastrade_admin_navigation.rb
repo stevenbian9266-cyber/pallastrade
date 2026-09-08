@@ -101,6 +101,14 @@ Rails.application.config.after_initialize do
               position: 45,
               active: -> { controller_name == 'payment_combinations' },
               if: -> { can?(:read, PallasTrade::PaymentCombination) || can?(:manage, PallasTrade::Order) }
+
+    # REV-P6-8h: Payment Ops（只读；Orders → Payments，含孤儿退款配对）
+    orders.add :payments_ops,
+              label: 'admin.orders.payments_ops',
+              url: :admin_payments_path,
+              position: 48,
+              active: -> { controller_name == 'payments_ops' },
+              if: -> { can?(:read, PallasTrade::Payment) || can?(:manage, PallasTrade::Order) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns

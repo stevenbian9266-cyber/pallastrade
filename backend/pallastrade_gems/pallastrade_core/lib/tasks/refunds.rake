@@ -37,9 +37,12 @@ namespace :pallastrade do
 
         reasons = value.reasons.join(',')
         orphans = value.orphans.map { |o| o[:provider_id] }.join('|')
+        # REV-P6-8h：孤儿金额/币种（只读；能力缺失或异常为空白）
+        orphan_amounts = value.orphans.map { |o| o[:amount] }.join('|')
+        orphan_currencies = value.orphans.map { |o| o[:currency] }.join('|')
         local_missing = value.local_unmatched.map { |u| u[:transaction_id] }.join('|')
-        puts [payment.prefixed_id, payment.currency, status, reasons, orphans, local_missing,
-              payment.updated_at.iso8601].join("\t")
+        puts [payment.prefixed_id, payment.currency, status, reasons, orphans, orphan_amounts,
+              orphan_currencies, local_missing, payment.updated_at.iso8601].join("\t")
       end
 
       puts "summary\t#{counts.map { |k, v| "#{k}=#{v}" }.join(' ')}"

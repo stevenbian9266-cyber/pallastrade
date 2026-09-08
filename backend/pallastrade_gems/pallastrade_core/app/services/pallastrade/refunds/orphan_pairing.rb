@@ -50,14 +50,17 @@ module PallasTrade
         local_by_ref = local_refunds.each_with_object({}) { |r, h| h[r.transaction_id.to_s] = r }
 
         matched = []
-        orphans = []
+        orphan_ids = []
         provider_ids.each do |pid|
           if local_by_ref.key?(pid)
             matched << { provider_id: pid, refund_id: local_by_ref[pid].prefixed_id }
           else
-            orphans << { provider_id: pid }
+            orphan_ids << pid
           end
         end
+
+        # REV-P6-8h：孤儿按 provider id 只读取金额（能力缺失/单条异常 → amount nil，不中断其他孤儿）。
+        orphans = orphan_ids.map { |pid| orphan_with_amount(pm, pid) }
 
         local_unmatched = []
         local_refunds.each do |r|
@@ -67,12 +70,31 @@ module PallasTrade
         status = (orphans.any? || local_unmatched.any?) ? 'needs_attention' : 'matched'
         reasons = []
         reasons << 'ORPHAN_REFUND' if orphans.any?
+        reasons << 'ORPHAN_AMOUNT_UNAVAILABLE' if orphans.any? { |o| o[:amount].nil? }
         reasons << 'LOCAL_REFUND_NOT_ON_PROVIDER' if local_unmatched.any?
 
         success(result(payment, status, reasons, provider_ids, matched, orphans, local_unmatched))
       rescue PallasTrade::Core::GatewayError, (defined?(Stripe::StripeError) ? Stripe::StripeError : StandardError) => e
         success(result(payment, 'unavailable', ['PROVIDER_UNAVAILABLE', e.message],
                        [], [], [], []))
+      end
+
+      # REV-P6-8h：按 provider refund id 只读取孤儿金额（major units）。能力判定 = 覆写了
+      # PaymentMethod#provider_refund_amount（owner 判定，同 CaptureEvidencePolicy）；Bogus（本地派生
+      # 引用，无真实孤儿）继承 base → nil。provider 异常逐条降级为 amount nil（不猜、不整体失败）。
+      def orphan_with_amount(pm, pid)
+        base = { provider_id: pid, amount: nil, currency: nil }
+        return base unless amount_capable?(pm)
+
+        details = pm.provider_refund_amount(pid)
+        details ? { provider_id: pid, amount: details[:amount], currency: details[:currency] } : base
+      rescue StandardError
+        base
+      end
+
+      def amount_capable?(pm)
+        pm.respond_to?(:provider_refund_amount) &&
+          pm.method(:provider_refund_amount).owner != PallasTrade::PaymentMethod
       end
 
       def result(payment, status, reasons, provider_ids, matched, orphans, local_unmatched)
