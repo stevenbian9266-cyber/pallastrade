@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing |
+| 状态 | done |
 | 创建日期 | 2026-09-08 |
 | 来源 | 需求：REV-P6-8d Provider 孤儿退款配对（只读 OrphanPairing + rake + runbook） |
 | 分类 | payments（语义归属） |
@@ -78,3 +78,5 @@ Stripe 形态 hash）、not_applicable（store_credit/check）、unsupported（�
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-08 | 0.1 | 初稿（依据 REV-P6-7 边界 + FIN-P4-5/6 数据面测绘） | AI |
+| 2026-09-08 | 0.2 | 实施：OrphanPairingResult + OrphanPairing（只读配对）+ rake refunds:orphans + runbook；spec 7 例 + 回归 95 例绿 + quick check（无 AP/nav OK） | AI |
+| 2026-09-08 | 0.3 | 验证收尾：全量 backend-rspec ×2 绿（预提交 EVD-…124827 / 提交后 EVD-…131431）；commit `fcdb883`；Gate GATE-2026-09-08T12-21-01 FINISHED；knowledge + evidence verified + task finished；doc-impact 过；push dev 发布。 | AI |
