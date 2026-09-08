@@ -13,7 +13,14 @@ class PallasTrade::ReimbursementType::OriginalPayment < PallasTrade::Reimburseme
       if payments.empty?
         splits = order.payment_splits.includes(:payment).order(:id)
         payments = splits.filter_map(&:payment).uniq
-        splits.each { |split| credit_limits[split.payment_id] = (split.captured_amount.to_f - split.refunded_amount.to_f) }
+        # REV-P6-8c：split 上限 = captured − refunded（succeeded 投影）− 该 split 已 durable 发起（covering）
+        # 的 refund 金额 —— 保证 ExecuteJob 未跑完时重复 perform 不重复建 requested（拆单/组合子订单路径）。
+        splits.each do |split|
+          covering = reimbursement.refunds
+                       .where(payment_split_id: split.id, state: PallasTrade::Refund::CAPACITY_STATES)
+                       .sum(:amount).to_f
+          credit_limits[split.payment_id] = (split.captured_amount.to_f - split.refunded_amount.to_f - covering)
+        end
       end
 
       reimbursement_list, unpaid_amount = create_refunds(reimbursement, payments, unpaid_amount, simulate, [], credit_limits)

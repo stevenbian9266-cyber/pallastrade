@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| implementing | PRD-20260908-payments-rev-p6-8c-reimbursement-async-chain-durable-requested-executejob | payments | 2026-09-08 | REQ-20260908-rev-p6-8c-reimbursement-async-chain.md |
 | done | PRD-20260908-payments-rev-p6-8b-refund-manual-review-retry-人工裁决与确定性重试-危险操作 | payments | 2026-09-08 | REQ-20260908-rev-p6-8b-refund-manual-review-retry.md |
 | done | PRD-20260908-payments-rev-p6-8a-refund-admin-ops-可见性-退款状态列表-详情-rails-admin | payments | 2026-09-08 | REQ-20260908-rev-p6-8a-refund-admin-ops-visibility.md |
 | done | PRD-20260908-storefront-小屏下个人中心入口可见与移动菜单search弹出搜索框 | storefront | 2026-09-08 | REQ-20260908-storefront-mobile-account-and-menu-search.md |

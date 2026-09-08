@@ -1775,6 +1775,31 @@
         "noSecondRefund": 15,
         "regressionGreen": 20
       }
+    },
+    {
+      "id": "GS-070",
+      "name": "REV-P6-8c Reimbursement 退款链 async 收敛：durable requested + ExecuteJob + initiated 记账",
+      "description": "PRD-20260908-payments-rev-p6-8c-reimbursement-async-chain（源 P6 §16/§46/§48/§57 + REV-P6-2 注记）：ReimbursementHelpers#create_refund 非 simulate = save!(requested) → enqueue ExecuteJob（删事务内同步 Refunds::Execute=AP-010）；Reimbursement#refund_coverage_amount/initiated/uninitiated covering 记账，perform! 以 uninitiated_within_tolerance 判 reimbursed（已发起）否则 errored+raise；initiation 幂等（create_refunds 扣 covering；split 上限=captured−refunded−split covering）防 ExecuteJob 未跑完重复建 requested。",
+      "mustDo": [
+        "reimbursement 退款 = durable requested + ExecuteJob enqueue，无同步 Execute（AC-R68C-01）",
+        "perform! 以 initiated(covering) 判 reimbursed；容量不足 → errored+raise（AC-R68C-02）",
+        "ExecuteJob 未跑完重复 perform 不重复建 requested（AC-R68C-03）",
+        "provider 拒绝不再 raise 到 Admin perform（refund failed 行 Ops 呈现 + ManualRetry）（AC-R68C-04）",
+        "child/single 售后 spec 更新 + 新增 async/accounting spec 全绿；全量 backend-rspec ×2 + quick check + doc-impact"
+      ],
+      "mustNotDo": [
+        "任何事务内同步 Refunds::Execute（AP-010）",
+        "对 ambiguous 自动重退（REV-INV-04）",
+        "孤儿退款配对 / ReverseCommerce::Recover 跨域 / 组合取消编排（后续包）",
+        "改 paid_amount（succeeded）资金事实展示口径"
+      ],
+      "scoring": {
+        "asyncChain": 35,
+        "initiatedAccounting": 25,
+        "dedupeIdempotent": 20,
+        "noSyncExecute": 10,
+        "regressionGreen": 10
+      }
     }
   ]
 }

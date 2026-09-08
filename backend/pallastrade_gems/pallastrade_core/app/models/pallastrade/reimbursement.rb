@@ -105,6 +105,22 @@ module PallasTrade
       total - paid_amount
     end
 
+    # REV-P6-8c (PRD-20260908-payments-rev-p6-8c-...)：covering（initiated）记账 —— durable
+    # requested/processing/ambiguous/succeeded 均视为「已发起」（REV-P6-2 根因：async 化后 perform 判定与
+    # 重复 perform 去重不能只看 succeeded）。
+    def refund_coverage_amount
+      refunds.where(state: PallasTrade::Refund::CAPACITY_STATES).sum(:amount).to_d
+    end
+
+    # 已发起合计 = refund covering + 本地即时 credits（store credit 保存即成立）。
+    def initiated_amount
+      refund_coverage_amount + credits.sum(:amount).to_d
+    end
+
+    def uninitiated_amount
+      total.to_d - initiated_amount
+    end
+
     def perform!(performer = nil)
       reimbursement_tax_calculator.call(self)
       reload
@@ -112,7 +128,7 @@ module PallasTrade
 
       reimbursement_performer.perform(self)
 
-      if unpaid_amount_within_tolerance?
+      if uninitiated_within_tolerance?
         reimbursed!
         reimbursement_success_hooks.each { |h| h.call self }
       else
@@ -152,6 +168,8 @@ module PallasTrade
     # how each reimbursement type will round as well. Since at this point the
     # payments and credits have already been processed, we should allow the
     # reimbursement to show as 'reimbursed' and not 'errored'.
+    # REV-P6-8c：判定基准由 paid_amount(succeeded) 改为 uninitiated（total − covering − credits）；
+    # 单分/逐笔退款金额在容量充足时精确覆盖 total，容差仅覆盖多类型 1 分舍入。
     def unpaid_amount_within_tolerance?
       reimbursement_count = reimbursement_models.size do |model|
         model.total_amount_reimbursed_for(self) > 0
@@ -162,6 +180,15 @@ module PallasTrade
                    0
                  end
       unpaid_amount.abs.between?(0, leniency)
+    end
+
+    def uninitiated_within_tolerance?
+      leniency = if initiated_amount.positive?
+                   (reimbursement_models.size.to_d - 1).clamp(0, 1) * 0.01.to_d
+                 else
+                   0
+                 end
+      uninitiated_amount.abs.between?(0, leniency)
     end
   end
 end

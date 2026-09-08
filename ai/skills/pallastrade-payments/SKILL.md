@@ -520,6 +520,26 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   `AuditLog.where(action:, resource_type:, resource_id:)`（无 `resource` 列）。
 - 边界：孤儿退款配对 / retry 全自动 / ReverseCommerce::Recover 跨域 → REV-P6-8c。
 
+## Reimbursement 退款链 async 收敛（REV-P6-8c, 2026-09-08；PRD-20260908-payments-rev-p6-8c）
+
+> 源 REV-P6 §16/§46/§48/§57 + REV-P6-2 边界注记。**legacy Reimbursement#perform! 退款链 async 拆链**——
+> 消除「事务内同步 Refunds::Execute.call(raise_on_failure:)」（AP-010/REV-INV-03 残留）。
+
+- `ReimbursementType::ReimbursementHelpers#create_refund`（非 simulate）：`save!`（durable requested）→
+  `Refunds::ExecuteJob.perform_later(refund.id)`（删同步 Execute；provider 拒绝不再 raise 到 Admin perform，
+  refund failed 由 Refund Ops 呈现 + ManualRetry 收敛）。simulate 不变。
+- **initiated（covering）记账**（REV-P6-2 根因）：`Reimbursement#refund_coverage_amount` = refunds state ∈
+  `Refund::CAPACITY_STATES`（requested/processing/ambiguous/succeeded）合计（failed/canceled 不计）；
+  `initiated_amount` = coverage + credits；`uninitiated_amount` = total − initiated。`perform!` 用
+  `uninitiated_within_tolerance?` 判 reimbursed（=已发起）否则 errored+raise（容量不足，同旧）。`paid_amount`
+  （succeeded）保留供资金事实/核算展示。
+- **initiation 幂等**：`create_refunds` 先扣本 reimbursement covering 合计；拆单/组合 split 上限
+  `credit_limits[payment_id] = captured − refunded − 该 split covering 合计`（`original_payment.rb#reimburse`）
+  ——ExecuteJob 未跑完时重复 perform 不重复建 requested。
+- 语义说明：reimbursement.reimbursed = 已发起（durable），资金终态看 refund 行（8a/8b）；refund 后续 failed
+  不回退 reimbursement 状态。
+- 边界（后续包）：provider 孤儿退款配对 / ReverseCommerce::Recover 跨域 / OrderCancellation 组合取消编排。
+
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 
 > **ORDER_ALLOCATION = 组合资金对成员订单的归属投影（immutable journal fact），不是额外 cash inflow**

@@ -2,7 +2,13 @@ module PallasTrade
   module ReimbursementType::ReimbursementHelpers
     # P7 (2026-08-28)：新增可选 payment_credit_limits（Hash payment_id → 上限），
     # 供拆单/组合支付子订单退款时按 PaymentSplit 未退部分限制（而非 payment 全局 credit_allowed）。
+    # REV-P6-8c：initiation 幂等 —— 先扣除本 reimbursement 已 durable 发起（covering）的 refund 金额，
+    # 避免 ExecuteJob 未跑完时重复 perform 重复建 requested（REV-P6-2 根因；simulate 亦只展示剩余应退）。
     def create_refunds(reimbursement, payments, unpaid_amount, simulate, reimbursement_list = [], payment_credit_limits = {})
+      if !simulate && reimbursement.respond_to?(:refund_coverage_amount)
+        unpaid_amount -= reimbursement.refund_coverage_amount
+      end
+
       payments.each do |payment|
         break if unpaid_amount <= 0
 
@@ -38,10 +44,10 @@ module PallasTrade
         refund.readonly!
       else
         refund.save!
-        # REV-P6-1：durable 落库(requested) 后显式执行；沿用旧语义——执行失败 raise
-        # （raise_on_failure: true），由 reimbursement 域标记 errored。
-        # （v1 兼容边界：本链仍可能在外层事务内同步执行，完整拆链 = REV-P6-2/4/5。）
-        PallasTrade::Refunds::Execute.call(refund: refund, raise_on_failure: true)
+        # REV-P6-8c (PRD-20260908-payments-rev-p6-8c-...)：durable(requested) 落库后 enqueue ExecuteJob
+        # （async；不再事务内同步 Refunds::Execute，AP-010/REV-INV-03）。资金最终状态由 Refund Ops（8a）
+        # 呈现、ManualRetry（8b）人工收敛；provider 拒绝不再使 Admin perform raise。
+        PallasTrade::Refunds::ExecuteJob.perform_later(refund.id)
       end
       refund
     end
