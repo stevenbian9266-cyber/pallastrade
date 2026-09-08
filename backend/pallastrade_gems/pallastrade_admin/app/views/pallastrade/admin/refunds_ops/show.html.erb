@@ -3,6 +3,21 @@
   <%= @refund.prefixed_id %>
 <% end %>
 <% content_for(:page_actions) do %>
+  <%# REV-P6-8b: 人工裁决工具（仅 eligible 状态 + update 权限显示；危险操作带强确认） %>
+  <% if %w[failed ambiguous manual_review].include?(@refund.state) && can?(:update, @refund) %>
+    <%= button_to PallasTrade.t('admin.orders.refunds_retry'),
+                  PallasTrade.retry_admin_refund_path(@refund),
+                  method: :post,
+                  data: { turbo_confirm: PallasTrade.t('admin.orders.refunds_retry_confirm') },
+                  class: 'btn btn-danger' %>
+  <% end %>
+  <% if %w[processing ambiguous].include?(@refund.state) && can?(:update, @refund) %>
+    <%= button_to PallasTrade.t('admin.orders.refunds_mark_review'),
+                  PallasTrade.mark_review_admin_refund_path(@refund),
+                  method: :post,
+                  data: { turbo_confirm: PallasTrade.t('admin.orders.refunds_mark_review_confirm') },
+                  class: 'btn btn-warning' %>
+  <% end %>
   <%= link_to PallasTrade.t('actions.back'), PallasTrade.admin_refunds_path, class: 'btn btn-outline' %>
 <% end %>
 

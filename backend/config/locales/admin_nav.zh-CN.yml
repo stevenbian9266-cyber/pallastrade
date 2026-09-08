@@ -12,6 +12,14 @@ zh-CN:
         transactions: 交易
         refunds: 退款
         refunds_help: 退款运维总览——覆盖订单取消、退货与单独发起的所有退款：状态、原支付、归属、Provider 引用与幂等键、Journal 事实、对账、退货入库与恢复信息。只读页面；人工复核与重试操作在后续包提供。
+        refunds_retry: 重试（同键）
+        refunds_retry_confirm: 使用「同一」Provider 幂等键重试该退款？将重新执行以裁决真实结果（Provider 去重——不会产生第二笔退款）。危险操作。
+        refunds_retried: 人工重试已入队——将以同一幂等键向 Provider 裁决该退款。
+        refunds_retry_failed: 无法为该退款排队人工重试。
+        refunds_mark_review: 标记人工复核
+        refunds_mark_review_confirm: 将该退款移入人工复核？无资金副作用——之后可用「重试（同键）」裁决。
+        refunds_marked_review: 退款已移入人工复核。
+        refunds_mark_review_failed: 无法将该退款移入人工复核。
       products:
         products_list: 商品列表
         categories: 分类

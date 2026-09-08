@@ -469,6 +469,14 @@ en:
         transactions_help: Durable CommerceTransaction orchestration. Recovery-required and manual-review transactions need attention; payment_confirmed/finalizing older than 1h are stuck. Run recovery only from recovery_required/finalizing.
         refunds: Refunds
         refunds_help: Durable Refund operations — every refund across order cancellations, returns and refund-only flows. See state, original payment, ownership, provider reference & idempotency key, journal fact, reconciliation, restock and recovery. Read-only (manual review / retry actions land in a later package).
+        refunds_retry: Retry (same key)
+        refunds_retry_confirm: 'Retry this refund with the SAME provider idempotency key? This re-runs execution to resolve the real outcome (provider deduplicates — no second refund is created). Dangerous operation.'
+        refunds_retried: Manual retry queued — refund will be resolved against the provider with the same idempotency key.
+        refunds_retry_failed: Unable to queue a manual retry for this refund.
+        refunds_mark_review: Mark for manual review
+        refunds_mark_review_confirm: 'Move this refund into manual review? No money side effect — you can resolve it later with "Retry (same key)".'
+        refunds_marked_review: Refund moved to manual review.
+        refunds_mark_review_failed: Unable to move this refund to manual review.
         parent_filter: Order type
         parent_orders: Parent orders
         child_orders: Child orders

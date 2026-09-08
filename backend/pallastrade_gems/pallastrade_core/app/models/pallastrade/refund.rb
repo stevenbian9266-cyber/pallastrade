@@ -115,9 +115,11 @@ module PallasTrade
       event :cancel_request do
         transition requested: :canceled
       end
-      # REV-P6-6 预留：provider 重查/人工裁决后的回退执行（同一 provider_idempotency_key）
+      # REV-P6-6/REV-P6-8b：provider 重查/人工裁决后的确定性回退执行（同一 provider_idempotency_key；
+      # Execute 对 processing 以同键重跑 → provider 去重返回真实结果，REV-INV-04 只允许同键解决）。
+      # manual_review → processing 由 REV-P6-8b 人工 Retry 使用（§47：manual_review 无自动副作用，仅 operator 触发）。
       event :retry_execution do
-        transition %i[failed ambiguous] => :processing
+        transition %i[failed ambiguous manual_review] => :processing
       end
 
       after_transition to: :processing,    do: :stamp_processing

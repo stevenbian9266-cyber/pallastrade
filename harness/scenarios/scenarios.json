@@ -1749,6 +1749,32 @@
         "legacyBadgeFixed": 15,
         "navAndRegressionGreen": 20
       }
+    },
+    {
+      "id": "GS-069",
+      "name": "REV-P6-8b Refund Manual Review/Retry：人工同键确定性重试 + 标记人工复核（危险操作）",
+      "description": "PRD-20260908-payments-rev-p6-8b-refund-manual-review-retry（源 P6 §63/§47/§49/§10/REV-INV-04）：Refund#retry_execution 扩展 manual_review→processing；Refunds::ManualRetry（仅 failed/ambiguous/manual_review 且 provider_idempotency_key 存在 → retry_execution!+attempt+1 → enqueue ExecuteJob 同键 resolve → Audit，绝不同步 Execute）；Refunds::MarkManualReview（processing/ambiguous→manual_review OPERATOR_REVIEW + Audit）；Rails Admin RefundsOpsController#retry/#mark_review（POST member，authorize 映射 :update，turbo_confirm 强确认）+ Show 按钮（eligible+权限显隐）+ i18n。单 refund 单键永不第二笔退款。",
+      "mustDo": [
+        "retry_execution 覆盖 failed/ambiguous/manual_review→processing（AC-R68B-01）",
+        "ManualRetry eligible → processing+attempt+1+ExecuteJob enqueue+Audit；不可用态/缺 key → failure 零副作用（AC-R68B-02/03）",
+        "并发：已 processing 再 retry → failure 不重复入队（AC-R68B-04）",
+        "MarkManualReview processing/ambiguous → manual_review+Audit（AC-R68B-05）",
+        "Admin POST retry/mark_review：无权限拒绝 + 强确认 + Show 按钮显隐（AC-R68B-06/07）",
+        "quick check 无 AP（不同步 Execute）/nav:validate/doc-impact 过；全量 backend-rspec ×2 绿"
+      ],
+      "mustNotDo": [
+        "任何同步 Refunds::Execute（AP-010）或第二笔退款（REV-INV-04）",
+        "对 ambiguous/manual_review 的自动重退（仅 operator 显式触发）",
+        "新增 v3 API/DB/导航项（8c 边界：孤儿配对/全自动 retry/跨域 Recover）",
+        "改 Execute/Recover 既有自动语义"
+      ],
+      "scoring": {
+        "deterministicRetry": 30,
+        "markReviewTool": 15,
+        "dangerControl": 20,
+        "noSecondRefund": 15,
+        "regressionGreen": 20
+      }
     }
   ]
 }

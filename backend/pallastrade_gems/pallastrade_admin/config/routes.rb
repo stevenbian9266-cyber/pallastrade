@@ -324,7 +324,13 @@ PallasTrade::Core::Engine.add_routes do
     end
     # REV-P6-8a: Refund Ops —— durable Refund inspection（只读，Orders → Refunds）。
     # 与既有 payment 嵌套 refunds（new/create/edit/update）并存；controller 指向 refunds_ops。
-    resources :refunds, only: [:index, :show], controller: 'refunds_ops'
+    # REV-P6-8b: member retry（人工同键确定性重试）/ mark_review（人工标记复核）。
+    resources :refunds, only: [:index, :show], controller: 'refunds_ops' do
+      member do
+        post :retry
+        post :mark_review
+      end
+    end
     get '/emails', to: 'emails#show', as: :emails
     patch '/emails', to: 'emails#update'
     post '/emails/test_send', to: 'emails#test_send', as: :emails_test_send

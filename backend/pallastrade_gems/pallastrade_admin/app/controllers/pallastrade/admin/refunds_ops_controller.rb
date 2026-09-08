@@ -32,6 +32,29 @@ module PallasTrade
         end
       end
 
+      # POST /admin/refunds/:id/retry —— REV-P6-8b 人工同键确定性重试（危险资金操作：turbo_confirm）。
+      # 资金执行只经 ExecuteJob（同键 → provider 去重），AP-010。服务内 with_lock 守卫并发。
+      def retry
+        outcome = PallasTrade::Refunds::ManualRetry.call(refund: @refund, actor: audit_actor)
+        if outcome.success?
+          flash[:success] = PallasTrade.t('admin.orders.refunds_retried')
+        else
+          flash[:error] = outcome.error&.to_s.presence || PallasTrade.t('admin.orders.refunds_retry_failed')
+        end
+        redirect_to PallasTrade.admin_refund_path(@refund), status: :see_other
+      end
+
+      # POST /admin/refunds/:id/mark_review —— REV-P6-8b 人工标记复核（无资金副作用）
+      def mark_review
+        outcome = PallasTrade::Refunds::MarkManualReview.call(refund: @refund, actor: audit_actor)
+        if outcome.success?
+          flash[:success] = PallasTrade.t('admin.orders.refunds_marked_review')
+        else
+          flash[:error] = outcome.error&.to_s.presence || PallasTrade.t('admin.orders.refunds_mark_review_failed')
+        end
+        redirect_to PallasTrade.admin_refund_path(@refund), status: :see_other
+      end
+
       private
 
       def model_class
@@ -50,6 +73,22 @@ module PallasTrade
 
       def collection_default_sort
         'created_at desc'
+      end
+
+      # retry/mark_review 非 CanCan 标准 action → 按 :update 授权（可更新退款的角色/超管可用）
+      def authorize_admin
+        authorize! :admin, model_class
+        effective_action = %i[retry mark_review].include?(action) ? :update : action
+        authorize! effective_action, model_class
+      end
+
+      def audit_actor
+        user = try_pallastrade_current_user
+        if user.respond_to?(:id)
+          { type: user.class.name, id: user.id, label: user.respond_to?(:email) ? user.email : nil }
+        else
+          user || 'admin'
+        end
       end
     end
   end

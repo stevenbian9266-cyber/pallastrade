@@ -496,6 +496,30 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   徽章（REV-P6-1 七态：succeeded/failed/ambiguous/manual_review/requested/processing/canceled）。
 - 边界：Manual Review/Retry（dangerous ops 权限/确认）归 REV-P6-8b。
 
+## Refund Manual Review / Retry（REV-P6-8b, 2026-09-08；PRD-20260908-payments-rev-p6-8b-refund-manual-review-retry）
+
+> 源 REV-P6 §63（Manual Retry Query / Manual Review）+ §47 Recovery Matrix + §49（同 key 确定性解决）+
+> §10 + REV-INV-04。人工触发的确定性解决工具（危险资金操作：权限 + 强确认 + 审计）。
+
+- **确定性 resolve 原语（关键）**：`Refunds::Execute` claim 对 `processing` 以**同一 provider_idempotency_key**
+  重跑（仅 requested 才重新 claim；processing → :claimed 直接 provider I/O）→ Stripe 幂等去重返回真实结果
+  （succeeded→ApplySuccess+Journal / failed / ambiguous 如实）。单 refund 单键 = 永不第二笔退款。
+- **状态机**：`Refund#retry_execution` 事件扩展 `manual_review → processing`（REV-P6-1 预留；
+  原 failed/ambiguous → processing 不变）。manual_review 无自动副作用（§47），仅 operator 触发。
+- `Refunds::ManualRetry.call(refund:, actor:)`：with_lock + reload；仅 failed/ambiguous/manual_review 且
+  provider_idempotency_key 存在 → `retry_execution!` + attempt_count+1 → **enqueue ExecuteJob**（不同步
+  Execute，AP-010）→ Audit('refund_manual_retry')。其余态/缺 key → failure 零副作用。并发双点由
+  with_lock + processing 非 eligible 挡。
+- `Refunds::MarkManualReview.call(refund:, actor:)`：仅 processing/ambiguous → `enter_manual_review!`
+  (code:'OPERATOR_REVIEW') + Audit('refund_mark_review')；其余 failure。
+- **Admin**：`RefundsOpsController#retry` / `#mark_review`（POST member；authorize_admin 把两者映射 :update；
+  `audit_actor` = current admin user Hash 或 'admin'）；Show 页 `page_actions` 按钮仅 eligible+`can?(:update)`
+  显示，危险操作 turbo_confirm；i18n 双语。模板 = `TransactionsController#recover`。
+- **gotcha**：`provider_idempotency_key` 有 partial unique → spec fixture 用 `refund:<prefixed_id>:execute`
+  派生唯一键，勿用固定字面量；`expect_any_instance_of(Execute)` 不支持 ServiceModule prepend（断言 enqueue）；
+  `AuditLog.where(action:, resource_type:, resource_id:)`（无 `resource` 列）。
+- 边界：孤儿退款配对 / retry 全自动 / ReverseCommerce::Recover 跨域 → REV-P6-8c。
+
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 
 > **ORDER_ALLOCATION = 组合资金对成员订单的归属投影（immutable journal fact），不是额外 cash inflow**
