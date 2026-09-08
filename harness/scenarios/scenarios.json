@@ -1701,6 +1701,29 @@
         "noNoise": 15,
         "regressionGreen": 15
       }
+    },
+    {
+      "id": "GS-067",
+      "name": "小屏 Header 个人中心入口可见 + 移动菜单 Search 弹出头部搜索浮层",
+      "description": "PRD-20260908-storefront-小屏下个人中心入口可见与移动菜单search弹出搜索框：Header 账户图标移除 hidden md:block（全断点可见，入口指向 /account）；SearchToggle 暴露 SearchOverlayContext/useSearchOverlay 作为唯一搜索浮层状态；MobileMenu 主面板「Search」行由 Link(/products) 改为 button：关闭抽屉并 openSearch()（无 Context 回退跳 /products）；抽屉页脚 My Account 保留。",
+      "mustDo": [
+        "<md Header 可见账户入口（无 hidden/md:hidden 包裹）且点击到 /account（AC-001）",
+        "移动菜单点 Search → 菜单关闭 + #search-overlay 打开（搜索输入框出现/自动聚焦，URL 不变不跳 /products）（AC-002）",
+        "桌面头部搜索按钮开合浮层行为不变；抽屉页脚 My Account 保留（AC-003）",
+        "组件测试 5 例 + layout 14 例绿；biome/tsc 绿"
+      ],
+      "mustNotDo": [
+        "建第二套搜索 UI（只允许复用 SearchToggle 单一浮层）",
+        "恢复 hidden md:block 隐藏小屏账户入口",
+        "移除抽屉 My Account / 破坏 PRD-20260810 AC-103 菜单结构"
+      ],
+      "scoring": {
+        "headerAccountVisible": 25,
+        "menuSearchOpensOverlay": 25,
+        "desktopSearchRegression": 20,
+        "noSecondSearchUI": 15,
+        "testsGreen": 15
+      }
     }
   ]
 }

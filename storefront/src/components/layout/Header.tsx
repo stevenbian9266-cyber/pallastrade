@@ -76,14 +76,13 @@ export async function Header({
       }
       rightEnd={
         <>
-          {/* Account - desktop only */}
-          <div className="hidden md:block">
-            <Button variant="ghost" size="icon-lg" asChild>
-              <Link href={`${basePath}/account`} aria-label={t("account")}>
-                <User className="size-5" />
-              </Link>
-            </Button>
-          </div>
+          {/* Account — visible on ALL breakpoints (mobile entry restored,
+              PRD-20260908-storefront-小屏下个人中心入口可见与移动菜单search弹出搜索框) */}
+          <Button variant="ghost" size="icon-lg" asChild>
+            <Link href={`${basePath}/account`} aria-label={t("account")}>
+              <User className="size-5" />
+            </Link>
+          </Button>
 
           {/* Cart */}
           <CartButton />

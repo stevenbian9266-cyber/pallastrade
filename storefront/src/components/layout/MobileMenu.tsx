@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { useSearchOverlay } from "@/components/layout/SearchToggle";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -53,6 +54,19 @@ export function MobileMenu({ rootCategories, basePath }: MobileMenuProps) {
   });
 
   const currentPanel = panelStack[panelStack.length - 1];
+  const searchOverlay = useSearchOverlay();
+
+  // Mobile menu "Search": close the drawer and open the single header search
+  // overlay (SearchToggle owns it via SearchOverlayContext). Fallback: navigate
+  // to the products listing when rendered outside SearchToggle.
+  const handleSearchClick = () => {
+    setOpen(false);
+    if (searchOverlay) {
+      searchOverlay.openSearch();
+    } else {
+      window.location.assign(`${basePath}/products`);
+    }
+  };
 
   const cancelPendingCallbacks = () => {
     if (rafRef.current !== null) {
@@ -231,15 +245,14 @@ export function MobileMenu({ rootCategories, basePath }: MobileMenuProps) {
               >
                 {t("allProducts")}
               </Link>
-              <SheetClose asChild className="md:hidden">
-                <Link
-                  href={`${basePath}/products`}
-                  className="flex items-center gap-3 text-left text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg px-3 py-2.5 text-base transition-colors"
-                >
-                  <Search className="w-5 h-5 text-gray-400" />
-                  <span>{t("search")}</span>
-                </Link>
-              </SheetClose>
+              <button
+                type="button"
+                onClick={handleSearchClick}
+                className="md:hidden flex items-center gap-3 text-left text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg px-3 py-2.5 text-base transition-colors"
+              >
+                <Search className="w-5 h-5 text-gray-400" />
+                <span>{t("search")}</span>
+              </button>
               {rootCategories.map((category) =>
                 category.children && category.children.length > 0 ? (
                   <button

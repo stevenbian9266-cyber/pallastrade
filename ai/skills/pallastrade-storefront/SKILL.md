@@ -214,6 +214,12 @@ The home page (`app/[country]/(storefront)/page.tsx`) composes 8 sections in `co
 
 `CategoryNav` (`components/layout/CategoryNav.tsx`) is a **persistent desktop category bar** — a **client component** (receives categories as props from the server layout). **Hovering a root category opens its sub-category mega panel** (grid of all level-2 children, each column listing level-3 grandchildren inline, plus a "View all" footer link); **clicking locks the panel open** (click again / click outside closes). `hidden md:block`, `overflow-x-auto` for many categories. The mobile drawer `MobileMenu` (`md:hidden` trigger) remains the small-screen entry point. There is deliberately **no separate home "shop by category" section** and **no sr-only category nav** — the visible nav bar already covers category browsing.
 
+### Header: account entry + single search overlay + mobile menu search (2026-09-08, PRD-20260908-storefront-小屏下个人中心入口可见与移动菜单search弹出搜索框)
+
+- `SearchToggle` (`components/layout/SearchToggle.tsx`, **client**) owns the **only** search-overlay state (`searchOpen`) and exports `SearchOverlayContext` + `useSearchOverlay()` (`{ open, openSearch, closeSearch }`) so **any sibling slot** (e.g. the mobile menu's Search row) can open the same `#search-overlay` (auto-focused `SearchBar`; Esc / click-outside / ✕ close). **Never build a second search UI** — reuse this overlay.
+- `Header`'s account (User icon → `{basePath}/account`) renders on **all breakpoints** (the old `hidden md:block` wrapper is gone). Do not re-add a desktop-only gate — the mobile personal-center entry lives in the top bar too.
+- `MobileMenu` main-panel **"Search" row is a `<button>`**: it closes the drawer and calls `openSearch()` (fallback: navigate `/products` only when rendered outside `SearchToggle`). The drawer footer **"My Account"** link stays as the in-menu account entry (PRD-20260810 AC-103).
+
 ### SEO / GEO (2026-08)
 
 - JSON-LD helpers in `lib/seo.ts`: `buildOrganizationJsonLd`, `buildWebsiteJsonLd` (WebSite + SearchAction → `{basePath}/products?q={search_term_string}`), `buildProductJsonLd`, `buildBreadcrumbJsonLd`, `buildCategoryItemListJsonLd`. The storefront layout injects Organization + WebSite; pages inject Product / Breadcrumb / ItemList / FAQPage. `buildProductJsonLd` adds an `AggregateRating` (`ratingValue` = `product.average_rating`, `reviewCount` = `product.review_count`, `bestRating: 5`) whenever the product has at least one approved review (P0-4) — the fields come from the Store API Product serializer.
