@@ -540,6 +540,28 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   不回退 reimbursement 状态。
 - 边界（后续包）：provider 孤儿退款配对 / ReverseCommerce::Recover 跨域 / OrderCancellation 组合取消编排。
 
+## Provider 孤儿退款配对（REV-P6-8d, 2026-09-08；PRD-20260908-payments-rev-p6-8d-provider-orphan-refund-pairing）
+
+> 源 REV-P6 §62 边界 + FIN-P4-5。**只读配对**：provider 有退款引用而本地无行 → ORPHAN（资金流出不可见）。
+> 零写/provider mutation、不自动退款（同 reconcile 不变式）。无 UI/API（service + rake + runbook）。
+
+- 数据面：provider = `fetch_financial_details(payment_session:)` 的 `provider_refund_references`
+  （Stripe charge refunds re_[]；Bogus 由本地 refunds 派生 `re_bogus_<id>`）；本地 =
+  `payment.refunds.where.not(transaction_id: nil)`（transaction_id = provider refund id）。
+- `Refunds::OrphanPairing.call(payment:)` → `OrphanPairingResult`（transient VO，freeze）：status
+  matched/needs_attention/not_applicable/unsupported/unavailable + reasons + provider ids[] + matched[]
+  + orphans[] + local_unmatched[]。能力/锚点镜像 ReconcilePayment：StoreCredit/Check→not_applicable；
+  `CaptureEvidencePolicy.implements_financial_details?`→unsupported；session（payment 或组合 fallback）缺→
+  unavailable(UNLINKED_LEGACY_PAYMENT)；provider 异常→unavailable(PROVIDER_UNAVAILABLE，捕获不 raise)。
+  配对：provider_id ∈ 本地 → matched；provider-only → orphans(ORPHAN_REFUND)；本地缺 provider →
+  local_unmatched(LOCAL_REFUND_NOT_ON_PROVIDER)；任一 → needs_attention。
+- rake `pallastrade:refunds:orphans[store_id]`（core `lib/tasks/refunds.rake`）：扫单店 completed PSP 支付
+  （单订单 ∪ 组合路径）→ TSV + summary；not_applicable/unsupported/matched 不逐行打印（汇总计数）。
+  runbook：`docs/operations/refund-orphan-pairing-runbook.md`。
+- **gotcha**：Bogus provider refs = `re_bogus_<local_refund_id>`，测试「matched」须把本地 transaction_id 设为该
+  派生 id；孤儿/异常用例用 stub `payment.payment_method.fetch_financial_details`（普通实例 stub 可行）。
+- 边界：单笔 provider refund 金额需 `retrieve_refund` 扩展；Admin/API 展示 → 后续包。
+
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 
 > **ORDER_ALLOCATION = 组合资金对成员订单的归属投影（immutable journal fact），不是额外 cash inflow**

@@ -1800,6 +1800,30 @@
         "noSyncExecute": 10,
         "regressionGreen": 10
       }
+    },
+    {
+      "id": "GS-071",
+      "name": "REV-P6-8d Provider 孤儿退款配对：只读 OrphanPairing + rake + runbook",
+      "description": "PRD-20260908-payments-rev-p6-8d-provider-orphan-refund-pairing（源 REV-P6 §62 边界 + FIN-P4-5）：Refunds::OrphanPairing.call(payment:) → OrphanPairingResult——provider_refund_references（Stripe re_[]/Bogus 派生）∩ 本地 refunds.transaction_id → matched；provider-only→orphans(ORPHAN_REFUND)；本地缺 provider→local_unmatched(LOCAL_REFUND_NOT_ON_PROVIDER)；能力/锚点镜像 ReconcilePayment（not_applicable/unsupported/unavailable 降级不 raise）。rake pallastrade:refunds:orphans[store_id] + runbook。只读零副作用。",
+      "mustDo": [
+        "匹配全部 → matched（AC-R68D-01）",
+        "provider-only → orphans + needs_attention（AC-R68D-02）",
+        "本地缺 provider → local_unmatched + needs_attention（AC-R68D-03）",
+        "StoreCredit/Check→not_applicable；无契约→unsupported；无 session/provider 异常→unavailable 不 raise（AC-R68D-04）",
+        "rake 注册可用 + runbook 存在（AC-R68D-05/06）；全量 backend-rspec ×2 + quick check + doc-impact"
+      ],
+      "mustNotDo": [
+        "任何写/provider mutation/自动 refund（reconcile 只读不变式）",
+        "对孤儿自动补记/建退款（人工 + 受控 backfill 原则）",
+        "UI/API 展示（后续包）；改动 Reconcile/Execute/状态机"
+      ],
+      "scoring": {
+        "pairingCorrect": 35,
+        "degradeSafe": 20,
+        "rakeRunbook": 20,
+        "readOnly": 15,
+        "regressionGreen": 10
+      }
     }
   ]
 }
