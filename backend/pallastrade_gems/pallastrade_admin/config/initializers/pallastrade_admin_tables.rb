@@ -2511,6 +2511,84 @@ Rails.application.config.after_initialize do
                                            default: true,
                                            position: 60
 
+  # REV-P6-8a (PRD-REV-P6-8a): Refund Ops —— durable Refund inspection（只读，Orders → Refunds）
+  # index 零 provider I/O：列表仅本地列；对账/restock/recovery 细节在 show 页。
+  PallasTrade.admin.tables.register(:refunds,
+    model_class: PallasTrade::Refund,
+    link_to_action: :show,
+    search_param: :state_cont,
+    row_actions: true,
+    row_actions_edit: false,
+    row_actions_delete: false,
+    new_resource: false)
+
+  PallasTrade.admin.tables.refunds.add :prefixed_id,
+                                       label: :id,
+                                       type: :string,
+                                       sortable: false,
+                                       filterable: false,
+                                       default: true,
+                                       position: 10
+
+  PallasTrade.admin.tables.refunds.add :state,
+                                       label: :state,
+                                       type: :custom,
+                                       partial: 'pallastrade/admin/tables/columns/refund_state',
+                                       sortable: false,
+                                       filterable: true,
+                                       filter_type: 'string',
+                                       default: true,
+                                       position: 20
+
+  PallasTrade.admin.tables.refunds.add :order,
+                                       label: :order_number,
+                                       type: :custom,
+                                       partial: 'pallastrade/admin/tables/columns/refund_order',
+                                       sortable: false,
+                                       filterable: false,
+                                       default: true,
+                                       position: 30
+
+  PallasTrade.admin.tables.refunds.add :money,
+                                       label: :amount,
+                                       type: :money,
+                                       sortable: false,
+                                       filterable: false,
+                                       default: true,
+                                       position: 40
+
+  PallasTrade.admin.tables.refunds.add :transaction_id,
+                                       label: :provider_reference,
+                                       type: :string,
+                                       sortable: false,
+                                       filterable: false,
+                                       default: true,
+                                       position: 50
+
+  PallasTrade.admin.tables.refunds.add :requested_at,
+                                       label: :requested_at,
+                                       type: :datetime,
+                                       sortable: true,
+                                       filterable: true,
+                                       default: true,
+                                       position: 60
+
+  PallasTrade.admin.tables.refunds.add :last_error_code,
+                                       label: :last_error,
+                                       type: :string,
+                                       sortable: false,
+                                       filterable: false,
+                                       default: true,
+                                       position: 70
+
+  PallasTrade.admin.tables.refunds.add :created_at,
+                                       label: :created_at,
+                                       type: :datetime,
+                                       sortable: true,
+                                       filterable: false,
+                                       default: false,
+                                       position: 80
+
   # Blog posts (CMS)
   PallasTrade.admin.tables.register(:posts, model_class: PallasTrade::Post, search_param: :title_or_slug_or_author_cont, row_actions: true)
 

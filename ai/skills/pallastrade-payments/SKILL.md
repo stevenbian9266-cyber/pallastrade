@@ -472,6 +472,30 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   `PROVIDER_REFUND_MISSING`；其余异常 → `PROVIDER_UNAVAILABLE`（对称 payment 侧）。
 - 边界：ambiguous 确定性落地（retry_execution）与 provider 孤儿退款配对归 REV-P6-8。
 
+## Refund Admin Ops 可见性（REV-P6-8a, 2026-09-08；PRD-20260908-payments-rev-p6-8a-refund-admin-ops）
+
+> 源 REV-P6 §63（REV-P6-8 Admin/Ops/Legacy Convergence）。**纯只读可见性**（零资金副作用/不改状态机/
+> 不新增 API）。Manual Review/Retry 动作 → 8b；legacy reimbursement 同步链 async 拆链 + 孤儿退款配对 +
+> retry_execution 接线 → 8c。
+
+- **Refund Ops 数据源**：持久层字段齐备（REV-P6-1/3/4/5/6/7）；缺口只在展示层。
+  - `Refund.for_store(store)` scope：单订单退款（`joins(payment: :order)` store_id）∪ 组合退款
+    （`joins(payment: :payment_combination)`，PaymentCombination 直连 store；组合 payment.order 为 nil）。
+    子查询并集防重复行。退款无 store_id 列，勿假设单一路径。
+  - `Refund#journal_entries` = `FinancialLedgerEntry(refund_id)`（REFUND_SUCCEEDED immutable 事实行）；
+    reconciliation = `ReconcileRefund.call(refund:)` 返回 **ServiceModule::Result**（须 `success? → .value`
+    取 SourceResult；异常降级 nil 不 500）；restock = `Returns::RestockFact.resolve(return_item:)`（只读五态）。
+  - ransack 白名单：Refund 显式声明（RansackableAttributes 默认仅 id/name/时间/position）。
+- **Rails Admin**（Orders → Refunds 叶子项，url `/admin/refunds`）：`RefundsOpsController`（继承
+  ResourceController，object_name 'refund'，model_class Refund —— base scope 自动用 `for_store(current_store)`）
+  + `views/.../refunds_ops/{index,show}` + tables 注册 `:refunds`（`link_to_action: :show`，custom 列 partial
+  `tables/columns/refund_state|refund_order`）+ nav 注册 + i18n 双语（en + `admin_nav.zh-CN.yml`）。
+  **index 零 provider I/O**（对账/restock 只在 show 页在线派生）。`refund_state_badge`/`refund_recovery_hint`
+  放 `RefundsOpsHelper` 并在 `Admin::BaseController` 注册 → order 内嵌 `_refunds` 表共用。
+- **Legacy #1**：order show `_refunds.html.erb` 状态列由 transaction_id 有无启发式改为真实 `refund.state`
+  徽章（REV-P6-1 七态：succeeded/failed/ambiguous/manual_review/requested/processing/canceled）。
+- 边界：Manual Review/Retry（dangerous ops 权限/确认）归 REV-P6-8b。
+
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 
 > **ORDER_ALLOCATION = 组合资金对成员订单的归属投影（immutable journal fact），不是额外 cash inflow**

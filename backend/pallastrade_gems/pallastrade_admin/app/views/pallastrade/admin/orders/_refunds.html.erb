@@ -24,11 +24,8 @@
               <tr id="<%= pallastrade_dom_id(refund) %>">
                 <td class="amount"><%= refund.display_amount %></td>
                 <td>
-                  <% if refund.transaction_id.present? %>
-                    <span class="badge badge-success"><%= icon('check') %><%= PallasTrade.t('state_machine_states.completed') %></span>
-                  <% else %>
-                    <span class="badge badge-warning"><%= icon('clock') %><%= PallasTrade.t('state_machine_states.pending') %></span>
-                  <% end %>
+                  <%# REV-P6-8a (PRD-REV-P6-8a): 真实 refund.state 徽章（替换 transaction_id 有无的旧启发式） %>
+                  <%= refund_state_badge(refund) %>
                 </td>
                 <td><%= truncate(refund.reason.name, length: 100) %></td>
                 <td><%= pallastrade_time(refund.created_at) %></td>

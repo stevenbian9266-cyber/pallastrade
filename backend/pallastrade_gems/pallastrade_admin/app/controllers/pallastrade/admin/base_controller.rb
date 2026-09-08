@@ -14,6 +14,8 @@ module PallasTrade
       helper 'pallastrade/currency'
       helper 'pallastrade/localized_names'
       helper 'pallastrade/addresses'
+      # REV-P6-8a: Refund state badge / recovery hint —— orders 内嵌退款表与 refunds_ops 页共用
+      helper 'pallastrade/admin/refunds_ops'
 
       before_action :authorize_admin
 

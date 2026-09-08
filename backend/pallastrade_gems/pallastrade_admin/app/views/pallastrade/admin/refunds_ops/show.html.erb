@@ -1,0 +1,165 @@
+<% content_for(:title, @refund.prefixed_id) %>
+<% content_for :page_title do %>
+  <%= @refund.prefixed_id %>
+<% end %>
+<% content_for(:page_actions) do %>
+  <%= link_to PallasTrade.t('actions.back'), PallasTrade.admin_refunds_path, class: 'btn btn-outline' %>
+<% end %>
+
+<%# REV-P6-8a (P6 §63): Refund Ops detail —— 全只读。Manual Review/Retry 动作归 REV-P6-8b。 %>
+<% refund = @refund || @object %>
+<% payment = refund.payment %>
+<% order = refund.order %>
+<% target_order = refund.target_order %>
+<% reimbursement = refund.reimbursement %>
+<% restock_items = refund.return_items %>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= refund.prefixed_id %></h5>
+    <%= refund_state_badge(refund) %>
+    <span class="text-sm text-gray-500 ml-2"><%= refund.amount ? refund.display_amount : '—' %></span>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div><dt class="text-sm text-gray-500">State</dt><dd><%= refund.state %></dd></div>
+      <div><dt class="text-sm text-gray-500">Attempt count</dt><dd><%= refund.attempt_count %></dd></div>
+      <div><dt class="text-sm text-gray-500">Requested at</dt><dd><%= refund.requested_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Processing at</dt><dd><%= refund.processing_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Succeeded at</dt><dd><%= refund.succeeded_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Failed at</dt><dd><%= refund.failed_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Ambiguous at</dt><dd><%= refund.ambiguous_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Manual review at</dt><dd><%= (refund.manual_review? ? refund.updated_at&.iso8601 : nil) || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Reason</dt><dd><%= refund.reason&.name.presence || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Refunder</dt><dd><%= refund.refunder&.email.presence || '—' %></dd></div>
+    </dl>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header"><h5 class="card-title">Original Payment</h5></div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div><dt class="text-sm text-gray-500">Payment</dt>
+        <dd>
+          <% if order && payment %>
+            <%= link_to payment.prefixed_id, PallasTrade.edit_admin_order_payment_path(order, payment) %>
+          <% else %>
+            <%= payment&.prefixed_id || '—' %>
+          <% end %>
+        </dd></div>
+      <div><dt class="text-sm text-gray-500">Method</dt><dd><%= payment&.payment_method&.name.presence || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Payment state</dt><dd><%= payment&.state.presence || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Order</dt>
+        <dd><% if order %><%= link_to order.number, PallasTrade.edit_admin_order_path(order) %><% else %>—<% end %></dd></div>
+      <div><dt class="text-sm text-gray-500">Reimbursement</dt>
+        <dd><%= reimbursement ? reimbursement.number : '—' %></dd></div>
+    </dl>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header"><h5 class="card-title">Ownership &amp; Provider</h5></div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div><dt class="text-sm text-gray-500">Commerce transaction</dt>
+        <dd><% if refund.commerce_transaction %><%= link_to refund.commerce_transaction.prefixed_id, PallasTrade.admin_transaction_path(refund.commerce_transaction) %><% else %>—<% end %></dd></div>
+      <div><dt class="text-sm text-gray-500">Target order (combination)</dt>
+        <dd><% if target_order %><%= link_to target_order.number, PallasTrade.edit_admin_order_path(target_order) %><% else %>—<% end %></dd></div>
+      <div><dt class="text-sm text-gray-500">Payment split</dt><dd><%= refund.payment_split&.prefixed_id || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Provider refund reference</dt><dd><%= refund.transaction_id.presence || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Provider idempotency key</dt><dd><%= refund.provider_idempotency_key.presence || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Execution idempotency key (derived)</dt><dd><%= refund.execution_idempotency_key.presence || '—' %></dd></div>
+    </dl>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header"><h5 class="card-title">Refund Fact / Journal</h5></div>
+  <div class="card-body">
+    <% entries = refund.journal_entries.order(:id) %>
+    <% if entries.any? %>
+      <table class="table w-full text-sm">
+        <thead><tr><th>Entry</th><th>Type</th><th>Amount</th><th>State</th><th>Effective at</th><th>Ledger idempotency</th></tr></thead>
+        <tbody>
+          <% entries.each do |entry| %>
+            <tr>
+              <td><%= entry.id %></td>
+              <td><%= entry.entry_type %></td>
+              <td><%= [entry.amount, entry.currency].compact.join(' ') %></td>
+              <td><%= entry.state %></td>
+              <td><%= entry.effective_at&.iso8601 || '—' %></td>
+              <td><%= entry.idempotency_key.presence || '—' %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-sm text-gray-500">— (no posted REFUND_SUCCEEDED journal entry)</p>
+    <% end %>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header"><h5 class="card-title">Reconciliation (read-only)</h5></div>
+  <div class="card-body">
+    <% if @reconciliation %>
+      <dl class="grid grid-cols-2 gap-4">
+        <div><dt class="text-sm text-gray-500">Status</dt><dd><%= @reconciliation.status %></dd></div>
+        <div><dt class="text-sm text-gray-500">Observed at</dt><dd><%= @reconciliation.respond_to?(:observed_at) ? (@reconciliation.observed_at&.iso8601 || '—') : '—' %></dd></div>
+        <div class="col-span-2"><dt class="text-sm text-gray-500">Reasons</dt><dd><%= Array(@reconciliation.reasons).presence&.join(', ') || '—' %></dd></div>
+      </dl>
+    <% else %>
+      <p class="text-sm text-gray-500">— (unavailable / degraded)</p>
+    <% end %>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header"><h5 class="card-title">Restock (return-linked)</h5></div>
+  <div class="card-body">
+    <% if restock_items.any? %>
+      <table class="table w-full text-sm">
+        <thead><tr><th>Return item</th><th>Acceptance</th><th>Restock fact</th></tr></thead>
+        <tbody>
+          <% restock_items.each do |item| %>
+            <% fact = begin; PallasTrade::Returns::RestockFact.resolve(return_item: item); rescue StandardError; nil; end %>
+            <tr>
+              <td><%= item.prefixed_id %></td>
+              <td><%= item.acceptance_status %></td>
+              <td><%= fact || '—' %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-sm text-gray-500">— (no linked customer return)</p>
+    <% end %>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header"><h5 class="card-title">Recovery</h5></div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div><dt class="text-sm text-gray-500">Attempts</dt><dd><%= refund.attempt_count %></dd></div>
+      <div><dt class="text-sm text-gray-500">Last error</dt><dd><%= [refund.last_error_code, refund.last_error_message].compact.join(' — ').presence || '—' %></dd></div>
+      <div class="col-span-2"><dt class="text-sm text-gray-500">Recovery note</dt><dd><%= refund_recovery_hint(refund) %></dd></div>
+    </dl>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header"><h5 class="card-title">Log entries / Audit</h5></div>
+  <div class="card-body">
+    <% if refund.log_entries.any? %>
+      <ul class="text-sm space-y-1">
+        <% refund.log_entries.order(:id).each do |entry| %>
+          <li><span class="text-gray-500"><%= entry.created_at&.iso8601 %>:</span> <%= truncate(entry.details.to_s, length: 200) %></li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="text-sm text-gray-500">—</p>
+    <% end %>
+  </div>
+</div>

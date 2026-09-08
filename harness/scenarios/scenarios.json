@@ -1724,6 +1724,31 @@
         "noSecondSearchUI": 15,
         "testsGreen": 15
       }
+    },
+    {
+      "id": "GS-068",
+      "name": "REV-P6-8a Refund Admin Ops 可见性：退款状态列表/详情（Rails Admin，只读）",
+      "description": "PRD-20260908-payments-rev-p6-8a-refund-admin-ops（源 P6 §63）：Rails Admin 新增 Orders → Refunds Ops 页——store 作用域列表（Refund.for_store 单订单 ∪ 组合退款；state 徽章/order/金额/provider 引用/时间/last_error，Ransack 过滤排序，index 零 provider I/O）+ 详情页 §63 全字段（五时间戳/原支付/ownership/Provider 幂等键/Journal 事实行/Reconciliation 在线只读/Restock 五态/Recovery/审计）+ order 内嵌退款表改真实 state 徽章（移除 transaction_id 启发式）。纯只读、不改状态机/不新增 API。",
+      "mustDo": [
+        "GET /admin/refunds 渲染当前 store 退款且不含异 store（AC-R68A-01/03）",
+        "详情页 §63 字段可达：state/五时间戳/provider ref/idempotency key/payment/order/Recovery（AC-R68A-05）",
+        "Reconciliation 卡只读在线渲染（失败降级不 500，AC-R68A-06）；Restock 无关联显示占位（AC-R68A-07）",
+        "order show 内嵌退款表显示真实 state 徽章（AC-R68A-08）；无 manage 权限拒绝（AC-R68A-09）",
+        "nav:validate OK；模型+请求 spec（5+8 例）+ 退款/对账/取消/admin 回归 92 例全绿；全量 backend-rspec ×2"
+      ],
+      "mustNotDo": [
+        "index 列表触发 provider I/O（对账只在 show 页在线一次）",
+        "任何资金副作用/状态机改动/新 API 端点（Manual Review/Retry 归 REV-P6-8b）",
+        "对 ambiguous 自动落地（§68 明确不做）",
+        "重复实现退款列表（既有 order 内嵌 + 本页共存，不互相替代）"
+      ],
+      "scoring": {
+        "opsListStoreScoped": 20,
+        "detailFieldsReachable": 25,
+        "reconcileReadonlyDegrade": 20,
+        "legacyBadgeFixed": 15,
+        "navAndRegressionGreen": 20
+      }
     }
   ]
 }

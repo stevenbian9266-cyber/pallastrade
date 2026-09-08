@@ -39,6 +39,9 @@ module PallasTrade
 
     has_many :log_entries, as: :source
 
+    # REV-P6-8a (PRD-REV-P6-8a)：退款的事实 journal 行（immutable financial ledger，Ops 展示只读）
+    has_many :journal_entries, class_name: 'PallasTrade::FinancialLedgerEntry', foreign_key: :refund_id
+
     with_options presence: true do
       validates :payment, :reason
       # REV-P6-1：transaction_id 仅在 SUCCEEDED 时必需（apply_success! 内保证）；
@@ -50,6 +53,12 @@ module PallasTrade
     validate :amount_within_frozen_split_limit, on: :create, if: -> { payment_split.present? && amount.present? }
     validates :state, inclusion: { in: STATES }
 
+    # REV-P6-8a (PRD-REV-P6-8a)：Ops 列表 ransack 白名单（RansackableAttributes 默认仅 id/name/时间/position）
+    self.whitelisted_ransackable_attributes = %w[
+      state amount transaction_id requested_at processing_at succeeded_at failed_at ambiguous_at
+      last_error_code attempt_count
+    ]
+
     before_create :assign_lifecycle_defaults
 
     scope :active, -> { where(state: ACTIVE_STATES) }
@@ -58,6 +67,16 @@ module PallasTrade
     scope :failed, -> { where(state: 'failed') }
     scope :ambiguous, -> { where(state: 'ambiguous') }
     scope :non_reimbursement, -> { where(reimbursement_id: nil) }
+
+    # REV-P6-8a (PRD-REV-P6-8a)：store 作用域（Ops 列表）——单订单退款（payment.order）∪ 组合退款
+    # （payment.payment_combination；组合 payment 无 order，PaymentCombination 直连 store）。
+    # 子查询并集避免 joins 重复行；退款本身无 store_id 列。
+    scope :for_store, lambda { |store|
+      via_order = joins(payment: :order).where(pallastrade_orders: { store_id: store.id })
+      via_combination = joins(payment: :payment_combination)
+                        .where(pallastrade_payment_combinations: { store_id: store.id })
+      where(id: via_order).or(where(id: via_combination))
+    }
 
     attr_reader :response
 

@@ -1,0 +1,10 @@
+<% content_for(:title, PallasTrade.t('admin.orders.refunds')) %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.orders.refunds') %>
+<% end %>
+
+<div class="alert alert-info mb-6">
+  <%= PallasTrade.t('admin.orders.refunds_help') %>
+</div>
+
+<%= render_table @collection, :refunds %>

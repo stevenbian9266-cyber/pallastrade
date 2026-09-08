@@ -10,6 +10,8 @@ zh-CN:
         all_orders: 全部订单
         orders_to_fulfill: 待发货订单
         transactions: 交易
+        refunds: 退款
+        refunds_help: 退款运维总览——覆盖订单取消、退货与单独发起的所有退款：状态、原支付、归属、Provider 引用与幂等键、Journal 事实、对账、退货入库与恢复信息。只读页面；人工复核与重试操作在后续包提供。
       products:
         products_list: 商品列表
         categories: 分类

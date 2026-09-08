@@ -85,6 +85,14 @@ Rails.application.config.after_initialize do
               position: 30,
               active: -> { controller_name == 'transactions' },
               if: -> { can?(:read, PallasTrade::CommerceTransaction) || can?(:manage, PallasTrade::Order) }
+
+    # REV-P6-8a: durable Refund inspection（只读；Orders → Refunds）
+    orders.add :refunds,
+              label: 'admin.orders.refunds',
+              url: :admin_refunds_path,
+              position: 40,
+              active: -> { controller_name == 'refunds_ops' },
+              if: -> { can?(:read, PallasTrade::Refund) || can?(:manage, PallasTrade::Refund) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns

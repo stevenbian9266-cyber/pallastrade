@@ -1,0 +1,8 @@
+<%# locals: (record:, column:, value:) %>
+<%# REV-P6-8a: Refund target order（组合退款可经 target_order/推导；无则 —） %>
+<% order = value || record.order %>
+<% if order %>
+  <%= link_to order.number, PallasTrade.edit_admin_order_path(order) %>
+<% else %>
+  <span class="text-gray-400">—</span>
+<% end %>
