@@ -10716,6 +10716,109 @@ paths:
                 updated_at: '2026-07-11T15:38:12.656Z'
                 preferences: {}
                 preference_schema: []
+  "/api/v3/admin/payment_combinations/{id}/cancel":
+    post:
+      summary: Cancel a payment combination (combination-level cancellation orchestration)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |-
+        Cancels a succeeded payment combination's member orders (all of them, or the given
+        `member_ids` subset) through the combination-level orchestration service
+        (`Orders::CombinationCancel`). Each member goes through the single-order Cancellation
+        Orchestrator (`Orders::Cancel`) — since REV-P6-8f it is split-aware: a paid combination
+        member has no local PSP payment row, so its durable `Refund(requested)` is created against
+        the combination Payment with the frozen `PaymentSplit` (`payment_split_id`/`target_order_id`)
+        ownership and executed asynchronously via `Refunds::ExecuteJob` (no in-transaction gateway I/O).
+
+        Pre-payment cancellation stays on `PaymentCombination#cancel` (pending/processing states);
+        this endpoint requires `status = succeeded`. Already-canceled or not-cancellable members are
+        skipped with a reason; a failing member never aborts siblings (aggregated in the response).
+        Re-running the endpoint is idempotent (only acts on members still cancellable).
+
+        Optional body params: `member_ids` (array of prefixed order ids), `reason`, `note`,
+        `refund_payments` (three-state: omit=auto / true / false), `restock_items`,
+        `notify_customer`. The response is the orchestration aggregate (no raw integer PKs).
+
+        **Required scope:** `write_orders` (for API-key authentication).
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        description: Payment combination ID (pcom_…)
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                member_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: >-
+                    Combination member order ids to cancel (prefixed order_…). Omit to cancel all
+                    not-yet-canceled members.
+                reason:
+                  type: string
+                  description: Cancellation reason (customer/declined/fraud/inventory/staff/other/expired)
+                note:
+                  type: string
+                  description: Staff-facing note
+                refund_payments:
+                  type: boolean
+                  description: >-
+                    REV-P6-4/8f refund decision forwarded to each member. Omit (auto): paid combo
+                    members get a durable requested refund against their frozen split. false:
+                    cancel without refunding.
+                restock_items:
+                  type: boolean
+                  description: Return inventory on cancel (hint; physical restock follows shipment/manifest semantics)
+                notify_customer:
+                  type: boolean
+                  description: Hint for order.canceled subscribers
+      responses:
+        '200':
+          description: combination cancellation orchestration result
+          content:
+            application/json:
+              example:
+                data:
+                  id: pcom_UkLWZg9DAJ
+                  type: payment_combination
+                  attributes:
+                    status: succeeded
+                    members:
+                      total: 2
+                      canceled: 2
+                      skipped: 0
+                      failed: 0
+                    canceled:
+                    - order_id: or_UkLWZg9DAJ
+                      order_number: R595209208
+                    - order_id: or_KuLWZg9DAK
+                      order_number: R595209209
+                    skipped: []
+                    failed: []
+        '404':
+          description: combination not found in the current store (or cross-store)
+        '422':
+          description: combination is not succeeded / no cancellable members in the selection
   "/api/v3/admin/orders/{order_id}/payments":
     get:
       summary: List payments
@@ -25425,6 +25528,8 @@ components:
         transaction_id:
           type: string
           nullable: true
+        state:
+          type: string
         amount:
           type: string
           nullable: true
@@ -25437,18 +25542,29 @@ components:
         reimbursement_id:
           type: string
           nullable: true
-        payment_split_id:
-          type: string
-          nullable: true
-        target_order_id:
-          type: string
-          nullable: true
         metadata:
+          type: object
+        last_error_message:
+          type: string
+          nullable: true
+        requested_at:
+          type: object
+        processing_at:
+          type: object
+        succeeded_at:
+          type: object
+        failed_at:
+          type: object
+        ambiguous_at:
           type: object
         created_at:
           type: string
         updated_at:
           type: string
+        payment_split_id:
+          type: object
+        target_order_id:
+          type: object
         payment:
           "$ref": "#/components/schemas/Payment"
         reimbursement:
@@ -25456,13 +25572,22 @@ components:
       required:
       - id
       - transaction_id
+      - state
       - amount
       - payment_id
       - refund_reason_id
       - reimbursement_id
       - metadata
+      - last_error_message
+      - requested_at
+      - processing_at
+      - succeeded_at
+      - failed_at
+      - ambiguous_at
       - created_at
       - updated_at
+      - payment_split_id
+      - target_order_id
       x-typelizer: true
     Reimbursement:
       type: object

@@ -34,10 +34,15 @@ module PallasTrade
         # REV-P6-4：refund_payments 三态（nil=auto / true=退 / false=显式不退）。
         # auto：取消时点存在可退 PSP completed payment → 退款（保持现网默认语义）；
         # 显式 false → 即使 PAID 也不建 Refund（AC-R64-03）。
-        will_refund = refund_payments == false ? false : (refund_payments == true || completed_refundable_payments(order).any?)
+        # REV-P6-8f（FR-R68F-101）：succeeded 组合成员的资金在组合 Payment + 冻结 split 上
+        # （无本地 PSP payment 行）——auto 视该 split 为可退源，修复 REV-P6-4 后「PAID 组合成员取消零退款」。
+        refundable_payments = completed_refundable_payments(order)
+        member_split = combination_member_split(order, refundable_payments)
+        will_refund = refund_payments == false ? false : (refund_payments == true || refundable_payments.any? || member_split.present?)
 
-        # refund_amount 仅支持单笔可退 PSP 支付（不可证明不猜，REV-P6-3 同原则）
-        if refund_amount.present? && completed_refundable_payments(order).size > 1
+        # refund_amount 仅支持单一可退源（单笔可退 PSP 支付或单一组合 split；不可证明不猜，
+        # REV-P6-3 同原则）。
+        if refund_amount.present? && (refundable_payments.size + (member_split ? 1 : 0)) > 1
           order.errors.add(:base, 'refund_amount is only supported for orders with a single refundable PSP payment')
           return failure(order)
         end
@@ -106,29 +111,68 @@ module PallasTrade
         end
       end
 
+      # REV-P6-8f：succeeded 组合成员的权威可退源 = 冻结 PaymentSplit。组合资金在组合 Payment
+      # （order_id=nil）上，成员订单无本地 PSP payment 行（settlement 已把 split.payment 回填为
+      # 组合 payment）——REV-P6-4 的本地查询对成员返回空正是「PAID 组合成员取消零退款」根因。
+      # 仅当订单确无本地可退 PSP payment、存在 succeeded 组合 split 且 credit_allowed > 0 时启用
+      # （否则维持既有本地 payment 语义，避免双源歧义）。
+      def combination_member_split(order, refundable_payments = nil)
+        refundable_payments ||= completed_refundable_payments(order)
+        return nil if refundable_payments.any?
+
+        PallasTrade::PaymentSplit
+          .joins(:payment_combination)
+          .where(order_id: order.id, pallastrade_payment_combinations: { status: 'succeeded' })
+          .where.not(payment_id: nil)
+          .select { |split| split.credit_allowed.to_f.positive? }
+          .first
+      end
+
       # REV-P6-4：在订单事务内为已决策退款的 completed PSP 支付建 durable
       # Refund(requested)（Refunds::Request，enqueue:false）。金额：refund_amount 存在时
       # 取 min(refund_amount, payment.credit_allowed)（调用方已保证单笔）；否则全 credit_allowed
       # （与旧隐式 after_cancel 全退语义一致）。任一建单失败 → 返回 nil（调用方回滚）。
+      # REV-P6-8f：无本地 PSP payment 的 succeeded 组合成员 → 组合 Payment + 冻结 split 退款
+      # （payment_split/target_order ownership 可证明才传；split 上限由
+      # Refund#amount_within_frozen_split_limit 强制执行，不碰兄弟 split）。
       def build_refunds_if_paid(order, will_refund, refund_amount)
         return [] unless will_refund
 
         payments = completed_refundable_payments(order)
-        return [] if payments.empty?
+        if payments.any?
+          built = []
+          payments.each do |payment|
+            amount = refund_amount.present? ? [refund_amount.to_d, payment.credit_allowed.to_d].min : payment.credit_allowed
+            result = PallasTrade::Refunds::Request.call(
+              payment: payment,
+              amount: amount,
+              reason: PallasTrade::RefundReason.order_canceled_reason,
+              refunder_id: order.canceler_id,
+              enqueue: false
+            )
+            return nil unless result.success?
 
-        payments.map do |payment|
-          amount = refund_amount.present? ? [refund_amount.to_d, payment.credit_allowed.to_d].min : payment.credit_allowed
-          result = PallasTrade::Refunds::Request.call(
-            payment: payment,
-            amount: amount,
-            reason: PallasTrade::RefundReason.order_canceled_reason,
-            refunder_id: order.canceler_id,
-            enqueue: false
-          )
-          return nil unless result.success?
-
-          result.value
+            built << result.value
+          end
+          return built
         end
+
+        split = combination_member_split(order)
+        return [] unless split
+
+        amount = refund_amount.present? ? [refund_amount.to_d, split.credit_allowed.to_d].min : split.credit_allowed
+        result = PallasTrade::Refunds::Request.call(
+          payment: split.payment,
+          amount: amount,
+          reason: PallasTrade::RefundReason.order_canceled_reason,
+          refunder_id: order.canceler_id,
+          payment_split: split,
+          target_order: order,
+          enqueue: false
+        )
+        return nil unless result.success?
+
+        [result.value]
       end
 
       # 仅当订单确未支付（无 completed payment / payment_total=0）且无进行中支付 attempt

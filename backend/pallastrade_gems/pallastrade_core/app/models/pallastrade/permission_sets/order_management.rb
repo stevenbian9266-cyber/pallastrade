@@ -27,6 +27,10 @@ module PallasTrade
         can :cancel, PallasTrade::Order, &:allow_cancel?
         cannot :destroy, PallasTrade::Order
         can :destroy, PallasTrade::Order, &:can_be_deleted?
+
+        # REV-P6-8f：组合级取消编排（succeeded 组合整组/子集取消；成员退款按冻结 split 走
+        # Orders::Cancel split-aware 路径）。pre-payment 组合的 cancel 仍是 combo 状态机职责。
+        can :cancel, PallasTrade::PaymentCombination, &:succeeded?
       end
     end
   end

@@ -13794,6 +13794,8 @@ components:
         transaction_id:
           type: string
           nullable: true
+        state:
+          type: string
         amount:
           type: string
           nullable: true
@@ -13809,6 +13811,7 @@ components:
       required:
       - id
       - transaction_id
+      - state
       - amount
       - payment_id
       - refund_reason_id

@@ -422,6 +422,13 @@ PallasTrade::Core::Engine.add_routes do
           resources :gift_cards, controller: 'orders/gift_cards', only: [:create, :destroy]
           resource :store_credits, controller: 'orders/store_credits', only: [:create, :destroy]
         end
+
+        # REV-P6-8f：组合级取消编排（succeeded 组合整组/子集取消；成员退款走 split-aware durable 路径）
+        resources :payment_combinations, only: [] do
+          member do
+            post :cancel
+          end
+        end
       end
 
       # Webhooks (outside of store namespace — no API key authentication)
