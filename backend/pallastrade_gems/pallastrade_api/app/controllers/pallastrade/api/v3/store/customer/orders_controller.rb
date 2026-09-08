@@ -23,6 +23,13 @@ module PallasTrade
                           .or(owned_orders.complete)
                           .preload_associations_lazily
             end
+
+            # PALLAS-CUSTOM: 订单历史默认按创建时间由近到远排序（PRD-20260908-checkout-商城前台-order）。
+            # 复用框架 apply_collection_sort 扩展点：客户端显式 sort（q[s]/sort 参数）仍优先，
+            # 此处 order 仅作「无显式 sort」时的确定性兜底；同秒创建以 id desc 稳定排序。
+            def apply_collection_sort(collection)
+              collection.order(created_at: :desc, id: :desc)
+            end
           end
         end
       end
