@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | verifying |
+| 状态 | done |
 | 创建日期 | 2026-09-08 |
 | 来源 | 需求：REV-P6-6 Refund Reverse Recovery（Recover + RecoverJob + RecoverSweeper） |
 | 分类 | payments |
@@ -60,3 +60,4 @@ Core `services/pallastrade/refunds/recover.rb` + `jobs/pallastrade/refunds/{reco
 |---|---|---|---|
 | 2026-09-08 | 0.1 | 初稿 | AI |
 | 2026-09-08 | 0.2 | 实施：三件套 + 调度 + specs 7 绿 | AI |
+| 2026-09-08 | 0.3 | AP-010 修正：requested→ExecuteJob async（资金执行只经 ExecuteJob）/ processing→本地锁 ambiguous（无 provider）；重跑 specs+全量绿。验证完成：commit `db149e8`，gate finished，提交前/后全量 backend-rspec 绿（EVD-…041114/…043302），recovery manual-only，doc-impact 通过，push dev 发布。 | AI |
