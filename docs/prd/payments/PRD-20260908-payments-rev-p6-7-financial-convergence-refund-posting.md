@@ -53,3 +53,4 @@ Core：`services/pallastrade/reconciliations/{reconcile_refund,reconcile_transac
 |---|---|---|---|
 | 2026-09-08 | 0.1 | 初稿（依据 §62 + 测绘 G1-G5） | AI |
 | 2026-09-08 | 0.2 | 实施 G1/G2/G3 + spec 6 例（49 全绿） | AI |
+| 2026-09-08 | 0.3 | 验证完成：commit `8657954`，gate finished，提交前/后全量 backend-rspec 绿（EVD-…054455/…061219），recovery manual-only，doc-impact 通过，push dev 发布（并入 origin）。 | AI |
