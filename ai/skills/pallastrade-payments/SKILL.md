@@ -560,7 +560,26 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   runbook：`docs/operations/refund-orphan-pairing-runbook.md`。
 - **gotcha**：Bogus provider refs = `re_bogus_<local_refund_id>`，测试「matched」须把本地 transaction_id 设为该
   派生 id；孤儿/异常用例用 stub `payment.payment_method.fetch_financial_details`（普通实例 stub 可行）。
-- 边界：单笔 provider refund 金额需 `retrieve_refund` 扩展；Admin/API 展示 → 后续包。
+- 边界：单笔 provider refund 金额与 Admin/API 展示已由 REV-P6-8h 落地（见下节）。
+
+## 孤儿金额 + Payment Ops（REV-P6-8h, 2026-09-09；PRD-20260908-payments-rev-p6-8h-orphan-amounts-payment-ops）
+
+> 8d 边界落地：孤儿（provider-only）退款**只读金额** + Rails Admin Payment Ops 展示。零写/provider mutation，
+> 金额不落库。risk critical（网关/金额关键词）→ 走 manual-only recovery plan。
+
+- **金额能力**：`PaymentMethod#provider_refund_amount(provider_reference)`（base → nil；owner 判定同
+  `CaptureEvidencePolicy`——覆写才算有能力）；Stripe 实现 = 只读 `retrieve_refund(ref)` →
+  `{ amount: major units, currency: }`。Bogus 引用本地派生、无真实孤儿 → 继承 base 自然降级。
+- **OrphanPairing 扩展**：orphan 条目 `{ provider_id:, amount:, currency: }`（不可得 nil）；逐条 rescue
+  单条失败不中断其他孤儿；能力缺失/任一孤儿无金额 → reasons 追加 `ORPHAN_AMOUNT_UNAVAILABLE`。
+  matched/local_unmatched 结构向后兼容（8d specs 仍绿）。
+- **rake** `pallastrade:refunds:orphans` TSV +orphan amounts/currencies 列（`|` 对齐）。
+- **Rails Admin Payments Ops**（Orders → Payments，只读）：`PaymentsOpsController` index（store completed PSP
+  payments 含组合 payment）+ show 在线跑 `OrphanPairing`（异常降级 nil 不 500，8a ReconcileRefund 模式）——
+  展示 matched/orphans(含金额)/local_unmatched。table/nav/routes only index+show/i18n；权限由
+  `can :manage Payment`（order_management）覆盖。
+- runbook `docs/operations/refund-orphan-pairing-runbook.md` 已更新（金额语义/列/页面）。
+- 边界：Admin API v3 只读端点 + SDK → 后续。
 
 ## ReverseCommerce::Recover 跨域收敛（REV-P6-8e, 2026-09-08；PRD-20260908-payments-rev-p6-8e-reverse-commerce-recover-cross-domain）
 

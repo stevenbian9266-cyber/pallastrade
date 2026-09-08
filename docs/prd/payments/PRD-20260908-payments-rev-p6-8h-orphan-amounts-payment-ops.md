@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | draft |
+| 状态 | done |
 | 创建日期 | 2026-09-08 |
 | 来源 | 需求：REV-P6-8h 孤儿退款配对金额扩展（retrieve_refund）+ Payment Ops 展示（用户三包授权 #2） |
 | 分类 | payments |
@@ -72,11 +72,11 @@ Stripe::Refund.retrieve）；rake 冒烟（TSV 列）；payments_ops request spe
 critical：手动 only recovery plan（只读取数无本地写——恢复=无动作，验证幂等）。
 
 ## 9. 文档同步清单
-- [ ] payments skill（8h 节：金额+Payment Ops）；runbook refund-orphan-pairing 更新；scenarios GS-075；
-  PRD/REQ/README；doc-impact。
-- [ ] 边界：Admin API v3 端点/SDK → 后续。
+- [x] payments skill（8h 节）；runbook refund-orphan-pairing 更新；scenarios GS-075；PRD/REQ/README；doc-impact。
+- [x] 边界：Admin API v3 端点/SDK → 后续。
 
 ## 10. 变更记录
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-08 | 0.1 | 初稿（8d runbook 边界落地：金额 retrieve_refund + Payment Ops 展示） | AI |
+| 2026-09-08 | 1.0 | done：实施完成（commit f04f522）——金额能力+OrphanPairing 扩展+rake 金额列+Payments Ops 页；spec 46/46、全量 ×2 绿、recovery plan（manual-only） | AI |
