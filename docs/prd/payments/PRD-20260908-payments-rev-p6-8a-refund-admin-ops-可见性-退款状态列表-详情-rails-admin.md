@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing |
+| 状态 | done |
 | 创建日期 | 2026-09-08 |
 | 来源 | 需求：REV-P6-8a Refund Admin Ops 可见性 — 退款状态列表/详情（Rails Admin） |
 | 分类 | payments（自动判定） |
@@ -125,3 +125,4 @@ attempt_count/ownership 三列/lock_version/log_entries/Journal FK），但 **Op
 |---|---|---|---|
 | 2026-09-08 | 0.1 | 初稿（依据 §63 + Explore 六层测绘） | AI |
 | 2026-09-08 | 0.2 | 实施：Refund.for_store/journal_entries/ransack 白名单 + RefundsOpsController/视图/路由/tables/nav/i18n + _refunds 状态徽章修复；模型 spec 5 例 + 请求 spec 8 例 + 回归 92 例全绿 + quick check（nav-validate OK/无 AP） | AI |
+| 2026-09-08 | 0.3 | 验证收尾：全量 backend-rspec ×2 绿（预提交 EVD-…084635 / 提交后 EVD-…091022，1096 例）；commit `c7da5e9`；Gate GATE-2026-09-08T07-06-33 FINISHED；knowledge 9/8 + evidence verified + task finished；doc-impact 过；push dev 发布（并入 origin）。 | AI |
