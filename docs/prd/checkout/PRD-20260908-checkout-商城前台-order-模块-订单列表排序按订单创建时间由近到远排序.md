@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-08 |
 | 来源 | 优化：商城前台 order 模块，订单列表排序按订单创建时间由近到远排序 |
 | 分类 | checkout（自动判定） |
@@ -93,3 +93,4 @@
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-08 | 0.1 | 初稿（定位 API 默认排序缺失；dev 库实测取证） | AI |
+| 2026-09-08 | 0.2 | 用户确认实施 → `customer/orders_controller.rb` 新增 `apply_collection_sort` 默认 `created_at desc, id desc`；spec 追加 AC-001/002/003（11 例全绿）；dev 线上 API 顺序抽查通过；commit c4869ff | AI |

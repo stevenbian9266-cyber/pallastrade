@@ -38,7 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
-| approved | PRD-20260908-checkout-商城前台-order-模块-订单列表排序按订单创建时间由近到远排序 | checkout | 2026-09-08 | REQ-20260908-store-order-list-created-at-desc.md |
+| done | PRD-20260908-checkout-商城前台-order-模块-订单列表排序按订单创建时间由近到远排序 | checkout | 2026-09-08 | REQ-20260908-store-order-list-created-at-desc.md |
 | verifying | PRD-20260908-payments-rev-p6-7-financial-convergence-refund-posting | payments | 2026-09-08 | REQ-20260908-rev-p6-7-financial-convergence.md |
 | done | PRD-20260908-payments-rev-p6-6-refund-reverse-recovery-recover-recoverjob-recovers | payments | 2026-09-08 | REQ-20260908-rev-p6-6-refund-reverse-recovery.md |
 | done | PRD-20260907-shipping-rev-p6-5-return-restock-decision-exactly-once-restock-accept | shipping | 2026-09-07 | REQ-20260907-rev-p6-5-return-restock-exactly-once.md |
