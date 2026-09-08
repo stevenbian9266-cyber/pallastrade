@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing |
+| 状态 | done |
 | 创建日期 | 2026-09-08 |
 | 来源 | 需求：REV-P6-8c reimbursement legacy 退款链 async 拆链（durable requested + ExecuteJob + initiated 记账） |
 | 分类 | payments（语义归属） |
@@ -88,3 +88,5 @@ split.refunded_amount 由 ExecuteJob 更新 → 测试改为跑 job 或断言 re
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-08 | 0.1 | 初稿（依据 §16/§46/§48/§57 + REV-P6-2 边界注记 + 链代码测绘） | AI |
+| 2026-09-08 | 0.2 | 实施：create_refund async（save+ExecuteJob，删同步 Execute）+ Reimbursement covering/initiated 记账 + perform! 判定 + initiation 幂等（covering/split covering）；新 async+accounting spec + child spec 更新 7 例 + 回归 148 例全绿 + quick check（无 AP/nav OK） | AI |
+| 2026-09-08 | 0.3 | 验证收尾：全量 backend-rspec ×2 绿（预提交 EVD-…114610 / 提交后 EVD-…120756）；commit `950573d`；Gate GATE-2026-09-08T11-16-24 FINISHED；knowledge + evidence verified + task finished；doc-impact 过；push dev 发布。 | AI |
