@@ -31,5 +31,14 @@ PALLAS_CART_SCHEDULE = [
     class: 'PallasTrade::Reconciliations::ReconcileSweeperJob',
     cron: '*/10 * * * *',
     queue: 'default'
+  },
+  # REV-P6-6 (2026-09-08): 注册 refund recovery sweeper —— 保守自动收敛 requested（从未执行）/processing
+  # （超时）退款；ambiguous/manual/failed 仅计数 + warn（人工介入）。enqueue RecoverJob 幂等。
+  {
+    name: 'refund_recovery_sweeper',
+    class: 'PallasTrade::Refunds::RecoverSweeperJob',
+    cron: '*/5 * * * *',
+    queue: 'default',
+    args: [{ 'requested_hours' => 1, 'processing_hours' => 6 }]
   }
 ].freeze

@@ -1649,6 +1649,32 @@
         "noPrematureRestock": 15,
         "regressionGreen": 15
       }
+    },
+    {
+      "id": "GS-065",
+      "name": "REV-P6-6 Refund Reverse Recovery：Recover + RecoverJob + RecoverSweeper 保守自动收敛",
+      "description": "REV-P6-6（PRD-20260908-payments-rev-p6-6-refund-reverse-recovery）：Refunds::Recover（with_lock+状态守卫）requested stale(>1h)&attempts<5 → 幂等 Execute 重跑（稳定 provider_idempotency_key）；processing stale(>6h) → record_ambiguous!(RECOVERY_TIMEOUT)（REV-INV-04 不自动重退）；ambiguous/failed/manual_review/fresh/capped 不动。RecoverJob per-refund（rescue 不 re-raise）；RecoverSweeperJob（sidekiq-cron */5）保守扫描 requested/processing stale → enqueue，attempts 封顶(5)停自动，ambiguous/manual 计数+warn structured metrics。镜像 Transactions::RecoverSweeperJob 哲学。",
+      "mustDo": [
+        "requested stale & <MAX → 幂等 Execute 重跑至 succeeded（attempt=1，不重复 PSP）（AC-R66-01）",
+        "requested fresh / attempts≥MAX → 不动（AC-R66-02）",
+        "processing stale → ambiguous + RECOVERY_TIMEOUT（不自动重退，AC-R66-03）",
+        "ambiguous/failed/manual_review → 不动（AC-R66-04）",
+        "sweeper：requested/processing stale enqueue RecoverJob；capped/fresh 不 enqueue；ambiguous 等仅计数+warn（AC-R66-05）",
+        "sidekiq_schedule 注册 refund_recovery_sweeper；P0-P5 + backend-rspec 全量绿"
+      ],
+      "mustNotDo": [
+        "对 ambiguous/failed/manual 自动重跑 provider（REV-INV-04）",
+        "processing 未达阈值即动；attempts 无封顶无限重扫",
+        "RecoverJob re-raise 触发 sidekiq 自动重试放大副作用",
+        "半吊子 ReverseCommerce::Recover / reimbursement async（归 REV-P6-7/8）"
+      ],
+      "scoring": {
+        "boundedRerun": 25,
+        "timeoutToAmbiguous": 25,
+        "noAutoRetryAmbiguous": 20,
+        "conservativeSweeper": 15,
+        "regressionGreen": 15
+      }
     }
   ]
 }

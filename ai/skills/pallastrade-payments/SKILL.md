@@ -445,6 +445,19 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **边界**：reimbursement 链完整 async 拆链与 ReverseCommerce::Recover（含 Restock 收敛）归 REV-P6-6/6-8；
   Shipment cancel / OrderInventory restock 通道不改。
 
+## Refund Reverse Recovery（REV-P6-6, 2026-09-08；PRD-20260908-payments-rev-p6-6-refund-reverse-recovery）
+
+> **Refund 自动收敛引擎**（源 REV-P6 §45/§46/§61；镜像 Transactions::RecoverSweeperJob 保守哲学）：
+> 只处理可安全自动恢复的；ambiguous/manual 仅计数+warn（人工/REV-P6-8 同 idempotency key 裁决）。
+
+- `Refunds::Recover`（with_lock + 状态守卫）：requested stale（>1h）& attempts<5 → 幂等
+  `Refunds::Execute` 重跑（稳定 provider_idempotency_key，不重复 PSP）；processing stale（>6h）→
+  `record_ambiguous!(RECOVERY_TIMEOUT)`（REV-INV-04 不自动重退）；其余不动。`MAX_AUTO_RETRY_ATTEMPTS=5`。
+- `Refunds::RecoverJob`：per-refund；rescue 不 re-raise（避免 sidekiq 重试放大；sweeper 周期重扫）。
+- `Refunds::RecoverSweeperJob`（sidekiq-cron */5，host schedule）：保守扫描 requested/processing stale →
+  enqueue RecoverJob；attempts 达上限停自动；ambiguous/manual_review/failed 计数 + warn（structured metrics）。
+- **边界**：`ReverseCommerce::Recover`（Restock/Journal 跨域）与 reimbursement async 拆链归 REV-P6-7/8。
+
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 
 > **ORDER_ALLOCATION = 组合资金对成员订单的归属投影（immutable journal fact），不是额外 cash inflow**
