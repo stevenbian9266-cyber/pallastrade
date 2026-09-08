@@ -1,0 +1,10 @@
+<% content_for(:title, PallasTrade.t('admin.orders.payment_combinations')) %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.orders.payment_combinations') %>
+<% end %>
+
+<div class="alert alert-info mb-6">
+  <%= PallasTrade.t('admin.orders.payment_combinations_help') %>
+</div>
+
+<%= render_table @collection, :payment_combinations %>

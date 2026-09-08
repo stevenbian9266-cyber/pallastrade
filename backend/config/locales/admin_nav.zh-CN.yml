@@ -20,6 +20,8 @@ zh-CN:
         refunds_mark_review_confirm: 将该退款移入人工复核？无资金副作用——之后可用「重试（同键）」裁决。
         refunds_marked_review: 退款已移入人工复核。
         refunds_mark_review_failed: 无法将该退款移入人工复核。
+        payment_combinations: 组合支付
+        payment_combinations_help: 组合支付可视化（只读）——查看合并支付的成员分摊（已收/已退/可退余额）、逐分摊退款、组合支付本身及其 durable 交易。退款展示真实 durable 状态；取消/退款操作在 Admin API 与订单页。
       products:
         products_list: 商品列表
         categories: 分类

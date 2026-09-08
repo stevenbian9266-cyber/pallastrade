@@ -331,6 +331,8 @@ PallasTrade::Core::Engine.add_routes do
         post :mark_review
       end
     end
+    # REV-P6-8g: PaymentCombination 只读可视化（组合资金不可在 Admin 手改——无 new/edit/delete）
+    resources :payment_combinations, only: [:index, :show]
     get '/emails', to: 'emails#show', as: :emails
     patch '/emails', to: 'emails#update'
     post '/emails/test_send', to: 'emails#test_send', as: :emails_test_send

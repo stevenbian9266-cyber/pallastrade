@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| draft | PRD-20260908-payments-rev-p6-8g-combination-visibility-rails-admin | payments | 2026-09-08 | REQ-20260908-rev-p6-8g-combination-visibility.md |
 | done | PRD-20260908-payments-rev-p6-8f-combination-level-cancel-orchestration | payments | 2026-09-08 | REQ-20260908-rev-p6-8f-combination-level-cancel.md |
 | done | PRD-20260908-payments-rev-p6-8e-reverse-commerce-recover-cross-domain | payments | 2026-09-08 | REQ-20260908-rev-p6-8e-reverse-commerce-recover.md |
 | done | PRD-20260908-payments-rev-p6-8d-provider-orphan-refund-pairing | payments | 2026-09-08 | REQ-20260908-rev-p6-8d-provider-orphan-refund-pairing.md |

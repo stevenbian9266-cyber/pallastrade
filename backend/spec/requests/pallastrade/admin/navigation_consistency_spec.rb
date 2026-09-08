@@ -100,7 +100,8 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
     it '主区模块子菜单完整（Orders / Products / Customers / Promotions / Reports / Blog / Returns）' do
       # TXN-P2-7: Orders 下新增 durable CommerceTransaction 检视项（:transactions）
       # REV-P6-8a: Orders 下新增 durable Refund Ops 检视项（:refunds，只读）
-      expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders transactions refunds])
+      # REV-P6-8g: Orders 下新增 PaymentCombination 组合可视化项（:payment_combinations，只读）
+      expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders transactions refunds payment_combinations])
       expect(sidebar.find(:products).children.map(&:key)).to eq(%i[products_list price_lists stock translations taxonomies options])
       expect(sidebar.find(:customers).children.map(&:key)).to eq(%i[customers_list customer_groups newsletter_subscribers])
       expect(sidebar.find(:promotions).children.map(&:key)).to eq(%i[promotions_list gift_cards])

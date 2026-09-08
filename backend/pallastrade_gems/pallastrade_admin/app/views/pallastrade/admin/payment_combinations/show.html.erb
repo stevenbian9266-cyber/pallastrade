@@ -1,0 +1,151 @@
+<% content_for(:title, @payment_combination.prefixed_id) %>
+<% content_for :page_title do %>
+  <%= @payment_combination.prefixed_id %>
+<% end %>
+<% content_for(:page_actions) do %>
+  <%= link_to PallasTrade.t('actions.back'), PallasTrade.admin_payment_combinations_path, class: 'btn btn-outline' %>
+<% end %>
+
+<%# REV-P6-8g (G6): PaymentCombination 只读可视化 —— 零资金副作用。组合取消/退款走 REV-P6-8f Admin API。 %>
+<% combo = @payment_combination %>
+<% splits = combo.payment_splits %>
+<% payments = combo.payments %>
+<% combo_payment = payments.first %>
+<% transaction = combo.commerce_transaction %>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= combo.prefixed_id %></h5>
+    <%= combination_state_badge(combo) %>
+    <span class="text-sm text-gray-500 ml-2"><%= combination_amount_label(combo) %></span>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div><dt class="text-sm text-gray-500">Status</dt><dd><%= combo.status %></dd></div>
+      <div><dt class="text-sm text-gray-500">Currency</dt><dd><%= combination_currency(combo) %></dd></div>
+      <div><dt class="text-sm text-gray-500">Members</dt><dd><%= splits.size %></dd></div>
+      <div><dt class="text-sm text-gray-500">Customer</dt><dd><%= combo.customer&.email.presence || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Created at</dt><dd><%= combo.created_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Completed at</dt><dd><%= combo.completed_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Expires at</dt><dd><%= combo.expires_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-sm text-gray-500">Refunded total</dt>
+        <dd><%= format('%.2f', splits.sum { |s| s.refunded_amount.to_f }) %> <%= combination_currency(combo) %></dd></div>
+    </dl>
+  </div>
+</div>
+
+<%# 逐成员 PaymentSplit：captured / refunded / credit_allowed（=可退余额）+ 该 split 的退款行 %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">Member splits</h5>
+    <span class="text-sm text-gray-500">captured − refunded = credit (refundable)</span>
+  </div>
+  <div class="card-body">
+    <% if splits.empty? %>
+      <p class="text-sm text-gray-500">—</p>
+    <% else %>
+      <% splits.each do |split| %>
+        <div class="border rounded p-4 mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <h6 class="text-sm font-semibold">
+              <%= split.order ? link_to("Order #{split.order.number}", PallasTrade.edit_admin_order_path(split.order)) : split.prefixed_id %>
+            </h6>
+            <span class="text-sm text-gray-500"><%= split.prefixed_id %></span>
+          </div>
+          <dl class="grid grid-cols-3 gap-4 mb-3">
+            <div><dt class="text-sm text-gray-500">Captured</dt><dd><%= split_amount_label(split, :captured_amount) %></dd></div>
+            <div><dt class="text-sm text-gray-500">Refunded</dt><dd><%= split_amount_label(split, :refunded_amount) %></dd></div>
+            <div><dt class="text-sm text-gray-500">Credit (refundable)</dt><dd><%= split_amount_label(split, :credit_allowed) %></dd></div>
+          </dl>
+
+          <% split_refunds = PallasTrade::Refund.where(payment_split_id: split.id).order(created_at: :asc) %>
+          <% if split_refunds.any? %>
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Refund</th><th>State</th><th>Amount</th><th>Provider reference</th><th>Requested at</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% split_refunds.each do |refund| %>
+                  <tr>
+                    <td><%= link_to refund.prefixed_id, PallasTrade.admin_refund_path(refund) %></td>
+                    <td><%= refund_state_badge(refund) %></td>
+                    <td><%= refund.amount ? format('%.2f', refund.amount.to_f) : '—' %></td>
+                    <td><%= refund.transaction_id.presence || '—' %></td>
+                    <td><%= refund.requested_at&.iso8601 || '—' %></td>
+                    <td></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          <% else %>
+            <p class="text-sm text-gray-500">No refunds for this split.</p>
+          <% end %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>
+
+<%# 组合 Payment（order_id=nil）及其退款 %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">Combination payment</h5>
+    <% if combo_payment %><%= content_tag(:span, combo_payment.state, class: 'badge badge-secondary') %><% end %>
+  </div>
+  <div class="card-body">
+    <% if combo_payment.nil? %>
+      <p class="text-sm text-gray-500">No combination payment row (pre-payment).</p>
+    <% else %>
+      <dl class="grid grid-cols-3 gap-4 mb-3">
+        <div><dt class="text-sm text-gray-500">Payment</dt><dd><%= combo_payment.prefixed_id %></dd></div>
+        <div><dt class="text-sm text-gray-500">Amount</dt><dd><%= format('%.2f', combo_payment.amount.to_f) %> <%= combination_currency(combo) %></dd></div>
+        <div><dt class="text-sm text-gray-500">Credit (refundable)</dt><dd><%= format('%.2f', combo_payment.credit_allowed.to_f) %></dd></div>
+      </dl>
+      <% payment_refunds = combo_payment.refunds.order(created_at: :asc) %>
+      <% if payment_refunds.any? %>
+        <table class="table table-sm">
+          <thead>
+            <tr><th>Refund</th><th>State</th><th>Amount</th><th>Split</th><th>Target order</th><th>Requested at</th></tr>
+          </thead>
+          <tbody>
+            <% payment_refunds.each do |refund| %>
+              <tr>
+                <td><%= link_to refund.prefixed_id, PallasTrade.admin_refund_path(refund) %></td>
+                <td><%= refund_state_badge(refund) %></td>
+                <td><%= refund.amount ? format('%.2f', refund.amount.to_f) : '—' %></td>
+                <td><%= refund.payment_split&.prefixed_id || '—' %></td>
+                <td><%= refund.target_order&.number || '—' %></td>
+                <td><%= refund.requested_at&.iso8601 || '—' %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-sm text-gray-500">No refunds on the combination payment.</p>
+      <% end %>
+    <% end %>
+  </div>
+</div>
+
+<%# CommerceTransaction 摘要（互链 transactions 详情） %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">Commerce transaction</h5>
+    <% if transaction %><%= content_tag(:span, transaction.state, class: 'badge badge-secondary') %><% end %>
+  </div>
+  <div class="card-body">
+    <% if transaction.nil? %>
+      <p class="text-sm text-gray-500">No durable transaction for this combination.</p>
+    <% else %>
+      <dl class="grid grid-cols-2 gap-4">
+        <div><dt class="text-sm text-gray-500">Transaction</dt>
+          <dd><%= link_to transaction.prefixed_id, PallasTrade.admin_transaction_path(transaction) %></dd></div>
+        <div><dt class="text-sm text-gray-500">State</dt><dd><%= transaction.state %></dd></div>
+        <div><dt class="text-sm text-gray-500">Purpose</dt><dd><%= transaction.purpose.presence || '—' %></dd></div>
+        <div><dt class="text-sm text-gray-500">Completed at</dt><dd><%= transaction.completed_at&.iso8601 || '—' %></dd></div>
+      </dl>
+    <% end %>
+  </div>
+</div>

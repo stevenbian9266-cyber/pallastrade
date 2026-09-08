@@ -31,6 +31,9 @@ module PallasTrade
         # REV-P6-8f：组合级取消编排（succeeded 组合整组/子集取消；成员退款按冻结 split 走
         # Orders::Cancel split-aware 路径）。pre-payment 组合的 cancel 仍是 combo 状态机职责。
         can :cancel, PallasTrade::PaymentCombination, &:succeeded?
+        # REV-P6-8g：组合/split 只读可视化（Orders → Payment Combinations 页）
+        can :read, PallasTrade::PaymentCombination
+        can :read, PallasTrade::PaymentSplit
       end
     end
   end

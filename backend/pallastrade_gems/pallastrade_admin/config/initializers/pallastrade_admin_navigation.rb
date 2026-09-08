@@ -93,6 +93,14 @@ Rails.application.config.after_initialize do
               position: 40,
               active: -> { controller_name == 'refunds_ops' },
               if: -> { can?(:read, PallasTrade::Refund) || can?(:manage, PallasTrade::Refund) }
+
+    # REV-P6-8g: PaymentCombination 组合可视化（只读；Orders → Payment Combinations）
+    orders.add :payment_combinations,
+              label: 'admin.orders.payment_combinations',
+              url: :admin_payment_combinations_path,
+              position: 45,
+              active: -> { controller_name == 'payment_combinations' },
+              if: -> { can?(:read, PallasTrade::PaymentCombination) || can?(:manage, PallasTrade::Order) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns

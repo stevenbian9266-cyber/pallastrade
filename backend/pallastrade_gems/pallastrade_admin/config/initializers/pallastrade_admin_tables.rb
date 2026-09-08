@@ -2589,6 +2589,68 @@ Rails.application.config.after_initialize do
                                        default: false,
                                        position: 80
 
+  # REV-P6-8g: PaymentCombination —— 组合只读可视化（Orders → Payment Combinations）
+  PallasTrade.admin.tables.register(:payment_combinations,
+    model_class: PallasTrade::PaymentCombination,
+    link_to_action: :show,
+    row_actions: true,
+    row_actions_edit: false,
+    row_actions_delete: false,
+    new_resource: false)
+
+  PallasTrade.admin.tables.payment_combinations.add :prefixed_id,
+                                                    label: :id,
+                                                    type: :string,
+                                                    sortable: false,
+                                                    filterable: false,
+                                                    default: true,
+                                                    position: 10
+
+  PallasTrade.admin.tables.payment_combinations.add :status,
+                                                    label: :state,
+                                                    type: :custom,
+                                                    partial: 'pallastrade/admin/tables/columns/payment_combination_state',
+                                                    sortable: false,
+                                                    filterable: true,
+                                                    filter_type: 'string',
+                                                    default: true,
+                                                    position: 20
+
+  PallasTrade.admin.tables.payment_combinations.add :amount,
+                                                    label: :amount,
+                                                    type: :string,
+                                                    sortable: false,
+                                                    filterable: false,
+                                                    default: true,
+                                                    position: 30,
+                                                    method: ->(combination) { "#{combination.amount} #{combination.currency}" }
+
+  PallasTrade.admin.tables.payment_combinations.add :members,
+                                                    label: :members,
+                                                    type: :number,
+                                                    sortable: false,
+                                                    filterable: false,
+                                                    default: true,
+                                                    position: 40,
+                                                    method: ->(combination) { combination.payment_splits.size }
+
+  PallasTrade.admin.tables.payment_combinations.add :refunded_total,
+                                                    label: :refunded_total,
+                                                    type: :string,
+                                                    sortable: false,
+                                                    filterable: false,
+                                                    default: true,
+                                                    position: 50,
+                                                    method: ->(combination) { format('%.2f', combination.payment_splits.sum { |s| s.refunded_amount.to_f }) }
+
+  PallasTrade.admin.tables.payment_combinations.add :created_at,
+                                                    label: :created_at,
+                                                    type: :datetime,
+                                                    sortable: true,
+                                                    filterable: false,
+                                                    default: true,
+                                                    position: 60
+
   # Blog posts (CMS)
   PallasTrade.admin.tables.register(:posts, model_class: PallasTrade::Post, search_param: :title_or_slug_or_author_cont, row_actions: true)
 
