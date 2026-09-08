@@ -190,6 +190,20 @@ module PallasTrade
       return_authorization.try(:currency) || PallasTrade::Store.default.default_currency
     end
 
+    # REV-P6-8e (PRD-20260908-payments-rev-p6-8e-...)：restock 事实 AMBIGUOUS 的幂等自愈入口
+    # （供 ReverseCommerce::Recover 消费；源 REV-P6 §39-42/§45）。守卫 = RestockFact AMBIGUOUS 精确语义：
+    # accepted? && restock_eligible? && 无 StockMovement(return_item_id)；重复/并发由 partial unique 兜底
+    # （restock_if_needed 内 RecordNotUnique 跳过），不会重复建正项。
+    #
+    # @return [Boolean] true = 本次已回补 StockMovement(+)，false = 守卫外（无动作）
+    def restock_if_ambiguous!
+      return false unless accepted? && restock_eligible?
+      return false if PallasTrade::StockMovement.where(return_item_id: id).exists?
+
+      restock_if_needed
+      true
+    end
+
     private
 
     def persist_acceptance_status_errors
