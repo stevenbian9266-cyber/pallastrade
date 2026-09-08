@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing |
+| 状态 | done |
 | 创建日期 | 2026-09-08 |
 | 来源 | 需求：REV-P6-8b Refund Manual Review/Retry 人工裁决与确定性重试（危险操作） |
 | 分类 | payments（自动判定） |
@@ -109,3 +109,4 @@ Admin 两个 member action/按钮/文案。无 API/DB/Storefront/Platform。
 |---|---|---|---|
 | 2026-09-08 | 0.1 | 初稿（依据 §63/§47/§49/§10 + Execute/Recover 语义） | AI |
 | 2026-09-08 | 0.2 | 实施：retry_execution 扩展 manual_review→processing + ManualRetry/MarkManualReview 服务 + Admin retry/mark_review member + Show 按钮 + i18n；新 spec 14 例全绿 + 回归 80 例绿 + quick check（无 AP/nav OK） | AI |
+| 2026-09-08 | 0.3 | 验证收尾：全量 backend-rspec ×2 绿（预提交 EVD-…095813 / 提交后 EVD-…102001）；commit `c1eb5ee`；Gate GATE-2026-09-08T09-24-13 FINISHED；knowledge 9/8 + evidence verified + task finished；doc-impact 过；push dev 发布。 | AI |
