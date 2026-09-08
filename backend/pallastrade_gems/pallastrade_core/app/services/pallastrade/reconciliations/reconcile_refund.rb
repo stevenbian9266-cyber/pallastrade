@@ -25,6 +25,21 @@ module PallasTrade
         pm = refund.payment&.payment_method
         return success(not_applicable(refund)) if not_applicable?(pm)
         return success(unsupported(refund)) unless self.class.implements_refund_details?(pm)
+
+        # REV-P6-7 (G2)：本地财务状态显式分类（此前全程不读 refund.state）。
+        #   - failed/canceled：provider 明确拒绝/撤销前，无资金流出 → 非 legacy 噪音；
+        #     以 NOT_APPLICABLE + NO_PROVIDER_REFUND 表示「无待对账退款」。
+        #   - ambiguous/manual_review 且无 provider 引用（REV-P6-6 超时收敛产物）→ 专用
+        #     NEEDS_ATTENTION LOCAL_REFUND_AMBIGUOUS（供人工；确定性落地归 REV-P6-8 retry_execution）。
+        #   - ambiguous/manual_review 但有引用 → 走 provider 对账；provider MATCHED 视为
+        #     LOCAL_AMBIGUOUS_RESOLVED_BY_PROVIDER（有效 provider 证据）。
+        if refund.canceled? || refund.failed?
+          return success(result(SourceResult::NOT_APPLICABLE, refund, ['NO_PROVIDER_REFUND'], nil))
+        end
+        if (refund.ambiguous? || refund.manual_review?) && refund.transaction_id.blank?
+          return success(attention(refund, 'LOCAL_REFUND_AMBIGUOUS', nil))
+        end
+
         return success(attention(refund, 'UNLINKED_LEGACY_PAYMENT', nil)) if refund.transaction_id.blank?
 
         provider = fetch_refund_details(refund, pm)
@@ -32,7 +47,12 @@ module PallasTrade
 
         return success(pending(refund, provider)) if provider[:status].present? && provider[:status].to_s != 'succeeded'
 
-        compare(refund, provider)
+        matched = compare(refund, provider)
+        return matched unless matched.value&.status == SourceResult::MATCHED
+        return matched unless refund.ambiguous? || refund.manual_review?
+
+        # provider 证据解析了本地 ambiguous —— 附标记供展示/REV-P6-8 落地
+        success(mark_local_ambiguous_resolved(matched.value))
       end
 
       # capability：fetch_refund_details 的 method owner 非 base PaymentMethod = 真实现。
@@ -44,11 +64,24 @@ module PallasTrade
 
       private
 
-      # @return [Hash] provider refund details 或 SourceResult（PROVIDER_UNAVAILABLE）
+      # @return [Hash] provider refund details 或 SourceResult（PROVIDER_REFUND_MISSING / PROVIDER_UNAVAILABLE）
       def fetch_refund_details(refund, pm)
         pm.fetch_refund_details(refund: refund)
       rescue PallasTrade::Core::GatewayError, (defined?(Stripe::StripeError) ? Stripe::StripeError : StandardError) => e
-        attention(refund, 'PROVIDER_UNAVAILABLE', nil, e)
+        # REV-P6-7 (G3)：provider「明确无此 refund」（资源缺失，如 Stripe No such refund）≠ 不可用。
+        # 对称 payment 侧 PROVIDER_PAYMENT_MISSING 语义，供告警区分（否则与 API 宕机混报）。
+        if resource_missing_error?(e)
+          attention(refund, 'PROVIDER_REFUND_MISSING', nil, e)
+        else
+          attention(refund, 'PROVIDER_UNAVAILABLE', nil, e)
+        end
+      end
+
+      # Stripe InvalidRequestError(resource_missing) / 消息含 no such refund → provider 侧缺失
+      def resource_missing_error?(error)
+        return true if defined?(Stripe::InvalidRequestError) && error.is_a?(Stripe::InvalidRequestError)
+
+        error.message.to_s.downcase.include?('no such refund')
       end
 
       def compare(refund, provider)
@@ -100,6 +133,25 @@ module PallasTrade
 
       def unsupported(refund)
         result(SourceResult::UNSUPPORTED, refund, ['PROVIDER_CONTRACT_UNSUPPORTED'], nil)
+      end
+
+      # REV-P6-7：MATCHED 但本地 ambiguous/manual_review → 附 provider 解决标记（供展示/REV-P6-8 落地）
+      def mark_local_ambiguous_resolved(source)
+        PallasTrade::Reconciliations::SourceResult.new(
+          source_type: source.source_type,
+          source_id: source.source_id,
+          status: source.status,
+          reasons: source.reasons + ['LOCAL_AMBIGUOUS_RESOLVED_BY_PROVIDER'],
+          local_amount: source.local_amount,
+          local_currency: source.local_currency,
+          provider_gross_amount: source.provider_gross_amount,
+          provider_currency: source.provider_currency,
+          provider_settlement_status: source.provider_settlement_status,
+          provider_payment_reference: source.provider_payment_reference,
+          provider_charge_reference: source.provider_charge_reference,
+          provider_error: source.provider_error,
+          observed_at: source.observed_at
+        )
       end
 
       def not_applicable?(pm)

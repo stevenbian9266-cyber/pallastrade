@@ -48,7 +48,7 @@ module PallasTrade
         local_captured_total = local_captured_total(payments)
 
         source_results = reconcile_sources(payments, refunds)
-        reasons = build_reasons(transaction, entries, buckets, payments, local_captured_total, source_results)
+        reasons = build_reasons(transaction, entries, buckets, payments, refunds, local_captured_total, source_results)
 
         summary = build_summary(transaction, buckets, source_results)
         status = synthesize_status(buckets, payments, source_results, reasons)
@@ -125,7 +125,7 @@ module PallasTrade
 
       # ---- reasons ----------------------------------------------------------
 
-      def build_reasons(transaction, entries, buckets, payments, local_captured_total, source_results)
+      def build_reasons(transaction, entries, buckets, payments, refunds, local_captured_total, source_results)
         reasons = []
 
         # 1. Journal 缺失：本地 captured payment 证据存在但 journal 无对应 CASH_CAPTURED entry
@@ -136,7 +136,18 @@ module PallasTrade
                                                                .where(entry_type: 'CASH_CAPTURED')
                                                                .pluck(:payment_id).compact
         captured_without_posting = captured_payments(payments).reject { |p| journal_payment_ids.include?(p.id) }
-        reasons << 'JOURNAL_POSTING_MISSING' if captured_without_posting.any?
+
+        # REV-P6-7 (G1)：refund 侧 journal 缺失检测——本地 succeeded+transaction_id（provable
+        # provider reference，镜像 RepairTransaction#partition_refunds）存在但无 REFUND_SUCCEEDED
+        # entry（subscriber 丢失/异常吞掉 W1-W3）→ 并入 JOURNAL_POSTING_MISSING；ReconcileSweeperJob
+        # 已按该 reason enqueue RepairTransactionJob（幂等补记）→ 闭环纯 refund posting 缺口。
+        journal_refund_ids = PallasTrade::FinancialLedgerEntry.by_transaction(transaction)
+                                                              .where(entry_type: 'REFUND_SUCCEEDED')
+                                                              .pluck(:refund_id).compact
+        provable_refunds = refunds.select { |r| r.succeeded? && r.transaction_id.present? }
+        refund_without_posting = provable_refunds.reject { |r| journal_refund_ids.include?(r.id) }
+
+        reasons << 'JOURNAL_POSTING_MISSING' if captured_without_posting.any? || refund_without_posting.any?
 
         # 2. allocation vs captured（组合场景有 ORDER_ALLOCATION 语义时才核对）
         if entries.where(entry_type: 'ORDER_ALLOCATION').exists? || transaction.payment_combination.present?

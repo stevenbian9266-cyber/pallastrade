@@ -458,6 +458,20 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   enqueue RecoverJob；attempts 达上限停自动；ambiguous/manual_review/failed 计数 + warn（structured metrics）。
 - **边界**：`ReverseCommerce::Recover`（Restock/Journal 跨域）与 reimbursement async 拆链归 REV-P6-7/8。
 
+## Financial Convergence（REV-P6-7, 2026-09-08；PRD-20260908-payments-rev-p6-7-financial-convergence-refund-posting）
+
+> 源 REV-P6 §62。P4（Journal/Post/Resolve/Repair/Reconcile）已闭环不重做；本包=§62 最小缺口。
+
+- **G1 补记闭环**：`ReconcileTransaction#build_reasons` 增 refund 侧 journal-missing 检测
+  （succeeded+transaction_id 且无 REFUND_SUCCEEDED entry）→ 并入 `JOURNAL_POSTING_MISSING`
+  → ReconcileSweeperJob enqueue RepairTransactionJob 幂等补记（subscriber 丢失/吞异常窗口闭合）。
+- **G2 本地状态分类**：`ReconcileRefund` 读 refund.state：failed/canceled → NOT_APPLICABLE+
+  NO_PROVIDER_REFUND（消噪音）；ambiguous/manual 无引用 → LOCAL_REFUND_AMBIGUOUS；有引用且
+  provider MATCHED → MATCHED+LOCAL_AMBIGUOUS_RESOLVED_BY_PROVIDER。
+- **G3 provider mismatch 语义**：Stripe InvalidRequestError/'no such refund' →
+  `PROVIDER_REFUND_MISSING`；其余异常 → `PROVIDER_UNAVAILABLE`（对称 payment 侧）。
+- 边界：ambiguous 确定性落地（retry_execution）与 provider 孤儿退款配对归 REV-P6-8。
+
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 
 > **ORDER_ALLOCATION = 组合资金对成员订单的归属投影（immutable journal fact），不是额外 cash inflow**
