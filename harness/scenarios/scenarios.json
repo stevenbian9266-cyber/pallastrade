@@ -1824,6 +1824,30 @@
         "readOnly": 15,
         "regressionGreen": 10
       }
+    },
+    {
+      "id": "GS-072",
+      "name": "REV-P6-8e ReverseCommerce::Recover 跨域收敛：restock AMBIGUOUS 自愈 + 复用 Refunds::Recover",
+      "description": "PRD-20260908-payments-rev-p6-8e-reverse-commerce-recover-cross-domain（源 REV-P6 §45/§39-42）：Order 锚点跨域收敛入口——ReturnItem#restock_if_ambiguous!（public 幂等，guard accepted?/restock_eligible?/partial-unique → 私有 restock_if_needed）+ ReverseCommerce::Recover.call(order:)（restock 域逐条 RestockFact.resolve→AMBIGUOUS 自愈、RESTOCKED/NOT_*/PENDING 计数；refund 域逐条复用 Refunds::Recover；单条 rescue 不中断）。rake pallastrade:reverse_commerce:{recover,list_ambiguous} + runbook。无自动退款/取消/新增资金副作用。",
+      "mustDo": [
+        "accepted+eligible 无 movement → restock_if_ambiguous! 回补 RESTOCKED；重复调用不重复建（AC-R68E-01）",
+        "守卫外（not-accepted/not-eligible/已有 movement）→ no-op false 不建行（AC-R68E-02）",
+        "Recover(order)：AMBIGUOUS 自愈 healed=1 + 计数正确 + fresh refund 零副作用（AC-R68E-03）",
+        "单条 restock/recover 异常 rescue 不中断整单（AC-R68E-04）",
+        "rake recover/list_ambiguous 注册 + runbook 存在（AC-R68E-05/06）；全量 backend-rspec ×2 + quick check + doc-impact"
+      ],
+      "mustNotDo": [
+        "重复实现 Refunds::Recover/restock 写入（复用唯一通道）",
+        "自动退款/取消、猜测状态、新增资金副作用",
+        "Journal/Reconcile 修复派发（归 P4 sweeper）与自动调度（后续）"
+      ],
+      "scoring": {
+        "idempotentHeal": 30,
+        "reuseRecover": 25,
+        "crossDomainResult": 20,
+        "isolatedRescue": 15,
+        "regressionGreen": 10
+      }
     }
   ]
 }

@@ -38,7 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
-| implementing | PRD-20260908-payments-rev-p6-8e-reverse-commerce-recover-cross-domain | payments | 2026-09-08 | REQ-20260908-rev-p6-8e-reverse-commerce-recover.md |
+| done | PRD-20260908-payments-rev-p6-8e-reverse-commerce-recover-cross-domain | payments | 2026-09-08 | REQ-20260908-rev-p6-8e-reverse-commerce-recover.md |
 | done | PRD-20260908-payments-rev-p6-8d-provider-orphan-refund-pairing | payments | 2026-09-08 | REQ-20260908-rev-p6-8d-provider-orphan-refund-pairing.md |
 | done | PRD-20260908-payments-rev-p6-8c-reimbursement-async-chain-durable-requested-executejob | payments | 2026-09-08 | REQ-20260908-rev-p6-8c-reimbursement-async-chain.md |
 | done | PRD-20260908-payments-rev-p6-8b-refund-manual-review-retry-人工裁决与确定性重试-危险操作 | payments | 2026-09-08 | REQ-20260908-rev-p6-8b-refund-manual-review-retry.md |

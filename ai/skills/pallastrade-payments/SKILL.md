@@ -562,6 +562,24 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   派生 id；孤儿/异常用例用 stub `payment.payment_method.fetch_financial_details`（普通实例 stub 可行）。
 - 边界：单笔 provider refund 金额需 `retrieve_refund` 扩展；Admin/API 展示 → 后续包。
 
+## ReverseCommerce::Recover 跨域收敛（REV-P6-8e, 2026-09-08；PRD-20260908-payments-rev-p6-8e-reverse-commerce-recover-cross-domain）
+
+> 源 REV-P6 §45 + §39-42：Order 锚点的跨域收敛入口——restock 事实 AMBIGUOUS（accepted+eligible 但
+> StockMovement 缺失）**幂等自愈** + **复用** `Refunds::Recover`（不重复实现）；Journal/Reconcile 修复归 P4
+> sweeper（不重复派发）。无自动取消/无猜测/无新增资金副作用。
+
+- `ReturnItem#restock_if_ambiguous!`（**public**，幂等）：仅 accepted? && restock_eligible? && 无
+  `StockMovement(return_item_id:)` → 调私有 `restock_if_needed`（**唯一写入通道**，partial unique
+  `stock_movements.return_item_id` 幂等）；返回 true=本次已回补 / false=守卫外。不改 acceptance 行为。
+- `ReverseCommerce::Recover.call(order:)`（新服务，Order 锚点）→ Result `{order_id, restock:{healed,
+  ambiguous,restocked,not_required,not_restockable,pending,errors}, refunds:{attempted,ok,noop,errors},
+  errors}`：restock 域逐 return_item `RestockFact.resolve`——AMBIGUOUS→`restock_if_ambiguous!`（healed+1）、
+  RESTOCKED/NOT_*/PENDING 计数不动作（PENDING 由上游裁决）；refund 域 `order.payments.refunds` 逐条
+  `Refunds::Recover.call(refund:)`（fresh/terminal no-op 幂等）；**单条 rescue 不中断整单**。
+- rake `pallastrade:reverse_commerce:{recover[order_id], list_ambiguous[store_id]}`（core
+  `lib/tasks/reverse_commerce.rake`）+ runbook `docs/operations/reverse-commerce-recover-runbook.md`。
+- 边界：Journal/Reconcile 修复派发（P4 sweeper 已拥有）、取消意图恢复/组合级编排、自动调度 → 后续。
+
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 
 > **ORDER_ALLOCATION = 组合资金对成员订单的归属投影（immutable journal fact），不是额外 cash inflow**

@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing |
+| 状态 | done |
 | 创建日期 | 2026-09-08 |
 | 来源 | 需求：REV-P6-8e ReverseCommerce::Recover 跨域收敛（restock AMBIGUOUS 自愈 + 复用 Refunds::Recover） |
 | 分类 | payments（语义归属；跨 shipping/recovery） |
@@ -77,10 +77,11 @@ restock 自愈 spec（AC-R68E-01/02：真回补/守卫/no-op/唯一并发跳过�
 （AC-R68E-05）。回归 refund/return/reconcile/8a-8d 相关 + quick check + 全量 ×2 + doc-impact。
 
 ## 9. 文档同步清单
-- [ ] payments skill（REV-P6-8e 节）；scenarios GS-072；PRD/REQ/README + runbook；doc-impact。
-- [ ] 边界记录：Journal/Reconcile 派发、取消恢复、自动调度 → 后续。
+- [x] payments skill（REV-P6-8e 节）；scenarios GS-072；PRD/REQ/README + runbook；doc-impact。
+- [x] 边界记录：Journal/Reconcile 派发、取消恢复、自动调度 → 后续。
 
 ## 10. 变更记录
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-08 | 0.1 | 初稿（依据 §45/§39-42 + RestockFact 注释 + 现有域收敛测绘） | AI |
+| 2026-09-08 | 1.0 | done：实施完成（commit 42ab65f）——restock_if_ambiguous! + Recover.call + rake/runbook；spec 4/4 绿、回归 90 例绿、全量 backend-rspec ×2 绿、quick check/doc-impact 过 | AI |
