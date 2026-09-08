@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-08 |
 | 来源 | 优化：1、小屏模式下，个人中心入口被隐藏了 2、小屏模式下，左侧菜单面板中，点击 search，没有显示搜索框 |
 | 分类 | storefront（AI 语义微调：自动判定为 catalog 因标题含「搜索」；实际为前端头部/移动菜单 UI，归属 storefront） |
@@ -94,4 +94,5 @@
 
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
-| 2026-09-08 | 0.1 | 初稿（390px 视口实测取证：头部账户 display:none；菜单 Search 仅跳 /products 不弹框；设计依据 PRD-20260810 FR-202/AC-103） | AI |
+| 2026-09-08 | 0.1 | 初稿（390px 视口实测取证） | AI |
+| 2026-09-08 | 0.2 | 用户确认实施：Header 账户去 `hidden md:block`；SearchToggle 新增 SearchOverlayContext/useSearchOverlay；MobileMenu Search 行→button 开浮层；组件测试 5 例 + layout 14 例全绿；commit 19475e6 | AI |
