@@ -581,6 +581,23 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - runbook `docs/operations/refund-orphan-pairing-runbook.md` 已更新（金额语义/列/页面）。
 - 边界：Admin API v3 只读端点 + SDK → 后续。
 
+## ReverseCommerce::Recover 自动调度化（REV-P6-8i, 2026-09-09；PRD-20260908-payments-rev-p6-8i-recover-auto-scheduling）
+
+> 8e 边界落地：restock-AMBIGUOUS 收敛从手动 rake 升级为**周期自动调度**（镜像 Refunds::RecoverSweeperJob
+> 保守哲学：只 enqueue 幂等 Recover、rescue 不 re-raise、capped 防风暴）。手动 rake/runbook 保留。
+
+- `ReverseCommerce::RecoverJob`（core jobs）：`perform(order_id)` → `Recover.call(order:)`（幂等自愈）；
+  rescue StandardError 仅 log（周期重扫兜底，防 sidekiq 重试放大）。order 缺失 no-op。
+- `ReverseCommerce::RecoverSweeperJob`（`perform(store_id: nil, max_enqueues: 20)`）：候选 SQL =
+  `ReturnItem.accepted` JOIN inventory_unit→order（store 归属）+ LEFT JOIN `pallastrade_stock_movements`
+  （`return_item_id IS NULL`——8e 幂等键）→ 逐条 `restock_eligible?` + `RestockFact.resolve == AMBIGUOUS`
+  复核 → order ids 去重 → enqueue RecoverJob；≥ cap 只 enqueue ≤ max_enqueues + warn；metrics log
+  （event `reverse_commerce.recover_sweeper`）。
+- 注册：`backend/config/sidekiq_schedule.rb`（PALLAS_CART_SCHEDULE）+`reverse_commerce_recover_sweeper`
+  （cron `*/5`，args max_enqueues=20）。
+- 边界：手动 rake/runbook 保留；ambiguous 之外仍人工/既有 sweeper；refund 域自动调度由
+  Refunds::RecoverSweeperJob 覆盖（不重复）。
+
 ## ReverseCommerce::Recover 跨域收敛（REV-P6-8e, 2026-09-08；PRD-20260908-payments-rev-p6-8e-reverse-commerce-recover-cross-domain）
 
 > 源 REV-P6 §45 + §39-42：Order 锚点的跨域收敛入口——restock 事实 AMBIGUOUS（accepted+eligible 但

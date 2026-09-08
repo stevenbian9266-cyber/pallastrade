@@ -29,6 +29,13 @@ cd /rails && bundle exec rake "pallastrade:reverse_commerce:list_ambiguous[<stor
 - `restock.pending>0`：尚未验收裁决，属正常，不动作。
 - `refunds.ok/noop`：复用 Refunds::Recover 结果（requested-stale 重跑 / processing-stale→ambiguous / no-op）。
 
+## 自动调度（REV-P6-8i）
+`ReverseCommerce::RecoverSweeperJob`（sidekiq-cron */5，`reverse_commerce_recover_sweeper`）自动扫描
+restock-AMBIGUOUS（accepted+eligible+无 StockMovement(return_item_id)）订单并 enqueue 幂等
+`ReverseCommerce::RecoverJob`（每轮 ≤ max_enqueues=20，超出 warn；metrics event
+`reverse_commerce.recover_sweeper`）。手动 rake 保留（精确单单收敛/审计用）。调度与 rake 均只 enqueue/执行
+幂等 Recover：重复跑不产生第二次 StockMovement/资金副作用。
+
 ## 边界
-- 不做自动调度（sidekiq）——restock 时序（acceptance 后何时可回补）需业务确认后再考虑定时化。
-- 不自动取消订单、不改 Journal/Reconcile 派发、不猜状态。
+- 自动调度已上线（8i）；ambiguous 之外（pending 未决/人工）仍由既有裁决路径与人工处理；不猜状态。
+- 不自动取消订单、不改 Journal/Reconcile 派发。

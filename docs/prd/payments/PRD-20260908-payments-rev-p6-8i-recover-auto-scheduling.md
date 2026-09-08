@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | draft |
+| 状态 | done |
 | 创建日期 | 2026-09-08 |
 | 来源 | 需求：REV-P6-8i ReverseCommerce::Recover 自动调度化（restock-AMBIGUOUS 扫描 + RecoverJob/Sweeper）（用户三包授权 #3） |
 | 分类 | payments |
@@ -65,11 +65,11 @@ cr.save! 后删 movement 成 AMBIGUOUS）：enqueue 去重、store 隔离、cap�
 no-op）。回归 8e/6/8g/8h + quick check + 全量 ×2。
 
 ## 9. 文档同步清单
-- [ ] payments skill（8i 节）；runbook reverse-commerce-recover 更新（自动调度说明）；scenarios GS-076；
-  PRD/REQ/README；doc-impact。
-- [ ] 边界：手动 rake 保留；调度为 */5 capped。
+- [x] payments skill（8i 节）；runbook reverse-commerce-recover 更新；scenarios GS-076；PRD/REQ/README；doc-impact。
+- [x] 边界：手动 rake 保留；调度为 */5 capped。
 
 ## 10. 变更记录
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-08 | 0.1 | 初稿（8e 边界落地：调度化；镜像 Refunds::RecoverSweeperJob 保守哲学） | AI |
+| 2026-09-08 | 1.0 | done：实施完成（commit 99fd899）——RecoverJob+RecoverSweeperJob+schedule；spec 3/3 + schedule；全量 ×2 绿 | AI |

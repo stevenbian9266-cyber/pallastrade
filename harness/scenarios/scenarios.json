@@ -1924,6 +1924,30 @@
         "paymentsOpsPage": 25,
         "regressionGreen": 10
       }
+    },
+    {
+      "id": "GS-076",
+      "name": "REV-P6-8i ReverseCommerce::Recover 自动调度化",
+      "description": "PRD-20260908-payments-rev-p6-8i-recover-auto-scheduling（8e 边界落地）：ReverseCommerce::RecoverJob（per-order 幂等收敛，rescue 不 re-raise）+ RecoverSweeperJob（ReturnItem.accepted LEFT JOIN stock_movements(return_item_id IS NULL) 候选 + restock_eligible?/RestockFact==AMBIGUOUS 复核 + order 去重 → enqueue；capped max_enqueues=20 warn；metrics reverse_commerce.recover_sweeper）+ sidekiq_schedule */5 注册。镜像 Refunds::RecoverSweeperJob 保守哲学（只 enqueue 幂等 Recover）。",
+      "mustDo": [
+        "store 内 restock-AMBIGUOUS 订单 → 每订单 enqueue RecoverJob 恰一次（去重）；跨店隔离（AC-R68I-01/03）",
+        "RecoverJob.perform_now 幂等自愈（movement 恢复、重复不重复建）；order 不存在 no-op 不 raise（AC-R68I-02）",
+        "capped：> max_enqueues 只 enqueue ≤ cap 并 warn/计数（AC-R68I-04）",
+        "schedule 注册条目存在（reverse_commerce_recover_sweeper */5）（AC-R68I-05）",
+        "全量 backend-rspec ×2 + quick check + doc-impact"
+      ],
+      "mustNotDo": [
+        "sweeper/Job 内同步资金/库存副作用（只 enqueue/只 Recover 幂等）",
+        "rescue 后 re-raise（防 sidekiq 重试放大）",
+        "ambiguous 之外状态自动处理（人工/既有 sweeper）；重复覆盖 refund 域调度"
+      ],
+      "scoring": {
+        "candidateQuery": 25,
+        "dedupeEnqueue": 20,
+        "idempotentJob": 25,
+        "cappedSweeper": 15,
+        "regressionGreen": 15
+      }
     }
   ]
 }
