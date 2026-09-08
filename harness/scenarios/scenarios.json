@@ -1874,6 +1874,31 @@
         "apiEndpoint": 15,
         "regressionGreen": 10
       }
+    },
+    {
+      "id": "GS-074",
+      "name": "REV-P6-8g Rails Admin 组合可视化：只读 PaymentCombination 页（G6）",
+      "description": "PRD-20260908-payments-rev-p6-8g-combination-visibility-rails-admin（G6）：Admin → Orders → Payment Combinations —— PaymentCombination 只读列表/详情（复刻 8a RefundsOps 基建：ResourceController+TableConcern/table register/nav/helper/i18n）。show：成员 PaymentSplit captured/refunded/credit_allowed + 该 split 退款行（8a 真实 state 徽章）+ 组合 Payment（credit_allowed/refunds）+ CommerceTransaction 摘要与互链。order_management 增 read PaymentCombination/PaymentSplit。零资金副作用只读页。",
+      "mustDo": [
+        "列表：succeeded/pending 组合显示状态徽章/金额/成员数/已退合计（AC-R68G-01）",
+        "详情：每成员 split captured/refunded/credit_allowed + order 链接；组合退款行真实 durable state 徽章（AC-R68G-02/03）",
+        "CommerceTransaction 卡 + admin 详情互链（AC-R68G-02）",
+        "superuser 与 order_manager（read PaymentCombination/Split）可访问；受限角色不可见（AC-R68G-04）",
+        "routes only index/show + nav Orders 子项 + i18n（en/zh）接线；nav spec Orders 子项含 payment_combinations（AC-R68G-05）",
+        "全量 backend-rspec ×2 + quick check + doc-impact"
+      ],
+      "mustNotDo": [
+        "任何写动作（组合资金不可在 Admin 手改——取消/退款走 8f Admin API）",
+        "provider/资金副作用；N+1 手写循环（用 ar_lazy_preload）",
+        "Admin API v3 组合只读端点/孤儿展示（8h 评估）"
+      ],
+      "scoring": {
+        "readOnlyPage": 35,
+        "splitVisibility": 30,
+        "navI18nWiring": 15,
+        "permission": 10,
+        "regressionGreen": 10
+      }
     }
   ]
 }

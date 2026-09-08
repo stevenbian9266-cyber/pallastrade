@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | draft |
+| 状态 | done |
 | 创建日期 | 2026-09-08 |
 | 来源 | 需求：REV-P6-8g Rails Admin 组合可视化 + 退款聚合展示（G6） |
 | 分类 | payments（语义归属；实现层 = pallastrade_admin） |
@@ -76,10 +76,11 @@ request/feature spec：admin 登录（superuser/order_manager/受限角色）→
 quick check nav-validate + 既有 admin request specs 回归。参考 8a request spec 结构。
 
 ## 9. 文档同步清单
-- [ ] payments skill（REV-P6-8g 节）；scenarios GS-074；PRD/REQ/README；doc-impact。
-- [ ] 边界：组合写动作、Admin API 组合只读端点 → 后续。
+- [x] payments skill（REV-P6-8g 节）；scenarios GS-074；PRD/REQ/README；doc-impact。
+- [x] 边界：组合写动作、Admin API 组合只读端点 → 8h 评估。
 
 ## 10. 变更记录
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-08 | 0.1 | 初稿（依据 8g 调研：admin 无组合面=G6 缺口；8a Ops 基建可复用） | AI |
+| 2026-09-08 | 1.0 | done：实施完成（commit 0a2b4b8）——只读 PaymentCombination 页（index/show）+ nav/table/i18n/helper + read 权限；spec 4/4 + nav spec 更新；全量 ×2 绿 | AI |

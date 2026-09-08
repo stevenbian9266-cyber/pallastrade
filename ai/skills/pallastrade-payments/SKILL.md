@@ -602,8 +602,26 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   member_ids 子集可空；current_store 作用域 + `pcom_` prefixed id；authorize `:cancel`——order_management 权限集
   增 `can :cancel, PaymentCombination, &:succeeded?`）；响应 `{data:{id,type,attributes{status,members,
   canceled[],skipped[],failed[]}}}`（只暴露 prefixed id，无整型 PK）。退款终态经既有 refunds 端点观测。
-- **边界**：Rails Admin 组合可视化/退款聚合展示（G6 另开）；OrderCancellation 状态机化与取消意图恢复；组合级
-  `payment_combination.*` 取消事件（无订阅者，先复用每成员 order.canceled）。
+- **边界**：OrderCancellation 状态机化与取消意图恢复；组合级 `payment_combination.*` 取消事件（无订阅者，
+  先复用每成员 order.canceled）。（Rails Admin 组合可视化已由 REV-P6-8g 落地，见下节。）
+
+## Rails Admin 组合可视化（REV-P6-8g, 2026-09-09；PRD-20260908-payments-rev-p6-8g-combination-visibility-rails-admin）
+
+> G6 落地：Admin → Orders → Payment Combinations —— PaymentCombination/split **只读**可视化（复刻
+> REV-P6-8a RefundsOps 基建：ResourceController+TableConcern / tables / nav / helper / i18n）。零资金副作用。
+
+- `PaymentCombinationsController`（pallastrade_admin，只读）：`index`（store 作用域列表：状态徽章/金额/成员数/
+  已退合计）+ `show` **隐式渲染**（Admin ResourceController 无基类 show——RefundsOps 自实现、Transactions 省略
+  show 同法；object_name=payment_combination → `@payment_combination`）。
+- show 页卡片：组合头（状态徽章/金额/currency/成员数）+ 逐成员 `PaymentSplit`（captured/refunded/
+  credit_allowed + 该 split 退款行：`Refund.where(payment_split_id:)`，8a 真实 state 徽章）+ 组合 Payment
+  （order_id=nil，state/credit_allowed/refunds）+ CommerceTransaction（摘要 + `admin_transaction_path` 互链）。
+  N+1 靠 ar_lazy_preload；组合退款行直接查（payment_split_id 或 combo payment.refunds）。
+- 接线：table `register(:payment_combinations)` + custom 状态列 partial（helper 需在 Admin::BaseController
+  `helper 'pallastrade/admin/payment_combinations'` 注册）；nav Orders position 45；routes `only [:index, :show]`
+  （无写动作）；i18n en.yml + admin_nav.zh-CN.yml。
+- 权限：order_management 增 `can :read, PaymentCombination` / `can :read, PaymentSplit`（OrderManager 可看）。
+- 边界：写动作/组合取消退款走 8f Admin API；Admin API v3 组合只读端点与孤儿展示 → 8h 评估。
 
 ## Allocation Integrity（FIN-P4-4, 2026-09-06；P4 V2 拆包第 4 包）
 
