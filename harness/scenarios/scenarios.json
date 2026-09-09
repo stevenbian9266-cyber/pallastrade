@@ -1972,6 +1972,29 @@
         "auditRake": 20,
         "regressionGreen": 15
       }
+    },
+    {
+      "id": "GS-078",
+      "name": "REV-P6-8k 组合级取消编排事件 + 审计/metrics 订阅者",
+      "description": "PRD-20260908-payments-rev-p6-8f §11（8f 边界落地）：Orders::CombinationCancel 编排取消 ≥1 成员 → publish_event 'payment_combination.cancel_orchestrated'（payload: prefixed id + status + members 聚合 + canceled/skipped/failed_order_ids + canceled_by）；canceled==0 不发。订阅者 CombinationCancelSubscriber（core engine 注册，async）→ Audit.record(action=payment_combination_cancel_orchestrated) + OperationalMetrics.count；payload id 双模；combination 缺失 no-op；rescue 不 raise。命名决策：状态机 pre-payment cancel 的 payment_combination.canceled 语义不同，不合并。",
+      "mustDo": [
+        "取消 ≥1 成员 → 发布 cancel_orchestrated 含 prefixed id/聚合/canceled_by（AC-R68K-01）",
+        "canceled==0 → 不发布（AC-R68K-02）",
+        "订阅者 → AuditLog(action=payment_combination_cancel_orchestrated, after 聚合) + OperationalMetrics.count（AC-R68K-03）",
+        "payload 双模 id；combination 缺失 no-op；异常 rescue 不 raise（AC-R68K-04）",
+        "engine 注册存在；8f 编排 spec 回归绿 + 状态机 canceled 语义不变（AC-R68K-05）"
+      ],
+      "mustNotDo": [
+        "合并/改变状态机 payment_combination.canceled（pre-payment）语义",
+        "组合全取消后自动转 canceled/closed（改状态机）；webhook 出站",
+        "订阅者 re-raise 或阻断事件流"
+      ],
+      "scoring": {
+        "eventPublish": 30,
+        "subscriberAuditMetrics": 35,
+        "isolationNoop": 15,
+        "regressionGreen": 20
+      }
     }
   ]
 }

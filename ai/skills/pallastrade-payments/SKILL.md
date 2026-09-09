@@ -661,8 +661,28 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   member_ids 子集可空；current_store 作用域 + `pcom_` prefixed id；authorize `:cancel`——order_management 权限集
   增 `can :cancel, PaymentCombination, &:succeeded?`）；响应 `{data:{id,type,attributes{status,members,
   canceled[],skipped[],failed[]}}}`（只暴露 prefixed id，无整型 PK）。退款终态经既有 refunds 端点观测。
-- **边界**：OrderCancellation 状态机化与取消意图恢复；组合级 `payment_combination.*` 取消事件（无订阅者，
-  先复用每成员 order.canceled）。（Rails Admin 组合可视化已由 REV-P6-8g 落地，见下节。）
+- **边界**：OrderCancellation 状态机化与取消意图恢复已由 REV-P6-8j 落地；组合级 `payment_combination.*` 取消事件已由 REV-P6-8k 落地（见下节）。（Rails Admin 组合可视化已由 REV-P6-8g 落地，见下节。）
+
+## 组合级取消编排事件（REV-P6-8k, 2026-09-09；PRD-20260908-payments-rev-p6-8f §11）
+
+> 8f 边界「组合级取消事件订阅者暂缺」落地。**命名决策**：PaymentCombination 状态机 cancel 事件
+> （pre-payment，pending/processing→canceled）已发布 `payment_combination.canceled`（零消费者）——那是组合
+> 自身终态取消；8k 编排事件是 **succeeded 组合成员被取消**（组合仍 succeeded）。语义不同 → 用独立事件名
+> `payment_combination.cancel_orchestrated`，状态机 canceled 事件不变（不合并）。
+
+- **事件发布**：`Orders::CombinationCancel#call` 编排结束且 `canceled > 0` →
+  `combination.publish_event('payment_combination.cancel_orchestrated', payload)`；payload =
+  `{id: pcom_…, status:'succeeded', members:{total,canceled,skipped,failed}, canceled_order_ids[],
+  skipped_order_ids[], failed_order_ids[], canceled_by(actor label/'system')}`；canceled==0（全 skip/失败）不发
+  （防噪）；幂等重跑仅影响仍可取消成员，每次实际取消发一次。事件发布在编排层事务外（逐成员各自事务）。
+- **订阅者**：`PallasTrade::Orders::CombinationCancelSubscriber`（core subscribers，注册于 core engine.rb）：
+  `subscribes_to 'payment_combination.cancel_orchestrated'`（默认 async SubscriberJob）→
+  `Audit.record(action:'payment_combination_cancel_orchestrated', actor: canceled_by, resource: combination,
+  after:{members,canceled_order_ids})` + `OperationalMetrics.count('payment_combination.cancel_orchestrated',
+  combination_id:, canceled:, skipped:, failed:)`；payload id 双模（pcom_/raw）；combination 缺失 no-op；
+  rescue → log 不 raise（不阻断事件流；审计可重放）。
+- **边界**：状态机 `payment_combination.canceled`（pre-payment）事件加消费者/加 payload；webhook 出站（组合
+  取消通知）；组合「全部成员取消后自动转 canceled/closed」——均后续。
 
 ## Rails Admin 组合可视化（REV-P6-8g, 2026-09-09；PRD-20260908-payments-rev-p6-8g-combination-visibility-rails-admin）
 

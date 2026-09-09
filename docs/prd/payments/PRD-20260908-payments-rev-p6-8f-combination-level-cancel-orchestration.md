@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | done（8f）；REV-P6-8k 边界落地追加见文末 §11（实施中） |
+| 状态 | done（8f 1.0 + REV-P6-8k 1.1，见文末 §11） |
 | 创建日期 | 2026-09-08 |
 | 来源 | 需求：REV-P6-8f OrderCancellation 组合级取消编排（split-aware 取消退款 + CombinationCancel 编排器 + Admin API） |
 | 分类 | payments（语义归属；组合资金/取消编排） |
@@ -133,6 +133,7 @@ spec、refund/request/8a-8e、reconcile、quick check + 全量 ×2 + doc-impact 
 | 2026-09-08 | 0.1 | 初稿（依据跨层调研：G1 零退款 + G2 无入口 + G3 无 API；FR-R64-106 边界落地） | AI |
 | 2026-09-08 | 1.0 | done：实施完成（commit 7347234）——split-aware Orders::Cancel + CombinationCancel + Admin API + admin.yaml；spec 14/14、回归 68 例、全量 backend-rspec ×2 绿、quick check/generated:check/doc-impact 过 | AI |
 | 2026-09-09 | 1.1 | REV-P6-8k（8f 边界落地）初稿：组合级取消编排事件 `payment_combination.cancel_orchestrated` + 审计/metrics 订阅者（见 §11；task TASK-20260909032549-ef07c9b7） | AI |
+| 2026-09-09 | 1.2 | REV-P6-8k done：实施完成（需求 commit 78e3476，task finished）——事件发布（canceled>0）+ CombinationCancelSubscriber（Audit+OperationalMetrics）+ engine 注册；spec 16 绿+回归 26 绿+全量 ×2 绿+quick 干净+doc-impact 过；GS-078；payments skill 8k 节 | AI |
 
 ---
 
