@@ -598,6 +598,29 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - 边界：手动 rake/runbook 保留；ambiguous 之外仍人工/既有 sweeper；refund 域自动调度由
   Refunds::RecoverSweeperJob 覆盖（不重复）。
 
+## OrderCancellation 状态机化 + 取消意图恢复（REV-P6-8j, 2026-09-09；PRD-20260909-payments-rev-p6-8j-ordercancellation-state-machine）
+
+> 源 REV-P6 §34/35：取消意图 durable（OC 行 + durable Refund(requested) 同事务）但 OC 无显式生命周期 →
+> 加 `state` 状态机 + **只读**审计 rake 检测「意图 applied 但资金未落地」。**不改资金/取消成功路径行为**
+> （失败仍整体回滚不留半取消——REV-P6-4 不变式保持）。
+
+- migration（host `backend/db/migrate/20260909000000_add_state_to_pallastrade_order_cancellations.rb`）：
+  `pallastrade_order_cancellations.state` string default 'requested' null:false + index；reversible
+  up 把存量行回填 'applied'（历史 OC 均为已应用取消；唯一写入方=Orders::Cancel，单点安全）。
+- 状态机（`OrderCancellation::STATES` + state_machine，initial requested）：`apply`(requested→applied)、
+  `fail`(requested/applied/recovery_required/manual_review→failed)、`flag_recovery_required`(applied→
+  recovery_required)、`flag_manual_review`(applied/recovery_required→manual_review)、`reapply`
+  (recovery_required/manual_review/failed→applied，人工裁决后重新标记)；scopes/predicates +
+  `needs_attention`(recovery_required|manual_review) + `recovery_attention?`。**无 completed/processing**
+  （apply 即 terminal=applied；refund 行终态由 Refund state 各自表达，避免重复聚合）。
+- `Orders::Cancel` 接线：捕获 `cancellations.create!(state:'requested')` 返回值 → 事务内 order.cancel!
+  成功后 `cancellation.apply!`（同原子；失败/回滚不留行）。
+- 审计 rake `pallastrade:orders:cancellations:list_attention[store_id]`（core `lib/tasks/orders_cancellations.rake`，
+  只读）：逐 applied OC（refund_payments=true & order canceled）查可退源 durable 退款（本地 PSP
+  payments refunds ∪ 组合 splits refunds）→ 无任何行 → `ATTENTION_NO_DURABLE_REFUND`；state ∈
+  recovery_required/manual_review 独立列出。TSV+summary（counts 总/attention）。
+- 边界：失败路径持久 recovery_required 意图（改资金失败语义）不实施；Admin UI 展示 → 后续与 8g/8a Ops 合并。
+
 ## ReverseCommerce::Recover 跨域收敛（REV-P6-8e, 2026-09-08；PRD-20260908-payments-rev-p6-8e-reverse-commerce-recover-cross-domain）
 
 > 源 REV-P6 §45 + §39-42：Order 锚点的跨域收敛入口——restock 事实 AMBIGUOUS（accepted+eligible 但

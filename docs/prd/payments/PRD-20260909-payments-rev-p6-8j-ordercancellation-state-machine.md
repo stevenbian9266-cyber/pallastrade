@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | draft |
+| 状态 | done |
 | 创建日期 | 2026-09-09 |
 | 来源 | 需求：REV-P6-8j OrderCancellation 状态机化 + 取消意图恢复（durable intent lifecycle；用户指令实施此前暂缓的第 4 项） |
 | 分类 | payments |
@@ -78,10 +78,11 @@ model spec（迁移守卫/谓词/事件从态）；Orders::Cancel spec 增 state
 list_attention 用 runner/直接方法测试可选；回归 cancellation_orchestration/8f split/8e。全量 ×2 + quick。
 
 ## 9. 文档同步清单
-- [ ] payments skill（8j 节）；scenarios GS-077；PRD/REQ/README；runbook（若新增审计 rake 需记录）；doc-impact。
+- [x] payments skill（8j 节）✅（本提交）；scenarios GS-077 ✅（本提交）；PRD/REQ/README ✅；runbook：审计 rake 记录于 payments skill（无独立 runbook 改动，恢复仍走 8e/8i runbook 入口）✅；doc-impact ✅。
 - [ ] 边界：completed/processing 态、Admin UI、失败持久 recovery 意图 → 后续。
 
 ## 10. 变更记录
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-09 | 0.1 | 初稿（REV-P6-0 audit + §34 落地；保守：不改资金成功/失败行为） | AI |
+| 2026-09-09 | 1.0 | 实施完成：migration(20260909000000)+状态机+Orders::Cancel apply 接线+审计 rake+specs；spec 9 绿/回归 30 绿/全量×2 绿/quick 干净；需求 commit c729ce2；GS-077 | AI |

@@ -1948,6 +1948,30 @@
         "cappedSweeper": 15,
         "regressionGreen": 15
       }
+    },
+    {
+      "id": "GS-077",
+      "name": "REV-P6-8j OrderCancellation 状态机化 + 取消意图恢复",
+      "description": "PRD-20260909-payments-rev-p6-8j-ordercancellation-state-machine（§34/35 落地）：OrderCancellation 加 state 状态机（requested/applied/failed/recovery_required/manual_review；events apply/fail/flag_recovery_required/flag_manual_review/reapply；scopes/predicates + needs_attention）+ migration 回填存量 applied + Orders::Cancel 事务内 apply 接线 + 只读审计 rake pallastrade:orders:cancellations:list_attention（applied & refund_payments & 无可退源 durable refund → ATTENTION_NO_DURABLE_REFUND；recovery_required/manual_review 列出）。不改资金成功/失败行为（失败仍整体回滚）。",
+      "mustDo": [
+        "迁移后 schema 有 state（default requested + index）；存量行回填 applied（AC-R68J-01）",
+        "Orders::Cancel 成功（UNPAID/PAID/refund_payments=false/refund_amount）→ OC.state='applied'；谓词/scopes/非法迁移守卫（AC-R68J-02）",
+        "失败回滚不留行（无 state 泄漏）；8f split-aware/8e 域不回归（AC-R68J-03）",
+        "rake list_attention：applied+refund_payments=true 无可退源 durable refund → ATTENTION_NO_DURABLE_REFUND；recovery_required/manual_review 列出（AC-R68J-04）",
+        "全量 backend-rspec ×2 + quick check + doc-impact（AC-R68J-05）"
+      ],
+      "mustNotDo": [
+        "completed/processing 态；失败路径持久 recovery_required 意图（改资金失败语义）",
+        "Admin UI 展示（后续与 8g/8a Ops 合并）",
+        "审计 rake 任何写/provider mutation（只读）"
+      ],
+      "scoring": {
+        "migrationBackfill": 15,
+        "stateMachine": 30,
+        "cancelWiring": 20,
+        "auditRake": 20,
+        "regressionGreen": 15
+      }
     }
   ]
 }
