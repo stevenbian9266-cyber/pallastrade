@@ -57,3 +57,22 @@ Rails Admin → Orders → **Payments**（只读）：completed PSP payments（�
 - 不做自动修复/自动退款；孤儿处理为人工 + 受控 backfill 原则。
 - 金额为只读展示不落库；非 Stripe provider 无金额能力时显示「—」。
 - Admin API v3 只读端点/SDK 暴露 → 后续独立包（如需外部系统消费）。
+
+## 孤儿补记（REV-P6-8m；人工门）
+
+> 孤儿 = provider 已退款、本地无 durable 行。补记把该**已发生资金**记录为本地 Refund（succeeded +
+> Journal），**绝不二次 PSP**。全程人工：
+
+```bash
+# 1) dry-run（只读，列计划）
+rake pallastrade:refunds:backfill_orphans[<store_id>]
+# 2) 核对 TSV 计划（payment / provider_ref / amount / planned）后执行
+APPLY=1 rake pallastrade:refunds:backfill_orphans[<store_id>]
+```
+
+- 输出：TSV + summary（backfilled / already_backfilled / skipped / planned / error）；skip 原因
+  `orphan_amount_unavailable`（provider 金额无法证明——不猜）。
+- 语义：`Refunds::BackfillProviderRefund`——幂等（同 payment+transaction_id noop）；补记行 metadata
+  `backfilled_orphan`；`AuditLog(action=refund_orphan_backfill)` 全量留痕（误补可据此定位）。
+- 组合孤儿（payment `order_id=nil`、target 不可证明）→ 仅 fact/Journal 落（不猜 target_order）。
+- 禁止自动调度；`--apply` 前必须 dry-run 核对。

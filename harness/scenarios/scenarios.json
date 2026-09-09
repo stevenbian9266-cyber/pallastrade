@@ -2019,6 +2019,31 @@
         "yamlSync": 15,
         "regressionGreen": 10
       }
+    },
+    {
+      "id": "GS-080",
+      "name": "REV-P6-8m 孤儿退款补记 backfill",
+      "description": "PRD-20260909-payments-孤儿退款补记-backfill-refunds-backfillproviderrefund-rake-dry-run-（RISK-REV-01 收口；8d/8h 边界落地）：Refunds::BackfillProviderRefund——孤儿（provider 已退本地无行）→ 本地 durable Refund + apply_success! 直接 succeeded（transaction_id=provider_id + metadata{backfilled_orphan} + refund.succeeded→PostRefund Journal 闭合）；幂等 noop；amount 不可证明 skip；绝不调 PSP/ExecuteJob。RefundReason.orphan_backfill_reason（Provider Refund Backfill，mutable false）+ Audit(action=refund_orphan_backfill)。rake pallastrade:refunds:backfill_orphans 默认 dry-run、APPLY=1 才写（id 子查询 or 候选面）。",
+      "mustDo": [
+        "孤儿补记 → Refund succeeded + transaction_id + metadata + Audit；未调 PSP/ExecuteJob（AC-R68M-01）",
+        "同 payment+provider_id 重复 → noop（AC-R68M-02）",
+        "amount 不可证明 → skip 不建行；payment 缺失 failure（AC-R68M-03）",
+        "orphan_backfill_reason 存在 mutable false（AC-R68M-04）",
+        "rake dry-run 默认只读 + APPLY=1 写；组合 order nil 不猜 target（AC-R68M-05）",
+        "回归 8d/8h/REV-P6-1 绿；全量 ×2 + quick + doc-impact（AC-R68M-06）"
+      ],
+      "mustNotDo": [
+        "补记触发 PSP/ExecuteJob/二次退款（记录已发生资金非发起）",
+        "孤儿 target_order/payment_split 不可证明乱猜；自动调度",
+        "未 dry-run 核对/金额无法证明执行 APPLY"
+      ],
+      "scoring": {
+        "backfillService": 35,
+        "idempotencySkip": 15,
+        "reasonAudit": 15,
+        "rakeDryRunApply": 20,
+        "regressionGreen": 15
+      }
     }
   ]
 }

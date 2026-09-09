@@ -118,7 +118,4 @@ refund lifecycle（REV-P6-1/2）、8a-8l 相关。AC-R68M-01~06 映射。
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-09 | 0.1 | 初稿（RISK-REV-01 收口：8d/8h 边界落地；复用 ApplySuccess 幂等；零 PSP） | AI |
-
-| 日期 | 版本 | 变更 | 操作者 |
-|---|---|---|---|
-| YYYY-MM-DD | 0.1 | 初稿 | AI |
+| 2026-09-09 | 1.0 | done：实施完成（需求 commit 1d7d252）——BackfillProviderRefund（补记即终态零 PSP/幂等）+ RefundReason.orphan_backfill_reason + rake dry-run/apply（id 子查询 or）；spec 5 绿+回归 41 绿+全量 ×2 绿+quick 干净；GS-080；payments skill 8m 节 + runbook 补记小节 | AI |

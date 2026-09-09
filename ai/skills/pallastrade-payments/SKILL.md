@@ -640,6 +640,25 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   scope 需求 `read_orders`（API-key）/ ability read（JWT）。admin.yaml paths curated + schemas 生成 +
   api-reference 副本同步（generated:check）。
 
+## 孤儿退款补记 backfill（REV-P6-8m, 2026-09-09；PRD-20260909-payments-孤儿退款补记-backfill-refunds-backfillproviderrefund-rake-dry-run-）
+
+> RISK-REV-01 收口：8d/8h 孤儿只读配对/金额 → 本地**补记**（provider 已退、本地无 durable 行）。
+> **补记 ≠ 发起退款**：记录已发生资金，绝不调 PSP/ExecuteJob（REV-INV-04 精神）。人工 rake 门（dry-run 默认）。
+
+- `Refunds::BackfillProviderRefund.call(payment:, provider_id:, amount:, currency:, actor:)`：守卫（payment/
+  amount 不可证明 → skip `orphan_amount_unavailable`）→ 幂等（同 payment+transaction_id 已存在 → noop
+  `already_backfilled`）→ `payment.refunds.create!(transaction_id: provider_id, state:'requested', reason:
+  RefundReason.orphan_backfill_reason, metadata:{backfilled_orphan:true,…})` → `apply_success!(authorization:
+  provider_id)`（幂等 succeeded + update_order 可证明投影 + after_commit refund.succeeded → PostRefund =
+  REFUND_SUCCEEDED Journal 自动闭合）→ `Audit.record(action:'refund_orphan_backfill')`。单条 rescue 隔离。
+- `RefundReason.orphan_backfill_reason`（`ORPHAN_BACKFILL_REASON = 'Provider Refund Backfill'`，mutable:false，
+  find_or_create——镜像 order_canceled_reason）。
+- rake `pallastrade:refunds:backfill_orphans[store_id]`（core `lib/tasks/refunds_backfill.rake`）：默认
+  **dry-run**（TSV 计划 + summary）；`APPLY=1` 才写。候选面 = 8d completed PSP payments（id 子查询 or，
+  避免 joins or 不兼容）；逐 orphan 金额以 8h provider 权威为准。禁止自动调度。
+- 边界：孤儿 target_order/payment_split 不可证明 → **不猜**（AC-6029；组合 order nil 仅 fact/journal 落）；
+  对外只读查看已由 8l orphan_pairing 端点提供。
+
 ## ReverseCommerce::Recover 跨域收敛（REV-P6-8e, 2026-09-08；PRD-20260908-payments-rev-p6-8e-reverse-commerce-recover-cross-domain）
 
 > 源 REV-P6 §45 + §39-42：Order 锚点的跨域收敛入口——restock 事实 AMBIGUOUS（accepted+eligible 但

@@ -39,6 +39,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
 | done | PRD-20260909-payments-rev-p6-8j-ordercancellation-state-machine | payments | 2026-09-09 | REQ-20260909-rev-p6-8j-ordercancellation-state-machine.md |
+| done | PRD-20260909-payments-孤儿退款补记-backfill-refunds-backfillproviderrefund-rake-dry-run- | payments | 2026-09-09 | REQ-20260909-rev-p6-8m-orphan-refund-backfill.md |
 | done | PRD-20260909-payments-admin-api-v3-只读端点-payment_combinations-index-show-refunds-sh | payments | 2026-09-09 | REQ-20260909-rev-p6-8l-admin-api-v3-readonly.md |
 | done | PRD-20260908-payments-rev-p6-8i-recover-auto-scheduling | payments | 2026-09-08 | REQ-20260908-rev-p6-8i-recover-auto-scheduling.md |
 | done | PRD-20260908-payments-rev-p6-8h-orphan-amounts-payment-ops | payments | 2026-09-08 | REQ-20260908-rev-p6-8h-orphan-amounts-payment-ops.md |
