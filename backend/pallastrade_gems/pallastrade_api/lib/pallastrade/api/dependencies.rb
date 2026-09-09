@@ -111,6 +111,8 @@ module PallasTrade
         admin_gift_card_batch_serializer: 'PallasTrade::Api::V3::Admin::GiftCardBatchSerializer',
         admin_payment_serializer: 'PallasTrade::Api::V3::Admin::PaymentSerializer',
         admin_refund_serializer: 'PallasTrade::Api::V3::Admin::RefundSerializer',
+        # REV-P6-8l：组合只读端点 serializer
+        admin_payment_combination_serializer: 'PallasTrade::Api::V3::Admin::PaymentCombinationSerializer',
         admin_adjustment_serializer: 'PallasTrade::Api::V3::Admin::AdjustmentSerializer',
         admin_shipping_category_serializer: 'PallasTrade::Api::V3::Admin::ShippingCategorySerializer',
         admin_tax_category_serializer: 'PallasTrade::Api::V3::Admin::TaxCategorySerializer',

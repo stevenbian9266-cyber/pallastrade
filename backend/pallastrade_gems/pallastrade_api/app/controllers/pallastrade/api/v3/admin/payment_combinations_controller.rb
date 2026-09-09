@@ -13,7 +13,27 @@ module PallasTrade
         # 每个成员经 Orders::Cancel split-aware durable 退款（组合 Payment + 冻结 split），
         # 资金异步 ExecuteJob。响应为编排聚合（{data:{…}}，不暴露原始整型 PK）。
         class PaymentCombinationsController < BaseController
-          before_action :set_combination
+          before_action :set_combination, except: [:index]
+
+          # REV-P6-8l（FR-R68L-101）：GET /api/v3/admin/payment_combinations（只读列表）
+          def index
+            combinations = PallasTrade::PaymentCombination
+                           .where(store_id: current_store.id)
+                           .ransack(params[:q])
+                           .result
+                           .order(created_at: :desc)
+            @pagy, @combinations = pagy(combinations, limit: params[:limit]&.to_i || 25)
+            render json: {
+              data: serialize_collection(@combinations),
+              meta: collection_meta
+            }
+          end
+
+          # REV-P6-8l（FR-R68L-102）：GET /api/v3/admin/payment_combinations/:id（只读详情；admin 扁平风格）
+          def show
+            authorize!(:read, @combination)
+            render json: serialize_resource(@combination)
+          end
 
           # POST /api/v3/admin/payment_combinations/:id/cancel
           def cancel
@@ -39,6 +59,23 @@ module PallasTrade
           end
 
           private
+
+          def serializer_class
+            PallasTrade.api.admin_payment_combination_serializer
+          end
+
+          def collection_meta
+            return {} unless @pagy
+
+            {
+              page: @pagy.page,
+              limit: @pagy.limit,
+              count: @pagy.count,
+              pages: @pagy.pages,
+              previous: @pagy.previous,
+              next: @pagy.next
+            }
+          end
 
           def set_combination
             @combination = PallasTrade::PaymentCombination

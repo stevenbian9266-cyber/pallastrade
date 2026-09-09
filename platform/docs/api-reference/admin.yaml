@@ -10716,6 +10716,278 @@ paths:
                 updated_at: '2026-07-11T15:38:12.656Z'
                 preferences: {}
                 preference_schema: []
+  "/api/v3/admin/payment_combinations":
+    get:
+      summary: List payment combinations (read-only, REV-P6-8l)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |-
+        Lists the current store's payment combinations (succeeded/pending/etc.) with lightweight
+        attributes (status/amount/currency/member_count/refunded_total). Store-scoped; cross-store
+        rows never appear. Supports `q` ransack filtering (e.g. `q[status_eq]=succeeded`) and
+        `limit` pagination.
+
+        **Required scope:** `read_orders` (for API-key authentication).
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      responses:
+        '200':
+          description: paginated payment combinations (flat admin serializer items)
+          content:
+            application/json:
+              example:
+                data:
+                - id: pcom_UkLWZg9DAJ
+                  status: succeeded
+                  amount: '20.00'
+                  currency: USD
+                  member_count: 2
+                  refunded_total: '0.0'
+                  created_at: '2026-09-09T00:00:00Z'
+                meta:
+                  page: 1
+                  limit: 25
+                  count: 1
+                  pages: 1
+        '401':
+          description: unauthenticated
+        '403':
+          description: missing read scope / ability
+  "/api/v3/admin/payment_combinations/{id}":
+    get:
+      summary: Show a payment combination (read-only, REV-P6-8l)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |-
+        Returns one store-scoped payment combination. Pass `expand=members,payments,transaction` to
+        inline the member payment splits (captured/refunded/credit_allowed per order), the
+        combination payments (the PSP payment carries `order_id = nil`) and the associated
+        CommerceTransaction summary. No raw integer PKs are exposed.
+
+        **Required scope:** `read_orders` (for API-key authentication).
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        description: Payment combination ID (pcom_…)
+        schema:
+          type: string
+      - name: expand
+        in: query
+        required: false
+        description: Comma-separated sideloads (members,payments,transaction)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: flat admin payment combination object
+          content:
+            application/json:
+              example:
+                id: pcom_UkLWZg9DAJ
+                status: succeeded
+                amount: '20.00'
+                currency: USD
+                member_count: 2
+                refunded_total: '0.0'
+                created_at: '2026-09-09T00:00:00Z'
+                members:
+                - id: split_UkLWZg9DAJ
+                  order_id: or_UkLWZg9DAJ
+                  order_number: R595209208
+                  currency: USD
+                  captured_amount: '10.00'
+                  refunded_amount: '0.00'
+                  credit_allowed: '10.00'
+        '401':
+          description: unauthenticated
+        '403':
+          description: missing read scope / ability
+        '404':
+          description: combination not found in the current store (or cross-store)
+  "/api/v3/admin/payments/{id}":
+    get:
+      summary: Show a payment (read-only, REV-P6-8l)
+      tags:
+      - Payments
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |-
+        Returns one store-scoped payment by prefixed id. Top-level route also reaches combination
+        payments whose `order_id` is nil (no parent order to nest under).
+
+        **Required scope:** `read_orders` (for API-key authentication).
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        description: Payment ID (pay_…)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: flat admin payment object
+        '401':
+          description: unauthenticated
+        '403':
+          description: missing read scope / ability
+        '404':
+          description: payment not found in the current store (or cross-store)
+  "/api/v3/admin/payments/{id}/orphan_pairing":
+    get:
+      summary: Provider ↔ local refund orphan pairing (read-only, REV-P6-8l)
+      tags:
+      - Payments
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |-
+        Runs the read-only `Refunds::OrphanPairing` for one payment (8d/8h semantics): matches local
+        durable refunds (`transaction_id = provider refund id`) against the provider's refund
+        references. `status` is one of `matched | needs_attention | not_applicable | unsupported |
+        unavailable`. `orphans[]` are provider-only refunds (with amount/currency when retrievable;
+        `ORPHAN_AMOUNT_UNAVAILABLE` otherwise). Read-only invariant: zero local writes, zero provider
+        mutations, never auto-refunds; provider errors degrade (`unavailable`) instead of 500.
+
+        **Required scope:** `read_orders` (for API-key authentication).
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        description: Payment ID (pay_…)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: pairing result
+          content:
+            application/json:
+              example:
+                status: needs_attention
+                reasons:
+                - ORPHAN_REFUND
+                provider_refund_references:
+                - re_UkLWZg9DAJ
+                matched: []
+                orphans:
+                - provider_id: re_UkLWZg9DAJ
+                  amount: 5.0
+                  currency: USD
+                local_unmatched: []
+                observed_at: '2026-09-09T00:00:00Z'
+        '401':
+          description: unauthenticated
+        '403':
+          description: missing read scope / ability
+        '404':
+          description: payment not found in the current store (or cross-store)
+  "/api/v3/admin/orders/{order_id}/refunds/{id}":
+    get:
+      summary: Show a refund (read-only, REV-P6-8l)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+        bearer_auth: []
+      description: |-
+        Returns one store-scoped refund of an order (8a lifecycle fields: state, metadata,
+        last_error_message, requested_at/processing_at/succeeded_at/failed_at/ambiguous_at,
+        payment_split_id, target_order_id, payment_id, refund_reason_id). Store-scoped; cross-store
+        or unknown id → 404.
+
+        **Required scope:** `read_orders` (for API-key authentication).
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token for admin authentication
+        schema:
+          type: string
+      - name: order_id
+        in: path
+        required: true
+        description: Order ID (or_…)
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        description: Refund ID (refund_…)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: flat admin refund object
+          content:
+            application/json:
+              example:
+                id: refund_UkLWZg9DAJ
+                state: requested
+                amount: '60.00'
+                payment_id: pay_UkLWZg9DAJ
+                refund_reason_id: refrsn_UkLWZg9DAJ
+                requested_at: '2026-09-09T00:00:00Z'
+        '401':
+          description: unauthenticated
+        '403':
+          description: missing read scope / ability
+        '404':
+          description: refund not found in the current store (or cross-store)
   "/api/v3/admin/payment_combinations/{id}/cancel":
     post:
       summary: Cancel a payment combination (combination-level cancellation orchestration)
@@ -26451,4 +26723,37 @@ components:
       - cover_image_url
       - body
       - body_html
+      x-typelizer: true
+    PaymentCombination:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        currency:
+          type: string
+        created_at:
+          type: string
+          nullable: true
+        member_count:
+          type: number
+        amount:
+          type: string
+        refunded_total:
+          type: string
+        members:
+          type: object
+        payments:
+          type: object
+        transaction:
+          type: object
+      required:
+      - id
+      - status
+      - currency
+      - created_at
+      - member_count
+      - amount
+      - refunded_total
       x-typelizer: true

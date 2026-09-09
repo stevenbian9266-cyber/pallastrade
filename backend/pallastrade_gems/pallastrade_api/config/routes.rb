@@ -417,16 +417,24 @@ PallasTrade::Core::Engine.add_routes do
               patch :void
             end
           end
-          resources :refunds, controller: 'orders/refunds', only: [:index, :create]
+          resources :refunds, controller: 'orders/refunds', only: [:index, :show, :create]
           resources :adjustments, controller: 'orders/adjustments', only: [:index, :show]
           resources :gift_cards, controller: 'orders/gift_cards', only: [:create, :destroy]
           resource :store_credits, controller: 'orders/store_credits', only: [:create, :destroy]
         end
 
         # REV-P6-8f：组合级取消编排（succeeded 组合整组/子集取消；成员退款走 split-aware durable 路径）
-        resources :payment_combinations, only: [] do
+        # REV-P6-8l：+index/show 只读（8g 数据面 API 化）
+        resources :payment_combinations, only: [:index, :show] do
           member do
             post :cancel
+          end
+        end
+
+        # REV-P6-8l：顶层支付只读（组合 Payment order_id=nil 亦可达）+ 孤儿退款配对扫描（只读）
+        resources :payments, only: [:show], controller: 'payments' do
+          member do
+            get :orphan_pairing
           end
         end
       end
