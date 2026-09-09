@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | done |
+| 状态 | done（8f）；REV-P6-8k 边界落地追加见文末 §11（实施中） |
 | 创建日期 | 2026-09-08 |
 | 来源 | 需求：REV-P6-8f OrderCancellation 组合级取消编排（split-aware 取消退款 + CombinationCancel 编排器 + Admin API） |
 | 分类 | payments（语义归属；组合资金/取消编排） |
@@ -132,3 +132,61 @@ spec、refund/request/8a-8e、reconcile、quick check + 全量 ×2 + doc-impact 
 |---|---|---|---|
 | 2026-09-08 | 0.1 | 初稿（依据跨层调研：G1 零退款 + G2 无入口 + G3 无 API；FR-R64-106 边界落地） | AI |
 | 2026-09-08 | 1.0 | done：实施完成（commit 7347234）——split-aware Orders::Cancel + CombinationCancel + Admin API + admin.yaml；spec 14/14、回归 68 例、全量 backend-rspec ×2 绿、quick check/generated:check/doc-impact 过 | AI |
+| 2026-09-09 | 1.1 | REV-P6-8k（8f 边界落地）初稿：组合级取消编排事件 `payment_combination.cancel_orchestrated` + 审计/metrics 订阅者（见 §11；task TASK-20260909032549-ef07c9b7） | AI |
+
+---
+
+## 11. REV-P6-8k —— 组合级取消编排事件 + 审计/metrics 订阅者（8f 边界落地）
+
+> 8f §2/3 边界「组合级 `payment_combination.*` 取消事件（订阅者暂缺，先复用每成员 order.canceled）」落地。
+> 任务：需求：REV-P6-8k（task TASK-20260909032549-ef07c9b7；引擎判定 risk critical → manual-only recovery plan + 四类 evidence）。
+
+### 11.1 背景与语义决策
+
+8f 编排器 `Orders::CombinationCancel` 逐成员复用 `Orders::Cancel`，每个成员发自己的 `order.canceled`；
+组合这一层**没有任何聚合事件**——想对「整组合被取消/部分取消」做联动（组合级审计、运营计数、未来 ERP/通知）
+无钩子。
+
+**命名决策**：`PaymentCombination` 状态机已有 `cancel` 事件（pending/processing→canceled，发布
+`payment_combination.canceled`，当前零消费者、无 payload）——那是 **pre-payment 组合自身终态取消**；而
+8k 编排事件发生在 **succeeded 组合被成员取消编排**（组合状态仍 succeeded，不变）。两者语义不同，若共用
+`payment_combination.canceled` 会使消费者无法区分。故 8k 采用**独立事件名**
+`payment_combination.cancel_orchestrated`（payload 带成员结果聚合），状态机 canceled 事件保持不变（不合并）。
+
+### 11.2 FR
+- FR-R68K-101（编排事件）：`Orders::CombinationCancel#call` 编排结束且 `canceled > 0` → 调
+  `combination.publish_event('payment_combination.cancel_orchestrated', payload)`。payload 含
+  `{ id: combination.prefixed_id, status: combination.status('succeeded'), members:{total,canceled,skipped,failed},
+  canceled_order_ids: [prefixed], skipped_order_ids: [prefixed], failed_order_ids: [prefixed], canceled_by: (canceler 标识或 'system') }`。
+  全部 skip/失败（canceled==0）不发（无实质取消，避免噪音）；幂等：重跑仅影响仍可取消成员，每次实际取消发一次。
+- FR-R68K-102（订阅者）：`PallasTrade::Orders::CombinationCancelSubscriber < PallasTrade::Subscriber`，
+  `subscribes_to 'payment_combination.cancel_orchestrated'`（默认 async → SubscriberJob）：
+  - payload id 支持 prefixed（pcom_）或 raw 双模（镜像 FinancialLedger succeeded 订阅者）；combination 缺失 no-op；
+  - `PallasTrade::Audit.record(actor: payload[:canceled_by] || 'system', action: 'payment_combination_cancel_orchestrated',
+    resource: combination, after: { members:…, canceled_order_ids:… })`（敏感资金操作审计，镜像 8a refund Audit）；
+  - `PallasTrade::OperationalMetrics.count('payment_combination.cancel_orchestrated', combination_id:…, canceled:…, skipped:…, failed:…)`；
+  - rescue StandardError → Rails.logger.error 不 raise（不阻断事件流；审计可重放）。
+- FR-R68K-103（注册）：core engine.rb 订阅者数组 += `PallasTrade::Orders::CombinationCancelSubscriber`
+  （镜像 L391 PaymentCombinationSucceededSubscriber 注册位）。
+- 边界（记录不实施）：状态机 `payment_combination.canceled`（pre-payment）事件加消费者/加 payload；
+  webhook 出站（组合取消通知）；组合「全部成员取消后组合自动转 canceled/closed」语义（改组合状态机——超出）。
+
+### 11.3 AC
+| AC | 条件 | FR |
+|---|---|---|
+| AC-R68K-01 | CombinationCancel 成功取消 ≥1 成员 → 发布 `payment_combination.cancel_orchestrated`，payload 含 prefixed combination id + members 聚合 + canceled_by | 101 |
+| AC-R68K-02 | canceled==0（全 skip/失败）→ 不发布 | 101 |
+| AC-R68K-03 | 订阅者收到事件 → Audit.record（action=payment_combination_cancel_orchestrated）+ OperationalMetrics.count；combination 缺失 no-op | 102 |
+| AC-R68K-04 | 订阅者异常 rescue 不 raise（log）；注册项存在于 engine.rb | 102/103 |
+| AC-R68K-05 | 回归：8f 编排 spec 全绿 + 状态机 `payment_combination.canceled` 语义不变 + 全量 backend-rspec ×2 + quick check + doc-impact | — |
+
+### 11.4 技术影响 / 测试
+- core：`services/orders/combination_cancel.rb`（+事件发布）；`subscribers/pallastrade/orders/combination_cancel_subscriber.rb`（新）；`lib/pallastrade/core/engine.rb`（+注册）。无 migration / 无 API / 无 UI。
+- specs：combination_cancel_spec 增发布断言（事件发布 or 订阅者副作用，视 stub 能力）；新 subscriber spec（审计+metrics 副作用、payload 双模、异常隔离）；回归 8f/8a-8j 相关组。
+- 知识同步：payments skill 8k 节；scenarios GS-078；events-webhooks skill 若涉新事件名需补（本包订阅者模式既有，复查无改则记录）。
+
+## 回写记录（harness prd update）
+
+| 日期 | 来源 | 操作者 |
+|---|---|---|
+| 2026-09-09 | REV-P6-8k（8f 边界落地）：组合级 payment_combination.canceled 事件 + 审计/metrics 订阅者 | AI |

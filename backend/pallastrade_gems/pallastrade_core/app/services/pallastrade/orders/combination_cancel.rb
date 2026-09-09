@@ -87,6 +87,24 @@ module PallasTrade
           end
         end
 
+        # REV-P6-8k：编排实际取消 ≥1 成员 → 发组合级聚合事件（succeeded 组合仍 succeeded；区别于
+        # 状态机 pre-payment cancel 的 payment_combination.canceled——语义不同不合并）。canceled==0
+        # （全 skip/失败）不发，避免噪音；幂等重跑仅影响仍可取消成员，每次实际取消发一次。
+        if canceled.any?
+          combination.publish_event(
+            'payment_combination.cancel_orchestrated',
+            {
+              id: combination.prefixed_id,
+              status: combination.status,
+              members: { total: members.size, canceled: canceled.size, skipped: skipped.size, failed: failed.size },
+              canceled_order_ids: canceled.map { |m| m[:order_prefixed_id] },
+              skipped_order_ids: skipped.map { |m| m[:order_prefixed_id] },
+              failed_order_ids: failed.map { |m| m[:order_prefixed_id] },
+              canceled_by: canceler_label(canceler)
+            }
+          )
+        end
+
         success(
           combination_id: combination.id,
           members: { total: members.size, canceled: canceled.size, skipped: skipped.size, failed: failed.size },
@@ -97,6 +115,14 @@ module PallasTrade
       end
 
       private
+
+      def canceler_label(canceler)
+        case canceler
+        when nil then 'system'
+        when Hash then (canceler[:label] || canceler['label'] || canceler[:email] || canceler['email'] || 'system').to_s
+        else canceler.respond_to?(:email) ? canceler.email.to_s.presence || 'system' : canceler.to_s.presence || 'system'
+        end
+      end
 
       def eligible_members(combination, member_ids)
         members = combination.orders.to_a

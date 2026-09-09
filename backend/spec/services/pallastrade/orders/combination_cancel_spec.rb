@@ -213,5 +213,39 @@ RSpec.describe PallasTrade::Orders::CombinationCancel, type: :service do
       expect(PallasTrade::Refund.where(payment_id: pay15.id, state: 'requested').count).to eq(1)
       expect(failed_member.cancellations.count).to eq(0)
     end
+
+    it 'AC-R68K-01: 编排取消 ≥1 成员 → 发布 payment_combination.cancel_orchestrated（含 prefixed id + 聚合 + canceled_by）' do
+      m1 = member_order(10, 'a')
+      m2 = member_order(10, 'b')
+      add_split(m1, captured: 10)
+      add_split(m2, captured: 10)
+      canceler = create(:user, email: 'admin@example.com')
+      expect(PallasTrade::Refunds::ExecuteJob).to receive(:perform_later).with(instance_of(Integer)).twice
+
+      expect(combination).to receive(:publish_event).with(
+        'payment_combination.cancel_orchestrated',
+        hash_including(
+          id: combination.prefixed_id,
+          status: 'succeeded',
+          members: { total: 2, canceled: 2, skipped: 0, failed: 0 },
+          canceled_order_ids: contain_exactly(m1.prefixed_id, m2.prefixed_id),
+          canceled_by: 'admin@example.com'
+        )
+      )
+
+      result = described_class.call(combination: combination, reason: 'staff', canceler: canceler)
+      expect(result.success?).to be(true)
+    end
+
+    it 'AC-R68K-02: canceled==0（成员均已取消）→ 不发布编排事件' do
+      m1 = member_order(10, 'a')
+      add_split(m1, captured: 10)
+      PallasTrade::Orders::Cancel.call(order: m1, reason: 'staff')
+
+      expect(combination).not_to receive(:publish_event)
+      result = described_class.call(combination: combination, reason: 'staff')
+      expect(result.success?).to be(true)
+      expect(result.value[:members]).to eq(total: 1, canceled: 0, skipped: 1, failed: 0)
+    end
   end
 end

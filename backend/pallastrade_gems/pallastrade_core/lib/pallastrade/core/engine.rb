@@ -390,7 +390,9 @@ module PallasTrade
           # FIN-P4-4 (2026-09-06): payment_combination.succeeded → ORDER_ALLOCATION posting
           PallasTrade::FinancialLedger::PaymentCombinationSucceededSubscriber,
           # CORE-P5-8 (2026-09-06): commerce_transaction.recovery_required/manual_review → 事件级计数
-          PallasTrade::OperationalMetricsSubscriber
+          PallasTrade::OperationalMetricsSubscriber,
+          # REV-P6-8k (2026-09-09): payment_combination.cancel_orchestrated → Audit + 组合取消计数
+          PallasTrade::Orders::CombinationCancelSubscriber
         ]
 
         # Pre-load authentication strategy classes to avoid reflection at request time
