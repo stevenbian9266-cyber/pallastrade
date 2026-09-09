@@ -328,13 +328,14 @@ Rails.application.config.after_initialize do
           position: 90
 
   # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——店铺列表
+  # PALLAS-CUSTOM: 单店化隐藏（2026-09-09）——渲染层禁用导航入口；恢复多店时把下方 if 条件改回 can?(:manage, PallasTrade::Store)
   sidebar_nav.add :stores,
           label: 'admin.stores.title',
           url: :admin_stores_path,
           icon: 'building-store',
           position: 94,
           active: -> { controller_name == 'stores' && action_name == 'index' },
-          if: -> { can?(:manage, PallasTrade::Store) }
+          if: -> { false }
 
   # Store Details（单页，叶子项）
   sidebar_nav.add :general_settings,

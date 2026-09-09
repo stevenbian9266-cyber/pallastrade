@@ -122,22 +122,18 @@ RSpec.describe 'Admin multi-store management', type: :request do
     expect(response).to have_http_status(:unprocessable_content)
   end
 
-  # PRD-... AC-004
-  it 'lists accessible stores in the switcher and switches the current store' do
+  # PRD-... AC-004（2026-09-09 单店化隐藏：切换器不再列出其他店铺；switch_store 后端逻辑保留可用）
+  it 'hides the store switcher list but keeps switch_store working' do
     sign_in_as_superuser
     get '/admin/orders'
     expect(response).to have_http_status(:ok)
-    # 超管可访问全部店铺 → 切换器含 Store A / B
-    expect(response.body).to include('Store A')
-    expect(response.body).to include('Store B')
+    # 单店化隐藏：切换器不再列出其他店铺（Store B 不再出现在切换列表/下拉中）
+    expect(response.body).not_to include('Store B')
 
+    # switch_store 后端逻辑仍保留可用（路由 + 授权 + session 切换）
     post '/admin/switch_store', params: { store_id: store_b.id }
     expect(response).to have_http_status(:redirect)
     expect(session[:admin_store_id]).to eq(store_b.id)
-
-    # 切换后 current_store 生效（订单页仍可访问，当前店铺高亮 Store B）
-    get '/admin/orders'
-    expect(response).to have_http_status(:ok)
   end
 
   # PRD-... AC-004（无授权拒绝）
