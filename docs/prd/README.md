@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| done | PRD-20260909-promotions-promo-batch1-invariants-and-code-uniqueness | promotions | 2026-09-09 | REQ-20260909-promo-batch1-invariants-and-code-uniqueness.md |
 | done | PRD-20260909-payments-rev-p6-8j-ordercancellation-state-machine | payments | 2026-09-09 | REQ-20260909-rev-p6-8j-ordercancellation-state-machine.md |
 | done | PRD-20260909-payments-孤儿退款补记-backfill-refunds-backfillproviderrefund-rake-dry-run- | payments | 2026-09-09 | REQ-20260909-rev-p6-8m-orphan-refund-backfill.md |
 | done | PRD-20260909-payments-admin-api-v3-只读端点-payment_combinations-index-show-refunds-sh | payments | 2026-09-09 | REQ-20260909-rev-p6-8l-admin-api-v3-readonly.md |

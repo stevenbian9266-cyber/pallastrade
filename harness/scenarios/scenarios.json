@@ -2044,6 +2044,28 @@
         "rakeDryRunApply": 20,
         "regressionGreen": 15
       }
+    },
+    {
+      "id": "GS-081",
+      "name": "Promotion code uniqueness & amount contract",
+      "description": "Promotions work must respect store-scoped single-code uniqueness, deterministic coupon lookup, and locked amount invariants (see REVIEW-20260908-promotions-module-audit.md / PRD-20260909-promo-batch1)",
+      "mustDo": [
+        "Enforce store-scoped single-code uniqueness (model + DB functional unique index)",
+        "Make with_coupon_code deterministic (single-code wins, ties → newest)",
+        "Keep discount_total == eligible promo adjustments invariant covered by contract specs",
+        "Reference the promotions domain skill (ai/skills/pallastrade-promotions/SKILL.md)"
+      ],
+      "mustNotDo": [
+        "Rely on .last for coupon code resolution",
+        "Create duplicate single-code promotions silently",
+        "Change discount amount semantics without updating contract tests"
+      ],
+      "scoring": {
+        "uniquenessBothLayers": 30,
+        "deterministicLookup": 25,
+        "contractTests": 30,
+        "noAntiPatterns": 15
+      }
     }
   ]
 }

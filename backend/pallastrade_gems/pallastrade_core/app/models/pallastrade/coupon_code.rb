@@ -18,6 +18,10 @@ module PallasTrade
 
     validates :code, presence: true, uniqueness: { scope: pallastrade_base_uniqueness_scope, conditions: -> { where(deleted_at: nil) } }
     validates :state, :promotion, presence: true
+    # PRD-20260909-promo-batch1 AC-P3-4: guard against colliding with a
+    # single-code promotion in the same store (insert_all bypasses this, so
+    # BulkGenerate also carries its own guard).
+    validate :code_unique_against_single_code_promotions_in_store, on: :create
 
     self.whitelisted_ransackable_attributes = %w[state code promotion_id]
     self.whitelisted_ransackable_associations = %w[promotion]
@@ -30,7 +34,7 @@ module PallasTrade
       update(order: order, state: 'used')
     end
 
-    def remove_from_order
+    def remove_from_orde
       update(order: nil, state: 'unused')
     end
 
@@ -40,6 +44,21 @@ module PallasTrade
 
     def to_csv(_store = nil)
       PallasTrade::CSV::CouponCodePresenter.new(self).call
+    end
+
+    private
+
+    # Generated coupon codes share the customer input space with single-code
+    # promotions, so a new code must not collide with one (PRD-20260909 AC-P3-4).
+    def code_unique_against_single_code_promotions_in_store
+      return if code.blank? || promotion.nil? || promotion.store_id.blank?
+
+      collision = PallasTrade::Promotion.
+                  where(store_id: promotion.store_id, kind: :coupon_code).
+                  where.not(multi_codes: true).
+                  where('lower(btrim(code)) = ?', code.to_s.strip.downcase).
+                  exists?
+      errors.add(:code, PallasTrade.t('coupon_code_taken_in_store')) if collision
     end
   end
 end

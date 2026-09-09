@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_09_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_10_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1809,6 +1809,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_09_000000) do
     t.string "type"
     t.datetime "updated_at", null: false
     t.integer "usage_limit"
+    t.index "store_id, lower(btrim((code)::text))", name: "index_pallastrade_promotions_on_store_id_and_normalized_code", unique: true, where: "(code IS NOT NULL)"
     t.index ["advertise"], name: "index_pt_promotions_on_advertise"
     t.index ["code"], name: "index_pt_promotions_on_code"
     t.index ["expires_at"], name: "index_pt_promotions_on_expires_at"

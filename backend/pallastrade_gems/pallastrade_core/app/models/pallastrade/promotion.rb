@@ -1,13 +1,12 @@
 module PallasTrade
   class Promotion < PallasTrade.base_class
-    has_prefix_id :promo  # PallasTrade-specific: promotion
+    has_prefix_id :promo # PallasTrade-specific: promotion
 
     include PallasTrade::SingleStoreResource
     include PallasTrade::Metafields
     include PallasTrade::Metadata
-    if defined?(PallasTrade::Security::Promotions)
-      include PallasTrade::Security::Promotions
-    end
+
+    include PallasTrade::Security::Promotions if defined?(PallasTrade::Security::Promotions)
     # Multi-store sharing moved to the pallastrade_multi_store extension in 5.6.
     include PallasTrade::LegacyMultiStoreSupport unless defined?(PallasTradeMultiStore)
 
@@ -21,7 +20,7 @@ module PallasTrade
     #
     # Magic methods
     #
-    normalizes :code, :path, :name, with: ->(value) { value&.to_s&.squish&.presence }
+    normalizes :code, :path, :name, with: ->(value) { value ? value.to_s.squish.presence : nil }
 
     #
     # Enums
@@ -66,6 +65,9 @@ module PallasTrade
     validates :description, length: { maximum: 255 }, allow_blank: true
     validate :expires_at_must_be_later_than_starts_at, if: -> { starts_at && expires_at }
     validates :code, presence: true, if: -> { coupon_code? && !multi_codes? }
+    # Store-scoped single-code uniqueness (PRD-20260909-promo-batch1 AC-P3-1).
+    # Mirrors the DB functional unique index (store_id, lower(btrim(code))).
+    validate :code_unique_in_store, if: -> { coupon_code? && !multi_codes? && code.present? }
     validates :number_of_codes, numericality: {
       only_integer: true,
       greater_than: 0,
@@ -93,16 +95,25 @@ module PallasTrade
     self.whitelisted_ransackable_attributes = ['name', 'path', 'promotion_category_id', 'code', 'starts_at', 'expires_at']
     self.whitelisted_ransackable_associations = %w[coupon_codes]
 
+    # Deterministic code lookup (PRD-20260909-promo-batch1 AC-P3-3):
+    # 1) a single-code promotion matching the normalized code wins;
+    # 2) otherwise a promotion that owns a matching generated CouponCode;
+    # 3) ties (historical duplicates only) resolve to the most recently created.
     def self.with_coupon_code(coupon_code)
       return nil unless coupon_code.present?
 
-      coupon_code = coupon_code.strip.downcase
+      normalized = coupon_code.to_s.strip.downcase
 
-      coupons.includes(:promotion_actions).
-        where.not(pallastrade_promotion_actions: { id: nil }).
-        where(code: coupon_code).or(
-          where(id: PallasTrade::CouponCode.where(code: coupon_code).select(:promotion_id))
-        ).last
+      scoped = coupons.includes(:promotion_actions).
+               where.not(pallastrade_promotion_actions: { id: nil })
+
+      single = scoped.where(code: normalized).order(created_at: :desc, id: :desc).first
+      return single if single
+
+      scoped.
+        where(id: PallasTrade::CouponCode.where(code: normalized).select(:promotion_id)).
+        order(created_at: :desc, id: :desc).
+        first
     end
 
     def self.active
@@ -115,9 +126,7 @@ module PallasTrade
     end
 
     def generate_code=(generating_code)
-      if ActiveModel::Type::Boolean.new.cast(generating_code)
-        self.code = random_code
-      end
+      self.code = random_code if ActiveModel::Type::Boolean.new.cast(generating_code)
     end
 
     # Flat-payload writer for `rules`. See
@@ -144,7 +153,7 @@ module PallasTrade
     end
 
     def expired?
-      !!(starts_at && Time.current < starts_at || expires_at && Time.current > expires_at)
+      !!((starts_at && Time.current < starts_at) || (expires_at && Time.current > expires_at))
     end
 
     def all_codes_used?
@@ -220,9 +229,9 @@ module PallasTrade
       specific_rules = rules.select { |rule| rule.applicable?(promotable) }
       return [] if specific_rules.none?
 
-      rule_eligibility = Hash[specific_rules.map do |rule|
+      rule_eligibility = specific_rules.to_h do |rule|
         [rule, rule.eligible?(promotable, options)]
-      end]
+      end
 
       if match_all?
         # If there are rules for this promotion, but no rules for this
@@ -247,7 +256,7 @@ module PallasTrade
     end
 
     def usage_limit_exceeded?(promotable)
-      usage_limit.present? && usage_limit > 0 && adjusted_credits_count(promotable) >= usage_limit
+      usage_limit.present? && usage_limit.positive? && adjusted_credits_count(promotable) >= usage_limit
     end
 
     def adjusted_credits_count(promotable)
@@ -266,12 +275,8 @@ module PallasTrade
     def line_item_actionable?(order, line_item)
       if eligible? order
         rules = eligible_rules(order)
-        if rules.blank?
-          true
-        else
-          rules.send(match_all? ? :all? : :any?) do |rule|
-            rule.actionable? line_item
-          end
+        rules.blank? || rules.send(match_all? ? :all? : :any?) do |rule|
+          rule.actionable? line_item
         end
       else
         false
@@ -315,10 +320,23 @@ module PallasTrade
       throw(:abort)
     end
 
+    # Store-scoped single-code uniqueness (PRD-20260909-promo-batch1 AC-P3-1).
+    # Compares against the same normalization the DB index enforces
+    # (trim + downcase) so the model error and the index stay in sync.
+    def code_unique_in_store
+      return unless store_id.present?
+
+      scope = PallasTrade::Promotion.
+              where(store_id: store_id, kind: :coupon_code).
+              where.not(multi_codes: true)
+      scope = scope.where.not(id: id) if id.present?
+
+      duplicate = scope.where('lower(btrim(code)) = ?', code.to_s.downcase).exists?
+      errors.add(:code, PallasTrade.t('promotion_code_taken_in_store')) if duplicate
+    end
+
     def set_kind
-      if (code.present? || (multi_codes? && number_of_codes.present?)) && kind == 'automatic'
-        self.kind = :coupon_code
-      end
+      self.kind = :coupon_code if (code.present? || (multi_codes? && number_of_codes.present?)) && kind == 'automatic'
     end
 
     def downcase_code
@@ -357,7 +375,7 @@ module PallasTrade
 
     def remove_coupons
       return unless (previous_changes.key?('kind') && previous_changes['kind'][0] == 'coupon_code' && kind == 'automatic') ||
-                    (previous_changes.key?('multi_codes') && previous_changes['multi_codes'][0] == true && multi_codes == false)
+        (previous_changes.key?('multi_codes') && previous_changes['multi_codes'][0] == true && multi_codes == false)
 
       coupon_codes.where(deleted_at: nil).update_all(deleted_at: Time.current)
     end
@@ -381,11 +399,10 @@ module PallasTrade
     end
 
     def random_code
-      coupon_code = loop do
+      loop do
         random_token = SecureRandom.hex(4)
         break random_token unless self.class.exists?(code: random_token)
       end
-      coupon_code
     end
   end
 end
