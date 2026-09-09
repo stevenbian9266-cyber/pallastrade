@@ -59,6 +59,9 @@
         </button>
         <input type="hidden" name="remove_<%= field_name %>" data-active-storage-upload-target="remove" />
       <% end %>
+
+    <!-- PALLAS-CUSTOM: 直传失败提示（2026-09-09）——上传失败时显示可见错误，避免静默提交无效附件 -->
+    <p data-active-storage-upload-target="error" role="alert" class="hidden text-sm text-red-600 mt-2"></p>
     </div>
   </div>
 <% end %>

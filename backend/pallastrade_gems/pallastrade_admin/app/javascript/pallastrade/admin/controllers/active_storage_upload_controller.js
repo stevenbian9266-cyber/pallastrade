@@ -6,7 +6,7 @@ import ImageEditor from '@uppy/image-editor'
 import ActiveStorageUpload from 'pallastrade/admin/helpers/uppy_active_storage'
 
 export default class extends Controller {
-  static targets = ['thumb', 'toolbar', 'remove', 'placeholder']
+  static targets = ['thumb', 'toolbar', 'remove', 'placeholder', 'error']
 
   static values = {
     fieldName: String,
@@ -83,9 +83,46 @@ export default class extends Controller {
       this.handleUI(file, response)
     })
 
+    // PALLAS-CUSTOM: 直传失败处理（2026-09-09）——直传被中断（CORS/网络/服务端）时给出可见错误、
+    // 移除残留隐藏域并广播 error 事件（import_form 等依赖它禁用提交按钮），避免静默提交无效 signed_id。
+    this.uppy.on('upload-error', (file, error) => this.handleUploadError(file, error))
+
     this.uppy.on('dashboard:modal-closed', () => {
       this.uppy.clear()
     })
+  }
+
+  handleUploadError(file, error) {
+    console.error('[ActiveStorage] Upload failed:', error)
+
+    // 移除可能残留的隐藏域，防止表单带着未落盘文件的 signed_id 提交（后端会 500 FileNotFoundError）
+    const existingField = this.element.querySelector(`input[name="${this.fieldNameValue}"]`)
+    if (existingField) {
+      existingField.remove()
+    }
+
+    this.showUploadError('Upload failed. Please select the file and try again.')
+
+    // 与 import_form_controller 等既有监听约定对齐（active-storage-upload:success 已有实现）
+    const event = new CustomEvent('active-storage-upload:error', {
+      detail: { file, error, controller: this },
+      bubbles: true
+    })
+    this.element.dispatchEvent(event)
+  }
+
+  showUploadError(message) {
+    if (this.hasErrorTarget) {
+      this.errorTarget.textContent = message
+      this.errorTarget.classList.remove('hidden')
+    }
+  }
+
+  clearUploadError() {
+    if (this.hasErrorTarget) {
+      this.errorTarget.textContent = ''
+      this.errorTarget.classList.add('hidden')
+    }
   }
 
   open(event) {
@@ -97,6 +134,8 @@ export default class extends Controller {
     event.preventDefault()
 
     if (window.confirm('Are you sure?')) {
+      this.clearUploadError()
+
       if (this.hasThumbTarget) {
         // handle thumb preview
         this.thumbTarget.style = 'display: none !important'
@@ -127,6 +166,8 @@ export default class extends Controller {
   }
 
   handleUI(file, response = null) {
+    this.clearUploadError()
+
     if (this.hasPlaceholderTarget) {
       this.placeholderTarget.style = 'display: none !important'
     }

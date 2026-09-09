@@ -83,9 +83,14 @@ module PallasTrade
       end
 
       def update
-        @store.assign_attributes(permitted_store_params)
+        store_params = permitted_store_params
+        # PALLAS-CUSTOM: 直传附件前置校验（2026-09-09）——直传被中断（CORS/网络）时 signed_id 指向的
+        # blob 文件可能未落盘，ActiveStorage 在 logo=/mailer_logo= 赋值阶段会下载嗅探并抛
+        # FileNotFoundError(500)。保存前校验并给出业务错误，替代不可读的 500。
+        validate_store_attachment_uploads(store_params)
+        @store.assign_attributes(store_params) if @store.errors.empty?
 
-        if @store.save
+        if @store.errors.empty? && @store.save
           remove_assets(%w[logo mailer_logo], object: @store)
           respond_to do |format|
             format.turbo_stream { flash.now[:success] = flash_message_for(@store, :successfully_updated) }
@@ -95,7 +100,7 @@ module PallasTrade
           flash[:error] = "#{PallasTrade.t('store_errors.unable_to_update')}: #{@store.errors.full_messages.join(', ')}"
         end
 
-        if @store.saved_changes? && permitted_store_params[:code].present? && PallasTrade.respond_to?(:admin_custom_domains_url)
+        if @store.saved_changes? && store_params[:code].present? && PallasTrade.respond_to?(:admin_custom_domains_url)
           redirect_to PallasTrade.admin_custom_domains_url(host: @store.url), allow_other_host: true
         elsif params[:section] == 'emails'
           # Email settings now live under the top-level Email menu.
@@ -105,6 +110,23 @@ module PallasTrade
             format.turbo_stream
             format.html { redirect_to PallasTrade.edit_admin_store_path(section: params[:section]) }
           end
+        end
+      end
+
+      # PALLAS-CUSTOM: 直传附件校验（2026-09-09）——store[logo]/store[mailer_logo] 的 signed_id
+      # 必须指向「已存在且文件已落盘」的 blob，否则给出业务错误而非 ActiveStorage 500。
+      def validate_store_attachment_uploads(store_params)
+        %i[logo mailer_logo].each do |attribute|
+          signed_id = store_params[attribute]
+          next if signed_id.blank?
+
+          blob = ActiveStorage::Blob.find_signed(signed_id)
+          file_stored = blob.present? && begin
+            blob.service.exist?(blob.key)
+          rescue StandardError
+            false
+          end
+          @store.errors.add(attribute, PallasTrade.t('store_errors.attachment_upload_incomplete')) unless file_stored
         end
       end
 
