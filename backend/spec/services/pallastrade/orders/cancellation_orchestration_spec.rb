@@ -32,6 +32,7 @@ RSpec.describe PallasTrade::Orders::Cancel, type: :service do
 
     expect(result.success?).to be(true)
     expect(order.reload.state).to eq('canceled')
+    expect(order.cancellations.last.state).to eq('applied') # REV-P6-8j：durable intent applied
     expect(PallasTrade::Refund.where(payment_id: order.payments.pluck(:id))).to be_empty
   end
 
@@ -45,6 +46,7 @@ RSpec.describe PallasTrade::Orders::Cancel, type: :service do
     expect(result.success?).to be(true)
     expect(order.reload.state).to eq('canceled')
     expect(order.cancellations.last.refund_payments).to be(true) # auto → resolved true（audit）
+    expect(order.cancellations.last.state).to eq('applied') # REV-P6-8j：durable intent applied
 
     refund = PallasTrade::Refund.last
     expect(refund.state).to eq('requested')

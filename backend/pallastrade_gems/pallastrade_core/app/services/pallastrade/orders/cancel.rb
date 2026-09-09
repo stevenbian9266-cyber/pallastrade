@@ -54,7 +54,9 @@ module PallasTrade
         refunds = []
         rolled_back = false
         order.transaction do
-          order.cancellations.create!(
+          # REV-P6-8j（§34）：OrderCancellation = durable 取消意图；新行进入 requested，取消成功后同事务
+          # 转为 applied（订单 canceled + durable refunds 已建）。失败/回滚 → 整行不存（REV-P6-4 不变式）。
+          cancellation = order.cancellations.create!(
             reason: reason,
             note: note,
             restock_items: restock_items,
@@ -62,7 +64,8 @@ module PallasTrade
             refund_amount: refund_amount,
             notify_customer: notify_customer,
             canceled_by: canceler,
-            created_at: canceled_at
+            created_at: canceled_at,
+            state: 'requested'
           )
 
           changes = { canceled_at: canceled_at }
@@ -80,6 +83,8 @@ module PallasTrade
           end
           refunds = built
           order.cancel!
+          # REV-P6-8j：取消应用成功 → durable intent applied（与取消同事务原子）
+          cancellation.apply!
         end
         if rolled_back
           return failure(order)

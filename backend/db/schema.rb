@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_08_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_09_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1166,10 +1166,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_08_000000) do
     t.decimal "refund_amount", precision: 10, scale: 2
     t.boolean "refund_payments", null: false
     t.boolean "restock_items", null: false
+    t.string "state", default: "requested", null: false
     t.datetime "updated_at", null: false
     t.index ["canceled_by_id", "canceled_by_type"], name: "idx_order_cancellations_canceled_by"
     t.index ["created_at"], name: "index_pt_order_cancellations_on_created_at"
     t.index ["order_id"], name: "index_pt_order_cancellations_on_order_id"
+    t.index ["state"], name: "index_pt_order_cancellations_on_state"
   end
 
   create_table "pallastrade_order_promotions", force: :cascade do |t|

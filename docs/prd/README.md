@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| draft | PRD-20260909-payments-rev-p6-8j-ordercancellation-state-machine | payments | 2026-09-09 | REQ-20260909-rev-p6-8j-ordercancellation-state-machine.md |
 | done | PRD-20260908-payments-rev-p6-8i-recover-auto-scheduling | payments | 2026-09-08 | REQ-20260908-rev-p6-8i-recover-auto-scheduling.md |
 | done | PRD-20260908-payments-rev-p6-8h-orphan-amounts-payment-ops | payments | 2026-09-08 | REQ-20260908-rev-p6-8h-orphan-amounts-payment-ops.md |
 | done | PRD-20260908-payments-rev-p6-8g-combination-visibility-rails-admin | payments | 2026-09-08 | REQ-20260908-rev-p6-8g-combination-visibility.md |
