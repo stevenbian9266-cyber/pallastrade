@@ -445,6 +445,20 @@ It doesn't — Webhooks 2.0 uses the same prefixed IDs as the API. If you're see
 - **错误**：404（跨店/不存在）、403（无 `:cancel` 权限）、422（非 succeeded / 无有效成员）。
 - 幂等：重复调用只处理仍未取消成员（skip already_canceled），不重复建 Refund。
 
+### 组合/支付/退款只读端点（REV-P6-8l, 2026-09-09）
+
+Admin API **只读**端点（scope `read_orders`/ability read；**扁平 serializer 风格**——无 type/attributes
+嵌套，同 8a refund create）：
+
+- `GET /api/v3/admin/payment_combinations`（index：store 作用域 ransack `q` + `limit` 分页，`{data[],meta}`；
+  轻量 status/amount/currency/member_count/refunded_total）；`GET /api/v3/admin/payment_combinations/:id`
+  （`expand=members,payments,transaction`：split captured/refunded/credit_allowed + 组合 payment +
+  txn 摘要）。新 `PallasTrade::Api::V3::Admin::PaymentCombinationSerializer`。
+- `GET /api/v3/admin/orders/:order_id/refunds/:id`（refund 详情：8a 生命周期字段）。
+- `GET /api/v3/admin/payments/:id`（**顶层** payment——组合 Payment `order_id=nil` 经嵌套不可达；store
+  作用域=锚点派生 combo.store_id ∪ order.store_id）；`GET /api/v3/admin/payments/:id/orphan_pairing`
+  （只读 `Refunds::OrphanPairing`：status 五态 + orphans 金额；零写/降级不 500）。
+
 ## Where to read further
 
 - **OpenAPI specs:** `node_modules/@pallastrade/docs/dist/api-reference/store.yaml` (Store API) and `admin.yaml` (Admin API) — every endpoint, parameter, response schema. Authoritative.

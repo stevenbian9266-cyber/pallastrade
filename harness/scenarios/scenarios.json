@@ -1995,6 +1995,30 @@
         "isolationNoop": 15,
         "regressionGreen": 20
       }
+    },
+    {
+      "id": "GS-079",
+      "name": "REV-P6-8l Admin API v3 只读端点（组合/退款/孤儿）",
+      "description": "PRD-20260909-payments-admin-api-v3-只读端点-payment_combinations-index-show-refunds-sh（8g/8h 边界落地；无 admin SDK 包不新建）：GET /admin/payment_combinations（index ransack+分页）+/:id（show expand members/payments/transaction，Admin::PaymentCombinationSerializer）；GET /admin/orders/:oid/refunds/:rid（show）；GET /admin/payments/:id（顶层，组合 payment order_id=nil 可达；store 作用域=锚点派生）+ /orphan_pairing（Refunds::OrphanPairing 只读五态+orphans 金额，零写/降级不 500）。admin v3 read 扁平风格；scope read_orders。admin.yaml 5 paths + schemas + api-reference 同步 + generated:check。",
+      "mustDo": [
+        "payment_combinations index/show 结构+store 隔离+expand members/payments/transaction（AC-R68L-01/02）",
+        "refunds/:id show 详情；顶层 payments/:id 可达组合 payment；跨店 404（AC-R68L-03）",
+        "orphan_pairing 只读五态（bogus/legacy unavailable 降级不 500）+ 零写断言（AC-R68L-04）",
+        "admin.yaml + api-reference 同步 + generated:check 无 drift；权限 403（AC-R68L-05）",
+        "回归 8a/8f/8g/8h 绿；全量 backend-rspec ×2 + quick check + doc-impact（AC-R68L-06）"
+      ],
+      "mustNotDo": [
+        "新建 admin TS SDK/客户端（无此包，独立工程）",
+        "孤儿端点任何写/provider mutation；全店孤儿扫描列表端点（rake 保留）",
+        "组合/退款写动作（既有 create/cancel 通道）"
+      ],
+      "scoring": {
+        "combinationEndpoints": 30,
+        "refundAndPaymentShow": 20,
+        "orphanPairingReadonly": 25,
+        "yamlSync": 15,
+        "regressionGreen": 10
+      }
     }
   ]
 }

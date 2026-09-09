@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | draft |
+| 状态 | done |
 | 创建日期 | 2026-09-09 |
 | 来源 | Admin API v3 只读端点：payment_combinations index/show + refunds show + 孤儿扫描（REV-P6-8l） |
 | 分类 | payments（自动判定） |
@@ -116,6 +116,7 @@ payments orphan_pairing（bogus unsupported、孤儿 fixture 金额、local_unma
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-09 | 0.1 | 初稿（8g/8h 边界落地：admin v3 只读端点化；SDK 现状记录不新建） | AI |
+| 2026-09-09 | 1.0 | done：实施完成（需求 commit bbf6bc6）——payment_combinations index/show + refunds show + payments show/orphan_pairing + Admin::PaymentCombinationSerializer + admin.yaml(5 paths)/api-reference + generated:check；request spec 5 绿+回归 21 绿+全量 ×2 绿+quick 干净；GS-079；payments/api-v3 skill 8l 节 | AI |
 
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|

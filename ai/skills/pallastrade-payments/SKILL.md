@@ -621,6 +621,25 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   recovery_required/manual_review 独立列出。TSV+summary（counts 总/attention）。
 - 边界：失败路径持久 recovery_required 意图（改资金失败语义）不实施；Admin UI 展示 → 后续与 8g/8a Ops 合并。
 
+## Admin v3 只读端点化（REV-P6-8l, 2026-09-09；PRD-20260909-payments-admin-api-v3-只读端点-payment_combinations-index-show-refunds-sh）
+
+> 8a/8g/8h 边界「Admin API v3 只读端点/SDK → 后续」落地（**SDK**：platform 无 admin SDK 包，仅
+> `@pallastrade/sdk` Store——新建 admin TS 客户端属独立工程，边界不实施）。把 Rails Admin 只读数据面
+> 暴露为 `/api/v3/admin` JSON：
+
+- `GET /admin/payment_combinations`（index：store 作用域 ransack + pagy meta；轻量字段 status/amount/
+  currency/member_count/refunded_total）；`GET /admin/payment_combinations/:id`（扁平 serializer，
+  `expand=members,payments,transaction` 内联 split captured/refunded/credit_allowed + 组合 payment +
+  CommerceTransaction 摘要）——新 `Admin::PaymentCombinationSerializer`（`PallasTrade.api` 注册）。
+- `GET /admin/orders/:oid/refunds/:rid`（refund 详情 show 补齐——8a serializer 字段已在，缺端点）。
+- `GET /admin/payments/:id`（顶层——组合 Payment `order_id=nil` 无父订单可嵌套）+ `GET /admin/payments/:id/
+  orphan_pairing`（在线 `Refunds::OrphanPairing` 只读：status matched/needs_attention/not_applicable/
+  unsupported/unavailable + orphans 金额；**零写/零 provider mutation**，legacy 无 session → unavailable 降级
+  不 500）。Payment store 作用域经锚点派生（combo.store_id ∪ order.store_id——Payment 无 store_id 列）。
+- admin v3 read 为**扁平风格**（serializer hash 直接，无 type/attributes 嵌套——8a create 同款）；
+  scope 需求 `read_orders`（API-key）/ ability read（JWT）。admin.yaml paths curated + schemas 生成 +
+  api-reference 副本同步（generated:check）。
+
 ## ReverseCommerce::Recover 跨域收敛（REV-P6-8e, 2026-09-08；PRD-20260908-payments-rev-p6-8e-reverse-commerce-recover-cross-domain）
 
 > 源 REV-P6 §45 + §39-42：Order 锚点的跨域收敛入口——restock 事实 AMBIGUOUS（accepted+eligible 但
