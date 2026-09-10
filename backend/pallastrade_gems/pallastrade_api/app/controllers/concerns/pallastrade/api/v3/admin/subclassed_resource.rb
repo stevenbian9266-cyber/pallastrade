@@ -101,14 +101,23 @@ module PallasTrade
           def resolve_subclass(type_name)
             return nil if type_name.blank?
 
-            self.class.subclass_registry.call.find { |klass| klass.api_type == type_name.to_s }
+            registry = self.class.subclass_registry.call
+            klass = registry.find { |candidate| candidate.api_type == type_name.to_s }
+            return klass if klass
+
+            # Also accept the fully-qualified class name (documented shape of
+            # `/promotion_actions/calculators?type=PallasTrade::…`). The match is
+            # against the registry only — never `constantize` arbitrary input, so
+            # a removed/foreign subclass still can't be smuggled in
+            # (PRD-20260910-promotions-promo-batch5a).
+            registry.find { |candidate| candidate.to_s == type_name.to_s }
           end
 
           def render_unknown_type
             render_error(
               code: self.class.unknown_type_error_code,
               message: PallasTrade.t("api.#{self.class.unknown_type_error_code}",
-                               default: 'Unknown type'),
+                                     default: 'Unknown type'),
               status: :unprocessable_content
             )
           end

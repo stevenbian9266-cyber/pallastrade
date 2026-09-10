@@ -245,6 +245,11 @@ namespace :pallastrade do
       PallasTrade::Tasks::PromoDuplicateCodeChecker.new.call
     end
 
+    desc 'Validate promotion rule/action definitions (PRD-20260910-promo-batch5a; STRICT=1 fails on errors)'
+    task definitions: :environment do
+      PallasTrade::Tasks::PromoDefinitionRegistryValidator.new(strict: ENV['STRICT'].to_s == '1').call
+    end
+
     desc 'Backfill promotion redemptions ledger (PRD-20260910-promo-batch3a; dry run by default: pass "false" to apply)'
     task :backfill_redemptions, %i[dry_run] => :environment do |_task, args|
       dry_run = args[:dry_run].to_s.downcase != 'false'
@@ -259,6 +264,67 @@ namespace :pallastrade do
         store_id: args[:store_id],
         limit: args[:limit]
       ).call
+    end
+  end
+end
+
+module PallasTrade
+  module Tasks
+    # PRD-20260910-promotions-promo-batch5a (PR-P7-3, AC-006)
+    #
+    # Consistency report for the promotion definition registry: every registered
+    # rule/action must have a calculator bucket (when it computes amounts), an
+    # admin form partial and — ideally — a locale label. Errors block; warnings
+    # are informational. `STRICT=1` makes errors exit non-zero so CI/lefthook can
+    # gate a PR that adds a definition without finishing the registration:
+    #
+    #   bundle exec rake pallastrade:promotions:definitions
+    #   STRICT=1 bundle exec rake pallastrade:promotions:definitions
+    class PromoDefinitionRegistryValidator
+      def initialize(strict: false, registry: PallasTrade::Promotions::DefinitionRegistry)
+        @strict = strict
+        @registry = registry
+      end
+
+      def call
+        issues = @registry.validate!
+        print_report(issues)
+
+        errors = issues.count { |issue| issue[:level] == :error }
+        if errors.positive? && @strict
+          raise "#{errors} promotion definition error(s) — see report above " \
+                '(PRD-20260910-promotions-promo-batch5a AC-006)'
+        end
+
+        errors
+      end
+
+      private
+
+      def print_report(issues)
+        entries = @registry.entries
+        rules = entries.count(&:rule?)
+        actions = entries.count(&:action?)
+
+        puts "Promotion definition registry: rules=#{rules} actions=#{actions} " \
+             "errors=#{count(issues, :error)} warnings=#{count(issues, :warning)}"
+
+        grouped = issues.group_by { |issue| issue[:kind] }
+        [PallasTrade::Promotions::DefinitionRegistry::RULE,
+         PallasTrade::Promotions::DefinitionRegistry::ACTION].each do |kind|
+          kind_issues = grouped[kind] || []
+          next if kind_issues.empty?
+
+          puts "#{kind.to_s.upcase} issues:"
+          kind_issues.each { |issue| puts "  [#{issue[:level]}] #{issue[:code]} #{issue[:key]}: #{issue[:message]}" }
+        end
+
+        puts 'Registry is consistent.' if issues.empty?
+      end
+
+      def count(issues, level)
+        issues.count { |issue| issue[:level] == level }
+      end
     end
   end
 end

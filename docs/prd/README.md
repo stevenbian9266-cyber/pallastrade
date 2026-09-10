@@ -38,11 +38,12 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
-| done | PRD-20260910-promotions-promo-batch3c-redemption-readonly | promotions | 2026-09-10 | REQ-20260910-promo-batch3c-redemption-readonly.md |
-| done | PRD-20260910-promotions-promo-batch4a-orderpromotion-snapshot | promotions | 2026-09-10 | REQ-20260910-promo-batch4a-orderpromotion-snapshot.md |
+| approved | PRD-20260910-promotions-promo-batch5a-definition-registry | promotions | 2026-09-10 | REQ-20260910-promo-batch5a-definition-registry.md |
 | done | PRD-20260910-promotions-promo-batch4b-refund-allocation | promotions | 2026-09-10 | REQ-20260910-promo-batch4b-refund-allocation.md |
-| done | PRD-20260910-promotions-promo-batch3a-redemption-ledger | promotions | 2026-09-10 | REQ-20260910-promo-batch3a-redemption-ledger.md |
+| done | PRD-20260910-promotions-promo-batch4a-orderpromotion-snapshot | promotions | 2026-09-10 | REQ-20260910-promo-batch4a-orderpromotion-snapshot.md |
+| done | PRD-20260910-promotions-promo-batch3c-redemption-readonly | promotions | 2026-09-10 | REQ-20260910-promo-batch3c-redemption-readonly.md |
 | done | PRD-20260910-promotions-promo-batch3b-redemption-hardening | promotions | 2026-09-10 | REQ-20260910-promo-batch3b-redemption-hardening.md |
+| done | PRD-20260910-promotions-promo-batch3a-redemption-ledger | promotions | 2026-09-10 | REQ-20260910-promo-batch3a-redemption-ledger.md |
 | done | PRD-20260909-promotions-promo-batch2-discount-projection-unified | promotions | 2026-09-09 | REQ-20260910-promo-batch2-discount-projection-unified.md |
 | done | PRD-20260909-promotions-promo-batch1-invariants-and-code-uniqueness | promotions | 2026-09-09 | REQ-20260909-promo-batch1-invariants-and-code-uniqueness.md |
 | done | PRD-20260909-payments-rev-p6-8j-ordercancellation-state-machine | payments | 2026-09-09 | REQ-20260909-rev-p6-8j-ordercancellation-state-machine.md |

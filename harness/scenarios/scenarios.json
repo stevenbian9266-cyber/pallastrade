@@ -2202,6 +2202,29 @@
         "authorityReuse": 20,
         "readOnlyPreconditions": 20
       }
+    },
+    {
+      "id": "GS-088",
+      "name": "Promotion definition registry convergence",
+      "description": "Rule/action discovery must come from one read-only registry instead of four hand-maintained lists (see PRD-20260910-promotions-promo-batch5a-definition-registry)",
+      "mustDo": [
+        "Project PallasTrade.promotions.rules/.actions, calculator buckets, additional_permitted_attributes, admin form partials and locale keys into PallasTrade::Promotions::DefinitionRegistry entries",
+        "Route Admin API /types + shorthand allowlist and Rails Admin pickers/form partials through the same registry (PreferenceSchema#registered_subclasses → registry)",
+        "Validate registry consistency via DefinitionRegistry.validate! + rake pallastrade:promotions:definitions (missing partial / empty calculator bucket / duplicate api_type = error; missing locale / unregistered STI subclass = warning)",
+        "Keep the registration arrays, calculator buckets and API /types response shapes unchanged; runtime registrations must be visible without cache invalidation"
+      ],
+      "mustNotDo": [
+        "Replace the registration mechanism with a new DSL or registry store",
+        "Change promotion eligibility, amount computation, admin form fields or /types field shape",
+        "Reparse class names for api_type (taxon → category, user → customer must resolve through the registry)",
+        "Let an unregistered type reach create/update (must stay 422) or constantize arbitrary input"
+      ],
+      "scoring": {
+        "singleSourceDiscovery": 30,
+        "validatorClassification": 25,
+        "adminAndApiConvergence": 25,
+        "regressionGreen": 20
+      }
     }
   ]
 }

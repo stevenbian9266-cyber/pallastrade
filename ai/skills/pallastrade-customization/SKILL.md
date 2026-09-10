@@ -191,6 +191,31 @@ These are tempting but wrong — the table above gives you a better answer for e
 - **Building a private extension gem for one-app customization** → put the code directly in `app/` (subscribers, decorators, services). Extensions are for sharing across apps.
 - **Forking PallasTrade** → almost never necessary. If you find yourself wanting to, work through this table from the top first — the right pattern almost certainly exists.
 
+## 自定义促销规则 / 动作的登记清单（PRD-20260910-promo-batch5a）
+
+扩展点保持不变（决策树第 2/3/7/8 级均可，注册入口仍是 `Rails.application.config.after_initialize`）：
+
+```ruby
+Rails.application.config.after_initialize do
+  PallasTrade.promotions.rules << PallasTrade::Promotion::Rules::MyRule
+  # 计算型动作还要挂 calculator：
+  PallasTrade.calculators.promotion_actions_create_adjustments << PallasTrade::Calculator::MyCalculator
+end
+```
+
+**新增一个 rule / action 必须完成 4 件事**（缺一项以前只会在运行时才发现）：
+
+| # | 事项 | 位置 |
+|---|---|---|
+| 1 | 注册到注册表 | `PallasTrade.promotions.rules` / `.actions`（+ calculator 桶，若 `calculators` 非空） |
+| 2 | 后台表单 partial | `pallastrade/admin/promotion_rules/forms/_<api_type>.html.erb`（或 `promotion_actions/forms/`） |
+| 3 | 文案 | `promotion_rule_types.<api_type>.{name,description}`（或 `promotion_action_types.…`），缺省回退 titleize |
+| 4 | 校验 | `bundle exec rake pallastrade:promotions:definitions`（`STRICT=1` 出错非零退出） |
+
+发现链路由 `PallasTrade::Promotions::DefinitionRegistry` 统一（Admin API `/types`、Rails Admin 类型选择器、
+表单 partial 解析都读它），因此第 1 步注册后 API 与后台同时可见；第 2/3 步的缺口由第 4 步的校验任务报出
+（缺 partial / 缺 calculator = error，缺 locale / 未注册 STI 子类 = warning）。细节见 `pallastrade-promotions` Skill。
+
 ## Where to read further
 
 - **PallasTrade's customization docs (the canonical decision tree):** `node_modules/@pallastrade/docs/dist/developer/customization/quickstart.md`

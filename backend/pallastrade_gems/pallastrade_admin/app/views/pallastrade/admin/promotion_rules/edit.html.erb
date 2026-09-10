@@ -9,7 +9,7 @@
         <p class="text-gray-600 mb-3">
           <%= @promotion_rule.human_description %>
         </p>
-        <%= render "pallastrade/admin/promotion_rules/forms/#{@promotion_rule.key}", f: f %>
+        <%= render promotion_rule_form_partial(@promotion_rule), f: f %>
       </div>
       <div class="card-footer flex justify-between">
         <%= turbo_save_button_tag PallasTrade.t('actions.update') %>

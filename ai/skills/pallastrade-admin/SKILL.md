@@ -290,6 +290,22 @@ end
 - 可退金额由 `ReturnItem` 权威计算（内存对象，不写库）；区块内**无任何写操作**（无按钮/表单/写路由）；
 - 无促销或无分摊时整块不渲染（`preview.available? && promotions.any?`）。
 
+### 促销规则/动作定义发现收敛到 registry（PRD-20260910-promo-batch5a）
+
+后台促销编辑器的「添加规则 / 添加动作」弹窗与表单 partial **不再各自解析类名**，统一读
+`PallasTrade::Promotions::DefinitionRegistry`：
+
+- 类型列表：`promotion_rule_entries(promotion)` / `promotion_action_entries(promotion)` 返回 registry 条目
+  （`label` / `description` 来自 `promotion_rule_types.<api_type>.*` locale），已存在的类型自动排除；
+  历史写法 `rule_type.demodulize.underscore` 会把 `Taxon` 解析成 `taxon`（真实 key 是 `category`），
+  导致 Taxon/User 两类在弹窗里显示 translation missing —— 现已由 registry 的 `key` 单源解析；
+- 表单 partial：`promotion_rule_form_partial(rule)` / `promotion_action_form_partial(action)` 走
+  `entry.admin_partial`（`pallastrade/admin/promotion_rules/forms/<key>`），未注册类型回退旧命名约定；
+- 控制器 allowlist：`allowed_rule_types` / `allowed_action_types` 读 `DefinitionRegistry.rule_classes` /
+  `.action_classes`，与 Admin API `SubclassedResource` 的 `subclassed_via` 同一来源；
+- 新增/修改规则或动作后跑 `bundle exec rake pallastrade:promotions:definitions`（`STRICT=1` 出错非零退出）
+  校验「注册数组 / calculator 桶 / 表单 partial / locale」四件套是否齐全。
+
 ## 多店铺管理（2026-08-17）
 
 数据/权限/API 层多店铺早已就绪（`PallasTrade::Store` 一等模型、`Current.store` 每请求上下文、`RoleUser` 用户→角色→店铺、`for_store(current_store)` 作用域、Store API `pk_` key 识别店铺）。2026-08-17 在 Rails 后台补齐管理 UI：

@@ -10,7 +10,8 @@ module PallasTrade
 
           scoped_resource :promotions
 
-          subclassed_via -> { PallasTrade.promotions.actions },
+          # Allowlist shared with Rails Admin and `/types` (PRD-20260910-promo-batch5a).
+          subclassed_via -> { PallasTrade::Promotions::DefinitionRegistry.action_classes },
                          unknown_type_error: 'unknown_promotion_action_type'
 
           def types
@@ -58,8 +59,8 @@ module PallasTrade
           def set_parent
             return if %w[types calculators].include?(action_name)
 
-            @parent = current_store.promotions.accessible_by(current_ability, :update)
-                                   .find_by_prefix_id!(params[:promotion_id])
+            @parent = current_store.promotions.accessible_by(current_ability, :update).
+                      find_by_prefix_id!(params[:promotion_id])
           end
 
           def parent_association

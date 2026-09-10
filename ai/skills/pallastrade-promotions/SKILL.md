@@ -260,6 +260,35 @@ Walk this list:
 
 Confirm registration ran: `PallasTrade.promotions.rules.include?(PallasTrade::Promotion::Rules::MyRule)` should be true after Rails boot. Confirm the admin partial exists at `app/views/pallastrade/admin/promotion_rules/forms/_<key>.html.erb` (the rule's `key` / `api_type`). Confirm locale keys under `pallastrade.promotion_rule_types.<underscored_class>.{name,description}` are present.
 
+Run the registry validator instead of eyeballing it — it checks all four registration steps at once:
+
+```bash
+bundle exec rake pallastrade:promotions:definitions        # report
+STRICT=1 bundle exec rake pallastrade:promotions:definitions  # non-zero exit on errors
+```
+
+## Definition Registry (single source of truth)
+
+`PallasTrade::Promotions::DefinitionRegistry` (PRD-20260910-promotions-promo-batch5a, PR-P7) is a **read-only projection** over the registration arrays. It is what the Admin API (`/promotion_rules/types`, `/promotion_actions/types`, `/promotion_actions/calculators`), Rails Admin (type pickers, form partials) and the validator all read — so a definition can no longer be "registered for the API but invisible in admin".
+
+It does **not** replace the registration mechanism: extensions must keep appending to `PallasTrade.promotions.rules` / `.actions` (and to the calculator buckets) exactly as before; the registry picks that up on every call (no cache to invalidate).
+
+Each entry exposes:
+
+| Field | Meaning |
+|---|---|
+| `key` / `api_type` | wire shorthand (`currency`, `category`, `customer`, `free_shipping`, …) |
+| `type` | STI class name persisted in `pallastrade_promotion_rules.type` / `promotion_actions.type` |
+| `label` / `description` | from `promotion_rule_types.<key>` / `promotion_action_types.<key>` locale keys |
+| `calculators` / `calculator_required?` | calculators the action accepts (`closed` for `CreateAdjustment` / `CreateItemAdjustments`) |
+| `allowed_attributes` | `klass.additional_permitted_attributes`, merged into the Admin API param allowlist |
+| `admin_partial` | `pallastrade/admin/promotion_rules/forms/<key>` (or `promotion_actions/forms/<key>`) |
+| `locale_key` | `promotion_rule_types.<key>` / `promotion_action_types.<key>` |
+
+Lookups: `DefinitionRegistry.for(:rule).classes`, `.rule_entries`, `.action_entries`, `.entry_for('category')`, `.find_by_api_type('category')`, `.calculators_for('create_adjustment')`, `.allowed_attributes_for('PallasTrade::Promotion::Rules::Taxon')`.
+
+Validating: `DefinitionRegistry.validate!` returns `[{ level:, code:, key:, kind:, message: }]` — `:error` for duplicate `api_type`, wrong STI parent, missing admin partial, empty calculator bucket, non-array `additional_permitted_attributes`; `:warning` for a missing locale label and for an STI subclass that was never registered.
+
 ## Where to read further
 
 - **Core concepts:** `node_modules/@pallastrade/docs/dist/developer/core-concepts/promotions.md`

@@ -6,7 +6,7 @@
       </div>
       <div class="card-body">
         <%= render partial: 'pallastrade/admin/shared/error_messages', locals: { target: @promotion_action } %>
-        <%= render "pallastrade/admin/promotion_actions/forms/#{@promotion_action.key}", f: f %>
+        <%= render promotion_action_form_partial(@promotion_action), f: f %>
       </div>
       <div class="card-footer flex justify-between">
         <%= turbo_save_button_tag PallasTrade.t('actions.update') %>

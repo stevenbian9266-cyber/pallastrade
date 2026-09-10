@@ -15,11 +15,7 @@ module PallasTrade
                          action_type = params.dig(:promotion_action, :type)
                          action_class = allowed_action_types.find { |type| type.to_s == action_type }
 
-                         if action_class
-                           action_class
-                         else
-                           raise 'Unknown promotion action type'
-                         end
+                         action_class || raise('Unknown promotion action type')
                        else
                          PallasTrade::PromotionAction
                        end
@@ -30,7 +26,9 @@ module PallasTrade
       end
 
       def allowed_action_types
-        PallasTrade.promotions.actions
+        # Single source of truth shared with the Admin API discovery surface
+        # (`/promotion_actions/types`) — PRD-20260910-promotions-promo-batch5a.
+        PallasTrade::Promotions::DefinitionRegistry.action_classes
       end
 
       def location_after_save
@@ -42,9 +40,7 @@ module PallasTrade
       end
 
       def set_calculator_type
-        if @promotion_action.respond_to?(:calculator_type)
-          @promotion_action.calculator_type = @promotion_action.class.calculators.first.name
-        end
+        @promotion_action.calculator_type = @promotion_action.class.calculators.first.name if @promotion_action.respond_to?(:calculator_type)
       end
 
       def permitted_resource_params

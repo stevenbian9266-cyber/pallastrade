@@ -13,11 +13,7 @@ module PallasTrade
                          rule_type = params.dig(:promotion_rule, :type)
                          rule_class = allowed_rule_types.find { |type| type.to_s == rule_type }
 
-                         if rule_class
-                           rule_class
-                         else
-                           raise 'Unknown promotion rule type'
-                         end
+                         rule_class || raise('Unknown promotion rule type')
                        else
                          PallasTrade::PromotionAction
                        end
@@ -28,7 +24,9 @@ module PallasTrade
       end
 
       def allowed_rule_types
-        PallasTrade.promotions.rules
+        # Single source of truth shared with the Admin API discovery surface
+        # (`/promotion_rules/types`) — PRD-20260910-promotions-promo-batch5a.
+        PallasTrade::Promotions::DefinitionRegistry.rule_classes
       end
 
       def location_after_save

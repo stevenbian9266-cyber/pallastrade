@@ -54,9 +54,9 @@ module PallasTrade
       # so write-side guards (e.g. the masked-round-trip check) don't
       # walk the schema or fall back to a `rescue NoMethodError`.
       def password_preference_keys
-        @password_preference_keys ||= preference_schema
-                                      .each_with_object(Set.new) { |field, set| set << field[:key] if field[:type] == :password }
-                                      .freeze
+        @password_preference_keys ||= preference_schema.
+                                      each_with_object(Set.new) { |field, set| set << field[:key] if field[:type] == :password }.
+                                      freeze
       end
 
       def compute_preference_schema
@@ -108,9 +108,11 @@ module PallasTrade
           relation = scope && owner ? scope.call(owner) : klass
           found = relation.where(id: decoded).pluck(:id).map(&:to_s).to_set
           missing = decoded.reject { |id| found.include?(id) }
-          raise ActiveRecord::RecordNotFound.new(
-            "Couldn't find #{klass.name} with id=#{missing.join(',')}", klass.name
-          ) if missing.any?
+          if missing.any?
+            raise ActiveRecord::RecordNotFound.new(
+              "Couldn't find #{klass.name} with id=#{missing.join(',')}", klass.name
+            )
+          end
 
           decoded
         end
@@ -171,10 +173,17 @@ module PallasTrade
       # Each STI parent (PaymentMethod, PromotionAction, PromotionRule)
       # already exposes its registry — we just route to the right one.
       # Override in the including class to add support for custom parents.
+      #
+      # Promotion rules/actions resolve through
+      # `PallasTrade::Promotions::DefinitionRegistry` so the Admin API
+      # (`/types`, shorthand lookup) and Rails Admin read the same allowlist
+      # (PRD-20260910-promotions-promo-batch5a). The registry is a read-only
+      # projection over `PallasTrade.promotions.*`, so runtime registrations
+      # are picked up without a cache to invalidate.
       def registered_subclasses
         return providers if respond_to?(:providers)
-        return PallasTrade.promotions.actions if name == 'PallasTrade::PromotionAction'
-        return PallasTrade.promotions.rules if name == 'PallasTrade::PromotionRule'
+        return Promotions::DefinitionRegistry.rule_classes if name == 'PallasTrade::PromotionRule'
+        return Promotions::DefinitionRegistry.action_classes if name == 'PallasTrade::PromotionAction'
 
         []
       end

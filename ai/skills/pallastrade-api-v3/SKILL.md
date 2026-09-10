@@ -489,6 +489,24 @@ Admin API **只读**端点（scope `read_orders`/ability read；**扁平 seriali
   作用域=锚点派生 combo.store_id ∪ order.store_id）；`GET /api/v3/admin/payments/:id/orphan_pairing`
   （只读 `Refunds::OrphanPairing`：status 五态 + orphans 金额；零写/降级不 500）。
 
+### 促销定义发现（`/promotion_*_types`, `/promotion_actions/calculators`）单源化（PRD-20260910-promo-batch5a）
+
+三个只读发现端点的数据源统一为 `PallasTrade::Promotions::DefinitionRegistry`（只读投影）：
+
+- `GET /api/v3/admin/promotion_rules/types`、`GET /api/v3/admin/promotion_actions/types`：
+  `{ data: [{ type, label, description, preference_schema }] }`——`type` 是 **api_type 简写**
+  （`category` / `customer` / `free_shipping`），`label`/`description` 来自 locale，
+  `preference_schema` 来自 `serialized_preference_schema`；**响应结构未变**，仅来源换成 registry
+  （`PreferenceSchema#registered_subclasses` 走 `DefinitionRegistry.rule_classes/.action_classes`）。
+- `GET /api/v3/admin/promotion_actions/calculators?type=…`：`?type` 既接受简写（`create_adjustment`）
+  也接受完整类名（`PallasTrade::Promotion::Actions::CreateAdjustment`，`SubclassedResource#resolve_subclass`
+  兜底匹配——只匹配注册表内类，不做 `constantize`）。
+- 写路径 `SubclassedResource#subclassed_via` 的 allowlist 同样是 registry
+  （`DefinitionRegistry.rule_classes` / `.action_classes`），未注册类型一律 422
+  （`unknown_promotion_rule_type` / `unknown_promotion_action_type`）。
+- 新增规则/动作只需注册到 `PallasTrade.promotions.rules/.actions` 与 calculator 桶；
+  可用 `bundle exec rake pallastrade:promotions:definitions` 校验四件套是否齐全。
+
 ## Where to read further
 
 - **OpenAPI specs:** `node_modules/@pallastrade/docs/dist/api-reference/store.yaml` (Store API) and `admin.yaml` (Admin API) — every endpoint, parameter, response schema. Authoritative.
