@@ -12,6 +12,8 @@ module PallasTrade
           # 金额契约与现有 Store Order/Cart serializer 一致（major-unit decimal string；
           # display_* 为展示格式化字符串）；hide_prices 门控金额为 null。
           class CheckoutSerializer < PallasTrade::Api::V3::BaseSerializer
+            include PallasTrade::Api::V3::DiscountRendering
+
             typelize id: :string, number: :string, state: :string, status: :string,
                      payment_state: [:string, { nullable: true }], shipment_state: [:string, { nullable: true }],
                      email: [:string, { nullable: true }], currency: :string,
@@ -28,7 +30,7 @@ module PallasTrade
                      additional_tax_total: [:string, { nullable: true }], display_additional_tax_total: [:string, { nullable: true }],
                      total: [:string, { nullable: true }], display_total: [:string, { nullable: true }],
                      amount_due: [:string, { nullable: true }], display_amount_due: [:string, { nullable: true }],
-                     discounts: 'Array<{ id: string, amount: string | null, currency: string }>',
+                     discounts: PallasTrade::Api::V3::DiscountRendering::DISCOUNT_LINE_TYPE,
                      taxes: 'Array<{ id: string, amount: string | null, currency: string }>',
                      shipping_address: { nullable: true }, billing_address: { nullable: true }
 
@@ -72,9 +74,7 @@ module PallasTrade
             many :fulfillments, resource: proc { PallasTrade.api.fulfillment_serializer }
 
             attribute :discounts do |view|
-              next if params[:hide_prices]
-
-              view.discounts.map { |d| { id: d.id, amount: d.amount, currency: d.currency } }
+              discounts_payload(view.order)
             end
 
             attribute :taxes do |view|

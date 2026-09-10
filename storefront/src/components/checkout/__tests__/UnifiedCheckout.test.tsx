@@ -407,6 +407,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(screen.getByLabelText("bill-first_name")).toBeInTheDocument();
   });
 
+  // PRD-20260909-promotions-promo-batch2-discount-projection-unified AC-008
   it("applies and removes a discount code through the coupon BFF (PRD 3.9.2)", async () => {
     const user = userEvent.setup();
     fetchMock.mockImplementation(
@@ -422,7 +423,18 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
                 display_discount_total: "-$5.00",
                 display_total: "$14.98",
                 discounts: [
-                  { id: "pr_1", code: "SAVE5", display_amount: "-$5.00" },
+                  {
+                    id: "discount_abc",
+                    promotion_id: "promo_x1",
+                    name: "Save 5",
+                    description: null,
+                    code: "SAVE5",
+                    kind: "coupon_code",
+                    amount: "-5.0",
+                    display_amount: "-$5.00",
+                    breakdown: { items: "0.0", order: "-5.0", shipping: "0.0" },
+                    removable: true,
+                  },
                 ],
               },
             }),

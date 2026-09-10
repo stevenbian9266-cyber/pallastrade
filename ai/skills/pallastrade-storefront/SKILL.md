@@ -269,6 +269,24 @@ export function MiniCart({ cartId, token }: { cartId: string; token: string }) {
 }
 ```
 
+#### Applied discounts — one canonical shape everywhere (2026-09-10, PRD-20260909-promotions-promo-batch2)
+
+`cart.discounts`, `order.discounts` and the Checkout API's `discounts` now render the **same** rows
+(`DiscountLine` in the OpenAPI/SDK types): one row per promotion, aggregating its eligible
+order / line-item / shipment adjustments. Fields the storefront may rely on:
+
+| Field | Use |
+|---|---|
+| `code` | Coupon code to display and to send back when removing (`CouponCode` filters on it; `gtm.ts` reads it for the purchase payload) |
+| `display_amount` | Pre-formatted negative amount for display |
+| `name` / `description` | Fallback label when the promo has no code |
+| `removable` | Show the remove button (coupon-code promos only) |
+| `promotion_id`, `kind`, `amount`, `breakdown` | Analytics / detail UIs |
+
+Invariant: `SUM(discounts[].amount) == discount_total`; when `hide_prices` is set the whole field is
+`null` (gate UI accordingly). `discounts[].id` is an order-promotion id (`discount_…`), not an
+adjustment id — never treat it as an Adjustment reference.
+
 ### Checkout
 
 The Store API exposes payment sessions for the checkout flow — a single, provider-agnostic endpoint that works with any session-based gateway (Stripe, Adyen, PayPal); the provider is selected via `payment_method_id`. The pattern:

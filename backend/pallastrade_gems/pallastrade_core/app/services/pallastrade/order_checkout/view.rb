@@ -87,9 +87,10 @@ module PallasTrade
         order.shipments
       end
 
-      # 解释性折扣明细（只读权威列；合计权威 = discount_total）。
+      # 解释性折扣明细（统一 DiscountProjection：按促销聚合、含行级/运费级、eligible-only；
+      # 合计权威仍为 discount_total）。
       def discounts
-        order.adjustments.select { |a| a.eligible? && a.promotion? }.map { |adj| Line.new(adj) }
+        @discounts ||= PallasTrade::Promotions::Projection::DiscountProjection.for(order: order)
       end
 
       # 解释性税明细（只读权威列；合计权威 = tax_total）。

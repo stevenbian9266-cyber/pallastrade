@@ -2066,6 +2066,28 @@
         "contractTests": 30,
         "noAntiPatterns": 15
       }
+    },
+    {
+      "id": "GS-082",
+      "name": "Unified discount projection & API contract",
+      "description": "Promotion display must use the canonical discount projection shared by Cart / Order / Admin Order / Checkout (see PRD-20260909-promo-batch2-discount-projection-unified)",
+      "mustDo": [
+        "Render discounts via PallasTrade::Promotions::Projection::DiscountProjection (one line per promotion, eligible adjustments only)",
+        "Keep SUM(discounts[].amount) == discount_total and amount == breakdown sum covered by parity specs",
+        "Null the whole discounts field when hide_prices is set",
+        "Reference the promotions domain skill (ai/skills/pallastrade-promotions/SKILL.md)"
+      ],
+      "mustNotDo": [
+        "Call OrderPromotion#amount during serialization (per-line SUM / N+1)",
+        "Let Cart / Order / Checkout return different discount shapes",
+        "Change the Checkout discounts id semantics without a documented migration note"
+      ],
+      "scoring": {
+        "singleProjectionSource": 30,
+        "parityAcrossSurfaces": 25,
+        "boundedQueries": 20,
+        "contractTests": 25
+      }
     }
   ]
 }

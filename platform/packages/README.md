@@ -39,6 +39,14 @@ Order durable transactions (P2, 2026-09-05): `orders.transactions.create(orderId
 
 Includes auto-generated TypeScript types and Zod schemas derived from the Rails Alba serializers — see the [type generation pipeline](../CLAUDE.md#type-generation-pipeline) in the root docs.
 
+Applied-discount lines (2026-09-10, PRD-20260909-promotions-promo-batch2): `Cart`, `Order` and the
+Checkout types all expose `discounts: Array<{ id, promotion_id, name, description, code, kind,
+amount, display_amount, breakdown, removable }>` — the canonical projection shared by Cart / Order /
+Admin Order / Checkout serializers. Regenerate whenever a serializer's `typelize` changes:
+`bundle exec rake typelizer:generate` (backend) + `bundle exec rake api:docs:schemas` (OpenAPI), then
+copy the generated files into `platform/packages/sdk/src/types/generated/` and
+`platform/docs/api-reference/` (both steps are automated by `scripts/ci/contracts.sh`).
+
 ### `@pallastrade/sdk-core` — Shared internals
 
 Private package. Provides `createRequestFn()`, `PallasTradeError`, retry logic, and Ransack query-param transformation (`transformListParams()`). Consumed by the SDK; not intended for direct use.

@@ -5,32 +5,34 @@ module PallasTrade
         # Admin API Order Serializer
         # Full order data including admin-only fields
         class OrderSerializer < V3::OrderSerializer
+          include PallasTrade::Api::V3::DiscountRendering
 
           # The Admin API has no guest gating — money fields inherited from the
           # store serializer are always present, so override their nullability.
-          typelize item_total: [:string, nullable: false], display_item_total: [:string, nullable: false],
-                   delivery_total: [:string, nullable: false], display_delivery_total: [:string, nullable: false],
-                   adjustment_total: [:string, nullable: false], display_adjustment_total: [:string, nullable: false],
-                   discount_total: [:string, nullable: false], display_discount_total: [:string, nullable: false],
-                   tax_total: [:string, nullable: false], display_tax_total: [:string, nullable: false],
-                   included_tax_total: [:string, nullable: false], display_included_tax_total: [:string, nullable: false],
-                   additional_tax_total: [:string, nullable: false], display_additional_tax_total: [:string, nullable: false],
-                   store_credit_total: [:string, nullable: false], display_store_credit_total: [:string, nullable: false],
-                   gift_card_total: [:string, nullable: false], display_gift_card_total: [:string, nullable: false],
-                   total: [:string, nullable: false], display_total: [:string, nullable: false],
-                   amount_due: [:string, nullable: false], display_amount_due: [:string, nullable: false]
+          typelize item_total: [:string, { nullable: false }], display_item_total: [:string, { nullable: false }],
+                   delivery_total: [:string, { nullable: false }], display_delivery_total: [:string, { nullable: false }],
+                   adjustment_total: [:string, { nullable: false }], display_adjustment_total: [:string, { nullable: false }],
+                   discount_total: [:string, { nullable: false }], display_discount_total: [:string, { nullable: false }],
+                   tax_total: [:string, { nullable: false }], display_tax_total: [:string, { nullable: false }],
+                   included_tax_total: [:string, { nullable: false }], display_included_tax_total: [:string, { nullable: false }],
+                   additional_tax_total: [:string, { nullable: false }], display_additional_tax_total: [:string, { nullable: false }],
+                   store_credit_total: [:string, { nullable: false }], display_store_credit_total: [:string, { nullable: false }],
+                   gift_card_total: [:string, { nullable: false }], display_gift_card_total: [:string, { nullable: false }],
+                   total: [:string, { nullable: false }], display_total: [:string, { nullable: false }],
+                   amount_due: [:string, { nullable: false }], display_amount_due: [:string, { nullable: false }],
+                   discounts: DISCOUNT_LINE_TYPE
 
           typelize status: :string,
-                   last_ip_address: [:string, nullable: true],
+                   last_ip_address: [:string, { nullable: true }],
                    considered_risky: :boolean, confirmation_delivered: :boolean,
                    store_owner_notification_delivered: :boolean,
-                   internal_note: [:string, nullable: true], approver_id: [:string, nullable: true],
-                   canceler_id: [:string, nullable: true], created_by_id: [:string, nullable: true],
-                   customer_id: [:string, nullable: true],
-                   preferred_stock_location_id: [:string, nullable: true],
-                   canceled_at: [:string, nullable: true], approved_at: [:string, nullable: true],
+                   internal_note: [:string, { nullable: true }], approver_id: [:string, { nullable: true }],
+                   canceler_id: [:string, { nullable: true }], created_by_id: [:string, { nullable: true }],
+                   customer_id: [:string, { nullable: true }],
+                   preferred_stock_location_id: [:string, { nullable: true }],
+                   canceled_at: [:string, { nullable: true }], approved_at: [:string, { nullable: true }],
                    payment_total: :string, display_payment_total: :string,
-                   tags: [:string, multi: true],
+                   tags: [:string, { multi: true }],
                    metadata: 'Record<string, unknown>'
 
           # Admin-only attributes
@@ -78,7 +80,9 @@ module PallasTrade
           end
 
           # Override inherited associations to use admin serializers
-          many :discounts, resource: proc { PallasTrade.api.admin_discount_serializer }, if: proc { expand?('discounts') }
+          attribute :discounts, if: proc { expand?('discounts') } do |order|
+            discounts_payload(order)
+          end
           many :line_items, key: :items, resource: proc { PallasTrade.api.admin_line_item_serializer }, if: proc { expand?('items') }
           many :fulfillments, resource: proc { PallasTrade.api.admin_fulfillment_serializer }, if: proc { expand?('fulfillments') }
           many :payments, resource: proc { PallasTrade.api.admin_payment_serializer }, if: proc { expand?('payments') }

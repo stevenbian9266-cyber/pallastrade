@@ -136,6 +136,34 @@ module PallasTrade
               },
               required: %w[code message]
             },
+            DiscountLine: {
+              type: :object,
+              description: 'Canonical applied-promotion line shared by Cart / Order / Admin Order / Checkout ' \
+                           '(one row per promotion, eligible adjustments only). SUM(amount) == discount_total.',
+              properties: {
+                id: { type: :string, description: 'Order-promotion ID (discount_*) or promotion ID (promo_*)', example: 'discount_abc123' },
+                promotion_id: { type: :string, description: 'Promotion ID', example: 'promo_abc123' },
+                name: { type: :string, description: 'Promotion name', example: 'Summer sale' },
+                description: { type: :string, nullable: true, description: 'Promotion description' },
+                code: { type: :string, nullable: true, description: 'Applied code; multi-code promos show the redeemed one' },
+                kind: { type: :string, description: 'Promotion kind', example: 'coupon_code' },
+                amount: { type: :string, nullable: true, description: 'Promotion total (negative); null when prices are hidden', example: '-20.0' },
+                display_amount: { type: :string, nullable: true, description: 'Formatted discount for display', example: '-$20.00' },
+                breakdown: {
+                  type: :object,
+                  nullable: true,
+                  description: 'Discount split per tier (sums to amount), null when prices are hidden',
+                  properties: {
+                    items: { type: :string, description: 'Line-item tier total', example: '-10.0' },
+                    order: { type: :string, description: 'Order tier total', example: '-5.0' },
+                    shipping: { type: :string, description: 'Shipment tier total', example: '-5.0' }
+                  },
+                  required: %w[items order shipping]
+                },
+                removable: { type: :boolean, description: 'Whether the customer can remove this discount (coupon-code promos)' }
+              },
+              required: %w[id promotion_id name code kind removable]
+            },
             FulfillmentManifestItem: {
               type: :object,
               description: 'An item within a fulfillment — which line item and how many units are in this fulfillment',
@@ -241,8 +269,33 @@ module PallasTrade
             patch_promotion_action_schema(schemas)
             patch_price_rule_schema(schemas)
             patch_import_schema(schemas)
+            patch_discount_projection_schema(schemas)
             schemas
           end
+        end
+
+        # Same Array<{...}> issue as cart/fulfillment — the canonical discount
+        # projection is shared by four serializers, so point every `discounts`
+        # property at the manually-defined DiscountLine component schema.
+        def patch_discount_projection_schema(schemas)
+          %w[Cart Order StoreCheckoutCheckout].each { |name| patch_discounts_array(schemas, name) }
+          patch_discounts_array(schemas, 'AdminOrder')
+        end
+
+        def patch_discounts_array(schemas, schema_name)
+          schema = schemas[schema_name] || schemas[schema_name.to_sym]
+          return unless schema
+
+          props = schema[:properties]
+          return unless props
+
+          key = props.key?('discounts') ? 'discounts' : :discounts
+          return unless props[key]
+
+          props[key] = {
+            type: :array,
+            items: { '$ref' => '#/components/schemas/DiscountLine' }
+          }
         end
 
         # Same Array<{...}> issue as cart/fulfillment — patch Import#schema_fields
