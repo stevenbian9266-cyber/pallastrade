@@ -3,6 +3,7 @@
 require 'rails_helper'
 
 # PRD-20260909-promotions-promo-batch2-discount-projection-unified AC-005 AC-006 AC-007 AC-009 AC-011
+# PRD-20260910-promotions-promo-batch3a-redemption-ledger AC-011
 # AC-005/006/007: Cart / Order / AdminOrder / Checkout return the SAME canonical
 # discount payload; AC-009: serialization no longer calls OrderPromotion#amount;
 # AC-011: rendering cost does not grow linearly with promotions (no N+1 sum).

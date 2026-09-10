@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_10_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_10_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1753,6 +1753,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_000000) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "pallastrade_promotion_redemptions", force: :cascade do |t|
+    t.decimal "amount", precision: 12, scale: 2
+    t.datetime "committed_at"
+    t.bigint "coupon_code_id"
+    t.datetime "created_at", null: false
+    t.string "currency"
+    t.bigint "order_id", null: false
+    t.bigint "promotion_id", null: false
+    t.string "release_reason"
+    t.datetime "released_at"
+    t.datetime "reserved_at"
+    t.datetime "reserved_until"
+    t.string "state", default: "reserved", null: false
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["coupon_code_id"], name: "index_pallastrade_promotion_redemptions_on_coupon_code_id"
+    t.index ["coupon_code_id"], name: "index_pt_promo_redemptions_on_active_coupon_code", unique: true, where: "((state)::text <> 'released'::text)"
+    t.index ["order_id"], name: "index_pallastrade_promotion_redemptions_on_order_id"
+    t.index ["promotion_id", "order_id"], name: "index_pt_promo_redemptions_on_promotion_and_order", unique: true
+    t.index ["promotion_id", "state"], name: "index_pt_promo_redemptions_on_promotion_and_state"
+    t.index ["promotion_id"], name: "index_pallastrade_promotion_redemptions_on_promotion_id"
+    t.index ["store_id", "state"], name: "index_pt_promo_redemptions_on_store_and_state"
+    t.index ["store_id"], name: "index_pallastrade_promotion_redemptions_on_store_id"
+    t.index ["user_id"], name: "index_pallastrade_promotion_redemptions_on_user_id"
+  end
+
   create_table "pallastrade_promotion_rule_taxons", force: :cascade do |t|
     t.datetime "created_at", precision: nil
     t.bigint "promotion_rule_id"
@@ -2862,6 +2889,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_000000) do
   add_foreign_key "pallastrade_payments", "pallastrade_payment_combinations", column: "payment_combination_id"
   add_foreign_key "pallastrade_payments", "pallastrade_payment_sessions", column: "payment_session_id"
   add_foreign_key "pallastrade_product_translations", "pallastrade_products"
+  add_foreign_key "pallastrade_promotion_redemptions", "pallastrade_coupon_codes", column: "coupon_code_id"
+  add_foreign_key "pallastrade_promotion_redemptions", "pallastrade_orders", column: "order_id"
+  add_foreign_key "pallastrade_promotion_redemptions", "pallastrade_promotions", column: "promotion_id"
+  add_foreign_key "pallastrade_promotion_redemptions", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_promotion_redemptions", "pallastrade_users", column: "user_id"
   add_foreign_key "pallastrade_redirects", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_refunds", "pallastrade_commerce_transactions", column: "commerce_transaction_id"
   add_foreign_key "pallastrade_refunds", "pallastrade_orders", column: "target_order_id"

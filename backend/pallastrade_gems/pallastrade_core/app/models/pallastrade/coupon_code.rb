@@ -30,12 +30,31 @@ module PallasTrade
       used_with_code(code).any?
     end
 
+    # PRD-20260910-promotions-promo-batch3a (D5): 核销时占用（used + 关联订单）。
+    # 购物车 apply 不再调用本方法（改为 attach_to_order!，只关联不消耗）。
     def apply_order!(order)
       update(order: order, state: 'used')
     end
 
-    def remove_from_orde
+    # 释放/移除时回退为可用（并解除订单关联）。
+    # 修复：batch1 提交误把方法名写成 remove_from_orde（缺 r），导致多码券
+    # 移除路径 NoMethodError（PRD-20260910-promo-batch3a AC-013）。
+    def remove_from_order
       update(order: nil, state: 'unused')
+    end
+
+    # 只把码关联到订单（保持 unused），供购物车阶段展示与核销时占用（PRD batch3a）。
+    def attach_to_order!(order)
+      return self if order_id == order.id
+
+      update(order: order)
+    end
+
+    # 解除订单关联但不改变 state（未消耗时使用）。
+    def detach_from_order
+      return self if order_id.nil?
+
+      update(order: nil)
     end
 
     def display_code

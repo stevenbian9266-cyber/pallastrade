@@ -129,6 +129,8 @@ module PallasTrade
     has_many :categories, class_name: 'PallasTrade::Category'
 
     has_many :promotions, class_name: 'PallasTrade::Promotion', dependent: :nullify
+    # PRD-20260910-promotions-promo-batch3a: 核销台账。
+    has_many :promotion_redemptions, class_name: 'PallasTrade::PromotionRedemption', dependent: :destroy
 
     has_many :wishlists, class_name: 'PallasTrade::Wishlist'
 

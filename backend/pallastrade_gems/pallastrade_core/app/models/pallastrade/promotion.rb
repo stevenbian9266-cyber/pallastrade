@@ -36,6 +36,9 @@ module PallasTrade
     has_many :promotion_actions, autosave: true, dependent: :destroy
     alias actions promotion_actions
     has_many :coupon_codes, -> { order(created_at: :asc) }, dependent: :destroy, class_name: 'PallasTrade::CouponCode'
+    # PRD-20260910-promotions-promo-batch3a: 核销台账（usage_limit 的唯一口径）。
+    has_many :promotion_redemptions, class_name: 'PallasTrade::PromotionRedemption',
+                                     dependent: :destroy, inverse_of: :promotion
     has_many :order_promotions, class_name: 'PallasTrade::OrderPromotion'
     has_many :orders, through: :order_promotions, class_name: 'PallasTrade::Order'
     belongs_to :store, class_name: 'PallasTrade::Store'
@@ -255,21 +258,31 @@ module PallasTrade
       rules.where(type: 'PallasTrade::Promotion::Rules::Product').map(&:products).flatten.uniq
     end
 
+    # PRD-20260910-promotions-promo-batch3a (D4): usage_limit 读取核销台账（committed），
+    # 不再依赖 Adjustment 即时统计。
     def usage_limit_exceeded?(promotable)
-      usage_limit.present? && usage_limit.positive? && adjusted_credits_count(promotable) >= usage_limit
+      return false if usage_limit.blank? || !usage_limit.positive?
+
+      adjusted_credits_count(promotable) >= usage_limit
     end
 
+    # 已核销计数（ledger）；当前订单自身的核销不计入，避免重算/重放时自锁。
     def adjusted_credits_count(promotable)
-      adjustments = promotable.is_a?(Order) ? promotable.all_adjustments : promotable.adjustments
-      credits_count - adjustments.eligible.promotion.where(source_id: actions.pluck(:id)).select(:order_id).distinct.count
+      count = credits_count
+      return count unless promotable.is_a?(PallasTrade::Order) && promotable.persisted?
+
+      count - promotion_redemptions.committed.where(order_id: promotable.id).count
     end
 
+    # @deprecated 旧口径（Adjustment 统计）。保留供审计/兼容读取；
+    # 业务判定请用 `credits_count`（ledger committed）。
     def credits
       Adjustment.eligible.promotion.where(source_id: actions.map(&:id))
     end
 
+    # PRD-20260910-promotions-promo-batch3a (D4): ledger committed 计数。
     def credits_count
-      credits.select(:order_id).distinct.count
+      promotion_redemptions.committed.count
     end
 
     def line_item_actionable?(order, line_item)

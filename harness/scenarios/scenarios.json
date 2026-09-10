@@ -2088,6 +2088,28 @@
         "boundedQueries": 20,
         "contractTests": 25
       }
+    },
+    {
+      "id": "GS-083",
+      "name": "Promotion redemption ledger (occupancy semantics)",
+      "description": "Promotion occupancy must go through the redemption ledger (see PRD-20260910-promotions-promo-batch3a-redemption-ledger)",
+      "mustDo": [
+        "Keep cart apply non-consuming (CouponCode stays unused, no redemption row) and write committed rows inside the order.complete transaction",
+        "Release redemptions (and multi-code state) on order cancellation via Promotions::Redemption::ReleaseOrder",
+        "Read usage_limit / credits_count from committed ledger rows and keep services idempotent",
+        "Reference the promotions domain skill (ai/skills/pallastrade-promotions/SKILL.md)"
+      ],
+      "mustNotDo": [
+        "Consume a one-time coupon code at cart-apply time",
+        "Keep a second usage-count source (Adjustment-based credits_count) as the business truth",
+        "Bypass the unique (promotion_id, order_id) / partial unique (coupon_code_id) constraints"
+      ],
+      "scoring": {
+        "ledgerOnlyTruth": 30,
+        "idempotentServices": 25,
+        "releaseOnCancel": 20,
+        "regressionGreen": 25
+      }
     }
   ]
 }

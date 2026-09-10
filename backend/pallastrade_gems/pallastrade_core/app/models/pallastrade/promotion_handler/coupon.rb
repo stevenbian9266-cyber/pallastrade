@@ -64,12 +64,7 @@ module PallasTrade
           # Order promotion has to be destroyed before line item removing
           order.promotions.delete(promotion)
 
-          if promotion.multi_codes?
-            coupon_code = promotion.coupon_codes.find_by(order: order)
-            coupon_code&.remove_from_order
-          else
-            promotion.touch
-          end
+          release_redemption_or_detach_code(promotion)
 
           remove_promotion_adjustments(promotion)
           remove_promotion_line_items(promotion)
@@ -124,6 +119,20 @@ module PallasTrade
         promotion_actions_ids = promotion.actions.pluck(:id)
         order.all_adjustments.where(source_id: promotion_actions_ids,
                                     source_type: 'PallasTrade::PromotionAction').destroy_all
+      end
+
+      # PRD-20260910-promotions-promo-batch3a (D5): 移除券时若已有 active 核销则
+      # 走释放路径（回退一次性码 + 记录 release_reason）；购物车阶段（无核销）
+      # 保持旧行为：多码脱离订单 / 单码 touch。
+      def release_redemption_or_detach_code(promotion)
+        redemption = PallasTrade::PromotionRedemption.active.find_by(promotion_id: promotion.id, order_id: order.id)
+        if redemption
+          PallasTrade::Promotions::Redemption::Release.call(redemption, reason: 'coupon_removed')
+        elsif promotion.multi_codes?
+          promotion.coupon_codes.find_by(order: order)&.remove_from_order
+        else
+          promotion.touch
+        end
       end
 
       def remove_promotion_line_items(promotion)
@@ -209,7 +218,11 @@ module PallasTrade
       end
 
       def handle_coupon_code(discount, coupon_code)
-        PallasTrade::CouponCode.unused.find_by(promotion_id: discount.source.promotion_id, code: coupon_code)&.apply_order!(order)
+        # PRD-20260910-promotions-promo-batch3a (D5/G1): 购物车 apply 只把码与订单
+        # 关联（供 code_for_order/投影展示），不再标记 used —— 占用发生在
+        # order.complete 的核销事务内（Promotions::Redemption::FinalizeOrder）。
+        code = PallasTrade::CouponCode.unused.find_by(promotion_id: discount.source.promotion_id, code: coupon_code)
+        code&.attach_to_order!(order)
       end
 
       # Whether the coupon handler should also handle gift card codes.

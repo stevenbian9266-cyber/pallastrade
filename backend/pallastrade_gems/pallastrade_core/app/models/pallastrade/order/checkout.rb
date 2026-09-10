@@ -155,7 +155,10 @@ module PallasTrade
               after_transition to: :complete, do: :finalize!
               after_transition to: :resumed, do: :after_resume
               after_transition to: :canceled, do: :after_cancel
-              after_transition to: :complete, do: :use_all_coupon_codes
+              # PRD-20260910-promotions-promo-batch3a: complete 时写核销台账
+              # （替代旧的 use_all_coupon_codes 占用职责）；canceled 时释放。
+              after_transition to: :complete, do: :record_promotion_redemptions
+              after_transition to: :canceled, do: :release_promotion_redemptions
               after_transition to: :complete, do: :redeem_gift_card
               after_transition to: :complete, do: :subscribe_to_newsletter
 

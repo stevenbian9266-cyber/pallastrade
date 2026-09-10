@@ -214,6 +214,9 @@ module PallasTrade
 
     has_many :order_promotions, class_name: 'PallasTrade::OrderPromotion'
     has_many :promotions, through: :order_promotions, class_name: 'PallasTrade::Promotion'
+    # PRD-20260910-promotions-promo-batch3a: 核销台账（下单核销 / 取消释放）。
+    has_many :promotion_redemptions, class_name: 'PallasTrade::PromotionRedemption',
+                                     dependent: :destroy, inverse_of: :order
 
     has_many :shipments, class_name: 'PallasTrade::Shipment', dependent: :destroy, inverse_of: :order do
       def states
@@ -946,8 +949,20 @@ module PallasTrade
       result.value
     end
 
+    # PRD-20260910-promotions-promo-batch3a (D3): 下单核销入口 —— 在 order.complete
+    # 的短事务内为每个生效促销写 committed 核销并占用一次性码（幂等）。
+    def record_promotion_redemptions
+      PallasTrade::Promotions::Redemption::FinalizeOrder.call(self)
+    end
+
+    # 兼容包装（PRD batch3a §11）：保留旧方法名，内部走核销台账。
     def use_all_coupon_codes
-      PallasTrade::CouponCodes::CouponCodesHandler.new(order: self).use_all_codes
+      record_promotion_redemptions
+    end
+
+    # 订单取消 → 释放全部 active 核销（幂等）。
+    def release_promotion_redemptions
+      PallasTrade::Promotions::Redemption::ReleaseOrder.call(self)
     end
 
     def has_step?(step)

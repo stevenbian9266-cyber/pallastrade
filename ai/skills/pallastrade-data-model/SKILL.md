@@ -48,6 +48,23 @@ storefront JSON-LD `AggregateRating`. Only `approved` reviews are public via the
 `GET /api/v3/store/products/:id/reviews`; moderation happens in the admin
 `PallasTrade::Admin::ReviewsController` (approve / reject / delete).
 
+## Promotion redemptions (ledger)
+
+`PallasTrade::PromotionRedemption` (table `pallastrade_promotion_redemptions`, prefix id
+`redemption_…`) is the promotion occupancy/redemption ledger — one row per `(promotion, order)`:
+
+- `state`: `reserved` → `committed` (written inside the `order.complete` transaction), or
+  `released` with `release_reason` (`order_canceled` / `coupon_removed` / `reserved_timeout` / `refunded` / `manual`).
+- nullable `coupon_code_id` (multi-code promos), `amount`/`currency`, `user_id`, and the
+  `reserved_at` / `reserved_until` / `committed_at` / `released_at` timestamps.
+- Constraints: unique `(promotion_id, order_id)`; **partial** unique `(coupon_code_id) WHERE state <> 'released'`
+  (a released code can be reused).
+- `Order has_many :promotion_redemptions`, `Promotion has_many :promotion_redemptions`,
+  `Store has_many :promotion_redemptions`. `PromotionRedemption#release!` also returns the
+  occupied `CouponCode` to `unused`.
+- `Promotion#credits_count` / `#usage_limit_exceeded?` read **committed** rows (the ledger is the
+  single source of truth for usage limits; the older `Adjustment`-based `Promotion#credits` is deprecated).
+
 ## Blog posts (CMS)
 
 `PallasTrade::Post` (table `pallastrade_posts`) is the CMS blog article model.
