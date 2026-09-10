@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_10_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_10_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1175,10 +1175,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_000001) do
   end
 
   create_table "pallastrade_order_promotions", force: :cascade do |t|
+    t.string "code"
     t.datetime "created_at", precision: nil
+    t.string "currency"
+    t.string "definition_digest"
+    t.string "description"
+    t.datetime "frozen_at"
+    t.decimal "item_amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.string "kind"
+    t.string "name"
+    t.decimal "order_amount", precision: 10, scale: 2, default: "0.0", null: false
     t.bigint "order_id"
     t.bigint "promotion_id"
+    t.decimal "shipping_amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.decimal "total_amount", precision: 10, scale: 2, default: "0.0", null: false
     t.datetime "updated_at", precision: nil
+    t.index ["frozen_at"], name: "index_pt_order_promotions_on_frozen_at"
     t.index ["order_id"], name: "index_pt_order_promotions_on_order_id"
     t.index ["promotion_id", "order_id"], name: "index_pt_order_promotions_on_promotion_id_and_order_id", unique: true
     t.index ["promotion_id"], name: "index_pt_order_promotions_on_promotion_id"

@@ -1,3 +1,7 @@
+# frozen_string_literal: true
+
+require 'digest'
+
 module PallasTrade
   class Promotion < PallasTrade.base_class
     has_prefix_id :promo # PallasTrade-specific: promotion
@@ -285,6 +289,30 @@ module PallasTrade
       promotion_redemptions.committed.count
     end
 
+    # PRD-20260910-promotions-promo-batch4a (D5): 促销定义摘要 —— 成交快照里记录
+    # 「当时定义是什么样」的审计证据（不参与金额计算）。
+    # 覆盖：kind / name / code / 多码 / 时间窗 / usage_limit / match_policy / 规则 / 动作。
+    def definition_payload
+      {
+        id: id,
+        kind: kind,
+        name: name,
+        code: code,
+        multi_codes: multi_codes?,
+        starts_at: starts_at&.utc&.iso8601,
+        expires_at: expires_at&.utc&.iso8601,
+        usage_limit: usage_limit,
+        match_policy: match_policy,
+        rules: promotion_rules.sort_by(&:id).map { |rule| definition_entry(rule) },
+        actions: promotion_actions.sort_by(&:id).map { |action| definition_entry(action) }
+      }
+    end
+
+    # 稳定 64 位 hex 摘要（排序 + 规范 JSON，同一份定义重复计算一致）。
+    def definition_digest
+      Digest::SHA256.hexdigest(JSON.generate(definition_payload))
+    end
+
     def line_item_actionable?(order, line_item)
       if eligible? order
         rules = eligible_rules(order)
@@ -320,6 +348,45 @@ module PallasTrade
     end
 
     private
+
+    # PRD-20260910-promotions-promo-batch4a (D5): 规则/动作的规范描述
+    # （类名 + key + 偏好 + 计算器），用于 definition_digest 的稳定比对。
+    def definition_entry(record)
+      entry = {
+        type: record.class.name,
+        key: record.respond_to?(:key) ? record.key : nil,
+        preferences: definition_preferences(record)
+      }
+
+      if record.respond_to?(:calculator)
+        calculator = begin
+          record.calculator
+        rescue StandardError
+          nil
+        end
+        entry[:calculator] = calculator.class.name if calculator
+      end
+
+      entry
+    end
+
+    def definition_preferences(record)
+      return nil unless record.respond_to?(:preferences)
+
+      preferences = record.preferences
+      return nil if preferences.blank?
+
+      hash = preferences.respond_to?(:to_h) ? preferences.to_h : preferences
+      hash.stringify_keys.sort.to_h.transform_values { |value| definition_value(value) }
+    end
+
+    def definition_value(value)
+      case value
+      when BigDecimal then value.to_s('F')
+      when Time, Date, DateTime then value.iso8601
+      else value
+      end
+    end
 
     def apply_pending_rules_and_actions
       flush_pending_typed_association(:promotion_rules)

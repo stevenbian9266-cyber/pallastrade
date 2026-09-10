@@ -38,6 +38,8 @@ zh-CN:
       promotions:
         promotions_list: 促销列表
         gift_cards: 礼品卡
+        # PRD-20260910-promo-batch3c 导航项（batch4a 期间补齐 zh-CN：FR-012 双语必填）
+        redemptions: 核销记录
       reports:
         reports_list: 报表列表
       blog:

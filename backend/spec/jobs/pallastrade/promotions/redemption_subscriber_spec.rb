@@ -55,6 +55,24 @@ RSpec.describe PallasTrade::Promotions::RedemptionSubscriber, type: :job do
       expect { subscriber.call(event('commerce_transaction.payment_confirmed', { 'id' => 'txn_missing' })) }.
         not_to raise_error
     end
+
+    # PRD-20260910-promotions-promo-batch4a-orderpromotion-snapshot AC-004
+    it 'freezes the order promotion snapshot before finalizing' do
+      promotion = coupon_promotion('SUB3')
+      order = build_order
+      apply_coupon(order, promotion.code)
+
+      txn = PallasTrade::CommerceTransaction.create!(store: store, purpose: 'purchase', currency: 'USD', amount: 100)
+      PallasTrade::TransactionOrder.create!(commerce_transaction: txn, order: order,
+                                            amount_snapshot: order.total)
+
+      subscriber.call(event('commerce_transaction.payment_confirmed', { 'id' => txn.prefixed_id }))
+
+      row = order.order_promotions.reload.find_by(promotion_id: promotion.id)
+      expect(row).to be_frozen
+      expect(row.total_amount.to_d).to be < 0
+      expect(order.promotion_redemptions.committed.count).to eq(1)
+    end
   end
 
   describe 'refund.succeeded（AC-006）' do

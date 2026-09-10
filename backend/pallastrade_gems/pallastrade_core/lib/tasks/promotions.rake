@@ -156,6 +156,85 @@ module PallasTrade
         ActiveRecord::Base.connection
       end
     end
+
+    # PRD-20260910-promotions-promo-batch4a (FR-006): 存量订单成交快照回填。
+    #   候选 = 已成交（completed_at 或标准流程 paid+）且当日有 eligible 促销调整的订单；
+    #   逐单隔离 rescue；已冻结行跳过（幂等）；dry-run 默认，APPLY=1 才写库。
+    class PromoOrderPromotionSnapshotBackfill
+      def initialize(dry_run: true, store_id: nil, limit: nil)
+        @dry_run = dry_run
+        @store_id = store_id.presence
+        @limit = limit.presence&.to_i
+      end
+
+      def call
+        frozen = 0
+        skipped = 0
+        failed = 0
+
+        candidate_ids.each do |order_id|
+          order = PallasTrade::Order.find_by(id: order_id)
+          next if order.nil?
+
+          before = order.order_promotions.count(&:frozen?)
+          rows = @dry_run ? preview(order) : PallasTrade::Promotions::Snapshot::Freeze.call(order)
+          after = order.order_promotions.reload.count(&:frozen?)
+
+          if after == before
+            skipped += 1
+          else
+            frozen += (after - before)
+          end
+
+          print_row(order, rows) if @dry_run
+        rescue StandardError => e
+          failed += 1
+          warn "skip backfill order=#{order_id}: #{e.class} #{e.message}"
+        end
+
+        puts "Backfill order promotion snapshots: candidates=#{candidate_ids.size} frozen=#{frozen} " \
+             "skipped_orders=#{skipped} failed=#{failed} dry_run=#{@dry_run}"
+      end
+
+      private
+
+      def candidates
+        scope = PallasTrade::Order.where(
+          "pallastrade_orders.completed_at IS NOT NULL OR pallastrade_orders.state IN (?)",
+          PallasTrade::Promotions::Snapshot::Freeze::MONEY_CONFIRMED_STATES
+        ).where(id: order_ids_with_promotion_adjustments)
+        scope = scope.joins(:store).where(pallastrade_stores: { id: @store_id }) if @store_id
+        scope = scope.limit(@limit) if @limit
+        scope
+      end
+
+      def candidate_ids
+        @candidate_ids ||= candidates.pluck(:id)
+      end
+
+      def order_ids_with_promotion_adjustments
+        PallasTrade::Adjustment.
+          where(source_type: 'PallasTrade::PromotionAction', eligible: true).
+          where.not(order_id: nil).
+          select(:order_id)
+      end
+
+      def preview(order)
+        PallasTrade::Promotions::Projection::DiscountProjection.for(order: order).reject do |line|
+          line.order_promotion&.frozen?
+        end
+      end
+
+      def print_row(order, rows)
+        rows.each do |row|
+          promotion = row.respond_to?(:promotion) ? row.promotion : nil
+          name = row.respond_to?(:name) ? row.name : promotion&.name
+          code = row.respond_to?(:code) ? row.code : promotion&.code_for_order(order)
+          amount = row.respond_to?(:amount) ? row.amount : 0
+          puts [order.id, order.number, promotion&.id, name, code, amount, order.currency].join("\t")
+        end
+      end
+    end
   end
 end
 
@@ -170,6 +249,16 @@ namespace :pallastrade do
     task :backfill_redemptions, %i[dry_run] => :environment do |_task, args|
       dry_run = args[:dry_run].to_s.downcase != 'false'
       PallasTrade::Tasks::PromoRedemptionBackfill.new(dry_run: dry_run).call
+    end
+
+    desc 'Backfill order promotion snapshots (PRD-20260910-promo-batch4a; dry run by default, APPLY=1 to write)'
+    task :backfill_order_promotion_snapshots, %i[store_id limit] => :environment do |_task, args|
+      dry_run = ENV['APPLY'].to_s != '1'
+      PallasTrade::Tasks::PromoOrderPromotionSnapshotBackfill.new(
+        dry_run: dry_run,
+        store_id: args[:store_id],
+        limit: args[:limit]
+      ).call
     end
   end
 end

@@ -37,22 +37,24 @@ module PallasTrade
             promotion.prefixed_id
           end
 
+          # PRD-20260910-promo-batch4a (FR-005): 成交订单读快照（历史不被当前定义漂移），
+          # 购物车/未冻结订单保持实时读取。
           def name
-            promotion.name
+            order_promotion&.name.presence || promotion.name
           end
 
           def description
-            promotion.description
+            order_promotion&.description.presence || promotion.description
           end
 
           # The code actually used on this order (multi-code promos resolve to
           # the redeemed code; single-code promos return their `code`).
           def code
-            promotion.code_for_order(@order)
+            order_promotion&.code.presence || promotion.code_for_order(@order)
           end
 
           def kind
-            promotion.kind
+            order_promotion&.kind.presence || promotion.kind
           end
 
           def removable?

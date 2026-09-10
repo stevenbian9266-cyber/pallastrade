@@ -65,6 +65,22 @@ storefront JSON-LD `AggregateRating`. Only `approved` reviews are public via the
 - `Promotion#credits_count` / `#usage_limit_exceeded?` read **committed** rows (the ledger is the
   single source of truth for usage limits; the older `Adjustment`-based `Promotion#credits` is deprecated).
 
+## Order promotion snapshot (batch4a, 2026-09-10)
+
+`pallastrade_order_promotions` carries the **成交快照** written at money-confirmed time
+(`order.complete` / standard-flow `paid` / `commerce_transaction.payment_confirmed`):
+
+- Snapshot columns: `name`, `kind`, `code`, `description`, `definition_digest`,
+  `item_amount` / `order_amount` / `shipping_amount` / `total_amount`
+  (`null: false, default: 0.0`), `currency`, `frozen_at` (`nil` = not frozen).
+- `OrderPromotion#frozen?` = `frozen_at` + `name` present; readers are **snapshot-first**
+  (`name` / `code` / `kind` / `description` fall back to the live promotion while unfrozen),
+  so carts behave exactly as before and historical orders never drift.
+- Amounts are copied from the batch2 `DiscountProjection` lines (never recomputed);
+  `Promotion#definition_digest` is a `SHA256` over the canonical definition payload.
+- Historical rows are frozen by `rake pallastrade:promotions:backfill_order_promotion_snapshots`
+  (dry-run by default, `APPLY=1` writes, idempotent — frozen rows are never overwritten).
+
 ## Blog posts (CMS)
 
 `PallasTrade::Post` (table `pallastrade_posts`) is the CMS blog article model.

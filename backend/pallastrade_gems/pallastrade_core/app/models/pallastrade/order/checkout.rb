@@ -159,6 +159,10 @@ module PallasTrade
               # （替代旧的 use_all_coupon_codes 占用职责）；canceled 时释放。
               after_transition to: :complete, do: :record_promotion_redemptions
               after_transition to: :canceled, do: :release_promotion_redemptions
+              # PRD-20260910-promotions-promo-batch4a: 成交快照冻结（legacy complete +
+              # 标准流程 paid）；幂等、不阻断成交事务（架构 §35/§134）。
+              after_transition to: :complete, do: :freeze_promotion_snapshots
+              after_transition to: :paid, do: :freeze_promotion_snapshots
               after_transition to: :complete, do: :redeem_gift_card
               after_transition to: :complete, do: :subscribe_to_newsletter
 

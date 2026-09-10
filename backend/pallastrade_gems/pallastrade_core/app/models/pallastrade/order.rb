@@ -955,6 +955,12 @@ module PallasTrade
       PallasTrade::Promotions::Redemption::FinalizeOrder.call(self)
     end
 
+    # PRD-20260910-promotions-promo-batch4a (FR-004, D2): 成交快照冻结入口 ——
+    # legacy `complete` / 标准流程 `paid` 均触发；幂等且不阻断成交事务。
+    def freeze_promotion_snapshots
+      PallasTrade::Promotions::Snapshot::Freeze.call(self)
+    end
+
     # 兼容包装（PRD batch3a §11）：保留旧方法名，内部走核销台账。
     def use_all_coupon_codes
       record_promotion_redemptions
@@ -1234,6 +1240,11 @@ module PallasTrade
     alias fully_discounted fully_discounted?
 
     def promo_code
+      # PRD-20260910-promotions-promo-batch4a (FR-005): 已成交订单读快照码
+      # （改名/停用/重新分配码不影响历史），未冻结时保持原有实时逻辑。
+      frozen_code = order_promotions.select(&:frozen?).filter_map { |op| op[:code].presence }.first
+      return frozen_code if frozen_code.present?
+
       PallasTrade::CouponCode.find_by(order: self, promotion: promotions).try(:code) || promotions.pluck(:code).compact.first
     end
 

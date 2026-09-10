@@ -272,6 +272,14 @@ end
 
 对应 Admin API 只读端点（如 `GET /api/v3/admin/promotion_redemptions`）见 `pallastrade-api-v3` Skill：`ResourceController` 子类 + `scoped_resource`，列表返回 `{ data, meta }`，**JWT 管理员需显式 `authorize!(:read, Model)`**（read 动作没有全局钩子；API key 主体由 `ScopedAuthorization` 处理）。Ransack 过滤必须在模型上写 `whitelisted_ransackable_attributes`，否则过滤条件被静默忽略（返回全量）。
 
+### 订单页展示读「成交快照」（PRD-20260910-promo-batch4a）
+
+订单详情页的促销面板（`admin/orders/_promotions.html.erb` + `_order_promotion.html.erb`）**不再直接读 `order_promotion.promotion.name` / `promotion.coupon_code?`**：
+
+- 名称用 `order_promotion.name`、类型徽章用 `order_promotion.coupon_code?`（内部读 `kind`）——两者都是「快照优先」读方法，成交订单（`frozen?`）返回冻结值，购物车/未回填订单回退实时促销定义；
+- 已冻结行额外渲染一个锁形徽章（`title` 显示 `frozen_at`），便于运营区分「历史快照」与「实时定义」；
+- 后台不得提供修改快照的写入口（快照只由成交/支付确认路径与回填 rake 写入）。
+
 ## 多店铺管理（2026-08-17）
 
 数据/权限/API 层多店铺早已就绪（`PallasTrade::Store` 一等模型、`Current.store` 每请求上下文、`RoleUser` 用户→角色→店铺、`for_store(current_store)` 作用域、Store API `pk_` key 识别店铺）。2026-08-17 在 Rails 后台补齐管理 UI：

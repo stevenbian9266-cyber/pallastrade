@@ -20,6 +20,9 @@ module PallasTrade
         return if transaction.nil?
 
         transaction.orders.find_each do |order|
+          # PRD-20260910-promo-batch4a：先冻结展示事实（快照），再写核销。
+          # force: 事件本身即资金确认信号，此时订单状态机可能尚未推进。
+          PallasTrade::Promotions::Snapshot::Freeze.call(order, force: true)
           PallasTrade::Promotions::Redemption::FinalizeOrder.call(order)
         end
       rescue StandardError => e
