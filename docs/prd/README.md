@@ -40,6 +40,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 |---|---|---|---|---|
 | done | PRD-20260910-promotions-promo-batch3c-redemption-readonly | promotions | 2026-09-10 | REQ-20260910-promo-batch3c-redemption-readonly.md |
 | done | PRD-20260910-promotions-promo-batch4a-orderpromotion-snapshot | promotions | 2026-09-10 | REQ-20260910-promo-batch4a-orderpromotion-snapshot.md |
+| done | PRD-20260910-promotions-promo-batch4b-refund-allocation | promotions | 2026-09-10 | REQ-20260910-promo-batch4b-refund-allocation.md |
 | done | PRD-20260910-promotions-promo-batch3a-redemption-ledger | promotions | 2026-09-10 | REQ-20260910-promo-batch3a-redemption-ledger.md |
 | done | PRD-20260910-promotions-promo-batch3b-redemption-hardening | promotions | 2026-09-10 | REQ-20260910-promo-batch3b-redemption-hardening.md |
 | done | PRD-20260909-promotions-promo-batch2-discount-projection-unified | promotions | 2026-09-09 | REQ-20260910-promo-batch2-discount-projection-unified.md |

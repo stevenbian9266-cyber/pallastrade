@@ -422,6 +422,9 @@ PallasTrade::Core::Engine.add_routes do
             end
           end
           resources :refunds, controller: 'orders/refunds', only: [:index, :show, :create]
+          # PRD-20260910-promo-batch4b（FR-003）：只读「退款计算预览」
+          # （原金额 / 分摊优惠 / 可退金额；不创建 Refund、不重跑 Promotion Engine）
+          resource :refund_calculation, only: [:show], controller: 'orders/refund_calculations'
           resources :adjustments, controller: 'orders/adjustments', only: [:index, :show]
           resources :gift_cards, controller: 'orders/gift_cards', only: [:create, :destroy]
           resource :store_credits, controller: 'orders/store_credits', only: [:create, :destroy]

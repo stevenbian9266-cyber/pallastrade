@@ -280,6 +280,16 @@ end
 - 已冻结行额外渲染一个锁形徽章（`title` 显示 `frozen_at`），便于运营区分「历史快照」与「实时定义」；
 - 后台不得提供修改快照的写入口（快照只由成交/支付确认路径与回填 rake 写入）。
 
+### 退款分摊预览卡片（PRD-20260910-promo-batch4b，架构 §101）
+
+促销卡片下方追加**只读**「Refund allocation preview」区块（partial
+`admin/orders/_refund_allocation_preview.html.erb`，由 `_promotions.html.erb` 渲染）：
+
+- 数据源 `Promotions::Allocation::RefundPreview`：每行显示 原金额 / 分摊优惠 / 可退金额（`refundable_amount` 为
+  `nil` 时渲染 `n/a`——该行无 inventory unit，绝不臆造金额），页脚为三列合计，下方逐促销显示「分摊 / 原折扣」；
+- 可退金额由 `ReturnItem` 权威计算（内存对象，不写库）；区块内**无任何写操作**（无按钮/表单/写路由）；
+- 无促销或无分摊时整块不渲染（`preview.available? && promotions.any?`）。
+
 ## 多店铺管理（2026-08-17）
 
 数据/权限/API 层多店铺早已就绪（`PallasTrade::Store` 一等模型、`Current.store` 每请求上下文、`RoleUser` 用户→角色→店铺、`for_store(current_store)` 作用域、Store API `pk_` key 识别店铺）。2026-08-17 在 Rails 后台补齐管理 UI：

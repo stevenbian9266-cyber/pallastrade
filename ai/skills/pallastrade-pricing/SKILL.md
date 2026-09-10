@@ -231,6 +231,19 @@ The display price uses the variant's Price for `PallasTrade::Current.currency`. 
 - 行级 cap：不超行可退金额；refund 总额再受 `payment.credit_allowed` 与冻结 split
   `captured − refunded` 双门禁约束（见 pallastrade-payments skill REV-P6-3）。
 
+### 促销折扣分摊投影（batch4b，2026-09-10；**只读，不改权威**）
+
+- `Promotions::Allocation::AdjustmentAllocation.for(order:)` 把促销折扣摊到行（架构 §57）：
+  行级调整 → `line_item`；订单级 → `order_prorata`；运费级 → `shipment_prorata`（按
+  `line_item.pre_tax_amount / order.pre_tax_item_amount`；分母为 0 时全额落最大行）。
+- 每个促销以 **batch4a 冻结快照** `total_amount` 为锚（未冻结用 batch2 投影），2 位小数余数补最大行 →
+  恒等式 `Σ 分摊 == 冻结折扣`（`balanced?`）。
+- `Promotions::Allocation::RefundPreview.call(order:, quantities:)` 产出
+  原金额（`line_item.amount`）/ 分摊优惠 / 可退金额三件套；**可退金额仍走 `ReturnItem` 权威**
+  （内存对象调 `DefaultRefundAmount`，不复制公式、不落库）。
+- 边界：本投影**不得**被当作第二权威——金额计算唯一入口仍是 `REFUND_AMOUNT_AUTHORITY`；
+  仅提供拆分与预览（Admin API `orders/:id/refund_calculation` 与后台订单页只读卡片）。
+
 ## Where to read further
 
 - **Core concepts:** `node_modules/@pallastrade/docs/dist/developer/core-concepts/pricing.md`

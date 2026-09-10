@@ -2179,6 +2179,29 @@
         "displayFallback": 20,
         "backfillIdempotent": 20
       }
+    },
+    {
+      "id": "GS-087",
+      "name": "Promotion refund allocation projection",
+      "description": "Refunds must explain the promotional discount per line without a third allocation scheme (see PRD-20260910-promotions-promo-batch4b-refund-allocation)",
+      "mustDo": [
+        "Allocate line-level promotion adjustments to their line, order/shipment-level adjustments pro-rata by pre-tax line share (AdjustmentAllocation, read-only)",
+        "Keep per-promotion SUM(allocation) == frozen snapshot total with deterministic 2-decimal rounding (remainder on the largest line)",
+        "Compute refundable amounts only through the frozen authority ReturnItem#refund_amount_calculator (in-memory ReturnItem, never a copied formula)",
+        "Expose the 原金额/分摊优惠/可退金额 triple read-only (Admin API orders/:id/refund_calculation + admin order page promos card)"
+      ],
+      "mustNotDo": [
+        "Introduce a second refund-amount calculator or persist an allocation table",
+        "Re-run the promotion engine (eligibility/eligibility re-checks) inside the preview",
+        "Write Refund/ReturnItem rows or mutate the order from the preview path",
+        "Silently invent a refundable amount when a line has no inventory unit (report unavailable instead)"
+      ],
+      "scoring": {
+        "allocationBasisCorrectness": 30,
+        "sumInvariant": 30,
+        "authorityReuse": 20,
+        "readOnlyPreconditions": 20
+      }
     }
   ]
 }

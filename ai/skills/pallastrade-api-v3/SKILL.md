@@ -386,6 +386,23 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
   `display_amount`, `currency`, `reserved_at`, `reserved_until`, `committed_at`, `released_at`,
   `release_reason`.
 
+### Order refund calculation — read-only preview (Admin API, 2026-09-10 batch4b)
+
+- `GET /api/v3/admin/orders/:order_id/refund_calculation` — read-only projection of
+  **原金额 / 分摊优惠 / 可退金额** per line item (`data.line_items[]`: `line_item_id` (`li_…`),
+  `original_amount`, `allocated_discount`, `allocated_discount_breakdown{line_item,order_prorata,shipment_prorata}`,
+  `pre_tax_amount`, `refundable_amount`, `refundable_source`), plus `data.promotions[]`
+  (per promotion `original_discount` / `allocated_discount` / `balanced`) and `data.totals`.
+- Optional `quantities[<li_…>]=n` (default: full line quantity). Validation is strict:
+  non-integer, unknown line item, or `n > line quantity` → **422** (`unknown line_item_id: …`).
+- `refundable_amount` goes through the frozen refund authority (`ReturnItem` +
+  `Calculator::Returns::DefaultRefundAmount`) — the endpoint never recomputes promotions and
+  never writes (`Refund`/`ReturnItem` counts unchanged; repeated calls are identical).
+- Authorization reuses `Orders::BaseController`: the parent order is resolved from
+  `current_store.orders` (cross-store → 404) and authorized with the order's `:show` capability
+  (read-only role OK; a role without `read Order` → 403). Serializer:
+  `admin_refund_calculation_serializer` (registered in `pallastrade/api/dependencies.rb`).
+
 ## Read/write attribute symmetry (a v3 invariant)
 
 For any resource: **whatever a serializer returns, the controller's `permitted_params` accepts on write under the same name.** No `label` exposed but `presentation` accepted. No `customer_note` exposed but `special_instructions` accepted. The client never has to translate.

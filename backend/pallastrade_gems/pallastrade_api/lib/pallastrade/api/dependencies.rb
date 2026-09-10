@@ -158,6 +158,7 @@ module PallasTrade
         admin_promotion_rule_serializer: 'PallasTrade::Api::V3::Admin::PromotionRuleSerializer',
         admin_coupon_code_serializer: 'PallasTrade::Api::V3::Admin::CouponCodeSerializer',
         admin_promotion_redemption_serializer: 'PallasTrade::Api::V3::Admin::PromotionRedemptionSerializer',
+        admin_refund_calculation_serializer: 'PallasTrade::Api::V3::Admin::RefundCalculationSerializer',
         admin_price_list_serializer: 'PallasTrade::Api::V3::Admin::PriceListSerializer',
         admin_price_rule_serializer: 'PallasTrade::Api::V3::Admin::PriceRuleSerializer',
         admin_resource_translations_serializer: 'PallasTrade::Api::V3::Admin::ResourceTranslationsSerializer',

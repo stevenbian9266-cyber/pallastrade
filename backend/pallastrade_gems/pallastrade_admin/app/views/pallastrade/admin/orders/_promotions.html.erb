@@ -28,6 +28,8 @@
           </tbody>
         </table>
       </div>
+      <%# PALLAS-CUSTOM: PRD-20260910-promo-batch4b —— 只读退款分摊预览（架构 §101） %>
+      <%= render 'pallastrade/admin/orders/refund_allocation_preview' %>
     <% else %>
       <p class="text-center text-gray-600 p-8">
         <%= PallasTrade.t(:no_promotions_applied) %>

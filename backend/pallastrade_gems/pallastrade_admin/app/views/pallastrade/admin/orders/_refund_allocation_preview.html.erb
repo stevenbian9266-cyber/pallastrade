@@ -1,0 +1,80 @@
+<%#
+  PALLAS-CUSTOM: PRD-20260910-promo-batch4b（FR-005，架构 §101 Refund Promotion Admin Panel）
+  只读退款分摊预览：原金额 / 分摊优惠 / 可退金额。
+  数据源 = Promotions::Allocation::RefundPreview（可退金额走 ReturnItem 权威；只读、不写库）。
+%>
+<% preview = begin
+     PallasTrade::Promotions::Allocation::RefundPreview.call(order: @order)
+   rescue StandardError
+     nil
+   end %>
+
+<% if preview&.available? && preview.line_items.any? %>
+  <% promotions = preview.promotions.to_a %>
+  <% if promotions.any? %>
+    <div class="card mb-6" id="order_refund_allocation_preview">
+      <div class="card-header border-0">
+        <h5 class="card-title flex items-center">
+          <%= icon('calculator', class: 'mr-2') %>
+          <%= PallasTrade.t('admin.order_promotions.refund_preview', default: 'Refund allocation preview') %>
+          <span class="badge badge-light ml-2"><%= PallasTrade.t(:read_only, default: 'read-only') %></span>
+        </h5>
+      </div>
+      <div class="card-body p-0 border-t">
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th class="rounded-none"><%= PallasTrade.t(:item) %></th>
+                <th class="rounded-none text-right"><%= PallasTrade.t('admin.order_promotions.original_amount', default: 'Original') %></th>
+                <th class="rounded-none text-right"><%= PallasTrade.t('admin.order_promotions.allocated_discount', default: 'Allocated discount') %></th>
+                <th class="rounded-none text-right"><%= PallasTrade.t('admin.order_promotions.refundable_amount', default: 'Refundable') %></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% preview.line_items.each do |line| %>
+                <tr>
+                  <td>
+                    <span class="font-bold"><%= line.name.presence || line.sku %></span>
+                    <span class="text-gray-600 text-sm ml-1">× <%= line.return_quantity %> / <%= line.quantity %></span>
+                  </td>
+                  <td class="text-right"><%= PallasTrade::Money.new(line.original_amount, currency: preview.currency).to_html %></td>
+                  <td class="text-right"><%= PallasTrade::Money.new(-line.allocated_discount, currency: preview.currency).to_html %></td>
+                  <td class="text-right">
+                    <% if line.refundable_amount.nil? %>
+                      <span class="text-gray-600"><%= PallasTrade.t('admin.order_promotions.refundable_unavailable', default: 'n/a') %></span>
+                    <% else %>
+                      <%= PallasTrade::Money.new(line.refundable_amount, currency: preview.currency).to_html %>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td class="font-bold"><%= PallasTrade.t(:total) %></td>
+                <td class="text-right font-bold"><%= PallasTrade::Money.new(preview.total_original, currency: preview.currency).to_html %></td>
+                <td class="text-right font-bold"><%= PallasTrade::Money.new(-preview.total_allocated, currency: preview.currency).to_html %></td>
+                <td class="text-right font-bold"><%= PallasTrade::Money.new(preview.total_refundable, currency: preview.currency).to_html %></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <% promotions.each do |promotion| %>
+          <div class="px-4 py-3 border-t text-sm">
+            <span class="font-bold"><%= promotion[:name] %></span>
+            <% if promotion[:code].present? %>
+              <span class="badge badge-light ml-1"><%= promotion[:code] %></span>
+            <% end %>
+            <span class="ml-2">
+              <%= PallasTrade.t('admin.order_promotions.promotion_allocation', default: 'Promotion allocation') %>:
+              <%= PallasTrade::Money.new(-promotion[:allocated_discount], currency: preview.currency).to_html %>
+              · <%= PallasTrade.t('admin.order_promotions.original_discount', default: 'Original discount') %>:
+              <%= PallasTrade::Money.new(-promotion[:original_discount], currency: preview.currency).to_html %>
+            </span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+<% end %>
