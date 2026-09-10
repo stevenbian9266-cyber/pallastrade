@@ -652,6 +652,14 @@ en:
         number_of_codes_help: How many codes you want to generate.
         number_of_codes_placeholder: Number of codes
         promotions_list: Promotions List
+        # PRD-20260910-promo-batch3c: 核销台账只读页
+        redemptions: Redemptions
+        redemptions_help: Read-only promotion redemption ledger — which order redeemed which promotion, when it was committed, and why it was released.
+        redemption_amount: Redemption amount
+        redemption_reserved_at: Reserved at
+        redemption_committed_at: Committed at
+        redemption_released_at: Released at
+        redemption_release_reason: Release reason
         usage_limit_help: Leave this field blank for unlimited usage.
       reports:
         reports_list: Reports List

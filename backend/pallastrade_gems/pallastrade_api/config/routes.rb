@@ -320,6 +320,10 @@ PallasTrade::Core::Engine.add_routes do
           resources :coupon_codes, only: [:index, :show]
         end
 
+        # PRD-20260910-promo-batch3c（2026-09-10）：核销台账只读（Admin）
+        # 过滤：order_id / promotion_id / state；分页 {data, meta}。
+        resources :promotion_redemptions, only: %i[index show]
+
         # Subclass discovery for the promotion editor: `/promotion_actions/types`
         # and `/promotion_rules/types` enumerate registered subclasses with
         # their preference schemas. Top-level so the SPA can build the

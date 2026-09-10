@@ -322,6 +322,8 @@ PallasTrade::Core::Engine.add_routes do
         post :recover
       end
     end
+    # PRD-20260910-promo-batch3c: 核销台账只读（Promotions → Redemptions）
+    resources :promotion_redemptions, only: [:index, :show]
     # REV-P6-8a: Refund Ops —— durable Refund inspection（只读，Orders → Refunds）。
     # 与既有 payment 嵌套 refunds（new/create/edit/update）并存；controller 指向 refunds_ops。
     # REV-P6-8b: member retry（人工同键确定性重试）/ mark_review（人工标记复核）。

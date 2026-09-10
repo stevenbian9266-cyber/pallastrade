@@ -2814,4 +2814,70 @@ Rails.application.config.after_initialize do
                                          filterable: true,
                                          default: true,
                                          position: 50
+
+  # PRD-20260910-promo-batch3c: 核销台账只读（Promotions → Redemptions）
+  PallasTrade.admin.tables.register(:promotion_redemptions,
+    model_class: PallasTrade::PromotionRedemption,
+    link_to_action: :show,
+    search_param: :state_cont,
+    row_actions: false,
+    row_actions_edit: false,
+    row_actions_delete: false,
+    new_resource: false)
+
+  PallasTrade.admin.tables.promotion_redemptions.add :prefixed_id,
+                                           label: :id,
+                                           type: :string,
+                                           sortable: false,
+                                           filterable: false,
+                                           default: true,
+                                           position: 10
+
+  PallasTrade.admin.tables.promotion_redemptions.add :state,
+                                           label: :state,
+                                           type: :string,
+                                           sortable: true,
+                                           filterable: true,
+                                           default: true,
+                                           position: 20
+
+  PallasTrade.admin.tables.promotion_redemptions.add :amount,
+                                           label: :amount,
+                                           type: :number,
+                                           sortable: true,
+                                           filterable: false,
+                                           default: true,
+                                           position: 30
+
+  PallasTrade.admin.tables.promotion_redemptions.add :currency,
+                                           label: :currency,
+                                           type: :string,
+                                           sortable: true,
+                                           filterable: true,
+                                           default: true,
+                                           position: 40
+
+  PallasTrade.admin.tables.promotion_redemptions.add :committed_at,
+                                           label: :committed_at,
+                                           type: :datetime,
+                                           sortable: true,
+                                           filterable: true,
+                                           default: true,
+                                           position: 50
+
+  PallasTrade.admin.tables.promotion_redemptions.add :released_at,
+                                           label: :released_at,
+                                           type: :datetime,
+                                           sortable: true,
+                                           filterable: true,
+                                           default: true,
+                                           position: 60
+
+  PallasTrade.admin.tables.promotion_redemptions.add :release_reason,
+                                           label: :release_reason,
+                                           type: :string,
+                                           sortable: false,
+                                           filterable: true,
+                                           default: true,
+                                           position: 70
 end

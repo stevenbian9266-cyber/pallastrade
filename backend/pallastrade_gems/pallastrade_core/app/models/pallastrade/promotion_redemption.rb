@@ -36,6 +36,13 @@ module PallasTrade
     scope :reserved, -> { where(state: 'reserved') }
     scope :released, -> { where(state: 'released') }
 
+    # PRD-20260910-promo-batch3c: Admin API 列表过滤（Ransack 白名单）。
+    self.whitelisted_ransackable_attributes = %w[
+      state promotion_id order_id store_id user_id coupon_code_id amount currency
+      reserved_at reserved_until committed_at released_at release_reason created_at updated_at
+    ]
+    self.whitelisted_ransackable_associations = %w[promotion order coupon_code]
+
     validates :state, inclusion: { in: STATES }
     validates :release_reason, inclusion: { in: RELEASE_REASONS }, allow_nil: true
     validates :promotion_id, uniqueness: { scope: :order_id }

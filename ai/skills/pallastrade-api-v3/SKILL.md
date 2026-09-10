@@ -373,6 +373,19 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
 - Serializer output: `id, title, slug, excerpt, author, published_at, cover_image_url, body, body_html,
   seo_title, seo_description` (Admin also `status`, timestamps).
 
+### Promotion redemptions — read-only ops endpoints (Admin API, 2026-09-10 batch3c)
+
+- `GET /api/v3/admin/promotion_redemptions` — `{ data, meta }` list of the redemption ledger,
+  newest first. Convenience filters: `order_id` (`order_…`), `promotion_id` (`promo_…`),
+  `state` (`reserved` / `committed` / `released`); Ransack `q[...]` and `page`/`limit` also work.
+  Invalid prefixed filters return an empty set (never a 500).
+- `GET /api/v3/admin/promotion_redemptions/:id` — single row (`redemption_…`); unknown id → 404.
+- Read-only: no create/update/destroy. Scoped `read` capability (permission registry
+  `:promotion_redemptions`); API-key principals are gated by `scoped_resource`, JWT admins by CanCan.
+- Serializer fields: `state`, `promotion_id`, `order_id`, `user_id`, `coupon_code`, `amount`,
+  `display_amount`, `currency`, `reserved_at`, `reserved_until`, `committed_at`, `released_at`,
+  `release_reason`.
+
 ## Read/write attribute symmetry (a v3 invariant)
 
 For any resource: **whatever a serializer returns, the controller's `permitted_params` accepts on write under the same name.** No `label` exposed but `presentation` accepted. No `customer_note` exposed but `special_instructions` accepted. The client never has to translate.

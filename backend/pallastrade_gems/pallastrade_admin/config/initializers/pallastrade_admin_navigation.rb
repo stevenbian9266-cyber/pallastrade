@@ -235,6 +235,13 @@ Rails.application.config.after_initialize do
                   url: :admin_promotions_path,
                   position: 5,
                   active: -> { controller_name == 'promotions' && action_name == 'index' }
+    # PRD-20260910-promo-batch3c: 核销台账只读观测（Promotions → Redemptions）
+    promotions.add :promotion_redemptions,
+                  label: 'admin.promotions.redemptions',
+                  url: :admin_promotion_redemptions_path,
+                  position: 15,
+                  active: -> { controller_name == 'promotion_redemptions' },
+                  if: -> { can?(:read, PallasTrade::PromotionRedemption) }
     # Gift Cards
     promotions.add :gift_cards,
                   label: :gift_cards,

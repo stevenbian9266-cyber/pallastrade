@@ -26831,3 +26831,68 @@ components:
       - code
       - kind
       - removable
+    PromotionRedemption:
+      type: object
+      properties:
+        id:
+          type: string
+        state:
+          type: string
+        currency:
+          type: string
+          nullable: true
+        release_reason:
+          type: string
+          nullable: true
+        promotion_id:
+          type: string
+          nullable: true
+        order_id:
+          type: string
+          nullable: true
+        user_id:
+          type: string
+          nullable: true
+        coupon_code:
+          type: string
+          nullable: true
+        amount:
+          type: string
+          nullable: true
+        display_amount:
+          type: string
+          nullable: true
+        reserved_at:
+          type: string
+          nullable: true
+        reserved_until:
+          type: string
+          nullable: true
+        committed_at:
+          type: string
+          nullable: true
+        released_at:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+        updated_at:
+          type: string
+      required:
+      - id
+      - state
+      - currency
+      - release_reason
+      - promotion_id
+      - order_id
+      - user_id
+      - coupon_code
+      - amount
+      - display_amount
+      - reserved_at
+      - reserved_until
+      - committed_at
+      - released_at
+      - created_at
+      - updated_at
+      x-typelizer: true

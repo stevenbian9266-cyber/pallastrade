@@ -7,6 +7,7 @@ require 'rails_helper'
 # PRD-20260909-promotions-promo-batch2-discount-projection-unified AC-010
 # PRD-20260910-promotions-promo-batch3a-redemption-ledger AC-011
 # PRD-20260910-promotions-promo-batch3b-redemption-hardening AC-011
+# PRD-20260910-promotions-promo-batch3c-redemption-readonly AC-007
 # I1 discount_total==eligible sum; I2 recalc determinism; I3 remove idempotency;
 # I4 best-per-adjustable; I5 no negative total; I6 OrderPromotion#amount gap.
 RSpec.describe 'Promotion amount contracts', type: :model do

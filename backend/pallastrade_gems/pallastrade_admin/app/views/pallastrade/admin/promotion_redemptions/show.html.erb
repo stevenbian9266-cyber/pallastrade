@@ -1,0 +1,53 @@
+<% content_for(:title, PallasTrade.t('admin.promotions.redemptions')) %>
+<% content_for :page_title do %>
+  <%= @object.prefixed_id %>
+<% end %>
+<%= content_for(:page_actions) do %>
+  <%= link_to PallasTrade.t('actions.back'), PallasTrade.admin_promotion_redemptions_path, class: 'btn btn-outline' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= @object.prefixed_id %></h5>
+    <span class="badge badge-info"><%= @object.state %></span>
+    <span class="text-sm text-gray-500 ml-2">
+      <%= @object.currency %> <%= @object.amount %>
+    </span>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div>
+        <dt class="text-sm text-gray-500"><%= PallasTrade.t('promotion') %></dt>
+        <dd><%= @object.promotion&.name || @object.promotion&.prefixed_id %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500"><%= PallasTrade.t('order') %></dt>
+        <dd><%= @object.order&.number || @object.order&.prefixed_id %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500"><%= PallasTrade.t('coupon_code') %></dt>
+        <dd><%= @object.coupon_code&.code.presence || '—' %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500"><%= PallasTrade.t('admin.promotions.redemption_amount') %></dt>
+        <dd><%= @object.amount&.to_s || '—' %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500"><%= PallasTrade.t('admin.promotions.redemption_reserved_at') %></dt>
+        <dd><%= @object.reserved_at&.iso8601 || '—' %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500"><%= PallasTrade.t('admin.promotions.redemption_committed_at') %></dt>
+        <dd><%= @object.committed_at&.iso8601 || '—' %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500"><%= PallasTrade.t('admin.promotions.redemption_released_at') %></dt>
+        <dd><%= @object.released_at&.iso8601 || '—' %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500"><%= PallasTrade.t('admin.promotions.redemption_release_reason') %></dt>
+        <dd><%= @object.release_reason.presence || '—' %></dd>
+      </div>
+    </dl>
+  </div>
+</div>

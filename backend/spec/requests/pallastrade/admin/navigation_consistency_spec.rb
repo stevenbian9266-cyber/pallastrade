@@ -105,7 +105,8 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
       expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders transactions refunds payment_combinations payments_ops])
       expect(sidebar.find(:products).children.map(&:key)).to eq(%i[products_list price_lists stock translations taxonomies options])
       expect(sidebar.find(:customers).children.map(&:key)).to eq(%i[customers_list customer_groups newsletter_subscribers])
-      expect(sidebar.find(:promotions).children.map(&:key)).to eq(%i[promotions_list gift_cards])
+      # PRD-20260910-promo-batch3c AC-004: Promotions 组新增只读核销台账子项
+      expect(sidebar.find(:promotions).children.map(&:key)).to eq(%i[promotions_list gift_cards promotion_redemptions])
       expect(sidebar.find(:reports).children.map(&:key)).to eq(%i[reports_list])
       expect(sidebar.find(:blog).children.map(&:key)).to eq(%i[blog_list])
       expect(sidebar.find(:returns).children.map(&:key)).to eq(%i[customer_returns return_authorizations])

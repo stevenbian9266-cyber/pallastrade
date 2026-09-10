@@ -261,6 +261,17 @@ end
 新增受控资源 = 注册 PermissionRegistry + 权限矩阵自动出现（零表单改动）。
 菜单结构增删 = 改 `pallastrade_admin_navigation.rb`（代码评审），不开放 UI 结构编辑。
 
+## 只读运维页范式（reference: Transactions / Refund Ops / Promotion Redemptions）
+
+后台的「只读观测页」统一按以下四件套落位（以 **Promotions → Redemptions**（2026-09-10，PRD-20260910-promo-batch3c）为例）：
+
+1. **控制器**：`pallastrade_admin/app/controllers/.../<resource>_controller.rb` 继承 `ResourceController`，覆写 `model_class` / `scope`（用 `current_store.<assoc>` 保证店铺隔离）/ `object_name` / `find_object`（`find_by_prefix_id!`）；只读页**不要**定义 new/create/edit/update/destroy。
+2. **表格**：`config/initializers/pallastrade_admin_tables.rb` 里 `PallasTrade.admin.tables.register(:<key>, model_class:, link_to_action: :show, search_param:, row_actions: false, row_actions_edit: false, row_actions_delete: false, new_resource: false)` + 逐列 `.add`；视图只写 `<%= render_table @collection, :<key> %>`。
+3. **导航**：`pallastrade_admin_navigation.rb` 在目标分组（如 `promotions.add`）加子项，`if: -> { can?(:read, <Model>) }` 守卫；**新增/删除子项必须同步 `spec/requests/pallastrade/admin/navigation_consistency_spec.rb` 的子项数组断言**（历史踩坑：Orders 加 `:transactions`、Promotions 加 `:promotion_redemptions` 都会让该断言失败）。
+4. **权限**：`backend/config/initializers/pallastrade_permission_registry.rb` 注册 `<resource>`（model_class + actions + data_fields: store_id）；`nav:validate` 会校验 role_permissions 里的 resource 必须已注册。
+
+对应 Admin API 只读端点（如 `GET /api/v3/admin/promotion_redemptions`）见 `pallastrade-api-v3` Skill：`ResourceController` 子类 + `scoped_resource`，列表返回 `{ data, meta }`，**JWT 管理员需显式 `authorize!(:read, Model)`**（read 动作没有全局钩子；API key 主体由 `ScopedAuthorization` 处理）。Ransack 过滤必须在模型上写 `whitelisted_ransackable_attributes`，否则过滤条件被静默忽略（返回全量）。
+
 ## 多店铺管理（2026-08-17）
 
 数据/权限/API 层多店铺早已就绪（`PallasTrade::Store` 一等模型、`Current.store` 每请求上下文、`RoleUser` 用户→角色→店铺、`for_store(current_store)` 作用域、Store API `pk_` key 识别店铺）。2026-08-17 在 Rails 后台补齐管理 UI：

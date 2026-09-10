@@ -2133,6 +2133,29 @@
         "eventWireUps": 25,
         "regressionGreen": 20
       }
+    },
+    {
+      "id": "GS-085",
+      "name": "Promotion redemption read-only observability",
+      "description": "Redemption ledger must be observable via Admin API + Rails Admin, read-only (see PRD-20260910-promotions-promo-batch3c-redemption-readonly)",
+      "mustDo": [
+        "Expose GET /api/v3/admin/promotion_redemptions (+ :id) with order_id/promotion_id/state filters, prefixed ids and { data, meta } pagination",
+        "Expose a read-only Rails Admin page (Promotions → Redemptions) with table registration and no new/edit/delete",
+        "Register the :promotion_redemptions capability (read + store_id data field) and enforce CanCan read for JWT admins",
+        "Regenerate contracts (typelizer + api-docs) and keep schemas:check clean"
+      ],
+      "mustNotDo": [
+        "Add any write path to the redemption ledger from the admin surfaces",
+        "Expose raw integer primary keys in API responses",
+        "Skip Ransack whitelisting (filters silently ignored)",
+        "Ship an admin nav entry without a permission guard"
+      ],
+      "scoring": {
+        "readOnlyBothSurfaces": 30,
+        "filterAndScopeIsolation": 25,
+        "capabilityRegistered": 20,
+        "contractsClean": 25
+      }
     }
   ]
 }
