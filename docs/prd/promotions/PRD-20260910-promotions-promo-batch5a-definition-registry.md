@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-10 |
 | 来源 | `promotion模块架构-任务拆解.md` 批次 5 → Phase 7（PR-P7-1..3）；架构 §3 Definition Registry；评审修正点「Definition 增量化 + 消除双描述漂移」 |
 | 分类 | promotions |
