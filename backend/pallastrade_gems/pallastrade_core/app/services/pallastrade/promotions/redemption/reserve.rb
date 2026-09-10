@@ -9,6 +9,9 @@ module PallasTrade
   module Promotions
     module Redemption
       class Reserve
+        # reserved 行 TTL 窗口（与 ExpireSweeperJob 的判定配合）。
+        DEFAULT_RESERVED_WINDOW = 2.hours
+
         def self.call(order:, promotion:, coupon_code: nil)
           new(order: order, promotion: promotion, coupon_code: coupon_code).call
         end
@@ -20,9 +23,33 @@ module PallasTrade
         end
 
         def call
-          existing = active_redemption
-          return existing if existing
+          existing = existing_redemption
+          return existing if existing&.active_state?
+          return existing.revive!(reserved_until: reserved_until) if existing.present?
 
+          create_redemption
+        rescue ActiveRecord::RecordNotUnique
+          # 竞争落在唯一索引上：重读既有行；released 行重新占用（幂等），否则直接返回。
+          existing = existing_redemption
+          raise if existing.nil?
+
+          existing.redemption_released? ? existing.revive!(reserved_until: reserved_until) : existing
+        end
+
+        private
+
+        attr_reader :order, :promotion, :coupon_code
+
+        def existing_redemption
+          PallasTrade::PromotionRedemption.find_by(promotion_id: promotion.id, order_id: order.id)
+        end
+
+        # reserved 行的 TTL 窗口（由 ExpireSweeperJob 依据 reserved_until 释放）。
+        def reserved_until
+          Time.current + DEFAULT_RESERVED_WINDOW
+        end
+
+        def create_redemption
           PallasTrade::PromotionRedemption.create!(
             store: order.store,
             promotion: promotion,
@@ -32,18 +59,9 @@ module PallasTrade
             state: 'reserved',
             amount: amount,
             currency: order.currency,
-            reserved_at: Time.current
+            reserved_at: Time.current,
+            reserved_until: reserved_until
           )
-        rescue ActiveRecord::RecordNotUnique
-          active_redemption || raise
-        end
-
-        private
-
-        attr_reader :order, :promotion, :coupon_code
-
-        def active_redemption
-          PallasTrade::PromotionRedemption.active.find_by(promotion_id: promotion.id, order_id: order.id)
         end
 
         # 多码促销：订单在购物车阶段已把码关联到订单（只关联不消耗），核销时取回。

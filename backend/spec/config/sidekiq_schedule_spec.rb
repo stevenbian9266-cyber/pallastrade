@@ -15,4 +15,16 @@ RSpec.describe 'sidekiq schedule (config/sidekiq_schedule.rb)' do
     expect(entry[:cron]).to be_present
     expect(entry[:queue]).to eq('default')
   end
+
+  # PRD-20260910-promotions-promo-batch3b-redemption-hardening AC-004
+  # reserved 行 TTL 出口必须被周期调度，否则悬挂占用永不释放。
+  it 'registers the promotion redemption expiry sweeper (batch3b AC-004)' do
+    load Rails.root.join('config/sidekiq_schedule.rb') unless defined?(PALLAS_CART_SCHEDULE)
+
+    entry = PALLAS_CART_SCHEDULE.find { |e| e[:name] == 'promotion_redemption_expiry' }
+    expect(entry).to be_present
+    expect(entry[:class]).to eq('PallasTrade::Promotions::Redemption::ExpireSweeperJob')
+    expect(entry[:cron]).to eq('*/5 * * * *')
+    expect(entry[:queue]).to eq('default')
+  end
 end

@@ -24,6 +24,13 @@ PALLAS_CART_SCHEDULE = [
     cron: '*/5 * * * *',
     queue: 'default'
   },
+  # PRD-20260910-promo-batch3b: 促销核销 reserved 行的 TTL 出口（保守：有支付证据不释放）。
+  {
+    name: 'promotion_redemption_expiry',
+    class: 'PallasTrade::Promotions::Redemption::ExpireSweeperJob',
+    cron: '*/5 * * * *',
+    queue: 'default'
+  },
   # FIN-P4 review 批1 (2026-09-06, bugfix C6): 注册 reconciliation sweeper —— 自动 reconcile +
   # journal-missing 幂等补记闭环（此前仅在手动 rake，部署中从不运行）。保守：仅 enqueue 补记。
   {

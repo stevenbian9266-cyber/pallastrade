@@ -41,6 +41,20 @@ module PallasTrade
     validates :promotion_id, uniqueness: { scope: :order_id }
     validate :coupon_code_available, if: -> { coupon_code_id.present? && !redemption_released? }
 
+    def active_state?
+      ACTIVE_STATES.include?(state)
+    end
+
+    # 重新占用（released → reserved）：取消/释放后同一 (promotion, order) 再次成交时复用该行
+    # （唯一索引不允许同键二次插入）。
+    def revive!(reserved_until: nil)
+      update!(
+        state: 'reserved', reserved_at: Time.current, reserved_until: reserved_until,
+        committed_at: nil, released_at: nil, release_reason: nil
+      )
+      self
+    end
+
     # 释放该核销（幂等）：写 released_at/reason，并回退占用中的一次性码。
     def release!(reason:)
       return self if redemption_released?

@@ -2110,6 +2110,29 @@
         "releaseOnCancel": 20,
         "regressionGreen": 25
       }
+    },
+    {
+      "id": "GS-084",
+      "name": "Promotion redemption hardening (race, TTL, event wire-ups)",
+      "description": "Redemption occupancy must be race-safe and self-healing (see PRD-20260910-promotions-promo-batch3b-redemption-hardening)",
+      "mustDo": [
+        "Serialize per-promotion occupancy (with_lock) and re-check usage_limit inside the lock; losers emit promotion.redemption_limit_overshoot without blocking a paid order",
+        "Release expired reserved rows via ExpireSweeperJob registered in config/sidekiq_schedule.rb, never touching orders with payment evidence",
+        "Reuse released rows via PromotionRedemption#revive! instead of inserting duplicates",
+        "Finalize on commerce_transaction.payment_confirmed and release on refund.succeeded for full refunds only"
+      ],
+      "mustNotDo": [
+        "Release committed redemptions on partial refunds",
+        "Block order completion (or raise) when another order won the usage slot",
+        "Run the sweeper against orders with active payment sessions/transactions",
+        "Register a subscriber without adding it to the engine subscriber list"
+      ],
+      "scoring": {
+        "lockAndRecheck": 30,
+        "sweeperSafety": 25,
+        "eventWireUps": 25,
+        "regressionGreen": 20
+      }
     }
   ]
 }
