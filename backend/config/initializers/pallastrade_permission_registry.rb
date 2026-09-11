@@ -71,6 +71,12 @@ Rails.application.config.after_initialize do
                model_class: PallasTrade::PromotionRedemption,
                actions: %w[read],
                data_fields: %w[store_id])
+  # PRD-20260911-promo-batch6 (PR-P9-2, D2=A): 促销分类后台 CRUD。
+  # PromotionCategory 无 store_id 列（安装级共享分类）→ 数据范围为空声明。
+  reg.register(:promotion_categories,
+               model_class: PallasTrade::PromotionCategory,
+               actions: %w[read create update destroy],
+               data_fields: [])
   reg.register(:developers,
                model_class: nil,
                actions: %w[read create update destroy],

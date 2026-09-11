@@ -1023,12 +1023,10 @@ en:
         public_metadata: Public metadata
         store_id: Store
         type: Type
-        advertise: Advertise
         code: Code
         description: Description
         expires_at: Expires at
         name: Name
-        path: Path
         starts_at: Starts at
         usage_limit: Usage limit
       pallastrade/promotion/actions/create_adjustment:

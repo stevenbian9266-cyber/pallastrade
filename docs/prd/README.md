@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| done | PRD-20260911-promotions-promo-batch6-pr-p9-cleanup | promotions | 2026-09-11 | REQ-20260911-promo-batch6-pr-p9-cleanup.md |
 | done | PRD-20260911-promotions-promo-batch5b-permission-single-source | promotions | 2026-09-11 | REQ-20260911-promo-batch5b-permission-single-source.md |
 | done | PRD-20260910-promotions-promo-batch5a-definition-registry | promotions | 2026-09-10 | REQ-20260910-promo-batch5a-definition-registry.md |
 | done | PRD-20260910-promotions-promo-batch4b-refund-allocation | promotions | 2026-09-10 | REQ-20260910-promo-batch4b-refund-allocation.md |

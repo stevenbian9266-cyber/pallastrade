@@ -2,6 +2,15 @@
   <%= f.pallastrade_number_field :usage_limit, min: 0, step: 1, help: PallasTrade.t('admin.promotions.usage_limit_help') %>
 <% end %>
 
+<%# PRD-20260911-promo-batch6 (PR-P9-2, D2=A): 促销分类（可选）。
+    分类为安装级共享数据，这里不受当前店铺限制；列表用完整集合，
+    避免无 category 权限的角色编辑促销时把已选分类静默清空。 %>
+<%= f.pallastrade_collection_select :promotion_category_id,
+      @promotion_categories, :id, :name,
+      { include_blank: true,
+        label: PallasTrade.t(:promotion_category),
+        help: PallasTrade.t('admin.promotions.promotion_category_help') } %>
+
 <%# datetime-local inputs have no timezone; render values in the store's timezone so admins see and submit values in the store's local time. %>
 <%
   to_store_local   = ->(value) { value&.in_time_zone(current_timezone)&.strftime('%Y-%m-%dT%H:%M') }

@@ -242,6 +242,13 @@ Rails.application.config.after_initialize do
                   position: 15,
                   active: -> { controller_name == 'promotion_redemptions' },
                   if: -> { can?(:read, PallasTrade::PromotionRedemption) }
+    # PRD-20260911-promo-batch6 (PR-P9-2, D2=A): 促销分类维护（Promotions → Categories）
+    promotions.add :promotion_categories,
+                  label: 'admin.promotions.promotion_categories',
+                  url: :admin_promotion_categories_path,
+                  position: 20,
+                  active: -> { controller_name == 'promotion_categories' },
+                  if: -> { can?(:manage, PallasTrade::PromotionCategory) }
     # Gift Cards
     promotions.add :gift_cards,
                   label: :gift_cards,

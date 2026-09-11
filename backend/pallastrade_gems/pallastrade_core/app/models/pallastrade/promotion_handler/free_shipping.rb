@@ -23,7 +23,7 @@ module PallasTrade
 
       def promotions
         store.promotions.active.joins(:promotion_actions).
-          where(PallasTrade::PromotionAction.table_name => { type: 'PallasTrade::Promotion::Actions::FreeShipping' }, path: nil).distinct
+          where(PallasTrade::PromotionAction.table_name => { type: 'PallasTrade::Promotion::Actions::FreeShipping' }).distinct
       end
     end
   end

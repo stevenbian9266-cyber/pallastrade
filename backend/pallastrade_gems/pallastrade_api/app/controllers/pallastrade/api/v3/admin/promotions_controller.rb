@@ -35,7 +35,7 @@ module PallasTrade
 
           def permitted_attributes
             [
-              :name, :description, :code, :path,
+              :name, :description, :code,
               :starts_at, :expires_at, :usage_limit, :match_policy,
               :kind, :multi_codes, :number_of_codes, :code_prefix,
               :promotion_category_id,

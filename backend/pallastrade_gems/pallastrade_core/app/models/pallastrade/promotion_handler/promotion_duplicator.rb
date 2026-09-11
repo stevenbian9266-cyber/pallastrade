@@ -8,7 +8,6 @@ module PallasTrade
 
       def duplicate
         @new_promotion = @promotion.dup
-        @new_promotion.path = "#{@promotion.path}_#{@random_string}"
         @new_promotion.name = "New #{@promotion.name}"
         @new_promotion.code = "#{@promotion.code}_#{@random_string}"
         @new_promotion.store = @promotion.store

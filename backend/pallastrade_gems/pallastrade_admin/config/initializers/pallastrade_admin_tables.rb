@@ -2815,6 +2815,28 @@ Rails.application.config.after_initialize do
                                          default: true,
                                          position: 50
 
+  # PRD-20260911-promo-batch6 (PR-P9-2, D2=A): 促销分类（Promotions → Categories）
+  PallasTrade.admin.tables.register(:promotion_categories,
+    model_class: PallasTrade::PromotionCategory,
+    search_param: :name_or_code_cont,
+    row_actions: true)
+
+  PallasTrade.admin.tables.promotion_categories.add :name,
+                                           label: :name,
+                                           type: :string,
+                                           sortable: true,
+                                           filterable: true,
+                                           default: true,
+                                           position: 10
+
+  PallasTrade.admin.tables.promotion_categories.add :code,
+                                           label: :code,
+                                           type: :string,
+                                           sortable: true,
+                                           filterable: true,
+                                           default: true,
+                                           position: 20
+
   # PRD-20260910-promo-batch3c: 核销台账只读（Promotions → Redemptions）
   PallasTrade.admin.tables.register(:promotion_redemptions,
     model_class: PallasTrade::PromotionRedemption,

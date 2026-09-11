@@ -16,12 +16,10 @@ erDiagram
         string description
         string kind
         string code
-        string path
         datetime starts_at
         datetime expires_at
         integer usage_limit
         string match_policy
-        boolean advertise
     }
 
     PromotionRule {
@@ -93,8 +91,6 @@ Promotions consist of two main components:
 | `expires_at` | When the promotion expires | 2025-09-01 23:59:59 |
 | `usage_limit` | Max times the promotion can be used | 500 |
 | `match_policy` | How rules are evaluated: `all` or `any` | `all` |
-| `advertise` | Whether to display on storefront | `true` |
-| `path` | SEO-friendly URL path | `summer-sale` |
 
 ### Multi-Code Promotions
 

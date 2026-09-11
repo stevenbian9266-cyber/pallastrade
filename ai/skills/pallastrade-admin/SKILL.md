@@ -276,6 +276,16 @@ end
 
 对应 Admin API 只读端点（如 `GET /api/v3/admin/promotion_redemptions`）见 `pallastrade-api-v3` Skill：`ResourceController` 子类 + `scoped_resource`，列表返回 `{ data, meta }`，**JWT 管理员需显式 `authorize!(:read, Model)`**（read 动作没有全局钩子；API key 主体由 `ScopedAuthorization` 处理）。Ransack 过滤必须在模型上写 `whitelisted_ransackable_attributes`，否则过滤条件被静默忽略（返回全量）。
 
+### Promotions → Categories 写路径 CRUD（PRD-20260911-promo-batch6 / PR-P9-2）
+
+`PallasTrade::PromotionCategory`（促销分类）原先只有 Admin API，后台无入口；本批次补最小 CRUD：
+
+- 控制器 `PallasTrade::Admin::PromotionCategoriesController`（`ResourceController` 子类，覆写 `model_class` / `object_name` / `permitted_resource_params`（`:name, :code`）/ `location_after_save|destroy → admin_promotion_categories_path`）；分类表**无 `store_id`**，所以**不**覆写 `scope`（默认 `model_class` + `accessible_by`）——写路径不要用 `current_store.<assoc>`。
+- 视图 `promotion_categories/{index,new,edit,_form}.html.erb`（镜像 `posts` CRUD：`content_for(:page_actions)` + `render_table` + `form_with model:`）；表格注册 `:promotion_categories`（`search_param: :name_or_code_cont`，模型侧需声明 `whitelisted_ransackable_attributes = %w[name code]`，否则过滤被静默忽略）。
+- 导航：`promotions.add :promotion_categories`（position 20，`if: -> { can?(:manage, PallasTrade::PromotionCategory) }`），en + zh-CN 双语；同步 `navigation_consistency_spec.rb` 子项数组断言。
+- 权限：PermissionRegistry 注册 `:promotion_categories`（`PromotionCategory`，read/create/update/destroy，`data_fields: []`）。
+- 促销编辑页分类选择器在 `promotions/form/_settings.html.erb`，数据由 `PromotionsController#load_form_data` 注入 `@promotion_categories`（**完整集合**，不按 ability 过滤——否则无分类权限的角色编辑促销会把已选分类静默清空）。
+
 ### 订单页展示读「成交快照」（PRD-20260910-promo-batch4a）
 
 订单详情页的促销面板（`admin/orders/_promotions.html.erb` + `_order_promotion.html.erb`）**不再直接读 `order_promotion.promotion.name` / `promotion.coupon_code?`**：

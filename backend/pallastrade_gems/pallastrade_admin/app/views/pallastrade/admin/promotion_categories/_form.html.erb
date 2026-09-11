@@ -1,0 +1,11 @@
+<%= form_with model: object, url: object.persisted? ? PallasTrade.admin_promotion_category_path(object) : PallasTrade.admin_promotion_categories_path, method: object.persisted? ? :patch : :post do |f| %>
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.promotion_categories.details') %></h5>
+    </div>
+    <div class="card-body">
+      <%= f.pallastrade_text_field :name, required: true, autofocus: f.object.new_record? %>
+      <%= f.pallastrade_text_field :code, help: PallasTrade.t('admin.promotion_categories.code_help') %>
+    </div>
+  </div>
+<% end %>

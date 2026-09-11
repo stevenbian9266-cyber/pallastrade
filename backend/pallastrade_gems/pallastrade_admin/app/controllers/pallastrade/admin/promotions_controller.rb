@@ -51,6 +51,8 @@ module PallasTrade
         @rule_types = @promotion_rules.map do |promotion_rule|
           [PallasTrade.t("promotion_rule_types.#{promotion_rule.to_s.demodulize.underscore}.name"), promotion_rule.to_s]
         end
+        # PRD-20260911-promo-batch6 (PR-P9-2, D2=A): 促销分类下拉（安装级数据，跨店共享）
+        @promotion_categories = PallasTrade::PromotionCategory.order(:name)
       end
 
       def collection_includes

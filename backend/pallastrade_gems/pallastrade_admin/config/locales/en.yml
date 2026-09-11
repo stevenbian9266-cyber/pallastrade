@@ -651,6 +651,9 @@ en:
         next_step_info: In the next step you will be able to add actions and rules to your promotion
         number_of_codes_help: How many codes you want to generate.
         number_of_codes_placeholder: Number of codes
+        # PRD-20260911-promo-batch6 (PR-P9-2, D2=A): 促销表单分类选择器 + 分类导航
+        promotion_categories: Promotion Categories
+        promotion_category_help: Optional grouping used to organise promotions in the admin.
         promotions_list: Promotions List
         # PRD-20260910-promo-batch3c: 核销台账只读页
         redemptions: Redemptions
@@ -661,6 +664,14 @@ en:
         redemption_released_at: Released at
         redemption_release_reason: Release reason
         usage_limit_help: Leave this field blank for unlimited usage.
+      promotion_categories:
+        # PRD-20260911-promo-batch6 (PR-P9-2, D2=A): 促销分类后台 CRUD
+        title: Promotion Categories
+        help: Group promotions for reporting and merchandising. Categories are shared across the store and can be left empty.
+        new_promotion_category: New Promotion Category
+        edit_promotion_category: Edit Promotion Category
+        details: Details
+        code_help: Optional short code used by integrations.
       reports:
         reports_list: Reports List
       publishing:

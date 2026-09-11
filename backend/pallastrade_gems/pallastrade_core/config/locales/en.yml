@@ -153,14 +153,12 @@ en:
         shipping_category: Shipping Category
         tax_category: Tax Category
       pallastrade/promotion:
-        advertise: Advertise
         code: Code
         description: Description
         event_name: Event Name
         expires_at: Expires At
         generate_code: Generate coupon code
         name: Name
-        path: Path
         promotion_category: Promotion Category
         starts_at: Starts At
         usage_limit: Usage Limit
@@ -707,7 +705,6 @@ en:
         resume_checkout: Resume Checkout
         view_cart: View Cart
     administration: Administration
-    advertise: Advertise
     all: All
     all_products: All products
     allowed_origin: Allowed Origin

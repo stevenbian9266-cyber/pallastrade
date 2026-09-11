@@ -106,7 +106,8 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
       expect(sidebar.find(:products).children.map(&:key)).to eq(%i[products_list price_lists stock translations taxonomies options])
       expect(sidebar.find(:customers).children.map(&:key)).to eq(%i[customers_list customer_groups newsletter_subscribers])
       # PRD-20260910-promo-batch3c AC-004: Promotions 组新增只读核销台账子项
-      expect(sidebar.find(:promotions).children.map(&:key)).to eq(%i[promotions_list gift_cards promotion_redemptions])
+      # PRD-20260911-promo-batch6 (PR-P9-2, D2=A): Promotions 组新增促销分类子项
+      expect(sidebar.find(:promotions).children.map(&:key)).to eq(%i[promotions_list gift_cards promotion_redemptions promotion_categories])
       expect(sidebar.find(:reports).children.map(&:key)).to eq(%i[reports_list])
       expect(sidebar.find(:blog).children.map(&:key)).to eq(%i[blog_list])
       expect(sidebar.find(:returns).children.map(&:key)).to eq(%i[customer_returns return_authorizations])
@@ -287,6 +288,8 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
   # AC-011：i18n 双语（新增 label en + zh-CN 必填）
   # ============================================================
   describe 'AC-011 — 新增 label 双语（en/zh-CN）' do
+    # PRD-20260911-promotions-promo-batch6-pr-p9-cleanup AC-005: admin.promotions.promotion_categories
+    # 为促销分类导航 label，同样要求 en/zh-CN 双语齐备。
     let(:bilingual_keys) do
       %w[
         admin.orders.all_orders
@@ -294,6 +297,7 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
         admin.products.categories
         admin.customers.customers_list
         admin.promotions.promotions_list
+        admin.promotions.promotion_categories
         admin.reports.reports_list
         admin.blog.blog_list
         admin.returns.customer_returns

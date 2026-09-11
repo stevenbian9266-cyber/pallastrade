@@ -373,6 +373,15 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
 - Serializer output: `id, title, slug, excerpt, author, published_at, cover_image_url, body, body_html,
   seo_title, seo_description` (Admin also `status`, timestamps).
 
+### Admin promotions — writable/readable fields (2026-09-11 batch6 cleanup)
+
+`path` (and the never-exposed `advertise`) are gone from the Admin promotion contract: the v3 admin
+`promotions_controller#permitted_attributes` no longer permits `:path`, and
+`V3::Admin::PromotionSerializer` no longer declares/serializes `path`. Both columns were dropped
+from `pallastrade_promotions` (PRD-20260911-promo-batch6). `promotion_category_id` is unchanged —
+categories are admin-managed since batch6 (see the **Promotions → Categories** entry in
+`pallastrade-admin`). **No endpoint was added or removed.**
+
 ### Promotion redemptions — read-only ops endpoints (Admin API, 2026-09-10 batch3c)
 
 - `GET /api/v3/admin/promotion_redemptions` — `{ data, meta }` list of the redemption ledger,

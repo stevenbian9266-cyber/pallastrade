@@ -2248,6 +2248,30 @@
         "validationGates": 25,
         "regressionGreen": 20
       }
+    },
+    {
+      "id": "GS-090",
+      "name": "Promotion legacy field removal + category admin entry",
+      "description": "Retire the dead v2 promotion fields (advertise/path, PromotionHandler::Page, Product#possible_promotions) and give PromotionCategory an admin entry point, with the same capability discipline as other promotion surfaces (see PRD-20260911-promotions-promo-batch6-pr-p9-cleanup)",
+      "mustDo": [
+        "Add a forward migration that removes advertise (with its index) and path from pallastrade_promotions; never edit historical migrations or hand-edit schema.rb",
+        "Delete every consumer with the columns: PromotionHandler::Page, Promotion#advertised scope + path normalizer/ransack entry, Product#possible_promotions, the ProductsHelper promo cache fragment, the PromotionDuplicator path assignment and the FreeShipping path:nil filter",
+        "Strip path/advertise from PermittedAttributes, the v3 admin promotions permit list and the admin promotion serializer, plus their i18n labels and platform docs",
+        "Ship a minimal PromotionCategory admin CRUD (controller + views + route + table registration + nav entry with en/zh-CN labels) and register the :promotion_categories capability (data_fields empty: the table has no store_id)",
+        "Render the promotion form category selector from the full category set (not ability-filtered) so an editor without category permission cannot silently clear the stored category"
+      ],
+      "mustNotDo": [
+        "Change promotion discount semantics, coupon-code flow or redemption ledger while cleaning up columns",
+        "Store-scope PromotionCategory queries (the table is installation-level and has no store_id)",
+        "Drop the promotion_categories table or the promotion_category_id contract",
+        "Leave a stale advertise/path reference in i18n, docs or OpenAPI/SDK generated types"
+      ],
+      "scoring": {
+        "columnRemovalComplete": 30,
+        "categoryCrudAndCapability": 30,
+        "contractAndDocsSync": 20,
+        "regressionGreen": 20
+      }
     }
   ]
 }

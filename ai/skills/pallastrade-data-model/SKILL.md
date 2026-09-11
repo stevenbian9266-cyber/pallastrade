@@ -65,6 +65,23 @@ storefront JSON-LD `AggregateRating`. Only `approved` reviews are public via the
 - `Promotion#credits_count` / `#usage_limit_exceeded?` read **committed** rows (the ledger is the
   single source of truth for usage limits; the older `Adjustment`-based `Promotion#credits` is deprecated).
 
+## Promotion columns cleanup (batch6, 2026-09-11)
+
+`pallastrade_promotions` no longer carries the v2-era `advertise` (boolean) and `path` (string)
+columns — removed by host migration `20260911000001_remove_advertise_and_path_from_pallastrade_promotions`
+(PRD-20260911-promo-batch6). Both were dead weight: `advertise` was only read by
+`Product#possible_promotions` (deleted, together with the now-unused
+`ProductsHelper#cache_key_for_product` promo fragment) and `path` only by
+`PromotionHandler::Page` (deleted). `Promotion` also drops `scope :advertised`, the `path`
+normalizer and the `path` ransack whitelist; `PromotionHandler::FreeShipping` no longer filters
+on `path: nil`.
+
+Grouping is the remaining promotion-side dimension: `Promotion belongs_to :promotion_category,
+optional: true` (table `pallastrade_promotion_categories`, prefix id `procat_…`, columns
+`name`/`code`, **no `store_id`** — categories are installation-level and shared across stores).
+Deleting a category does not delete promotions (the FK is nullable and there is no dependent
+cascade).
+
 ## Order promotion snapshot (batch4a, 2026-09-10)
 
 `pallastrade_order_promotions` carries the **成交快照** written at money-confirmed time

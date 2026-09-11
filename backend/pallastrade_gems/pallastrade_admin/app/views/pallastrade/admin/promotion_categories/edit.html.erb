@@ -1,0 +1,6 @@
+<%= content_for(:title, PallasTrade.t('admin.promotion_categories.edit_promotion_category')) %>
+<% content_for :page_title do %>
+  <%= @object.name.presence || PallasTrade.t('admin.promotion_categories.edit_promotion_category') %>
+<% end %>
+
+<%= render partial: 'form', locals: { object: @object } %>

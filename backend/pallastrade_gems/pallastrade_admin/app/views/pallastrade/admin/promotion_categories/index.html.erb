@@ -1,0 +1,15 @@
+<%= content_for(:title, PallasTrade.t('admin.promotion_categories.title')) %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.promotion_categories.title') %>
+<% end %>
+<%= content_for(:page_actions) do %>
+  <%= link_to PallasTrade.t('admin.promotion_categories.new_promotion_category'),
+              PallasTrade.new_admin_promotion_category_path,
+              class: 'btn btn-primary' %>
+<% end %>
+
+<div class="alert alert-info mb-6">
+  <%= PallasTrade.t('admin.promotion_categories.help') %>
+</div>
+
+<%= render_table @collection, :promotion_categories %>

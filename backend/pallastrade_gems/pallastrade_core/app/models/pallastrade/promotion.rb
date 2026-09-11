@@ -24,7 +24,7 @@ module PallasTrade
     #
     # Magic methods
     #
-    normalizes :code, :path, :name, with: ->(value) { value ? value.to_s.squish.presence : nil }
+    normalizes :code, :name, with: ->(value) { value ? value.to_s.squish.presence : nil }
 
     #
     # Enums
@@ -86,7 +86,6 @@ module PallasTrade
     #
     scope :expired, -> { where('expires_at < ?', Time.current) }
     scope :coupons, -> { where(kind: :coupon_code) }
-    scope :advertised, -> { where(advertise: true) }
     scope :applied, lambda {
       joins(<<-SQL).distinct
         INNER JOIN pallastrade_order_promotions
@@ -99,7 +98,7 @@ module PallasTrade
     #
     # `name` is whitelisted so the admin global search / command palette can
     # filter via the `name_or_code_cont` predicate without a dedicated scope.
-    self.whitelisted_ransackable_attributes = ['name', 'path', 'promotion_category_id', 'code', 'starts_at', 'expires_at']
+    self.whitelisted_ransackable_attributes = ['name', 'promotion_category_id', 'code', 'starts_at', 'expires_at']
     self.whitelisted_ransackable_associations = %w[coupon_codes]
 
     # Deterministic code lookup (PRD-20260909-promo-batch1 AC-P3-3):

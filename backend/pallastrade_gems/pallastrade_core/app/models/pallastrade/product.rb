@@ -79,10 +79,6 @@ module PallasTrade
 
     has_many :promotions, through: :promotion_rules, class_name: 'PallasTrade::Promotion'
 
-    has_many :possible_promotions, -> { advertised.active }, through: :promotion_rules,
-                                                             class_name: 'PallasTrade::Promotion',
-                                                             source: :promotion
-
     belongs_to :tax_category, class_name: 'PallasTrade::TaxCategory'
     belongs_to :shipping_category, class_name: 'PallasTrade::ShippingCategory', inverse_of: :products
     has_many :shipping_methods, through: :shipping_category, class_name: 'PallasTrade::ShippingMethod'

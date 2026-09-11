@@ -174,6 +174,8 @@ PallasTrade::Core::Engine.add_routes do
       resources :promotion_rules, as: :rules, except: [:index, :show]
       resources :coupon_codes, only: :index
     end
+    # PRD-20260911-promo-batch6 (PR-P9-2, D2=A): 促销分类后台 CRUD（安装级，无 store 维度）
+    resources :promotion_categories, except: [:show]
     get 'search/option_values', defaults: { format: :json }, to: 'search#option_values'
 
     # gift cards

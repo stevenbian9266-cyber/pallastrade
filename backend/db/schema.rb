@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_10_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_11_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1828,7 +1828,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_000002) do
   end
 
   create_table "pallastrade_promotions", force: :cascade do |t|
-    t.boolean "advertise", default: false
     t.string "code"
     t.string "code_prefix"
     t.datetime "created_at", null: false
@@ -1839,7 +1838,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_000002) do
     t.boolean "multi_codes", default: false
     t.string "name"
     t.integer "number_of_codes"
-    t.string "path"
     t.jsonb "private_metadata"
     t.bigint "promotion_category_id"
     t.jsonb "public_metadata"
@@ -1849,12 +1847,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_000002) do
     t.datetime "updated_at", null: false
     t.integer "usage_limit"
     t.index "store_id, lower(btrim((code)::text))", name: "index_pallastrade_promotions_on_store_id_and_normalized_code", unique: true, where: "(code IS NOT NULL)"
-    t.index ["advertise"], name: "index_pt_promotions_on_advertise"
     t.index ["code"], name: "index_pt_promotions_on_code"
     t.index ["expires_at"], name: "index_pt_promotions_on_expires_at"
     t.index ["id", "type"], name: "index_pt_promotions_on_id_and_type"
     t.index ["kind"], name: "index_pt_promotions_on_kind"
-    t.index ["path"], name: "index_pt_promotions_on_path"
     t.index ["promotion_category_id"], name: "index_pt_promotions_on_promotion_category_id"
     t.index ["starts_at"], name: "index_pt_promotions_on_starts_at"
     t.index ["store_id"], name: "index_pt_promotions_on_store_id"
