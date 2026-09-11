@@ -176,6 +176,8 @@
 - [x] `platform/docs/developer/core-concepts/promotions.mdx` + `platform/docs/api-reference/webhooks-events.mdx`
 - [x] `docs/prd/README.md` 索引
 
+**知识同步门结论（sync-check，2026-09-11）**：全资产 20 项已逐项评估 —— **updated 6 项**（领域 Skill `pallastrade-promotions`、`pallastrade-data-model`、`pallastrade-api-v3`、`pallastrade-admin`、测试、场景库）+ **reviewed-no-change 14 项**（`{store,admin}.yaml`：未增删端点且 `generated:check` 无漂移；SDK 类型；storefront Skill/组件测试、events Skill、typescript-sdk Skill、platform/根 README、security Skill、AGENTS.md §8、prd Skill、AGENTS.md、copilot-instructions.md）。已 `sync-check --ack`，知识环 20/11 通过。
+
 ---
 
 ## 11. 变更记录
@@ -184,3 +186,4 @@
 |---|---|---|---|
 | 2026-09-11 | 0.1 | 初稿：PR-P9-1..5 盘点（含证据行号）+ 决策清单（D1..D4）+ 建议范围；等用户拍板后置 approved 并实施 | AI |
 | 2026-09-11 | 1.0 | 用户拍板 D1=A / D2=A / D3+D4 暂缓；按此实施 P9-1 字段与死代码下线 + P9-2 分类最小 UI；补 §4/§5/§6/§9/§10 定稿 | AI |
+| 2026-09-11 | 1.1 | 收尾：全量套件 1426 examples 通过（修复 batch5b 写死计数断言）、知识同步门 20 项评估 + ack、恢复计划 REC-bfbcee01f781c6、gate finished + task completed；用户显式批准关键风险收尾（不含推送 dev） | AI |

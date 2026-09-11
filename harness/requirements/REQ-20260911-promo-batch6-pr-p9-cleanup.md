@@ -92,9 +92,15 @@
 |---|---|
 | 新增规格 | `promotion_legacy_cleanup_spec.rb`（11 例）+ `promotion_categories_spec.rb`（10 例）全绿 |
 | 回归集合 | 206 examples / 0 failures / 6 pending（促销 + 权限 + 导航 + API + services + jobs + rake） |
+| 全量套件 | `backend-rspec` 验证器 **1426 examples / 0 failures** / 6 pending（首次运行 1 例失败：batch5b 写死 `resources=14` → 已改为按注册表动态取数，提交 `819a0c7c`） |
 | 迁移 | 容器 `db:migrate` 成功；`schema.rb` 同步 |
 | 注册表 | `permissions:validate` resources=15 models=14 errors=0 warnings=3 |
 | 导航 | `nav:validate` OK（0 warning），`check --profile quick` 无反模式/AP-009 |
 | 契约 | `generated:check` 无漂移；`doc-impact` 3 synced / 0 missing；`prd verify` 全 AC 覆盖 |
 | 规范 | 新增文件 rubocop 0 offense；改动行沿用文件既有模式 |
+| 知识同步门 | `sync-check` 全资产 20 项评估（6 updated / 14 reviewed-no-change）→ `--ack`；知识环 20/11 通过 |
+| 恢复计划 | `REC-bfbcee01f781c6`（manual-only：备份 → 停损 → 回滚 → 验证） |
+| 证据环 | test（EVD-…044619）+ review（EVD-…044806）+ knowledge（EVD-…051345）+ approval（EVD-…051330，用户显式批准，不含推送 dev） |
+| Gate / Task | `GATE-2026-09-11T03-03-10` finished；`TASK-20260911030259-4a126a1b` completed with verified evidence |
+| 提交 | `93f9f3b6`（主体）+ `819a0c7c`（修复断言/文档） |
 
