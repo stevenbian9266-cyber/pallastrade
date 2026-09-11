@@ -36,11 +36,19 @@ module PallasTrade
 
         event.mark_processing!
 
-        result = PallasTrade::Dependencies.payments_handle_webhook_service.constantize.call(
-          payment_method: event.payment_method,
-          action: event.action.to_sym,
-          payment_session: event.payment_session
-        )
+        # PRD-20260911-payments-dsp-p7-1 (DSP-P7-1)：dispute 事件族不携带 payment_session，
+        # 走专用处理服务（webhook 只是证据，不得在此取消订单/动库存/补记资金）。
+        result = if event.dispute_action?
+                   PallasTrade::Dependencies.disputes_handle_provider_event_service.constantize.call(
+                     webhook_event: event
+                   )
+                 else
+                   PallasTrade::Dependencies.payments_handle_webhook_service.constantize.call(
+                     payment_method: event.payment_method,
+                     action: event.action.to_sym,
+                     payment_session: event.payment_session
+                   )
+                 end
 
         if result.failure?
           # 业务确定性失败（订单取消 / no_payment_found 等）→ 记录 failed，

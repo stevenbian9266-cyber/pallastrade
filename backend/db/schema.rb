@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_11_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_11_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -696,6 +696,40 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_11_000001) do
     t.datetime "updated_at", precision: nil, null: false
     t.bigint "variant_id"
     t.index ["variant_id"], name: "index_pt_digitals_on_variant_id"
+  end
+
+  create_table "pallastrade_disputes", force: :cascade do |t|
+    t.decimal "amount", precision: 12, scale: 2, default: "0.0", null: false
+    t.string "attention_reason"
+    t.bigint "commerce_transaction_id"
+    t.datetime "created_at", null: false
+    t.string "currency"
+    t.datetime "evidence_due_at"
+    t.datetime "evidence_submitted_at"
+    t.decimal "fee_amount", precision: 12, scale: 2
+    t.string "kind"
+    t.string "network_reason_code"
+    t.bigint "order_id"
+    t.string "outcome"
+    t.bigint "payment_combination_id"
+    t.bigint "payment_id"
+    t.jsonb "private_metadata"
+    t.string "provider", null: false
+    t.string "provider_charge_reference"
+    t.string "provider_dispute_reference", null: false
+    t.string "provider_payment_reference"
+    t.jsonb "public_metadata"
+    t.string "reason"
+    t.datetime "resolved_at"
+    t.datetime "responded_at"
+    t.string "state", null: false
+    t.bigint "store_id"
+    t.datetime "updated_at", null: false
+    t.index ["order_id"], name: "index_pallastrade_disputes_on_order_id"
+    t.index ["payment_id"], name: "index_pallastrade_disputes_on_payment_id"
+    t.index ["provider", "provider_dispute_reference"], name: "idx_pt_disputes_provider_ref", unique: true
+    t.index ["state", "evidence_due_at"], name: "index_pallastrade_disputes_on_state_and_evidence_due_at"
+    t.index ["store_id"], name: "index_pallastrade_disputes_on_store_id"
   end
 
   create_table "pallastrade_email_logs", force: :cascade do |t|

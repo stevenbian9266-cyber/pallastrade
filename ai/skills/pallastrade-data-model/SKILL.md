@@ -82,6 +82,23 @@ optional: true` (table `pallastrade_promotion_categories`, prefix id `procat_…
 Deleting a category does not delete promotions (the FK is nullable and there is no dependent
 cascade).
 
+## Disputes (DSP-P7-1, 2026-09-11)
+
+`pallastrade_disputes` (prefix id `dsp_…`) is the durable aggregate for **provider-initiated money
+reversals** (chargeback / inquiry / warning / representment) — deliberately **not** a Refund:
+
+- Unique `(provider, provider_dispute_reference)` — the event idempotency key; a payment can carry
+  **1:N** disputes and partial amounts.
+- State machine (10 values, **forward-only by phase rank**): `opened` → `needs_response` →
+  `submitted` → `under_review` → `won/lost/accepted/expired`, plus `closed` (archive) and
+  `manual_review` (human). Backwards moves are rejected; corrections within the same phase and
+  closed/manual_review entries are allowed.
+- `evidence_due_at` is first-class (provider evidence window); `attention_reason`
+  (`unlinked_payment` / `non_positive_amount` / `invalid_transition`) marks rows needing a human.
+- Written only by `PallasTrade::Disputes::HandleProviderEvent` (webhook-driven, idempotent, upsert
+  never nil-overwrites existing facts). **No** order/inventory/payment/journal writes.
+- `CommerceTransaction` stays `completed`: disputes never mutate the original transaction state.
+
 ## Order promotion snapshot (batch4a, 2026-09-10)
 
 `pallastrade_order_promotions` carries the **成交快照** written at money-confirmed time

@@ -885,6 +885,31 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   本包聚焦 core ops 原语 + sweeper metrics 日志 + runbook。
 - 运维手册：`docs/operations/financial-reconciliation-runbook.md`。无 migration/schema/API。
 
+## Dispute ingestion（DSP-P7-1, 2026-09-11；PRD-20260911-payments-dsp-p7-1）
+
+> **非商户发起的资金逆转**（chargeback / inquiry / warning / representment）从本切片开始有 durable 事实。
+> 边界（P7-0 冻结）：**Refund ≠ Dispute**；不改 CommerceTransaction 状态机；webhook = evidence 不是 authority；
+> inventory 不变；journal append-only。本切片**零业务副作用**（只写 dispute 域）。
+
+- **表/模型**：`pallastrade_disputes`（`dsp_` 前缀）+ `PallasTrade::Dispute`：`provider` +
+  `provider_dispute_reference` 唯一（事件幂等键）、`kind`（inquiry/warning/chargeback/retrieval）、
+  10 态状态机（`opened/needs_response/accepted/submitted/under_review/won/lost/expired/closed/manual_review`，
+  **阶段序单向收敛**：允许向前跳级与同阶段纠偏，禁止倒退）、`evidence_due_at` 一等列、
+  `attention_reason`（`unlinked_payment` / `non_positive_amount` / `invalid_transition`）。
+- **入口**：`Gateway::WEBHOOK_EVENT_ACTIONS` 新增 5 个 `charge.dispute.*` 事件 →
+  `parse_webhook_event` **对 dispute 族不要求 payment_session**（支付族行为不变）→ 控制器沿用
+  `WebhookEventStore` + `HandleWebhookJob`（P0 的 dedupe/replay/retry 全部复用）→ Job 按事件族
+  分流到 `PallasTrade::Disputes::HandleProviderEvent`（支付动作仍走 `Payments::HandleWebhook`）。
+- **服务**：`Disputes::HandleProviderEvent` 解析 payload（`Disputes::ProviderPayload`，Stripe 形状 +
+  零小数货币归一）→ 用 `payment_intent` 锚定本地 `Payment#response_code` → `Dispute.upsert_from_event!`；
+  **无锚点不丢事件**（落行 + `unlinked_payment`）；provider 未知状态保持原状态；非法迁移记
+  `invalid_transition` 而不抛错。
+- **DI**：`PallasTrade::Dependencies.disputes_handle_provider_event_service`（默认为上述服务）。
+- **部署**：新增订阅事件后必须**重新注册 Stripe webhook endpoint**（`CreateGatewayWebhooks` 用该配置下发），
+  否则线上不会投递 dispute 事件。
+- **后续切片**：P7-2 Fact 解析 / P7-3 Journal+对账（`FACT_TYPES`/`ENTRY_TYPES`/`fact_posting_key` 要扩展）/
+  P7-4 Evidence / P7-5 Deadline sweeper / P7-6 Recovery / P7-7 Admin Console。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.
@@ -894,6 +919,11 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **Stripe gem:** `https://github.com/stevenbian9266-cyber/pallastrade` — best reference for a real-world payment integration.
 
 ## Changelog (P0 Payment, 2026-09-03)
+
+- DSP-P7-1 (2026-09-11, PRD-20260911-payments-dsp-p7-1): Dispute durable 模型与 provider 事件入口——
+  `pallastrade_disputes`/`PallasTrade::Dispute`（幂等 upsert + 阶段序状态机 + attention_reason）；
+  `charge.dispute.*` 五事件订阅/映射/parse 分流；`HandleWebhookJob` 按族分派到
+  `Disputes::HandleProviderEvent`（复用 P0 dedupe/replay）；无锚点不丢事件；零业务副作用。
 
 - FIN-P4-8 (2026-09-06, PRD-20260906-payments-fin-p4-8): Repair/Legacy/Operations——`FinancialLedger::
   RepairTransaction`（Journal 幂等补记，委托 PostPayment/Refund/Allocation；绝不重 Payment/Refund）+

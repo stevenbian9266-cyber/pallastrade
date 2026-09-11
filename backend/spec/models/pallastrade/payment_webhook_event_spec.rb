@@ -3,6 +3,7 @@
 require 'rails_helper'
 
 # P0-2 (PRD FR-020/FR-021/FR-022): PaymentWebhookEvent 生命周期 + DB 级去重。
+# PRD-20260911-payments-dsp-p7-1-durable-dispute-model-and-provider-event-ingestion AC-001（dispute 动作白名单 + dispute_action?）
 RSpec.describe PallasTrade::PaymentWebhookEvent, type: :model do
   let(:store) { @default_store }
   let(:payment_method) { create(:bogus_payment_method, store: store, active: true, display_on: 'both', auto_capture: true) }
@@ -124,6 +125,38 @@ RSpec.describe PallasTrade::PaymentWebhookEvent, type: :model do
 
       expect(event.reload.provider_created_at).to be_a(Time)
       expect(event.provider_created_at.to_i).to eq(1_700_000_000)
+    end
+  end
+
+  # PRD-20260911-payments-dsp-p7-1 (DSP-P7-1) AC-001：dispute 事件族动作白名单
+  describe 'dispute actions' do
+    described_class::DISPUTE_ACTIONS.each do |dispute_action|
+      it "accepts action=#{dispute_action}" do
+        event, = build_event(provider_event_id: "evt_#{dispute_action}", action: dispute_action)
+
+        expect(event).to be_persisted
+        expect(event.action).to eq(dispute_action)
+        expect(event).to be_dispute_action
+      end
+    end
+
+    it 'keeps the payment action set intact and marks them as non-dispute' do
+      event, = build_event(provider_event_id: 'evt_payment', action: 'captured')
+
+      expect(event).to be_persisted
+      expect(event).not_to be_dispute_action
+    end
+
+    it 'still rejects unknown actions' do
+      expect do
+        build_event(provider_event_id: 'evt_bogus', action: 'bogus_action')
+      end.to raise_error(ActiveRecord::RecordInvalid)
+    end
+
+    it 'classifies actions via the class-level predicate' do
+      expect(described_class.dispute_action?('dispute_closed')).to be true
+      expect(described_class.dispute_action?('captured')).to be false
+      expect(described_class.dispute_action?(nil)).to be false
     end
   end
 end

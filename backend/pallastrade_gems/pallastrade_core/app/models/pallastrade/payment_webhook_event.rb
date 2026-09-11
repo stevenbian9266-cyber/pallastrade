@@ -22,6 +22,14 @@ module PallasTrade
 
     STATUSES = %w[received processing processed failed].freeze
     ACTIONS  = %w[captured authorized failed canceled].freeze
+    # PRD-20260911-payments-dsp-p7-1 (DSP-P7-1)：provider 发起的资金逆转事件族。
+    # 这些事件不绑定 payment_session（parse 层分流），落库后由 HandleWebhookJob 分流到
+    # `PallasTrade::Disputes::HandleProviderEvent`。
+    DISPUTE_ACTIONS = %w[
+      dispute_created dispute_updated dispute_closed
+      dispute_funds_withdrawn dispute_funds_reinstated
+    ].freeze
+    ALL_ACTIONS = (ACTIONS + DISPUTE_ACTIONS).freeze
 
     belongs_to :payment_method, class_name: 'PallasTrade::PaymentMethod', optional: false
     belongs_to :payment_session, class_name: 'PallasTrade::PaymentSession', optional: true
@@ -29,7 +37,7 @@ module PallasTrade
     validates :provider, :provider_event_id, :status, presence: true
     validates :provider_event_id, uniqueness: { scope: :provider }
     validates :status, inclusion: { in: STATUSES }
-    validates :action, inclusion: { in: ACTIONS }, allow_nil: true
+    validates :action, inclusion: { in: ALL_ACTIONS }, allow_nil: true
 
     before_validation :normalize_provider_created_at
 
@@ -49,6 +57,15 @@ module PallasTrade
 
     STATUSES.each do |status_name|
       define_method("#{status_name}?") { status == status_name }
+    end
+
+    # PRD-20260911-payments-dsp-p7-1：dispute 事件族判定（Job 分流依据）。
+    def dispute_action?
+      DISPUTE_ACTIONS.include?(action.to_s)
+    end
+
+    def self.dispute_action?(action)
+      DISPUTE_ACTIONS.include?(action.to_s)
     end
 
     # ── 生命周期（简单方法 + 显式守卫，不用 state_machine：

@@ -95,6 +95,8 @@ module PallasTrade
 
         payment_create_service: 'PallasTrade::Payments::Create',
         payments_handle_webhook_service: 'PallasTrade::Payments::HandleWebhook',
+        # PRD-20260911-payments-dsp-p7-1 (DSP-P7-1)：dispute 事件族专用处理服务
+        disputes_handle_provider_event_service: 'PallasTrade::Disputes::HandleProviderEvent',
 
         # finders
         address_finder: 'PallasTrade::Addresses::Find',

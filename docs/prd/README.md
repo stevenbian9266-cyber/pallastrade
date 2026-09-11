@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| done | PRD-20260911-payments-dsp-p7-1-durable-dispute-model-and-provider-event-ingestion | payments | 2026-09-11 | REQ-20260911-dsp-p7-1-dispute-model-and-event-ingestion.md |
 | done | PRD-20260911-payments-dsp-p7-0-dispute-semantic-audit-and-data-model-freeze | payments | 2026-09-11 | REQ-20260911-dsp-p7-0-dispute-semantic-audit.md |
 | done | PRD-20260911-promotions-promo-batch6-pr-p9-cleanup | promotions | 2026-09-11 | REQ-20260911-promo-batch6-pr-p9-cleanup.md |
 | done | PRD-20260911-promotions-promo-batch5b-permission-single-source | promotions | 2026-09-11 | REQ-20260911-promo-batch5b-permission-single-source.md |

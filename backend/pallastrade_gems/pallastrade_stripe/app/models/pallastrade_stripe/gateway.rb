@@ -17,8 +17,22 @@ module PallasTradeStripe
       'checkout.session.completed' => :captured,
       'checkout.session.async_payment_succeeded' => :captured,
       'checkout.session.async_payment_failed' => :failed,
-      'checkout.session.expired' => :canceled
+      'checkout.session.expired' => :canceled,
+      # PALLAS-CUSTOM (2026-09-11, PRD-20260911-payments-dsp-p7-1): provider 发起的
+      # 资金逆转（chargeback / dispute）事件族。与支付事件不同，它们**不携带
+      # payment_session**，因此 parse 层单独分流（见 parse_webhook_event）。
+      'charge.dispute.created' => :dispute_created,
+      'charge.dispute.updated' => :dispute_updated,
+      'charge.dispute.closed' => :dispute_closed,
+      'charge.dispute.funds_withdrawn' => :dispute_funds_withdrawn,
+      'charge.dispute.funds_reinstated' => :dispute_funds_reinstated
     }.freeze
+
+    # dispute 事件族动作（parse 分流依据；与 PallasTrade::PaymentWebhookEvent::DISPUTE_ACTIONS 对齐）
+    DISPUTE_ACTIONS = %i[
+      dispute_created dispute_updated dispute_closed
+      dispute_funds_withdrawn dispute_funds_reinstated
+    ].freeze
 
     has_one_attached :apple_developer_merchantid_domain_association, service: PallasTrade.private_storage_service_name
 
@@ -51,6 +65,10 @@ module PallasTradeStripe
 
       action = WEBHOOK_EVENT_ACTIONS[event.type]
       return nil unless action
+
+      # dispute 家族：无 payment_session（P7-0 F4）——事件语义以 Payment/Charge 为锚，
+      # 由 Disputes::HandleProviderEvent 解析，这里只负责验签 + 动作归一分发。
+      return { action: action, payment_session: nil, metadata: { stripe_event: event } } if DISPUTE_ACTIONS.include?(action)
 
       object_id = event.data.object[:id]
       payment_session =

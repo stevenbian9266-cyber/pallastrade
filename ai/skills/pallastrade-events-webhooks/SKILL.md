@@ -286,6 +286,23 @@ In production, endpoint URLs are validated against private IP ranges (RFC 1918, 
 | `payment.paid` | Payment moves to paid state |
 | `payment.voided` | Payment voided before capture |
 
+### Dispute / chargeback ingestion（inbound provider events, DSP-P7-1, 2026-09-11）
+
+Provider 发起的资金逆转（Stripe `charge.dispute.*`）走**入站** webhook 链，不是 PallasTrade 出站事件：
+
+| Provider event | Normalized action | Local effect |
+|---|---|---|
+| `charge.dispute.created` | `dispute_created` | 建/更新 `PallasTrade::Dispute`（`opened`/`needs_response`） |
+| `charge.dispute.updated` | `dispute_updated` | 幂等更新状态 / `evidence_due_at` |
+| `charge.dispute.closed` | `dispute_closed` | 收敛到 `won` / `lost`（终态写 `resolved_at`） |
+| `charge.dispute.funds_withdrawn` | `dispute_funds_withdrawn` | 仅记事实（财务处理属 P7-3） |
+| `charge.dispute.funds_reinstated` | `dispute_funds_reinstated` | 仅记事实（财务处理属 P7-3） |
+
+要点：①这些事件**不携带 payment_session**，`parse_webhook_event` 单独分流；②仍落
+`PaymentWebhookEvent`（复用 P0 dedupe/replay/retry）；③`HandleWebhookJob` 按动作族分派到
+`PallasTrade::Disputes::HandleProviderEvent`；④**webhook 只是证据**——不得因此取消订单、动库存或补记资金；
+⑤解析不到本地 Payment 时仍落行并标 `attention_reason=unlinked_payment`（不丢事件）。
+
 ### Payment session lifecycle
 
 | Event | When |

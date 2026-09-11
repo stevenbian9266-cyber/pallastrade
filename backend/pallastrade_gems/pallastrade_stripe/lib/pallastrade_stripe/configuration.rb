@@ -9,6 +9,11 @@ module PallasTradeStripe
       checkout.session.async_payment_succeeded
       checkout.session.async_payment_failed
       checkout.session.expired
+      charge.dispute.created
+      charge.dispute.updated
+      charge.dispute.closed
+      charge.dispute.funds_withdrawn
+      charge.dispute.funds_reinstated
     ]
     preference :use_legacy_webhook_handlers, :boolean, default: false
   end

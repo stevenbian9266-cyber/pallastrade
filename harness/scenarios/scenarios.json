@@ -2272,6 +2272,30 @@
         "contractAndDocsSync": 20,
         "regressionGreen": 20
       }
+    },
+    {
+      "id": "GS-091",
+      "name": "Dispute ingestion (durable dispute + provider event entry)",
+      "description": "Provider-initiated money reversals must become durable facts without touching order/inventory/finance semantics, reusing the P0 webhook inbox (see PRD-20260911-payments-dsp-p7-1)",
+      "mustDo": [
+        "Subscribe and map charge.dispute.* events in the gateway, routing them to a dispute handler that does NOT require a payment_session (payment/checkout paths unchanged)",
+        "Persist a durable PallasTrade::Dispute keyed by (provider, provider_dispute_reference) with idempotent upsert (nil never overwrites existing facts)",
+        "Keep the state machine forward-only by phase rank (jumps allowed, rollbacks rejected) and record evidence_due_at as a first-class column",
+        "Keep events durable when no local payment matches (attention_reason=unlinked_payment) instead of dropping or failing the webhook",
+        "Reuse PaymentWebhookEvent dedupe/replay/retry and keep zero business side effects (no order cancel, no stock movement, no journal posting)"
+      ],
+      "mustNotDo": [
+        "Route dispute events through the payment webhook service or cancel/restock orders from a webhook",
+        "Reuse REFUND_SUCCEEDED / Refund semantics for chargebacks, or mutate CommerceTransaction state",
+        "Assume 1 payment = 1 dispute or full-amount disputes only",
+        "Lose a dispute event because the provider payload has no resolvable local anchor"
+      ],
+      "scoring": {
+        "eventEntryWiring": 25,
+        "durableIdempotentModel": 25,
+        "noSideEffectsAndAttention": 25,
+        "regressionGreen": 25
+      }
     }
   ]
 }
