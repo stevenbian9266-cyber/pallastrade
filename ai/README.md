@@ -30,12 +30,13 @@ npx skills update
 
 ## What ships
 
-### 25 skills
+### 29 skills
 
 | Skill | When it activates |
 |---|---|
 | `pallastrade-project` | General PallasTrade project context — conventions, customization patterns, common commands. |
 | `pallastrade-customization` | Decision tree for "where does my customization belong" — routes to the right specific skill. Use FIRST when the pattern isn't obvious. |
+| `pallastrade-prd` | One-line requirement → full PRD (categorized, named, indexed) → user confirmation → harness gate → implementation → acceptance criteria + tests → API-doc sync → knowledge-sync gate. |
 | `pallastrade-resource` | Adding a new model + API endpoint via the `pallastrade:api_resource` generator, or a model-only resource via `pallastrade:model`. |
 | `pallastrade-decorators` | Extending existing PallasTrade models/controllers via decorators (`Module#prepend`). |
 | `pallastrade-dependencies` | Swapping core PallasTrade services via `PallasTrade.dependencies` — cart, checkout, ability, serializers. Includes the introspection rake tasks. |
@@ -58,6 +59,10 @@ npx skills update
 | `pallastrade-security` | Rails security + PallasTrade-specific (CanCanCan scopes, encrypted preferences, webhook HMAC, PCI scope reduction). |
 | `pallastrade-performance` | Cart pipeline, catalog N+1s, search latency, image processing, Sidekiq queue tuning. |
 | `pallastrade-deployment` | Deploying to Heroku, Render, K8s, Docker — env vars, release commands, S3, Sidekiq. |
+| `harness-prd` | Engine-agnostic PRD-driven workflow — expand a one-line requirement into a PRD and drive the loop (categories/layers come from `harness.config.mjs`). |
+| `harness-docs` | After code changes, draft the affected knowledge docs (`harness docs generate`) and keep `docs-check` / `doc-impact` green. |
+| `harness-skill-author` | Author or maintain a domain Skill (`harness skill new --domain <x>`) and register it in the index. |
+| `harness-standards-audit` | Draft machine-readable standards JSON (`harness standards generate`) or close standards-coverage gaps by reading business code. |
 
 ### `pallastrade-expert` subagent
 

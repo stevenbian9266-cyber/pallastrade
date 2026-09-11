@@ -37,8 +37,10 @@ for (const entry of fs.readdirSync(gemRoot, { withFileTypes: true })) {
 }
 
 const branch = git('branch', '--show-current')
-if (branch && branch !== 'main') {
-  errors.push(`Current branch is ${branch}; expected main`)
+// 2026-09-05 起仓库为 dev-only（远程仅 dev，无 main/prod），详见 AGENTS.md §0.4
+// 2026-09-11 修复：此处原先硬编码 main，导致 Monorepo Contract 常年失败
+if (branch && branch !== 'dev') {
+  errors.push(`Current branch is ${branch}; expected dev`)
 }
 
 let remote = ''

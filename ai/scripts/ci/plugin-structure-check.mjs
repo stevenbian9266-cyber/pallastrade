@@ -45,9 +45,9 @@ const hookNames = readdirSync(join(root, 'hooks'))
   .filter((name) => name.endsWith('.sh'))
   .sort()
 
-if (skillNames.length !== 25) {
-  failures.push(`plugin must ship exactly 25 skills; found ${skillNames.length}`)
-}
+// 2026-09-11 修复：数量不再写死（曾写死 25，实际涨到 29 → AI CI 常年红）。
+// 改为“声明 = 实际”：以 ship 的 Skill 目录为准，断言三处元数据声明一致，并校验 README 技能表无遗漏。
+const skillCountLabel = `${skillNames.length} skills`
 if (skillNames.includes('pallastrade-upgrade')) {
   failures.push('removed pallastrade-upgrade skill is still present')
 }
@@ -67,12 +67,19 @@ for (const [location, content] of [
   ['.claude-plugin/plugin.json', JSON.stringify(plugin)],
   ['.claude-plugin/marketplace.json', JSON.stringify(marketplace)],
 ]) {
-  if (!content.includes('25 skills')) {
-    failures.push(`${location} does not declare the actual 25-skill count`)
+  if (!content.includes(skillCountLabel)) {
+    failures.push(`${location} does not declare the actual ${skillCountLabel} count`)
   }
   if (content.includes('pallastrade-upgrade')) {
     failures.push(`${location} advertises the removed pallastrade-upgrade skill`)
   }
+}
+
+// README 技能表必须列全（防止新增 Skill 后表格静默漂移：2026-09-11 修复）
+const readmeSkillRows = new Set([...readme.matchAll(/^\|\s*`([a-z0-9-]+)`\s*\|/gm)].map((match) => match[1]))
+const missingSkillRows = skillNames.filter((name) => !readmeSkillRows.has(name))
+if (missingSkillRows.length > 0) {
+  failures.push(`README.md skills table is missing: ${missingSkillRows.join(', ')}`)
 }
 
 if (plugin) {
