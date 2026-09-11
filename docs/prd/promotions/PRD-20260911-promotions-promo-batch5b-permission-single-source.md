@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-11 |
 | 来源 | `promotion模块架构-任务拆解.md` 批次 5 → Phase 8（PR-P8-1..3）；架构 §103/§104（Capability + Store Scope；Admin API Store Context） |
 | 分类 | promotions |
@@ -180,6 +180,7 @@
 | 2026-09-11 | 1.0 | 用户明确选择「批次 5b：PR-P8 权限单源」授权实施；FR/AC（AC-001..008）与测试映射锁定 | AI |
 | 2026-09-11 | 1.1 | 按实施盘点校正：`:coupon_codes` 新增注册（数据范围经 promotion 上卷）、`PromotionCategory` 无后台入口不入矩阵、`:customers` 去掉不可执行的 `store_id` 声明（D6）、校验码表与分级锁定 | AI |
 | 2026-09-11 | 1.2 | 实施完成：注册表多模型覆盖 + Ability 多目标（含数据范围按模型上卷与列类型转换）+ 权限集派生 + `permissions:validate`/nav 覆盖断言 + spec ×5；回归 170 examples 绿 | AI |
+| 2026-09-11 | 1.3 | 收尾：注册验证器 backend-rspec（全量 suite）success；gate GATE-2026-09-11T01-39-55 finished；用户批准权限变更（approval 已录）；恢复计划 REC-6d123ac5134f48 | AI |
 
 ## 11. 实施记录
 
