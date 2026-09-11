@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | done（审计冻结已交付；实施从 DSP-P7-1 开始） |
+| 状态 | done（审计冻结已交付；实施从 DSP-P7-1 开始；§9 开放项 **O1–O5 已全部实测取证关闭**，仅 O2 partial 因测试环境限制标注未实测） |
 | 创建日期 | 2026-09-11 |
 | 来源 | 用户指令「继续后续批次」→ 选定 **P7 — Dispute & Chargeback Orchestration** → 切片 **DSP-P7-0 仅审计冻结**；源规格 `豆包梳理业务需求/P7 — Dispute & Chargeback Orchestration.md` |
 | 分类 | payments（`harness prd new` 自动判定为 harness，按 AGENTS §0.3 做语义微调：本线属 payments 域，与 FIN-P4 / REV-P6 同域） |
@@ -177,17 +177,73 @@
 
 ---
 
-## 9. 开放项（需 provider 侧实测确认，不阻塞 P7-1 模型/入口切片）
+## 9. 开放项（provider 侧实测）— **已取证关闭（2026-09-11，dev + Stripe test mode）**
 
-| # | 开放项 | 建议取证方式 |
-|---|---|---|
-| O1 | Stripe dispute 相关 BalanceTransaction 类型、dispute fee 表现 | dev 环境触发一次真实 dispute（测试卡 + test clock），采集 webhook payload 与 BT 列表 |
-| O2 | partial dispute 的字段语义（`amount` 与 `payment_intent.amount` 的关系） | 同上 |
-| O3 | 两次 dispute 同一 payment 的实际事件序列与恢复路径 | 同上 |
-| O4 | `evidence_details.due_by` 的时区/窗口 | 同上（与 `current_timezone` 校对） |
-| O5 | `funds_reinstated` 与 `closed` 的先后关系（win 场景） | 同上 |
+| # | 开放项 | 实测结论（2026-09-11，三次真实 dispute 实验） | 状态 |
+|---|---|---|---|
+| O1 | Stripe dispute 相关 BalanceTransaction 类型、dispute fee 表现 | **扣款** = 单条 `adjustment` BT：`amount = -争议额`、`fee = 1500`（**固定 $15**，与争议额无关）、`net = -(争议额+fee)`；**不存在独立的 fee BT**。**胜诉返还** = 另开一条 `adjustment` BT：`amount = +争议额`、**`fee = 0`**、`net = +争议额` → **dispute fee 胜诉也不退还** | ✅ 已确认 |
+| O2 | partial dispute 的字段语义（`amount` 与 `payment_intent.amount` 的关系） | **未覆盖**：test helper 令牌仅能产生全额 dispute（`amount == payment_intent.amount`，三次实验 $10/$25/$50 均为全额）；账户禁用 raw card data API，partial 无法构造 | ⚠️ 未实测（设计按"不假设相等"处理，见 §9.2） |
+| O3 | 两次 dispute 同一 payment 的实际事件序列与恢复路径 | **乱序必然存在（三次实验均复现）**：`funds_withdrawn` 与 `created` 恒为**同一秒**，但两者先后在 B1/B3 与 B2 中**不一致**；`funds_withdrawn` 与 `closed` 可同秒（B3）| ✅ 已确认 |
+| O4 | `evidence_details.due_by` 的时区/窗口 | `due_by = 1789862399` → **2026-09-19 23:59:59 UTC**（UTC 日末；B1/B2 同一值，窗口 ≈ 8 天）。**非本地时区、非事件时刻+8×24h** | ✅ 已确认 |
+| O5 | `funds_reinstated` 与 `closed` 的先后关系（win 场景） | **两条终局路径均已实测**：① **won**（B3，$50）→ `closed` 与 `funds_reinstated` **同一秒（18:10:33Z）**，列表序 `closed` 在前；② **lost**（B2，$25）→ `closed` 在 `funds_withdrawn` 后 2 秒，**无** `funds_reinstated`。**先后关系不稳定 ⇒ 不可依赖顺序**。本地收敛：`state=won/outcome=won` 且 `funds_reinstated_at` 写入 ✓；`state=lost/outcome=lost` 且 `funds_reinstated_at=nil` ✓ | ✅ 已确认 |
 
 > O1–O5 是 **P7-3 财务切片的输入**；P7-1（模型 + 事件入口）可以先落地。
+
+### 9.1 取证方法与原始证据（2026-09-11）
+
+**环境**：dev 栈（`pallastrade-dev-*`）+ Stripe test mode，gateway `PallasTradeStripe::Gateway` id=4；
+webhook endpoint `we_1U7VcvBP3yRzFgyp5bylxUb2` → `https://dev.pallastrade.cn/api/v3/webhooks/payments/pm_VqXmZF31wY`（订阅 13 事件，含 5 个 `charge.dispute.*`）。
+**链路为真实 provider → 真实 webhook → 真实入库，非 mock。**
+
+**三次实验（覆盖 3 条不同终局路径）**：
+
+| 实验 | 金额 | 构造方式 | 终局 | 关键观测 |
+|---|---|---|---|---|
+| B1 | $10 | `tok_createDispute` + 提交通用证据 | `under_review`（长期挂起） | 扣款 BT；`funds_withdrawn`/`created` 同秒；`updated` 驱动状态收敛 |
+| B2 | $25 | `tok_createDispute` + `Stripe::Dispute.close` | **lost** | `created`→`funds_withdrawn`（同秒）→`closed`(+2s)；无返还款 |
+| B3 | $50 | `tok_createDispute` + `uncategorized_text='winning_evidence'` + `submit` | **won** | **两条 BT**（扣款 + 返还）；`closed` 与 `funds_reinstated` 同秒 |
+
+> **测试方法学（供后续切片复用）**：test mode 下 `Dispute.close` 只产出 `lost`；**唯一可编程的 `won` 路径**是提交证据时把
+> `uncategorized_text` 设为 `winning_evidence`（Stripe 测试文档 §模拟争议 §证据）。这是 P7 线复现"胜诉 + 资金返还"的确定手段。
+
+**原始证据（逐项）**：
+
+- **O1（扣款）**：B1 `txn_1UEXiSBP3yRzFgypVXuOWcHW type=adjustment amount=-1000 fee=1500 net=-2500`；
+  B2 `txn_1UEYrjBP3yRzFgypFbbfXF8f type=adjustment amount=-2500 fee=1500 net=-4000`；
+  B3 `txn_1UEYu7BP3yRzFgypmYAvgVuv type=adjustment amount=-5000 fee=1500 net=-6500`
+  → **fee 恒为 1500（$15）**，与争议额 $10/$25/$50 无关
+- **O1（返还，B3）**：`txn_1UEYuCBP3yRzFgyp4yzMNSzV type=adjustment amount=5000 fee=0 net=5000`
+  → **只返还争议额，$15 dispute fee 不返还**（净损失 = fee）
+- **O3/O5（事件序列，provider 侧 `Stripe::Event` 时间戳）**：
+  - B1：`created` + `funds_withdrawn`（同秒 16:54:21Z）→ `updated`（16:58:29Z）
+  - B2：`created` + `funds_withdrawn`（18:07:59Z）→ `closed`（18:08:01Z）
+  - B3：`created` + `funds_withdrawn`（18:10:27Z）→ `updated`（18:10:28Z）→ `closed` + `funds_reinstated`（**同秒 18:10:33Z**）
+  - **同秒事件的相对顺序在三次实验间不一致（B1/B3 `funds_withdrawn` 在前，B2 `created` 在前）**
+- **O4**：`evidence_details.due_by = 1789862399` → `2026-09-19 23:59:59 UTC`（B1/B2 均为该值）
+
+**P7-1/P7-2 代码在真实环境的联动验证**（同批实验顺带完成）：
+
+| 断言 | 实测结果 |
+|---|---|
+| webhook 落地 + 幂等键 | `PaymentWebhookEvent` 11 条 dispute 事件全部 `processed`（含乱序到达） |
+| dispute 落库（P7-1） | 3 行 `PallasTrade::Dispute`，`state` 随事件正确收敛（`under_review` / `lost` / `won`） |
+| `funds_withdrawn_at` 写入（P7-2） | B1 `16:54:21Z`、B3 `18:10:27Z`（由 `charge.dispute.funds_withdrawn` 首次观测写入） |
+| **`funds_reinstated_at` 写入（P7-2）** | **B3 `2026-09-11 18:10:33 UTC` ✓（win 路径首次真实写入）**；B1/B2 为 `nil`（未收到 reinstate 事件，语义正确） |
+| 终局字段 | B2 `outcome=lost`/`resolved_at=18:08:01`；B3 `outcome=won` |
+| 乱序容错（P7-1/2） | `funds_withdrawn` 早于 `created` 到达时仍正确落库与收敛（无丢失、无覆盖） |
+| 无锚点不丢事件（P7-1） | 三行均 `attention_reason = unlinked_payment`（独立测试支付无本地 payment 锚点，事件仍落库不丢失） |
+
+### 9.2 对 P7-3 的设计含义（依据上述事实）
+
+| 事实 | P7-3 设计结论 |
+|---|---|
+| 扣款与 fee 在**同一条** `adjustment` BT（`amount=-争议额, fee=1500, net=-(争议额+1500)`） | 打款事实必须**拆两条**流水：`DISPUTE_DEBIT` = 争议额、dispute fee = 独立费用条目（`PSP_FEE` 语义）；二者共享同一 provider BT 引用。**不得**把 `net` 当成单一发生额 |
+| 返还 BT 只含争议额（`fee=0`），**fee 不退** | 胜诉时记 `DISPUTE_CREDIT` = 争议额；**dispute fee 是净损失，必须单独入账且不可冲回**（对账需能识别"已扣 fee 未返还"） |
+| `funds_withdrawn` 可早于/晚于 `created`（同秒、顺序不稳） | 入账**不可依赖事件到达顺序**；必须以 `DisputeFact`（P7-2 裁决）为准，`fact_posting_key` 用 dispute 维度去重而非事件序 |
+| `closed` 与 `funds_reinstated` 同秒、顺序不定 | **金额事实与胜负结论解耦**：金额由 `funds_*` 驱动、胜负由 `won/lost` 驱动，两者不互推 ⇒ 顺序无关即正确 |
+| `due_by` 为 UTC 日末 23:59:59（≈8 天） | P7-5 sweeper 用 **UTC** 语义判定到期；窗口长度**不写死**，读 provider 快照 |
+| partial 未实测（`amount` 与 PI 金额关系未证） | 金额**一律取 dispute 自身快照**（`DisputeFact.amount`），**禁止**用 `payment_intent.amount` 推导；partial 场景留 `AMBIGUOUS` + reason_code 出口 |
+| 无锚点（`unlinked_payment`）真实可达 | P7-3 入账需处理"无 payment 锚点"的事实：**不得静默丢弃**，应进 `NEEDS_ATTENTION`/manual_review 通道（P7-6 兜底） |
 
 ---
 
@@ -245,3 +301,4 @@ security / 机制类资产均无需变更），已 `sync-check --ack`，知识�
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-11 | 0.1 | 初稿：P7-0 审计冻结（边界 B1–B7、Q1–Q9 结论 + F1–F6 附加发现、Dispute DB proposal、事件入口、财务/对账集成面、O1–O5 开放项、DSP-P7-1..8 切片计划） | AI |
+| 2026-09-11 | 0.2 | §9 开放项取证落地：dev + Stripe test mode 三次真实 dispute 实验（B1 $10 / B2 $25 lost / B3 $50 won）→ **O1/O3/O4/O5 确认关闭**（扣款与 fee 同条 adjustment BT 且 fee 恒定 $15、返还仅返争议额 fee 不退、事件同秒乱序必然、`closed` 与 `funds_reinstated` 同秒且顺序不定、`due_by` 为 UTC 日末）；**O2 partial 未覆盖**（test helper 令牌仅能产生全额争议）；新增 §9.1 原始证据（含测试方法学：`uncategorized_text='winning_evidence'` 是唯一可编程 won 路径）与 §9.2「对 P7-3 的设计含义」；同批完成 P7-1/P7-2 代码在真实环境的联动验证（含 `funds_reinstated_at` 首次真实写入） | AI |
