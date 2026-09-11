@@ -21,6 +21,12 @@ module PallasTrade
     class HandleProviderEvent
       prepend PallasTrade::ServiceModule::Base
 
+      # DSP-P7-2：funds 事件 → 时间戳列（首次观测写入，不覆盖既有值 → 重复投递幂等）。
+      FUNDS_TIMESTAMP_COLUMNS = {
+        'dispute_funds_withdrawn' => :funds_withdrawn_at,
+        'dispute_funds_reinstated' => :funds_reinstated_at
+      }.freeze
+
       # @param webhook_event [PallasTrade::PaymentWebhookEvent]
       # @return [PallasTrade::ServiceModule::Result]
       #   success(dispute:, payment:, action:) / failure(webhook_event, message)
@@ -39,6 +45,7 @@ module PallasTrade
         )
 
         apply_state(dispute, payload, webhook_event)
+        apply_funds_timestamp(dispute, webhook_event)
         success(dispute: dispute.reload, payment: payment, action: webhook_event.action)
       end
 
@@ -111,6 +118,15 @@ module PallasTrade
                                                     'to' => target,
                                                     'event_type' => webhook_event.event_type }
                         ))
+      end
+
+      # DSP-P7-2：funds 事件时间戳（首次观测写入；不覆盖既有值，重放/重复投递幂等）。
+      def apply_funds_timestamp(dispute, webhook_event)
+        column = FUNDS_TIMESTAMP_COLUMNS[webhook_event.action.to_s]
+        return if column.blank?
+        return if dispute.public_send(column).present?
+
+        dispute.update!(column => webhook_event.provider_created_at || Time.current)
       end
     end
   end

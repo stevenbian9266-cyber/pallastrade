@@ -152,6 +152,22 @@ module PallasTrade
       nil
     end
 
+    # PALLAS-CUSTOM: DSP-P7-2 (PRD-20260911-payments-dsp-p7-2)
+    # Read-only provider dispute-details contract — authoritative provider snapshot for a single
+    # Dispute (P7-0 §7): status / amount / currency / reason / evidence window / balance-transaction
+    # references. No local writes, no provider mutation. Consumed by `Disputes::ResolveFact`, and
+    # used as the O1–O5 evidence-collection tool for the P7 line. Capability detection follows the
+    # `fetch_refund_details` pattern (method owner != base PaymentMethod).
+    #
+    # @param dispute [PallasTrade::Dispute]
+    # @return [Hash] normalized provider snapshot (amount in major units)
+    # @raise [::NotImplementedError] when the gateway has no read-only dispute contract
+    # @raise [PallasTrade::Core::GatewayError] when the dispute has no provider reference
+    # @raise [Stripe::StripeError] on provider/network failure (caller degrades)
+    def fetch_dispute_details(dispute:)
+      raise ::NotImplementedError, 'You must implement fetch_dispute_details method for this gateway.'
+    end
+
     # Parses an incoming webhook payload from the payment provider.
     # Override in gateway subclasses to implement provider-specific webhook parsing.
     #

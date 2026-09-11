@@ -910,6 +910,30 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **后续切片**：P7-2 Fact 解析 / P7-3 Journal+对账（`FACT_TYPES`/`ENTRY_TYPES`/`fact_posting_key` 要扩展）/
   P7-4 Evidence / P7-5 Deadline sweeper / P7-6 Recovery / P7-7 Admin Console。
 
+## Dispute 事实裁决（DSP-P7-2, 2026-09-11；PRD-20260911-payments-dsp-p7-2）
+
+> 把 P7-1 的「单事件直译」升级为**可对账的事实裁决**：provider 只读快照 ↔ 本地状态 → `DisputeFact`
+> （事实 + 确认度 + 裁决）。本切片**零写**（不写 order/inventory/payment/journal）。
+
+- **只读契约**：`PaymentMethod#fetch_dispute_details(dispute:)`（base `NotImplementedError`；Stripe 实现
+  `Stripe::Dispute.retrieve` → 归一 `{ provider_dispute_reference:, status:, amount:, currency:, reason:,
+  network_reason_code:, evidence_due_at:, evidence_submitted_at:, has_evidence:,
+  balance_transaction_references:, observed_at: }`；金额主单位、零小数货币不除 100）。
+  capability = method owner ≠ base（同 `fetch_refund_details`）；同时作为 P7 线 O1–O5 取证工具。
+- **事实 VO**：`Disputes::DisputeFact`（transient）—— `FACT_TYPES`（DISPUTE_OPENED / FUNDS_WITHDRAWN /
+  FUNDS_REINSTATED / WON / LOST；P7-3 激活到 Journal 时**同名对齐**）、`STATUSES`（CONFIRMED / AMBIGUOUS /
+  UNSUPPORTED / NOT_APPLICABLE）、裁决枚举 + `money_movement?`（仅两类资金事实为真，P7-3 入账输入）。
+- **裁决矩阵**（`Disputes::ResolveFact.call(dispute:, fetch:)`）：provider 状态先取快照、回退
+  `private_metadata['provider_status']` → `aligned / stale_local / stale_provider / conflict / unknown /
+  unsupported / unavailable / not_applicable`；`manual_review` 一律 conflict；stale/conflict 标
+  `needs_attention?`（P7-5 告警、P7-6 收敛输入）。
+- **降级纪律**：无契约 → UNSUPPORTED + `PROVIDER_CONTRACT_UNSUPPORTED`；provider 故障 → AMBIGUOUS +
+  `PROVIDER_UNAVAILABLE`；无 payment 锚点 → AMBIGUOUS + `UNLINKED_PAYMENT`；金额缺失/≤0 → AMBIGUOUS +
+  `AMOUNT_UNPROVABLE`（**不产生资金事实**）。
+- **funds 时间戳**：迁移新增 `funds_withdrawn_at` / `funds_reinstated_at`；`HandleProviderEvent` 在
+  `dispute_funds_withdrawn` / `dispute_funds_reinstated` **首次观测写入**（重放不覆盖，幂等）。
+- **后续切片**：P7-3 Journal+对账（消费 `money_movement?`）/ P7-5 deadline sweeper / P7-6 收敛动作 / P7-7 Console。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.

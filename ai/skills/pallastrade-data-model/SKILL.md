@@ -95,6 +95,8 @@ reversals** (chargeback / inquiry / warning / representment) — deliberately **
   closed/manual_review entries are allowed.
 - `evidence_due_at` is first-class (provider evidence window); `attention_reason`
   (`unlinked_payment` / `non_positive_amount` / `invalid_transition`) marks rows needing a human.
+- `funds_withdrawn_at` / `funds_reinstated_at` (DSP-P7-2) record when the provider actually withdrew /
+  reinstated the money — written once by the funds events (replay never overwrites).
 - Written only by `PallasTrade::Disputes::HandleProviderEvent` (webhook-driven, idempotent, upsert
   never nil-overwrites existing facts). **No** order/inventory/payment/journal writes.
 - `CommerceTransaction` stays `completed`: disputes never mutate the original transaction state.

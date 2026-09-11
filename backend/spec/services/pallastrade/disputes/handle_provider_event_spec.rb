@@ -51,7 +51,7 @@ RSpec.describe PallasTrade::Disputes::HandleProviderEvent do
     }
   end
 
-  def webhook_event(action:, payload:, provider_event_id: "evt_#{SecureRandom.hex(4)}")
+  def webhook_event(action:, payload:, provider_event_id: "evt_#{SecureRandom.hex(4)}", provider_created_at: Time.current)
     event, = PallasTrade::PaymentWebhookEvent.create_unique(
       provider: 'stripe',
       provider_event_id: provider_event_id,
@@ -59,7 +59,7 @@ RSpec.describe PallasTrade::Disputes::HandleProviderEvent do
       action: action,
       event_type: payload['type'],
       payload: payload.to_json,
-      provider_created_at: Time.current
+      provider_created_at: provider_created_at
     )
     event
   end
@@ -196,6 +196,66 @@ RSpec.describe PallasTrade::Disputes::HandleProviderEvent do
       expect(dispute).to be_won # 终态不被回退
       expect(dispute.attention_reason).to eq('invalid_transition')
       expect(dispute.private_metadata['invalid_transition']['to']).to eq('needs_response')
+    end
+  end
+
+  describe 'funds 时间戳（AC-004）' do
+    it 'records funds_withdrawn_at from the funds_withdrawn event time' do
+      payment
+      at = Time.zone.parse('2026-09-12 10:00:00')
+
+      described_class.call(
+        webhook_event: webhook_event(action: 'dispute_funds_withdrawn',
+                                     payload: stripe_dispute_payload(type: 'charge.dispute.funds_withdrawn'),
+                                     provider_created_at: at)
+      )
+
+      dispute = PallasTrade::Dispute.find_by(provider_dispute_reference: 'dp_test_1')
+
+      expect(dispute.funds_withdrawn_at).to be_within(1.second).of(at)
+      expect(dispute.funds_reinstated_at).to be_nil
+    end
+
+    it 'does not overwrite an already observed timestamp (replay / 重复投递幂等)' do
+      payment
+      first = Time.zone.parse('2026-09-12 10:00:00')
+      later = Time.zone.parse('2026-09-13 10:00:00')
+      payload = stripe_dispute_payload(type: 'charge.dispute.funds_withdrawn')
+
+      described_class.call(webhook_event: webhook_event(action: 'dispute_funds_withdrawn',
+                                                        payload: payload, provider_created_at: first))
+      described_class.call(webhook_event: webhook_event(action: 'dispute_funds_withdrawn',
+                                                        payload: payload, provider_created_at: later))
+
+      dispute = PallasTrade::Dispute.find_by(provider_dispute_reference: 'dp_test_1')
+
+      expect(dispute.funds_withdrawn_at).to be_within(1.second).of(first)
+    end
+
+    it 'records funds_reinstated_at for funds_reinstated events' do
+      payment
+      at = Time.zone.parse('2026-09-14 08:30:00')
+
+      described_class.call(
+        webhook_event: webhook_event(action: 'dispute_funds_reinstated',
+                                     payload: stripe_dispute_payload(type: 'charge.dispute.funds_reinstated'),
+                                     provider_created_at: at)
+      )
+
+      dispute = PallasTrade::Dispute.find_by(provider_dispute_reference: 'dp_test_1')
+
+      expect(dispute.funds_reinstated_at).to be_within(1.second).of(at)
+    end
+
+    it 'leaves both timestamps nil for non-funds events' do
+      payment
+
+      described_class.call(webhook_event: webhook_event(action: 'dispute_created', payload: stripe_dispute_payload))
+
+      dispute = PallasTrade::Dispute.find_by(provider_dispute_reference: 'dp_test_1')
+
+      expect(dispute.funds_withdrawn_at).to be_nil
+      expect(dispute.funds_reinstated_at).to be_nil
     end
   end
 end

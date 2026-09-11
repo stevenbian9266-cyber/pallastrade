@@ -2296,6 +2296,30 @@
         "noSideEffectsAndAttention": 25,
         "regressionGreen": 25
       }
+    },
+    {
+      "id": "GS-092",
+      "name": "Dispute fact resolution (read-only provider contract + verdicts)",
+      "description": "Resolve dispute facts read-only: provider snapshot (fetch_dispute_details) vs local state becomes a DisputeFact with confirmation level and alignment verdict, and funds events persist their observation timestamps (see PRD-20260911-payments-dsp-p7-2)",
+      "mustDo": [
+        "Add a read-only PaymentMethod#fetch_dispute_details contract (base raises NotImplementedError; Stripe implements it via Stripe::Dispute.retrieve returning a normalized snapshot with major-unit amounts)",
+        "Keep capability detection truthful (method owner != base PaymentMethod) so providers without the contract degrade to UNSUPPORTED instead of guessing",
+        "Build a transient DisputeFact VO with frozen fact vocabulary (DISPUTE_OPENED / FUNDS_WITHDRAWN / FUNDS_REINSTATED / WON / LOST), confirmation statuses and the alignment verdict enum",
+        "Classify provider_status × local state as aligned / stale_local / stale_provider / conflict / unknown, with manual_review always reported as conflict",
+        "Persist funds_withdrawn_at / funds_reinstated_at from the funds events (first observation wins; replay never overwrites) and keep the rest of the slice write-free"
+      ],
+      "mustNotDo": [
+        "Write order / inventory / payment / journal rows or trigger provider mutations from the resolver (persisting verdicts belongs to later slices)",
+        "Guess amounts for zero-decimal currencies or treat an unmapped provider status as aligned",
+        "Activate FinancialFact / ledger entry types in this slice (P7-3 owns journal activation) or fabricate a money fact when the amount is unprovable",
+        "Swallow provider failures: unavailable / unsupported / unlinked must stay explicit closed-enum verdicts"
+      ],
+      "scoring": {
+        "readOnlyContract": 25,
+        "verdictMatrix": 25,
+        "degradationSemantics": 25,
+        "regressionGreen": 25
+      }
     }
   ]
 }

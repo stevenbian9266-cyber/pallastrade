@@ -287,6 +287,12 @@ module PallasTradeStripe
       send_request { |opts| Stripe::Refund.retrieve(refund_id, opts) }
     end
 
+    # PALLAS-CUSTOM: DSP-P7-2 (PRD-20260911-payments-dsp-p7-2)
+    # Read-only retrieval of a Stripe Dispute.
+    def retrieve_dispute(dispute_id)
+      send_request { |opts| Stripe::Dispute.retrieve(dispute_id, opts) }
+    end
+
     # PALLAS-CUSTOM: FIN-P4-6 (PRD-20260906-payments-fin-p4-6)
     # Read-only provider refund-details contract — normalized financial facts for a single
     # Refund (P4 §37). Resolves the local Refund's transaction_id (re_) to the Stripe Refund
@@ -320,6 +326,39 @@ module PallasTradeStripe
       {
         amount: stripe_refund.amount.to_d / 100,
         currency: stripe_refund.currency.to_s
+      }
+    end
+
+    # PALLAS-CUSTOM: DSP-P7-2 (PRD-20260911-payments-dsp-p7-2)
+    # Read-only provider dispute-details contract — normalized snapshot for a local Dispute:
+    # `{ provider_dispute_reference:, status:, amount:, currency:, reason:, network_reason_code:,
+    #    evidence_due_at:, evidence_submitted_at:, has_evidence:, balance_transaction_references:,
+    #    observed_at: }`（amount 主单位；零小数货币不除 100）。
+    # 只读，零本地写、零 provider mutation；provider 故障由调用方按封闭枚举降级。
+    #
+    # @param dispute [PallasTrade::Dispute]
+    # @return [Hash]
+    # @raise [PallasTrade::Core::GatewayError] when the dispute has no provider dispute reference
+    # @raise [Stripe::StripeError] on provider/network failure
+    def fetch_dispute_details(dispute:)
+      reference = dispute.provider_dispute_reference
+      raise PallasTrade::Core::GatewayError, 'Dispute has no provider dispute reference' if reference.blank?
+
+      stripe_dispute = retrieve_dispute(reference)
+      evidence_details = read_stripe(stripe_dispute, :evidence_details)
+
+      {
+        provider_dispute_reference: stripe_dispute.id,
+        status: stripe_dispute.status&.to_s,
+        amount: PallasTrade::Dispute.normalize_provider_amount(stripe_dispute.amount, stripe_dispute.currency),
+        currency: stripe_dispute.currency&.to_s,
+        reason: stripe_dispute.reason&.to_s,
+        network_reason_code: read_stripe(stripe_dispute, :network_reason_code)&.to_s,
+        evidence_due_at: unix_seconds_to_time(read_stripe(evidence_details, :due_by)),
+        evidence_submitted_at: unix_seconds_to_time(read_stripe(stripe_dispute, :evidence_submitted_at)),
+        has_evidence: read_stripe(evidence_details, :has_evidence),
+        balance_transaction_references: stripe_balance_transaction_references(stripe_dispute),
+        observed_at: Time.current
       }
     end
 
@@ -433,6 +472,28 @@ module PallasTradeStripe
     end
 
     private
+
+    # DSP-P7-2：Stripe 对象字段防御性读取（缺失 key 返回 nil，不抛错）。
+    def read_stripe(node, key)
+      return nil if node.nil?
+
+      node.respond_to?(key) ? node.public_send(key) : nil
+    end
+
+    # DSP-P7-2：Stripe unix 秒 → Time（nil/空值不猜）。
+    def unix_seconds_to_time(value)
+      return nil if value.blank?
+
+      Time.zone.at(value.to_i)
+    end
+
+    # DSP-P7-2：dispute.balance_transactions（funds debit / reinstatement 的 BT 引用）。
+    def stripe_balance_transaction_references(stripe_dispute)
+      list = read_stripe(stripe_dispute, :balance_transactions)
+      return [] unless list.respond_to?(:map)
+
+      list.map { |entry| entry.respond_to?(:id) ? entry.id.to_s : entry.to_s }.compact
+    end
 
     def stripe_idempotency_key(base_key, action)
       return if base_key.blank?

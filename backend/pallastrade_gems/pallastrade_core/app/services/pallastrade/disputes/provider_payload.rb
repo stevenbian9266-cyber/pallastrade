@@ -15,8 +15,8 @@ module PallasTrade
     #   - 不猜：缺失字段返回 nil（由调用方决定 attention/状态保持）
     #   - 金额归一：最小货币单位 → decimal（零小数货币不除 100）
     class ProviderPayload
-      # Stripe 官方零小数货币（amount 即最小单位本身）
-      ZERO_DECIMAL_CURRENCIES = %w[bif clp djf gnf jpy kmf krw mga pyg rwf ugx vnd vuv xaf xof xpf].freeze
+      # Stripe 官方零小数货币（amount 即最小单位本身）——DSP-P7-2 起单一来源在 `PallasTrade::Dispute`
+      ZERO_DECIMAL_CURRENCIES = PallasTrade::Dispute::ZERO_DECIMAL_CURRENCIES
 
       # provider dispute.status → 域内状态（P7-0 §7 映射；未知状态保持原状）
       STATE_BY_PROVIDER_STATUS = {
@@ -148,11 +148,10 @@ module PallasTrade
         value.is_a?(Hash) ? read(value, :id)&.to_s : value.to_s
       end
 
+      # DSP-P7-2：换算逻辑单一来源（`PallasTrade::Dispute.normalize_provider_amount`）——
+      # 零小数货币不除 100；此处保持历史返回类型 Float（ProviderPayload 契约不变）。
       def normalized_amount(value, currency_code)
-        amount = value.to_f
-        return amount if ZERO_DECIMAL_CURRENCIES.include?(currency_code.to_s.downcase)
-
-        (amount / 100.0).round(2)
+        PallasTrade::Dispute.normalize_provider_amount(value, currency_code)&.to_f
       end
     end
   end

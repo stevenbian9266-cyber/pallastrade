@@ -26,6 +26,10 @@ module PallasTrade
 
     TERMINAL_STATES = %w[accepted won lost expired closed].freeze
 
+    # DSP-P7-2：provider 金额归一（Stripe 等以**最小货币单位**传输；零小数货币即主单位本身）。
+    # 单一来源——`Disputes::ProviderPayload` 与网关 fetch 契约均引用本清单，避免两套换算。
+    ZERO_DECIMAL_CURRENCIES = %w[bif clp djf gnf jpy kmf krw mga pyg rwf ugx vnd vuv xaf xof xpf].freeze
+
     # 阶段序（不是逐级邻接矩阵）：provider 会跳级（needs_response → won），因此约束是
     # 「**只能向前**」而不是「只能走相邻状态」；closed 为归档态可从任意状态进入，
     # manual_review 为人工介入态（出入自由）。
@@ -75,6 +79,23 @@ module PallasTrade
 
     def attention?
       attention_reason.present?
+    end
+
+    # DSP-P7-2：零小数货币判定（JPY/KRW 等；此类货币的「最小单位」= 主单位）
+    def self.zero_decimal_currency?(currency)
+      ZERO_DECIMAL_CURRENCIES.include?(currency.to_s.downcase)
+    end
+
+    # DSP-P7-2：provider 最小单位金额 → 域内主单位金额（decimal）。
+    # 零小数货币不除 100；nil 原样返回（不猜，由调用方决定 AMBIGUOUS）。
+    # @param minor_units [Integer, String, nil]
+    # @param currency [String, nil]
+    # @return [BigDecimal, nil]
+    def self.normalize_provider_amount(minor_units, currency)
+      return nil if minor_units.nil?
+
+      amount = minor_units.to_d
+      zero_decimal_currency?(currency) ? amount : amount / 100
     end
 
     # 幂等 upsert：同一 (provider, reference) 只维持一行；nil 值不覆盖既有事实

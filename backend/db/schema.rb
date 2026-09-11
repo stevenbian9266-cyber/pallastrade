@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_11_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_11_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -707,6 +707,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_11_000002) do
     t.datetime "evidence_due_at"
     t.datetime "evidence_submitted_at"
     t.decimal "fee_amount", precision: 12, scale: 2
+    t.datetime "funds_reinstated_at"
+    t.datetime "funds_withdrawn_at"
     t.string "kind"
     t.string "network_reason_code"
     t.bigint "order_id"
