@@ -38,12 +38,23 @@ jobs:
           set -euo pipefail
           API_URL="https://dev.pallastrade.cn"
           PUB_KEY="${{ secrets.PALLASTRADE_PUBLISHABLE_KEY_DEV }}"
-          STORE_NAME="${{ vars.STORE_NAME_DEV }}"
+          STORE_NAME="${{ vars.STORE_NAME_DEV || 'PallasTrade-Dev' }}"
+          SITE_URL="https://dev.pallastrade.cn"
+          DEFAULT_LOCALE="${{ vars.DEFAULT_LOCALE_DEV || 'en' }}"
+          DEFAULT_COUNTRY="${{ vars.DEFAULT_COUNTRY_DEV || 'US' }}"
+          # PALLAS-CUSTOM bugfix (2026-09-11): NEXT_PUBLIC_* 在 next build 时被内联
+          # （客户端+服务端都生效），必须与 deploy/.env.storefront.dev 的运行时值一致
+          # （见 storefront/Dockerfile 注释，不一致会触发 hydration mismatch）。
+          # 此前漏传 SITE_URL/DEFAULT_*/STORE_NAME → 密码重置邮件 handler 500、
+          # 邮件链接全坏（webhook 事务邮件链路）。
           docker build -t ghcr.io/${{ github.repository_owner }}/pallastrade-storefront:${{ github.ref_name }} \
             -f storefront/Dockerfile \
             --build-arg PALLASTRADE_API_URL="$API_URL" \
             --build-arg PALLASTRADE_PUBLISHABLE_KEY="$PUB_KEY" \
             --build-arg NEXT_PUBLIC_STORE_NAME="$STORE_NAME" \
+            --build-arg NEXT_PUBLIC_SITE_URL="$SITE_URL" \
+            --build-arg NEXT_PUBLIC_DEFAULT_LOCALE="$DEFAULT_LOCALE" \
+            --build-arg NEXT_PUBLIC_DEFAULT_COUNTRY="$DEFAULT_COUNTRY" \
             --build-arg NEXT_PUBLIC_TAWK_TO_PROPERTY_ID="${{ vars.TAWK_TO_PROPERTY_ID }}" \
             --build-arg NEXT_PUBLIC_TAWK_TO_WIDGET_ID="${{ vars.TAWK_TO_WIDGET_ID }}" \
             --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY="${{ vars.TURNSTILE_SITE_KEY }}" \

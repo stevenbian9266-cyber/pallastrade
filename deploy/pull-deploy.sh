@@ -55,8 +55,12 @@ fi
 NEW_HEAD="$(git rev-parse "origin/$BRANCH")"
 
 # 2. 拉取 storefront 镜像（失败/超时不致命：可能 CI 尚未推送过）
+# PALLAS-CUSTOM bugfix (2026-09-11): 180s 在跨境带宽下经常不足（实测每轮均超时，
+# 永远回退本地旧镜像 → storefront 镜像更新实际依赖手动）。放宽到 900s，与
+# deploy.sh 同量级；docker 已完成层跨轮复用（Already exists），未完成层下轮重下，
+# 多轮可累积完成拉取。
 NEW_IMG_ID="none"
-if timeout 180 docker pull "$GHCR_IMG" >/dev/null 2>&1; then
+if timeout 900 docker pull "$GHCR_IMG" >/dev/null 2>&1; then
   NEW_IMG_ID="$(docker image inspect "$GHCR_IMG" --format '{{.Id}}' 2>/dev/null || echo none)"
 else
   echo "⚠️ docker pull $GHCR_IMG 失败/超时，使用本地已有镜像" >&2
