@@ -8,7 +8,7 @@ module PallasTrade
   # - 提交订单（Carts::Submit）从 Cart 快照创建 Order（state=pending）后 Cart → converted
   # - 状态机极简：active → converted / abandoned
   #
-  # 注意：Spree 遗留的购物车服务已重命名为 `PallasTrade::CartLegacy::*`（AddItem/Recalculate
+  # 注意：上游框架遗留的购物车服务已重命名为 `PallasTrade::CartLegacy::*`（AddItem/Recalculate
   # 等，操作 Order 而非本模型），待 P4 清理。新流程请使用 `PallasTrade::Carts::*`（复数）
   # 服务命名空间。
   class Cart < PallasTrade.base_class

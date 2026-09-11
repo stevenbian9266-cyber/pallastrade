@@ -1,6 +1,6 @@
 # REQ-20260830-order-flow-standard-ecommerce-p1
 
-> 关联 PRD：`docs/prd/checkout/PRD-20260829-checkout-订单流程标准电商改造-购物车与订单分表-订单确认-提交订单-checkout纯支付-自有化去spree化.md`（status: approved）
+> 关联 PRD：`docs/prd/checkout/PRD-20260829-checkout-订单流程标准电商改造-购物车与订单分表-订单确认-提交订单-checkout纯支付-自有化去上游品牌化.md`（status: approved）
 > 关联 Task：TASK-20260829160454-a104cb71 ｜ Gate：GATE-2026-08-29T16-05-59
 
 ## Step 0：跨层搜索（6 层强制）

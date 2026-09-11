@@ -1,4 +1,4 @@
-# PRD-20260829-checkout-订单流程标准电商改造-购物车与订单分表-订单确认-提交订单-checkout纯支付-自有化去spree化
+# PRD-20260829-checkout-订单流程标准电商改造-购物车与订单分表-订单确认-提交订单-checkout纯支付-自有化去上游品牌化
 
 | 元数据 | 值 |
 |---|---|
@@ -10,21 +10,21 @@
 | 关联 REQ | 实施时回填 |
 | 关联 PRD | 原 PRD-20260829-checkout-订单模块-单笔走现有checkout-多笔走组合支付新流程（需求演进，范围扩大为订单流程标准电商改造） |
 | 关联设计 | `docs/design/order-flow-redesign.md`（完整方案，本 PRD 为其实施级细化） |
-| 需求类型 | 新功能 / 架构改造（去 Spree 化） |
+| 需求类型 | 新功能 / 架构改造（去上游品牌化） |
 
 ## 1. 背景与目标
 
 - **一句话需求原文**：购物车提供商品选择和删除；选中商品后进入订单确认流程（收件信息、物流方式等），点击提交订单进入 checkout 页面走支付流程；商品详情页 Buy Now 进入订单确认流程（同上）。需覆盖父子单、拆单、合单、合并支付、逆向订单流程。按标准电商方案靠拢；购物车与订单分表；处理自有化不干净部分。
 - **背景**：
-  - 当前 PallasTrade 5.x（`PallasTrade.version = 5.6.0.rc1`）中 **Cart 与 Order 同表**（`PallasTrade::Order`，`state=cart` 即购物车；`POST /carts` 即插入 Order 记录）。这是从 Spree fork 演化遗留的**同表妥协**。
+  - 当前 PallasTrade 5.x（`PallasTrade.version = 5.6.0.rc1`）中 **Cart 与 Order 同表**（`PallasTrade::Order`，`state=cart` 即购物车；`POST /carts` 即插入 Order 记录）。这是从 上游框架fork 演化遗留的**同表妥协**。
   - 订单没有「订单确认」「提交订单」节点：只有购物车（cart 态）与已支付完成（complete 态）；「已提交待支付」订单只能靠 `completed_at` 有值 + 未支付来表达，不符合标准电商语义。
-  - 代码内存在大量**自有化不干净**的痕迹：Spree 的 `checkout_flow`（cart→address→delivery→payment→confirm→complete）、`PallasTrade.base_class`、Zone/Taxon/Taxonomy 等 Spree 概念、大量 `naming bridge`（5.5/5.6 → 6.0 列重命名）、几十处 `@deprecated ... removed in PallasTrade 6.0` 过渡注释。
+  - 代码内存在大量**自有化不干净**的痕迹：上游框架的 `checkout_flow`（cart→address→delivery→payment→confirm→complete）、`PallasTrade.base_class`、Zone/Taxon/Taxonomy 等 上游框架概念、大量 `naming bridge`（5.5/5.6 → 6.0 列重命名）、几十处 `@deprecated ... removed in PallasTrade 6.0` 过渡注释。
   - 代码注释明确规划了 **6.0 Cart/Order split**（`carts/complete.rb`："In PallasTrade 6 this service will complete the PallasTrade::Cart, and create a PallasTrade::Order"），本次即**提前落地该规划**。
 - **目标**：
   1. **Cart / Order 物理分表**：购物车独立表 + 极简状态；订单独立表 + 标准状态机。
   2. **新增「订单确认」与「提交订单」节点**：收货/物流在订单确认独立步骤填写；提交订单 = 创建订单（待支付）；Checkout 收敛为纯支付。
   3. **购物车勾选/删除** + Buy Now 走订单确认流程。
-  4. **自有化去 Spree 化**：清理本次改造涉及订单/购物车的 Spree 遗留、naming bridge 与过渡 deprecation。
+  4. **自有化去上游品牌化**：清理本次改造涉及订单/购物车的 上游框架遗留、naming bridge 与过渡 deprecation。
 - **成功指标**：
   - 新购物车流程：加购 → 勾选 → 订单确认 → 提交订单 → Checkout 支付，端到端可走通。
   - 订单状态机符合标准电商（pending→paid→shipped→completed；canceled/refunded/returned）。
@@ -39,20 +39,20 @@
 3. `POST /api/v3/store/carts/:id/submit`（提交订单 → 创建 Order + Cart converted）。
 4. 前端：购物车页勾选/删除；订单确认页（收件+物流+预览）；Checkout 纯支付页；Buy Now 走订单确认。
 5. 后端 API/事件/Webhook 相应重构 + 测试。
-6. **自有化清理**：本次触碰的订单/购物车相关 Spree 遗留与过渡注释清理（清单见 §6.5）。
+6. **自有化清理**：本次触碰的订单/购物车相关 上游框架遗留与过渡注释清理（清单见 §6.5）。
 
 ### 2.2 本次不做（后续阶段）
 - 存量数据迁移（用户确认：**存量数据不处理**，存量购物车/订单保持原样，新流程只作用于新数据）。
 - P2：我的订单补付 + 合并支付增强（收货逐单确认/明细）。
 - P3：逆向流程前台化 + 父子/拆合单在新状态机下理顺。
-- P4：Zone/Taxon/Taxonomy 等非订单领域的 Spree 概念移除。
+- P4：Zone/Taxon/Taxonomy 等非订单领域的 上游框架概念移除。
 - 6.0 的 User→Customer 表重命名等。
 
 ## 3. 现状分析（5.x 现状 + 自有化遗留）
 
 ### 3.1 订单/购物车现状
 - `PallasTrade::Order` 单表承载：购物车（`state=cart/address/delivery/payment/confirm`）、正式订单（`complete`）、逆向（`canceled/returned/awaiting_return/resumed`）。
-- `checkout_flow`（Spree 模式）：`cart → address → delivery → payment → confirm → complete`，`previous_states = [:cart]`。
+- `checkout_flow`（上游框架模式）：`cart → address → delivery → payment → confirm → complete`，`previous_states = [:cart]`。
 - `status`：draft（购物车/Admin 代下单）/ placed / canceled；`completed_at` 表示下单完成。
 - 派生状态：`payment_state`（OrderUpdater：paid/balance_due/credit_owed/failed/void）、`shipment_state`（pending/ready/partial/shipped/backorder）。
 - 购物车服务：`Carts::Create/Update/UpsertItems/Complete/AutoSplit`；`PallasTrade::Cart` 模型**不存在**（Cart 即 Order 的 cart 态）。
@@ -67,8 +67,8 @@
 | S-02 | `PallasTrade::Cart` 缺失（Cart=Order 同表） | `Carts::*` 服务 | ✅ 新建 Cart 模型 |
 | S-03 | naming bridge（"5.5 API naming bridges (DB column rename in 6.0)"、user_id→customer_id 注释） | `order.rb:84,150`、`line_item.rb:106` 等 | ✅ 本次触碰文件清理 |
 | S-04 | deprecation 过渡注释（"removed in 6.0"）涉及订单/购物车 | 多个 concern/model | ✅ 本次触碰文件清理 |
-| S-05 | `PallasTrade.base_class`（Spree::Base 模式） | 全局 | ⏸ 本次不动（超出范围） |
-| S-06 | Zone/Taxon/Taxonomy（Spree 概念） | 全局 | ⏸ 本次不动 |
+| S-05 | `PallasTrade.base_class`（上游框架::Base 模式） | 全局 | ⏸ 本次不动（超出范围） |
+| S-06 | Zone/Taxon/Taxonomy（上游框架概念） | 全局 | ⏸ 本次不动 |
 
 > 原则：只清理**本次改造触碰**的文件/概念，避免扩大爆炸半径；未触碰领域留待 P4。
 

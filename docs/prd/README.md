@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| done | PRD-20260911-payments-dsp-p7-2-dispute-fact-resolution | payments | 2026-09-11 | REQ-20260911-dsp-p7-2-dispute-fact-resolution.md |
 | done | PRD-20260911-payments-dsp-p7-1-durable-dispute-model-and-provider-event-ingestion | payments | 2026-09-11 | REQ-20260911-dsp-p7-1-dispute-model-and-event-ingestion.md |
 | done | PRD-20260911-payments-dsp-p7-0-dispute-semantic-audit-and-data-model-freeze | payments | 2026-09-11 | REQ-20260911-dsp-p7-0-dispute-semantic-audit.md |
 | done | PRD-20260911-promotions-promo-batch6-pr-p9-cleanup | promotions | 2026-09-11 | REQ-20260911-promo-batch6-pr-p9-cleanup.md |
@@ -96,7 +97,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | approved | PRD-20260830-checkout-下单链路规范化统一化-场景a-b统一下单页-场景c收银台弹窗-参考阿里国际站 | checkout | 2026-08-30 | REQ-20260901-positive-checkout-payment-flow-hardening.md |
 | done | PRD-20260830-other-修复-skill-权威路径 | other | 2026-08-30 | REQ-20260830-fix-skill-authority-paths.md |
 | approved | PRD-20260829-checkout-订单模块-单笔走现有checkout-多笔走组合支付新流程-收货信息独立填写 | checkout | 2026-08-29 | REQ-20260830-order-module-single-combined-payment.md |
-| approved | PRD-20260829-checkout-订单流程标准电商改造-购物车与订单分表-订单确认-提交订单-checkout纯支付-自有化去spree化 | checkout | 2026-08-29 | REQ-20260830-order-flow-standard-ecommerce-p1.md |
+| approved | PRD-20260829-checkout-订单流程标准电商改造-购物车与订单分表-订单确认-提交订单-checkout纯支付-自有化去上游品牌化 | checkout | 2026-08-29 | REQ-20260830-order-flow-standard-ecommerce-p1.md |
 | done | PRD-20260828-checkout-p8-前置校验-库存-风控-订单服务增强-flag-灰度 | checkout | 2026-08-28 | REQ-20260828-order-lifecycle-p8.md |
 | done | PRD-20260828-checkout-p7-逆向链路售后父子单化-flag-灰度 | checkout | 2026-08-28 | REQ-20260828-order-lifecycle-p7.md |
 | done | PRD-20260828-admin-p6-admin-手动拆单-父子树-ui-flag-灰度 | admin | 2026-08-28 | REQ-20260828-order-lifecycle-p6.md |
