@@ -148,10 +148,10 @@
 
 ## 8. 风险与约束
 
-- **不可逆变更**：D1-A/D2-B 涉及删列/删表（`db/migrate` 新增迁移可回滚性有限；生产库需备份）。
+- **不可逆变更**：D1-A 删列（`advertise`/`path`）不可逆——回滚需新增迁移重新加列并回填历史值；实施前需备份生产库。D2-A 仅新增后台入口与 capability，未删表。
 - **上游一致性**：`advertise`/`path`/`promotion_category_id` 均为上游列/字段；删除会与未来 gem 升级分叉（本项目直接改 gem，需在 §0.1 记录）。
 - **契约链**：动 `promotion_category_id` 需同步 `backend/public/api-docs/admin.yaml` + `platform/docs/api-reference/admin.yaml` + `admin-sdk` 生成类型 + `generated:check`。
-- **权限**：若 P9-2 补 UI，需按 batch5b 的 capability 规范注册 `:promotion_categories`（`models` + `data_fields`）并保证 `nav:validate`/`permissions:validate` 通过。
+- **权限**：P9-2 已按 batch5b 的 capability 规范注册 `:promotion_categories`（单模型 + `data_fields: []`），`nav:validate`/`permissions:validate` 均通过。
 - **工作树并行会话**：实施前必须 `git status --porcelain` 核对（此前发生过外部回退事故）。
 
 ---
@@ -175,6 +175,7 @@
 - [x] `harness/scenarios/scenarios.json`（GS-090）
 - [x] `platform/docs/developer/core-concepts/promotions.mdx` + `platform/docs/api-reference/webhooks-events.mdx`
 - [x] `docs/prd/README.md` 索引
+
 ---
 
 ## 11. 变更记录

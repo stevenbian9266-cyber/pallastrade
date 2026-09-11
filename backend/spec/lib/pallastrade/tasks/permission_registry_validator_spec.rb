@@ -22,7 +22,13 @@ RSpec.describe PallasTrade::Tasks::PermissionRegistryValidator do
     it '报告资源/模型计数且无 error' do
       output = capture_stdout { described_class.new.call }
 
-      expect(output).to include('Permission registry: resources=14')
+      # 计数取自注册表本身（而非写死数字）：新增 capability（如 batch6 的
+      # :promotion_categories）不应打破本断言，只校验"报告与注册表一致 + 无 error"。
+      registry = PallasTrade::PermissionRegistry
+      expected_models = registry.resources.sum { |resource| Array(registry[resource]&.models).size }
+
+      expect(output).to include("resources=#{registry.resources.size}")
+      expect(output).to include("models=#{expected_models}")
       expect(output).to include('errors=0')
       expect(output).not_to include('ERROR issues:')
     end
