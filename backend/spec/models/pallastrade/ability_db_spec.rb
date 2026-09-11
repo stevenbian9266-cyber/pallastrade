@@ -86,11 +86,12 @@ RSpec.describe PallasTrade::Ability do
 
     it 'applies self scope to accessible_by for read (AC-007)' do
       owner = create(:user, email: 'owner@example.com')
-      viewer = create(:user, email: 'viewer2@example.com')
+      create(:user, email: 'viewer2@example.com')
       order_mine = create(:order, store: store, user: owner)
       order_other = create(:order, store: store, user: create(:user, email: 'other@example.com'))
 
-      viewer_admin = create(:admin_user, email: 'viewer_admin@example.com', password: 'secret', password_confirmation: 'secret', without_admin_role: true)
+      viewer_admin = create(:admin_user, email: 'viewer_admin@example.com', password: 'secret', password_confirmation: 'secret',
+                                         without_admin_role: true)
       role = create(:role, name: 'self_orders_read')
       role.rebuild_role_permissions(
         function: { orders: ['read'] },
@@ -106,7 +107,8 @@ RSpec.describe PallasTrade::Ability do
     end
 
     it 'applies custom condition to accessible_by for read (AC-007)' do
-      viewer_admin = create(:admin_user, email: 'custom_admin@example.com', password: 'secret', password_confirmation: 'secret', without_admin_role: true)
+      viewer_admin = create(:admin_user, email: 'custom_admin@example.com', password: 'secret', password_confirmation: 'secret',
+                                         without_admin_role: true)
       role = create(:role, name: 'custom_orders')
       role.rebuild_role_permissions(
         function: { orders: ['read'] },
@@ -127,6 +129,70 @@ RSpec.describe PallasTrade::Ability do
       # default 客户角色无 DB role_permissions → 回退 DefaultCustomer
       expect(ability.db_driven?).to be(false)
       expect(ability).to be_can(:read, PallasTrade::Product)
+    end
+  end
+
+  # PRD-20260911-promotions-promo-batch5b-permission-single-source AC-002
+  # capability 覆盖多模型：DB 角色拿到 promotions.* 后必须同时能管规则/动作，
+  # 否则后台规则弹窗（authorize! PallasTrade::PromotionRule）会被拒绝。
+  describe 'capability 多模型覆盖（batch5b）' do
+    it 'promotions 授权同时覆盖 Promotion / PromotionRule / PromotionAction' do
+      user = create(:admin_user, email: 'promo_mgr@example.com', password: 'secret',
+                                 password_confirmation: 'secret', without_admin_role: true)
+      role = create(:role, name: 'promotion_manager')
+      role.role_permissions.create!(permission_type: 'function', resource: 'promotions', action: 'update', allowed: true)
+      create(:role_user, user: user, role: role, resource: store, store: store)
+
+      ability = PallasTrade::Ability.new(user, store: store)
+
+      expect(ability).to be_can(:update, PallasTrade::Promotion)
+      expect(ability).to be_can(:update, PallasTrade::PromotionRule)
+      expect(ability).to be_can(:update, PallasTrade::PromotionAction)
+      expect(ability).to be_can(:admin, PallasTrade::PromotionRule)
+      expect(ability).not_to be_can(:update, PallasTrade::Product)
+    end
+
+    it 'coupon_codes 是独立 capability，未被授予时不可写' do
+      user = create(:admin_user, email: 'promo_reader@example.com', password: 'secret',
+                                 password_confirmation: 'secret', without_admin_role: true)
+      role = create(:role, name: 'promotion_reader')
+      role.role_permissions.create!(permission_type: 'function', resource: 'promotions', action: 'read', allowed: true)
+      create(:role_user, user: user, role: role, resource: store, store: store)
+
+      ability = PallasTrade::Ability.new(user, store: store)
+
+      expect(ability).to be_can(:read, PallasTrade::PromotionRule)
+      expect(ability).not_to be_can(:update, PallasTrade::CouponCode)
+
+      role.role_permissions.create!(permission_type: 'function', resource: 'coupon_codes', action: 'update', allowed: true)
+      ability = PallasTrade::Ability.new(user.reload, store: store)
+
+      expect(ability).to be_can(:update, PallasTrade::CouponCode)
+    end
+
+    it '数据范围按模型上卷：规则的读权限经 promotion.store_id 限定到本店' do
+      scoped_store = create(:store, code: 'ability_scope_store')
+      other_store = create(:store, code: 'ability_scope_other')
+
+      promotion = create(:promotion, store: scoped_store, code: 'ABIL1')
+      rule = PallasTrade::Promotion::Rules::Currency.create!(promotion: promotion, preferred_currency: 'USD')
+      other_rule = PallasTrade::Promotion::Rules::Currency.create!(
+        promotion: create(:promotion, store: other_store, code: 'ABIL2'), preferred_currency: 'USD'
+      )
+
+      user = create(:admin_user, email: 'scoped_promo@example.com', password: 'secret',
+                                 password_confirmation: 'secret', without_admin_role: true)
+      role = create(:role, name: 'scoped_promotion_reader')
+      role.rebuild_role_permissions(
+        function: { promotions: ['read'] },
+        data: { promotions: { scope: 'store', scope_value: scoped_store.id } }
+      )
+      create(:role_user, user: user, role: role, resource: scoped_store, store: scoped_store)
+
+      ability = PallasTrade::Ability.new(user, store: scoped_store)
+
+      expect(ability).to be_can(:read, rule)
+      expect(ability).not_to be_can(:read, other_rule)
     end
   end
 end

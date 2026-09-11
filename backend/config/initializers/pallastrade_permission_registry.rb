@@ -16,12 +16,25 @@ Rails.application.config.after_initialize do
                model_class: PallasTrade::Product,
                actions: %w[read create update destroy export],
                data_fields: %w[store_id])
+  # PRD-20260911-promo-batch5b 盘点发现（D6）：用户表无 store_id 列，原声明的
+  # data_fields: store_id 无法执行（数据范围选「按店」时会让 accessible_by 生成
+  # users.store_id 条件而报错）→ 改为空声明；矩阵数据范围选项不受影响。（能力/行为不变）
   reg.register(:customers,
                model_class: PallasTrade.user_class,
                actions: %w[read create update destroy export],
-               data_fields: %w[store_id])
+               data_fields: [])
+  # PRD-20260911-promo-batch5b: 一个 capability 覆盖多个模型——后台促销管理
+  # 同时含 Promotion（列表/编辑）、PromotionRule（规则弹窗）、PromotionAction（动作弹窗），
+  # 三者在后台各自 `authorize!`，所以 DB 角色拿到 promotions.* 必须对三个模型都生效。
   reg.register(:promotions,
                model_class: PallasTrade::Promotion,
+               models: [PallasTrade::Promotion, PallasTrade::PromotionRule, PallasTrade::PromotionAction],
+               actions: %w[read create update destroy],
+               data_fields: %w[store_id])
+  # PRD-20260911-promo-batch5b: 券码后台（promotion 嵌套的 Coupon Codes 只读列表）
+  # 单独成资源；CouponCode 无 store_id 列，数据范围经 belongs_to :promotion 上卷。
+  reg.register(:coupon_codes,
+               model_class: PallasTrade::CouponCode,
                actions: %w[read create update destroy],
                data_fields: %w[store_id])
   reg.register(:returns,

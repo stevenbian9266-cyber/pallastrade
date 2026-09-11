@@ -246,16 +246,20 @@ end
 
 - **`PallasTrade::RolePermission`**：角色权限行，`permission_type` ∈ `set`（引用权限集类，保留复杂块逻辑，如 admin SuperUser）/ `function`（resource × action: read/create/update/destroy/export/manage）/ `menu`（nav_key 可见性）/ `data`（resource × scope: all/self/store/channel/custom）。
 - **`PallasTrade::MenuConfig`**：~~可视化菜单配置覆盖层（显隐/改名/排序/自定义菜单项）~~。**2026-08-17 方向收敛**：菜单结构归代码定义，MenuConfig 只保留模型/表（历史兼容，不删），**写入入口与渲染覆盖合并已移除**——侧边栏严格按代码导航配置渲染。
-- **`PallasTrade::PermissionRegistry`**：功能/数据权限矩阵可配置资源的注册表（resource → model_class + actions + data_fields）。新增可授权资源须在 `backend/config/initializers/pallastrade_permission_registry.rb` 登记。
+- **`PallasTrade::PermissionRegistry`**：功能/数据权限矩阵可配置资源的注册表（resource → **models（覆盖模型集合）** + model_class（主模型，= models.first）+ actions + data_fields）。新增可授权资源须在 `backend/config/initializers/pallastrade_permission_registry.rb` 登记。
+
+  **capability 可覆盖多个模型**（PRD-20260911-promo-batch5b）：后台控制器按各自的模型类 `authorize!`，因此一个资源必须列出它涵盖的全部模型——例如 `:promotions` 覆盖 `Promotion + PromotionRule + PromotionAction`（否则 DB 角色拿到 `promotions.update` 仍改不了规则/动作），`:coupon_codes` 单独覆盖 `CouponCode`。数据字段无列时可经 `belongs_to` 上卷（CouponCode → `promotion.store_id`）。
+
+  自洽校验：`bundle exec rake pallastrade:permissions:validate`（`STRICT=1` 有 error 非零退出）；`PermissionRegistry.validate!` 分级：error = 非 AR 模型 / model_class 与 models.first 不一致 / 非法 action / 数据字段无列且不可达（`belongs_to` 链深度 ≤ 2）/ 覆盖模型缺列且无上卷路径；warning = 同一模型被多资源覆盖、无模型的 UI-only 资源。
 
 关键行为：
 
 1. **Ability 由 DB 驱动**：`PallasTrade::Ability#apply_permissions_from_db` 读取用户角色的 role_permissions；`admin` 角色由 `Role.default_admin_role` 确保 `set: SuperUser`；无 DB 配置的角色回退代码权限集（storefront default）。
-2. **功能权限 → 授权主体**：resource 经 PermissionRegistry 解析为模型类（`orders` → `PallasTrade::Order`），授予时自动附带 `:admin`（面板入口 gate）。read/index/show 授予时叠加数据范围条件（`accessible_by` 自动生效）。
+2. **功能权限 → 授权主体**：resource 经 PermissionRegistry 解析为**全部覆盖模型**（`orders` → `PallasTrade::Order`；`promotions` → Promotion/PromotionRule/PromotionAction），对每个模型授予同一 action，并自动附带 `:admin`（面板入口 gate）。read/index/show 授予时叠加数据范围条件（`accessible_by` 自动生效）；目标模型无该列时经 `belongs_to` 上卷（`{ promotion: { store_id: … } }`）并按列类型转换 scope_value。
 3. **菜单权限过滤**：DB 驱动角色（`ability.menu_permissions` 非 nil）的侧边栏完全由菜单权限决定（跳过代码 `if:`）；未配置角色按代码 `if:` 向后兼容。
 4. **菜单配置页 = 只读可视化（2026-08-17 起）**：`MenuConfigsController#index` 仅只读展示导航树（`PallasTrade.admin.navigation.sidebar.root_items`），无任何编辑控件/写路由；菜单结构由 `pallastrade_admin_navigation.rb` 定义。权限配置依据 = Roles 页「菜单权限」树状勾选（与配置页同一导航树）。
 5. **角色权限 UI**：Roles 编辑页三 tab（菜单/功能/数据）；`Role#rebuild_role_permissions` 重建（set 类型保护）。
-6. **校验**：`nav:validate` 校验 role_permissions 的 resource 必须注册于 PermissionRegistry。
+6. **校验**：`nav:validate` 校验 role_permissions 的 resource 必须注册于 PermissionRegistry，并要求促销后台模型（Promotion/PromotionRule/PromotionAction/CouponCode/PromotionRedemption）均被某个 capability 覆盖。
 
 ⚠️ 角色权限编辑只影响 menu/function/data；`set`（admin SuperUser）不受 UI 重建影响。
 新增受控资源 = 注册 PermissionRegistry + 权限矩阵自动出现（零表单改动）。

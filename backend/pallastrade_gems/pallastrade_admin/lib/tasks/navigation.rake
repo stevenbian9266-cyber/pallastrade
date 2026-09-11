@@ -50,6 +50,10 @@ namespace :pallastrade do
       # PALLAS-CUSTOM: 权限体系（P6）——DB 角色权限 resource 必须注册于 PermissionRegistry
       validate_role_permissions(violations, warnings)
 
+      # PALLAS-CUSTOM (batch5b, PRD-20260911-promotions-promo-batch5b): 促销后台控制器的
+      # 模型必须被某个 capability 覆盖（否则 DB 驱动角色拿到 promotions.* 仍然改不了规则/动作/券码）
+      validate_promotion_surface_coverage(violations)
+
       if violations.empty?
         puts "✅ nav:validate OK — #{warnings.size} warning(s)"
         warnings.each { |w| puts "⚠️  #{w}" }
@@ -71,6 +75,31 @@ namespace :pallastrade do
       end
     rescue StandardError => e
       warnings << "role_permissions 校验跳过（#{e.class}）"
+    end
+
+    # PALLAS-CUSTOM: 促销后台 surface 的权限覆盖校验（batch5b）
+    # 后台控制器按各自的模型类 authorize!，因此模型必须在注册表的覆盖集合内。
+    def validate_promotion_surface_coverage(violations)
+      surface_models = %w[
+        PallasTrade::Promotion
+        PallasTrade::PromotionRule
+        PallasTrade::PromotionAction
+        PallasTrade::CouponCode
+        PallasTrade::PromotionRedemption
+      ]
+
+      covered = PallasTrade::PermissionRegistry.resources.flat_map do |resource|
+        Array(PallasTrade::PermissionRegistry[resource]&.models).map(&:name)
+      end
+
+      surface_models.each do |model_name|
+        next if covered.include?(model_name)
+
+        violations << "permission-registry: 促销后台模型 #{model_name} 未被任何 capability 覆盖" \
+                      "（须在 pallastrade_permission_registry.rb 的 models 中声明）"
+      end
+    rescue StandardError => e
+      violations << "permission-registry 促销覆盖校验失败（#{e.class}）"
     end
 
     def validate_item(item, context, violations, warnings)

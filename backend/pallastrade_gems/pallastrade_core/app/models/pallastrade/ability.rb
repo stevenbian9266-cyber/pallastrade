@@ -92,11 +92,11 @@ module PallasTrade
       # menu 类型：记录角色菜单权限
       menu_rows = role_permissions.select { |rp| rp.permission_type == 'menu' }
       if menu_rows.any?
-        if menu_rows.any? { |rp| rp.allowed? && rp.nav_key == 'all' }
-          @menu_permissions = :all
-        else
-          @menu_permissions = menu_rows.filter_map { |rp| rp.allowed? ? rp.nav_key : nil }
-        end
+        @menu_permissions = if menu_rows.any? { |rp| rp.allowed? && rp.nav_key == 'all' }
+                              :all
+                            else
+                              menu_rows.filter_map { |rp| rp.allowed? ? rp.nav_key : nil }
+                            end
       end
 
       true
@@ -105,33 +105,42 @@ module PallasTrade
     # PALLAS-CUSTOM: function 权限 → can/cannot（2026-08-16）
     # 资源经 PermissionRegistry 解析为模型类（如 orders → PallasTrade::Order），
     # 使 `can?(:read, PallasTrade::Order)` 生效（导航 if: 与控制器 authorize 都用模型类）。
-    # 授予任一功能权限时同时授予 `:admin`（admin 面板入口 gate，BaseController#authorize_admin）。
-    # read/index/show 授予时叠加数据范围条件（P5：accessible_by 自动生效）。
+    #
+    # PALLAS-CUSTOM (2026-09-11, PRD-20260911-promotions-promo-batch5b): 一个 capability
+    # 可覆盖多个模型（如 promotions → Promotion / PromotionRule / PromotionAction），
+    # 对每个模型应用同一 grant；数据范围条件按模型分别派生（模型无该列时经 belongs_to 上卷）。
     def apply_function_permission(rp)
-      target = resolve_permission_target(rp.resource)
       action = rp.action.to_sym
-      action = :manage if action == :manage
 
-      if rp.allowed?
-        if read_action?(action) && (condition = data_condition_for(rp.resource))
-          can action, target, condition
+      resolve_permission_targets(rp.resource).each do |target|
+        condition = read_action?(action) ? data_condition_for(rp.resource, target) : nil
+
+        if rp.allowed?
+          if condition
+            can action, target, condition
+          else
+            can action, target
+          end
+          can :admin, target unless action == :admin
         else
-          can action, target
+          cannot action, target
+          cannot :admin, target
         end
-        can :admin, target unless action == :admin
-      else
-        cannot action, target
-        cannot :admin, target
       end
     end
 
-    # PALLAS-CUSTOM: 资源名 → 授权主体（2026-08-16）
-    # 'all' → :all；注册表有模型类 → 模型类；否则保持资源符号。
-    def resolve_permission_target(resource)
-      return :all if resource.to_s == 'all'
+    # PALLAS-CUSTOM: 资源名 → 授权主体集合（2026-08-16 / 多模型覆盖 2026-09-11）
+    # 'all' → [:all]；注册表声明了覆盖模型 → 全部模型；否则保持资源符号。
+    def resolve_permission_targets(resource)
+      return [:all] if resource.to_s == 'all'
 
       entry = PallasTrade::PermissionRegistry[resource]
-      entry&.model_class || resource.to_sym
+      Array(entry&.models).presence || [entry&.model_class || resource.to_sym]
+    end
+
+    # 向后兼容：单目标解析（取第一个主体）。
+    def resolve_permission_target(resource)
+      resolve_permission_targets(resource).first
     end
 
     # PALLAS-CUSTOM: read 系 action（P5 数据权限）
@@ -145,9 +154,13 @@ module PallasTrade
     #   store   → store_id = scope_value
     #   channel → channel_id = scope_value
     #   custom  → 白名单自定义条件（管理员配置的简单 Hash，如 {"store_id"=>"xxx"}）
-    # @param resource [String] 资源名
+    #
+    # PALLAS-CUSTOM (batch5b): 传入 `model:` 时按该模型派生；覆盖模型没有该列时
+    # 经 belongs_to 上卷（PromotionRule → promotion.store_id），避免跨店越权或 SQL 报错。
+    # @param resource [String, Symbol] 资源名
+    # @param model [Class, nil] 目标模型（nil = 资源主模型）
     # @return [Hash, nil]
-    def data_condition_for(resource)
+    def data_condition_for(resource, model = nil)
       dp = @data_permissions[resource.to_sym]
       return nil unless dp
 
@@ -158,19 +171,51 @@ module PallasTrade
       when 'self'
         return nil unless fields.include?('user_id')
 
-        { user_id: @user&.id }
+        scope_condition_for(model || entry&.model_class, :user_id, @user&.id)
       when 'store'
         return nil if dp[:scope_value].blank?
 
-        { store_id: dp[:scope_value] }
+        scope_condition_for(model || entry&.model_class, :store_id, dp[:scope_value])
       when 'channel'
         return nil if dp[:scope_value].blank?
 
-        { channel_id: dp[:scope_value] }
+        scope_condition_for(model || entry&.model_class, :channel_id, dp[:scope_value])
       when 'custom'
         cond = dp[:custom_condition]
         cond if cond.is_a?(Hash) && cond.any?
       end
+    end
+
+    # 模型自身有列 → 直接条件；否则找 belongs_to 关联持有该列的模型（如
+    # PromotionRule → promotion.store_id）；都没有时保持原条件（查询期显式报错，
+    # 而不是退化为无条件放行）。
+    def scope_condition_for(model, field, value)
+      return { field => value } if model.nil? || !model.respond_to?(:column_names)
+
+      if model.column_names.include?(field.to_s)
+        { field => cast_column_value(model, field, value) }
+      else
+        association = belongs_to_owner(model, field)
+        return { field => value } unless association
+
+        { association.name => { field => cast_column_value(association.klass, field, value) } }
+      end
+    end
+
+    def belongs_to_owner(model, field)
+      model.reflect_on_all_associations(:belongs_to).find do |candidate|
+        candidate.klass.respond_to?(:column_names) && candidate.klass.column_names.include?(field.to_s)
+      rescue StandardError
+        false
+      end
+    end
+
+    # role_permissions.scope_value 是字符串列；CanCan 条件按模型属性比较，
+    # 需要按目标列类型转换（store_id 是整数列 → "5" 必须变 5，否则永远不匹配）。
+    def cast_column_value(model, field, value)
+      model.type_for_attribute(field.to_s).cast(value)
+    rescue StandardError
+      value
     end
 
     def safe_permission_set_class(name)

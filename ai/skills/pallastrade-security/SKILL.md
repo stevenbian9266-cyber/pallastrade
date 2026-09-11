@@ -207,6 +207,13 @@ Since the permission-system refactor, **admin roles are authorized from the DB**
 - **menu** grants control sidebar visibility (`ability.menu_permissions`); a DB-driven role's menu tree is decided entirely by menu grants.
 - Admin role-permission editing happens in the Roles edit page (three tabs: menu/function/data) — see the `pallastrade-admin` skill. `nav:validate` enforces that permission resources are registered.
 
+**Capability = 资源 × 覆盖模型集合（2026-09-11, PRD-20260911-promo-batch5b）**：注册表的每个资源声明 `models`（覆盖模型），Ability 对该集合内**每个模型**授予同一 action。后台每个控制器按自己的模型类 `authorize!`，所以：
+
+- 一个后台功能若跨越多个模型（如促销：`Promotion` / `PromotionRule` / `PromotionAction`），注册表必须全部列出——否则 DB 角色会被"授权了却打不开页面"（失权而非越权，但同样是权限事实与 UI 不一致）；
+- 代码级权限集不再各自硬编码模型：用 `grants_registry_resource :promotions, :coupon_codes` 从注册表派生（`PermissionSets::Base`），保证"矩阵能配的 = 代码集能授的 = 控制器能开门的"；
+- 数据范围条件按目标模型派生：模型无该列时经 `belongs_to` 上卷（`{ promotion: { store_id: … } }`），并按列类型转换 `scope_value`（否则字符串永不等值于整数列 → 静默失权）；不能表达时**保持原条件**（查询期显式报错），不回退为无条件放行；
+- 变更权限/注册表后必须跑 `bundle exec rake pallastrade:permissions:validate`（`STRICT=1`）+ `pallastrade:admin:nav_validate`，并复核 `spec/models/pallastrade/ability_db_spec.rb`、后台权限 request spec。
+
 Keep `set`-type permissions (SuperUser) out of the rebuild path — the UI never edits them.
 
 ### Payment method preferences

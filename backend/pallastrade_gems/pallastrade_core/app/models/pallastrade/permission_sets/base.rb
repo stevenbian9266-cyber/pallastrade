@@ -27,39 +27,69 @@ module PallasTrade
         @ability = ability
       end
 
-      # Activates this permission set by adding its permissions to the ability.
-      # Override this method in subclasses to define the permissions.
+      # PALLAS-CUSTOM (2026-09-11, PRD-20260911-promotions-promo-batch5b):
+      # 从 PermissionRegistry 派生授权，避免权限集与注册表各写一份资源清单。
       #
-      # @abstract
+      # @param resources [Array<Symbol>] 注册表资源名
+      # @param actions [Array<Symbol>, Symbol] 授予的动作（默认 :manage）
+      # @return [void]
+      def self.grants_registry_resource(*resources, actions: :manage)
+        registry_grants << [resources.flatten, Array(actions)]
+      end
+
+      # @return [Array<Array>] `[[resources, actions], ...]`
+      def self.registry_grants
+        @registry_grants ||= []
+      end
+
+      # Activates this permission set by adding its permissions to the ability.
+      #
+      # 默认实现将 `grants_registry_resource` 声明的资源展开为 can 语句；
+      # 子类可覆写并 `super` 以追加特殊行（如无后台 UI 的模型）。
+      #
       # @return [void]
       def activate!
-        raise NotImplementedError, "#{self.class} must implement #activate!"
+        raise NotImplementedError, "#{self.class} must implement #activate!" if self.class.registry_grants.empty?
+
+        apply_registry_grants
       end
 
       protected
+
+      # 把注册表声明的资源展开为 `can action, model`（模型取自注册表覆盖集合）。
+      def apply_registry_grants
+        self.class.registry_grants.each do |resources, actions|
+          resources.each do |resource|
+            models = Array(PallasTrade::PermissionRegistry[resource]&.models)
+            next if models.empty?
+
+            actions.each { |action| models.each { |model| can action, model } }
+          end
+        end
+      end
 
       # Delegates the `can` method to the ability instance.
       #
       # @param args [Array] arguments to pass to CanCan::Ability#can
       # @param block [Proc] optional block for conditional permissions
-      def can(*args, &block)
-        ability.can(*args, &block)
+      def can(*, &)
+        ability.can(*, &)
       end
 
       # Delegates the `cannot` method to the ability instance.
       #
       # @param args [Array] arguments to pass to CanCan::Ability#cannot
       # @param block [Proc] optional block for conditional permissions
-      def cannot(*args, &block)
-        ability.cannot(*args, &block)
+      def cannot(*, &)
+        ability.cannot(*, &)
       end
 
       # Delegates the `can?` method to the ability instance.
       #
       # @param args [Array] arguments to pass to CanCan::Ability#can?
       # @return [Boolean]
-      def can?(*args)
-        ability.can?(*args)
+      def can?(*)
+        ability.can?(*)
       end
 
       # Returns the user from the ability instance.

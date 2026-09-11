@@ -289,6 +289,20 @@ Lookups: `DefinitionRegistry.for(:rule).classes`, `.rule_entries`, `.action_entr
 
 Validating: `DefinitionRegistry.validate!` returns `[{ level:, code:, key:, kind:, message: }]` — `:error` for duplicate `api_type`, wrong STI parent, missing admin partial, empty calculator bucket, non-array `additional_permitted_attributes`; `:warning` for a missing locale label and for an STI subclass that was never registered.
 
+## 促销权限（capability 单源，PRD-20260911-promo-batch5b）
+
+后台促销入口的授权走 `PallasTrade::PermissionRegistry`（矩阵 / Ability / nav:validate 同一来源）：
+
+| capability | 覆盖模型 | 后台入口 |
+|---|---|---|
+| `promotions.read/create/update/destroy` | `Promotion`、`PromotionRule`、`PromotionAction` | Promotions 列表；规则/动作弹窗 |
+| `coupon_codes.*` | `CouponCode` | 促销下的 Coupon Codes 页 |
+| `promotion_redemptions.read` | `PromotionRedemption` | Promotions → Redemptions（只读，batch3c） |
+
+- `PromotionCategory` 无后台控制器 → 只在代码权限集 `PermissionSets::PromotionManagement` 里显式声明（不入矩阵）。
+- CouponCode 无 `store_id` 列，数据范围经 `belongs_to :promotion` 上卷为 `{ promotion: { store_id: … } }`。
+- 新增促销子资源时：在 `backend/config/initializers/pallastrade_permission_registry.rb` 注册（含 `models:` 覆盖集合），再跑 `rake pallastrade:permissions:validate` 与 `rake pallastrade:admin:nav_validate`（nav 会断言促销后台 5 个模型都被覆盖）。
+
 ## Where to read further
 
 - **Core concepts:** `node_modules/@pallastrade/docs/dist/developer/core-concepts/promotions.md`

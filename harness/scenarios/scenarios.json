@@ -2225,6 +2225,29 @@
         "adminAndApiConvergence": 25,
         "regressionGreen": 20
       }
+    },
+    {
+      "id": "GS-089",
+      "name": "Promotion permission single source",
+      "description": "Permission capabilities must cover every model the admin surface authorizes against, derived from one registry (see PRD-20260911-promotions-promo-batch5b-permission-single-source)",
+      "mustDo": [
+        "Declare PermissionRegistry resources with a models: coverage set (promotions → Promotion + PromotionRule + PromotionAction; coupon_codes → CouponCode; promotion_redemptions read-only) and keep model_class as models.first",
+        "Make Ability#apply_function_permission grant every covered model and derive data scope per model (belongs_to rollup like promotion.store_id, with scope_value cast to the column type)",
+        "Derive PermissionSets::PromotionManagement from the registry (grants_registry_resource) instead of hardcoding the model list",
+        "Validate via PermissionRegistry.validate! + rake pallastrade:permissions:validate (non-AR model / model_class mismatch / invalid action / unreachable data field = error; duplicate model / UI-only resource = warning) and nav:validate promotion-surface coverage"
+      ],
+      "mustNotDo": [
+        "Introduce a second permission registry or re-hardcode model lists in permission sets",
+        "Change Admin API v3 scope authorization, SuperUser behaviour or business models/migrations",
+        "Silently grant unconditional access when a data scope cannot be expressed (keep the raw condition so the failure is loud)",
+        "Fold promotion_redemptions into the promotions capability (it stays read-only)"
+      ],
+      "scoring": {
+        "capabilityCoverage": 30,
+        "abilityMultiModel": 25,
+        "validationGates": 25,
+        "regressionGreen": 20
+      }
     }
   ]
 }
