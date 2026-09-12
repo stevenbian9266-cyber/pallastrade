@@ -2329,7 +2329,7 @@
         "Write references as paths that resolve from the repo root (e.g. backend/pallastrade_gems/pallastrade_core/app/services/pallastrade/carts/) instead of bare fragments like services/pallastrade/cart/",
         "Update every affected SKILL.md in the same change (or a dedicated fix slice) whenever code is renamed, moved or deleted elsewhere in the repo",
         "Mark removed components as history: state the removal (slice/PRD id) and point at the current entry point, instead of leaving a dead path behind",
-        "Verify with `npx harness eval-ai --check-freshness` (0 path errors) and `npx harness eval-ai --scenarios` (all scenarios valid)"
+        "Keep workflow/trigger descriptions in sync with the workflow files (e.g. deploy.yml listens on `[dev]` only — the `[main, dev]` era ended 2026-08-31), and verify with `npx harness eval-ai --check-freshness` (0 path errors) plus `npx harness eval-ai --scenarios` (all scenarios valid)"
       ],
       "mustNotDo": [
         "Leave a backticked path that no longer exists — it fails the Nightly freshness step and blocks the whole nightly run",
