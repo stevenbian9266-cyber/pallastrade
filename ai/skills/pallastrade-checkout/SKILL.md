@@ -78,7 +78,7 @@ Checkout is how an independent active `PallasTrade::Cart` becomes a submitted `P
 账户订单页勾选待支付订单时的分流与新合并流程（Storefront `OrderCombinedPay` → `CombinedPaymentCheckout`）：
 
 - **分流**：`OrderCombinedPay`（`storefront/src/components/account/OrderCombinedPay.tsx`）——恰好 1 笔 → `/checkout/[orderId]`（单订单 checkout，沿用订单地址/配送，只确认 + 支付，复用 P1 `OrderPaymentContent`）；2+ 笔 → `POST /payment_combinations` → `/combined-payment/[pcom_id]`。
-- **合并流程两步骤**：`CombinedPaymentCheckout`（`storefront/src/components/checkout/CombinedPaymentCheckout.tsx`）：
+- **合并流程两步骤（历史流程，CHK-P1-4C 2026-09-04 已移除该页面）**：原 `CombinedPaymentCheckout` 两步页已删除，账户订单页现行入口 = `PaymentCheckoutModal`（`storefront/src/components/checkout/PaymentCheckoutModal.tsx`）；以下两步描述保留供追溯：
   1. **收货**：`GET /payment_combinations/:id?expand=orders` 展开成员订单；逐单确认/编辑收货地址，保存走 `PATCH /customers/me/orders/:order_id/shipping_address`（`Store::Customer::Orders::ShippingAddressController` → `PallasTrade::Orders::UpdateShippingAddress`，仅当前用户自己的未支付订单可改，防 IDOR）；无地址订单强制填写后才能进入支付（AC-004）。
   2. **商品 + 支付**：展示各成员订单商品明细（订单号/商品/数量/小计/运费/合计）与组合总金额；Stripe PaymentElement 区域无任何地址输入（AC-007）。
 - **订单收货地址更新 API**：`PATCH /api/v3/store/customers/me/orders/:order_id/shipping_address`——复用 `Carts::Update` 的地址赋值模式（`shipping_address_id` 引用用户已存地址 / 就地更新挂载地址，country_iso/state_abbr 由 Address 模型解析），已下单订单不重置 checkout 状态机，同步已有 shipment 的 address_id。
@@ -292,7 +292,7 @@ end
 - **Core concepts:** `node_modules/@pallastrade/docs/dist/developer/core-concepts/orders.md`, `payments.md`
 - **Checkout customization:** `node_modules/@pallastrade/docs/dist/developer/customization/checkout.md`
 - **Order source:** `PallasTrade::Order` and `PallasTrade::Order::Checkout` in the installed `pallastrade_core` gem — the state machine wiring.
-- **Cart services:** `PallasTrade::Cart::AddItem`, `PallasTrade::Cart::Recalculate`, etc. in `pallastrade_core/app/services/pallastrade/cart/`.
+- **Cart services:** 新流程 = `PallasTrade::Carts::{Create,Update,UpsertItems,Submit,Complete,AutoSplit}`（`backend/pallastrade_gems/pallastrade_core/app/services/pallastrade/carts/`）；上游框架遗留 = `PallasTrade::CartLegacy::{AddItem,Recalculate}`（`backend/pallastrade_gems/pallastrade_core/app/services/pallastrade/cart_legacy/`）。
 
 ## Changelog (CHK-P1-1A Read-only CheckoutView, 2026-09-03)
 

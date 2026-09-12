@@ -208,7 +208,7 @@ end
 | # | 事项 | 位置 |
 |---|---|---|
 | 1 | 注册到注册表 | `PallasTrade.promotions.rules` / `.actions`（+ calculator 桶，若 `calculators` 非空） |
-| 2 | 后台表单 partial | `pallastrade/admin/promotion_rules/forms/_<api_type>.html.erb`（或 `promotion_actions/forms/`） |
+| 2 | 后台表单 partial | `backend/pallastrade_gems/pallastrade_admin/app/views/pallastrade/admin/promotion_rules/forms/_<api_type>.html.erb`（或 `backend/pallastrade_gems/pallastrade_admin/app/views/pallastrade/admin/promotion_actions/forms/`） |
 | 3 | 文案 | `promotion_rule_types.<api_type>.{name,description}`（或 `promotion_action_types.…`），缺省回退 titleize |
 | 4 | 校验 | `bundle exec rake pallastrade:promotions:definitions`（`STRICT=1` 出错非零退出） |
 

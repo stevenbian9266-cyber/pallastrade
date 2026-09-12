@@ -2320,6 +2320,27 @@
         "degradationSemantics": 25,
         "regressionGreen": 25
       }
+    },
+    {
+      "id": "GS-093",
+      "name": "Skill path references stay resolvable (freshness invariant)",
+      "description": "Keep every path reference inside ai/skills/*/SKILL.md resolvable after refactors: use repo-root-relative paths for real files, and rewrite references to removed code as history that names the current entry point (Nightly 'Freshness + scenarios' step enforces this)",
+      "mustDo": [
+        "Write references as paths that resolve from the repo root (e.g. backend/pallastrade_gems/pallastrade_core/app/services/pallastrade/carts/) instead of bare fragments like services/pallastrade/cart/",
+        "Update every affected SKILL.md in the same change (or a dedicated fix slice) whenever code is renamed, moved or deleted elsewhere in the repo",
+        "Mark removed components as history: state the removal (slice/PRD id) and point at the current entry point, instead of leaving a dead path behind",
+        "Verify with `npx harness eval-ai --check-freshness` (0 path errors) and `npx harness eval-ai --scenarios` (all scenarios valid)"
+      ],
+      "mustNotDo": [
+        "Leave a backticked path that no longer exists — it fails the Nightly freshness step and blocks the whole nightly run",
+        "Delete the historical explanation entirely; keep the context while pointing at the replacement",
+        "Rename skill directories or frontmatter `name` values while only fixing paths"
+      ],
+      "scoring": {
+        "pathsResolve": 40,
+        "removedCodeRewritten": 30,
+        "freshnessGreen": 30
+      }
     }
   ]
 }

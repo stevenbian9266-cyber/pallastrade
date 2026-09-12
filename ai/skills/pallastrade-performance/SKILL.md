@@ -205,7 +205,7 @@ Only the Store API catalog controllers (products, categories, countries, currenc
 
 ## Where to read further
 
-- **Cart pipeline:** `PallasTrade::Cart::Recalculate` and its dependencies in `pallastrade_core/app/services/pallastrade/cart/`.
+- **Cart pipeline:** `PallasTrade::Carts::Submit`（`backend/pallastrade_gems/pallastrade_core/app/services/pallastrade/carts/`）及其下游（`Carts::AutoSplit` / `Orders::Complete`）；遗留实现 `PallasTrade::CartLegacy::Recalculate`（`backend/pallastrade_gems/pallastrade_core/app/services/pallastrade/cart_legacy/`）。
 - **Search provider:** `PallasTrade::SearchProvider::Base` and `PallasTrade::SearchProvider::Meilisearch` in the installed `pallastrade_core` gem.
 - **Deployment caching:** `node_modules/@pallastrade/docs/dist/developer/deployment/caching.md`.
 - **Search + filtering:** `node_modules/@pallastrade/docs/dist/developer/core-concepts/search-filtering.md`.

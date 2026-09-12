@@ -345,7 +345,7 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **生命周期**：`requested → processing → succeeded | failed | ambiguous → manual_review`（+ requested→canceled）。
   常量 `Refund::STATES / ACTIVE_STATES(requested,processing,ambiguous) / CAPACITY_STATES(+succeeded) /
   TERMINAL_STATES`。**删除 `after_create :perform!`**（create 即 PSP 副作用反模式）。
-- **Refunds::Execute**（`services/pallastrade/refunds/execute.rb`，v1 同步）：claim（payment 锁内重校验
+- **Refunds::Execute**（`backend/pallastrade_gems/pallastrade_core/app/services/pallastrade/refunds/execute.rb`，v1 同步）：claim（payment 锁内重校验
   capacity、排除自身 → requested→processing + 写 `provider_idempotency_key`(`refund:<prefixed_id>:execute`)）→
   provider I/O（携带稳定 idempotency key）→ 三态持久化：`apply_success!`（succeeded+transaction_id+split/order
   投影+audit，单事务可重放）/ `record_failure!`（failed+last_error）/ `record_ambiguous!`（ambiguous）。

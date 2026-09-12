@@ -220,7 +220,7 @@ ImmutableError）。posting 输入 = `FinancialFact`（见 pallastrade-payments 
 
 ## Financial Fact（FIN-P4-1, 2026-09-06；transient value object，非 DB aggregate）
 
-`PallasTrade::FinancialFact`（`models/pallastrade/financial_fact.rb`）是**不落库**的只读值对象——
+`PallasTrade::FinancialFact`（`backend/pallastrade_gems/pallastrade_core/app/models/pallastrade/financial_fact.rb`）是**不落库**的只读值对象——
 非 AR、无表、无 migration。它标准化「Payment/Refund → 资金事实」语义（status/fact_type/
 instrument_class/ownership/命名纪律见 `pallastrade-payments` SKILL §Financial Fact Resolution）。
 CommerceTransaction/Payment/Refund/PaymentSplit 仍是唯一持久化资金与分摊载体；FinancialFact 是
