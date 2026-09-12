@@ -963,6 +963,27 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   **期望账行 = funds 时间戳集合**（不是「当前最强事实」，否则已 `won` 的争议会被误判缺账）；零写、
   零 provider I/O（`capability: JOURNAL_LOCAL_ONLY`），为 P7-5 补记/告警提供输入。
 
+## Dispute 证据快照（DSP-P7-4, 2026-09-12；PRD-20260912-payments-dsp-p7-4-dispute-evidence-snapshot）
+
+> 把既有事实投影为一张**可审阅的证据卡**（源计划 §41），供运营在截止前决定是否应诉；
+> 为 P7-5 告警 / P7-6 收敛 / P7-7 展现提供输入。**不落库、不提交、默认不触网**。
+
+- **入口**：`Disputes::EvidenceSnapshot`（transient 不可变 VO：`sections` / `missing_evidence` / `submission_ready` /
+  `fact_type` / `fact_status` / `resolution`）+ `Disputes::BuildEvidenceSnapshot.call(dispute:, fetch: false)`（只读投影）。
+- **分段与结构**：`order / transaction / payment / refunds / fulfillment / customer_communication / policy / provider /
+  journal / reconciliation`，每段 `{ availability: available|not_available, reason: <封闭枚举>, data: {} }`。
+- **禁推导铁律（源计划 §42）**：`delivered_at` / `proof_of_delivery` 恒 `not_available`（`not_recorded`）；客户沟通恒
+  `not_available`；policy 恒 `not_recorded`（仅附 `store_url` 参考）。**绝不**由 `shipped_at` 推成「已送达」。
+- **零触网**：默认 `fetch: false` → provider 段 `not_requested`；仅 `fetch: true` 且 capability 为真才调用只读契约，
+  故障 → `provider_unavailable` 且不阻断其他段。capability 用**类级**判定（`class.instance_method(...).owner != PaymentMethod`）
+  ——实例级会被测试打桩干扰（stub 会把方法装到 singleton 上，造成「假装有契约」）。
+- **缺失清单**：`missing_evidence[]` 封闭枚举 —— `PROOF_OF_DELIVERY_NOT_AVAILABLE` / `CUSTOMER_COMMUNICATION_NOT_RECORDED` /
+  `TRACKING_MISSING` / `SHIPPED_AT_MISSING` / `PROVIDER_SNAPSHOT_UNSUPPORTED` / `PROVIDER_SNAPSHOT_UNAVAILABLE` /
+  `ORDER_MISSING` / `PAYMENT_ANCHOR_MISSING` / `JOURNAL_MISSING` / `REFUND_OVERLAP_PRESENT`。
+- **不提交**：`submission_ready` 恒 `false`（源计划 §43/§67：Submit Evidence 属危险操作，归 P7-8，且需 permission + confirmation + audit）。
+- **PII**：VO 内携带必要业务字段，但**日志/错误不写 PII**（仅 ids / 段名 / reason）。
+- **后续切片**：P7-5 deadline sweeper（消费 `missing_evidence` 与 `evidence_due_at`）/ P7-6 收敛动作 / P7-7 Console 展示 / P7-8 多 provider + 提交。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.

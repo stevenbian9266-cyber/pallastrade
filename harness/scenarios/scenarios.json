@@ -2365,6 +2365,30 @@
         "postingKeyCorrectness": 25,
         "reconciliationReadOnly": 25
       }
+    },
+    {
+      "id": "GS-095",
+      "name": "Dispute evidence snapshot (truthful, read-only projection)",
+      "description": "Project existing facts into a reviewable evidence card for a dispute: every section carries availability + closed-enum reason, unavailable facts are never fabricated, and nothing is submitted to the provider (see PRD-20260912-payments-dsp-p7-4-dispute-evidence-snapshot)",
+      "mustDo": [
+        "Build the snapshot as a deterministic read-only projection (order / transaction / payment / refunds / fulfillment / customer_communication / policy / provider / journal / reconciliation) with per-section availability and closed-enum reason",
+        "Keep delivered_at and proof_of_delivery permanently not_available (not_recorded) and never infer delivery from shipped_at; customer communication and policy stay not_recorded too",
+        "Default to zero provider I/O (provider section reports not_requested) and only call the read-only contract when fetch is requested AND the gateway class overrides it, degrading to provider_unavailable on failure without blocking other sections",
+        "Expose a closed-enum missing_evidence list (proof of delivery, communication, tracking, shipped_at, provider snapshot, order/payment anchor, journal, refund overlap) for later slices to consume",
+        "Keep submission_ready permanently false and keep PII out of logs (ids, section names and reasons only), with read-only assertions proving zero writes"
+      ],
+      "mustNotDo": [
+        "Fabricate or default-fill unavailable evidence, or derive delivery from shipping timestamps",
+        "Submit evidence to the provider, accept disputes automatically, or trigger refunds from the snapshot (submit belongs to a later slice with permission + confirmation + audit)",
+        "Persist the snapshot, add migrations, or introduce API/UI surfaces in this slice",
+        "Detect provider capability from an instance method look-up (test stubs would masquerade as implemented contracts)"
+      ],
+      "scoring": {
+        "truthfulAvailability": 30,
+        "readOnlyAndOffline": 25,
+        "missingEvidenceEnum": 25,
+        "regressionGreen": 20
+      }
     }
   ]
 }
