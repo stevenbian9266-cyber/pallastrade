@@ -17,6 +17,12 @@ RSpec.describe PallasTrade::Transactions::Recover, type: :service do
 
   before do
     variant.update_column(:track_inventory, true)
+    # 环境无关（Backend CI 修复 2026-09-12）：`Store#default_stock_location` 取全局第一个
+    # `default: true` 库位——CI 走 `db:prepare`（含引擎 seed）时该库位来自 seed，本地测试库则
+    # 不存在，工厂会据此给 variant 建库存项，导致 Reserve/Finalize 的 StockMovement 落到
+    # 非本 spec 的库位（movements=0）。这里把 variant 收敛到本 spec 的库位，使断言与
+    # "是否存在其他默认库位" 无关。
+    variant.stock_items.where.not(id: stock_item.id).destroy_all
     stock_item.update_columns(count_on_hand: 5, backorderable: false)
   end
 
