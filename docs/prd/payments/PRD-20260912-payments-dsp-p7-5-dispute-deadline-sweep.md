@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved（2026-09-12 用户显式确认实施） |
+| 状态 | done（2026-09-12 实施 / 验证 / 知识同步完成；已提交 `8483eadd`） |
 | 创建日期 | 2026-09-12 |
 | 来源 | 用户指令「继续」→ 承接 DSP-P7-4 的下一切片（P7-4 PRD 已显式预留 Sweeper） |
 | 分类 | payments（`harness prd new` 自动判定，关键词「退款」命中） |
@@ -145,13 +145,16 @@
 
 ## 9. 文档同步清单（实施后必做）
 
-| 资产 | 计划 |
+| 资产 | 结论（sync-check 逐项评估） |
 |---|---|
-| `ai/skills/pallastrade-payments/SKILL.md` | 新增 DSP-P7-5 段（扫描分桶/零决策铁律/调度条目/噪音控制） |
-| `ai/skills/pallastrade-deployment/SKILL.md` 或 `platform` 文档 | 评估：新增周期任务是否需要运维文档登记（如 sidekiq-cron 清单） |
-| `harness/scenarios/scenarios.json` | 新增 GS 场景（期限告警只提示不决策 + 只读幂等） |
-| `docs/prd/README.md` | 登记本 PRD 索引行 |
-| `ai/skills/pallastrade-data-model/SKILL.md` | 评估后不更新（无 schema 变更） |
+| `ai/skills/pallastrade-payments/SKILL.md` | ✅ 已更新：新增 DSP-P7-5 段（分桶/边界、零业务动作铁律、调度条目、噪音控制、缺口清单）。 |
+| `harness/scenarios/scenarios.json` | ✅ 已更新：新增 **GS-096**（deadline sweep 只提示不决策）；`eval-ai --scenarios` 97/97。 |
+| `docs/prd/README.md` | ✅ 已登记本 PRD 索引行。 |
+| `ai/skills/pallastrade-prd/SKILL.md` | ⏭ 评估后不更新：PRD 流程本身无变化。 |
+| `AGENTS.md` / `.github/copilot-instructions.md` | ⏭ 评估后不更新：未新增全局规则、门禁或反模式。 |
+| `ai/skills/pallastrade-data-model/SKILL.md` | ⏭ 评估后不更新：**零 schema 变更**（复用 `evidence_due_at` + 既有复合索引）。 |
+| `ai/skills/pallastrade-deployment/SKILL.md` | ⏭ 评估后不更新：调度沿用宿主既有 `sidekiq_schedule.rb` 机制（未引入新调度方式）。 |
+| `backend/public/api-docs/*.yaml` / `platform/docs/api-reference/` | ⏭ 评估后不更新：`harness generated:check` 无漂移（无 API/SDK 变更）。 |
 
 ## 10. 变更记录
 
@@ -161,3 +164,4 @@
 | 2026-09-12 | draft → approved | 用户问答工具选择『确认实施 P7-5』；批准证据已记录；Gate `GATE-2026-09-12T13-53-09` preparation 已清；恢复计划 `REC-61c24a36045b15` |
 | 2026-09-12 | 实施（待验证） | 新增 `Disputes::ScanDeadlines`（只读分桶扫描 + limit）+ `Disputes::DeadlineSweeperJob`（事件/日志/单条隔离）+ 宿主调度条目 `dispute_deadline_sweep`；域内 54 examples 全绿（含 P7-1..4）；rubocop 干净。实现注释：①边界 `due_at == now` 归 `due_soon`（`hours_remaining = 0.0`）；②扫描从 DB 重载 dispute，故「构建失败降级」用例需对**任意实例**打桩（`allow_any_instance_of`，附加注释）；③调度常量仅 Sidekiq server 进程加载，用例显式 `require config/sidekiq_schedule`。 |
 | 2026-09-12 | 既有 spec 触碰（flaky 真根因修复） | verifier 复跑命中 `spec/services/pallastrade/transactions/reserve_inventory_spec.rb` 的**既有 flaky**（与 P7-5 无关）：失败断言 `released.count == 1` 实得 0，说明 order_a 的预留**根本没建**（而非补偿未释放）。**真根因**：`Store#default_stock_location` 取**全局首个** `default: true` 库存点（`store.rb:400-407`），而 `StockReservations::Reserve#select_stock_item` 取 `variant.stock_items.detect { 第一个 active+非缺货+有库存 }` —— DB 中已存在别的默认库存点时两处判断分岐。**修复**：① spec 自己声明为默认库存点（示例内清掉其他 `default` 标记，让工厂建的 stock_item 落在同一位置）；② 收敛变体库存项（保留此前的 `destroy_all`）；③ 补前置断言「本次确实为 order_a 建过 1 条预留」，使未来失败点不再指向错误归因。 |
+| 2026-09-12 | 验证完成 → done | 注册 verifier `backend-rspec` 全量绿（EVD-20260912153944-682b38fea9）；定向 12 examples / 0 failures；域内 54 全绿；flaky 修复后 5 种子 × 62 examples 全 0 failures；rubocop 0 违规；`eval-ai --scenarios` 97/97（GS-096）、freshness 0 error、`doc-impact` synced、`generated:check` 无漂移；Gate `GATE-2026-09-12T13-53-09` 已关闭；已提交推送 `8483eadd` |
