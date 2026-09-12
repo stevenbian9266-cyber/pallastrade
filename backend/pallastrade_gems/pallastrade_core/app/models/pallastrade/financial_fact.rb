@@ -21,8 +21,13 @@ module PallasTrade
     ].freeze
 
     # fact_type 最小集合（FR-4P1-03；ORDER_ALLOCATION 于 FIN-P4-4 激活——FR-4P4-01）
+    # DSP-P7-3（FR-P73-01）：争议域 5 个事实类型与 `Disputes::DisputeFact::FACT_TYPES` **同名单对齐**
+    #   —— 仅 FUNDS_WITHDRAWN / FUNDS_REINSTATED 为**现金事实**（激活 entry_type）；
+    #   OPENED / WON / LOST 为**非现金事实**（永不入账，防双记——FR-P73-02）。
     FACT_TYPES = %w[
-      CASH_CAPTURED STORE_CREDIT_APPLIED OFFLINE_PAYMENT_RECORDED REFUND_SUCCEEDED ORDER_ALLOCATION NONE
+      CASH_CAPTURED STORE_CREDIT_APPLIED OFFLINE_PAYMENT_RECORDED REFUND_SUCCEEDED ORDER_ALLOCATION
+      DISPUTE_OPENED DISPUTE_FUNDS_WITHDRAWN DISPUTE_FUNDS_REINSTATED DISPUTE_WON DISPUTE_LOST
+      NONE
     ].freeze
 
     # instrument class（FR-4P1-05）
@@ -35,9 +40,9 @@ module PallasTrade
     # 金额/币种字段的“来源冲突 → AMBIGUOUS”语义见 ResolvePayment（FR-4P1-18）。
     ATTRIBUTES = %i[
       fact_type status amount currency instrument_class
-      commerce_transaction_id order_id payment_id refund_id
+      commerce_transaction_id order_id payment_id refund_id dispute_id
       payment_session_id payment_combination_id payment_split_id
-      provider provider_payment_reference provider_refund_reference
+      provider provider_payment_reference provider_refund_reference provider_dispute_reference
       effective_at evidence reason_code
     ].freeze
 

@@ -2341,6 +2341,30 @@
         "removedCodeRewritten": 30,
         "freshnessGreen": 30
       }
+    },
+    {
+      "id": "GS-094",
+      "name": "Dispute funds posting + journal reconciliation (cash-fact activation)",
+      "description": "Activate frozen dispute facts into the immutable journal: only cash movements (funds withdrawn/reinstated) post entries, event-scoped facts survive terminal states, and a read-only reconciler compares the expected cash entries with the ledger (see PRD-20260912-payments-dsp-p7-3-dispute-posting-and-reconcile)",
+      "mustDo": [
+        "Activate only the cash fact types in FinancialLedgerEntry::ENTRY_TYPES (DISPUTE_FUNDS_WITHDRAWN / DISPUTE_FUNDS_REINSTATED) while keeping DISPUTE_OPENED/WON/LOST non-cash facts permanently unactivated (posting them would double count the same money)",
+        "Resolve dispute facts through ResolveDispute with an optional event-scoped fact_type hint so a won/lost dispute never swallows a later funds event, and keep amounts signed (withdrawal negative, reinstatement positive)",
+        "Require a stable effective_at taken from the funds timestamps (never fall back to Time.current, which would drift the idempotency key across retries) and return closed-enum skip reasons instead of guessing",
+        "Give ledger entries a dispute_id and put dispute first in fact_posting_key source precedence, because one payment can carry 1:N disputes (same-second, same-amount collisions must not be silently deduplicated)",
+        "Publish dispute.funds_withdrawn / dispute.funds_reinstated after commit only when the timestamps go from blank to present, post asynchronously from the subscriber, and keep reconciliation read-only (expected entries = the funds timestamp set, zero provider I/O)"
+      ],
+      "mustNotDo": [
+        "Post entries for non-cash dispute facts (opened / won / lost) or reuse refund/payment semantics for chargebacks",
+        "Write the ledger inside the dispute transaction, or let a posting failure roll back or mutate the dispute fact",
+        "Let the reconciler write rows, call the provider, or derive expectations from the strongest current fact type (that misreports a won dispute as missing entries)",
+        "Create/update Dispute, Payment or Transaction rows from posting, or backfill historical disputes"
+      ],
+      "scoring": {
+        "cashFactActivation": 25,
+        "eventScopedFacts": 25,
+        "postingKeyCorrectness": 25,
+        "reconciliationReadOnly": 25
+      }
     }
   ]
 }

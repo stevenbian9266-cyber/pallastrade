@@ -212,7 +212,9 @@ PallasTrade::Order.complete                  # named scope — NOT equivalent: d
 
 `pallastrade_financial_ledger_entries`（迁移 `20260906000001`，CommerceTransaction 先例直接放
 `backend/db/migrate/`）——CommerceTransaction 级不可变资金账本：`commerce_transaction_id` NOT NULL FK；
-可空 source FK `order_id/payment_id/refund_id/payment_combination_id/payment_split_id`；`entry_type`；带符号
+可空 source FK `order_id/payment_id/refund_id/dispute_id/payment_combination_id/payment_split_id`（`dispute_id`
+于 **DSP-P7-3** 追加：迁移 `20260912000004`，nullable + index——争议资金行直连 dispute 主体，
+并使 posting key 避开「同 payment 1:N 争议」碰撞）；`entry_type`；带符号
 `amount decimal(10,2)`；`currency`；`idempotency_key` UNIQUE；`reversal_of_id` 自引用（partial UNIQUE
 WHERE state='posted'）；`state`(posted/reversed)；`effective_at`(事实时间)/`recorded_at`(入账时间，DB 默认
 now)；`provider/provider_reference` 预留。模型 `PallasTrade::FinancialLedgerEntry`（`fle_`，append-only +

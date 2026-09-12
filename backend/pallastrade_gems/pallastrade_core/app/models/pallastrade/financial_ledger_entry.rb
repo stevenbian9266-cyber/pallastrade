@@ -20,8 +20,13 @@ module PallasTrade
 
     # FIN-P4-4：ORDER_ALLOCATION 激活（组合资金归属投影，非 cash——FIN-INV-05/AC-4013）；
     # PSP_FEE/PSP_NET_SETTLEMENT 仍预留（FIN-P4-5）。
+    # DSP-P7-3（FR-P73-02）：争议域**只激活现金事实** FUNDS_WITHDRAWN / FUNDS_REINSTATED；
+    #   DISPUTE_OPENED / DISPUTE_WON / DISPUTE_LOST 是非现金事实（无真实资金移动）——
+    #   若将其入账会与 withdrawn/reinstated 形成**双记**，因此**永不激活**（Post 门禁 skip，
+    #   对账将其归入 not_applicable）。
     ENTRY_TYPES = %w[
       CASH_CAPTURED STORE_CREDIT_APPLIED OFFLINE_PAYMENT_RECORDED REFUND_SUCCEEDED ORDER_ALLOCATION
+      DISPUTE_FUNDS_WITHDRAWN DISPUTE_FUNDS_REINSTATED
     ].freeze
     RESERVED_ENTRY_TYPES = %w[PSP_FEE PSP_NET_SETTLEMENT].freeze
     ALL_ENTRY_TYPES = (ENTRY_TYPES + RESERVED_ENTRY_TYPES).freeze
@@ -29,7 +34,7 @@ module PallasTrade
 
     # 不可变列：创建后禁止任何原地修改
     IMMUTABLE_ATTRIBUTES = %w[
-      commerce_transaction_id order_id payment_id refund_id payment_combination_id
+      commerce_transaction_id order_id payment_id refund_id dispute_id payment_combination_id
       payment_split_id entry_type amount currency idempotency_key effective_at
       provider provider_reference
     ].freeze
@@ -42,6 +47,7 @@ module PallasTrade
     belongs_to :order, class_name: 'PallasTrade::Order', optional: true
     belongs_to :payment, class_name: 'PallasTrade::Payment', optional: true
     belongs_to :refund, class_name: 'PallasTrade::Refund', optional: true
+    belongs_to :dispute, class_name: 'PallasTrade::Dispute', optional: true
     belongs_to :payment_combination, class_name: 'PallasTrade::PaymentCombination', optional: true
     belongs_to :payment_split, class_name: 'PallasTrade::PaymentSplit', optional: true
     belongs_to :reversal_of, class_name: 'PallasTrade::FinancialLedgerEntry', optional: true,
@@ -84,12 +90,27 @@ module PallasTrade
     end
 
     # 规范化 posting identity（P4 §13）：同一资金事实（fact）→ 稳定唯一 key。
-    # source 取 fact 中最具体的实体（refund > payment > combination > split > order > txn）。
+    # source 取 fact 中最具体的实体（DSP-P7-3 追加 dispute 为最高优先级：
+    # dispute > refund > payment > combination > split > order > txn）。
     def self.fact_posting_key(fact)
-      source = fact.refund_id.presence || fact.payment_id.presence ||
-               fact.payment_combination_id.presence || fact.payment_split_id.presence ||
-               fact.order_id.presence || 'txn'
-      "fact:#{fact.fact_type}:#{fact.commerce_transaction_id}:#{source}:#{fact.effective_at&.to_i}"
+      "fact:#{fact.fact_type}:#{fact.commerce_transaction_id}:#{source_token_for(fact)}:#{fact.effective_at&.to_i}"
+    end
+
+    # source token（P4 §13；DSP-P7-3 追加 dispute 分支）：一个 payment 可携带 **1:N disputes**
+    # （见 data-model SKILL §Disputes；部分金额），若沿用 payment 作 source，同一秒的两笔争议
+    # 会派生出**相同 key** → 第二笔被静默去重丢账（FR-P73-04 / AC-P73-03）。
+    def self.source_token_for(fact)
+      dispute_reference = dispute_reference_of(fact)
+      return "dispute:#{dispute_reference}" if dispute_reference.present?
+
+      fact.refund_id.presence || fact.payment_id.presence ||
+        fact.payment_combination_id.presence || fact.payment_split_id.presence ||
+        fact.order_id.presence || 'txn'
+    end
+
+    # 非争议事实无 dispute_id 属性 → nil（保持既有 key 逐字节不变，FR-P73-12）
+    def self.dispute_reference_of(fact)
+      fact.respond_to?(:dispute_id) ? fact.dispute_id.presence : nil
     end
 
     private

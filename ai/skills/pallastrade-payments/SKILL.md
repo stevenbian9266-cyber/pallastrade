@@ -932,7 +932,36 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   `AMOUNT_UNPROVABLE`（**不产生资金事实**）。
 - **funds 时间戳**：迁移新增 `funds_withdrawn_at` / `funds_reinstated_at`；`HandleProviderEvent` 在
   `dispute_funds_withdrawn` / `dispute_funds_reinstated` **首次观测写入**（重放不覆盖，幂等）。
-- **后续切片**：P7-3 Journal+对账（消费 `money_movement?`）/ P7-5 deadline sweeper / P7-6 收敛动作 / P7-7 Console。
+- **后续切片**：P7-3 ✅（2026-09-12，见下节 Journal + 对账）/ P7-5 deadline sweeper / P7-6 收敛动作 / P7-7 Console。
+
+## Dispute 资金入账与对账（DSP-P7-3, 2026-09-12；PRD-20260912-payments-dsp-p7-3-dispute-posting-and-reconcile）
+
+> 把 P7-2 冻结的争议资金事实**激活进不可变 Journal**，并落地只读对账：争议扣款/返还可追溯、恰好一次。
+> 范围外：Evidence（P7-4）、死线 sweeper（P7-5）、收敛动作（P7-6）、Console（P7-7）、历史 backfill。
+
+- **词汇激活**：`FinancialFact::FACT_TYPES` 追加争议 5 类（与 `DisputeFact::FACT_TYPES` **同名单**）；
+  `FinancialLedgerEntry::ENTRY_TYPES` **只激活 2 类现金事实**（`DISPUTE_FUNDS_WITHDRAWN` /
+  `DISPUTE_FUNDS_REINSTATED`）；`DISPUTE_OPENED/WON/LOST` 为**非现金事实，永不激活**（防双记）。
+- **方向约定**：扣回 = 流出 = **负数**；返还 = 流入 = **正数**（同一争议胜诉后两条账行净额为 0）。
+- **事件作用域事实（关键）**：P7-2 `fact_type_for` 终态优先（won/lost 覆盖 funds 时间戳）——若入账层沿用
+  「当前最强事实」，一个已 `won` 的争议的 `funds_reinstated` **将永不入账**（资金缺口）。因此
+  `FinancialFacts::ResolveDispute.call(dispute:, fetch:, fact_type:)` 支持**事件提示**：subscriber 按事件名
+  传 `DISPUTE_FUNDS_WITHDRAWN` / `DISPUTE_FUNDS_REINSTATED`；不传 hint 时保持 P7-2 语义（供证据/展示读取）。
+- **入账编排**：`FinancialLedger::PostDispute.call(dispute:, fact_type:)` = `ResolveDispute` →
+  `Post.postable?` 门禁 → `Post`（幂等）。skip reason 封闭枚举：`fact_status_not_confirmed` /
+  `entry_type_not_activated` / `commerce_transaction_missing` / `amount_or_currency_missing` /
+  `effective_at_missing` / `not_postable`。**只读边界**：唯一写 = `FinancialLedgerEntry`。
+  `effective_at` 严格取 funds 时间戳（**无 fallback**：用 `Time.current` 兜底会让幂等键随重试漂移）。
+- **幂等键修复**：`financial_ledger_entries` 新增 `dispute_id`；`fact_posting_key` 的 source 优先级变为
+  **dispute > refund > payment > combination > split > order > txn** —— 一个 payment 可携带 **1:N 争议**
+  （部分金额），旧优先级会让同秒同额的第二笔被**静默去重丢账**；非争议事实 key 逐字节不变。
+- **接线**：`Dispute` 在 `funds_*_at` **由空变非空**时 after_commit 发布 `dispute.funds_withdrawn` /
+  `dispute.funds_reinstated` → `FinancialLedger::DisputeFundsSubscriber`（async）→ `PostDispute`；
+  异常 rescue 记录、不阻断争议落库（不在业务事务内写账本）。
+- **只读对账**：`Reconciliations::ReconcileDispute.call(dispute:)` → 分类 `aligned` / `journal_missing` /
+  `amount_mismatch` / `orphan_entry` / `not_applicable` + `reasons[]` + `expected_entries[]` + `entries[]`。
+  **期望账行 = funds 时间戳集合**（不是「当前最强事实」，否则已 `won` 的争议会被误判缺账）；零写、
+  零 provider I/O（`capability: JOURNAL_LOCAL_ONLY`），为 P7-5 补记/告警提供输入。
 
 ## Where to read further
 

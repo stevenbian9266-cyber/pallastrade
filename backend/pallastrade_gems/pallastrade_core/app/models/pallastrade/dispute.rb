@@ -51,6 +51,11 @@ module PallasTrade
 
     class InvalidTransition < StandardError; end
 
+    # DSP-P7-3（FR-P73-09）：资金事实入账广播 —— 仅当 funds 时间戳**由空变非空**时发布（天然幂等）；
+    # after_commit 保证 posting 恒在争议事实**落库提交之后**执行（对齐 payment.paid / refund.succeeded
+    # 模式，避免在业务事务内写账本——AP-010 精神）。
+    after_commit :publish_funds_events, on: :update
+
     belongs_to :store, optional: true
     belongs_to :order, optional: true
     belongs_to :payment, optional: true
@@ -141,5 +146,20 @@ module PallasTrade
       true
     end
     # rubocop:enable Naming/PredicateMethod
+
+    private
+
+    # DSP-P7-3：只广播「资金事实首次落地」这一事件（重复投递/重复写不重复发）
+    def publish_funds_events
+      publish_funds_event('dispute.funds_withdrawn', 'funds_withdrawn_at')
+      publish_funds_event('dispute.funds_reinstated', 'funds_reinstated_at')
+    end
+
+    def publish_funds_event(event_name, attribute)
+      before, after_value = previous_changes[attribute]
+      return unless before.blank? && after_value.present?
+
+      publish_event(event_name, { 'id' => prefixed_id })
+    end
   end
 end

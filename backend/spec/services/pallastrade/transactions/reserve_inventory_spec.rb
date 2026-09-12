@@ -18,6 +18,11 @@ RSpec.describe PallasTrade::Transactions::ReserveInventory, type: :service do
     si = variant.stock_items.where(stock_location: stock_location).first ||
       create(:stock_item, variant: variant, stock_location: stock_location)
     si.update_columns(count_on_hand: count_on_hand, backorderable: backorderable)
+    # INV 稳定性：`Store#default_stock_location` 取**全局首个** `default: true` 库存点
+    # （`store.rb` default_stock_location），工厂建的 product master 会自带一个该位置的 stock_item，
+    # 其 count_on_hand 不受本 helper 控制 → 在同一 DB 上重跑/其他 spec 留下默认库存点时结果漂移。
+    # 收敛为「本 spec 显式指定的库存点唯一」→ 断言与库存数值确定（同 recover_inventory 修复口径）。
+    variant.stock_items.where.not(id: si.id).destroy_all
     o.update_columns(state: 'pending', status: 'placed', submitted_at: Time.current)
     o.line_items.reload
     o

@@ -303,6 +303,21 @@ Provider 发起的资金逆转（Stripe `charge.dispute.*`）走**入站** webho
 `PallasTrade::Disputes::HandleProviderEvent`；④**webhook 只是证据**——不得因此取消订单、动库存或补记资金；
 ⑤解析不到本地 Payment 时仍落行并标 `attention_reason=unlinked_payment`（不丢事件）。
 
+### Dispute funds lifecycle（outbound, DSP-P7-3, 2026-09-12）
+
+争议域**首次发布 PallasTrade 出站事件**（此前只有入站）：`PallasTrade::Dispute` 在 funds 时间戳
+**由空变非空**的 `after_commit` 发布（重复投递/重复写不重复发）：
+
+| Event | When | Subscriber |
+|---|---|---|
+| `dispute.funds_withdrawn` | `funds_withdrawn_at` 首次落地（provider 扣回资金） | `PallasTrade::FinancialLedger::DisputeFundsSubscriber`（async） |
+| `dispute.funds_reinstated` | `funds_reinstated_at` 首次落地（provider 返还资金） | 同上 |
+
+要点：①payload 为 `{ 'id' => dsp_… }`（subscriber 兼容 `dsp_` 前缀与裸 id 双模式）；
+②subscriber 按**事件名**传 `fact_type:` 给 `FinancialLedger::PostDispute`（终态 `won`/`lost` 不吞掉后续资金事件）；
+③异常 rescue 记录日志、**不阻断**争议落库（posting 恒为独立事务/幂等，重试不重复入账）；
+④`after_commit` 发布——禁止在业务事务内写账本。
+
 ### Payment session lifecycle
 
 | Event | When |

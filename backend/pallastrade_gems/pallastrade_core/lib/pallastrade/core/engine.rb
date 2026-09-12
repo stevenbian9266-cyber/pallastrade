@@ -387,6 +387,8 @@ module PallasTrade
           # REV-P6-1 (2026-09-06): refund.succeeded → FinancialLedger posting（Refund 创建不再隐含成功）
           PallasTrade::FinancialLedger::PaymentPaidSubscriber,
           PallasTrade::FinancialLedger::RefundSucceededSubscriber,
+          # DSP-P7-3 (2026-09-12): dispute.funds_withdrawn / dispute.funds_reinstated → FinancialLedger posting
+          PallasTrade::FinancialLedger::DisputeFundsSubscriber,
           # FIN-P4-4 (2026-09-06): payment_combination.succeeded → ORDER_ALLOCATION posting
           PallasTrade::FinancialLedger::PaymentCombinationSucceededSubscriber,
           # CORE-P5-8 (2026-09-06): commerce_transaction.recovery_required/manual_review → 事件级计数

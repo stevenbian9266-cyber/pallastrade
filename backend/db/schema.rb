@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_11_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_12_000004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -787,6 +787,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_11_000003) do
     t.bigint "commerce_transaction_id", null: false
     t.datetime "created_at", null: false
     t.string "currency", null: false
+    t.bigint "dispute_id"
     t.datetime "effective_at", null: false
     t.string "entry_type", null: false
     t.string "idempotency_key", null: false
@@ -805,6 +806,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_11_000003) do
     t.datetime "updated_at", null: false
     t.index ["commerce_transaction_id", "entry_type"], name: "idx_on_commerce_transaction_id_entry_type_7a34e245bf"
     t.index ["commerce_transaction_id"], name: "idx_on_commerce_transaction_id_2ec979de8c"
+    t.index ["dispute_id"], name: "index_pallastrade_financial_ledger_entries_on_dispute_id"
     t.index ["idempotency_key"], name: "index_pallastrade_financial_ledger_entries_on_idempotency_key", unique: true
     t.index ["order_id"], name: "index_pallastrade_financial_ledger_entries_on_order_id"
     t.index ["payment_combination_id"], name: "idx_on_payment_combination_id_5ef4a0473f"

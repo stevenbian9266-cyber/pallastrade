@@ -63,13 +63,14 @@ module PallasTrade
           refund: resolve(PallasTrade::Refund, fact.refund_id),
           payment_combination: resolve(PallasTrade::PaymentCombination, fact.payment_combination_id),
           payment_split: resolve(PallasTrade::PaymentSplit, fact.payment_split_id),
+          dispute: resolve(PallasTrade::Dispute, dispute_reference(fact)),
           entry_type: fact.fact_type,
           amount: fact.amount.to_d,
           currency: fact.currency.to_s,
           idempotency_key: key,
           effective_at: fact.effective_at.presence || Time.current,
           provider: fact.provider,
-          provider_reference: fact.provider_payment_reference.presence || fact.provider_refund_reference,
+          provider_reference: provider_reference_for(fact),
           metadata: metadata || {}
         )
       end
@@ -81,6 +82,17 @@ module PallasTrade
         klass.find_by_prefix_id(prefixed_id)
       rescue StandardError
         nil
+      end
+
+      # DSP-P7-3：provider 引用优先级追加争议引用（争议资金行的可追溯外部标识）
+      def provider_reference_for(fact)
+        fact.provider_payment_reference.presence || fact.provider_refund_reference.presence ||
+          (fact.respond_to?(:provider_dispute_reference) ? fact.provider_dispute_reference.presence : nil)
+      end
+
+      # DSP-P7-3：非争议事实无 dispute_id 属性 → nil
+      def dispute_reference(fact)
+        fact.respond_to?(:dispute_id) ? fact.dispute_id : nil
       end
     end
   end
