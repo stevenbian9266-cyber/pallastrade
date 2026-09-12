@@ -84,10 +84,14 @@ module PallasTrade
         nil
       end
 
-      # DSP-P7-3：provider 引用优先级追加争议引用（争议资金行的可追溯外部标识）
+      # DSP-P7-3：provider 引用优先级——**争议引用优先**（2026-09-12 dev E2E 实测修复）。
+      # 争议资金行的外部身份 = 争议引用（`dp_…`）；若被锚点付款引用（`pi_…`）抢先，
+      # 账行就无法按 dispute 追溯（PRD FR-P73-05 要求取 dispute 的 provider 引用）。
+      # 非争议事实无 `provider_dispute_reference` → 保持原有 fallback 顺序，行为逐字节不变。
       def provider_reference_for(fact)
-        fact.provider_payment_reference.presence || fact.provider_refund_reference.presence ||
-          (fact.respond_to?(:provider_dispute_reference) ? fact.provider_dispute_reference.presence : nil)
+        dispute_reference = fact.respond_to?(:provider_dispute_reference) ? fact.provider_dispute_reference.presence : nil
+
+        dispute_reference || fact.provider_payment_reference.presence || fact.provider_refund_reference.presence
       end
 
       # DSP-P7-3：非争议事实无 dispute_id 属性 → nil

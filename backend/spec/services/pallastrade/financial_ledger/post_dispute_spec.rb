@@ -60,6 +60,17 @@ RSpec.describe PallasTrade::FinancialLedger::PostDispute, type: :service do
     expect(PallasTrade::FinancialLedgerEntry.where(entry_type: 'DISPUTE_FUNDS_WITHDRAWN').count).to eq(1)
   end
 
+  it 'AC-P73-01 账行 provider_reference 取争议引用（即使锚点付款引用同时存在）' do
+    dispute = make_dispute(funds_withdrawn_at: Time.current)
+    # dev E2E 实测场景：dispute 同时带 provider_payment_reference（pi_…，锚点）与争议引用（dp_…）
+    dispute.update_columns(provider_payment_reference: 'pi_anchor_1')
+
+    entry = post!(dispute).value[:entry]
+
+    expect(entry.provider_reference).to eq(dispute.provider_dispute_reference)
+    expect(entry.provider_reference).not_to eq('pi_anchor_1')
+  end
+
   it 'AC-P73-02 幂等：重复 PostDispute → 同一行，绝不重复入账' do
     dispute = make_dispute(funds_withdrawn_at: Time.current)
 
