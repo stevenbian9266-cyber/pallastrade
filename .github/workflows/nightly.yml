@@ -7,6 +7,10 @@ on:
 
 permissions:
   contents: read
+  # 被调用的 backend-ci.yml 在 workflow 级声明 packages: write（构建并推送镜像）
+  # GitHub 规则：被调用 workflow 的权限不得高于调用方，否则整个 run 直接 startup_failure（无日志）。
+  # 2026-09-12 修复：此前只声明 contents: read，导致 Nightly 自 2026-09-08 起每晚 startup_failure。
+  packages: write
 
 jobs:
   backend:
