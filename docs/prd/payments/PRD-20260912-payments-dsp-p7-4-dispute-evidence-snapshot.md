@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved（2026-09-12 用户显式确认实施） |
+| 状态 | done（2026-09-12 实施 / 验证 / 知识同步完成；已提交 `7780922b`）|
 | 创建日期 | 2026-09-12 |
 | 来源 | 用户指令「继续」→ 承接 DSP-P7-3 的下一切片（P7-3 PRD 已显式预留 Evidence） |
 | 分类 | payments（`harness prd new` 自动判定，关键词「退款」命中） |
@@ -177,3 +177,4 @@
 | 2026-09-12 | 创建（draft） | 承接 P7-3 预留的 Evidence 切片；源计划 §41/§42/§43；待用户确认后实施 |
 | 2026-09-12 | draft → approved | 用户问答工具选择『确认实施 P7-4』；批准证据已记录；Gate `GATE-2026-09-12T12-40-37` preparation 已清 |
 | 2026-09-12 | 实施（待验证） | 新增 `Disputes::EvidenceSnapshot`（VO）+ `Disputes::BuildEvidenceSnapshot`（只读投影）+ 12 例 spec（全绿）；rubocop 干净。实现注释：①policy 段实现为恒 `not_recorded` + `store_url` 参考（FR-P74-09 已同步）；②capability 判定改为**类级**（`class.instance_method.owner`）——实例级会被 RSpec 打桩干扰（`expect(pm).not_to receive(...)` 会把方法装到 singleton 上 → 误判为「实现了契约」），这一坑由 AC-P74-04 用例暴露；③provider 段新增 `not_requested` 原因（默认不取数 ≠ 不支持）。 |
+| 2026-09-12 | 验证完成 → done | 注册 verifier `backend-rspec` 全量套件绿（EVD-20260912134552-26c8cdd131）；定向 12 examples / 0 failures；rubocop 3 文件 0 违规；`eval-ai --scenarios` 96/96（新增 GS-095）、`--check-freshness` 0 error、`doc-impact` synced、`generated:check` 无漂移；Gate `GATE-2026-09-12T12-40-37` 已关闭，已提交推送 `7780922b` |
