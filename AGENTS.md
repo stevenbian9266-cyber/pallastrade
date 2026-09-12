@@ -32,7 +32,7 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 | `backend/CLAUDE.md` | 后端规范 | 后端权威 | 涉及 backend 代码 | 后端维护者 |
 | `platform/CLAUDE.md` | 平台规范 | 平台权威 | 涉及 platform 代码 | 平台维护者 |
 | `storefront/CLAUDE.md` | 商城规范 | 商城权威（含 Code Style/样式规范） | 涉及 storefront 代码 | 商城维护者 |
-| `ai/skills/*/SKILL.md`（25 个） | Skill | 领域知识权威 | gate 强制 + §0.2 路由 | 各领域维护者 |
+| `ai/skills/*/SKILL.md`（29 个） | Skill | 领域知识权威 | gate 强制 + §0.2 路由 | 各领域维护者 |
 | `harness/standards/*.json` | 规范注册表 | **机器可读开发规范索引**（不复制权威正文） | Change Plan / 开发监督 / 规范覆盖率检查 | 工程负责人 |
 | `harness/policies/anti-patterns.json` | 反模式 | **反模式唯一权威**（机器执行） | CI 强制；违规检查 | 工程负责人 |
 | `harness/policies/task-rules.json` | 任务规则 | 任务规则权威 | 新功能/优化 | 工程负责人 |

@@ -61,7 +61,7 @@ Shipped plans:
 - `5.5-admin-auth-cookie-refresh.md` — Admin SPA refresh token in httpOnly cookie, access token in memory, server-side logout
 - `5.5-admin-customers-api.md` — Admin Customers + nested addresses/credit_cards/store_credits + CustomerGroups
 - `5.5-admin-spa-csv-export.md` — Admin API ExportsController + admin-sdk + `useExport` + toolbar export button
-- `5.5-agent-skills.md` — PallasTrade Agent Skills: 25 skills + `pallastrade-expert` subagent + safety hooks, distributed via `npx skills add stevenbian9266-cyber/pallastrade`
+- `5.5-agent-skills.md` — PallasTrade Agent Skills: 29 skills + `pallastrade-expert` subagent + safety hooks, distributed via `npx skills add stevenbian9266-cyber/pallastrade`
 
 ## Monorepo Structure
 
