@@ -318,6 +318,18 @@ Provider 发起的资金逆转（Stripe `charge.dispute.*`）走**入站** webho
 ③异常 rescue 记录日志、**不阻断**争议落库（posting 恒为独立事务/幂等，重试不重复入账）；
 ④`after_commit` 发布——禁止在业务事务内写账本。
 
+### Dispute 收敛事件（outbound, DSP-P7-6, 2026-09-12）
+
+| Event | When | 消费方 |
+|---|---|---|
+| `dispute.recovery_repaired` | 收敛**改变了事实**（生命周期单调前进 / 账行幂等补记） | 告警、指标 |
+| `dispute.recovery_manual_review` | 收敛**移交人工**（`provider_conflict` / `journal_gap` / `funds_evidence_missing`） | 运营待办 |
+
+要点：①payload `{ 'id' => dsp_…, 'decision' => …, 'state' => …, 'actions' => [类型列表] }`（无 PII）；
+②仅**非 noop 且非降级**的决策发布（不造噪音）；③发布失败**不影响已完成的收敛**——job 摘要里同一条可能
+既计入 `recovered` 又计入 `failed`（事实已修、通知未发出）；④调度 `dispute_recovery_sweep`（每日 01:30，`limit: 50`），
+`journal_gap` 候选走纯本地路径（零 provider I/O）。
+
 ### Payment session lifecycle
 
 | Event | When |

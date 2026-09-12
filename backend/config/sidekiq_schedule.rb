@@ -65,5 +65,15 @@ PALLAS_CART_SCHEDULE = [
     cron: '0 1 * * *',
     queue: 'default',
     args: [{ 'window_hours' => 72 }]
+  },
+  # DSP-P7-6 (2026-09-12): 注册争议收敛 sweeper —— **只修事实、不做资金决策**（不重扣款/不自动退款）：
+  # provider 权威状态单调收敛 + journal_missing 幂等补记 + 冲突/缺证据交人工（manual_review）。
+  # 每日 01:30（错开 01:00 的期限扫描）；limit 50 有界（最多 50 次 provider 只读调用）。
+  {
+    name: 'dispute_recovery_sweep',
+    class: 'PallasTrade::Disputes::RecoverSweeperJob',
+    cron: '30 1 * * *',
+    queue: 'default',
+    args: [{ 'limit' => 50, 'verify_after_hours' => 24 }]
   }
 ].freeze

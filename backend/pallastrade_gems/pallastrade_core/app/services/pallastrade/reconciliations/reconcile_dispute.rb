@@ -37,19 +37,29 @@ module PallasTrade
       }.freeze
 
       # @param dispute [PallasTrade::Dispute]
+      # @param dispute_fact [PallasTrade::Disputes::DisputeFact, nil] 已解析的权威裁决（DSP-P7-6）：收敛编排
+      #   已持有 provider 快照派生的事实 → 直接复用（零重复只读调用）；`nil` = 本地解析（既有行为不变）
       # @return [PallasTrade::ServiceModule::Result] success(Hash) / failure(dispute, message)
-      def call(dispute:)
+      def call(dispute:, dispute_fact: nil)
         return failure(nil, 'Dispute not found') if dispute.nil?
 
-        resolution = PallasTrade::Disputes::ResolveFact.call(dispute: dispute)
-        return failure(dispute, resolution.error) unless resolution.success?
+        resolution = dispute_fact
+        if resolution.nil?
+          resolution_result = PallasTrade::Disputes::ResolveFact.call(dispute: dispute)
+          return failure(dispute, resolution_result.error) unless resolution_result.success?
 
-        fact = PallasTrade::FinancialFacts::ResolveDispute.call(dispute: dispute).value
+          resolution = resolution_result.value
+        end
+
+        fact_result = PallasTrade::FinancialFacts::ResolveDispute.call(dispute: dispute, dispute_fact: resolution)
+        return failure(dispute, fact_result.error) unless fact_result.success?
+
+        fact = fact_result.value
         entries = PallasTrade::FinancialLedgerEntry.where(dispute_id: dispute.id).order(:effective_at, :id)
         expectations = expectations_for(dispute, fact)
         verdict = classify(fact, entries, expectations)
 
-        success(result({ dispute: dispute, fact: fact, resolution: resolution.value,
+        success(result({ dispute: dispute, fact: fact, resolution: resolution,
                          entries: entries, expectations: expectations, verdict: verdict }))
       end
 

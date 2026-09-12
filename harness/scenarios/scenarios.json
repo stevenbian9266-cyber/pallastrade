@@ -2413,6 +2413,33 @@
         "isolationAndIdempotence": 20,
         "scheduleRegistration": 20
       }
+    },
+    {
+      "id": "GS-097",
+      "name": "Dispute recovery converges facts only (never money)",
+      "description": "Converge a dispute against the provider's current truth: repair lifecycle forward-only, repair missing journal entries idempotently, escalate conflicts/gaps to humans, and never re-charge, auto-refund or rewrite the ledger (see PRD-20260912-payments-dsp-p7-6-dispute-recovery)",
+      "mustDo": [
+        "Decide from facts only: local dispute + provider read-only snapshot (fetch) + FinancialFact + Journal + Reconciliation, returning a closed decision enum plus an action list",
+        "Repair lifecycle only from an authoritative forward-only source (provider_fetch snapshot, monotonic phase rank); treat webhook metadata as non-authoritative and never move a state backwards",
+        "Repair a missing journal entry exactly once through FinancialLedger::PostDispute with the event-scoped fact_type, reusing the same provider snapshot instead of fetching again",
+        "Escalate to humans via attention_reason (provider_conflict / journal_gap / funds_evidence_missing) plus state=manual_review, appending the reason only when empty and staying idempotent once a human is already on the row",
+        "Bound the batch sweep with a limit and a local-only prefilter (attention / journal_gap / stale_active) that performs zero provider I/O, and register it in the existing sidekiq-cron schedule",
+        "Record the last convergence in private_metadata.recovery and publish dispute.recovery_* only for decisions that changed something"
+      ],
+      "mustNotDo": [
+        "Re-charge the customer, auto-refund, or create Payment/Refund records because a dispute was lost or mismatched",
+        "Write state from a degraded provider snapshot (unsupported/unavailable) or overwrite a terminal local state backwards",
+        "Rewrite or delete existing FinancialLedgerEntry rows (append-only) for amount_mismatch/orphan_entry",
+        "Invent funds timestamps to make a journal entry postable, or touch order/inventory/CommerceTransaction",
+        "Re-post a journal entry on re-runs, or re-flag a dispute that already carries an attention reason"
+      ],
+      "scoring": {
+        "forwardOnlyLifecycleRepair": 25,
+        "idempotentJournalRepair": 25,
+        "humanEscalationDiscipline": 20,
+        "noMoneyMovements": 20,
+        "boundedZeroIoScan": 10
+      }
     }
   ]
 }

@@ -37,9 +37,13 @@ module PallasTrade
       #   携带 `funds_reinstated_at` 时「当前最强事实」= `DISPUTE_WON` —— 若放任入账层沿用该事实，
       #   **返还资金将永不入账**（资金缺口）。入账层因此按**实际发生的现金事件**解析；
       #   不传 hint 时保持 P7-2 语义（供对账/证据读取使用）。
+      # @param dispute_fact [PallasTrade::Disputes::DisputeFact, nil] **已解析的裁决**（DSP-P7-6）：收敛编排
+      #   已持有 provider 权威快照派生的 DisputeFact → 直接复用，避免重复只读调用且不依赖本地元数据。
+      #   `nil` = 自行解析（既有行为逐字节不变）。
       # @return [PallasTrade::ServiceModule::Result] success(FinancialFact) / failure(dispute, message)
-      def call(dispute:, fetch: false, fact_type: nil)
+      def call(dispute:, fetch: false, fact_type: nil, dispute_fact: nil)
         return failure(nil, 'Dispute not found') if dispute.nil?
+        return success(build_fact(dispute, dispute_fact, fact_type)) if dispute_fact.present?
 
         resolution = PallasTrade::Disputes::ResolveFact.call(dispute: dispute, fetch: fetch)
         return failure(dispute, resolution.error) unless resolution.success?

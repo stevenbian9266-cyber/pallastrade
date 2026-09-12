@@ -47,7 +47,14 @@ module PallasTrade
     }.freeze
 
     # 需要人工关注的原因码
-    ATTENTION_REASONS = %w[unlinked_payment non_positive_amount invalid_transition].freeze
+    #   P7-1 写入（入口）：unlinked_payment / non_positive_amount / invalid_transition
+    #   P7-6 写入（收敛）：provider_conflict（provider↔本地终局冲突）/ journal_gap（对账缺口不可自动补）
+    #                    / funds_evidence_missing（provider 已示资金移动但本地无 funds 时间戳，绝不猜）
+    # 零 DDL：`attention_reason` 为 string 列（迁移无 CHECK 约束）
+    ATTENTION_REASONS = %w[
+      unlinked_payment non_positive_amount invalid_transition
+      provider_conflict journal_gap funds_evidence_missing
+    ].freeze
 
     class InvalidTransition < StandardError; end
 

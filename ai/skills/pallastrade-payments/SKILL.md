@@ -999,7 +999,39 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **零业务动作（铁律）**：不提交证据、不接受/关闭争议、不退款、不改任何 dispute/payment/order 状态、不调用 provider —— 用例以负向断言钉死。
 - **调度**：宿主层 `backend/config/sidekiq_schedule.rb` 的 `dispute_deadline_sweep`（`0 1 * * *`，`window_hours=72`），
   由既有 `config/initializers/pallastrade_sidekiq_cron.rb` 注册 —— **每日一次**（而非每小时）以避免告警噪音。
-- **后续切片**：P7-6 收敛动作 / P7-7 Console 展示 / P7-8 多 provider + 证据提交（提交属危险操作，需 permission + confirmation + audit）。
+- **后续切片**：P7-6 ✅（2026-09-12，见下节收敛动作）/ P7-7 Console 展示 / P7-8 多 provider + 证据提交（提交属危险操作，需 permission + confirmation + audit）。
+
+## Dispute 收敛动作 Recovery（DSP-P7-6, 2026-09-12；PRD-20260912-payments-dsp-p7-6-dispute-recovery）
+
+> 源计划 §47–§53：以 **Facts** 为输入（本地 Dispute + provider 当前只读快照 + FinancialFact + Journal + Reconciliation）
+> 把「provider 真相」收敛回本地，**只修事实、不做资金决策**（§49/§50 铁律）。
+
+- **单条收敛**：`Disputes::Recover.call(dispute:, fetch: true, apply: true)` → 决策封闭枚举 `DECISIONS`
+  （`noop` / `lifecycle_repaired` / `journal_repaired` / `lifecycle_and_journal_repaired` /
+  `manual_review_flagged` / `manual_review_pending` / `unavailable` / `unsupported`）+ `actions[]`
+  （状态 `planned|applied|skipped|blocked`）+ `fact`/`reconciliation` 摘要 + `state_before/after`；
+  `apply: false` = dry-run（返回**计划**、数据库零变化）。
+- **生命周期收敛（唯一允许的状态写）**：仅 `stale_local`（provider 终局权威 + 单调前进）或 `manual_review → provider 终态`；
+  `conflict` / `stale_provider` / 降级（`unsupported` / `unavailable`）一律**零写** —— webhook 的
+  `private_metadata['provider_status']` **不是权威**（必须 `fact.source == 'provider_fetch'`；P7-0 §20）。
+- **账行补记（唯一允许的账本写）**：`journal_missing` → 按 funds 时间戳逐条
+  `PostDispute.call(dispute:, fact_type:, dispute_fact:)`（幂等键恰好一次）；`orphan_entry` / `amount_mismatch`
+  **不改写既有账行**（append-only）→ 交人工。
+- **人工通道**（`attention_reason` 自 P7-1 落地后**首次有 writer**）：`provider_conflict`（终局冲突）/ `journal_gap`
+  （对账缺口不可自动补）/ `funds_evidence_missing`（provider 终局已示资金移动而本地无 funds 时间戳 → **不猜**）。
+  标记 = `attention_reason`（**只补不覆盖**）+ `state = manual_review`；已在人工态且已有 attention →
+  `manual_review_pending`（幂等，不重复标）。
+- **审计**：有动作时 `private_metadata['recovery'] = { at, decision, actions, from, to }`（仅最近一次，非累积）。
+- **批量**：`Disputes::ScanRecoveryCandidates.call(now:, limit: 50, verify_after_hours: 24)`（**零 provider I/O**）
+  三类 selection —— `attention` / `journal_gap`（纯 SQL 反连接）/ `stale_active`，优先级去重后排序截断；
+  `Disputes::RecoverSweeperJob` 每日 01:30（`journal_gap` 候选走 `fetch: false` 纯本地路径，其余 fetch 只读快照）。
+- **出站事件**：`dispute.recovery_repaired` / `dispute.recovery_manual_review`（仅非 noop 且非降级）。
+- **铁律（负向断言钉死）**：不重扣款、不自动退款、不建 Payment/Refund、不改 order/inventory/txn、
+  不改写既有账行、不调任何 provider 写方法。
+- **P7-3 服务扩展（加法式，默认行为逐字节不变）**：`FinancialFacts::ResolveDispute` / `FinancialLedger::PostDispute` /
+  `Reconciliations::ReconcileDispute` 新增可选 `dispute_fact:` —— 复用**同一份**权威快照，避免重复 provider 只读
+  调用，且不依赖本地元数据（否则缺元数据时会把可证事实降为 AMBIGUOUS → 漏补账）。
+- **后续切片**：P7-7 Admin Console 展现 / P7-8 多 provider + 证据提交（提交属危险操作，需 permission + confirmation + audit）。
 
 ## Where to read further
 

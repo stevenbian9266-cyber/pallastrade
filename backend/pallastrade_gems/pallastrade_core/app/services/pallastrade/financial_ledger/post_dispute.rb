@@ -22,13 +22,17 @@ module PallasTrade
       # @param dispute [PallasTrade::Dispute]
       # @param fact_type [String, nil] 事件作用域事实类型提示（见 `ResolveDispute`：终态 won/lost 不会吞掉
       #   后续 funds 事件；缺省 = P7-2 最强事实）
+      # @param dispute_fact [PallasTrade::Disputes::DisputeFact, nil] 已解析的权威裁决（DSP-P7-6 收敛复用
+      #   provider 快照：避免重复只读调用、不依赖本地元数据；nil = 自行解析，行为不变）
       # @return [PallasTrade::ServiceModule::Result]
       #   success({ entry: FinancialLedgerEntry|nil, fact: FinancialFact, skipped: Boolean, reason: String|nil })
       #   / failure(fact|dispute, message)
-      def call(dispute:, fact_type: nil)
+      def call(dispute:, fact_type: nil, dispute_fact: nil)
         return failure(nil, 'Dispute not found') if dispute.nil?
 
-        resolution = PallasTrade::FinancialFacts::ResolveDispute.call(dispute: dispute, fact_type: fact_type)
+        resolution = PallasTrade::FinancialFacts::ResolveDispute.call(
+          dispute: dispute, fact_type: fact_type, dispute_fact: dispute_fact
+        )
         return failure(dispute, resolution.error) unless resolution.success?
 
         fact = resolution.value
@@ -48,6 +52,7 @@ module PallasTrade
       def self.skip_reason_for(fact)
         return 'fact_not_found' if fact.nil?
         return 'fact_status_not_confirmed' unless fact.confirmed?
+
         activated = PallasTrade::FinancialLedgerEntry::ENTRY_TYPES.include?(fact.fact_type)
         return 'entry_type_not_activated' unless activated
 

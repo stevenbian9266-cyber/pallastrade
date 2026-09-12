@@ -93,12 +93,16 @@ reversals** (chargeback / inquiry / warning / representment) — deliberately **
   `submitted` → `under_review` → `won/lost/accepted/expired`, plus `closed` (archive) and
   `manual_review` (human). Backwards moves are rejected; corrections within the same phase and
   closed/manual_review entries are allowed.
-- `evidence_due_at` is first-class (provider evidence window); `attention_reason`
-  (`unlinked_payment` / `non_positive_amount` / `invalid_transition`) marks rows needing a human.
+- `evidence_due_at` is first-class (provider evidence window); `attention_reason` marks rows needing a human —
+  written at ingestion (`unlinked_payment` / `non_positive_amount` / `invalid_transition`) and by DSP-P7-6
+  convergence (`provider_conflict` / `journal_gap` / `funds_evidence_missing`), **never overwriting** an existing
+  reason (enum lives in `PallasTrade::Dispute::ATTENTION_REASONS`; `string` column, no DB check → zero DDL to extend).
 - `funds_withdrawn_at` / `funds_reinstated_at` (DSP-P7-2) record when the provider actually withdrew /
   reinstated the money — written once by the funds events (replay never overwrites).
-- Written only by `PallasTrade::Disputes::HandleProviderEvent` (webhook-driven, idempotent, upsert
-  never nil-overwrites existing facts). **No** order/inventory/payment/journal writes.
+- Written by `PallasTrade::Disputes::HandleProviderEvent` (webhook-driven, idempotent, upsert never nil-overwrites
+  existing facts) and by `PallasTrade::Disputes::Recover` (DSP-P7-6 convergence: **forward-only** state repair from a
+  provider snapshot + idempotent journal repair + manual review — never re-charges, never auto-refunds, never rewrites
+  ledger entries). **No** order/inventory/payment/journal writes beyond the ledger repair above.
 - `CommerceTransaction` stays `completed`: disputes never mutate the original transaction state.
 
 ## Order promotion snapshot (batch4a, 2026-09-10)
