@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing（2026-09-12 用户确认后实施；代码 + 测试 + 知识同步已就位，待重复验证收尾） |
+| 状态 | done（2026-09-12 实施 / 验证 / 知识同步完成；已提交 `a455bb13`） |
 | 创建日期 | 2026-09-12 |
 | 来源 | 用户指令「继续」→ 承接 DSP-P7-5 的下一切片（P7-0 FR-006；源计划 §47–§53） |
 | 分类 | payments（`harness prd new` 自动判定，关键词「退款」命中） |
@@ -249,7 +249,10 @@
 - [x] **`docs/prd/README.md`**：已登记本 PRD 索引行
 - [x] **`harness/requirements/REQ-20260912-dsp-p7-6-dispute-recovery.md`**：已生成（含 6 层搜索 + Skill 咨询证据表）
 - [x] **API 文档**：N/A（无接口变更）→ 以 `generated:check` 无漂移为证
-- [ ] `ai/skills/pallastrade-prd/SKILL.md` / `AGENTS.md` / `copilot-instructions.md` / `deployment` Skill：收尾时逐项评估（预计不更新：未新增全局规则/门禁/反模式；调度沿用既有机制）
+- [x] `ai/skills/pallastrade-prd/SKILL.md`：⏭ 评估后不更新（PRD 流程与门禁未变化）
+- [x] `AGENTS.md` / `.github/copilot-instructions.md`：⏭ 评估后不更新（未新增全局规则/门禁/反模式；`ATTENTION_REASONS` 扩展属域内语义，已登记 data-model Skill）
+- [x] `ai/skills/pallastrade-deployment/SKILL.md`：⏭ 评估后不更新（调度沿用既有 sidekiq-cron 机制：`backend/config/sidekiq_schedule.rb` + `pallastrade_sidekiq_cron.rb`，P7-5 已有同类登记）
+- [x] `ai/skills/pallastrade-testing/SKILL.md`：⏭ 评估后不更新（沿用既有服务/job spec 约定，无新测试机制）
 
 ## 10. 变更记录
 
@@ -259,3 +262,4 @@
 | 2026-09-12 | 0.2 | 用户确认（approved）：全量实施；sweeper 默认启用（每日 01:30，limit 50）；人工复核置 `manual_review` | AI |
 | 2026-09-12 | 0.3 | 实施：`Disputes::Recover` / `ScanRecoveryCandidates` / `RecoverSweeperJob` + `ATTENTION_REASONS` 扩展 + 调度登记；P7-3 三个服务加法式新增 `dispute_fact:`（复用同一份权威快照，避免重复 provider 只读调用且不依赖本地元数据）；新增 3 个 spec（共 27 examples） | AI |
 | 2026-09-12 | 0.4 | 实施中发现并修正两处设计缺陷：①`ReconcileDispute` 仅用本地裁决 → 缺元数据时把可证事实降为 AMBIGUOUS 导致**漏补账**（改为传入权威 `dispute_fact`）；②生命周期修复后再判 `manual_review?` 会把「本就在人工态」的行当成新冲突重复标记（改为用**观测态**判定，消除自激振荡） | AI |
+| 2026-09-12 | 0.5 | 验证完成 → done：注册 verifier `backend-rspec` 全量绿（EVD-20260912172318-a64e1736b5）；定向 27 examples + 域内 273 examples 0 failures；rubocop 本次触碰 11 文件 0 违规；`generated:check` 无漂移、`doc-impact` 判定知识已同步；GS-097 → 98/98（freshness 0 error）；恢复计划 `REC-55cf62d7907898`；Gate `GATE-2026-09-12T16-20-07` 关闭（review EVD-20260912172349-2ef45012f4 / knowledge EVD-20260912172351-32c7bd8d38 / approval EVD-20260912162055-3466eef15c）；已提交推送 `a455bb13` | AI |

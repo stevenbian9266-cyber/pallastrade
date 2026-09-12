@@ -105,3 +105,5 @@ DSP-P7-6：争议**收敛动作 Recovery** —— provider 权威状态单调收
 - 新增测试：`spec/services/pallastrade/disputes/recover_spec.rb`（AC-P76-01..14）、
   `.../scan_recovery_candidates_spec.rb`（AC-P76-15/16）、`spec/jobs/pallastrade/disputes/recover_sweeper_job_spec.rb`（AC-P76-17/18）。
 - 测试事实：定向 27 examples 全绿；争议域 + 对账 + 账本 + 事实层 273 examples 0 failures；rubocop 本次触碰 11 文件 0 违规。
+- 验证事实：注册 verifier `backend-rspec` 全量绿（EVD-20260912172318-a64e1736b5）；`generated:check` 无漂移；`doc-impact` 判定知识已同步；GS-097 → scenarios 98/98、freshness 0 error。
+- 交付：提交 `a455bb13`（已推送 `dev`）；`REC-55cf62d7907898`（manual-only 恢复计划）。
