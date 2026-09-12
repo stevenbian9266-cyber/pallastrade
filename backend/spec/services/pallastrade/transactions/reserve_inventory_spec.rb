@@ -6,9 +6,18 @@ require 'rails_helper'
 # Transactions::ReserveInventory —— Start 的 Reserve 门（AC-3001/3002/3003/3004/3005）。
 RSpec.describe PallasTrade::Transactions::ReserveInventory, type: :service do
   let(:store) { create(:store, code: 'resinv_store') }
-  let(:stock_location) { create(:stock_location, name: 'WH-R', active: true) }
+  # INV 稳定性（真根因）：`Store#default_stock_location` 取**全局首个** `default: true` 库存点
+  # （store.rb:400-407），而 `StockReservations::Reserve#select_stock_item` 取
+  # `variant.stock_items.detect { 第一个 active+非缺货+有库存 }`——两处对「用哪个库存点」的判断
+  # 在 DB 里已有别的默认库存点时会分岐，使 order_a 的预留根本不建（于是补偿无从释放）。
+  # 修法：① 本 spec 自己声明为默认库存点（示例内清掉其他 default 标记）；② 收敛变体库存项（见 build_order）。
+  let(:stock_location) { create(:stock_location, name: 'WH-R', active: true, default: true) }
   let(:variant) { create(:product, store: store).master }
   let(:stock_item) { create(:stock_item, variant: variant, stock_location: stock_location) }
+
+  before do
+    PallasTrade::StockLocation.where(default: true).where.not(id: stock_location.id).update_all(default: false)
+  end
 
   def build_order(variant:, quantity: 1, count_on_hand: 5, backorderable: false)
     o = create(:order_with_line_items, store: store, variants: [variant],
@@ -119,6 +128,8 @@ RSpec.describe PallasTrade::Transactions::ReserveInventory, type: :service do
       result = described_class.call(transaction: tx)
 
       expect(result).to be_failure
+      # 前置：本次尝试确实为 order_a 建过预留（否则失败点会被误读为「补偿未释放」）
+      expect(PallasTrade::StockReservation.where(order: order_a).count).to eq(1)
       # order_a 本次新建的 RESERVED 已被补偿为 RELEASED（不留占用）
       expect(PallasTrade::StockReservation.reserved.where(order: order_a).count).to eq(0)
       expect(PallasTrade::StockReservation.released.where(order: order_a).count).to eq(1)

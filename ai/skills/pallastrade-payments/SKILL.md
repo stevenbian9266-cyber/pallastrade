@@ -984,6 +984,23 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **PII**：VO 内携带必要业务字段，但**日志/错误不写 PII**（仅 ids / 段名 / reason）。
 - **后续切片**：P7-5 deadline sweeper（消费 `missing_evidence` 与 `evidence_due_at`）/ P7-6 收敛动作 / P7-7 Console 展示 / P7-8 多 provider + 提交。
 
+## Dispute 证据期限扫描与告警（DSP-P7-5, 2026-09-12；PRD-20260912-payments-dsp-p7-5-dispute-deadline-sweep）
+
+> 盯住 `evidence_due_at`：临近/逾期时提醒运营，**只提示、不替商户决策**（源计划 §44/§45）。
+
+- **只读扫描**：`Disputes::ScanDeadlines.call(window_hours: 72, now:, limit: 500)` → `{ due_soon: [], overdue: [],
+  window_hours:, scanned_at:, scanned_count: }`；只收「**未终态**（`Dispute.active`）+ **有** `evidence_due_at`」的争议，
+  排序 `evidence_due_at` 升序 + `limit` 截断（命中既有复合索引）。**边界**：`due_at == now` 归 `due_soon`（`hours_remaining = 0.0`）。
+- **可行动的告警**：每项携带 `hours_remaining` + P7-4 的 `missing_evidence[]`（缺送达证明/缺单号…）；
+  证据投影失败 → `evidence_unavailable: true` + 空清单（**不假装「无缺口」**），且不阻断扫描。
+- **Job**：`Disputes::DeadlineSweeperJob`（`queue_as PallasTrade.queues.default`）逐条发布
+  `dispute.evidence_due_soon` / `dispute.evidence_overdue` + 结构化 JSON 日志；返回
+  `{ published:, failed:, overdue:, due_soon:, window_hours:, scanned_at: }`；**单条异常隔离**（rescue + 日志，继续其余）。
+- **零业务动作（铁律）**：不提交证据、不接受/关闭争议、不退款、不改任何 dispute/payment/order 状态、不调用 provider —— 用例以负向断言钉死。
+- **调度**：宿主层 `backend/config/sidekiq_schedule.rb` 的 `dispute_deadline_sweep`（`0 1 * * *`，`window_hours=72`），
+  由既有 `config/initializers/pallastrade_sidekiq_cron.rb` 注册 —— **每日一次**（而非每小时）以避免告警噪音。
+- **后续切片**：P7-6 收敛动作 / P7-7 Console 展示 / P7-8 多 provider + 证据提交（提交属危险操作，需 permission + confirmation + audit）。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.

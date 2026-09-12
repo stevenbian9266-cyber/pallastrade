@@ -2389,6 +2389,30 @@
         "missingEvidenceEnum": 25,
         "regressionGreen": 20
       }
+    },
+    {
+      "id": "GS-096",
+      "name": "Dispute evidence deadline sweep (alert only, never decide)",
+      "description": "Scan non-terminal disputes with an evidence deadline, bucket them as due_soon/overdue, and alert with actionable gaps while never submitting evidence, accepting disputes or moving money (see PRD-20260912-payments-dsp-p7-5-dispute-deadline-sweep)",
+      "mustDo": [
+        "Scan read-only: only non-terminal disputes that actually carry evidence_due_at, bucketed by due_at < now (overdue) vs now <= due_at <= now+window (due_soon, boundary equality belongs to due_soon), ordered by due date with a bounded limit",
+        "Attach hours_remaining plus the P7-4 missing_evidence list so the alert is actionable, degrading to evidence_unavailable when the evidence projection fails instead of pretending there are no gaps",
+        "Publish dispute.evidence_due_soon / dispute.evidence_overdue with a structured JSON log per dispute and return a run summary (published/failed/overdue/due_soon)",
+        "Isolate per-dispute failures (rescue + log, keep processing the rest) and keep the job safe to re-run",
+        "Register the sweep in the host-side sidekiq-cron schedule once per day (0 1 * * *) rather than hourly, to control alert noise"
+      ],
+      "mustNotDo": [
+        "Submit evidence, accept/close a dispute, refund the customer, or mutate dispute/payment/order state from the sweeper",
+        "Guess a deadline: include disputes with no evidence_due_at, or keep alerting terminal disputes",
+        "Load the alert path with provider I/O or let a single bad dispute fail the whole batch",
+        "Introduce a new scheduling mechanism instead of the existing sidekiq-cron schedule file"
+      ],
+      "scoring": {
+        "deadlineBucketing": 30,
+        "alertOnlyNoDecisions": 30,
+        "isolationAndIdempotence": 20,
+        "scheduleRegistration": 20
+      }
     }
   ]
 }

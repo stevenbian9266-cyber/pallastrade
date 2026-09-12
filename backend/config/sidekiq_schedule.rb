@@ -56,5 +56,14 @@ PALLAS_CART_SCHEDULE = [
     cron: '*/5 * * * *',
     queue: 'default',
     args: [{ 'max_enqueues' => 20 }]
+  },
+  # DSP-P7-5 (2026-09-12): 注册争议证据期限扫描 —— **只提示不决策**（不提交证据/不接受争议/不退款）；
+  # 每日 01:00 扫一次（避免每小时告警噪音），告警 payload 携带 P7-4 的 missing_evidence 便于应诉准备。
+  {
+    name: 'dispute_deadline_sweep',
+    class: 'PallasTrade::Disputes::DeadlineSweeperJob',
+    cron: '0 1 * * *',
+    queue: 'default',
+    args: [{ 'window_hours' => 72 }]
   }
 ].freeze
