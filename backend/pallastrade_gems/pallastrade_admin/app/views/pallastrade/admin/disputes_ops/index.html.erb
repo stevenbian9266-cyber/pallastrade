@@ -7,4 +7,88 @@
   <%= PallasTrade.t('admin.orders.disputes_ops_help') %>
 </div>
 
+<%# ── 运营报表（DSP-P7-10 B2 / FR-006，只读；默认窗口 90 天） ── %>
+<% report = @ops_report %>
+<% if report %>
+  <% totals = report[:totals] %>
+  <% outcomes = report[:outcomes] %>
+  <% deadlines = report[:deadlines] %>
+  <% handling = report[:handling] %>
+  <% money = report[:money] %>
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.orders.disputes_report_title') %></h5>
+    </div>
+    <div class="card-body">
+      <p class="text-sm text-gray-500 mb-4"><%= PallasTrade.t('admin.orders.disputes_report_help') %></p>
+      <% if report[:degraded].any? %>
+        <div class="alert alert-warning">
+          <%= PallasTrade.t('admin.orders.disputes_report_degraded', reasons: report[:degraded].join(', ')) %>
+        </div>
+      <% end %>
+
+      <div class="grid grid-cols-4 gap-3 mb-4">
+        <div>
+          <div class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_report_disputes') %></div>
+          <div><strong><%= totals[:disputes] %></strong>
+            <span class="text-gray-500 text-sm">(<%= totals[:active] %> active / <%= totals[:terminal] %> terminal)</span>
+          </div>
+        </div>
+        <div>
+          <div class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_report_win_rate') %></div>
+          <div><strong><%= outcomes[:win_rate].nil? ? '—' : number_to_percentage(outcomes[:win_rate] * 100, precision: 1) %></strong>
+            <span class="text-gray-500 text-sm">(<%= outcomes[:won] %> won / <%= outcomes[:lost] %> lost)</span>
+          </div>
+        </div>
+        <div>
+          <div class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_report_deadline') %></div>
+          <div><strong><%= deadlines[:met_rate].nil? ? '—' : number_to_percentage(deadlines[:met_rate] * 100, precision: 1) %></strong>
+            <span class="text-gray-500 text-sm">(<%= deadlines[:met] %>/<%= deadlines[:with_deadline] %>)</span>
+          </div>
+        </div>
+        <div>
+          <div class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_report_handling') %></div>
+          <div><strong><%= handling[:average_days].nil? ? '—' : "#{handling[:average_days]} d" %></strong>
+            <span class="text-gray-500 text-sm">(<%= handling[:resolved_count] %> resolved)</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-sm text-gray-500 mb-4">
+        <%= PallasTrade.t('admin.orders.disputes_report_money',
+                          currency: money[:currency].to_s.upcase.presence || '—',
+                          amount: money[:disputed_amount].nil? ? '—' : format('%.2f', money[:disputed_amount]),
+                          fees: money[:fee_amount].nil? ? '—' : format('%.2f', money[:fee_amount])) %>
+      </p>
+
+      <% if report[:by_reason].any? %>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th><%= PallasTrade.t('admin.orders.disputes_report_reason') %></th>
+              <th>Total</th>
+              <th>Won</th>
+              <th>Lost</th>
+              <th><%= PallasTrade.t('admin.orders.disputes_report_win_rate') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% report[:by_reason].each do |row| %>
+              <tr>
+                <td class="text-sm"><%= row[:reason] %></td>
+                <td><%= row[:total] %></td>
+                <td><%= row[:won] %></td>
+                <td><%= row[:lost] %></td>
+                <td><%= row[:win_rate].nil? ? '—' : number_to_percentage(row[:win_rate] * 100, precision: 1) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-gray-500 mb-0"><%= PallasTrade.t('admin.orders.disputes_report_empty') %></p>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
 <%= render_table @collection, :disputes %>

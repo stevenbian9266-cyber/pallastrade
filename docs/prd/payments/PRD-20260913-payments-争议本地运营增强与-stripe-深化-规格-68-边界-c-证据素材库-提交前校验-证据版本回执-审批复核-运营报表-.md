@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing（**B1 + B1.5 已交付**；B2/B3 待做） |
+| 状态 | implementing（**B1 / B1.5 / B2-报表 已交付**；FR-005 复核流 + B3 待做） |
 | 创建日期 | 2026-09-13 |
 | 来源 | 优化：争议本地运营增强与 Stripe 深化（规格 §68 边界 C：证据素材库/提交前校验/证据版本回执/审批复核/运营报表/通知升级/RMA 联动） |
 | 分类 | payments（自动判定） |
@@ -105,3 +105,4 @@
 | 2026-09-13 | 0.1 | 初稿。**边界决策记录**：用户 2026-09-13 授权「自主采取最优方案」→ AI 采纳 `RESEARCH-20260913-p7-spec68-advanced-dispute-boundary-options.md` 的**方案 C**（D1=B/C、D2=C、D3=否，即不修订 §71、不做任何自动化），分 B1/B2/B3 三批交付 | AI |
 | 2026-09-13 | 0.2 | **B1 交付**（用户指令「实施」）：新增表 `pallastrade_dispute_evidence_assets` + 模型 `DisputeEvidenceAsset` + 服务 `Disputes::EvidenceAssets` / `Disputes::PreSubmitCheck` / `Disputes::SubmissionTimeline`；spec 3 个文件 20 例全绿（AC-001/002/003/004/010）；Skill §DSP-P7-10 B1 + 场景库 GS-104 同步。**未做**：控制台渲染（B1.5）、FR-005…009（B2/B3） | AI |
 | 2026-09-13 | 0.3 | **B1.5 交付**（用户指令「自主完成全部决策，直接实施」）：控制台接线 —— `show` 新增只读**提交历史卡**（版本/回执/证据键 diff）与**素材库·建议卡**；`member post :precheck` 草稿校验动作（零写：不建回执/不写审计/不调 provider）；危险操作表单新增「Check draft」按钮（`formaction` 复用同一张表单，无字段重复）；en.yml 新增 14 个键；新 spec `disputes_ops_evidence_ops_spec.rb` 9 例 + 全套 35 例全绿；Skill §边界行更新 | AI |
+| 2026-09-13 | 0.4 | **B2（FR-006 运营报表）交付**（用户指令「继续」）：新增只读服务 `Disputes::OpsReport`（口径写死：win_rate=won/(won+lost)、met_rate=截止前提交、处理时长=resolved_at−created_at；状态取 `Dispute::TERMINAL_STATES`）；**降级不猜**（mixed currency → 金额置 nil；异常 → 降级信封）；`/admin/disputes` 列表页新增报表卡（`safe_value` 包裹，异常不 500）+ en.yml 8 键；spec `ops_report_spec.rb` 9 例 + `disputes_ops_report_spec.rb` 3 例；争议域全套 **152 例全绿**。**未做**：FR-005 双人复核（需改危险提交路径，单独切片）、FR-007 通知升级、B3（RMA / Stripe 回执状态机） | AI |

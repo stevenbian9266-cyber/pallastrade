@@ -538,6 +538,17 @@ en:
         disputes_timeline_empty: Nothing has been submitted to the provider yet.
         disputes_timeline_version: 'v%{version}'
         disputes_timeline_diff: 'added %{added} · removed %{removed}'
+        # DSP-P7-10 B2（运营报表，只读；窗口默认 90 天）
+        disputes_report_title: Dispute operations report
+        disputes_report_help: Read-only summary of this store's disputes for the last 90 days. Figures are derived from stored disputes only — nothing is written and no provider is contacted.
+        disputes_report_degraded: 'Partial or unavailable figures: %{reasons}'
+        disputes_report_disputes: Disputes
+        disputes_report_win_rate: Win rate
+        disputes_report_deadline: Deadline met
+        disputes_report_handling: Avg handling
+        disputes_report_money: 'Disputed %{amount} %{currency} · fees %{fees} %{currency}'
+        disputes_report_reason: Reason code
+        disputes_report_empty: No disputes in this window yet.
         disputes_submissions: Recent provider actions
         disputes_evidence_failed: The action could not be completed.
         disputes_capability_title: Provider capability and payment exposure

@@ -1116,6 +1116,21 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   危险操作表单新增 **Check draft** 按钮（`formaction` → `POST :precheck`，复用同一张表单的字段，零字段重复）。
   `precheck` 动作**零写**：只把阻断项/警告经 flash 回显（`disputes_precheck_blocked|ok|warnings`），不建回执、不写审计、不调 provider。
 
+### 争议运营报表（DSP-P7-10 B2 / FR-006，2026-09-13）
+
+> 只读、零写、不触网；**口径写死**以免同指标两种算法。落点：`/admin/disputes` 列表页顶部卡。
+
+- `Disputes::OpsReport.call(store:, from:, to:, provider:, window_days:)` → 纯 Hash（默认窗口 90 天；`window_days: :all` 不限）：
+  `totals`（disputes/active/terminal/needs_attention）/ `states` / `outcomes`（won/lost/decided/**win_rate**）/ `by_reason`（按 `reason`
+  回退 `network_reason_code`，空则 `unknown`）/ `deadlines`（with_deadline/met/submitted_late/not_submitted/**met_rate**）/
+  `handling`（仅 `resolved_at` 非空的：平均/中位/最快/最慢天数）/ `money` / `degraded`。
+- **口径**：`win_rate = won/(won+lost)`（分母 0 → **nil，不用 0 伪装**）；`met_rate` = 截止前已提交 / 有截止时间者；
+  处理时长 = `resolved_at - created_at`。状态词汇直接取 `Dispute::TERMINAL_STATES`（不在报表里另立口径）。
+- **降级（不猜）**：币种多于一种 → `money.mixed_currency = true` 且金额全部置 nil（**不求和**）；
+  入参异常 → 返回字段齐全的**降级信封** + `degraded: ['report_unavailable:<Err>']`；store 缺失 → `degraded: ['store_missing']`。
+- **接线**：`index` 取 `@ops_report`（`safe_value` 包裹，失败→nil→卡片不渲染，列表页恒 200）；i18n 键 `disputes_report_*`。
+- 报表**尚未包含**：按 provider/网络细分、导出 CSV、时间序列趋势、按运营人员维度（下一片评估）。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.

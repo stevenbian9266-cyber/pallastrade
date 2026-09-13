@@ -36,8 +36,10 @@ module PallasTrade
       before_action :load_dispute, only: CUSTOM_ACTIONS
 
       # GET /admin/disputes
+      # DSP-P7-10 B2：列表页附**只读运营报表**（默认 90 天窗口；失败降级 nil，列表页恒 200）
       def index
         super
+        @ops_report = ops_report_for
       end
 
       # GET /admin/disputes/:id —— §66 全字段下钻（在线只读调用逐个降级，页面恒 200）
@@ -284,6 +286,11 @@ module PallasTrade
       # DSP-P7-10 B1：提交历史 / 版本 / 回执（只读；异常降级 nil）
       def submission_timeline_for(dispute)
         safe_value { PallasTrade::Disputes::SubmissionTimeline.call(dispute: dispute) }
+      end
+
+      # DSP-P7-10 B2：本店运营报表（只读、零写；异常降级 nil）
+      def ops_report_for
+        safe_value { PallasTrade::Disputes::OpsReport.call(store: current_store) }
       end
 
       # 草稿载荷（与 submit_evidence 同形：文本 + 上传文件）
