@@ -26,7 +26,7 @@ module PallasTrade
 
       # 自定义动作名不是 CanCan 真实动作（无法 alias 到 :update）→ 跳过基类 `load_resource`
       # （它用**原始 action 名**对实例授权），改为自加载记录 + 在 `authorize_admin` 里映射语义动作。
-      CUSTOM_ACTIONS = %i[refresh dry_run recover snapshot mark_review submit_evidence accept_dispute].freeze
+      CUSTOM_ACTIONS = %i[refresh dry_run recover snapshot mark_review precheck submit_evidence accept_dispute].freeze
       # 写动作（映射到 :update；其余自定义动作归 :read）
       UPDATE_ACTIONS = %i[recover mark_review submit_evidence accept_dispute].freeze
       # 「最近 provider 事件」候选窗口（有界扫描，零 provider I/O；命中失败显示 —）
@@ -57,6 +57,11 @@ module PallasTrade
         @evidence_submissions = evidence_submissions_for(dispute)
         @last_acceptance = @evidence_submissions.find { |s| s.kind == 'accepted' }
         @late_submission = late_submission?(dispute)
+
+        # DSP-P7-10 B1：素材库 / provider 建议 / 提交历史（全部只读，逐项降级）
+        @evidence_assets = evidence_assets_for
+        @evidence_suggestions = evidence_suggestions_for(dispute, @evidence_catalog)
+        @submission_timeline = submission_timeline_for(dispute)
 
         # DSP-P7-9：只读能力矩阵 + 支付级多争议聚合（逐项 rescue 降级，页面绑不 500）
         @provider_capabilities = provider_capabilities_for(dispute)
@@ -107,6 +112,29 @@ module PallasTrade
                                           missing: outcome.value.missing_evidence.size)
         else
           flash[:error] = outcome.error&.to_s.presence || PallasTrade.t('admin.orders.disputes_snapshot_failed')
+        end
+        redirect_to PallasTrade.admin_dispute_path(@dispute), status: :see_other
+      end
+
+      # POST /admin/disputes/:id/precheck —— 提交前完整性/合规校验（DSP-P7-10 B1）
+      # **零写**：不建回执、不写审计、不发事件、不调 provider；只把阻断项/建议提示回控制台。
+      def precheck
+        outcome = PallasTrade::Disputes::PreSubmitCheck.call(
+          dispute: @dispute,
+          evidence: evidence_payload,
+          accept_late: params[:accept_late].present? || params[:late_confirmed].to_s == '1'
+        )
+        report = outcome.success? ? outcome.value : { ok: false, blocking: ['precheck_unavailable'], warnings: [] }
+
+        if report[:ok]
+          flash[:success] = PallasTrade.t('admin.orders.disputes_precheck_ok', count: report[:provided_keys].size)
+        else
+          reasons = report[:blocking].map { |code| evidence_error_message(code) }.join(' · ')
+          flash[:error] = PallasTrade.t('admin.orders.disputes_precheck_blocked', reasons: reasons)
+        end
+        if report[:warnings].present?
+          flash[:warning] = PallasTrade.t('admin.orders.disputes_precheck_warnings',
+                                          warnings: report[:warnings].map { |code| evidence_error_message(code) }.join(' · '))
         end
         redirect_to PallasTrade.admin_dispute_path(@dispute), status: :see_other
       end
@@ -236,6 +264,34 @@ module PallasTrade
         PallasTrade::DisputeEvidenceSubmission.for_dispute(dispute).recent_first.limit(20).to_a
       rescue StandardError
         []
+      end
+
+      # DSP-P7-10 B1：本店素材库（只读列举；异常降级空数组）
+      def evidence_assets_for
+        PallasTrade::Disputes::EvidenceAssets.new(store: current_store).list.limit(20).to_a
+      rescue StandardError
+        []
+      end
+
+      # DSP-P7-10 B1：按 provider 契约 + reason code 的**建议**（只建议，绝不生成/提交）
+      def evidence_suggestions_for(dispute, catalog)
+        PallasTrade::Disputes::EvidenceAssets.new(store: current_store)
+                                             .suggest(dispute: dispute, catalog: catalog)
+      rescue StandardError
+        { supported: false, suggestions: [], reason_code: nil }
+      end
+
+      # DSP-P7-10 B1：提交历史 / 版本 / 回执（只读；异常降级 nil）
+      def submission_timeline_for(dispute)
+        safe_value { PallasTrade::Disputes::SubmissionTimeline.call(dispute: dispute) }
+      end
+
+      # 草稿载荷（与 submit_evidence 同形：文本 + 上传文件）
+      def evidence_payload
+        raw = params[:evidence]
+        return {} unless raw.respond_to?(:permit)
+
+        raw.permit!.to_h
       end
 
       def late_submission?(dispute)

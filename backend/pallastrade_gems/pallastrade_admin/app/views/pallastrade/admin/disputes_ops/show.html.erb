@@ -333,6 +333,101 @@
   </div>
 </div>
 
+<%# ── 7.5 提交历史 / 版本 / 回执（DSP-P7-10 B1，只读） ── %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.orders.disputes_timeline') %></h5>
+  </div>
+  <div class="card-body">
+    <p class="text-sm text-gray-500 mb-3"><%= PallasTrade.t('admin.orders.disputes_timeline_help') %></p>
+    <% timeline_entries = @submission_timeline&.[](:entries) || [] %>
+    <% if timeline_entries.any? %>
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Ver</th>
+            <th>Action</th>
+            <th>Provider status</th>
+            <th>Reference</th>
+            <th>Evidence keys</th>
+            <th>Diff vs previous</th>
+            <th>When</th>
+            <th>Actor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% timeline_entries.each do |entry| %>
+            <tr>
+              <td><span class="badge"><%= PallasTrade.t('admin.orders.disputes_timeline_version', version: entry[:version]) %></span></td>
+              <td class="text-sm"><%= entry[:kind] %><% if entry[:late] %> <span class="text-red-700">(late)</span><% end %></td>
+              <td class="text-sm"><%= entry[:provider_status].presence || '—' %></td>
+              <td class="text-xs"><%= entry[:provider_reference].presence || '—' %></td>
+              <td class="text-xs"><%= entry[:evidence_keys].join(', ').presence || '—' %></td>
+              <td class="text-xs">
+                <% if entry[:diff][:first] %>
+                  first submission
+                <% else %>
+                  <%= PallasTrade.t('admin.orders.disputes_timeline_diff',
+                                    added: entry[:diff][:added].join(', ').presence || '—',
+                                    removed: entry[:diff][:removed].join(', ').presence || '—') %>
+                <% end %>
+              </td>
+              <td class="text-xs"><%= entry[:at]&.strftime('%Y-%m-%d %H:%M') %></td>
+              <td class="text-xs"><%= entry[:actor][:label].presence || '—' %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-gray-500 mb-0"><%= PallasTrade.t('admin.orders.disputes_timeline_empty') %></p>
+    <% end %>
+  </div>
+</div>
+
+<%# ── 7.6 证据素材库 + provider 建议（DSP-P7-10 B1；只读引用，绝不自动提交/生成） ── %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.orders.disputes_evidence_library') %></h5>
+  </div>
+  <div class="card-body">
+    <p class="text-sm text-gray-500 mb-3"><%= PallasTrade.t('admin.orders.disputes_evidence_library_help') %></p>
+    <% if @evidence_assets.any? %>
+      <ul class="mb-4">
+        <% @evidence_assets.each do |asset| %>
+          <li class="text-sm">
+            <strong><%= asset.name %></strong>
+            <span class="text-gray-500">
+              (<%= asset.kind %><%= asset.evidence_key.present? ? " · #{asset.evidence_key}" : '' %><%= asset.reason_code.present? ? " · #{asset.reason_code}" : '' %>)
+            </span>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="text-gray-500"><%= PallasTrade.t('admin.orders.disputes_evidence_library_empty') %></p>
+    <% end %>
+
+    <h6 class="text-sm font-semibold mb-2"><%= PallasTrade.t('admin.orders.disputes_evidence_suggestions') %></h6>
+    <p class="text-sm text-gray-500 mb-2"><%= PallasTrade.t('admin.orders.disputes_evidence_suggestions_help') %></p>
+    <% if @evidence_suggestions && @evidence_suggestions[:supported] %>
+      <% if @evidence_suggestions[:suggestions].any? %>
+        <ul class="mb-0">
+          <% @evidence_suggestions[:suggestions].each do |suggestion| %>
+            <li class="text-sm">
+              <strong><%= suggestion[:key] %></strong>
+              <span class="text-gray-500">(<%= suggestion[:type] %><%= suggestion[:required] ? ', required' : '' %>)</span>
+              — <%= suggestion[:assets].map { |asset| asset[:name] }.join(', ') %>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="text-gray-500 mb-0">—</p>
+      <% end %>
+    <% else %>
+      <p class="text-gray-500 mb-0"><%= PallasTrade.t('admin.orders.disputes_evidence_suggestions_unsupported') %></p>
+    <% end %>
+  </div>
+</div>
+
 <%# ── 8. 【危险操作】提交证据 / 接受争议（DSP-P7-8）────────────────────────────── %>
 <%# 三件套：permission（can?(:update)）+ confirmation（turbo_confirm + confirm 参数）+ audit（服务内） %>
 <div class="card mb-6 border-red-300">
@@ -399,6 +494,10 @@
           </div>
         <% end %>
 
+        <%= f.submit PallasTrade.t('admin.orders.disputes_draft_precheck'),
+                     formaction: PallasTrade.precheck_admin_dispute_path(dispute),
+                     formmethod: :post,
+                     class: 'btn btn-secondary mr-2' %>
         <%= f.submit PallasTrade.t('admin.orders.disputes_submit_evidence'),
                      data: { turbo_confirm: PallasTrade.t('admin.orders.disputes_submit_evidence_confirm') },
                      class: 'btn btn-warning' %>

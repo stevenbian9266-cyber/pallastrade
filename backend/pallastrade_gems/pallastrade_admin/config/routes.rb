@@ -350,6 +350,8 @@ PallasTrade::Core::Engine.add_routes do
         post :recover
         post :snapshot
         post :mark_review
+        # DSP-P7-10 B1：提交前校验（零写、零 provider I/O；仅给出阻断项与修复建议）
+        post :precheck
         # DSP-P7-8 危险操作（不可逆；无批量变体）
         post :submit_evidence
         post :accept_dispute

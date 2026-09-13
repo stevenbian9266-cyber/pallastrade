@@ -522,6 +522,22 @@ en:
         disputes_accepted: Dispute accepted (provider status %{provider_status}).
         disputes_accept_already_done: This dispute was already accepted with the same reason (status %{provider_status}).
         disputes_accept_needs_confirm: Confirmation is required to accept a dispute.
+        # DSP-P7-10 B1（运营增强：素材库 / 提交前校验 / 提交历史）—— 全部零写、零自动化
+        disputes_evidence_library: Evidence library
+        disputes_evidence_library_help: Reusable snippets saved for this store. Inserting one only fills the draft — nothing is ever submitted automatically.
+        disputes_evidence_library_empty: No saved evidence assets yet. Add them per store to speed up future disputes.
+        disputes_evidence_suggestions: Suggested for this gateway
+        disputes_evidence_suggestions_help: Derived from the gateway's evidence catalogue and the stored library — suggestions only; nothing is generated or submitted.
+        disputes_evidence_suggestions_unsupported: This gateway declares no evidence catalogue, so no suggestions are made.
+        disputes_draft_precheck: Check draft
+        disputes_precheck_ok: Draft check passed — %{count} field(s) ready to submit.
+        disputes_precheck_blocked: 'Draft check blocked — %{reasons}'
+        disputes_precheck_warnings: 'Warnings: %{warnings}'
+        disputes_timeline: Submission history
+        disputes_timeline_help: Append-only provider receipts. Versions count per action type; the diff compares evidence keys against the previous submission.
+        disputes_timeline_empty: Nothing has been submitted to the provider yet.
+        disputes_timeline_version: 'v%{version}'
+        disputes_timeline_diff: 'added %{added} · removed %{removed}'
         disputes_submissions: Recent provider actions
         disputes_evidence_failed: The action could not be completed.
         disputes_capability_title: Provider capability and payment exposure

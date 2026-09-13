@@ -1110,7 +1110,11 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   `diff{added,removed,kept,first}`、`provider_status` / `provider_reference`（如实呈现，缺失即 null）、`files_count`、`actor`；
   返回 `{entries（最新在前）, count, latest（最新一条）, versions, kinds}`；**不改写回执**（仍 append-only）。
 - **边界（B2/B3 未做）**：审批/双人复核（FR-005）、运营报表（FR-006）、通知升级（FR-007）、RMA 入口（FR-008）、
-  Stripe 回执状态机（FR-009）；控制台渲染（素材插入 / 预检 / 时间线面板）在 B1.5 接线。
+  Stripe 回执状态机（FR-009）。
+- **控制台接线（B1.5，2026-09-13）**：`/admin/disputes/:id` 新增两张只读卡 —— **提交历史**（版本 / provider 回执 / 证据键 diff / actor）
+  与 **素材库·建议卡**（本店素材 + 按 provider 目录的建议；无契约则明示“不编造建议”）；
+  危险操作表单新增 **Check draft** 按钮（`formaction` → `POST :precheck`，复用同一张表单的字段，零字段重复）。
+  `precheck` 动作**零写**：只把阻断项/警告经 flash 回显（`disputes_precheck_blocked|ok|warnings`），不建回执、不写审计、不调 provider。
 
 ## Where to read further
 
