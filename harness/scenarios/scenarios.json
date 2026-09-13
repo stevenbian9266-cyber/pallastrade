@@ -2588,6 +2588,32 @@
         "zeroDepAndFast": 15,
         "wiredIntoHooksAndCi": 15
       }
+    },
+    {
+      "id": "GS-104",
+      "name": "Dispute evidence operations stay local: library, pre-submit check, timeline",
+      "description": "DSP-P7-10 B1 (PRD-20260913-payments … boundary C): store-scoped evidence asset library, zero-write pre-submit check reusing EvidenceCatalog, and an append-only submission timeline with per-kind versions and key diffs",
+      "mustDo": [
+        "Store evidence assets (text/file) tagged by evidence_key and reason_code in a store-scoped library",
+        "Make insert return a plain value only, so a library asset can never become a submission",
+        "Reuse EvidenceCatalog as the single field-validation authority instead of duplicating field rules",
+        "Return distinguishable blocking codes (unsupported / empty / unknown key / too long / missing required / late needs confirmation) with fix hints",
+        "Expose an append-only timeline with per-kind versions and added/removed/kept diffs",
+        "Keep Disputes::SubmitEvidence as the only submission entry point, still gated by permission + confirmation + audit",
+        "Pin zero funds/inventory/order/ledger writes with count assertions in specs"
+      ],
+      "mustNotDo": [
+        "Auto-submit, auto-represent, auto-refund, auto-restock or auto-rebill (source plan §71 stays untouched)",
+        "Let a library asset or a pre-submit check call the provider or create a receipt",
+        "Mutate or delete DisputeEvidenceSubmission rows (append-only) or infer a provider status the provider never reported"
+      ],
+      "scoring": {
+        "libraryIsReferenceOnly": 25,
+        "catalogReuseNoDuplication": 20,
+        "actionableBlockingCodes": 20,
+        "timelineVersionsAndDiffs": 20,
+        "zeroWriteNegativeAssertions": 15
+      }
     }
   ]
 }

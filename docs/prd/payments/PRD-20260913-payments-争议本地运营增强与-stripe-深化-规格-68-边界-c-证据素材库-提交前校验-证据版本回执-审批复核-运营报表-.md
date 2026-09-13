@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved（用户 2026-09-13 授权「自主采取最优方案」→ AI 采纳方案 C：D1=B/C、D2=C、D3=否） |
+| 状态 | implementing（B1 已交付并通过 20 例 spec；B2/B3 待做） |
 | 创建日期 | 2026-09-13 |
 | 来源 | 优化：争议本地运营增强与 Stripe 深化（规格 §68 边界 C：证据素材库/提交前校验/证据版本回执/审批复核/运营报表/通知升级/RMA 联动） |
 | 分类 | payments（自动判定） |
@@ -103,3 +103,4 @@
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-13 | 0.1 | 初稿。**边界决策记录**：用户 2026-09-13 授权「自主采取最优方案」→ AI 采纳 `RESEARCH-20260913-p7-spec68-advanced-dispute-boundary-options.md` 的**方案 C**（D1=B/C、D2=C、D3=否，即不修订 §71、不做任何自动化），分 B1/B2/B3 三批交付 | AI |
+| 2026-09-13 | 0.2 | **B1 交付**（用户指令「实施」）：新增表 `pallastrade_dispute_evidence_assets` + 模型 `DisputeEvidenceAsset` + 服务 `Disputes::EvidenceAssets` / `Disputes::PreSubmitCheck` / `Disputes::SubmissionTimeline`；spec 3 个文件 20 例全绿（AC-001/002/003/004/010）；Skill §DSP-P7-10 B1 + 场景库 GS-104 同步。**未做**：控制台渲染（B1.5）、FR-005…009（B2/B3） | AI |

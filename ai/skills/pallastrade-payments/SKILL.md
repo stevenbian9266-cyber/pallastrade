@@ -1088,7 +1088,29 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   网关不支持时整卡降级为提示文案（不渲染表单）。
 - **铁律（负向断言钉死）**：不建/改 Payment、Refund、`FinancialLedgerEntry`、Order、Inventory、CommerceTransaction；
   不自动退款、不重扣款 —— 资金结果仍由 **webhook** 驱动 P7-3 入账与 P7-6 收敛。
-- **后续切片**：Adyen / PayPal 适配 + 合同（前置：sandbox 凭证）；`advanced dispute capabilities`（源计划 §68）。
+- **后续切片**：Adyen / PayPal 适配 + 合同（前置：sandbox 凭证，**用户已确认挂起**）；`advanced dispute capabilities` —— 边界已定，见下节 DSP-P7-10。
+
+## 争议本地运营增强 B1（DSP-P7-10, 2026-09-13；PRD-20260913-payments-…-边界-c）
+
+> 源计划 §68 边界 C 第 1 批（决策 **D1=B/C、D2=C、D3=否**：不修订 §71、**不做任何自动化**）。
+> 三件套全部**零资金副作用**，且**不**新增提交入口 —— `Disputes::SubmitEvidence` 仍是唯一提交口。
+
+- **证据素材库**（`PallasTrade::DisputeEvidenceAsset`，表 `pallastrade_dispute_evidence_assets`，前缀 `dea_`）：
+  store 作用域（`store_id` 可空=全局）、`kind` ∈ text/file、可按 `evidence_key` / `reason_code` 归类、`active` 软停用；
+  文件素材走 `has_one_attached :file`（挂素材自身，不回挂 Dispute）。
+- **`Disputes::EvidenceAssets`**（门面，对齐 `EvidenceCatalog` 纯函数风格）：
+  `list` / `create` / `retire`（此二者写素材表 + 审计 `dispute_evidence_asset_created|retired`）/ `insert`（**返回纯值** `{key,value}`，
+  不触网、不建回执）/ `suggest`（按 provider 目录**仅建议**：无契约 → `supported:false` + 空建议，**不编造**）。
+  坑：未附加的 file 素材 `insert` → `asset_value_missing`（`has_one_attached` 未附加时是代理对象，必须显式判 `attached?`）。
+- **`Disputes::PreSubmitCheck`**（FR-003，**零写**：不建回执 / 不写审计 / 不发事件 / 不触网，可反复调用）：
+  复用 `EvidenceCatalog#validate` 后补编排层判定 → `blocking[]`（`evidence_submission_unsupported` / `evidence_empty` /
+  `unknown_evidence_key:*` / `evidence_too_long:*` / `evidence_missing_required:*` / `late_submission_requires_confirmation` /
+  `dispute_terminal` …）、`warnings[]`、`missing_required[]`、`fix_hints{}`、`digest`（与提交幂等基准同算法）。
+- **`Disputes::SubmissionTimeline`**（FR-004，只读）：按时间递增计 `version`（**按 kind 独立**），每条给出
+  `diff{added,removed,kept,first}`、`provider_status` / `provider_reference`（如实呈现，缺失即 null）、`files_count`、`actor`；
+  返回 `{entries（最新在前）, count, latest（最新一条）, versions, kinds}`；**不改写回执**（仍 append-only）。
+- **边界（B2/B3 未做）**：审批/双人复核（FR-005）、运营报表（FR-006）、通知升级（FR-007）、RMA 入口（FR-008）、
+  Stripe 回执状态机（FR-009）；控制台渲染（素材插入 / 预检 / 时间线面板）在 B1.5 接线。
 
 ## Where to read further
 
