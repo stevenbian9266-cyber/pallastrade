@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done（2026-09-13 收口：TASK-20260906124447-0c5b8f03 gate finished） |
 | 创建日期 | 2026-09-06 |
 | 来源 | 需求：CORE-P5-8 Operational Hardening（legacy 路径使用计数 + 运营指标埋点） |
 | 分类 | admin（自动判定） |

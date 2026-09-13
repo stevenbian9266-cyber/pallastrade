@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | draft |
+| 状态 | done（2026-09-13 收口：TASK-20260831132416-326234e9 gate finished） |
 | 创建日期 | 2026-08-31 |
 | 来源 | 优化：部署脚本固化与容错（deploy-sf 固化 + pull-deploy 磁盘预检与 flock 超时 + deploy README 规范） |
 | 分类 | infra（自动判定） |

@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done（2026-09-13 追溯收口：TASK-20260905030854-889b7274 gate finished） |
 | 创建日期 | 2026-09-05 |
 | 来源 | TXN-P2-6 第二阶段：SDK 消费（platform SDK 同步 CommerceTransaction 类型 + orders.transactions.create / transactions.get client） |
 | 分类 | other |

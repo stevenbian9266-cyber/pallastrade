@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved（2026-09-13 用户显式确认实施；三项决策：① 动作集合**包含** `dry_run`；② **允许**真实执行 `recover`（带 turbo_confirm + 幂等 + 负向断言）；③ `OrderManagement`/`OrderDisplay` 补 Dispute **只读**规则） |
+| 状态 | done（2026-09-13 收口：TASK-20260913011222-7251b398 gate finished；2026-09-13 用户显式确认实施；三项决策：① 动作集合**包含** `dry_run`；② **允许**真实执行 `recover`（带 turbo_confirm + 幂等 + 负向断言）；③ `OrderManagement`/`OrderDisplay` 补 Dispute **只读**规则） |
 | 创建日期 | 2026-09-13 |
 | 来源 | 用户指令「继续」→ 承接 DSP-P7-6 的下一切片（P7-0 FR-007；源计划 §66/§67） |
 | 分类 | payments（`harness prd new` 自动判定） |

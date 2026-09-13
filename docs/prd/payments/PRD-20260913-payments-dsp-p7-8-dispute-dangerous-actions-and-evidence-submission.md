@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done（2026-09-13 收口：TASK-20260913033838-fe7f725c gate finished） |
 | 创建日期 | 2026-09-13 |
 | 来源 | 新增：DSP-P7-8 争议危险操作与证据提交（Accept Dispute / Submit Evidence，Stripe 先行） |
 | 分类 | payments（关键词命中 payments） |

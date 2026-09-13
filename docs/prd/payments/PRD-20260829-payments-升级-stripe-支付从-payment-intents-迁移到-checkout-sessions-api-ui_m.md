@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done（2026-09-13 收口：TASK-20260829064700-15a7d705 gate finished） |
 | 创建日期 | 2026-08-29 |
 | 来源 | 升级：stripe提示升级 https://docs.stripe.com/payments/payment-element/migration-ewcs（前台右下角 Stripe 悬浮气泡提示迁移） |
 | 分类 | payments（自动判定） |

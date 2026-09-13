@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | draft |
+| 状态 | done（2026-09-13 收口：gate finished「需求：商城前台接入tawk.to作为客服工具」；工件 storefront/src/components/layout/TawkToWidget.tsx） |
 | 创建日期 | 2026-08-10 |
 | 来源 | 商城前台接入tawk.to作为客服工具 |
 | 分类 | storefront（自动判定） |

@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done（2026-09-13 追溯收口：TASK-20260905024214-83e1abea gate finished） |
 | 创建日期 | 2026-09-05 |
 | 来源 | TXN-P2-6（Storefront/API Migration）第一阶段：契约快照——CommerceTransaction 入 OpenAPI store.yaml + SDK TS types，`api:docs:check` 归绿 |
 | 分类 | payments |

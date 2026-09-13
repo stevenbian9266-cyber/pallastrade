@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done（2026-09-13 追溯收口：TASK-20260904063137-db01ee07 gate finished，实现/验证/知识证据齐备） |
 | 创建日期 | 2026-09-04 |
 | 来源 | `豆包梳理业务需求/P2 — Commerce Transaction Orchestration & Recovery.md`（TXN-P2 程序，用户定稿）+ `docs/research/RESEARCH-20260904-txn-p2-0-commerce-transaction-semantic-audit.md`（TXN-P2-0 审计，用户「实施」批准） |
 | 分类 | checkout（关键词命中；harness prd new 自动判定） |

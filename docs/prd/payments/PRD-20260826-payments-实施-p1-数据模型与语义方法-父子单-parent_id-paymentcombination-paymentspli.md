@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | verifying |
+| 状态 | done（2026-09-13 追溯收口：payment_combination.rb / parent_id / PaymentSplit 工件齐备；原 REQ 未登记 task，已记入收口报告） |
 | 创建日期 | 2026-08-26 |
 | 来源 | 需求：实施 P1 数据模型与语义方法（父子单 parent_id / PaymentCombination / PaymentSplit） |
 | 分类 | payments（自动判定） |

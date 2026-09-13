@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done（2026-09-13 追溯收口：TASK-20260904092421-1e95254d gate finished） |
 | 创建日期 | 2026-09-04 |
 | 来源 | P2 源文档 §19/§20/§54（TXN-P2-3 Payment Fact Resolver） |
 | 分类 | payments（自动判定） |

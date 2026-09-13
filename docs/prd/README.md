@@ -79,7 +79,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260907-payments-rev-p6-3-partial-combination-refund-allocation-组合退款-ownershi | payments | 2026-09-07 | REQ-20260907-rev-p6-3-partial-combination-refund-allocation.md |
 | done | PRD-20260906-payments-rev-p6-2-refund-execution-orchestration-refunds-request-asyn | payments | 2026-09-06 | REQ-20260906-rev-p6-2-refund-execution.md |
 | done | PRD-20260906-payments-rev-p6-1-durable-refund-lifecycle-foundation-退款-durable-生命周期 | payments | 2026-09-06 | REQ-20260906-rev-p6-1-durable-refund-lifecycle.md |
-| approved | PRD-20260906-admin-core-p5-8-operational-hardening-legacy-路径使用计数-运营指标埋点 | admin | 2026-09-06 | REQ-20260906-cp5-8-operational-hardening.md |
+| done | PRD-20260906-admin-core-p5-8-operational-hardening-legacy-路径使用计数-运营指标埋点 | admin | 2026-09-06 | REQ-20260906-cp5-8-operational-hardening.md |
 | done | PRD-20260906-payments-fin-p4-8-repair-legacy-operations | payments | 2026-09-06 | REQ-20260906-fin-p4-8.md |
 | done | PRD-20260906-payments-fin-p4-7-transaction-reconciliation | payments | 2026-09-06 | REQ-20260906-fin-p4-7.md |
 | done | PRD-20260906-payments-fin-p4-6-source-reconciliation | payments | 2026-09-06 | REQ-20260906-fin-p4-6.md |
@@ -88,23 +88,23 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260906-payments-fin-p4-3-payment-refund-posting | payments | 2026-09-06 | REQ-20260906-fin-p4-3.md |
 | done | PRD-20260905-payments-fin-p4-2-immutable-financial-journal | payments | 2026-09-05 | REQ-20260906-fin-p4-2.md |
 | done | PRD-20260905-payments-fin-p4-1-支付资金账本-commercetransaction-级-immutable-financial-jo | payments | 2026-09-05 | REQ-20260906-fin-p4-1.md |
-| draft | PRD-20260905-shipping-库存事务集成与预留生命周期-p3-stockreservation-接入-commercetransaction-res | shipping | 2026-09-05 | （实施时回填） |
-| approved | PRD-20260905-checkout-paymentcombination-txn-化-组合交易收敛到-transactions-finalize-recov | checkout | 2026-09-05 | REQ-20260905-paymentcombination-txn.md |
-| approved | PRD-20260905-checkout-txn-p2-6-轮3-storefront-transaction-first-迁移-checkout-start-b | checkout | 2026-09-05 | REQ-20260905-txn-p2-6-storefront-transaction-first.md |
-| approved | PRD-20260905-payments-txn-p2-6-contract-snapshot | payments | 2026-09-05 | REQ-20260905-txn-p2-6-contract-snapshot.md |
-| approved | PRD-20260905-other-txn-p2-closure-report-and-store-serializer | other | 2026-09-05 | REQ-20260905-txn-p2-closure.md |
-| approved | PRD-20260905-payments-txn-p2-7-operational-hardening-backend-slice | payments | 2026-09-05 | REQ-20260905-txn-p2-7.md |
-| approved | PRD-20260904-payments-txn-p2-5-unified-finalization-transactions-finalize-onpaymentsuccess | payments | 2026-09-04 | REQ-20260904-txn-p2-5.md |
-| approved | PRD-20260904-payments-txn-p2-4-recovery-engine-recovery-required-权威状态解析-recover | payments | 2026-09-04 | REQ-20260904-txn-p2-4.md |
-| approved | PRD-20260904-payments-txn-p2-3-payment-fact-resolver-provider-只读状态契约-资金事实判定 | payments | 2026-09-04 | REQ-20260904-txn-p2-3.md |
-| approved | PRD-20260904-api-txn-p2-2-transactions-start-resume-事务启动幂等-quote-consent-sess | api | 2026-09-04 | REQ-20260904-txn-p2-2.md |
-| approved | PRD-20260904-checkout-txn-p2-1-commercetransaction-core-transactions-transaction_o | checkout | 2026-09-04 | REQ-20260904-txn-p2-1.md |
+| done | PRD-20260905-shipping-库存事务集成与预留生命周期-p3-stockreservation-接入-commercetransaction-res | shipping | 2026-09-05 | （实施时回填） |
+| done | PRD-20260905-checkout-paymentcombination-txn-化-组合交易收敛到-transactions-finalize-recov | checkout | 2026-09-05 | REQ-20260905-paymentcombination-txn.md |
+| done | PRD-20260905-checkout-txn-p2-6-轮3-storefront-transaction-first-迁移-checkout-start-b | checkout | 2026-09-05 | REQ-20260905-txn-p2-6-storefront-transaction-first.md |
+| done | PRD-20260905-payments-txn-p2-6-contract-snapshot | payments | 2026-09-05 | REQ-20260905-txn-p2-6-contract-snapshot.md |
+| done | PRD-20260905-other-txn-p2-closure-report-and-store-serializer | other | 2026-09-05 | REQ-20260905-txn-p2-closure.md |
+| done | PRD-20260905-payments-txn-p2-7-operational-hardening-backend-slice | payments | 2026-09-05 | REQ-20260905-txn-p2-7.md |
+| done | PRD-20260904-payments-txn-p2-5-unified-finalization-transactions-finalize-onpaymentsuccess | payments | 2026-09-04 | REQ-20260904-txn-p2-5.md |
+| done | PRD-20260904-payments-txn-p2-4-recovery-engine-recovery-required-权威状态解析-recover | payments | 2026-09-04 | REQ-20260904-txn-p2-4.md |
+| done | PRD-20260904-payments-txn-p2-3-payment-fact-resolver-provider-只读状态契约-资金事实判定 | payments | 2026-09-04 | REQ-20260904-txn-p2-3.md |
+| done | PRD-20260904-api-txn-p2-2-transactions-start-resume-事务启动幂等-quote-consent-sess | api | 2026-09-04 | REQ-20260904-txn-p2-2.md |
+| done | PRD-20260904-checkout-txn-p2-1-commercetransaction-core-transactions-transaction_o | checkout | 2026-09-04 | REQ-20260904-txn-p2-1.md |
 | done | PRD-20260902-payments-payment-p0-foundation-hardening-paymentsession-payment-正式关联- | payments | 2026-09-02 | REQ-20260902-payment-p0.md |
 | done | PRD-20260831-harness-实施-harness-token-优化-宿主侧 | harness | 2026-08-31 | REQ-20260831-harness-token-optimization-host.md |
-| approved | PRD-20260830-checkout-下单链路规范化统一化-场景a-b统一下单页-场景c收银台弹窗-参考阿里国际站 | checkout | 2026-08-30 | REQ-20260901-positive-checkout-payment-flow-hardening.md |
+| done | PRD-20260830-checkout-下单链路规范化统一化-场景a-b统一下单页-场景c收银台弹窗-参考阿里国际站 | checkout | 2026-08-30 | REQ-20260901-positive-checkout-payment-flow-hardening.md |
 | done | PRD-20260830-other-修复-skill-权威路径 | other | 2026-08-30 | REQ-20260830-fix-skill-authority-paths.md |
-| approved | PRD-20260829-checkout-订单模块-单笔走现有checkout-多笔走组合支付新流程-收货信息独立填写 | checkout | 2026-08-29 | REQ-20260830-order-module-single-combined-payment.md |
-| approved | PRD-20260829-checkout-订单流程标准电商改造-购物车与订单分表-订单确认-提交订单-checkout纯支付-自有化去上游品牌化 | checkout | 2026-08-29 | REQ-20260830-order-flow-standard-ecommerce-p1.md |
+| done | PRD-20260829-checkout-订单模块-单笔走现有checkout-多笔走组合支付新流程-收货信息独立填写 | checkout | 2026-08-29 | REQ-20260830-order-module-single-combined-payment.md |
+| done | PRD-20260829-checkout-订单流程标准电商改造-购物车与订单分表-订单确认-提交订单-checkout纯支付-自有化去上游品牌化 | checkout | 2026-08-29 | REQ-20260830-order-flow-standard-ecommerce-p1.md |
 | done | PRD-20260828-checkout-p8-前置校验-库存-风控-订单服务增强-flag-灰度 | checkout | 2026-08-28 | REQ-20260828-order-lifecycle-p8.md |
 | done | PRD-20260828-checkout-p7-逆向链路售后父子单化-flag-灰度 | checkout | 2026-08-28 | REQ-20260828-order-lifecycle-p7.md |
 | done | PRD-20260828-admin-p6-admin-手动拆单-父子树-ui-flag-灰度 | admin | 2026-08-28 | REQ-20260828-order-lifecycle-p6.md |
@@ -113,16 +113,16 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260827-payments-实施-p3-父子单金额与支付状态派生-combined_total-payment-shipment_state-聚合 | payments | 2026-08-27 | REQ-20260827-order-lifecycle-p3.md |
 | done | PRD-20260826-checkout-实施-p2-统一拆单引擎-orders-splitter-策略分组-调整分摊-幂等 | checkout | 2026-08-26 | REQ-20260826-order-lifecycle-p2.md |
 | done | PRD-20260826-payments-实施-p1-数据模型与语义方法-父子单-parent_id-paymentcombination-paymentspli | payments | 2026-08-26 | REQ-20260826-order-lifecycle-p1.md |
-| draft | PRD-20260818-catalog-p0-4-产品评论 | catalog | 2026-08-18 | （实施时回填） |
-| draft | PRD-20260818-other-p0-3-邮件自动化-弃单恢复 | other | 2026-08-18 | （实施时回填） |
-| approved | PRD-20260817-other-移除根-package-json-无用的-glob-弃用依赖 | other | 2026-08-17 | （实施时回填） |
-| approved | PRD-20260817-admin-新建店铺表单-货币语言选择器与邮箱预设 | admin | 2026-08-17 | （实施时回填） |
-| draft | PRD-20260817-admin-多店铺管理-店铺列表-新建-切换 | admin | 2026-08-17 | （实施时回填） |
-| draft | PRD-20260817-admin-菜单配置收敛-结构代码化-可视化只读展示-权限配置依据 | admin | 2026-08-17 | （实施时回填） |
-| reviewing | PRD-20260816-admin-后台可视化菜单配置模块-角色权限体系-菜单-数据-功能权限 | admin | 2026-08-16 | （实施时回填） |
-| approved | PRD-20260816-admin-管理后台导航架构统一重构-常显原则-面包屑自动推导-单一布局 | admin | 2026-08-16 | REQ-20260816-admin-nav-architecture |
+| done | PRD-20260818-catalog-p0-4-产品评论 | catalog | 2026-08-18 | （实施时回填） |
+| done | PRD-20260818-other-p0-3-邮件自动化-弃单恢复 | other | 2026-08-18 | （实施时回填） |
+| done | PRD-20260817-other-移除根-package-json-无用的-glob-弃用依赖 | other | 2026-08-17 | （实施时回填） |
+| done | PRD-20260817-admin-新建店铺表单-货币语言选择器与邮箱预设 | admin | 2026-08-17 | （实施时回填） |
+| done | PRD-20260817-admin-多店铺管理-店铺列表-新建-切换 | admin | 2026-08-17 | （实施时回填） |
+| done | PRD-20260817-admin-菜单配置收敛-结构代码化-可视化只读展示-权限配置依据 | admin | 2026-08-17 | （实施时回填） |
+| done | PRD-20260816-admin-后台可视化菜单配置模块-角色权限体系-菜单-数据-功能权限 | admin | 2026-08-16 | （实施时回填） |
+| done | PRD-20260816-admin-管理后台导航架构统一重构-常显原则-面包屑自动推导-单一布局 | admin | 2026-08-16 | REQ-20260816-admin-nav-architecture |
 | done | PRD-20260816-admin-管理后台导航一致性-主区按-email-模式-设置区按-settings-模式统一 | admin | 2026-08-16 | REQ-20260816-admin-nav-consistency |
-| draft | PRD-20260813-admin-移除管理后台-integrations-菜单及相关逻辑 | admin | 2026-08-13 | （实施时回填） |
+| done | PRD-20260813-admin-移除管理后台-integrations-菜单及相关逻辑 | admin | 2026-08-13 | （实施时回填） |
 | done | PRD-20260808-admin-去掉管理后台左侧菜单的升级逻辑-community-edition-升级提示 | admin | 2026-08-08 | REQ-20260808-remove-enterprise-notice |
 | done | PRD-20260808-admin-ai-tools-page-optimization | admin | 2026-08-08 | REQ-20260808-ai-tools-page-optimization |
 | done | PRD-20260808-api-实施-ai-tools-模块优化-p0-locale修复-添加provider-p1-预设可见-引导-p2-api文档- | api | 2026-08-08 | REQ-20260808-ai-tools-optimization |
@@ -131,7 +131,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260809-infra-oss-storage | infra | 2026-08-09 | REQ-20260809-oss-storage |
 | merged | PRD-20260809-infra-oss-cache-control | infra | 2026-08-09 | REQ-20260809-oss-cache-control |
 | done | PRD-20260809-harness-prd-dedupe-update | harness | 2026-08-09 | REQ-20260809-harness-prd-dedupe-update |
-| reviewing | PRD-20260809-storefront-brand-assets | storefront | 2026-08-09 | （实施时回填） |
+| done | PRD-20260809-storefront-brand-assets | storefront | 2026-08-09 | （实施时回填） |
 | done | PRD-20260809-catalog-创建兔狲品牌图片资源套件 | catalog | 2026-08-09 | REQ-20260810-pallas-cat-brand-assets |
 | done | PRD-20260810-storefront-商城前台接入tawk-to作为客服工具 | storefront | 2026-08-10 | REQ-20260810-tawk-to-widget |
 | done | PRD-20260810-storefront-对商城前台进行重新规划 | storefront | 2026-08-10 | REQ-20260810-storefront-redesign |
@@ -147,12 +147,16 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260815-other-redirect-增加标题与描述字段 | other | 2026-08-15 | REQ-20260815-redirect-title-description |
 | done | PRD-20260815-shipping-补货通知-back-in-stock | shipping | 2026-08-15 | 订阅→补货事件→Resend 邮件 delivered 验证通过 |
 | done | PRD-20260815-catalog-邮件管理整合-email-一级菜单-配置-模板-记录-分类-回复开关 | catalog | 2026-08-15 | REQ-20260815-email-management-integration |
-| approved | PRD-20260829-payments-升级-stripe-支付从-payment-intents-迁移到-checkout-sessions-api-ui_m | payments | 2026-08-29 | （实施时回填） |
-| implementing | PRD-20260831-payments-stripe-自绘卡支付表单-paymentintent-模式 | payments | 2026-08-31 | REQ-20260831-stripe-自绘卡支付表单.md |
+| done | PRD-20260829-payments-升级-stripe-支付从-payment-intents-迁移到-checkout-sessions-api-ui_m | payments | 2026-08-29 | （实施时回填） |
+| done | PRD-20260831-payments-stripe-自绘卡支付表单-paymentintent-模式 | payments | 2026-08-31 | REQ-20260831-stripe-自绘卡支付表单.md |
 
 | done | PRD-20260903-checkout-chk-p1-1a-read-only-checkoutview | checkout | 2026-09-03 | REQ-20260903-chk-p1-1a.md |
-| done | PRD-20260903-checkout-chk-p1-1-order-checkout-application-layer-checkoutview（1B/2/3/4/4B/4C/4C4/5 实施收口） | checkout | 2026-09-03 | REQ-20260903-chk-p1-{1b,2,3,4,4b,4c,5}.md · REQ-20260904-chk-p1-4c4.md |
+| done | PRD-20260903-checkout-chk-p1-1-order-checkout-application-layer-checkoutview | checkout | 2026-09-03 | REQ-20260903-chk-p1-{1b,2,3,4,4b,4c,5}.md · REQ-20260904-chk-p1-4c4.md |
 | done | PRD-20260904-r1-contract-generation-infra | api | 2026-09-04 | REQ-20260904-r1-contract-generation.md |
+| done | PRD-20260905-other-txn-p2-6-sdk-consumption | other | 2026-09-05 | REQ-20260905-txn-p2-6-sdk-consumption.md |
+| done | PRD-20260831-infra-部署脚本固化与容错-deploy-sf-固化-pull-deploy-磁盘预检与-flock-超时-deploy-rea | infra | 2026-08-31 | REQ-20260831-部署脚本固化与容错.md |
+| merged | PRD-20260828-other-p7-逆向链路售后父子单化-flag-灰度 | other | 2026-08-28 | （与 checkout-p7 同需求：历史副本，正式以 checkout 侧为准） |
+
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 
 1. 用户一句话需求 → AI 查重 + 分类 + 生成 PRD（draft）

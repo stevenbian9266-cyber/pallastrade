@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done（2026-09-13 追溯收口：TASK-20260905015105-9eaa63f6 gate finished；本 PRD 即 P2 收口报告本体） |
 | 创建日期 | 2026-09-05 |
 | 来源 | TXN-P2 收口（P2-6 后端前置 + §65 Completion Report + doc-impact 同步） |
 | 分类 | other（AI 语义微调：P2 收口/文档） |

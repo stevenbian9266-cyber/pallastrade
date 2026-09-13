@@ -2,20 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | draft |
-| 创建日期 | 2026-09-09 |
-| 来源 | 孤儿退款补记 backfill：Refunds::BackfillProviderRefund + rake dry-run/apply（补记即终态，绝不二次 PSP） |
-| 分类 | payments（自动判定） |
-
-> ⚠️ AI：请按 docs/prd/_TEMPLATE.md 完整扩充本文档（背景/FR/AC/跨层搜索/测试计划/文档同步清单），再进入用户确认。
-
----
-
-# PRD-20260909-payments-孤儿退款补记-backfill-refunds-backfillproviderrefund-rake-dry-run-
-
-| 元数据 | 值 |
-|---|---|
-| 状态 | draft |
+| 状态 | done（2026-09-13 收口：TASK-20260909063544-ba160044 gate finished；并清理重复骨架头部块） |
 | 创建日期 | 2026-09-09 |
 | 来源 | 孤儿退款补记 backfill：Refunds::BackfillProviderRefund + rake dry-run/apply（补记即终态，绝不二次 PSP） |
 | 分类 | payments（自动判定） |

@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done（2026-09-13 追溯收口：TASK-20260905031630-e6314687 gate finished） |
 | 创建日期 | 2026-09-05 |
 | 来源 | 需求：TXN-P2-6 轮3 storefront transaction-first 迁移（checkout/start BFF + order-payment action） |
 | 分类 | checkout（自动判定） |

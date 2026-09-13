@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done（2026-09-13 追溯收口：TASK-20260905012809-8f662c06 / TASK-20260905040006-eb2c2df2 gate finished） |
 | 创建日期 | 2026-09-05 |
 | 来源 | P2 源文档 §58（TXN-P2-7 Operational Hardening）——slice1 后端切片已完成；**slice2（2026-09-05 回写）：Admin transaction inspection UI + 保守自动 stuck sweeper + 最小 metrics/alerts**（用户选「完整资源页/保守 sweeper/最小集」） |
 | 分类 | payments（交易运维域） |

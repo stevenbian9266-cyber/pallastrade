@@ -1,5 +1,13 @@
 # PRD-20260904-r1-contract-generation-infra
 
+| 元数据 | 值 |
+|---|---|
+| 状态 | done（2026-09-13 追溯收口：`harness.config.mjs → generatedCheck.checks` 已指向 `scripts/ci/contracts.sh`，不再是 `echo SKIP` 空转；原 TASK-20260904023203-21329797 门禁未闭环） |
+| 创建日期 | 2026-09-04 |
+| 分类 | api |
+| 关联 REQ | REQ-20260904-r1-contract-generation.md |
+| 需求类型 | 基建（契约生成管线可运行化，方案 A） |
+
 > 一句话需求：实施 R1 基建——rswag/typelizer 可运行化（消除 SDK/yaml 手写漂移）。用户确认方案 A（Schema 全自动生成 + Paths 维持校验），Docker 执行。
 
 ## 1. 背景

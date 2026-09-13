@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done（2026-09-13 追溯收口：TASK-20260905050410-0f492f00 gate finished） |
 | 创建日期 | 2026-09-05 |
 | 来源 | 需求：PaymentCombination txn 化——组合交易收敛到 Transactions::Finalize/Recover（每成员 TransactionOrder + OnPaymentSuccess 收敛）。用户决策（2026-09-05 vscode_askQuestions）：**全收敛到 Finalize**（不复用 Complete 阶段1；SettleJob→RecoverJob）/ **每成员一笔 TransactionOrder** / **PSP 成功收敛到 OnPaymentSuccess** |
 | 分类 | checkout（自动判定） |

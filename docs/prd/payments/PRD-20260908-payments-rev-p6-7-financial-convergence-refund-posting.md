@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done（2026-09-13 追溯收口：FinancialLedger::PostRefund 等工件齐备，由 FIN-P4-3/REV-P6-8* 门禁覆盖） |
 | 创建日期 | 2026-09-08 |
 | 来源 | 需求：REV-P6-7 Financial Convergence（refund posting 缺失闭环 + ReconcileRefund 本地状态分类 + provider mismatch 语义） |
 | 分类 | payments（语义归属；prd new 误判 catalog 已弃用该骨架） |

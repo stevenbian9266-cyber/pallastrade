@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done（2026-09-13 追溯收口：TASK-20260904070819-8ab4f216 gate finished） |
 | 创建日期 | 2026-09-04 |
 | 来源 | P2 程序文档 §14/§15/§53 + TXN-P2-0 审计（§5 冻结决策/§6.5 QUOTE_CONSENT/§6.6 session 关系/§6.12 API 提案） |
 | 分类 | api（harness prd new 自动判定，因含 Store API） |
