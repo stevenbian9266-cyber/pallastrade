@@ -21,6 +21,12 @@ module PallasTrade
       # DSP-P7-7: Dispute state/attention 徽章（disputes_ops 列表与详情共用）
       helper 'pallastrade/admin/disputes_ops'
 
+      # PALLAS-CUSTOM: 后台页面防缓存（2026-09-13 bugfix）——退出登录后按浏览器“后退”，
+      # 浏览器会从 bfcache/本地缓存直接还原已登录页面而不回服务器校验会话。
+      # 与 API 层（PallasTrade::Api::V3::HttpCaching）保持一致用 private, no-store；
+      # 另配合 shared/_head 的 pageshow 兜底（bfcache 还原时强制刷新）。
+      before_action :prevent_admin_page_caching
+
       before_action :authorize_admin
 
       # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——current_store 解析：session 选中店铺（RoleUser 授权校验）
@@ -45,6 +51,11 @@ module PallasTrade
       end
 
       protected
+
+      # 见上方 before_action 注释：禁止浏览器缓存后台页面，使“后退”必须回服务器校验会话。
+      def prevent_admin_page_caching
+        response.headers['Cache-Control'] = 'private, no-store'
+      end
 
       def action
         params[:action].to_sym
@@ -141,7 +152,7 @@ module PallasTrade
       # the store-wide `preferred_admin_locale` via `default_locale`.
       def current_locale
         @current_locale ||= [admin_user_selected_locale, admin_locale_cookie].
-          detect { |locale| supported_admin_locale?(locale) } || default_locale
+                            detect { |locale| supported_admin_locale?(locale) } || default_locale
       end
 
       # The store's timezone resolved to an +ActiveSupport::TimeZone+, falling
@@ -190,7 +201,7 @@ module PallasTrade
 
         clear_return_to
 
-        session_key = "#{model_class.to_s.demodulize.pluralize.downcase}_return_to".to_sym
+        session_key = :"#{model_class.to_s.demodulize.pluralize.downcase}_return_to"
         session[session_key] = "#{request.path}?#{request.query_string}"
       rescue ActionDispatch::Cookies::CookieOverflow
         clear_return_to
@@ -205,13 +216,13 @@ module PallasTrade
       def remove_assets(attachment_types, object: nil)
         attachment_types.each do |attachment_type|
           remove_param = "remove_#{attachment_type}"
-          if params[remove_param] == '1'
-            object ||= attachment_type == 'asset' ? @page_section : @object
-            attachment = object.public_send(attachment_type)
-            if attachment.attached?
-              attachment.detach
-              attachment.purge_later
-            end
+          next unless params[remove_param] == '1'
+
+          object ||= attachment_type == 'asset' ? @page_section : @object
+          attachment = object.public_send(attachment_type)
+          if attachment.attached?
+            attachment.detach
+            attachment.purge_later
           end
         end
       end
@@ -250,8 +261,8 @@ module PallasTrade
         user = try_pallastrade_current_user
         return PallasTrade::Store.none unless user
 
-        ids = PallasTrade::RoleUser.where(user: user, resource_type: 'PallasTrade::Store')
-                                   .pluck(:resource_id).compact.uniq
+        ids = PallasTrade::RoleUser.where(user: user, resource_type: 'PallasTrade::Store').
+              pluck(:resource_id).compact.uniq
         PallasTrade::Store.where(id: ids)
       end
 
@@ -261,10 +272,10 @@ module PallasTrade
         return false unless user
 
         role_ids = PallasTrade::RoleUser.where(user: user).pluck(:role_id).uniq
-        PallasTrade::RolePermission.set
-                                   .where(role_id: role_ids)
-                                   .where(permission_set: 'PallasTrade::PermissionSets::SuperUser')
-                                   .exists?
+        PallasTrade::RolePermission.set.
+          where(role_id: role_ids).
+          where(permission_set: 'PallasTrade::PermissionSets::SuperUser').
+          exists?
       end
     end
   end

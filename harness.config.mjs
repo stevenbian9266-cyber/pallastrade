@@ -166,6 +166,11 @@ export default {
         description: 'Admin session specs (sign-in guard + sign-out redirect back to the admin sign-in page)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/user_sessions_spec.rb'],
       },
+      // 管理后台页面防缓存（退出后“后退”不还原已登录页）：no-store 响应头 + bfcache 兜底
+      'admin-page-caching-rspec': {
+        description: 'Admin page caching specs (no-store headers + back-forward-cache reload guard)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/page_caching_spec.rb'],
+      },
       // P1 订单流程改造：本次变更相关 spec（新购物车/提交订单/回归）
       'p1-order-flow-rspec': {
         description: 'P1 order-flow specs (cart/submit/request + regression)',
