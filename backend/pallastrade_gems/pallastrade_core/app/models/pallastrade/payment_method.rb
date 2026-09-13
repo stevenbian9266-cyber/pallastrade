@@ -168,6 +168,41 @@ module PallasTrade
       raise ::NotImplementedError, 'You must implement fetch_dispute_details method for this gateway.'
     end
 
+    # PALLAS-CUSTOM: DSP-P7-8 (PRD-20260913-payments-dsp-p7-8)
+    # **写**契约：向 provider 提交争议证据（危险操作之一；调用方必须已过 permission + confirmation + audit）。
+    # 基类 raise → 能力由「类级 method owner ≠ 基类」与 `#dispute_evidence_catalog` 共同探测（零 I/O）。
+    # 实现方约定：evidence = { 证据键 => 文本值 | 文件对象 }；返回归一化回执
+    # `{ provider_reference:, status:, submitted_at:, files: { key => provider_file_ref }, metadata: {} }`。
+    # 实现方**不得**触碰本地资金/订单/库存（铁律：资金结果由 webhook 驱动）。
+    #
+    # @param dispute [PallasTrade::Dispute]
+    # @param evidence [Hash]
+    # @return [Hash] 归一化回执
+    # @raise [::NotImplementedError] when the gateway has no write contract
+    # @raise [PallasTrade::Core::GatewayError] when the dispute has no provider reference
+    def submit_dispute_evidence(dispute:, evidence:)
+      raise ::NotImplementedError, 'You must implement submit_dispute_evidence method for this gateway.'
+    end
+
+    # PALLAS-CUSTOM: DSP-P7-8 (PRD-20260913-payments-dsp-p7-8)
+    # **写**契约：接受争议（不可逆；provider 侧通常等于关闭争议）。同 submit_dispute_evidence 的三件套约束。
+    #
+    # @param dispute [PallasTrade::Dispute]
+    # @param reason [String]
+    # @return [Hash] 归一化回执 `{ provider_reference:, status:, accepted_at:, metadata: {} }`
+    def accept_dispute(dispute:, reason: nil)
+      raise ::NotImplementedError, 'You must implement accept_dispute method for this gateway.'
+    end
+
+    # PALLAS-CUSTOM: DSP-P7-8 (PRD-20260913-payments-dsp-p7-8)
+    # provider 专属**证据类型目录**（源计划 §68）；空目录 = 该网关不支持证据提交。
+    # 条目形状：`{ key:, type: 'text'|'file', max_length:, required: }`（核心不内置任何 provider 字段名）。
+    #
+    # @return [Array<Hash>]
+    def dispute_evidence_catalog
+      []
+    end
+
     # Parses an incoming webhook payload from the payment provider.
     # Override in gateway subclasses to implement provider-specific webhook parsing.
     #

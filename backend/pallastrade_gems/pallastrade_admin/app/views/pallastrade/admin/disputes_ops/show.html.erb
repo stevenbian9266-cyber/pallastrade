@@ -3,7 +3,8 @@
   <%= @dispute.prefixed_id %>
 <% end %>
 <%# DSP-P7-7 (PRD-20260913-payments-dsp-p7-7-admin-disputes-console)：§66 展现面 + §67 安全动作 %>
-<%# 动作显隐 = eligible 状态 且 有权限；写动作带 turbo_confirm；危险操作（接受争议/提交证据）不在本切片 %>
+<%# DSP-P7-8 (PRD-20260913-payments-dsp-p7-8)：危险操作区（提交证据 / 接受争议）—— %>
+<%#   仅 :update 权限可见；前端 turbo_confirm + 后端显式 confirm 参数双重确认；provider 不支持则整卡降级。 %>
 <% content_for :page_actions do %>
   <% if can?(:read, @dispute) %>
     <%= button_to PallasTrade.t('admin.orders.disputes_refresh'),
@@ -328,6 +329,126 @@
       </table>
     <% else %>
       <p class="text-gray-500 mb-0">No refunds on the anchored payment.</p>
+    <% end %>
+  </div>
+</div>
+
+<%# ── 8. 【危险操作】提交证据 / 接受争议（DSP-P7-8）────────────────────────────── %>
+<%# 三件套：permission（can?(:update)）+ confirmation（turbo_confirm + confirm 参数）+ audit（服务内） %>
+<div class="card mb-6 border-red-300">
+  <div class="card-header">
+    <h5 class="card-title text-red-700"><%= PallasTrade.t('admin.orders.disputes_danger_zone') %></h5>
+  </div>
+  <div class="card-body">
+    <p class="text-sm text-gray-500 mb-4">
+      <%= PallasTrade.t('admin.orders.disputes_danger_zone_help') %>
+    </p>
+
+    <% if @evidence_catalog.nil? %>
+      <div class="alert alert-warning mb-0">
+        <%= PallasTrade.t('admin.orders.disputes_danger_unsupported') %>
+      </div>
+    <% elsif !can?(:update, dispute) %>
+      <div class="alert alert-info mb-0">
+        <%= PallasTrade.t('admin.orders.disputes_danger_no_permission') %>
+      </div>
+    <% else %>
+      <% if @late_submission %>
+        <div class="alert alert-warning">
+          <%= PallasTrade.t('admin.orders.disputes_danger_late_warning',
+                            due_at: dispute.evidence_due_at&.strftime('%Y-%m-%d %H:%M')) %>
+        </div>
+      <% end %>
+
+      <%# 1) 提交证据：文本 + 文件（文件走 Stripe File 上传；留存挂回执） %>
+      <%= form_with url: PallasTrade.submit_evidence_admin_dispute_path(dispute),
+                    method: :post, multipart: true, local: true do |f| %>
+        <h6 class="text-sm font-semibold mb-2"><%= PallasTrade.t('admin.orders.disputes_submit_evidence') %></h6>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <% @evidence_catalog.text_entries.each do |entry| %>
+            <div>
+              <label class="text-sm text-gray-500" for="evidence_<%= entry.key %>">
+                <%= entry.key.humanize %>
+              </label>
+              <%= text_field_tag "evidence[#{entry.key}]", nil,
+                                 id: "evidence_#{entry.key}",
+                                 maxlength: entry.max_length,
+                                 class: 'form-input w-full' %>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <% @evidence_catalog.file_entries.each do |entry| %>
+            <div>
+              <label class="text-sm text-gray-500" for="evidence_<%= entry.key %>">
+                <%= entry.key.humanize %>
+              </label>
+              <%= file_field_tag "evidence[#{entry.key}]", id: "evidence_#{entry.key}", class: 'form-input w-full' %>
+            </div>
+          <% end %>
+        </div>
+
+        <% if @late_submission %>
+          <div class="mb-3">
+            <%= hidden_field_tag :late_confirmed, '0' %>
+            <%= check_box_tag :late_confirmed, '1', false, id: 'late_confirmed' %>
+            <label for="late_confirmed" class="text-sm text-red-700">
+              <%= PallasTrade.t('admin.orders.disputes_danger_late_confirm') %>
+            </label>
+          </div>
+        <% end %>
+
+        <%= f.submit PallasTrade.t('admin.orders.disputes_submit_evidence'),
+                     data: { turbo_confirm: PallasTrade.t('admin.orders.disputes_submit_evidence_confirm') },
+                     class: 'btn btn-warning' %>
+      <% end %>
+
+      <hr class="my-5">
+
+      <%# 2) 接受争议（不可逆）：必须填写理由 + 显式确认 %>
+      <%= form_with url: PallasTrade.accept_dispute_admin_dispute_path(dispute),
+                    method: :post, local: true do |f| %>
+        <h6 class="text-sm font-semibold mb-2 text-red-700"><%= PallasTrade.t('admin.orders.disputes_accept') %></h6>
+        <p class="text-sm text-gray-500 mb-3"><%= PallasTrade.t('admin.orders.disputes_accept_help') %></p>
+        <div class="mb-3">
+          <label class="text-sm text-gray-500" for="accept_reason">
+            <%= PallasTrade.t('admin.orders.disputes_accept_reason') %>
+          </label>
+          <%= text_area_tag :reason, nil, id: 'accept_reason', rows: 2, class: 'form-input w-full' %>
+        </div>
+        <%= hidden_field_tag :confirm, '1' %>
+        <%= f.submit PallasTrade.t('admin.orders.disputes_accept'),
+                     data: { turbo_confirm: PallasTrade.t('admin.orders.disputes_accept_confirm') },
+                     class: 'btn btn-danger' %>
+      <% end %>
+    <% end %>
+
+    <% if @evidence_submissions.any? %>
+      <hr class="my-5">
+      <h6 class="text-sm font-semibold mb-2"><%= PallasTrade.t('admin.orders.disputes_submissions') %></h6>
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Kind</th>
+            <th>Provider status</th>
+            <th>Actor</th>
+            <th>Late</th>
+            <th>At</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @evidence_submissions.each do |submission| %>
+            <tr>
+              <td><%= submission.accepted? ? PallasTrade.t('admin.orders.disputes_accept') : PallasTrade.t('admin.orders.disputes_submit_evidence') %></td>
+              <td><%= submission.provider_status.presence || '—' %></td>
+              <td><%= submission.actor_label.presence || submission.actor_type.presence || '—' %></td>
+              <td><%= submission.late ? 'yes' : 'no' %></td>
+              <td><%= submission.created_at&.strftime('%Y-%m-%d %H:%M') %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
     <% end %>
   </div>
 </div>

@@ -47,6 +47,41 @@ zh-CN:
         disputes_mark_review_failed: 无法将该争议标记为人工复核。
         disputes_deadline: 证据截止
         disputes_flags: 标记
+        # DSP-P7-8（危险操作：提交证据 / 接受争议）
+        disputes_danger_zone: 危险操作
+        disputes_danger_zone_help: 这两个动作会直接调用支付提供方，且无法在后台撤销。每次执行都经过权限校验、二次确认与审计；资金变动仍以提供方 webhook 为准。
+        disputes_danger_unsupported: 当前网关不支持提交争议证据，请到提供方后台处理。
+        disputes_danger_no_permission: 你没有提交证据或接受争议的权限。
+        disputes_danger_late_warning: 证据截止时间（%{due_at}）已过——逾期提交必须在下方显式确认。
+        disputes_danger_late_confirm: 我确认这是证据截止后的逾期提交
+        disputes_submit_evidence: 提交证据
+        disputes_submit_evidence_confirm: 确定向支付提供方提交这些证据？数据将发送到平台之外。
+        disputes_evidence_submitted: 证据已提交给提供方（状态 %{provider_status}）。
+        disputes_evidence_already_submitted: 相同证据此前已提交——本次未重复发送（状态 %{provider_status}）。
+        disputes_accept: 接受争议
+        disputes_accept_help: 接受争议等于向持卡人让步。该操作不可逆，通常意味着争议款项损失。
+        disputes_accept_reason: 接受该争议的原因？
+        disputes_accept_confirm: 确定接受该争议？不可撤销——争议款项将让步。
+        disputes_accepted: 已接受争议（提供方状态 %{provider_status}）。
+        disputes_accept_already_done: 该争议此前已用相同理由接受过（状态 %{provider_status}）。
+        disputes_accept_needs_confirm: 接受争议需要显式确认。
+        disputes_submissions: 最近的提供方操作
+        disputes_evidence_failed: 操作未能完成。
+        disputes_evidence_error_evidence_empty: 请至少填写一项证据。
+        disputes_evidence_error_unknown_evidence_key: 存在该提供方不支持的证据字段。
+        disputes_evidence_error_evidence_too_long: 某个证据字段超长。
+        disputes_evidence_error_evidence_not_text: 文本证据字段收到了不支持的值。
+        disputes_evidence_error_evidence_not_file: 文件证据字段需要上传文件。
+        disputes_evidence_error_evidence_file_too_large: 证据文件过大。
+        disputes_evidence_error_evidence_file_type_not_allowed: 证据文件类型不被允许。
+        disputes_evidence_error_dispute_terminal: 该争议已处于终态，无法再提交证据。
+        disputes_evidence_error_late_submission_not_confirmed: 证据截止时间已过——请先确认逾期提交。
+        disputes_evidence_error_evidence_submission_unsupported: 当前网关不支持提交证据。
+        disputes_evidence_error_accept_unsupported: 当前网关不支持接受争议。
+        disputes_evidence_error_payment_method_missing: 该争议没有关联的支付方式。
+        disputes_evidence_error_dispute_not_found: 未找到该争议。
+        disputes_evidence_error_provider_error: 支付提供方拒绝或执行失败。
+        disputes_evidence_error_reason_required: 接受争议必须填写理由。
       products:
         products_list: 商品列表
         categories: 分类

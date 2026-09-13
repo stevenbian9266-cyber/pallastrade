@@ -8,15 +8,17 @@
 # show ：§66 全字段下钻（关联 / provider 引用 / journal / 对账 / 证据快照 / 收敛状态 / 最近 provider 事件）；
 #        在线只读调用（对账、证据投影、裁决）**逐个降级**，异常一律 nil → 页面**恒 200**（对齐 RefundsOpsController#show）。
 #
-# 动作（全部幂等；危险操作不在本切片）：
-#   refresh     = 刷新 provider 状态（`ResolveFact(fetch: true)`，**只读**）
-#   dry_run     = 收敛预览（`Recover(apply: false)`，**零写**）
-#   recover     = 收敛执行（`Recover(apply: true)`，唯一允许的写；幂等，重复执行 `noop`）
-#   snapshot    = 生成证据快照（`BuildEvidenceSnapshot(fetch: true)`，**transient 不落库、不提交**）
-#   mark_review = 人工标记复核（attention + manual_review + 审计 actor）
+# 动作（P7-7 全部安全；P7-8 新增两个**危险操作**）：
+#   refresh         = 刷新 provider 状态（`ResolveFact(fetch: true)`，**只读**）
+#   dry_run         = 收敛预览（`Recover(apply: false)`，**零写**）
+#   recover         = 收敛执行（`Recover(apply: true)`，本地唯一写；幂等）
+#   snapshot        = 生成证据快照（`BuildEvidenceSnapshot(fetch: true)`，**transient 不落库、不提交**）
+#   mark_review     = 人工标记复核（attention + manual_review + 审计 actor）
+#   submit_evidence = **危险**：向 provider 提交证据（Stripe Dispute#update；需 permission + confirmation + audit）
+#   accept_dispute  = **危险且不可逆**：接受争议（Stripe Dispute#close；需 permission + confirmation + audit）
 #
 # 铁律（源计划 §49/§50/§67）：不退款、不重扣、不建 Payment、不改 order/inventory/journal、
-#   不调 provider 写方法；`Accept Dispute` / `Submit Evidence` **不在本切片**（归 P7-8，需 permission + confirmation + audit）。
+#   **危险操作只调 provider 写 + 落不可变回执**（资金结果仍由 webhook 驱动 P7-3 入账 / P7-6 收敛）。
 module PallasTrade
   module Admin
     class DisputesOpsController < ResourceController
@@ -24,9 +26,9 @@ module PallasTrade
 
       # 自定义动作名不是 CanCan 真实动作（无法 alias 到 :update）→ 跳过基类 `load_resource`
       # （它用**原始 action 名**对实例授权），改为自加载记录 + 在 `authorize_admin` 里映射语义动作。
-      CUSTOM_ACTIONS = %i[refresh dry_run recover snapshot mark_review].freeze
+      CUSTOM_ACTIONS = %i[refresh dry_run recover snapshot mark_review submit_evidence accept_dispute].freeze
       # 写动作（映射到 :update；其余自定义动作归 :read）
-      UPDATE_ACTIONS = %i[recover mark_review].freeze
+      UPDATE_ACTIONS = %i[recover mark_review submit_evidence accept_dispute].freeze
       # 「最近 provider 事件」候选窗口（有界扫描，零 provider I/O；命中失败显示 —）
       PROVIDER_EVENT_WINDOW = 20
 
@@ -49,6 +51,12 @@ module PallasTrade
         @refunds = refunds_for(dispute)
         @recovery = recovery_metadata(dispute)
         @last_provider_event = last_provider_event(dispute)
+
+        # DSP-P7-8：危险操作区的渲染输入（目录 + 最近回执；在线调用全部降级）
+        @evidence_catalog = evidence_catalog_for(dispute)
+        @evidence_submissions = evidence_submissions_for(dispute)
+        @last_acceptance = @evidence_submissions.find { |s| s.kind == 'accepted' }
+        @late_submission = late_submission?(dispute)
       end
 
       # POST /admin/disputes/:id/refresh —— 刷新 provider 状态（只读契约，零写）
@@ -111,6 +119,54 @@ module PallasTrade
         redirect_to PallasTrade.admin_dispute_path(@dispute), status: :see_other
       end
 
+      # POST /admin/disputes/:id/submit_evidence —— 【危险】向 provider 提交证据
+      # 三件套：permission（authorize_admin → :update）+ confirmation（视图 turbo_confirm；逾期需 late_confirmed=1）
+      # + audit（服务内 dispute_evidence_submitted / _failed）。
+      def submit_evidence
+        evidence = params[:evidence].respond_to?(:to_unsafe_h) ? params[:evidence].to_unsafe_h : params[:evidence]
+        outcome = PallasTrade::Disputes::SubmitEvidence.call(
+          dispute: @dispute,
+          evidence: evidence,
+          actor: audit_actor,
+          accept_late: params[:late_confirmed].to_s == '1'
+        )
+
+        if outcome.success?
+          value = outcome.value
+          key = value[:idempotent] ? 'disputes_evidence_already_submitted' : 'disputes_evidence_submitted'
+          flash[:success] = PallasTrade.t("admin.orders.#{key}",
+                                          provider_status: value[:provider_status].presence || '—')
+        else
+          flash[:error] = evidence_error_message(outcome.error)
+        end
+        redirect_to PallasTrade.admin_dispute_path(@dispute), status: :see_other
+      end
+
+      # POST /admin/disputes/:id/accept_dispute —— 【危险且不可逆】接受争议
+      # 服务端同样要求显式 `confirm=1`（双重确认：前端 turbo_confirm + 后端参数），确保不是误触。
+      def accept_dispute
+        unless params[:confirm].to_s == '1'
+          flash[:error] = PallasTrade.t('admin.orders.disputes_accept_needs_confirm')
+          return redirect_to PallasTrade.admin_dispute_path(@dispute), status: :see_other
+        end
+
+        outcome = PallasTrade::Disputes::AcceptDispute.call(
+          dispute: @dispute,
+          reason: params[:reason],
+          actor: audit_actor
+        )
+
+        if outcome.success?
+          value = outcome.value
+          key = value[:idempotent] ? 'disputes_accept_already_done' : 'disputes_accepted'
+          flash[:success] = PallasTrade.t("admin.orders.#{key}",
+                                          provider_status: value[:provider_status].presence || '—')
+        else
+          flash[:error] = evidence_error_message(outcome.error)
+        end
+        redirect_to PallasTrade.admin_dispute_path(@dispute), status: :see_other
+      end
+
       private
 
       def model_class
@@ -158,6 +214,37 @@ module PallasTrade
         outcome.success? ? outcome.value : nil
       rescue StandardError
         nil
+      end
+
+      # DSP-P7-8：provider 证据目录（零 I/O；不支持 → nil → 视图降级为"该网关不支持"）
+      def evidence_catalog_for(dispute)
+        payment_method = dispute.payment&.payment_method
+        return nil if payment_method.nil?
+
+        catalog = PallasTrade::Disputes::EvidenceCatalog.new(payment_method: payment_method)
+        catalog.supported? ? catalog : nil
+      rescue StandardError
+        nil
+      end
+
+      # DSP-P7-8：回执列表（最近的在前；异常降级空数组）
+      def evidence_submissions_for(dispute)
+        PallasTrade::DisputeEvidenceSubmission.for_dispute(dispute).recent_first.limit(20).to_a
+      rescue StandardError
+        []
+      end
+
+      def late_submission?(dispute)
+        dispute.respond_to?(:evidence_due_at) && dispute.evidence_due_at.present? &&
+          Time.current > dispute.evidence_due_at
+      end
+
+      # 服务层错误码 → 用户可读文案（未知码原样回显，便于排障）
+      def evidence_error_message(error)
+        code = error.to_s.split(':').first
+        key = "admin.orders.disputes_evidence_error_#{code}"
+        message = PallasTrade.t(key)
+        message == key ? (error.to_s.presence || PallasTrade.t('admin.orders.disputes_evidence_failed')) : message
       end
 
       def journal_entries_for(dispute)

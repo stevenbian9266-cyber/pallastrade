@@ -70,6 +70,10 @@ module PallasTrade
     belongs_to :commerce_transaction, optional: true
     belongs_to :payment_combination, optional: true
 
+    # DSP-P7-8：危险操作（提交证据 / 接受争议）的**不可变回执**（append-only；本模型不反向写状态）
+    has_many :evidence_submissions, class_name: 'PallasTrade::DisputeEvidenceSubmission',
+                                     inverse_of: :dispute
+
     validates :provider, :provider_dispute_reference, :state, presence: true
     validates :provider_dispute_reference, uniqueness: { scope: :provider }
     validates :state, inclusion: { in: STATES }

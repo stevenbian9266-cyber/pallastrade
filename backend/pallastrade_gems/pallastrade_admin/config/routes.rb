@@ -340,8 +340,9 @@ PallasTrade::Core::Engine.add_routes do
     # REV-P6-8h: Payment Ops（只读；含组合 payment 与孤儿退款配对）——top-level /admin/payments
     resources :payments, only: [:index, :show], controller: 'payments_ops'
     # DSP-P7-7: Dispute Ops —— durable Dispute 只读检视 + 安全动作（Orders → Disputes）。
-    # 只读优先：refresh / snapshot / dry_run 零写；recover（幂等收敛）与 mark_review（人工标记）是仅有的两个写动作。
-    # 危险操作（Accept Dispute / Submit Evidence）**不在本切片**（归 P7-8，需 permission + confirmation + audit）。
+    # 只读优先：refresh / snapshot / dry_run 零写；recover（幂等收敛）与 mark_review（人工标记）是安全写动作。
+    # DSP-P7-8: 新增两个**危险操作**（源计划 §67）——submit_evidence（向 provider 提交证据）与
+    #   accept_dispute（接受争议，不可逆）；两者强制 permission(`:update`) + confirmation(前后端双重) + audit。
     resources :disputes, only: [:index, :show], controller: 'disputes_ops' do
       member do
         post :refresh
@@ -349,6 +350,9 @@ PallasTrade::Core::Engine.add_routes do
         post :recover
         post :snapshot
         post :mark_review
+        # DSP-P7-8 危险操作（不可逆；无批量变体）
+        post :submit_evidence
+        post :accept_dispute
       end
     end
     get '/emails', to: 'emails#show', as: :emails

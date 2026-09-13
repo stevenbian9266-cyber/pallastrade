@@ -1059,7 +1059,36 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   `nav_validate`）；按钮文案与确认框走 `PallasTrade.t`，不硬编码英文。
 - **负向断言（钉死边界）**：无 Accept / Submit Evidence 路由或按钮；动作不创建 Payment/Refund、不改订单/库存/
   CommerceTransaction、不改写既有账行（append-only）；`dry_run` 与 `refresh` 数据库零写。
-- **后续切片**：P7-8 多 provider + 证据提交 / Accept Dispute（危险操作：permission + confirmation + audit 三件套）。
+- **后续切片**：P7-8 ✅（2026-09-13，见下节危险操作与证据提交）。
+
+## Dispute 危险操作与证据提交（DSP-P7-8, 2026-09-13；PRD-20260913-payments-dsp-p7-8）
+
+> 源计划 §67/§68：`Submit Evidence` / `Accept Dispute` 是**危险操作**，若实现**必须** `permission + confirmation + audit`。
+> 本片在**现有 provider（Stripe，dev 已具备 test 密钥）**上落地写路径；Adyen/PayPal 适配与合同**延后**至凭证齐备。
+
+- **provider 写契约（capability-gated，零 I/O）**：`PaymentMethod#submit_dispute_evidence(dispute:, evidence:)` 与
+  `#accept_dispute(dispute:, reason:)` —— 基类 `raise NotImplementedError`；能力探测 = **类级 method owner ≠ 基类**
+  （同 `fetch_dispute_details` 范式）+ `#dispute_evidence_catalog` 非空。`Bogus`/Check/StoreCredit 自然降级（零崩溃）。
+- **证据目录（provider-specific evidence types，源计划 §68）**：目录**来自适配器**（核心不内置任何 provider 字段名）：
+  Stripe = 16 个文本键（`customer_name` / `customer_email_address` / `product_description` / `uncategorized_text` …）
+  + 8 个文件键（`shipping_documentation` / `receipt` / `customer_communication` …）。校验：未知键拒、文本 ≤20k、
+  文件 ≤4.5MB 且内容类型白名单（png/jpeg/gif/pdf）、空载荷拒。
+- **编排**：`Disputes::SubmitEvidence`（校验 → provider 写 → **不可变回执** → 审计 → 事件）与 `Disputes::AcceptDispute`
+  （不可逆；必填 reason；**不改本地 `Dispute#state`** —— 状态仍由 webhook/收敛推进）。
+- **不可变回执表** `pallastrade_dispute_evidence_submissions`（append-only，模型层 `before_update`/`update_columns`/`before_destroy`
+  拒绝修改）：`kind`（`evidence_submitted` / `accepted`）、`payload_digest`、`provider_reference`/`provider_status`、
+  actor 三列、`late`、`accepted_reason`、`response_metadata`（jsonb）、文件附件（审计留存）。**无金额列**。
+- **幂等**：`(dispute_id, kind, payload_digest)` 唯一 —— 同载荷重复提交**不再次调用 provider**，返回既有回执（`idempotent: true`）。
+- **失败不落回执**：provider 抛错 → `failure('provider_error:…')` + 仅写审计（`dispute_evidence_submit_failed` / `dispute_accept_failed`），
+  杜绝“半成品回执”污染幂等基准。
+- **逾期策略**：`evidence_due_at` 之后提交需 `accept_late: true`（控制台勾选 + 二次确认），回执 `late: true` 留痕。
+- **事件**：`dispute.evidence_submitted` / `dispute.accepted`（**回执落库后**发布；`publish_event` 在调用点派发）。
+- **控制台**：`/admin/disputes/:id` 新增「危险操作」卡（证据表单 + 文件字段 + 接受争议表单）；
+  可见性 `can?(:update, Dispute)`；危险动作**双重确认**（视图 `turbo_confirm` + 接受争议另需后端 `confirm=1`）；
+  网关不支持时整卡降级为提示文案（不渲染表单）。
+- **铁律（负向断言钉死）**：不建/改 Payment、Refund、`FinancialLedgerEntry`、Order、Inventory、CommerceTransaction；
+  不自动退款、不重扣款 —— 资金结果仍由 **webhook** 驱动 P7-3 入账与 P7-6 收敛。
+- **后续切片**：Adyen / PayPal 适配 + 合同（前置：sandbox 凭证）；`advanced dispute capabilities`（源计划 §68）。
 
 ## Where to read further
 
@@ -1070,6 +1099,12 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **Stripe gem:** `https://github.com/stevenbian9266-cyber/pallastrade` — best reference for a real-world payment integration.
 
 ## Changelog (P0 Payment, 2026-09-03)
+
+- DSP-P7-8 (2026-09-13, PRD-20260913-payments-dsp-p7-8): Dispute 危险操作与证据提交 —— provider 写契约
+  （`submit_dispute_evidence` / `accept_dispute`，capability-gated）+ 证据目录（Stripe 16 文本 + 8 文件键）+
+  `Disputes::SubmitEvidence` / `Disputes::AcceptDispute` 编排 + 不可变回执表 `pallastrade_dispute_evidence_submissions`
+  （1 个 migration）+ 控制台危险操作卡（双重确认）。铁律：**零资金副作用**，状态仍由 webhook/收敛推进；
+  Adyen/PayPal 适配延后至凭证齐备。
 
 - DSP-P7-7 (2026-09-13, PRD-20260913-payments-dsp-p7-7): Dispute Admin Console——`/admin/disputes` 列表（注册表
   驱动 + Ransack 白名单 + `for_store` 隔离）与七卡详情（P7-1…P7-6 只读投影，异常降级不 500）；5 个动作全部叠在

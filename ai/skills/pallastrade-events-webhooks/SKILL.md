@@ -324,6 +324,8 @@ Provider 发起的资金逆转（Stripe `charge.dispute.*`）走**入站** webho
 |---|---|---|
 | `dispute.recovery_repaired` | 收敛**改变了事实**（生命周期单调前进 / 账行幂等补记） | 告警、指标 |
 | `dispute.recovery_manual_review` | 收敛**移交人工**（`provider_conflict` / `journal_gap` / `funds_evidence_missing`） | 运营待办 |
+| `dispute.evidence_submitted` | 运营向 provider **提交证据成功**（DSP-P7-8；payload `submission_id` / `provider_status` / `late` / `evidence_keys`） | 审计、SLA 指标 |
+| `dispute.accepted` | 运营**接受争议**成功（DSP-P7-8；不可逆；payload 含 `reason`） | 审计、损失统计 |
 
 要点：①payload `{ 'id' => dsp_…, 'decision' => …, 'state' => …, 'actions' => [类型列表] }`（无 PII）；
 ②仅**非 noop 且非降级**的决策发布（不造噪音）；③发布失败**不影响已完成的收敛**——job 摘要里同一条可能

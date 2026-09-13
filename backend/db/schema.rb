@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_12_000004) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_13_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -696,6 +696,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_12_000004) do
     t.datetime "updated_at", precision: nil, null: false
     t.bigint "variant_id"
     t.index ["variant_id"], name: "index_pt_digitals_on_variant_id"
+  end
+
+  create_table "pallastrade_dispute_evidence_submissions", force: :cascade do |t|
+    t.string "accepted_reason"
+    t.string "actor_id"
+    t.string "actor_label"
+    t.string "actor_type"
+    t.datetime "created_at", null: false
+    t.bigint "dispute_id", null: false
+    t.string "kind", null: false
+    t.boolean "late", default: false, null: false
+    t.string "payload_digest", null: false
+    t.string "provider_reference"
+    t.string "provider_status"
+    t.jsonb "response_metadata", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.index ["dispute_id", "kind", "payload_digest"], name: "idx_dispute_ev_sub_idempotency", unique: true
+    t.index ["dispute_id", "kind"], name: "idx_dispute_ev_sub_disp_kind"
+    t.index ["provider_reference"], name: "idx_dispute_ev_sub_provider_ref"
   end
 
   create_table "pallastrade_disputes", force: :cascade do |t|
@@ -2908,6 +2927,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_12_000004) do
   add_foreign_key "pallastrade_commerce_transactions", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_commerce_transactions", "pallastrade_users", column: "customer_id"
   add_foreign_key "pallastrade_contact_messages", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_dispute_evidence_submissions", "pallastrade_disputes", column: "dispute_id"
   add_foreign_key "pallastrade_email_logs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_email_templates", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_financial_ledger_entries", "pallastrade_commerce_transactions", column: "commerce_transaction_id"

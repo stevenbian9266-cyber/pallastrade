@@ -362,6 +362,85 @@ module PallasTradeStripe
       }
     end
 
+    # PALLAS-CUSTOM: DSP-P7-8 (PRD-20260913-payments-dsp-p7-8)
+    # provider 专属**证据类型目录**（Stripe `Dispute.evidence` 字段的受限策展子集，源计划 §68）。
+    # 文本键走 `evidence: { <key>: <string> }`；文件键先 `Stripe::File.create` 再把 `file_…` 引用放进同一键。
+    DISPUTE_EVIDENCE_TEXT_KEYS = %w[
+      customer_name customer_email_address customer_purchase_ip billing_address shipping_address
+      product_description uncategorized_text access_activity_log
+      shipping_date service_date
+      cancellation_policy_disclosure cancellation_rebuttal
+      refund_policy_disclosure refund_refusal_explanation
+      duplicate_charge_id duplicate_charge_explanation
+    ].freeze
+
+    DISPUTE_EVIDENCE_FILE_KEYS = %w[
+      customer_communication shipping_documentation receipt
+      cancellation_policy refund_policy service_documentation
+      duplicate_charge_documentation uncategorized_file
+    ].freeze
+
+    def dispute_evidence_catalog
+      DISPUTE_EVIDENCE_TEXT_KEYS.map { |key| { key: key, type: 'text', max_length: 20_000 } } +
+        DISPUTE_EVIDENCE_FILE_KEYS.map { |key| { key: key, type: 'file' } }
+    end
+
+    # PALLAS-CUSTOM: DSP-P7-8 (PRD-20260913-payments-dsp-p7-8)
+    # **写**：向 Stripe 提交争议证据（危险操作；调用方已过 permission + confirmation + audit）。
+    # 文本 → `Stripe::Dispute.update(evidence: {...})`；文件 → 先上传到 Stripe 再把 file 引用写入同键。
+    # **零本地资金副作用**（铁律：资金结果由 webhook 驱动 P7-3 入账 / P7-6 收敛）。
+    #
+    # @param dispute [PallasTrade::Dispute]
+    # @param evidence [Hash] 证据键 → 文本值 / 文件对象（需可读且带 path 或 tempfile）
+    # @return [Hash] { provider_reference:, status:, submitted_at:, files: { key => file_ref }, metadata: {} }
+    def submit_dispute_evidence(dispute:, evidence:)
+      reference = dispute_reference_for!(dispute)
+      file_references = {}
+      payload = {}
+
+      (evidence || {}).each do |key, value|
+        key = key.to_s
+        if DISPUTE_EVIDENCE_FILE_KEYS.include?(key)
+          file_references[key] = upload_dispute_evidence_file(value)
+          payload[key] = file_references[key]
+        else
+          payload[key] = value.to_s
+        end
+      end
+
+      stripe_dispute = nil
+      if payload.any?
+        stripe_dispute = send_request { |opts| Stripe::Dispute.update(reference, { evidence: payload }, opts) }
+      end
+
+      {
+        provider_reference: read_stripe(stripe_dispute, :id).to_s.presence || reference,
+        status: read_stripe(stripe_dispute, :status)&.to_s,
+        submitted_at: unix_seconds_to_time(read_stripe(stripe_dispute, :evidence_submitted_at)),
+        files: file_references,
+        metadata: { 'evidence_keys' => payload.keys.sort }
+      }
+    end
+
+    # PALLAS-CUSTOM: DSP-P7-8 (PRD-20260913-payments-dsp-p7-8)
+    # **写**：接受争议（不可逆）—— Stripe 语义 = 关闭争议（`Dispute.close`）。
+    # 本地**不**改 Dispute#state（由 webhook / 收敛推进），只回传归一化回执。
+    #
+    # @param dispute [PallasTrade::Dispute]
+    # @param reason [String] 审计用（不回传 Stripe，Stripe 无对应字段）
+    # @return [Hash] { provider_reference:, status:, accepted_at:, metadata: {} }
+    def accept_dispute(dispute:, reason: nil)
+      reference = dispute_reference_for!(dispute)
+      stripe_dispute = send_request { |opts| Stripe::Dispute.close(reference, opts) }
+
+      {
+        provider_reference: read_stripe(stripe_dispute, :id).to_s.presence || reference,
+        status: read_stripe(stripe_dispute, :status)&.to_s,
+        accepted_at: Time.current,
+        metadata: { 'reason' => reason.to_s[0, 200] }
+      }
+    end
+
     def create_ephemeral_key(customer_id)
       protect_from_error do
         response = send_request { |opts| Stripe::EphemeralKey.create({ customer: customer_id }, opts.merge(stripe_version: Stripe.api_version)) }
@@ -472,6 +551,33 @@ module PallasTradeStripe
     end
 
     private
+
+    # DSP-P7-8：写契约共用的 provider 争议引用（缺失即拒绝 —— 不猜引用，不新建远端对象）。
+    def dispute_reference_for!(dispute)
+      reference = dispute.provider_dispute_reference
+      raise PallasTrade::Core::GatewayError, 'Dispute has no provider dispute reference' if reference.blank?
+
+      reference
+    end
+
+    # DSP-P7-8：证据文件 → Stripe File（`purpose: dispute_evidence`），返回 `file_…` 引用。
+    # 只接受**可读且带 path(/tempfile)** 的上传对象（Stripe SDK 需要真实文件句柄）。
+    def upload_dispute_evidence_file(value)
+      io = extract_evidence_file_io(value)
+      raise PallasTrade::Core::GatewayError, 'Dispute evidence file is missing or not readable' if io.nil?
+
+      stripe_file = send_request { |opts| Stripe::File.create({ purpose: 'dispute_evidence', file: io }, opts) }
+      stripe_file.id.to_s
+    rescue Stripe::StripeError => e
+      raise PallasTrade::Core::GatewayError, filtered_stripe_error_message(e.message)
+    end
+
+    def extract_evidence_file_io(value)
+      return value.tempfile if value.respond_to?(:tempfile) && value.tempfile.respond_to?(:read)
+      return value if value.respond_to?(:read) && value.respond_to?(:path) && value.path.present?
+
+      nil
+    end
 
     # DSP-P7-2：Stripe 对象字段防御性读取（缺失 key 返回 nil，不抛错）。
     def read_stripe(node, key)

@@ -504,6 +504,41 @@ en:
         disputes_mark_review_failed: Unable to mark this dispute for manual review.
         disputes_deadline: Deadline
         disputes_flags: Flags
+        # DSP-P7-8（危险操作：提交证据 / 接受争议）
+        disputes_danger_zone: Dangerous actions
+        disputes_danger_zone_help: These actions talk to the payment provider and cannot be undone from this console. Every action is permission-checked, confirmed and audited; fund movements still come from the provider webhook.
+        disputes_danger_unsupported: This gateway does not support dispute evidence submission. Use the provider dashboard instead.
+        disputes_danger_no_permission: You do not have permission to submit evidence or accept this dispute.
+        disputes_danger_late_warning: The evidence deadline (%{due_at}) has passed — a late submission must be confirmed explicitly below.
+        disputes_danger_late_confirm: I understand this is a late submission after the evidence deadline
+        disputes_submit_evidence: Submit evidence
+        disputes_submit_evidence_confirm: Submit this evidence to the payment provider? This sends data outside the platform.
+        disputes_evidence_submitted: Evidence submitted to the provider (status %{provider_status}).
+        disputes_evidence_already_submitted: This exact evidence was already submitted — nothing was sent again (status %{provider_status}).
+        disputes_accept: Accept dispute
+        disputes_accept_help: Accepting the dispute concedes it to the cardholder. This is irreversible and usually means the disputed amount is lost.
+        disputes_accept_reason: Why are you accepting this dispute?
+        disputes_accept_confirm: Accept this dispute? This is irreversible — the disputed amount will be conceded.
+        disputes_accepted: Dispute accepted (provider status %{provider_status}).
+        disputes_accept_already_done: This dispute was already accepted with the same reason (status %{provider_status}).
+        disputes_accept_needs_confirm: Confirmation is required to accept a dispute.
+        disputes_submissions: Recent provider actions
+        disputes_evidence_failed: The action could not be completed.
+        disputes_evidence_error_evidence_empty: Provide at least one piece of evidence.
+        disputes_evidence_error_unknown_evidence_key: An evidence field is not supported by this provider.
+        disputes_evidence_error_evidence_too_long: One of the evidence fields is too long.
+        disputes_evidence_error_evidence_not_text: A text evidence field received an unsupported value.
+        disputes_evidence_error_evidence_not_file: A file evidence field requires a file.
+        disputes_evidence_error_evidence_file_too_large: An evidence file is too large.
+        disputes_evidence_error_evidence_file_type_not_allowed: An evidence file type is not allowed.
+        disputes_evidence_error_dispute_terminal: This dispute is already in a final state — evidence can no longer be submitted.
+        disputes_evidence_error_late_submission_not_confirmed: The evidence deadline has passed — confirm the late submission first.
+        disputes_evidence_error_evidence_submission_unsupported: This gateway does not support evidence submission.
+        disputes_evidence_error_accept_unsupported: This gateway does not support accepting disputes.
+        disputes_evidence_error_payment_method_missing: This dispute has no linked payment method.
+        disputes_evidence_error_dispute_not_found: Dispute not found.
+        disputes_evidence_error_provider_error: The payment provider rejected or failed the request.
+        disputes_evidence_error_reason_required: A reason is required to accept a dispute.
         parent_filter: Order type
         parent_orders: Parent orders
         child_orders: Child orders

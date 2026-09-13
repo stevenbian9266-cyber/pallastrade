@@ -100,6 +100,11 @@ reversals** (chargeback / inquiry / warning / representment) — deliberately **
   reason (enum lives in `PallasTrade::Dispute::ATTENTION_REASONS`; `string` column, no DB check → zero DDL to extend).
 - `funds_withdrawn_at` / `funds_reinstated_at` (DSP-P7-2) record when the provider actually withdrew /
   reinstated the money — written once by the funds events (replay never overwrites).
+- `pallastrade_dispute_evidence_submissions` (DSP-P7-8) stores the **immutable receipts** of the two dangerous
+  provider write actions (`evidence_submitted` / `accepted`): `payload_digest` (idempotency key, unique per
+  `(dispute, kind)`), provider reference/status, actor columns, `late`, `accepted_reason`, `response_metadata`
+  (jsonb) and the retained evidence files. **No amount columns** — money still moves through the provider
+  webhook → DSP-P7-3 ledger path; the model rejects updates/destroys (`ImmutableError`).
 - Written by `PallasTrade::Disputes::HandleProviderEvent` (webhook-driven, idempotent, upsert never nil-overwrites
   existing facts) and by `PallasTrade::Disputes::Recover` (DSP-P7-6 convergence: **forward-only** state repair from a
   provider snapshot + idempotent journal repair + manual review — never re-charges, never auto-refunds, never rewrites
