@@ -35,6 +35,9 @@ module PallasTrade
         'funds_withdrawn_at' => 'DISPUTE_FUNDS_WITHDRAWN',
         'funds_reinstated_at' => 'DISPUTE_FUNDS_REINSTATED'
       }.freeze
+      # DSP-P7-9（FR-P79-06）：手续费为**独立期望账行**（流出、永不返还）——
+      #   仅当 provider 已证 fee 且存在扣款时间戳（否则幂等键无法稳定派生，不可能入账）
+      FEE_ENTRY_TYPE = 'DISPUTE_FEE'
 
       # @param dispute [PallasTrade::Dispute]
       # @param dispute_fact [PallasTrade::Disputes::DisputeFact, nil] 已解析的权威裁决（DSP-P7-6）：收敛编排
@@ -68,13 +71,24 @@ module PallasTrade
       def expectations_for(dispute, fact)
         amount = fact&.amount.to_d.abs
 
-        EXPECTATION_BY_ATTRIBUTE.filter_map do |attribute, entry_type|
+        expectations = EXPECTATION_BY_ATTRIBUTE.filter_map do |attribute, entry_type|
           next if dispute.public_send(attribute).blank?
 
           # 方向约定（FR-P73-08）：扣回为流出（负）、返还为流入（正）
           signed = entry_type == 'DISPUTE_FUNDS_WITHDRAWN' ? -amount : amount
           { entry_type: entry_type, amount: signed }
         end
+
+        fee = fee_expectation_for(dispute)
+        expectations << fee if fee
+        expectations
+      end
+
+      # DSP-P7-9（FR-P79-06）：手续费期望账行（**独立**于争议额，且永不冲销）
+      def fee_expectation_for(dispute)
+        return nil if dispute.fee_amount.blank? || dispute.funds_withdrawn_at.blank?
+
+        { entry_type: FEE_ENTRY_TYPE, amount: -dispute.fee_amount.to_d.abs }
       end
 
       # @return [Array(String, Array<String>)] [classification, reasons]
@@ -96,6 +110,20 @@ module PallasTrade
         return ['amount_mismatch', [mismatch]] if mismatch
 
         ['aligned', []]
+      end
+
+      # DSP-P7-9（FR-P79-06）：手续费视图（**只读**）—— provider 是否已证 / 账本是否已记 / 是否返还。
+      # `returned` 恒 false：provider 实测胜诉返还 BT 的 fee = 0（P7-0 §9.2）→ 手续费是净损失。
+      def fee_summary(dispute, entries)
+        entry = entries.find { |row| row.entry_type == FEE_ENTRY_TYPE }
+        {
+          evidence: dispute.fee_amount.present?,
+          amount: dispute.fee_amount&.to_d,
+          currency: dispute.currency,
+          posted: !entry.nil?,
+          entry_id: entry&.id,
+          returned: false
+        }
       end
 
       def entry_for(entries, entry_type)
@@ -130,6 +158,7 @@ module PallasTrade
           fact_status: fact&.status,
           skip_reason: fact.nil? ? 'fact_unavailable' : PallasTrade::FinancialLedger::PostDispute.skip_reason_for(fact),
           expected_entries: context[:expectations],
+          fee: fee_summary(context[:dispute], context[:entries]),
           entries: context[:entries].map { |entry| entry_summary(entry) },
           reasons: reasons,
           capability: CAPABILITY,

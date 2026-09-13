@@ -358,7 +358,26 @@ module PallasTradeStripe
         evidence_submitted_at: unix_seconds_to_time(read_stripe(stripe_dispute, :evidence_submitted_at)),
         has_evidence: read_stripe(evidence_details, :has_evidence),
         balance_transaction_references: stripe_balance_transaction_references(stripe_dispute),
+        # DSP-P7-9（FR-P79-03）：BT 明细 + 手续费（扣款与 fee 在**同一条** adjustment BT）
+        balance_transaction_details: stripe_balance_transaction_details(stripe_dispute),
+        fee_amount: stripe_dispute_fee_amount(stripe_dispute),
         observed_at: Time.current
+      }
+    end
+
+    # PALLAS-CUSTOM: DSP-P7-9 (PRD-20260913-payments-dsp-p7-9-partial-and-multi-dispute-semantics)
+    # provider **能力矩阵**（只读、零 I/O）：控制台据此渲染/降级（源计划 RV-D10）。
+    #
+    # @return [Hash]
+    def dispute_capabilities
+      {
+        supported: true,
+        reason: nil,
+        evidence_submission: true,
+        accept_dispute: true,
+        fee_capture: true,
+        evidence_text_keys: DISPUTE_EVIDENCE_TEXT_KEYS,
+        evidence_file_keys: DISPUTE_EVIDENCE_FILE_KEYS
       }
     end
 
@@ -599,6 +618,50 @@ module PallasTradeStripe
       return [] unless list.respond_to?(:map)
 
       list.map { |entry| entry.respond_to?(:id) ? entry.id.to_s : entry.to_s }.compact
+    end
+
+    # DSP-P7-9（FR-P79-03）：dispute 的 BalanceTransaction 明细（含 fee/net）。
+    # 「扣款 + 手续费」在同一条 adjustment BT（P7-0 §9.2 实测），必须拆开读；
+    # 字段缺失/非对象条目 → 一律 nil（**不猜**金额）。金额按争议币种做最小单位归一。
+    def stripe_balance_transaction_details(stripe_dispute)
+      currency = read_stripe(stripe_dispute, :currency)&.to_s
+      list = read_stripe(stripe_dispute, :balance_transactions)
+      return [] unless list.respond_to?(:map)
+
+      list.map do |entry|
+        entry_currency = balance_transaction_field(entry, :currency)&.to_s.presence || currency
+        reference = balance_transaction_field(entry, :id)
+        reference = entry if reference.blank? && !entry.is_a?(Hash)
+
+        {
+          reference: reference.to_s,
+          type: balance_transaction_field(entry, :type)&.to_s,
+          amount: PallasTrade::Dispute.normalize_provider_amount(balance_transaction_field(entry, :amount), entry_currency),
+          fee: PallasTrade::Dispute.normalize_provider_amount(balance_transaction_field(entry, :fee), entry_currency),
+          net: PallasTrade::Dispute.normalize_provider_amount(balance_transaction_field(entry, :net), entry_currency),
+          currency: entry_currency
+        }
+      end
+    end
+
+    # BT 条目可为 Stripe 对象 / Hash / 纯 id 字符串（webhook 载荷三种都可能）→ 统一防御式读取。
+    def balance_transaction_field(entry, key)
+      return nil if entry.nil?
+      return entry[key] || entry[key.to_s] if entry.is_a?(Hash)
+
+      entry.respond_to?(key) ? entry.public_send(key) : nil
+    end
+
+    # 手续费 = adjustment BT 的 fee（正数，取最大值 —— 扣款那条才有 fee，返还那条为 0）。
+    # 无 adjustment / 无 fee 字段 → nil（不猜、**不写死金额**）。
+    def stripe_dispute_fee_amount(stripe_dispute)
+      fees = stripe_balance_transaction_details(stripe_dispute).filter_map do |detail|
+        next unless detail[:type].to_s == 'adjustment'
+
+        fee = detail[:fee]&.to_d
+        fee if fee&.positive?
+      end
+      fees.max
     end
 
     def stripe_idempotency_key(base_key, action)

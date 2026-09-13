@@ -1098,6 +1098,34 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **Docs:** `node_modules/@pallastrade/docs/dist/developer/core-concepts/payments.md` (the how-to companion is `dist/developer/how-to/custom-payment-method.md`).
 - **Stripe gem:** `https://github.com/stevenbian9266-cyber/pallastrade` — best reference for a real-world payment integration.
 
+## 部分争议 / 多争议 / 争议费用（DSP-P7-9, 2026-09-13；PRD-20260913-payments-dsp-p7-9-partial-and-multi-dispute-semantics）
+
+> 把源计划 §68「advanced dispute capabilities」收窄为 Stripe 侧可验证范围：partial 语义、一个 payment 的 1:N 争议、
+> **争议手续费**闭环（采集 → 落库 → 独立入账 → 对账）、provider 能力矩阵只读降级。**零新增资金自动化**。
+
+- **手续费事实（O1 落地）**：Stripe 把「扣款 + fee」放在**同一条** `adjustment` BalanceTransaction
+  （`amount=-争议额, fee=固定金额, net=-(争议额+fee)`）；胜诉返还 BT 的 `fee = 0` ⇒ **fee 永不退回**（净损失）。
+  因此 `fetch_dispute_details` 追加 `balance_transaction_details[{reference,type,amount,fee,net,currency}]` 与
+  派生 `fee_amount`（adjustment BT 的最大正 fee；缺失 → nil，**不猜、不写死金额**）。
+- **fee 落库**：`Disputes::CaptureFee` 只写 `Dispute#fee_amount` 一列（**空→非空**，重放不覆盖；fee 币种取 dispute `currency`，
+  因为表无 `fee_currency` 列——零迁移边界）。无 payment 锚点/无契约/异常 → 降级枚举且零写。
+  采集点在 `Disputes::Recover`（`fetch && apply` 时；dry-run 零写；已有 fee 时零额外网络调用）。
+- **fee 入账**：`FACT_TYPES` / `ENTRY_TYPES` 追加 `DISPUTE_FEE`（**追加式**；`PSP_FEE` 仍为 FIN-P4-5 预留）；
+  `FinancialFacts::ResolveDispute` 的 `DISPUTE_FEE` 分支金额取 `fee_amount`（**负数**）、`effective_at` 取 `funds_withdrawn_at`
+  （**无 fallback**）；`Dispute` 在 fee 空→非空时发布 `dispute.fee_recorded` → `DisputeFundsSubscriber` → `PostDispute`。
+  **fee 条目永不冲销**（胜诉只记 `DISPUTE_FUNDS_REINSTATED`）。
+- **对账**：期望账行新增 fee（仅当「fee 已证 + 有扣款时间戳」）；缺账走既有 `journal_missing`
+  （reason `JOURNAL_POSTING_MISSING_DISPUTE_FEE`）→ P7-6 `Recover` 自动补记（**无需新分类枚举**）；
+  结果新增只读 `fee` 视图 `{ evidence:, amount:, currency:, posted:, returned: false }`。
+- **partial 语义**：`Dispute#partial?`（只读派生；`payment` 缺失 → false，**未知 ≠ 部分**）；金额**一律**取 dispute 快照，
+  禁止用 `payment.amount` 推导争议金额（P7-0 §9.2 铁律；spec 含 grep 级负向断言）。
+- **payment 级多争议（只读）**：`Disputes::PaymentDisputeSummary` → `{ dispute_count, active_count, disputed_total,
+  remaining_amount, exceeds_payment, mixed_currency, disputes[] }`；**零写、零 provider I/O、零决策**
+  （币种不一致则不给合计；超限只是提示）。
+- **provider 能力矩阵（RV-D10）**：`PaymentMethod#dispute_capabilities` 基类 = `UNSUPPORTED` 形态；
+  Stripe 覆写为 `{ supported: true, evidence_submission:, accept_dispute:, fee_capture:, evidence_text_keys:, evidence_file_keys: }`；
+  控制台只读卡片按矩阵渲染，不支持时给出原因且不渲染写表单。
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - DSP-P7-8 (2026-09-13, PRD-20260913-payments-dsp-p7-8): Dispute 危险操作与证据提交 —— provider 写契约

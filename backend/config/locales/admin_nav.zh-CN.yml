@@ -67,6 +67,26 @@ zh-CN:
         disputes_accept_needs_confirm: 接受争议需要显式确认。
         disputes_submissions: 最近的提供方操作
         disputes_evidence_failed: 操作未能完成。
+        disputes_capability_title: 提供方能力与支付级风险敷口
+        disputes_capability_help: 只读视图（不调提供方、不动资金）。写操作仍受权限 + 二次确认 + 审计约束。
+        disputes_capability_no_payment: 无支付锚点，提供方能力不可判定。
+        disputes_capability_provider: 提供方
+        disputes_capability_contract: 争议写契约
+        disputes_capability_supported: 已支持
+        disputes_capability_unsupported: 该提供方无争议写契约（UNSUPPORTED），写操作保持禁用。
+        disputes_capability_evidence: 证据提交
+        disputes_capability_accept: 接受争议
+        disputes_capability_fee: 手续费采集
+        disputes_capability_scope: 金额范围
+        disputes_partial: 部分争议
+        disputes_full: 全额争议
+        disputes_payment_summary: 支付级争议敲口
+        disputes_payment_count: 争议笔数（未终态）
+        disputes_payment_disputed: 合计争议额
+        disputes_payment_amount: 支付金额
+        disputes_payment_remaining: 剩余额度
+        disputes_payment_exceeds: 合计争议额已超过支付额，请人工核对。
+        disputes_payment_mixed: 多种币种，不给出合计。
         disputes_evidence_error_evidence_empty: 请至少填写一项证据。
         disputes_evidence_error_unknown_evidence_key: 存在该提供方不支持的证据字段。
         disputes_evidence_error_evidence_too_long: 某个证据字段超长。

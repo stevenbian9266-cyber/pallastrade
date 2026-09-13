@@ -332,6 +332,21 @@ Available in models, controllers, jobs, and services. Set automatically by contr
 - **Adding new models / API resources:** use the `pallastrade-resource` skill.
 - **Extending existing PallasTrade models** (add an association, validation, scope, method via decorator): use the `pallastrade-decorators` skill.
 
+## Dispute fee / partial & multi-dispute (DSP-P7-9, 2026-09-13)
+
+- `pallastrade_disputes.fee_amount` (decimal, nullable) is now **written once** by `Disputes::CaptureFee`
+  (nil → value; replays never overwrite). There is **no** `fee_currency` column — the fee is booked in the
+  dispute's own `currency` (provider evidence: the fee sits on the dispute's adjustment BT in the same currency).
+- `FinancialFact::FACT_TYPES` and `FinancialLedgerEntry::ENTRY_TYPES` gained **`DISPUTE_FEE`** (append-only;
+  `PSP_FEE` / `PSP_NET_SETTLEMENT` remain FIN-P4-5 reservations). The fee is an **outflow** entry that shares the
+  provider BT reference with `DISPUTE_FUNDS_WITHDRAWN` but has its own posting key, and it is **never reversed**
+  (a win reinstates the disputed amount only).
+- Partial amounts and 1:N disputes per payment stay first-class (unique key stays
+  `(provider, provider_dispute_reference)`); the disputed amount always comes from the dispute snapshot —
+  `Dispute#partial?` is a derived, read-only predicate (no `payment` anchor → `false`, never guessed).
+- Read-only projections introduced by this slice (`Disputes::PaymentDisputeSummary`) write nothing: payment-level
+  totals are computed on the fly and withheld when currencies differ.
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - INV-P3 (2026-09-05, PRD-20260905-shipping-库存事务集成与预留生命周期-p3): pallastrade_stock_reservations 生命周期状态化（state default 'reserved' + reserved/committed/released/expired_at + release_reason + commerce_transaction_id 可空 FK；唯一约束改 partial unique WHERE state='reserved'；索引 (stock_item_id,state,expires_at)）；StockReservation 状态机 RESERVED→COMMITTED（canonical physical consumption 后的事实确认，不改 count_on_hand）/RELEASED/EXPIRED，Release/Expire 不再硬删除；commerce_transactions +snapshot_schema_version（V2：snapshot_data.schema_version + participant inventory_demand evidence）；**无 lock_version**（沿用 with_lock+state guard，与 CommerceTransaction 一致）。

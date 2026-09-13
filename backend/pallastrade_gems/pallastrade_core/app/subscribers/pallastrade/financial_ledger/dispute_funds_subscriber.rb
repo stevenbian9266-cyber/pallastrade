@@ -16,12 +16,14 @@
 module PallasTrade
   module FinancialLedger
     class DisputeFundsSubscriber < PallasTrade::Subscriber
-      subscribes_to 'dispute.funds_withdrawn', 'dispute.funds_reinstated'
+      subscribes_to 'dispute.funds_withdrawn', 'dispute.funds_reinstated', 'dispute.fee_recorded'
 
       # 事件 → 入账事实类型（事件作用域；终态 won/lost 不吞掉后续资金事件——见 ResolveDispute 注释）
+      # DSP-P7-9（FR-P79-05）：`dispute.fee_recorded` → 独立 `DISPUTE_FEE` 条目（永不冲销）
       FACT_TYPE_BY_EVENT = {
         'dispute.funds_withdrawn' => 'DISPUTE_FUNDS_WITHDRAWN',
-        'dispute.funds_reinstated' => 'DISPUTE_FUNDS_REINSTATED'
+        'dispute.funds_reinstated' => 'DISPUTE_FUNDS_REINSTATED',
+        'dispute.fee_recorded' => 'DISPUTE_FEE'
       }.freeze
 
       def handle(event)

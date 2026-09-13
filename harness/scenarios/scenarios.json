@@ -2536,6 +2536,32 @@
         "regressionSpecs": 20,
         "noNavigationRegressions": 10
       }
+    },
+    {
+      "id": "GS-102",
+      "name": "Dispute fee, partial and multi-dispute semantics stay evidence-driven",
+      "description": "Implement dispute-fee capture, partial-dispute semantics, payment-level exposure and a read-only provider capability matrix without introducing any money automation (PRD-20260913-payments-dsp-p7-9; source plan §68 boundary C, RV-D10)",
+      "mustDo": [
+        "Capture the provider dispute fee from balance-transaction details (amount/fee/net) and record it once (nil → value; replays never overwrite)",
+        "Post the fee as its own ledger entry (DISPUTE_FEE, outflow, shared provider reference with the withdrawal, distinct posting key) that is never reversed — a win returns the disputed amount only",
+        "Expect the fee in reconciliation (reason JOURNAL_POSTING_MISSING_DISPUTE_FEE, repaired through the existing convergence path) and expose a read-only fee view, including that the fee is never returned",
+        "Derive partial and aggregate facts read-only: disputed amounts always come from the dispute snapshot, payment-level totals are computed on the fly (zero writes, mixed currency withholds totals)",
+        "Answer provider capability explicitly (UNSUPPORTED for gateways without a contract) and degrade the admin console instead of guessing or rendering unusable forms"
+      ],
+      "mustNotDo": [
+        "Hardcode the fee amount or invent a fee-currency column, or fold the fee into the disputed amount (provider net must never be treated as a single amount)",
+        "Derive the disputed amount from payment.amount, or classify a partial dispute as full without an explicit derived rule",
+        "Touch Payment / Order / Inventory / CommerceTransaction from fee capture, aggregation or the capability matrix",
+        "Add a new dispute reconciliation classification that downstream convergence cannot consume",
+        "Auto-represent, auto-refund or auto-restock based on any of these read-only projections"
+      ],
+      "scoring": {
+        "feeEvidence": 25,
+        "separateFeePosting": 25,
+        "partialAndAggregation": 25,
+        "capabilityDegradation": 15,
+        "noAutomationNoWrite": 10
+      }
     }
   ]
 }

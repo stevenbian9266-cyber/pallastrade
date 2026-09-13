@@ -24,9 +24,12 @@ module PallasTrade
     # DSP-P7-3（FR-P73-01）：争议域 5 个事实类型与 `Disputes::DisputeFact::FACT_TYPES` **同名单对齐**
     #   —— 仅 FUNDS_WITHDRAWN / FUNDS_REINSTATED 为**现金事实**（激活 entry_type）；
     #   OPENED / WON / LOST 为**非现金事实**（永不入账，防双记——FR-P73-02）。
+    # DSP-P7-9（FR-P79-05）：`DISPUTE_FEE` —— 争议**手续费**是独立现金事实（与争议额同一条 provider BT，
+    #   但金额不同且**永不返还**，见 P7-0 §9.2）→ 必须单独入账，不得把 BT.net 当成单一发生额。
     FACT_TYPES = %w[
       CASH_CAPTURED STORE_CREDIT_APPLIED OFFLINE_PAYMENT_RECORDED REFUND_SUCCEEDED ORDER_ALLOCATION
       DISPUTE_OPENED DISPUTE_FUNDS_WITHDRAWN DISPUTE_FUNDS_REINSTATED DISPUTE_WON DISPUTE_LOST
+      DISPUTE_FEE
       NONE
     ].freeze
 

@@ -109,6 +109,18 @@ module PallasTrade
       attention_reason.present?
     end
 
+    # DSP-P7-9（FR-P79-01）：**部分争议**（争议金额小于该支付金额）只读派生。
+    # provider 无法构造 partial（P7-0 §9.2 O2 未实测）→ 语义靠 fixture 钉死；
+    # `payment` 缺失或金额不可比 → false（**未知 ≠ 部分争议**，不猜）。
+    def partial?
+      return false if payment.nil? || amount.nil?
+
+      payment_amount = payment.respond_to?(:amount) ? payment.amount : nil
+      return false if payment_amount.nil? || payment_amount.to_d.zero?
+
+      amount.to_d < payment_amount.to_d
+    end
+
     # DSP-P7-2：零小数货币判定（JPY/KRW 等；此类货币的「最小单位」= 主单位）
     def self.zero_decimal_currency?(currency)
       ZERO_DECIMAL_CURRENCIES.include?(currency.to_s.downcase)
@@ -176,6 +188,8 @@ module PallasTrade
     def publish_funds_events
       publish_funds_event('dispute.funds_withdrawn', 'funds_withdrawn_at')
       publish_funds_event('dispute.funds_reinstated', 'funds_reinstated_at')
+      # DSP-P7-9（FR-P79-04/05）：手续费事实首次落地 → 独立入账（`DISPUTE_FEE`，永不冲销）
+      publish_funds_event('dispute.fee_recorded', 'fee_amount')
     end
 
     def publish_funds_event(event_name, attribute)

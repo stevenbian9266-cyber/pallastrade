@@ -203,6 +203,24 @@ module PallasTrade
       []
     end
 
+    # PALLAS-CUSTOM: DSP-P7-9 (PRD-20260913-payments-dsp-p7-9-partial-and-multi-dispute-semantics)
+    # provider **能力矩阵**（只读、零 I/O）：控制台据此渲染/降级（源计划 RV-D10）。
+    # 基类返回 `UNSUPPORTED` 形态——无契约的 provider **不得被猜成支持**；适配器覆写为真实矩阵。
+    #
+    # @return [Hash] { supported:, reason:, evidence_submission:, accept_dispute:, fee_capture:,
+    #                  evidence_text_keys:, evidence_file_keys: }
+    def dispute_capabilities
+      {
+        supported: false,
+        reason: 'unsupported_provider',
+        evidence_submission: false,
+        accept_dispute: false,
+        fee_capture: false,
+        evidence_text_keys: [],
+        evidence_file_keys: []
+      }
+    end
+
     # Parses an incoming webhook payload from the payment provider.
     # Override in gateway subclasses to implement provider-specific webhook parsing.
     #

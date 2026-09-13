@@ -524,6 +524,26 @@ en:
         disputes_accept_needs_confirm: Confirmation is required to accept a dispute.
         disputes_submissions: Recent provider actions
         disputes_evidence_failed: The action could not be completed.
+        disputes_capability_title: Provider capability and payment exposure
+        disputes_capability_help: Read-only view (no provider call, no money movement). Write actions stay gated by permission + confirmation + audit.
+        disputes_capability_no_payment: No payment anchor — provider capability unknown.
+        disputes_capability_provider: Provider
+        disputes_capability_contract: Dispute write contract
+        disputes_capability_supported: supported
+        disputes_capability_unsupported: Provider has no dispute write contract (UNSUPPORTED) — write actions stay disabled.
+        disputes_capability_evidence: Evidence submission
+        disputes_capability_accept: Accept dispute
+        disputes_capability_fee: Fee capture
+        disputes_capability_scope: Amount scope
+        disputes_partial: partial
+        disputes_full: full
+        disputes_payment_summary: Payment-level dispute exposure
+        disputes_payment_count: Disputes (active)
+        disputes_payment_disputed: Disputed total
+        disputes_payment_amount: Payment amount
+        disputes_payment_remaining: Remaining
+        disputes_payment_exceeds: Total disputed exceeds the payment amount — review manually.
+        disputes_payment_mixed: Multiple currencies — totals withheld.
         disputes_evidence_error_evidence_empty: Provide at least one piece of evidence.
         disputes_evidence_error_unknown_evidence_key: An evidence field is not supported by this provider.
         disputes_evidence_error_evidence_too_long: One of the evidence fields is too long.

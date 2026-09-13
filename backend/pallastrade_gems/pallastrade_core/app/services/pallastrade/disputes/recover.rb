@@ -48,6 +48,22 @@ module PallasTrade
       # / blocked = 状态机拒绝
       ACTION_STATUSES = %w[planned applied skipped blocked].freeze
 
+      # DSP-P7-9（FR-P79-04）：手续费采集（dry-run 零写；已有 fee 直接返回零 I/O 结果）
+      def fee_capture_for(dispute, enabled)
+        return nil unless enabled
+
+        if dispute.fee_amount.present?
+          return { dispute_id: dispute.prefixed_id, recorded: false, fee_amount: dispute.fee_amount.to_d,
+                   currency: dispute.currency, degraded: nil }
+        end
+
+        result = PallasTrade::Disputes::CaptureFee.call(dispute: dispute)
+        return result.value if result.success?
+
+        { dispute_id: dispute.prefixed_id, recorded: false, fee_amount: nil, currency: dispute.currency,
+          degraded: 'CAPTURE_FAILED' }
+      end
+
       # provider 只读裁决 → 降级决策（零写）
       DEGRADED_DECISION_BY_RESOLUTION = {
         'unsupported' => 'unsupported',
@@ -61,7 +77,9 @@ module PallasTrade
       # 期望账行类型 → 事件作用域事实类型（P7-3 命名纪律：两套清单同名）
       JOURNAL_FACT_TYPE_BY_ENTRY_TYPE = {
         'DISPUTE_FUNDS_WITHDRAWN' => 'DISPUTE_FUNDS_WITHDRAWN',
-        'DISPUTE_FUNDS_REINSTATED' => 'DISPUTE_FUNDS_REINSTATED'
+        'DISPUTE_FUNDS_REINSTATED' => 'DISPUTE_FUNDS_REINSTATED',
+        # DSP-P7-9（FR-P79-05/06）：手续费缺账走**同一条**补记通道（无需新分类）
+        'DISPUTE_FEE' => 'DISPUTE_FEE'
       }.freeze
 
       # @param dispute [PallasTrade::Dispute]
@@ -76,6 +94,8 @@ module PallasTrade
         return failure(dispute, fact_result.error) unless fact_result.success?
 
         fact = fact_result.value
+        # DSP-P7-9（FR-P79-04）：手续费事实采集（仅 apply 且本地尚无 fee 时；只写 `fee_amount` 一列）
+        fee_capture = fee_capture_for(dispute, fetch && apply)
         # 复用**同一份**权威快照派生的事实（零重复 provider I/O，且不依赖本地元数据：
         # 仅靠本地 `private_metadata['provider_status']` 会在缺元数据时把可证事实降为 AMBIGUOUS → 漏补账）
         reconciliation_result = PallasTrade::Reconciliations::ReconcileDispute.call(dispute: dispute,
@@ -98,6 +118,7 @@ module PallasTrade
                 decision: decision,
                 actions: actions,
                 fact: fact_summary(fact),
+                fee: fee_capture,
                 reconciliation: reconciliation_summary(reconciliation),
                 attention_reason: dispute.attention_reason,
                 manual_review: dispute.manual_review?,

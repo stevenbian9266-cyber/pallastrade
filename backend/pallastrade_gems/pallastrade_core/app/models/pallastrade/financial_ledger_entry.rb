@@ -24,9 +24,12 @@ module PallasTrade
     #   DISPUTE_OPENED / DISPUTE_WON / DISPUTE_LOST 是非现金事实（无真实资金移动）——
     #   若将其入账会与 withdrawn/reinstated 形成**双记**，因此**永不激活**（Post 门禁 skip，
     #   对账将其归入 not_applicable）。
+    # DSP-P7-9（FR-P79-05）：追加 `DISPUTE_FEE`（争议手续费，**流出/负数**，独立条目）。
+    #   与 `DISPUTE_FUNDS_WITHDRAWN` 共享同一 provider BT 引用但**各自独立**，且**永不冲销**
+    #   （P7-0 §9.2 实测：胜诉返还 BT 的 `fee = 0`）。`PSP_FEE` 仍为 FIN-P4-5 预留，不在此激活。
     ENTRY_TYPES = %w[
       CASH_CAPTURED STORE_CREDIT_APPLIED OFFLINE_PAYMENT_RECORDED REFUND_SUCCEEDED ORDER_ALLOCATION
-      DISPUTE_FUNDS_WITHDRAWN DISPUTE_FUNDS_REINSTATED
+      DISPUTE_FUNDS_WITHDRAWN DISPUTE_FUNDS_REINSTATED DISPUTE_FEE
     ].freeze
     RESERVED_ENTRY_TYPES = %w[PSP_FEE PSP_NET_SETTLEMENT].freeze
     ALL_ENTRY_TYPES = (ENTRY_TYPES + RESERVED_ENTRY_TYPES).freeze

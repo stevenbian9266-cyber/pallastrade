@@ -24,10 +24,11 @@ module PallasTrade
     class ResolveDispute
       prepend PallasTrade::ServiceModule::Base
 
-      # 现金事实（真实资金移动）——只有这两类进入 Journal
-      CASH_FACT_TYPES = %w[DISPUTE_FUNDS_WITHDRAWN DISPUTE_FUNDS_REINSTATED].freeze
+      # 现金事实（真实资金移动）——只有这三类进入 Journal
+      # DSP-P7-9（FR-P79-05）：`DISPUTE_FEE` = 争议手续费（真实资金流出，独立事实）
+      CASH_FACT_TYPES = %w[DISPUTE_FUNDS_WITHDRAWN DISPUTE_FUNDS_REINSTATED DISPUTE_FEE].freeze
       # 流出方向的事实（记账金额取负）
-      OUTFLOW_FACT_TYPES = %w[DISPUTE_FUNDS_WITHDRAWN].freeze
+      OUTFLOW_FACT_TYPES = %w[DISPUTE_FUNDS_WITHDRAWN DISPUTE_FEE].freeze
 
       # @param dispute [PallasTrade::Dispute]
       # @param fetch [Boolean] true = 先取 provider 只读快照再裁决（默认 false：纯本地、零网络）
@@ -64,7 +65,7 @@ module PallasTrade
         PallasTrade::FinancialFact.new(
           fact_type: type,
           status: dispute_fact.status,
-          amount: amount_for(dispute_fact, cash, type),
+          amount: amount_for(dispute, dispute_fact, cash, type),
           currency: dispute_fact.currency,
           instrument_class: instrument_class_for(dispute, cash),
           commerce_transaction_id: dispute.commerce_transaction&.prefixed_id,
@@ -82,7 +83,15 @@ module PallasTrade
       end
 
       # 现金事实才带方向符号；非现金事实保留原值（仅作事实描述，不入账）
-      def amount_for(dispute_fact, cash, fact_type)
+      # DSP-P7-9：`DISPUTE_FEE` 的金额**不来自争议额**（两者是同一条 BT 上的不同数值）→ 取 `Dispute#fee_amount`；
+      #   缺失 = 无可证金额 → nil（由 PostDispute 门禁以 `amount_or_currency_missing` skip，不猜）。
+      def amount_for(dispute, dispute_fact, cash, fact_type)
+        if fact_type == 'DISPUTE_FEE'
+          return nil if dispute.fee_amount.blank?
+
+          return -dispute.fee_amount.to_d.abs
+        end
+
         return dispute_fact.amount if dispute_fact.amount.nil? || !cash
 
         amount = dispute_fact.amount.to_d
@@ -103,7 +112,8 @@ module PallasTrade
       # 记账生效时间 = 资金事实发生时间（**无 fallback**，保证幂等键稳定）
       def effective_at_for(dispute, fact_type)
         case fact_type
-        when 'DISPUTE_FUNDS_WITHDRAWN' then dispute.funds_withdrawn_at
+        # DSP-P7-9：手续费与扣款同笔发生（同一条 BT）→ 生效时间同扣款时间戳（**无 fallback**）
+        when 'DISPUTE_FUNDS_WITHDRAWN', 'DISPUTE_FEE' then dispute.funds_withdrawn_at
         when 'DISPUTE_FUNDS_REINSTATED' then dispute.funds_reinstated_at
         else dispute.resolved_at || dispute.created_at
         end

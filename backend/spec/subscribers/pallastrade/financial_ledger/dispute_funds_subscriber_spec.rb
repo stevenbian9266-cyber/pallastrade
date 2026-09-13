@@ -28,9 +28,9 @@ RSpec.describe PallasTrade::FinancialLedger::DisputeFundsSubscriber, type: :subs
     double('event', name: name, payload: { 'id' => dispute.prefixed_id })
   end
 
-  it 'AC-P73-09 订阅两个资金事件' do
+  it 'AC-P73-09 订阅资金事件（DSP-P7-9 追加手续费事件）' do
     expect(described_class.subscription_patterns).to contain_exactly(
-      'dispute.funds_withdrawn', 'dispute.funds_reinstated'
+      'dispute.funds_withdrawn', 'dispute.funds_reinstated', 'dispute.fee_recorded'
     )
   end
 

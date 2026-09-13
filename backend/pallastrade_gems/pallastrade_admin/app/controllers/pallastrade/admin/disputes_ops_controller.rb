@@ -57,6 +57,10 @@ module PallasTrade
         @evidence_submissions = evidence_submissions_for(dispute)
         @last_acceptance = @evidence_submissions.find { |s| s.kind == 'accepted' }
         @late_submission = late_submission?(dispute)
+
+        # DSP-P7-9：只读能力矩阵 + 支付级多争议聚合（逐项 rescue 降级，页面绑不 500）
+        @provider_capabilities = provider_capabilities_for(dispute)
+        @payment_summary = payment_summary_for(dispute)
       end
 
       # POST /admin/disputes/:id/refresh —— 刷新 provider 状态（只读契约，零写）
@@ -237,6 +241,39 @@ module PallasTrade
       def late_submission?(dispute)
         dispute.respond_to?(:evidence_due_at) && dispute.evidence_due_at.present? &&
           Time.current > dispute.evidence_due_at
+      end
+
+      # DSP-P7-9（FR-P79-08）：provider 能力矩阵（只读、零 I/O；基类 = UNSUPPORTED 形态）。
+      # 无 payment 锚点 / 异常 → nil 或降级形态（视图展示原因，不渲染写表单）。
+      def provider_capabilities_for(dispute)
+        payment_method = dispute.payment&.payment_method
+        return nil if payment_method.nil?
+
+        capabilities = if payment_method.respond_to?(:dispute_capabilities)
+                         payment_method.dispute_capabilities
+                       else
+                         { supported: false, reason: 'unsupported_provider' }
+                       end
+        { provider: dispute.provider, capabilities: capabilities }
+      rescue StandardError => e
+        Rails.logger.error(
+          "[Admin::DisputesOps] capability matrix failed for dispute #{dispute.prefixed_id}: #{e.class} #{e.message}"
+        )
+        { provider: dispute.provider, capabilities: { supported: false, reason: 'unavailable' } }
+      end
+
+      # DSP-P7-9（FR-P79-07）：支付级多争议只读聚合（零写、零 provider I/O；失败降级 nil）
+      def payment_summary_for(dispute)
+        payment = dispute.payment
+        return nil if payment.nil?
+
+        result = PallasTrade::Disputes::PaymentDisputeSummary.call(payment: payment)
+        result.success? ? result.value : nil
+      rescue StandardError => e
+        Rails.logger.error(
+          "[Admin::DisputesOps] payment dispute summary failed for dispute #{dispute.prefixed_id}: #{e.class} #{e.message}"
+        )
+        nil
       end
 
       # 服务层错误码 → 用户可读文案（未知码原样回显，便于排障）

@@ -452,3 +452,108 @@
     <% end %>
   </div>
 </div>
+
+<%# DSP-P7-9 (PRD-20260913-payments-dsp-p7-9)：**只读**视图 —— provider 能力矩阵 + 支付级多争议聚合 %>
+<%#   铁律：零写、零资金动作、逐项 rescue 降级（页面绑不 500） %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.orders.disputes_capability_title') %></h5>
+  </div>
+  <div class="card-body">
+    <p class="text-sm text-gray-500 mb-4"><%= PallasTrade.t('admin.orders.disputes_capability_help') %></p>
+
+    <% if @provider_capabilities.nil? %>
+      <p class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_capability_no_payment') %></p>
+    <% else %>
+      <% capabilities = @provider_capabilities[:capabilities] || {} %>
+      <table class="table table-sm">
+        <tbody>
+          <tr>
+            <td class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_capability_provider') %></td>
+            <td><%= @provider_capabilities[:provider].to_s.upcase %></td>
+          </tr>
+          <tr>
+            <td class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_capability_contract') %></td>
+            <td>
+              <% if capabilities[:supported] == true %>
+                <span class="badge badge-success"><%= PallasTrade.t('admin.orders.disputes_capability_supported') %></span>
+              <% else %>
+                <span class="badge badge-warning"><%= capabilities[:reason].presence || 'unsupported_provider' %></span>
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_capability_evidence') %></td>
+            <td><%= capabilities[:evidence_submission] ? 'yes' : 'no' %>
+              <% text_keys = Array(capabilities[:evidence_text_keys]); file_keys = Array(capabilities[:evidence_file_keys]) %>
+              <% if text_keys.any? || file_keys.any? %>
+                <span class="text-sm text-gray-500">(<%= text_keys.size %> / <%= file_keys.size %>)</span>
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_capability_accept') %></td>
+            <td><%= capabilities[:accept_dispute] ? 'yes' : 'no' %></td>
+          </tr>
+          <tr>
+            <td class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_capability_fee') %></td>
+            <td><%= capabilities[:fee_capture] ? 'yes' : 'no' %></td>
+          </tr>
+          <tr>
+            <td class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_capability_scope') %></td>
+            <td><%= @dispute.partial? ? PallasTrade.t('admin.orders.disputes_partial') : PallasTrade.t('admin.orders.disputes_full') %></td>
+          </tr>
+        </tbody>
+      </table>
+      <% if capabilities[:supported] != true %>
+        <p class="text-sm text-warning"><%= PallasTrade.t('admin.orders.disputes_capability_unsupported') %></p>
+      <% end %>
+    <% end %>
+
+    <% if @payment_summary %>
+      <hr class="my-4">
+      <h6 class="text-sm font-semibold mb-2"><%= PallasTrade.t('admin.orders.disputes_payment_summary') %></h6>
+      <table class="table table-sm">
+        <tbody>
+          <tr>
+            <td class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_payment_count') %></td>
+            <td><%= @payment_summary[:dispute_count] %> (<%= @payment_summary[:active_count] %>)</td>
+          </tr>
+          <tr>
+            <td class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_payment_disputed') %></td>
+            <td>
+              <% if @payment_summary[:disputed_total] %>
+                <%= format('%.2f', @payment_summary[:disputed_total].to_f) %> <%= @payment_summary[:currency].to_s.upcase %>
+              <% else %>
+                <%= PallasTrade.t('admin.orders.disputes_payment_mixed') %>
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_payment_amount') %></td>
+            <td>
+              <% if @payment_summary[:payment_amount] %>
+                <%= format('%.2f', @payment_summary[:payment_amount].to_f) %>
+              <% else %>
+                &mdash;
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_payment_remaining') %></td>
+            <td>
+              <% if @payment_summary[:remaining_amount] %>
+                <%= format('%.2f', @payment_summary[:remaining_amount].to_f) %>
+              <% else %>
+                &mdash;
+              <% end %>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <% if @payment_summary[:exceeds_payment] %>
+        <p class="text-sm text-warning"><%= PallasTrade.t('admin.orders.disputes_payment_exceeds') %></p>
+      <% end %>
+    <% end %>
+  </div>
+</div>
