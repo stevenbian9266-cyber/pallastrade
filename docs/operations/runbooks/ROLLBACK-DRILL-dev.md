@@ -145,9 +145,10 @@ bash deploy/pull-deploy.sh dev                  # 触发重建 + 重新记录 st
 
 | 现象 | 说明 |
 |---|---|
+| **🔴 crontab 恢复失效（演练后自查发现，已修）** | 脚本原先用 `sed -i "$CRON_BAK"` + `crontab "$CRON_BAK"`——把**禁用版写回了备份文件本身**，于是 `restore()` 恢复的是「禁用版」→ **cron 自动部署静默停摆，dev 卡在演练前版本数小时**（本次实测：state 停在 `fc4d3324` 而仓库已到 `e37b3616`）。**修正**：禁用变换只作用于 `mktemp` 副本，备份保持未修改原样；`restore()` 新增「恢复后不得残留 `#DRILL#`」校验，残留则显式告警并给出人工恢复命令 |
 | cron 并发抢跑 | 首次 dry-run 恰逢 cron 部署窗口，出现 `backend/up=000`、`public/up=502`（容器重建中）。**演练必须禁用 cron**（脚本已内置） |
 | `deploy.sh` 输出被 `tail` 缓冲 | 日志中 `deploy.sh` 输出直到结束才落盘，无法实时观察进度 → 建议加 `stdbuf -oL` 或用 `tee` 直通 |
-| `couldn't find env file: /opt/pallastrade/repo/.env.dev` | 演练脚本在 `$REPO` 之外的 cwd 调用了 compose ps；**无害**（仅状态展示），但应修正 cwd |
+| `couldn't find env file: /opt/pallastrade/repo/.env.dev` | 演练脚本在 `$REPO` 之外的 cwd 调用了 compose ps；**无害**（仅状态展示），已修 cwd 为 `$REPO/deploy` |
 
 ---
 
@@ -160,3 +161,4 @@ bash deploy/pull-deploy.sh dev                  # 触发重建 + 重新记录 st
 | 3 | backend 镜像增加不可变 tag（`pallastrade-dev-web:<sha>`）并保留最近 N 个 | backend 回滚从 297s 降到 `docker tag` + `up -d`（秒级） | 🟡 P1 |
 | 4 | `pull-deploy.sh` 记录 state 时**同时写入上一个可回滚的 (head, digest)** 并保留镜像 | 支持「回滚到上一个成功部署」一条命令 | 🟡 P1 |
 | 5 | `drill-rollback-dev.sh` 纳入定期演练（每季度），并把耗时写入本手册 §4.1 | 保持回滚路径可用、耗时数据可跟踪 | 🟢 P2 |
+| 6 | ~~演练脚本 crontab 恢复失效~~ **已修复**：禁用变换改用临时副本 + restore 后残留校验 | 避免演练导致 cron 自动部署静默停摆 | ✅ 已完成 |

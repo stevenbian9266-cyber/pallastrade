@@ -40,6 +40,12 @@ restore(){
   step "=== restore (trap, exit=$rc) ==="
   if [ "$CRON_DISABLED" = "yes" ] && [ -f "$CRON_BAK" ]; then
     crontab "$CRON_BAK" && step "✅ crontab 已恢复" || fail "crontab 恢复失败，请手工执行: crontab $CRON_BAK"
+    # 恢复后必须验证：不允许残留 #DRILL# 标记（否则 cron 自动部署会静默停摆）
+    if crontab -l | grep -q '^#DRILL#'; then
+      fail "🔴 crontab 仍含 #DRILL# 标记（备份本身被污染）——请人工执行: crontab -l | sed 's|^#DRILL# ||' | crontab -"
+    else
+      step "✅ crontab 校验通过（无 #DRILL# 残留，pull-deploy 行已启用）"
+    fi
     CRON_DISABLED="no"
   fi
   if [ "$ROLLED_BACK" = "yes" ]; then
@@ -95,10 +101,16 @@ if [ "$DRY_RUN" = "yes" ]; then step "(--dry-run) 前置检查通过，退出"; 
 # ---------- 2. 禁用 cron ----------
 step "--- 禁用 cron pull-deploy ---"
 crontab -l > "$CRON_BAK" 2>/dev/null || { fail "crontab -l 失败"; exit 2; }
-sed -i 's|^\([^#].*pull-deploy\)|#DRILL# \1|' "$CRON_BAK"
-crontab "$CRON_BAK" || { fail "crontab 写入失败"; exit 2; }
+# ⚠️ 2026-09-13 自查修正：备份文件必须保持**未修改原样**；禁用变换只能作用于临时副本。
+#    首次演练曾用 `sed -i $CRON_BAK` + `crontab $CRON_BAK`，导致 restore 把「已禁用版」
+#    当成原始 crontab 写回 —— cron 自动部署被长期停摆（dev 卡在旧 commit 数小时）。
+CRON_TMP="$(mktemp)"
+sed 's|^\([^#].*pull-deploy\)|#DRILL# \1|' "$CRON_BAK" > "$CRON_TMP"
+crontab "$CRON_TMP" || { fail "crontab 写入失败"; exit 2; }
+rm -f "$CRON_TMP"
 CRON_DISABLED="yes"
-step "已禁用（备份 $CRON_BAK）"
+step "已禁用（未修改备份 $CRON_BAK）"
+if crontab -l | grep -q '^#DRILL#'; then step "✅ 禁用已生效"; else fail "禁用未生效（crontab 无 #DRILL# 标记）"; fi
 
 # ---------- 3. 回退 ----------
 T0="$(date +%s)"
