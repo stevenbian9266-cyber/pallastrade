@@ -2737,6 +2737,27 @@
         "reasonsExposed": 10,
         "zeroWrite": 10
       }
+    },
+    {
+      "id": "GS-110",
+      "name": "Handling a dispute never moves stock by itself",
+      "description": "DSP-P7-10 B3 (FR-008): the dispute console links into the existing order returns flow (manual), states plainly when there is no anchored order, and writes nothing while rendering",
+      "mustDo": [
+        "Link to the existing order-side returns flow instead of reimplementing returns inside the dispute domain",
+        "Show an explicit message when the dispute has no anchored order instead of hiding the entry point",
+        "Keep the entry purely navigational: no inventory, order, payment or receipt writes while rendering",
+        "Pin the behaviour with count assertions on inventory units, stock movements, orders, payments and receipts"
+      ],
+      "mustNotDo": [
+        "Restock, create a return/authorization or refund from the dispute console",
+        "Duplicate the returns workflow or hide the entry when data is missing"
+      ],
+      "scoring": {
+        "reusesExistingFlow": 35,
+        "explicitMissingDataMessage": 20,
+        "navigationOnly": 30,
+        "countAssertions": 15
+      }
     }
   ]
 }

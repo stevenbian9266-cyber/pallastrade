@@ -569,6 +569,11 @@ en:
         disputes_receipt_unknown: unknown
         disputes_receipt_none: no receipt yet
         disputes_receipt_help: Moved forward by provider write-backs only (submitted → acknowledged → rejected); never guessed.
+        # DSP-P7-10 B3 / FR-008（退货/补货人工入口；只跳转，争议侧零库存写）
+        disputes_return_entry: Returns / restock (manual)
+        disputes_return_entry_help: Handling a dispute never moves stock or money on its own. Create the return or restock in the orders flow — this link only opens that existing, explicit workflow.
+        disputes_return_entry_action: Open return / restock flow
+        disputes_return_entry_missing_order: No anchored order on this dispute, so there is nothing to return yet.
         disputes_submissions: Recent provider actions
         disputes_evidence_failed: The action could not be completed.
         disputes_capability_title: Provider capability and payment exposure

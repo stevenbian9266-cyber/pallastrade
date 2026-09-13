@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing（**B1 / B1.5 / B2 / B3-FR009 已交付**；FR-008 RMA 入口待做） |
+| 状态 | done（B1 / B1.5 / B2 / B3 **全部交付**；边界 C 收口） |
 | 创建日期 | 2026-09-13 |
 | 来源 | 优化：争议本地运营增强与 Stripe 深化（规格 §68 边界 C：证据素材库/提交前校验/证据版本回执/审批复核/运营报表/通知升级/RMA 联动） |
 | 分类 | payments（自动判定） |
@@ -109,3 +109,4 @@
 | 2026-09-13 | 0.5 | **B2（FR-005 双人复核）交付**（用户指令「继续」）：新表 `pallastrade_dispute_evidence_approvals`（`dap_`，append-only，无金额列）+ 服务 `Disputes::ApproveEvidenceDraft`（签核绑定载荷摘要；自批自被拒；幂等；审计 approved/rejected）；`SubmitEvidence` 新增 `require_approval:`（**默认 false，既有行为不变**）→ 缺签核 `evidence_review_required`、同人签发 `approval_requires_different_operator`，通过后 `approval_id` 入回执与审计；控制台新增 Approve draft（第二人）按钮（`formaction` 复用同一表单）+ 签核列表；开关 `PallasTrade::Config[:dispute_evidence_requires_second_review]`；spec `approve_evidence_draft_spec.rb` 9 例；争议域全套 **183 例全绿** | AI |
 | 2026-09-13 | 0.6 | **B2（FR-007 期限提醒与升级）交付**（用户指令「继续」）：新增订阅者 `Disputes::DeadlineAlertSubscriber`（消费 sweeper 已发布的 `dispute.evidence_due_soon` / `dispute.evidence_overdue`）；`due_soon` 只留痕（审计 + 指标），`overdue` 在 `attention_reason` 为空时升级为新增词表值 `evidence_overdue`（**不覆盖**更具体原因），该值同时进入 `Attentions` 与运营报表 `needs_attention`；engine.rb 注册；spec 7 例 + sweeper 回归 5 例全绿；Skill § 提醒升级节 + GS-108 | AI |
 | 2026-09-13 | 0.7 | **B3（FR-009 回执状态机）交付**（用户指令「继续」）：新增只读服务 `Disputes::ReceiptStatus`（**派生不落表** —— 回执 append-only 不可改写）：`submitted → acknowledged → rejected` 单向，信号取 provider 回写（争议推进到 `under_review` / 回执回 `under_review` / `invalid_transition` + 状态回到 `needs_response`），冲突或缺失 → `unknown`/`no_receipt`（不猜）；单调性由状态机拒绝倒退 + attention 不被覆盖保证；`SubmissionTimeline` 输出新增 `receipt:` 字段 + 时间线卡徽章 + en.yml 6 键；spec 9 例 + 时间线回归 5 例全绿；SKILL §回执状态机节 + GS-109 | AI |
+| 2026-09-13 | 0.8 | **B3（FR-008 退货/补货人工入口）交付 → 本 PRD 收口（done）**：争议详情页新增只读卡「Returns / restock (manual)」，经既有 `parent_order_returns_admin_order_path(order)` 跳转订单域既有售后流程（**只跳转**：争议侧零库存写、零自动补货）；无锚点订单时显式提示而非隐藏入口；en.yml 4 键；spec 3 例（链接存在 / 无订单提示 / 渲染零写）；**争议域全套 232 例全绿**；SKILL § 入口节 + GS-110。**边界 C 完整交付**：素材库、提交前校验、版本回执、运营报表、双人复核、期限提醒升级、回执状态机、RMA 入口；全程零资金/库存/订单自动化（§71 未动），Adyen/PayPal 按用户决议挂起 | AI |

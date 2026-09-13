@@ -1179,6 +1179,16 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - 接线：`SubmissionTimeline` 输出多一个 `receipt:` 字段（时间线卡顶部徽章：submitted/acknowledged/rejected/no receipt yet）。
 - 边界：provider 状态归一复用 `ProviderPayload::STATE_BY_PROVIDER_STATUS`（不在本服务另立一套词汇）。
 
+### 退货/补货人工入口（DSP-P7-10 B3 / FR-008，2026-09-13）
+
+> "处理争议"永远**不自己动库存与钱**：退货/补货仍走订单域既有显式流程，争议页只提供一个**人工跳转**。
+
+- 争议详情页新增只读卡「Returns / restock (manual)」→ `PallasTrade.parent_order_returns_admin_order_path(dispute.order)`
+  （admin routes 中 `resources :orders` 的 member 路由；同时存在 `orders/customer_returns` 嵌套资源）。
+- 无锚点订单（`dispute.order` nil）→ **显式文案说明无法退货**，不隐藏入口、不报错。
+- 零库存写：渲染入口不动 `InventoryUnit` / `StockMovement` / 订单 / 支付 / 回执（spec 有计数断言）。
+- i18n：`disputes_return_entry` / `_help` / `_action` / `_missing_order`。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.
