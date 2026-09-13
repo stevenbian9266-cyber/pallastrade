@@ -220,15 +220,18 @@ flowchart TB
 
 ## 7. 建议行动（按优先级）
 
-| 优先级 | 行动 | 产出 | 预估 |
+> **2026-09-13 收口更新**：本表各项已执行或已转独立任务；逐项判定与证据见
+> `docs/research/RESEARCH-20260913-p0-p7-prd-closeout-and-deferred-register.md`。
+
+| 优先级 | 行动 | 产出 | 状态（2026-09-13） |
 |---|---|---|---|
-| P0 | **状态漂移修复**：修正 README 索引与 2 处文件头（P0-foundation、rev-p6-7），并在 harness 增加一致性检查（`prd verify --status-drift`） | docs + harness 能力 | 0.5 天 |
-| P0 | **P2 线收口评审**：对 TXN-P2-1…P2-7 逐条确认「实现/验证/上线」，补 §10 交付记录并置 done（或明确降级为"部分实现"） | 7 个 PRD 状态 + 证据 | 1–2 天 |
-| P1 | **P3 线收口**：把 draft PRD 提升为 approved 或补做缺失实现（Reservation lifecycle 与 P2 的 Consumption 契约） | PRD + 可能的补做 | 1–3 天 |
-| P1 | **P5-8 运营加固**：Legacy 路径使用计数与指标埋点（退场量化依据） | PRD 收口 + 代码 | 1–2 天 |
-| P2 | **规格覆盖率台账**：为 P2/P3/P4/P5/P6 各生成"章节 → PRD → AC → 测试文件"映射表（可脚本化生成初稿） | `docs/research/*-coverage-matrix.md` | 2–3 天 |
-| P2 | **回滚与修复演练**：以 dev 为靶场，演练一次"账本冲销 + 对账修复 + 争议收敛"闭环，记录到 `docs/operations/` | 演练报告 | 0.5 天 |
-| P3 | **provider 扩展**：申请 Adyen/PayPal sandbox 凭据后续做 §68 | PRD + 适配器 | 待凭据 |
+| P0 | **状态漂移修复**：修正 README 索引与文件头（P0-foundation、rev-p6-7），并在 harness 增加一致性检查 | docs + harness 能力 | ✅ **收口完成** —— 索引↔文件 **117↔117、漂移 0**（含 25 处漂移 + 5 处缺失索引 + 3 处无状态行 + 2 组名实互换 + 1 份重复 PRD）；**检查器机制已另开任务**（用户确认接入 CI/lefthook） |
+| P0 | **P2 线收口评审**：对 TXN-P2-1…P2-7 逐条确认并置 done | 7+ 个 PRD 状态 + 证据 | ✅ **完成** —— TXN-P2-1…P2-7（含 SDK / 轮3 / 组合交易 txn 化 / 收口报告）共 **11 份全部 `done`**，逐项对应 `phase=finished` 门禁 |
+| P1 | **P3 线收口**：draft PRD 提升或补做实现 | PRD + 可能的补做 | ✅ **完成** —— 文件早已 `done`（`TASK-20260905110600-942c63c2` finished），索引由 `draft` 归位 |
+| P1 | **P5-8 运营加固**：Legacy 路径使用计数与指标埋点 | PRD 收口 + 代码 | ✅ **PRD 已收口**（`TASK-20260906124447-0c5b8f03` finished）；**量化报告仍挂起**（埋点就绪，待 dev 跑出数，见收口报告 §5-3） |
+| P2 | **规格覆盖率台账**：章节 → PRD → AC → 测试映射表 | `docs/research/*-coverage-matrix.md` | ⏸ 未执行（保留建议） |
+| P2 | **回滚与修复演练**：dev 靶场演练并报告 | 演练报告 | 🔄 **进行中** —— 用户已确认在 dev 执行真实回滚演练（回退→验证→前滚），独立任务 |
+| P3 | **provider 扩展**：Adyen/PayPal sandbox 凭据 | PRD + 适配器 | ⏸ 待凭据（已正式登记为挂起项，见收口报告 §5-1） |
 
 ---
 
@@ -236,9 +239,11 @@ flowchart TB
 
 1. 未做**逐 AC 复算**：本报告核查"工件/测试/证据/部署"，未逐条重放历史 AC（P4/P6/P7 的 AC 数量级为数十条/线）。
 2. 未做**逐章节规格覆盖率证明**：P2=108、P3=122、P4=130、P6=151、P7=149 章节与实现的三级映射缺失（见建议 P2-①）。
-3. 未审计**前端/Storefront 侧**的 P2-P6 相关 UI（storefront checkout 迁移 PRD 仍 approved）。
+3. ~~未审计前端/Storefront 侧…~~ → **2026-09-13 已补**：storefront 相关 PRD（TXN-P2-6 轮3、tawk.to、重新规划、brand-assets）均已与文件状态对齐并收口。
 4. 未核验**历史数据一致性**（如 legacy 回填的正确性），仅核验其代码与测试存在。
-5. 未覆盖**旁线 PRD**（catalog 产品评论、邮件自动化、多市场架构升级 V1.0 等）的实现状态。
+5. ~~未覆盖旁线 PRD…~~ → **2026-09-13 已补**：旁线 PRD（产品评论、邮件自动化、多店铺、菜单收敛、移除 integrations、P5-8）已逐项判定并收口。
+6. **【新增】6 项属「追溯收口」**（无 `phase=finished` 门禁，凭代码工件 + 测试判定）：`payment-p0-foundation`、`rev-p6-7`、`order-lifecycle-p1`、`chk-p1-1`、`chk-p1-1a`、`r1-contract-generation` —— 明细见收口报告 §3。
+7. **【新增】11 份 PRD 存在重复骨架头部**（`prd new` 骨架未替换就追加正文），本次仅登记未清理，见收口报告 §4/§5-7。
 
 ---
 
@@ -251,3 +256,7 @@ flowchart TB
 - 全量验证：`EVD-20260913071415-e7c36f0977`（1661 examples / 0 failures / 6 pending）
 - 流水线与部署：commit `81aaf582` 四件套 CI 全绿；`/opt/pallastrade/.pull-deploy-state-dev = 81aaf582`
 - 治理任务：`TASK-20260913083052-54a7e245`（本审计）/ gate `GATE-2026-09-13T08-30-58`
+- **收口任务**：`TASK-20260913085722-ae3f1a01` · gate `GATE-2026-09-13T08-57-36`（docs）
+- **收口报告**：`docs/research/RESEARCH-20260913-p0-p7-prd-closeout-and-deferred-register.md`（判定表 / 追溯收口 / 挂起项备案 / 复检结果）
+- **收口 REQ**：`harness/requirements/REQ-20260913-p0-p7-prd-closeout.md`
+- **收口后复检**：索引 117 行 ↔ 文件 117 份，漂移 0、未进索引 0；状态分布 `done=114 / merged=2 / obsolete=1`
