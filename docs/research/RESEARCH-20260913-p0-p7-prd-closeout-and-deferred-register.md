@@ -70,6 +70,23 @@
 
 **建议**：这 6 项已在本次以回归证据（当日全量 `backend-rspec` 1661 examples / 0 failures）背书；若要求每个 PRD 独立门禁，请安排一次「补门禁」批次（见 §5 第 6 条）。
 
+### 3.1 测试溯源核验（`harness prd verify --id <PRD>`，2026-09-13 实测登记）
+
+对 §3 六项逐项跑了机器核验，结果如下（**缺口显式登记，不再隐性漂移**）：
+
+| PRD | 实测结果 | 性质 |
+|---|---|---|
+| `PRD-20260902-payments-payment-p0-foundation-hardening-paymentsession-payment-正式关联-` | 缺失 AC-063 / AC-064 / AC-070 | 实现已确认，spec 未打 `PRD-ID AC-x` 标记 |
+| `PRD-20260908-payments-rev-p6-7-financial-convergence-refund-posting` | **PRD 内未找到 AC 标注** | 该 PRD 未定义 AC 编号 → 需先补 AC 定义才谈溯源 |
+| `PRD-20260826-payments-实施-p1-数据模型与语义方法-父子单-parent_id-paymentcombination-paymentspli` | 缺失 AC-003 / AC-004 / AC-008 | 同上（实现已确认） |
+| `PRD-20260903-checkout-chk-p1-1-order-checkout-application-layer-checkoutview` | 缺失 AC-104 / AC-105 / AC-107 | `spec/services/pallastrade/order_checkout/` 5 份已存在，缺标记 |
+| `PRD-20260903-checkout-chk-p1-1a-read-only-checkoutview` | 缺失 AC-104 / AC-105 / AC-107 | 同上 |
+| `PRD-20260904-r1-contract-generation-infra` | 缺失 AC-104 / AC-105 / AC-106 | 契约检查由 `harness generated:check` 覆盖，无 spec 级标记 |
+
+**为什么不夹带修复**：补齐标记需逐 PRD 复核 **AC 定义原文** → 定位对应 spec → 打标 → `prd verify` 复跑；
+其中 rev-p6-7 还缺 AC 定义本身。强行在同一批里改会把「文档卫生」与「验收口径」混在一起，
+故单独立项（建议批次名：**「L2 溯源标记补齐」**，预估 6 PRD × 2–4 spec 文件）。
+
 ---
 
 ## 4. 数据质量修复（本次附带完成）
@@ -79,7 +96,7 @@
 | **名实互换** | `…chk-p1-1-order-checkout-application-layer-checkoutview.md` 与 `…chk-p1-1a-read-only-checkoutview.md` **两文件内容互换** | `git mv` 对调（内容各归其名） |
 | **名实不符** | `…admin-管理后台新增安全配置管理模块-oss-key-secret-值托管.md` 正文实为「统一配置中心（⛔废弃）」 | `git mv` 恢复为 `…管理后台统一配置中心-集中管理关键参数与-secret-env-从模块取数.md`（与索引行一致） |
 | **重复 PRD** | `other/PRD-20260828-other-p7-逆向链路售后父子单化` 与 `checkout/PRD-20260828-checkout-p7-…` 同需求双份 | `other/` 侧置 `merged`（历史副本）；`checkout/` 侧标题修正为自身名 |
-| **骨架残留** | 11 份 PRD 存在**重复 H1 + 重复元数据块**（`prd new` 骨架未替换，直接追加正文） | 本次未改；见 §5 第 7 条（建议机器归一化） |
+| **骨架残留** | 11 份 PRD 存在**重复 H1 + 重复元数据块**（`prd new` 骨架未替换，直接追加正文） | ✅ **已于 2026-09-13 清理**：11 文件 / 16 行（0 插入）—— 规则：删除以 `# PRD-{YYYYMMDD}-` 起始的骨架块（块内为模板元数据表 + 🔁 查重回写引用，遇首个正文行即结束）与单行 `> ⚠️ AI：请按 docs/prd/_TEMPLATE.md…` 占位；清理后残留 grep = 0，`prd-status-sync --check` 119/119 零漂移 |
 | **缺失索引** | 5 份 PRD 未进 `docs/prd/README.md` | 补齐 3 行（sdk-consumption / infra 部署脚本固化 / other-p7），另 2 行由改名与去后缀消除 |
 | **索引名后缀** | 索引行 `…checkoutview（1B/2/3/4/4B/4C/4C4/5 实施收口）` 与文件名不符 | 索引行去掉后缀，与文件对齐 |
 
@@ -95,7 +112,7 @@
 | 4 | **安全配置管理模块（OSS key/secret 值托管）PRD 正文缺失** | 仅有「草案」门禁记录，`docs/prd/` 无正文 | 补写 PRD 正文，或正式标废弃 | security |
 | 5 | **R1 契约生成在 Windows 本地不可跑** | `contracts.sh` 需 docker+linux；本地 `generated:check` 走 SKIP | 在 CI / linux 环境执行；或在宿主补 Windows 分支 | api/infra |
 | 6 | **CHK-P1-1 系列 9 个任务门禁未闭环** | 门禁停在 `implementation`（历史债务） | 安排补门禁批次，或接受 §3 的追溯收口口径 | checkout |
-| 7 | **11 份 PRD 重复骨架头部** | 结构冗余，首行状态与正文块状态可能各说各话 | 在「PRD 状态一致性检查器」中加归一化动作 | harness |
+| 7 | **11 份 PRD 重复骨架头部** | 结构冗余，首行状态与正文块状态可能各说各话 | 在「PRD 状态一致性检查器」中加归一化动作 | ✅ **已清理 2026-09-13**（见 §4；本次以一次性确定性脚本完成，规则已记入 §4——若后续再出现，再把该规则移进检查器 `--fix-scaffold`） |
 | 8 | **多店铺切换 UI 已隐藏**（`b1b24d4c`：隐藏多店铺切换下拉与 Stores 导航项，渲染层保留代码与路由） | 与「多店铺管理」PRD 的验收口径存在解释空间 | 明确该功能的产品定位（保留/移除） | admin |
 | 9 | **dev-only 单环境：无生产 SLA / 无回滚演练** | 仅证明 dev 可运行 + CI 绿 | 见 Task C（dev 真实回滚演练） | infra |
 | 10 | **逐条 AC 复算未做** | 审计 §8 已声明；本报告沿用 | 需要时按 PRD 逐条复算 | 全体 |

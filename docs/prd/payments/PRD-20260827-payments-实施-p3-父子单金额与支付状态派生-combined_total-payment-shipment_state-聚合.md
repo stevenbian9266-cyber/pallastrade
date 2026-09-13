@@ -27,8 +27,6 @@
 
 ---
 
-# PRD-{YYYYMMDD}-{category}-{slug}
-
 | 元数据 | 值 |
 |---|---|
 | 状态 | draft / reviewing / approved / implementing / verifying / done / rejected / merged |

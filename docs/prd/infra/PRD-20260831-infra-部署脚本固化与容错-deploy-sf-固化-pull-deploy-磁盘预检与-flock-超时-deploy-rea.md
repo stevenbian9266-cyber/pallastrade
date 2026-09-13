@@ -7,11 +7,8 @@
 | 来源 | 优化：部署脚本固化与容错（deploy-sf 固化 + pull-deploy 磁盘预检与 flock 超时 + deploy README 规范） |
 | 分类 | infra（自动判定） |
 
-> ⚠️ AI：请按 docs/prd/_TEMPLATE.md 完整扩充本文档（背景/FR/AC/跨层搜索/测试计划/文档同步清单），再进入用户确认。
 
 ---
-
-# PRD-{YYYYMMDD}-{category}-{slug}
 
 | 元数据 | 值 |
 |---|---|
