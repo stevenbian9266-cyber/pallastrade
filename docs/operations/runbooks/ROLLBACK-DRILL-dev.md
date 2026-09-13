@@ -137,6 +137,19 @@ bash deploy/pull-deploy.sh dev                  # 触发重建 + 重新记录 st
 
 **根治建议**（见 §5 第 1 条）：`pull-deploy.sh` 的变化检测应增加**实际运行镜像 vs 期望镜像**的比对，而非只信 state 文件。
 
+### 4.2.1 ✅ 已修复（2026-09-13，P0）
+
+**修复内容**：事实来源从 state 文件改为**实际运行态**。
+
+| 环节 | 实现 |
+|---|---|
+| 后端版本戳 | `deploy.sh` 构建前写入 `backend/.deployed-revision`（`${DEPLOY_REVISION:-$(git rev-parse HEAD)}`），经 Dockerfile `COPY . .` 烘进镜像 → `docker exec pallastrade-dev-web-1 cat /rails/.deployed-revision` |
+| storefront 运行态 | `docker inspect --format '{{.Image}}' pallastrade-dev-storefront-1` 与期望镜像 ID 比对 |
+| 前滚保证 | 运行态 ≠ `origin/dev` 期望 → **强制部署**（并在日志打印「需要部署：…」的原因串）；state 文件降级为纯优化 |
+| 回归守卫 | `node --test tests/pull-deploy-forward-roll.test.mjs`（PD-01..10：接线 / 顺序 / dockerignore 可达性 / gitignore / 严格模式与 dev-only 守卫） |
+
+**影响**：手工回退（本 §4.2 场景）不再需要 `rm -f $STATE` 的偏方 —— cron 下一轮即可自行发现并前滚。
+
 ### 4.3 🟡 演练结论 2：回退耗时基线 = **297s（≈5 分钟）**
 
 后端重建 5 分钟即完成（构建缓存命中）。这是**当前架构下最快的回滚时间**；storefront 若也需回退，需额外「本地构建镜像 + save/scp/load」，量级为 30 分钟+（本次未实测，因回退目标与当前 storefront 代码一致）。
@@ -156,7 +169,7 @@ bash deploy/pull-deploy.sh dev                  # 触发重建 + 重新记录 st
 
 | # | 建议 | 收益 | 优先级 |
 |---|---|---|---|
-| 1 | `pull-deploy.sh` 变化检测增加**「实际运行镜像 vs 期望镜像」**校验（对比 `docker inspect` 当前 web/storefront 容器镜像 ID 与 state 记录值），不一致即重部署 | 修复 §4.2 的**假绿/无限期停留旧版本**缺陷；让手工回退可被 cron 自动发现并前滚 | 🔴 P0 |
+| 1 | `pull-deploy.sh` 变化检测增加**「实际运行镜像 vs 期望镜像」**校验（对比 `docker inspect` 当前 web/storefront 容器镜像 ID 与 state 记录值），不一致即重部署 | 修复 §4.2 的**假绿/无限期停留旧版本**缺陷；让手工回退可被 cron 自动发现并前滚 | ✅ **已修复 2026-09-13**（§4.2.1；镜像内版本戳 + storefront 运行镜像 ID + 回归守卫 `tests/pull-deploy-forward-roll.test.mjs`） |
 | 2 | CI 推送 storefront 镜像时**同时打不可变 tag**（`dev-<sha>`），并保留最近 N 个 | storefront 具备可回滚的确定目标 | 🔴 P0 |
 | 3 | backend 镜像增加不可变 tag（`pallastrade-dev-web:<sha>`）并保留最近 N 个 | backend 回滚从 297s 降到 `docker tag` + `up -d`（秒级） | 🟡 P1 |
 | 4 | `pull-deploy.sh` 记录 state 时**同时写入上一个可回滚的 (head, digest)** 并保留镜像 | 支持「回滚到上一个成功部署」一条命令 | 🟡 P1 |

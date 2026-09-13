@@ -275,6 +275,20 @@ Meilisearch index wasn't built. Run `bundle exec rake pallastrade:search:reindex
 - dev/prod **数据库独立**，示例数据需分别创建。
 - CI：`deploy.yml` 监听 **`[dev]`**（2026-08-31 起 dev-only；`main` 分支与 prod 栈已删除，见 AGENTS §0.4），runner 构建 storefront 镜像并 **push 到 ghcr.io**（跨境 SSH 被 GFW 阻断，推送式已废弃）；服务器 cron 每 5 分钟跑 `deploy/pull-deploy.sh` 主动拉代码 + 镜像，有变化才 `deploy.sh` 部署；tawk/GTM ID 走仓库 Actions Variables（公开，非 Secrets）。
 
+### pull-deploy 变化判据：**实际运行态**（P0 修复，2026-09-13）
+
+> 旧版只比对**状态文件**里的 `(head, storefront digest)` → 手动回滚 / 构建半途失败后状态文件不变 →
+> 误判「无变化」→ **静默长期跑旧版**（rollback drill 实测，见 `docs/operations/runbooks/ROLLBACK-DRILL-dev.md` §4.2）。
+
+- **事实来源 = 运行态**：① 后端镜像内版本戳 `docker exec pallastrade-dev-web-1 cat /rails/.deployed-revision`；
+  ② storefront 运行容器镜像 ID `docker inspect --format '{{.Image}}' pallastrade-dev-storefront-1`。
+  任一对不上 `origin/dev` 期望值 → **强制部署**（前滚保证）；状态文件降级为纯优化（防每轮重复构建）。
+- **版本戳由 `deploy.sh` 写入**：构建前 `printf '%s\n' "${DEPLOY_REVISION:-$(git rev-parse HEAD)}" > ../backend/.deployed-revision`，
+  经 Dockerfile `COPY . .` 烘进镜像 `/rails/.deployed-revision`（该文件 gitignore，Server-only 运行产物）。
+- **回归守卫**：`node --test tests/pull-deploy-forward-roll.test.mjs`（PD-01..10：接线、顺序、
+  dockerignore/gitignore 可达性、严格模式与 dev-only 守卫）。
+- 排查口诀：状态文件绿 ≠ 部署完成 —— 对不准就先 `docker exec … cat /rails/.deployed-revision`。
+
 ## Where to read further
 
 - **PallasTrade-starter Dockerfile + docker-compose:** https://github.com/stevenbian9266-cyber/pallastrade — reference production-ready Docker setup.

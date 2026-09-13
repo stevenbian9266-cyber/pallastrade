@@ -66,26 +66,53 @@ else
   echo "⚠️ docker pull $GHCR_IMG 失败/超时，使用本地已有镜像" >&2
 fi
 
-# 3. 变化检测
+# 3. 变化检测（2026-09-13 修复 P0：**状态文件不是事实来源，实际运行态才是**）
+#   旧版只比 (状态文件 head, 状态文件 img) —— 手动回滚/半途失败后状态文件不变 →
+#   误判「无变化」→ 静默长期跑旧版（rollback drill 实测，见 runbook §4.2）。
 OLD_HEAD=""; OLD_IMG_ID=""
 if [ -f "$STATE_FILE" ]; then
   OLD_HEAD="$(sed -n 1p "$STATE_FILE")"
   OLD_IMG_ID="$(sed -n 2p "$STATE_FILE")"
 fi
 
-if [ "$NEW_HEAD" = "$OLD_HEAD" ] && [ "$NEW_IMG_ID" = "$OLD_IMG_ID" ]; then
-  echo "✅ 无变化（head=${NEW_HEAD:0:8} img=${NEW_IMG_ID:0:12}），跳过部署"
+# 3.1 实际运行态对账（镜像内版本戳 + storefront 运行镜像 ID）
+WEB_CONTAINER="pallastrade-dev-web-1"
+SF_CONTAINER="pallastrade-dev-storefront-1"
+RUNNING_HEAD="$(docker exec "$WEB_CONTAINER" cat /rails/.deployed-revision 2>/dev/null | tr -d '\r\n' || true)"
+RUNNING_SF_IMG="$(docker inspect --format '{{.Image}}' "$SF_CONTAINER" 2>/dev/null || true)"
+
+DEPLOY_REASON=""
+add_reason() {
+  if [ -n "$DEPLOY_REASON" ]; then DEPLOY_REASON="$DEPLOY_REASON; $1"; else DEPLOY_REASON="$1"; fi
+}
+
+if [ "$NEW_HEAD" != "$OLD_HEAD" ]; then
+  add_reason "代码更新 ${OLD_HEAD:0:8}→${NEW_HEAD:0:8}"
+fi
+if [ "$NEW_IMG_ID" != "$OLD_IMG_ID" ]; then
+  add_reason "storefront 镜像更新 ${OLD_IMG_ID:0:12}→${NEW_IMG_ID:0:12}"
+fi
+# 前滚保证：运行态与期望不一致（含首次上线无戳 / 手动回滚 / 构建半途失败）必须部署
+if [ "$RUNNING_HEAD" != "$NEW_HEAD" ]; then
+  add_reason "运行态≠期望（运行=${RUNNING_HEAD:-未知} 期望=${NEW_HEAD:0:8}）"
+fi
+if [ "$NEW_IMG_ID" != "none" ] && [ -n "$RUNNING_SF_IMG" ] && [ "$RUNNING_SF_IMG" != "$NEW_IMG_ID" ]; then
+  add_reason "storefront 运行镜像陈旧"
+fi
+
+if [ -z "$DEPLOY_REASON" ]; then
+  echo "✅ 无变化（head=${NEW_HEAD:0:8} img=${NEW_IMG_ID:0:12}，运行态已一致），跳过部署"
   exit 0
 fi
 
-echo "🔔 检测到变化: head ${OLD_HEAD:0:8}→${NEW_HEAD:0:8}, img ${OLD_IMG_ID:0:12}→${NEW_IMG_ID:0:12}"
+echo "🔔 需要部署：$DEPLOY_REASON"
 
 # 4. 部署（整体 15 分钟超时，防 deploy.sh 内部卡死）
 git reset --hard "origin/$BRANCH"
 if [ "$NEW_IMG_ID" != "none" ]; then
   docker tag "$GHCR_IMG" "$SF_IMG"
 fi
-timeout 900 bash deploy/deploy.sh "$ENV" || echo "⚠️ deploy.sh 超时/失败（exit=$?），状态可能未完成" >&2
+timeout 900 env DEPLOY_REVISION="$NEW_HEAD" bash deploy/deploy.sh "$ENV" || echo "⚠️ deploy.sh 超时/失败（exit=$?），状态可能未完成" >&2
 
 # 4.1 nginx 权威配置同步（仓库版本化）+ 路由归属 smoke test（2026-09-06 根治：
 #     /api/v3 → Rails、其余 /api → Next BFF。失败则不记录状态，下轮 cron 重试）

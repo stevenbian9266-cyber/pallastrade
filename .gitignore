@@ -26,6 +26,9 @@ Thumbs.db
 .claude/settings.local.json
 **/settings.local.json
 
+# 部署版本戳（由 deploy/deploy.sh 在构建前写入后端构建上下文，烘进镜像供运行态对账）
+.deployed-revision
+
 # Temporary debug/utility scripts (local-only, never commit)
 /tmp-toy/
 

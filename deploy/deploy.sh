@@ -24,6 +24,15 @@ done
 
 echo "=== 部署 $ENV（$COMPOSE）==="
 
+# 部署版本戳（2026-09-13，pull-deploy P0 修复的配套件）
+#   把**本次要部署的 commit** 写进构建上下文，经 Dockerfile `COPY . .` 烘进镜像 →
+#   运行期可读（`docker exec <web> cat /rails/.deployed-revision`），供 pull-deploy 对账
+#   “实际跑的是哪一版”。背景：只比对状态文件会把「手动回滚 / 半途失败」误判为
+#   「无变化」→ 静默跑旧版（见 docs/operations/runbooks/ROLLBACK-DRILL-dev.md §4.2）。
+REVISION="${DEPLOY_REVISION:-$(git rev-parse HEAD 2>/dev/null || echo unknown)}"
+printf '%s\n' "$REVISION" > ../backend/.deployed-revision
+echo "--- 版本戳 revision=$REVISION ---"
+
 # Backend 在服务器构建（构建缓存命中时快，且不会 OOM）
 docker compose -f "$COMPOSE" --env-file "$ENVFILE" build web worker
 # Storefront 镜像由 CI runner / 本地构建后传输（服务器不跑 next build，避免 OOM）；
