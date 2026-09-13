@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing（**B1 / B1.5 / B2（报表 + FR-005 复核 + FR-007 提醒）已交付**；B3 待做） |
+| 状态 | implementing（**B1 / B1.5 / B2 / B3-FR009 已交付**；FR-008 RMA 入口待做） |
 | 创建日期 | 2026-09-13 |
 | 来源 | 优化：争议本地运营增强与 Stripe 深化（规格 §68 边界 C：证据素材库/提交前校验/证据版本回执/审批复核/运营报表/通知升级/RMA 联动） |
 | 分类 | payments（自动判定） |
@@ -108,3 +108,4 @@
 | 2026-09-13 | 0.4 | **B2（FR-006 运营报表）交付**（用户指令「继续」）：新增只读服务 `Disputes::OpsReport`（口径写死：win_rate=won/(won+lost)、met_rate=截止前提交、处理时长=resolved_at−created_at；状态取 `Dispute::TERMINAL_STATES`）；**降级不猜**（mixed currency → 金额置 nil；异常 → 降级信封）；`/admin/disputes` 列表页新增报表卡（`safe_value` 包裹，异常不 500）+ en.yml 8 键；spec `ops_report_spec.rb` 9 例 + `disputes_ops_report_spec.rb` 3 例；争议域全套 **152 例全绿**。**未做**：FR-005 双人复核（需改危险提交路径，单独切片）、FR-007 通知升级、B3（RMA / Stripe 回执状态机） | AI |
 | 2026-09-13 | 0.5 | **B2（FR-005 双人复核）交付**（用户指令「继续」）：新表 `pallastrade_dispute_evidence_approvals`（`dap_`，append-only，无金额列）+ 服务 `Disputes::ApproveEvidenceDraft`（签核绑定载荷摘要；自批自被拒；幂等；审计 approved/rejected）；`SubmitEvidence` 新增 `require_approval:`（**默认 false，既有行为不变**）→ 缺签核 `evidence_review_required`、同人签发 `approval_requires_different_operator`，通过后 `approval_id` 入回执与审计；控制台新增 Approve draft（第二人）按钮（`formaction` 复用同一表单）+ 签核列表；开关 `PallasTrade::Config[:dispute_evidence_requires_second_review]`；spec `approve_evidence_draft_spec.rb` 9 例；争议域全套 **183 例全绿** | AI |
 | 2026-09-13 | 0.6 | **B2（FR-007 期限提醒与升级）交付**（用户指令「继续」）：新增订阅者 `Disputes::DeadlineAlertSubscriber`（消费 sweeper 已发布的 `dispute.evidence_due_soon` / `dispute.evidence_overdue`）；`due_soon` 只留痕（审计 + 指标），`overdue` 在 `attention_reason` 为空时升级为新增词表值 `evidence_overdue`（**不覆盖**更具体原因），该值同时进入 `Attentions` 与运营报表 `needs_attention`；engine.rb 注册；spec 7 例 + sweeper 回归 5 例全绿；Skill § 提醒升级节 + GS-108 | AI |
+| 2026-09-13 | 0.7 | **B3（FR-009 回执状态机）交付**（用户指令「继续」）：新增只读服务 `Disputes::ReceiptStatus`（**派生不落表** —— 回执 append-only 不可改写）：`submitted → acknowledged → rejected` 单向，信号取 provider 回写（争议推进到 `under_review` / 回执回 `under_review` / `invalid_transition` + 状态回到 `needs_response`），冲突或缺失 → `unknown`/`no_receipt`（不猜）；单调性由状态机拒绝倒退 + attention 不被覆盖保证；`SubmissionTimeline` 输出新增 `receipt:` 字段 + 时间线卡徽章 + en.yml 6 键；spec 9 例 + 时间线回归 5 例全绿；SKILL §回执状态机节 + GS-109 | AI |

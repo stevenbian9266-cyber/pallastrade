@@ -41,14 +41,24 @@ module PallasTrade
                   count: entries.size,
                   latest: entries.last,
                   versions: entries.group_by { |e| e[:kind] }.transform_values { |items| items.size },
-                  kinds: entries.map { |e| e[:kind] }.uniq
+                  kinds: entries.map { |e| e[:kind] }.uniq,
+                  # DSP-P7-10 B3 / FR-009：回执单向状态机（只读派生；不可得则显式降级）
+                  receipt: receipt_status_for(dispute)
                 })
       end
 
       private
 
+      def receipt_status_for(dispute)
+        outcome = ReceiptStatus.call(dispute: dispute)
+        outcome.success? ? outcome.value : { state: nil, rank: nil, reasons: ['unavailable'] }
+      rescue StandardError
+        { state: nil, rank: nil, reasons: ['unavailable'] }
+      end
+
       def empty
-        { entries: [], count: 0, latest: nil, versions: {}, kinds: [] }
+        { entries: [], count: 0, latest: nil, versions: {}, kinds: [],
+          receipt: { state: nil, rank: nil, reasons: ['dispute_missing'] } }
       end
 
       def build_entry(record, version, previous)

@@ -561,6 +561,14 @@ en:
         disputes_evidence_error_dispute_terminal: This dispute is already in a terminal state.
         disputes_evidence_error_invalid_decision: Unknown review decision.
         disputes_evidence_error_payload_digest_missing: The draft is empty — nothing to review.
+        # DSP-P7-10 B3 / FR-009（回执单向状态机，只读派生）
+        disputes_receipt_state: 'Provider receipt: %{state}'
+        disputes_receipt_submitted: submitted
+        disputes_receipt_acknowledged: acknowledged
+        disputes_receipt_rejected: rejected
+        disputes_receipt_unknown: unknown
+        disputes_receipt_none: no receipt yet
+        disputes_receipt_help: Moved forward by provider write-backs only (submitted → acknowledged → rejected); never guessed.
         disputes_submissions: Recent provider actions
         disputes_evidence_failed: The action could not be completed.
         disputes_capability_title: Provider capability and payment exposure

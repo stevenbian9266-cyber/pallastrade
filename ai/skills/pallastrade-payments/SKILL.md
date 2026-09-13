@@ -1162,6 +1162,23 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - 注册：`PallasTrade.subscribers.concat [ …, Disputes::DeadlineAlertSubscriber ]`（engine.rb）——
   **忘注册 = 事件静默丢失**，故 spec 包含 `expect(PallasTrade.subscribers).to include(described_class)` 断言。
 
+### 回执单向状态机（DSP-P7-10 B3 / FR-009，2026-09-13）
+
+> **派生而非落表**：回执 `DisputeEvidenceSubmission` 是 append-only 不可变的，不允许改写 `provider_status`；
+> 推进信号本来就存在 —— provider 回写推进 `Dispute#state`（needs_response → under_review → won/lost），
+> 而"打回补证"会被状态机判为**倒退**并留下 `attention_reason = invalid_transition`。
+
+- `Disputes::ReceiptStatus.call(dispute:, submission: nil)` → **只读派生**（零写、零事件、零触网）：
+  `submitted(1) → acknowledged(2) → rejected(3)`，返回 `{state, rank, receipt_id, emitted_at,
+  provider_status_at_submission, dispute_state, previous_state, reasons[]}`。
+- 判据：`acknowledged` = 争议已到 `under_review` 阶段 / 回执提交时 provider 回 `under_review` / 存在更新的回执；
+  `rejected` = `attention_reason = invalid_transition` **且** 净化的 provider 状态回到 `needs_response`；
+  信号冲突 → `unknown`；无回执 → `state: nil`（`no_receipt`）。**不猜**。
+- **单调性来源**：`Dispute#state` 拒绝倒退 + `attention_reason` 不被后续流程覆盖（`DeadlineAlertSubscriber` 只在空时写）
+  → 派生值天然不回退（spec 有单调性用例）。
+- 接线：`SubmissionTimeline` 输出多一个 `receipt:` 字段（时间线卡顶部徽章：submitted/acknowledged/rejected/no receipt yet）。
+- 边界：provider 状态归一复用 `ProviderPayload::STATE_BY_PROVIDER_STATUS`（不在本服务另立一套词汇）。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.

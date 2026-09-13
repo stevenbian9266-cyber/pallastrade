@@ -340,6 +340,14 @@
   </div>
   <div class="card-body">
     <p class="text-sm text-gray-500 mb-3"><%= PallasTrade.t('admin.orders.disputes_timeline_help') %></p>
+    <% receipt_state = (@submission_timeline && @submission_timeline[:receipt] ? @submission_timeline[:receipt][:state] : nil) %>
+    <p class="mb-3">
+      <span class="badge">
+        <%= PallasTrade.t('admin.orders.disputes_receipt_state',
+                          state: receipt_state ? PallasTrade.t("admin.orders.disputes_receipt_#{receipt_state}") : PallasTrade.t('admin.orders.disputes_receipt_none')) %>
+      </span>
+      <span class="text-gray-500 text-xs"><%= PallasTrade.t('admin.orders.disputes_receipt_help') %></span>
+    </p>
     <% timeline_entries = @submission_timeline&.[](:entries) || [] %>
     <% if timeline_entries.any? %>
       <table class="table table-sm">
