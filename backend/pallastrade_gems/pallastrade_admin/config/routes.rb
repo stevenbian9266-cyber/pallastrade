@@ -352,6 +352,8 @@ PallasTrade::Core::Engine.add_routes do
         post :mark_review
         # DSP-P7-10 B1：提交前校验（零写、零 provider I/O；仅给出阻断项与修复建议）
         post :precheck
+        # DSP-P7-10 B2 / FR-005：证据草稿双人复核签核（append-only；提交前置条件）
+        post :approve_draft
         # DSP-P7-8 危险操作（不可逆；无批量变体）
         post :submit_evidence
         post :accept_dispute

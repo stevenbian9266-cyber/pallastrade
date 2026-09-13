@@ -549,6 +549,18 @@ en:
         disputes_report_money: 'Disputed %{amount} %{currency} · fees %{fees} %{currency}'
         disputes_report_reason: Reason code
         disputes_report_empty: No disputes in this window yet.
+        # DSP-P7-10 B2 / FR-005（双人复核：签核 append-only；默认开关关闭）
+        disputes_approve_draft: Approve draft (second operator)
+        disputes_approved_draft: Draft approved — a different operator can now submit exactly this payload.
+        disputes_approve_already_done: You already reviewed this exact draft — nothing was recorded twice.
+        disputes_approvals: Draft reviews
+        disputes_approvals_empty: No draft review recorded yet.
+        disputes_review_required: Second-operator review is required for this store before evidence can be submitted.
+        disputes_evidence_error_evidence_review_required: This draft has no approval from a second operator yet.
+        disputes_evidence_error_approval_requires_different_operator: The reviewer must be a different operator than the submitter.
+        disputes_evidence_error_dispute_terminal: This dispute is already in a terminal state.
+        disputes_evidence_error_invalid_decision: Unknown review decision.
+        disputes_evidence_error_payload_digest_missing: The draft is empty — nothing to review.
         disputes_submissions: Recent provider actions
         disputes_evidence_failed: The action could not be completed.
         disputes_capability_title: Provider capability and payment exposure

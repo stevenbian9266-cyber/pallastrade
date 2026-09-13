@@ -455,6 +455,35 @@
         </div>
       <% end %>
 
+      <% if @evidence_review_required %>
+        <div class="alert alert-warning">
+          <%= PallasTrade.t('admin.orders.disputes_review_required') %>
+        </div>
+      <% end %>
+
+      <% if @evidence_approvals.any? %>
+        <div class="mb-4">
+          <h6 class="text-sm font-semibold mb-2"><%= PallasTrade.t('admin.orders.disputes_approvals') %></h6>
+          <ul class="mb-0">
+            <% @evidence_approvals.each do |approval| %>
+              <li class="text-sm">
+                <span class="badge"><%= approval.decision %></span>
+                <span class="text-gray-500"><%= approval.actor_label.presence || '—' %></span>
+                <span class="text-gray-500 text-xs">· <%= approval.created_at&.strftime('%Y-%m-%d %H:%M') %></span>
+                <% if approval.requested_by.present? %>
+                  <span class="text-gray-500 text-xs">· requested by <%= approval.requested_by %></span>
+                <% end %>
+                <% if approval.note.present? %>
+                  <span class="text-gray-500 text-xs">· <%= approval.note %></span>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      <% elsif @evidence_review_required %>
+        <p class="text-sm text-gray-500 mb-4"><%= PallasTrade.t('admin.orders.disputes_approvals_empty') %></p>
+      <% end %>
+
       <%# 1) 提交证据：文本 + 文件（文件走 Stripe File 上传；留存挂回执） %>
       <%= form_with url: PallasTrade.submit_evidence_admin_dispute_path(dispute),
                     method: :post, multipart: true, local: true do |f| %>
@@ -496,6 +525,10 @@
 
         <%= f.submit PallasTrade.t('admin.orders.disputes_draft_precheck'),
                      formaction: PallasTrade.precheck_admin_dispute_path(dispute),
+                     formmethod: :post,
+                     class: 'btn btn-secondary mr-2' %>
+        <%= f.submit PallasTrade.t('admin.orders.disputes_approve_draft'),
+                     formaction: PallasTrade.approve_draft_admin_dispute_path(dispute),
                      formmethod: :post,
                      class: 'btn btn-secondary mr-2' %>
         <%= f.submit PallasTrade.t('admin.orders.disputes_submit_evidence'),

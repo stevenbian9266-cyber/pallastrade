@@ -1131,6 +1131,24 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **接线**：`index` 取 `@ops_report`（`safe_value` 包裹，失败→nil→卡片不渲染，列表页恒 200）；i18n 键 `disputes_report_*`。
 - 报表**尚未包含**：按 provider/网络细分、导出 CSV、时间序列趋势、按运营人员维度（下一片评估）。
 
+### 证据草稿双人复核（DSP-P7-10 B2 / FR-005，2026-09-13）
+
+> **加强**而非替换：`Disputes::SubmitEvidence` 仍是唯一提交口（三件套不变）；签核只是它的**可选前置条件**。
+> 开关：`PallasTrade::Config[:dispute_evidence_requires_second_review]`（**默认关闭 → 既有路径行为不变**）。
+
+- 表 `pallastrade_dispute_evidence_approvals`（前缀 `dap_`）+ 模型 `DisputeEvidenceApproval`：**append-only**
+  （`before_update` + `update_columns` 双拦，`ImmutableError`），无金额列。绑定的键是**载荷摘要**（与提交幂等基准同算法）
+  —— 草稿改一个字，原签核自动失效（无需撤销机制）。
+- `Disputes::ApproveEvidenceDraft.call(dispute:, actor:, evidence:|payload_digest:, decision:, note:, requested_by:)`：
+  – 拒绝码：`dispute_terminal` / `invalid_decision` / `evidence_submission_unsupported` / `payload_digest_missing`（空草稿不签）/ `approval_requires_different_operator`（`requested_by` == 签发人）；
+  – 幂等：同 `(dispute, digest, decision, actor)` 重复签核 → 返回既有记录（`idempotent: true`）；
+  – 审计：`dispute_evidence_draft_approved|rejected`；**零 provider I/O、不建回执**。
+- `SubmitEvidence` 新增 `require_approval:`（**默认 false**）：为 true 时缺签核 → `evidence_review_required`；
+  签发人与提交人相同 → `approval_requires_different_operator`；通过后 `approval_id` 写进回执 `response_metadata` 与审计。
+  幂等短路在签核校验**之前**（已提交过的同一幂等键不因复核开关而变失败）。
+- 控制台：危险区新增 **Approve draft (second operator)** 按钮（`formaction` → `POST :approve_draft`，复用同一张表单 →
+  签的正是即将提交的那份载荷）；展示签核列表（decision/actor/时间/requester/note）；开关开启时提示需要复核。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.

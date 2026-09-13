@@ -16,7 +16,9 @@ module PallasTrade
     #     CommerceTransaction；资金结果仍由 provider webhook 驱动 P7-3 入账与 P7-6 收敛；
     #   - **不改 `Dispute#state`**（状态机由 webhook / 收敛推进；本服务只写回执 + 审计 + 事件）；
     #   - **幂等**：同一 `(dispute, payload_digest)` 重复提交 → 返回既有回执，**不**再次调用 provider；
-    #   - **失败不落回执**：provider 抛错时返回 failure 并只写审计（避免"半成品回执"污染幂等基准）。
+    #   - **失败不落回执**：provider 抛错时返回 failure 并只写审计（避免"半成品回执"污染幂等基准）；
+    #   - **双人复核（DSP-P7-10 FR-005，可选）**：`require_approval: true` 时必须存在**同一 payload_digest**
+    #     的签核（`DisputeEvidenceApproval`），且签发人 ≠ 提交人 —— 否则拒绝；默认 false，既有调用行为不变。
     class SubmitEvidence
       prepend PallasTrade::ServiceModule::Base
 
@@ -26,8 +28,9 @@ module PallasTrade
       # @param evidence [Hash] 证据键 → 文本值 / 文件对象（UploadedFile 或 stream）
       # @param actor [String, Hash] 操作者（`{ type:, id:, label: }` 或字符串）
       # @param accept_late [Boolean] 逾期提交是否已经过二次确认
+      # @param require_approval [Boolean] 是否要求第二人签核该草稿（FR-005）
       # @return [PallasTrade::ServiceModule::Result] success({ submission:, idempotent:, late:, provider_status: })
-      def call(dispute:, evidence:, actor: 'admin', accept_late: false)
+      def call(dispute:, evidence:, actor: 'admin', accept_late: false, require_approval: false)
         return failure(nil, 'dispute_not_found') if dispute.nil?
 
         dispute = PallasTrade::Dispute.find_by(id: dispute.id)
@@ -50,12 +53,22 @@ module PallasTrade
         existing = find_existing(dispute, digest)
         return success({ submission: existing, idempotent: true, late: existing.late, provider_status: existing.provider_status }) if existing
 
+        # FR-005：双人复核前置校验（默认关闭 → 行为不变）
+        approval = nil
+        if require_approval
+          approval = PallasTrade::DisputeEvidenceApproval.approved_for(dispute: dispute, payload_digest: digest)
+          return failure(nil, 'evidence_review_required') if approval.nil?
+          if approval.actor_label.present? && approval.actor_label == actor_field(actor, :label).to_s
+            return failure(nil, 'approval_requires_different_operator')
+          end
+        end
+
         receipt = write_to_provider(dispute, payment_method, validation, actor)
         return failure(nil, receipt[:error]) if receipt[:error]
 
-        submission = persist_receipt(dispute, digest, receipt, validation, late, actor)
+        submission = persist_receipt(dispute, digest, receipt, validation, late, actor, approval)
         attach_files(submission, validation[:files])
-        audit_success(dispute, actor, submission)
+        audit_success(dispute, actor, submission, approval)
         publish_event(dispute, submission)
 
         success({
@@ -101,7 +114,7 @@ module PallasTrade
         { error: "provider_error:#{e.class.name}" }
       end
 
-      def persist_receipt(dispute, digest, receipt, validation, late, actor)
+      def persist_receipt(dispute, digest, receipt, validation, late, actor, approval = nil)
         PallasTrade::DisputeEvidenceSubmission.create!(
           dispute: dispute,
           kind: 'evidence_submitted',
@@ -112,7 +125,10 @@ module PallasTrade
           actor_id: actor_field(actor, :id),
           actor_label: actor_field(actor, :label),
           late: late,
-          response_metadata: receipt[:metadata].merge('evidence_keys' => validation[:text].keys.sort + validation[:files].keys.sort)
+          response_metadata: receipt[:metadata].merge(
+            'evidence_keys' => validation[:text].keys.sort + validation[:files].keys.sort,
+            'approval_id' => approval&.prefixed_id
+          ).compact
         )
       end
 
@@ -141,7 +157,7 @@ module PallasTrade
         end
       end
 
-      def audit_success(dispute, actor, submission)
+      def audit_success(dispute, actor, submission, approval = nil)
         PallasTrade::Audit.record(
           action: 'dispute_evidence_submitted',
           actor: actor,
@@ -151,6 +167,7 @@ module PallasTrade
             provider_reference: submission.provider_reference,
             provider_status: submission.provider_status,
             late: submission.late,
+            approval: approval&.prefixed_id,
             evidence_keys: submission.response_metadata['evidence_keys']
           }
         )

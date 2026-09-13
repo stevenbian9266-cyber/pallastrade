@@ -26,9 +26,9 @@ module PallasTrade
 
       # 自定义动作名不是 CanCan 真实动作（无法 alias 到 :update）→ 跳过基类 `load_resource`
       # （它用**原始 action 名**对实例授权），改为自加载记录 + 在 `authorize_admin` 里映射语义动作。
-      CUSTOM_ACTIONS = %i[refresh dry_run recover snapshot mark_review precheck submit_evidence accept_dispute].freeze
+      CUSTOM_ACTIONS = %i[refresh dry_run recover snapshot mark_review precheck approve_draft submit_evidence accept_dispute].freeze
       # 写动作（映射到 :update；其余自定义动作归 :read）
-      UPDATE_ACTIONS = %i[recover mark_review submit_evidence accept_dispute].freeze
+      UPDATE_ACTIONS = %i[recover mark_review approve_draft submit_evidence accept_dispute].freeze
       # 「最近 provider 事件」候选窗口（有界扫描，零 provider I/O；命中失败显示 —）
       PROVIDER_EVENT_WINDOW = 20
 
@@ -64,6 +64,10 @@ module PallasTrade
         @evidence_assets = evidence_assets_for
         @evidence_suggestions = evidence_suggestions_for(dispute, @evidence_catalog)
         @submission_timeline = submission_timeline_for(dispute)
+
+        # DSP-P7-10 B2：双人复核（开关 + 签核记录）
+        @evidence_review_required = evidence_review_required?
+        @evidence_approvals = evidence_approvals_for(dispute)
 
         # DSP-P7-9：只读能力矩阵 + 支付级多争议聚合（逐项 rescue 降级，页面绑不 500）
         @provider_capabilities = provider_capabilities_for(dispute)
@@ -153,6 +157,27 @@ module PallasTrade
         redirect_to PallasTrade.admin_dispute_path(@dispute), status: :see_other
       end
 
+      # POST /admin/disputes/:id/approve_draft —— 证据草稿**双人复核**签核（DSP-P7-10 B2 / FR-005）
+      # 局部写：只落不可变签核记录 + 审计；**不**提交凭据、**不**建回执、**不**调 provider。
+      def approve_draft
+        outcome = PallasTrade::Disputes::ApproveEvidenceDraft.call(
+          dispute: @dispute,
+          actor: audit_actor,
+          evidence: evidence_payload,
+          decision: params[:decision].presence || 'approved',
+          note: params[:note],
+          requested_by: params[:requested_by]
+        )
+
+        if outcome.success?
+          key = outcome.value[:idempotent] ? 'disputes_approve_already_done' : 'disputes_approved_draft'
+          flash[:success] = PallasTrade.t("admin.orders.#{key}")
+        else
+          flash[:error] = evidence_error_message(outcome.error)
+        end
+        redirect_to PallasTrade.admin_dispute_path(@dispute), status: :see_other
+      end
+
       # POST /admin/disputes/:id/submit_evidence —— 【危险】向 provider 提交证据
       # 三件套：permission（authorize_admin → :update）+ confirmation（视图 turbo_confirm；逾期需 late_confirmed=1）
       # + audit（服务内 dispute_evidence_submitted / _failed）。
@@ -162,7 +187,8 @@ module PallasTrade
           dispute: @dispute,
           evidence: evidence,
           actor: audit_actor,
-          accept_late: params[:late_confirmed].to_s == '1'
+          accept_late: params[:late_confirmed].to_s == '1',
+          require_approval: evidence_review_required?
         )
 
         if outcome.success?
@@ -291,6 +317,20 @@ module PallasTrade
       # DSP-P7-10 B2：本店运营报表（只读、零写；异常降级 nil）
       def ops_report_for
         safe_value { PallasTrade::Disputes::OpsReport.call(store: current_store) }
+      end
+
+      # DSP-P7-10 B2 / FR-005：是否要求第二人签核（默认关闭 → 既有提交路径行为不变）
+      def evidence_review_required?
+        PallasTrade::Config[:dispute_evidence_requires_second_review].present?
+      rescue StandardError
+        false
+      end
+
+      # DSP-P7-10 B2：签核记录（只读；异常降级空数组）
+      def evidence_approvals_for(dispute)
+        dispute.evidence_approvals.recent_first.limit(10).to_a
+      rescue StandardError
+        []
       end
 
       # 草稿载荷（与 submit_evidence 同形：文本 + 上传文件）

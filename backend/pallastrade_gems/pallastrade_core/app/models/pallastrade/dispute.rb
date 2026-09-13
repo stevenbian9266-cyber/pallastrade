@@ -74,6 +74,10 @@ module PallasTrade
     has_many :evidence_submissions, class_name: 'PallasTrade::DisputeEvidenceSubmission',
                                      inverse_of: :dispute
 
+    # DSP-P7-10 B2 / FR-005：证据草稿的**双人复核签核**（append-only；提交前置条件）
+    has_many :evidence_approvals, class_name: 'PallasTrade::DisputeEvidenceApproval',
+                                  inverse_of: :dispute
+
     validates :provider, :provider_dispute_reference, :state, presence: true
     validates :provider_dispute_reference, uniqueness: { scope: :provider }
     validates :state, inclusion: { in: STATES }
