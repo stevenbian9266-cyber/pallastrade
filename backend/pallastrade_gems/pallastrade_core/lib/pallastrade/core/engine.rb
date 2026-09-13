@@ -395,6 +395,8 @@ module PallasTrade
           PallasTrade::OperationalMetricsSubscriber,
           # REV-P6-8k (2026-09-09): payment_combination.cancel_orchestrated → Audit + 组合取消计数
           PallasTrade::Orders::CombinationCancelSubscriber,
+          # DSP-P7-10 B2 / FR-007：争议证据期限提醒与升级（消费者于 DeadlineSweeperJob 发布的事件）
+          PallasTrade::Disputes::DeadlineAlertSubscriber,
           # PRD-20260910-promo-batch3b: commerce_transaction.payment_confirmed → 核销兜底；
           # refund.succeeded（全额）→ 释放核销名额
           PallasTrade::Promotions::RedemptionSubscriber

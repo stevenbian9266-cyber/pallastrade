@@ -1149,6 +1149,19 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - 控制台：危险区新增 **Approve draft (second operator)** 按钮（`formaction` → `POST :approve_draft`，复用同一张表单 →
   签的正是即将提交的那份载荷）；展示签核列表（decision/actor/时间/requester/note）；开关开启时提示需要复核。
 
+### 期限提醒与升级（DSP-P7-10 B2 / FR-007，2026-09-13）
+
+> 扫描器保持**只读**，"通知/升级"放到**订阅者**（职责分离）：`ScanDeadlines` → `DeadlineSweeperJob`
+> 逐条发 `dispute.evidence_due_soon` / `dispute.evidence_overdue` → `Disputes::DeadlineAlertSubscriber`（本次新增）。
+
+- `due_soon`：**只留痕** —— 审计 `dispute_deadline_alerted` + 指标 `dispute.deadline_alert`；**不改状态、不打标记**。
+- `overdue` ：**升级**为人工关注 —— 在 `attention_reason` 为空时写入 `evidence_overdue`（新增到 `Dispute::ATTENTION_REASONS`）；
+  已有更具体原因（`provider_conflict` / `journal_gap` / …）**不覆盖**。该标记会出现在控制台与运营报表的 `needs_attention` 指标里。
+- **零自动化**：绝不自动提交证据 / 自动接受争议 / 自动退款 / 改库存订单（§71 禁区）；终态争议、找不到的争议 → no-op；
+  异常 rescue 记日志（不阻断 sweeper 或争议落库）；payload id 双模（`dsp_` / raw integer）。
+- 注册：`PallasTrade.subscribers.concat [ …, Disputes::DeadlineAlertSubscriber ]`（engine.rb）——
+  **忘注册 = 事件静默丢失**，故 spec 包含 `expect(PallasTrade.subscribers).to include(described_class)` 断言。
+
 ## Where to read further
 
 - **Payment source:** `bundle show pallastrade_core`/app/models/pallastrade/payment.rb — the state machine and processing methods.

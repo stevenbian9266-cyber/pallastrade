@@ -51,10 +51,12 @@ module PallasTrade
     #   P7-6 写入（收敛）：provider_conflict（provider↔本地终局冲突）/ journal_gap（对账缺口不可自动补）
     #                    / funds_evidence_missing（provider 已示资金移动但本地无 funds 时间戳，绝不猜）
     #   P7-7 写入（后台）：operator_review（运营在 Console 主动标记复核）
+    #   P7-10 B2 写入（订阅者）：evidence_overdue（期限已过仍未提交 —— DeadlineAlertSubscriber 升级）
     # 零 DDL：`attention_reason` 为 string 列（迁移无 CHECK 约束）
     ATTENTION_REASONS = %w[
       unlinked_payment non_positive_amount invalid_transition
       provider_conflict journal_gap funds_evidence_missing operator_review
+      evidence_overdue
     ].freeze
 
     class InvalidTransition < StandardError; end
