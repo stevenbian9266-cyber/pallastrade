@@ -161,6 +161,11 @@ export default {
         description: 'Backend RSpec suite (PallasTrade core/api/app)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec'],
       },
+      // 管理后台会话（登出跳转回归）：admin/user_sessions_spec
+      'admin-sessions-rspec': {
+        description: 'Admin session specs (sign-in guard + sign-out redirect back to the admin sign-in page)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/user_sessions_spec.rb'],
+      },
       // P1 订单流程改造：本次变更相关 spec（新购物车/提交订单/回归）
       'p1-order-flow-rspec': {
         description: 'P1 order-flow specs (cart/submit/request + regression)',

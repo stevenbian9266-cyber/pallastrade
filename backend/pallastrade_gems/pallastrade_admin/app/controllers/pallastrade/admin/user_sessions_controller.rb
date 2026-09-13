@@ -39,6 +39,14 @@ module PallasTrade
       def translation_scope
         'devise.user_sessions'
       end
+
+      # PALLAS-CUSTOM: 管理后台登出跳转（2026-09-13 bugfix）——Devise 默认的
+      # after_sign_out_path_for 会回退到 root_path（'/'），而本部署中 '/' 由 Next.js
+      # 商城前台承接（nginx 默认 location），管理员点退出后会被送到前台首页。
+      # 这里固定回管理后台登录页（/admin_user/sign_in）。
+      def after_sign_out_path_for(_resource_or_scope)
+        new_session_path(resource_name)
+      end
     end
   end
 end
