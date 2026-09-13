@@ -230,7 +230,10 @@ export function applyFix(root) {
     if (!file || file.status === null || file.engineVisible) continue;
     if (String(file.raw ?? '').includes(' / ')) continue;
     const text = readFileSync(file.abs, 'utf8');
-    const next = text.replace(STATUS_ROW_LOOSE, `| 状态 | ${file.status} |`);
+    // 只归一化单元格空白（把补空格变成引擎口径），**必须保留状态词后的括注原文**
+    // （2026-09-13 回归：早期实现用 `| 状态 | ${status} |` 重建整行，导致括注信息丢失）
+    const value = String(file.raw ?? '').trim();
+    const next = text.replace(STATUS_ROW_LOOSE, `| 状态 | ${value} |`);
     if (next !== text) {
       writeFileSync(file.abs, next, 'utf8');
       normalizedRows.push(file.rel);

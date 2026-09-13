@@ -39,7 +39,7 @@
 - FR-001：新增 `scripts/ci/prd-status-sync.mjs`（Node ESM，**零第三方依赖**），支持 `--check`（默认）/ `--fix` / `--json` / `--root <dir>`。
 - FR-002：**双向解析**：`docs/prd/README.md` 索引行（状态|PRD|分类|日期|REQ）与每份 `docs/prd/**/PRD-*.md` 文件头的 `| 状态 | … |` 行。
 - FR-003：检出四类问题：`state-drift`（两侧不同）、`not-indexed`、`missing-file`、`unparsable-status-row`。
-- FR-004：`--fix` 以**文件头状态为准**回写索引；仅当文件无状态行时以索引为准补齐文件并打印告警；**不新建/不删除文件**。实施补充：`--fix` 还会把**引擎不可见**（补空格/制表符）的 `| 状态 | … |` 行归一为 `| 状态 | <status> |`（语义不变，仅对齐引擎口径；词表图例行不动）。
+- FR-004：`--fix` 以**文件头状态为准**回写索引；仅当文件无状态行时以索引为准补齐文件并打印告警；**不新建/不删除文件**。实施补充：`--fix` 还会把**引擎不可见**（补空格/制表符）的 `| 状态 | … |` 行归一为引擎口径 `| 状态 | <原文> |`——**仅调单元格空白，必须原样保留状态词后的括注原文**（不得用 `| 状态 | <token> |` 重建整行）；词表图例行不动。
 - FR-005：状态词表 = 引擎词表（draft/reviewing/approved/implementing/verifying/done/rejected） ∪ 仓库扩展（merged/obsolete/⛔废弃）。
 - FR-006：接入 `lefthook.yml` pre-commit（glob `docs/prd/**`）与 `.github/workflows/harness-full.yml`（新增 `prd-status` job）。
 - FR-007：退出码：`0` 一致；`1` 存在漂移；`2` 用法/IO 错误（CI 可区分）。
@@ -103,3 +103,4 @@
 |---|---|---|---|
 | 2026-09-13 | 0.1 | 初稿（基于 P0–P7 收口的实测漂移数据） | AI |
 | 2026-09-13 | 1.0 | 实施完成：`scripts/ci/prd-status-sync.mjs` + `tests/prd-status-sync.test.mjs`（9 用例）+ lefthook pre-commit + harness-full.yml `prd-status` job + AGENTS/Skill/scenarios 同步；实仓回填 5 处历史问题后 `--check` exit 0 | AI |
+| 2026-09-13 | 1.0.1 | **回归修复**：自查发现 `--fix` 归一化用 `| 状态 | <token> |` 重建整行，导致 3 份 PRD 的状态行括注丢失（如 p3 的 `（v1.1 实施完成，2026-09-05，commit 8a0e8b8；task … finished with verified evidence）`）。已改为**只归一化单元格空白、原样保留括注**，从 `5e741d69` 恢复括注，并新增 AC-004d 回归用例（10 用例全绿） | AI |

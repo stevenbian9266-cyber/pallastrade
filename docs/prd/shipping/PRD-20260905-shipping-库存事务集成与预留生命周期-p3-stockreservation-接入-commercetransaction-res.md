@@ -2,7 +2,7 @@
 
 | 元数据      | 值                                                                                                                                                                                                                                             |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 状态 | done |
+| 状态 | done（v1.1 实施完成，2026-09-05，commit `8a0e8b8`；task `TASK-20260905110600-942c63c2` finished with verified evidence） |
 | 创建日期     | 2026-09-05                                                                                                                                                                                                                                    |
 | 来源       | 优化：库存事务集成与预留生命周期（P3）——StockReservation 接入 CommerceTransaction Reserve→Finalize/Physical Consume→Commit / Release / Expire 生命周期 + Inventory Recovery（`豆包梳理业务需求/P3 — Inventory Transaction Integration & Reservation Lifecycle.md`，工程编号 INV-P3） |
 | 分类       | shipping（自动判定，命中"库存/stock"；AI 语义微调说明：跨 checkout/payments/transaction 域，但主体是库存/履约，沿用既有 stock 类 PRD 落位）                                                                                                                                         |

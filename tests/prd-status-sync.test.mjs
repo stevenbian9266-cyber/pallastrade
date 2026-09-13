@@ -153,6 +153,32 @@ test('AC-004c applyFix 归一化补空格状态行，复检通过且可被引擎
   }
 });
 
+// AC-004d：归一化必须保留括注（回归用例：早期实现重建整行导致信息丢失）
+test('AC-004d applyFix 归一化补空格状态行时保留括注原文', () => {
+  const root = makeRepo({
+    readmeRows: ['| done | PRD-20260101-demo-theta | demo | 2026-01-01 | REQ-t.md |'],
+    prds: [
+      {
+        category: 'demo',
+        name: 'PRD-20260101-demo-theta',
+        statusRow: '| 状态       | done（2026-09-05 实施完成，commit abc123；task TASK-x finished）      |',
+      },
+    ],
+  });
+  try {
+    applyFix(root);
+    const text = readFileSync(join(root, 'docs', 'prd', 'demo', 'PRD-20260101-demo-theta.md'), 'utf8');
+    assert.match(
+      text,
+      /^\| 状态 \| done（2026-09-05 实施完成，commit abc123；task TASK-x finished） \|$/m,
+      '括注必须原样保留，仅归一化空白',
+    );
+    assert.equal(analyze(root).ok, true);
+  } finally {
+    cleanup(root);
+  }
+});
+
 test('AC-004b 完全缺失状态行 → unparsable-status-row', () => {
   const root = makeRepo({
     readmeRows: ['| done | PRD-20260101-demo-delta | demo | 2026-01-01 | REQ-w.md |'],
