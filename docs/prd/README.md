@@ -38,7 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
-| approved | PRD-20260913-payments-dsp-p7-9-partial-and-multi-dispute-semantics | payments | 2026-09-13 | REQ-20260913-dsp-p7-9-partial-and-multi-dispute-semantics.md |
+| done | PRD-20260913-payments-dsp-p7-9-partial-and-multi-dispute-semantics | payments | 2026-09-13 | REQ-20260913-dsp-p7-9-partial-and-multi-dispute-semantics.md |
 | done | PRD-20260913-payments-dsp-p7-8-dispute-dangerous-actions-and-evidence-submission | payments | 2026-09-13 | REQ-20260913-dsp-p7-8-dispute-dangerous-actions.md |
 | done | PRD-20260913-payments-dsp-p7-7-admin-disputes-console | payments | 2026-09-13 | REQ-20260913-dsp-p7-7-admin-disputes-console.md |
 | done | PRD-20260912-payments-dsp-p7-6-dispute-recovery | payments | 2026-09-12 | REQ-20260912-dsp-p7-6-dispute-recovery.md |

@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved（用户 2026-09-13 回复「实施」） |
+| 状态 | done |
 | 创建日期 | 2026-09-13 |
 | 来源 | 需求：DSP-P7-9 部分争议与多争议语义（partial dispute / 同一支付多 dispute + provider 能力矩阵只读降级，补齐 P7-0 O1–O3） |
 | 分类 | payments |
@@ -126,3 +126,4 @@
 | 2026-09-13 | 0.1 | 初稿：把源计划 §68「advanced dispute capabilities」收窄为边界 C（partial / 多争议 / provider 能力矩阵），并纳入 P7-0 O1（fee 缺口）、O2（partial 未实测）、O3（乱序序列）的消化；含 6 层跨层搜索取证与「无迁移」结论 | AI |
 | 2026-09-13 | 0.2 | **用户确认（approved）**：边界 C + 顺带消化 O1–O3；用户回复「实施」；Adyen/PayPal 暂不处理 | AI |
 | 2026-09-13 | 0.3 | 实施完成：`Dispute#partial?`、`Disputes::CaptureFee`（只写 `fee_amount` 一列）、`DISPUTE_FEE` 事实/账行（永不冲销）、`fetch_dispute_details` BT 明细+`fee_amount`、`ReconcileDispute` fee 期望 + 只读 `fee` 视图、`Disputes::PaymentDisputeSummary`（零写）、`PaymentMethod#dispute_capabilities`（基类 UNSUPPORTED）、控制台只读卡片（双语）；新增 7 个 spec 文件 + 修正 2 处字面清单断言；定向 40 例 + 争议域回归 361 例全绿 | AI |
+| 2026-09-13 | 0.4 | 验证完成 → **done**：注册 verifier `backend-rspec` 全量绿（EVD-20260913071415-e7c36f0977：1661 examples / 0 failures / 6 pending；Line 75.7% / Branch 42.53%）；反模式 0 / AP-009 0 / `nav:validate` 0 warning；`generated:check` 无漂移、`doc-impact` 1 synced、`eval ai --check-freshness` 0 warning、`eval-ai --scenarios` 103/103；gate `GATE-2026-09-13T06-17-33` 16/16 关闭（review EVD-20260913071506-710ac8b3be / knowledge EVD-20260913071507-262086ff01 / approval EVD-20260913071509-4ee01f62e1）；恢复计划 `REC-37c3c1a646503b`；提交 `81aaf582` 已推送 `origin/dev`；CI（`81aaf582`）四件套全部 ✅；dev 部署核验：`pull-deploy` state=`81aaf582`，容器内 `capture_fee.rb` / `payment_dispute_summary.rb` / `DISPUTE_FEE` / `dispute_capabilities` 已就位，线上 `GET /admin/disputes` → 302（登录跳转） | AI |
