@@ -38,7 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
-| implementing | PRD-20260913-payments-dsp-p7-7-admin-disputes-console | payments | 2026-09-13 | REQ-20260913-dsp-p7-7-admin-disputes-console.md |
+| done | PRD-20260913-payments-dsp-p7-7-admin-disputes-console | payments | 2026-09-13 | REQ-20260913-dsp-p7-7-admin-disputes-console.md |
 | done | PRD-20260912-payments-dsp-p7-6-dispute-recovery | payments | 2026-09-12 | REQ-20260912-dsp-p7-6-dispute-recovery.md |
 | done | PRD-20260912-payments-dsp-p7-5-dispute-deadline-sweep | payments | 2026-09-12 | REQ-20260912-dsp-p7-5-dispute-deadline-sweep.md |
 | done | PRD-20260912-payments-dsp-p7-4-dispute-evidence-snapshot | payments | 2026-09-12 | REQ-20260912-dsp-p7-4-dispute-evidence-snapshot.md |
