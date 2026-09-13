@@ -94,8 +94,9 @@ reversals** (chargeback / inquiry / warning / representment) — deliberately **
   `manual_review` (human). Backwards moves are rejected; corrections within the same phase and
   closed/manual_review entries are allowed.
 - `evidence_due_at` is first-class (provider evidence window); `attention_reason` marks rows needing a human —
-  written at ingestion (`unlinked_payment` / `non_positive_amount` / `invalid_transition`) and by DSP-P7-6
-  convergence (`provider_conflict` / `journal_gap` / `funds_evidence_missing`), **never overwriting** an existing
+  written at ingestion (`unlinked_payment` / `non_positive_amount` / `invalid_transition`), by DSP-P7-6
+  convergence (`provider_conflict` / `journal_gap` / `funds_evidence_missing`) and by the DSP-P7-7 admin console
+  (`operator_review`, `Disputes::MarkManualReview`), **never overwriting** an existing
   reason (enum lives in `PallasTrade::Dispute::ATTENTION_REASONS`; `string` column, no DB check → zero DDL to extend).
 - `funds_withdrawn_at` / `funds_reinstated_at` (DSP-P7-2) record when the provider actually withdrew /
   reinstated the money — written once by the funds events (replay never overwrites).

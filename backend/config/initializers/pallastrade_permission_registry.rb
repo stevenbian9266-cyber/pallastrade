@@ -66,6 +66,11 @@ Rails.application.config.after_initialize do
                model_class: PallasTrade::CommerceTransaction,
                actions: %w[read update],
                data_fields: %w[store_id])
+  # DSP-P7-7: 争议运维查看/收敛（Admin Disputes 控制台；含人工标记复核）
+  reg.register(:disputes,
+               model_class: PallasTrade::Dispute,
+               actions: %w[read update],
+               data_fields: %w[store_id])
   # PRD-20260910-promo-batch3c: 核销台账只读（Admin API + Promotions → Redemptions）
   reg.register(:promotion_redemptions,
                model_class: PallasTrade::PromotionRedemption,

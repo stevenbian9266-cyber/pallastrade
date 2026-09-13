@@ -2440,6 +2440,32 @@
         "noMoneyMovements": 20,
         "boundedZeroIoScan": 10
       }
+    },
+    {
+      "id": "GS-098",
+      "name": "Dispute admin console projects facts and gates danger",
+      "description": "Give operators a read-only console for the whole dispute lifecycle: a store-scoped, ransack-filtered list plus a detail page that projects evidence, reconciliation, ledger, refund overlap and recovery state, with exactly the safe actions wired and no money decision reachable (see PRD-20260913-payments-dsp-p7-7-admin-disputes-console)",
+      "mustDo": [
+        "Scope every read through the model's for_store scope and a whitelisted ransack surface, so cross-store disputes are invisible and filters cannot reach arbitrary columns",
+        "Project each existing slice read-only on the detail page (evidence snapshot, reconciliation, ledger entries, refund overlap, recovery metadata, last provider event) and degrade a failing projection to an unavailable card instead of raising",
+        "Expose only actions that stack on existing services: read-only provider refresh, dry-run recovery plan, apply recovery (facts only), rebuild the transient evidence snapshot, and mark for manual review",
+        "Write the operator escalation as attention_reason=operator_review plus state=manual_review, appending the reason only when empty, auditing the action and staying idempotent",
+        "Gate the write actions behind the :update ability while reads need :read, and register the model in the permission registry with its store_id data field"
+      ],
+      "mustNotDo": [
+        "Add routes, buttons or services that accept a dispute or submit evidence (dangerous operations reserved for a later slice), or let the console move money in any way",
+        "Create or mutate Payment/Refund/ledger rows from the console, rewrite existing append-only ledger entries, or bypass the recovery service to write dispute state directly",
+        "Let a failing projection bubble up as a 500, or leak another store's dispute through the list, the search filters or the detail route",
+        "Overwrite an existing attention_reason when the operator marks for review, or re-audit an idempotent repeat mark",
+        "Hardcode operator-facing copy outside the translation keys, or ship a sidebar entry that fails the bilingual navigation gate"
+      ],
+      "scoring": {
+        "storeScopedReadOnlyProjection": 25,
+        "safeActionSurface": 25,
+        "escalationWriteDiscipline": 20,
+        "dangerOperationsGated": 20,
+        "degradationAndI18n": 10
+      }
     }
   ]
 }

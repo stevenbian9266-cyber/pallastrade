@@ -50,10 +50,11 @@ module PallasTrade
     #   P7-1 写入（入口）：unlinked_payment / non_positive_amount / invalid_transition
     #   P7-6 写入（收敛）：provider_conflict（provider↔本地终局冲突）/ journal_gap（对账缺口不可自动补）
     #                    / funds_evidence_missing（provider 已示资金移动但本地无 funds 时间戳，绝不猜）
+    #   P7-7 写入（后台）：operator_review（运营在 Console 主动标记复核）
     # 零 DDL：`attention_reason` 为 string 列（迁移无 CHECK 约束）
     ATTENTION_REASONS = %w[
       unlinked_payment non_positive_amount invalid_transition
-      provider_conflict journal_gap funds_evidence_missing
+      provider_conflict journal_gap funds_evidence_missing operator_review
     ].freeze
 
     class InvalidTransition < StandardError; end
@@ -80,6 +81,17 @@ module PallasTrade
     scope :active, -> { where.not(state: TERMINAL_STATES) }
     scope :terminal, -> { where(state: TERMINAL_STATES) }
     scope :needs_attention, -> { where.not(attention_reason: nil) }
+
+    # DSP-P7-7：Admin Ops 店铺作用域——`Admin::ResourceController` 会调 `model_class.for_store(current_store)`，
+    # 缺此 scope 会回退全表 → **跨店泄露**（导航/详情同源）
+    scope :for_store, ->(store) { where(store_id: store.id) }
+
+    # DSP-P7-7：Admin Ops 列表过滤/排序白名单（`RansackableAttributes` 默认仅 id/name/时间/position；
+    # 非白名单条件会被 Ransack **静默丢弃** → 表现为「过滤器点了没反应」）
+    self.whitelisted_ransackable_attributes = %w[
+      state kind provider outcome attention_reason amount currency
+      evidence_due_at evidence_submitted_at funds_withdrawn_at funds_reinstated_at resolved_at created_at
+    ]
 
     STATES.each do |state_name|
       define_method("#{state_name}?") { state == state_name }

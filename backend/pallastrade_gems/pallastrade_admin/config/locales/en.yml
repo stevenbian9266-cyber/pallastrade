@@ -481,6 +481,29 @@ en:
         payment_combinations_help: Combined-payment visibility (read-only) — every PaymentCombination with its member PaymentSplits (captured / refunded / credit), per-split refunds, the combination payment and its durable commerce transaction. Refunds show their real durable state. Cancellation / refund actions belong to the Admin API and order pages.
         payments_ops: Payments
         payments_ops_help: Payment operations (read-only) — completed PSP payments of this store (including combined payments). Open a payment to run the read-only provider refund pairing (OrphanPairing) which reports matched, orphans (provider-only refunds, with read-only amounts) and local refunds missing on the provider. Nothing is written or auto-refunded.
+        disputes_ops: Disputes
+        disputes_ops_help: 'Dispute operations (Orders → Disputes) — provider-initiated money reversals (chargeback / inquiry / warning) of this store with the full fact chain: payment anchor, commerce transaction, order, provider references, amount, state & flags, evidence deadline, journal entries, reconciliation and the latest recovery. The safe actions never move money: they refresh the provider state (read-only), preview or run the idempotent recovery, rebuild the read-only evidence snapshot and mark the dispute for manual review. Accepting a dispute or submitting evidence is a separate, protected workflow.'
+        disputes_refresh: Refresh provider state
+        disputes_refreshed: 'Provider state refreshed — resolution: %{resolution}, provider status: %{provider_status}.'
+        disputes_refresh_failed: Unable to read the provider state for this dispute.
+        disputes_dry_run: Preview recovery
+        disputes_dry_run_confirm: 'Preview what the idempotent recovery would do for this dispute? Nothing is written.'
+        disputes_dry_run_done: 'Recovery preview — the decision would be: %{decision}.'
+        disputes_dry_run_failed: Unable to preview recovery for this dispute.
+        disputes_recover: Run recovery
+        disputes_recover_confirm: 'Run the idempotent recovery? It can only move the dispute forward, repair a missing journal entry or hand it to manual review — it never re-charges, never refunds and never rewrites the ledger.'
+        disputes_recovered: 'Recovery finished — decision: %{decision}.'
+        disputes_recover_failed: Unable to run recovery for this dispute.
+        disputes_snapshot: Generate evidence snapshot
+        disputes_snapshot_done: 'Evidence snapshot generated — %{missing} missing item(s). Nothing is stored or submitted.'
+        disputes_snapshot_failed: Unable to build the evidence snapshot for this dispute.
+        disputes_mark_review: Mark for manual review
+        disputes_mark_review_confirm: 'Mark this dispute for manual review? It records the operator reason and opens the human channel — no money side effect.'
+        disputes_marked_review: Dispute marked for manual review.
+        disputes_already_marked: This dispute is already marked for manual review.
+        disputes_mark_review_failed: Unable to mark this dispute for manual review.
+        disputes_deadline: Deadline
+        disputes_flags: Flags
         parent_filter: Order type
         parent_orders: Parent orders
         child_orders: Child orders

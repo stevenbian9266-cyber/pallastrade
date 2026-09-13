@@ -34,6 +34,10 @@ module PallasTrade
         # REV-P6-8g：组合/split 只读可视化（Orders → Payment Combinations 页）
         can :read, PallasTrade::PaymentCombination
         can :read, PallasTrade::PaymentSplit
+
+        # DSP-P7-7：争议运维（Orders → Disputes）——只读展现 + 收敛/人工标记动作
+        # （动作本身仍受 P7-6/P7-7 服务的幂等与铁律约束；此处只解决「能不能进页面/能不能点」）
+        can :read, PallasTrade::Dispute
       end
     end
   end

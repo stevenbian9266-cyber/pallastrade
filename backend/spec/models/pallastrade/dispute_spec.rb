@@ -121,4 +121,32 @@ RSpec.describe PallasTrade::Dispute, type: :model do
       expect { dispute.transition_to!('bogus') }.to raise_error(described_class::InvalidTransition)
     end
   end
+
+  # PRD-20260913-payments-dsp-p7-7-admin-disputes-console
+  # AC-P77-15 —— Admin Ops 查询能力：店铺作用域（防跨店泄露）+ Ransack 白名单（列表过滤/排序生效）
+  describe 'Admin Ops query surface (DSP-P7-7)' do
+    let(:store) { create(:store, code: 'dispute_scope_store', default: true) }
+    let(:other_store) { create(:store, code: 'dispute_scope_other') }
+
+    def scoped_dispute(target_store:, state: 'opened', reference:)
+      described_class.create!(
+        provider: 'stripe', provider_dispute_reference: reference,
+        state: state, amount: 10, currency: 'usd', store_id: target_store.id
+      )
+    end
+
+    it 'AC-P77-15 for_store 只返回该店争议' do
+      mine = scoped_dispute(target_store: store, reference: 'dp_scope_mine')
+      scoped_dispute(target_store: other_store, reference: 'dp_scope_theirs')
+
+      expect(described_class.for_store(store).pluck(:id)).to eq([mine.id])
+    end
+
+    it 'AC-P77-15 ransack 白名单覆盖列表过滤所需列' do
+      whitelisted = described_class.ransackable_attributes
+
+      expect(whitelisted).to include('state', 'attention_reason', 'evidence_due_at', 'created_at')
+      expect(described_class.ransack(state_cont: 'lost').result.to_sql).to include('state')
+    end
+  end
 end

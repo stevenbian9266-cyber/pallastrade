@@ -2652,6 +2652,67 @@ Rails.application.config.after_initialize do
                                                     position: 60
 
   # REV-P6-8h: Payment Ops —— completed PSP payments（含组合 payment）只读列表
+  # DSP-P7-7: Dispute Ops（只读；Orders → Disputes）——列表列（disputes_ops 页渲染）
+  PallasTrade.admin.tables.register(:disputes,
+    model_class: PallasTrade::Dispute,
+    link_to_action: :show,
+    row_actions: true,
+    row_actions_edit: false,
+    row_actions_delete: false,
+    new_resource: false)
+
+  PallasTrade.admin.tables.disputes.add :prefixed_id,
+                                        label: :id,
+                                        type: :string,
+                                        sortable: false,
+                                        filterable: false,
+                                        default: true,
+                                        position: 5
+  PallasTrade.admin.tables.disputes.add :state,
+                                        label: :state,
+                                        type: :custom,
+                                        partial: 'pallastrade/admin/tables/columns/dispute_state',
+                                        sortable: false,
+                                        filterable: true,
+                                        filter_type: 'string',
+                                        default: true,
+                                        position: 10
+  PallasTrade.admin.tables.disputes.add :provider,
+                                        label: :provider,
+                                        type: :string,
+                                        sortable: false,
+                                        filterable: true,
+                                        default: true,
+                                        position: 15
+  PallasTrade.admin.tables.disputes.add :amount,
+                                        label: :amount,
+                                        type: :string,
+                                        sortable: false,
+                                        filterable: false,
+                                        default: true,
+                                        position: 20
+  PallasTrade.admin.tables.disputes.add :evidence_due_at,
+                                        label: 'admin.orders.disputes_deadline',
+                                        type: :datetime,
+                                        sortable: true,
+                                        filterable: false,
+                                        default: true,
+                                        position: 25
+  PallasTrade.admin.tables.disputes.add :attention_reason,
+                                        label: 'admin.orders.disputes_flags',
+                                        type: :string,
+                                        sortable: false,
+                                        filterable: true,
+                                        default: true,
+                                        position: 30
+  PallasTrade.admin.tables.disputes.add :created_at,
+                                        label: :created_at,
+                                        type: :datetime,
+                                        sortable: true,
+                                        filterable: false,
+                                        default: true,
+                                        position: 35
+
   PallasTrade.admin.tables.register(:payments,
     model_class: PallasTrade::Payment,
     link_to_action: :show,

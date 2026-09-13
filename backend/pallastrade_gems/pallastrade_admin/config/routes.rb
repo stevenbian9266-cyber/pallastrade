@@ -339,6 +339,18 @@ PallasTrade::Core::Engine.add_routes do
     resources :payment_combinations, only: [:index, :show]
     # REV-P6-8h: Payment Ops（只读；含组合 payment 与孤儿退款配对）——top-level /admin/payments
     resources :payments, only: [:index, :show], controller: 'payments_ops'
+    # DSP-P7-7: Dispute Ops —— durable Dispute 只读检视 + 安全动作（Orders → Disputes）。
+    # 只读优先：refresh / snapshot / dry_run 零写；recover（幂等收敛）与 mark_review（人工标记）是仅有的两个写动作。
+    # 危险操作（Accept Dispute / Submit Evidence）**不在本切片**（归 P7-8，需 permission + confirmation + audit）。
+    resources :disputes, only: [:index, :show], controller: 'disputes_ops' do
+      member do
+        post :refresh
+        post :dry_run
+        post :recover
+        post :snapshot
+        post :mark_review
+      end
+    end
     get '/emails', to: 'emails#show', as: :emails
     patch '/emails', to: 'emails#update'
     post '/emails/test_send', to: 'emails#test_send', as: :emails_test_send

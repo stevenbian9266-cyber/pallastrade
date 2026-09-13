@@ -1031,7 +1031,35 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **P7-3 服务扩展（加法式，默认行为逐字节不变）**：`FinancialFacts::ResolveDispute` / `FinancialLedger::PostDispute` /
   `Reconciliations::ReconcileDispute` 新增可选 `dispute_fact:` —— 复用**同一份**权威快照，避免重复 provider 只读
   调用，且不依赖本地元数据（否则缺元数据时会把可证事实降为 AMBIGUOUS → 漏补账）。
-- **后续切片**：P7-7 Admin Console 展现 / P7-8 多 provider + 证据提交（提交属危险操作，需 permission + confirmation + audit）。
+- **后续切片**：P7-7 ✅（2026-09-13，见下节 Admin Console）/ P7-8 多 provider + 证据提交（提交属危险操作，需 permission + confirmation + audit）。
+
+## Dispute Admin Console（DSP-P7-7, 2026-09-13；PRD-20260913-payments-dsp-p7-7-admin-disputes-console）
+
+> 源计划 §66/§67：把 P7-1…P7-6 已落地的能力**只读汇总**到后台一页（列表 + 七张详情卡），
+> 让运营看清「有哪些争议、卡在哪、下一步该干什么」；**不新增任何资金动作**
+> （Accept Dispute / Submit Evidence 是 P7-8 的危险操作，本切片连路由和按钮都不存在）。
+
+- **列表**：`/admin/disputes`（`PallasTrade::Admin::DisputesOpsController#index`），列由注册表
+  `PallasTrade.admin.tables.register(:disputes)` 驱动（7 列；`state` 用 `partial:` 自定义徽章）；
+  Ransack 白名单在**模型层** `Dispute.whitelisted_ransackable_attributes`（state/kind/provider/outcome/
+  attention_reason/amount/currency/三类时间戳…），列表恒经 `for_store` 作用域 → 跨店不可见。
+- **详情（§66 七张卡）**：状态与金额 / Evidence 快照（P7-4）/ provider 对账（P7-3）/ 账本行（P7-3）/
+  退款重叠 / 收敛记录（P7-6）/ 最近 provider 事件（P7-1）——**全部是只读投影**：每个投影各包一层
+  rescue，异常降级为 `nil` 并渲染 "unavailable" 卡片，页面**绝不 500**。
+- **动作（仅 5 个，全部叠在既有服务之上）**：`refresh`（provider 只读刷新，数据库零写）/ `dry_run`
+  （`Recover.apply: false` 计划预览）/ `recover`（`Recover.apply: true`，唯一可写动作，仍然只修事实、不碰资金）/
+  `snapshot`（重建 P7-4 证据快照，不落库、不提交）/ `mark_review`（`Disputes::MarkManualReview` →
+  `attention_reason = operator_review` + `state = manual_review` + `Audit.record('dispute_mark_review')`）。
+- **`operator_review` 写入纪律**：`attention_reason` 与 P7-1/P7-6 一致地**只补不覆盖**；已是人工态且已有
+  reason 时返回 `already_marked`（幂等，不重复写、不重复审计）。
+- **权限边界**：读 = `can?(:read, PallasTrade::Dispute)`（order_display / order_management 两侧均补）；
+  写 = `:update`（仅 order_management 的 `modify` 覆盖）；权限注册表登记
+  `reg.register(:disputes, model_class: PallasTrade::Dispute, actions: %w[read update], data_fields: %w[store_id])`。
+- **导航/文案**：侧边栏 Orders 下 `disputes_ops`（bilingual key `admin.orders.disputes_ops`，双语硬门
+  `nav_validate`）；按钮文案与确认框走 `PallasTrade.t`，不硬编码英文。
+- **负向断言（钉死边界）**：无 Accept / Submit Evidence 路由或按钮；动作不创建 Payment/Refund、不改订单/库存/
+  CommerceTransaction、不改写既有账行（append-only）；`dry_run` 与 `refresh` 数据库零写。
+- **后续切片**：P7-8 多 provider + 证据提交 / Accept Dispute（危险操作：permission + confirmation + audit 三件套）。
 
 ## Where to read further
 
@@ -1042,6 +1070,12 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **Stripe gem:** `https://github.com/stevenbian9266-cyber/pallastrade` — best reference for a real-world payment integration.
 
 ## Changelog (P0 Payment, 2026-09-03)
+
+- DSP-P7-7 (2026-09-13, PRD-20260913-payments-dsp-p7-7): Dispute Admin Console——`/admin/disputes` 列表（注册表
+  驱动 + Ransack 白名单 + `for_store` 隔离）与七卡详情（P7-1…P7-6 只读投影，异常降级不 500）；5 个动作全部叠在
+  既有服务上（refresh / dry_run / snapshot / recover / mark_review），其中 `recover` 是唯一可写动作且仍然只修事实；
+  新增 `Disputes::MarkManualReview`（`operator_review` + 审计，幂等只补不覆盖）。无 migration；Accept/Submit Evidence
+  属 P7-8，本切片不提供路由/按钮。
 
 - DSP-P7-1 (2026-09-11, PRD-20260911-payments-dsp-p7-1): Dispute durable 模型与 provider 事件入口——
   `pallastrade_disputes`/`PallasTrade::Dispute`（幂等 upsert + 阶段序状态机 + attention_reason）；

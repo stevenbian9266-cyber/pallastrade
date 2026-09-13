@@ -109,6 +109,14 @@ Rails.application.config.after_initialize do
               position: 48,
               active: -> { controller_name == 'payments_ops' },
               if: -> { can?(:read, PallasTrade::Payment) || can?(:manage, PallasTrade::Order) }
+
+    # DSP-P7-7: Dispute Ops（Orders → Disputes；只读展现 + 安全动作）
+    orders.add :disputes_ops,
+              label: 'admin.orders.disputes_ops',
+              url: :admin_disputes_path,
+              position: 50,
+              active: -> { controller_name == 'disputes_ops' },
+              if: -> { can?(:read, PallasTrade::Dispute) || can?(:manage, PallasTrade::Order) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns

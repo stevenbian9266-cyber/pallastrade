@@ -1,0 +1,333 @@
+<% content_for(:title, @dispute.prefixed_id) %>
+<% content_for :page_title do %>
+  <%= @dispute.prefixed_id %>
+<% end %>
+<%# DSP-P7-7 (PRD-20260913-payments-dsp-p7-7-admin-disputes-console)：§66 展现面 + §67 安全动作 %>
+<%# 动作显隐 = eligible 状态 且 有权限；写动作带 turbo_confirm；危险操作（接受争议/提交证据）不在本切片 %>
+<% content_for :page_actions do %>
+  <% if can?(:read, @dispute) %>
+    <%= button_to PallasTrade.t('admin.orders.disputes_refresh'),
+                  PallasTrade.refresh_admin_dispute_path(@dispute),
+                  method: :post,
+                  class: 'btn btn-outline' %>
+    <%= button_to PallasTrade.t('admin.orders.disputes_dry_run'),
+                  PallasTrade.dry_run_admin_dispute_path(@dispute),
+                  method: :post,
+                  data: { turbo_confirm: PallasTrade.t('admin.orders.disputes_dry_run_confirm') },
+                  class: 'btn btn-outline' %>
+    <%= button_to PallasTrade.t('admin.orders.disputes_snapshot'),
+                  PallasTrade.snapshot_admin_dispute_path(@dispute),
+                  method: :post,
+                  class: 'btn btn-outline' %>
+  <% end %>
+  <% if can?(:update, @dispute) %>
+    <%= button_to PallasTrade.t('admin.orders.disputes_recover'),
+                  PallasTrade.recover_admin_dispute_path(@dispute),
+                  method: :post,
+                  data: { turbo_confirm: PallasTrade.t('admin.orders.disputes_recover_confirm') },
+                  class: 'btn btn-warning' %>
+    <%= button_to PallasTrade.t('admin.orders.disputes_mark_review'),
+                  PallasTrade.mark_review_admin_dispute_path(@dispute),
+                  method: :post,
+                  data: { turbo_confirm: PallasTrade.t('admin.orders.disputes_mark_review_confirm') },
+                  class: 'btn btn-warning' %>
+  <% end %>
+  <%= link_to PallasTrade.t('actions.back'), PallasTrade.admin_disputes_path, class: 'btn btn-outline' %>
+<% end %>
+
+<% dispute = @dispute || @object %>
+<% payment = dispute.payment %>
+<% order = dispute.order %>
+<% transaction = dispute.commerce_transaction %>
+
+<%# ── 1. 争议概览（Dispute ID / Provider / Amount-Currency / Reason / State / Flags / Deadline） ── %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.orders.disputes_ops') %></h5>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div>
+        <dt class="text-sm text-gray-500">Dispute ID</dt>
+        <dd><%= dispute.prefixed_id %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Provider</dt>
+        <dd><%= dispute.provider %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Amount / Currency</dt>
+        <dd><%= format('%.2f', dispute.amount.to_f) %> <%= dispute.currency.to_s.upcase %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">State</dt>
+        <dd><%= dispute_state_badge(dispute) %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Kind</dt>
+        <dd><%= dispute.kind.presence || '—' %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_flags') %></dt>
+        <dd><%= dispute_attention_badge(dispute) %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Reason</dt>
+        <dd><%= dispute.reason.presence || '—' %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Network reason code</dt>
+        <dd><%= dispute.network_reason_code.presence || '—' %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_deadline') %></dt>
+        <dd><%= dispute.evidence_due_at&.strftime('%Y-%m-%d %H:%M') || '—' %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Evidence submitted at</dt>
+        <dd><%= dispute.evidence_submitted_at&.strftime('%Y-%m-%d %H:%M') || '—' %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Funds withdrawn / reinstated</dt>
+        <dd>
+          <%= dispute.funds_withdrawn_at&.strftime('%Y-%m-%d %H:%M') || '—' %>
+          /
+          <%= dispute.funds_reinstated_at&.strftime('%Y-%m-%d %H:%M') || '—' %>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Resolved at</dt>
+        <dd><%= dispute.resolved_at&.strftime('%Y-%m-%d %H:%M') || '—' %></dd>
+      </div>
+    </dl>
+  </div>
+</div>
+
+<%# ── 2. 锚点：Payment / CommerceTransaction / Order + Provider references ── %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">Anchors &amp; provider references</h5>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div>
+        <dt class="text-sm text-gray-500">Payment</dt>
+        <dd>
+          <% if payment %>
+            <%= link_to payment.prefixed_id, PallasTrade.admin_payment_path(payment) %>
+          <% else %>
+            —
+          <% end %>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Commerce transaction</dt>
+        <dd>
+          <% if transaction %>
+            <%= link_to transaction.prefixed_id, PallasTrade.admin_transaction_path(transaction) %>
+          <% else %>
+            —
+          <% end %>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Order</dt>
+        <dd><%= order ? order.number : '—' %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Provider dispute reference</dt>
+        <dd><%= dispute.provider_dispute_reference %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Provider charge reference</dt>
+        <dd><%= dispute.provider_charge_reference.presence || '—' %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Provider payment reference</dt>
+        <dd><%= dispute.provider_payment_reference.presence || '—' %></dd>
+      </div>
+    </dl>
+  </div>
+</div>
+
+<%# ── 3. 判定与收敛状态（裁决 / 收敛审计 / 最近 provider 事件） ── %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">Provider truth &amp; recovery</h5>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div>
+        <dt class="text-sm text-gray-500">Resolution (provider ↔ local)</dt>
+        <dd><%= dispute_resolution_badge(@fact&.resolution) %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Fact</dt>
+        <dd>
+          <%= @fact&.fact_type || '—' %>
+          (<%= @fact&.status || '—' %>, source: <%= @fact&.source || '—' %>)
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Last observed provider status</dt>
+        <dd><%= @fact&.provider_status.presence || dispute.private_metadata&.dig('provider_status').presence || '—' %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Recovery</dt>
+        <dd><%= dispute_recovery_hint(dispute, @recovery) %></dd>
+      </div>
+      <div>
+        <dt class="text-sm text-gray-500">Last provider event</dt>
+        <dd>
+          <% if @last_provider_event %>
+            <%= @last_provider_event.action %> ·
+            <%= @last_provider_event.status %> ·
+            <%= @last_provider_event.created_at.strftime('%Y-%m-%d %H:%M') %>
+          <% else %>
+            —
+          <% end %>
+        </dd>
+      </div>
+    </dl>
+  </div>
+</div>
+
+<%# ── 4. Financial movements / Journal（只读账本派行） ── %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">Financial movements (journal)</h5>
+  </div>
+  <div class="card-body">
+    <% if @journal_entries.any? %>
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Entry</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Effective at</th>
+            <th>State</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @journal_entries.each do |entry| %>
+            <tr>
+              <td><%= entry.prefixed_id %></td>
+              <td><%= entry.entry_type %></td>
+              <td><%= format('%.2f', entry.amount.to_f) %> <%= entry.currency.to_s.upcase %></td>
+              <td><%= entry.effective_at&.strftime('%Y-%m-%d %H:%M') %></td>
+              <td><%= entry.state %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-gray-500 mb-0">No journal entries yet.</p>
+    <% end %>
+  </div>
+</div>
+
+<%# ── 5. Reconciliation（在线只读；异常降级） ── %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">Reconciliation</h5>
+  </div>
+  <div class="card-body">
+    <% if @reconciliation %>
+      <dl class="grid grid-cols-2 gap-4">
+        <div>
+          <dt class="text-sm text-gray-500">Classification</dt>
+          <dd><%= @reconciliation[:classification] %></dd>
+        </div>
+        <div>
+          <dt class="text-sm text-gray-500">Capability</dt>
+          <dd><%= @reconciliation[:capability] %></dd>
+        </div>
+        <div>
+          <dt class="text-sm text-gray-500">Reasons</dt>
+          <dd><%= Array(@reconciliation[:reasons]).join(', ').presence || '—' %></dd>
+        </div>
+        <div>
+          <dt class="text-sm text-gray-500">Expected entries</dt>
+          <dd><%= Array(@reconciliation[:expected_entries]).map { |e| e[:entry_type] }.join(', ').presence || '—' %></dd>
+        </div>
+      </dl>
+    <% else %>
+      <p class="text-gray-500 mb-0">Reconciliation unavailable (degraded — the page stays read-only).</p>
+    <% end %>
+  </div>
+</div>
+
+<%# ── 6. Evidence snapshot（在线只读投影；不落库、不提交） ── %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">Evidence snapshot</h5>
+  </div>
+  <div class="card-body">
+    <% if @evidence %>
+      <p class="text-gray-500">
+        Submission ready: <strong><%= @evidence.submission_ready? %></strong>
+        · missing: <strong><%= @evidence.missing_evidence.size %></strong>
+        (submitting evidence is a protected workflow outside this console)
+      </p>
+      <% if @evidence_sections.any? %>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Section</th>
+              <th>Availability</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @evidence_sections.each do |section| %>
+              <tr>
+                <td><%= section[:name] %></td>
+                <td><%= section[:availability] || '—' %></td>
+                <td><%= section[:reason] || '—' %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% end %>
+      <% if @evidence.missing_evidence.any? %>
+        <p class="mb-0"><strong>Missing:</strong> <%= @evidence.missing_evidence.join(', ') %></p>
+      <% end %>
+    <% else %>
+      <p class="text-gray-500 mb-0">Evidence snapshot unavailable (degraded — nothing is stored or submitted).</p>
+    <% end %>
+  </div>
+</div>
+
+<%# ── 7. Refund overlap（同一 payment 的退款队列，只读） ── %>
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title">Refund overlap</h5>
+  </div>
+  <div class="card-body">
+    <% if @refunds.any? %>
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Refund</th>
+            <th>State</th>
+            <th>Amount</th>
+            <th>Created at</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @refunds.each do |refund| %>
+            <tr>
+              <td><%= refund.prefixed_id %></td>
+              <td><%= refund_state_badge(refund) %></td>
+              <td><%= format('%.2f', refund.amount.to_f) %> <%= refund.currency.to_s.upcase %></td>
+              <td><%= refund.created_at&.strftime('%Y-%m-%d %H:%M') %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-gray-500 mb-0">No refunds on the anchored payment.</p>
+    <% end %>
+  </div>
+</div>

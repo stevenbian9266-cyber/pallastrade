@@ -18,6 +18,8 @@ module PallasTrade
       helper 'pallastrade/admin/refunds_ops'
       # REV-P6-8g: PaymentCombination 状态徽章 / split 金额标签（payment_combinations 页共用）
       helper 'pallastrade/admin/payment_combinations'
+      # DSP-P7-7: Dispute state/attention 徽章（disputes_ops 列表与详情共用）
+      helper 'pallastrade/admin/disputes_ops'
 
       before_action :authorize_admin
 

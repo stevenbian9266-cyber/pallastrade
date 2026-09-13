@@ -19,6 +19,8 @@ module PallasTrade
         can [:read, :admin], PallasTrade::CustomerReturn
         can [:read, :admin], PallasTrade::Reimbursement
         can [:read, :admin], PallasTrade::Refund
+        # DSP-P7-7：争议只读（Orders → Disputes 控制台；运营开箱可见）
+        can [:read, :admin], PallasTrade::Dispute
         can [:read, :admin], PallasTrade::StoreCredit
         can [:read, :admin], PallasTrade::GiftCard
       end

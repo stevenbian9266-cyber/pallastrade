@@ -24,6 +24,29 @@ zh-CN:
         payment_combinations_help: 组合支付可视化（只读）——查看合并支付的成员分摊（已收/已退/可退余额）、逐分摊退款、组合支付本身及其 durable 交易。退款展示真实 durable 状态；取消/退款操作在 Admin API 与订单页。
         payments_ops: 支付
         payments_ops_help: 支付运维（只读）——本店 completed PSP 支付（含组合支付）。打开任一支付运行 Provider 退款配对（OrphanPairing）：matched / 孤儿（Provider 独有退款，含只读金额）/ 本地缺 Provider 的退款。全程零写入、不自动退款。
+        disputes_ops: 争议
+        disputes_ops_help: '争议运维（Orders → Disputes）——本店 provider 发起的资金逆转（拒付 / 查询 / 预警）及其完整事实链：支付锚点、交易、订单、provider 引用、金额、状态与标记、证据截止、账行、对账与最近一次收敛。安全动作永不触碰资金：刷新 provider 状态（只读）、预览或执行幂等收敛、重新生成只读证据快照、标记人工复核。接受争议与提交证据是另一套受保护流程（归 P7-8）。'
+        disputes_refresh: 刷新 Provider 状态
+        disputes_refreshed: 已刷新 provider 状态——裁决：%{resolution}，provider 状态：%{provider_status}。
+        disputes_refresh_failed: 无法读取该争议的 provider 状态。
+        disputes_dry_run: 预览收敛
+        disputes_dry_run_confirm: 预览幂等收敛对该争议会做什么？不会写入任何数据。
+        disputes_dry_run_done: 收敛预览——预期决策：%{decision}。
+        disputes_dry_run_failed: 无法预览该争议的收敛。
+        disputes_recover: 执行收敛
+        disputes_recover_confirm: 执行幂等收敛？它只能把争议向前推进、补记缺失账行或移交人工复核——绝不重扣款、不退款、不改写账本。
+        disputes_recovered: 收敛完成——决策：%{decision}。
+        disputes_recover_failed: 无法执行该争议的收敛。
+        disputes_snapshot: 生成证据快照
+        disputes_snapshot_done: 已生成证据快照——缺失 %{missing} 项。不落库、不提交。
+        disputes_snapshot_failed: 无法生成该争议的证据快照。
+        disputes_mark_review: 标记人工复核
+        disputes_mark_review_confirm: 将该争议标记为人工复核？会记录运营原因并打开人工通道——无任何资金副作用。
+        disputes_marked_review: 争议已标记为人工复核。
+        disputes_already_marked: 该争议已在人工复核队列中。
+        disputes_mark_review_failed: 无法将该争议标记为人工复核。
+        disputes_deadline: 证据截止
+        disputes_flags: 标记
       products:
         products_list: 商品列表
         categories: 分类
