@@ -5,7 +5,7 @@
 | 审计对象 | 源规格 `豆包梳理业务需求/` 的 **P0 / P2 / P3 / P4 / P5 / P6 / P7** 七条线（及其旁线：checkout / promotions / admin / catalog / infra） |
 | 审计日期 | 2026-09-13 |
 | 审计类型 | 审计（`TASK-20260913083052-54a7e245` / gate `GATE-2026-09-13T08-30-58`） |
-| 审计范围 | ① 规格↔PRD↔代码工件存在性；② 治理状态与证据链；③ 测试规模；④ 部署事实；**不含**逐条 AC 复算与逐章节规格覆盖率证明（见 §6 未覆盖项） |
+| 审计范围 | ① 规格↔PRD↔代码工件存在性；② 治理状态与证据链；③ 测试规模；④ 部署事实；⑤ **全景架构图 + 关键实现（§2/§3）**；**不含**逐条 AC 复算与逐章节规格覆盖率证明（见 §8 未覆盖项） |
 | 结论摘要 | **实现面显著领先于治理面**：P0/P4/P6/P7 已交付并收口；**P2 全线与 P3 的 PRD 未收口（approved/draft）但代码已落地**；另发现 **README 索引与 PRD 文件状态漂移** 2 处 |
 | 总体评级 | 实现：**B+**（可运行、有测试、已上线 dev）／治理：**C+**（113 个 PRD 中 28 个未 done，且存在状态漂移） |
 
@@ -26,7 +26,126 @@
 
 ---
 
-## 2. 关键发现（按严重度）
+## 2. 架构图（P0–P7 全景）
+
+> 图的依据：本节节点名均可在 §3 关键实现表中找到对应文件（本审计实测）。虚线表示异步（事件/作业）。
+
+```mermaid
+flowchart TB
+    PSP["PSP / 卡组织（Stripe）"]
+
+    subgraph P0G["P0 · 支付基础加固（入口事实层）"]
+        WHEV["PaymentWebhookEvent<br/>入库 / provider_event_id 去重 / 重放"]
+        HW["Payments::HandleWebhook<br/>+ HandleWebhookJob（按事件族分流）"]
+        WHEV --> HW
+    end
+
+    subgraph CKG["Checkout（旁线）"]
+        CART["Cart → Carts::Submit"]
+        ORD["Order"]
+        OCHK["OrderCheckout::*<br/>view / snapshot / readiness / versioning"]
+        CART --> ORD
+        OCHK --> ORD
+    end
+
+    subgraph P2G["P2 · 交易编排与恢复"]
+        TXN["CommerceTransaction<br/>created→payment_pending→payment_confirmed→finalizing→completed<br/>(+ canceled / recovery_required / manual_review)"]
+        ST["Transactions::Start / Resume"]
+        OPS["Transactions::OnPaymentSuccess"]
+        FINZ["Transactions::Finalize"]
+        PFR["Transactions::PaymentFactResolver"]
+        IFR["Transactions::InventoryFactResolver"]
+        RCV["Transactions::Recover<br/>+ RecoverJob / RecoverSweeperJob"]
+        ST --> TXN
+        OPS --> TXN
+        FINZ --> TXN
+        TXN --> PFR
+        OPS -.-> FINZ
+        OPS -.-> IFR
+        RCV -.-> TXN
+    end
+
+    subgraph P3G["P3 · 库存预留生命周期"]
+        RSV["StockReservation<br/>reserved→committed / released / expired"]
+        RI["Transactions::ReserveInventory"]
+        EXJ["StockReservations::ExpireJob"]
+        RI --> RSV
+        EXJ -.-> RSV
+    end
+
+    subgraph P4G["P4 · 资金账本与对账（唯一账源）"]
+        FCT["FinancialFact<br/>CONFIRMED / AUTHORIZED_ONLY / AMBIGUOUS / UNSUPPORTED"]
+        POS["FinancialLedger::{Post, PostPayment, PostRefund,<br/>PostDispute, PostAllocation, Reverse}"]
+        LED["FinancialLedgerEntry<br/>append-only · ImmutableError · idempotency_key"]
+        RCN["Reconciliations::{ReconcilePayment, ReconcileRefund,<br/>ReconcileTransaction, ReconcileDispute}"]
+        SWP["ReconcileSweeperJob / RepairTransactionJob"]
+        FCT --> POS --> LED --> RCN
+        SWP -.-> RCN
+    end
+
+    subgraph P6G["P6 · 反向商业（退款 / 取消）"]
+        RQ["Refunds::Request（durable requested）"]
+        EXE["Refunds::Execute + ExecuteJob"]
+        RRV["Refunds::{Recover, RecoverJob/Sweeper,<br/>ManualRetry, MarkManualReview, OrphanPairing}"]
+        CXL["Orders::{Cancel, CombinationCancel}"]
+        RQ --> EXE
+        RRV -.-> EXE
+    end
+
+    subgraph P7G["P7 · 争议与拒付"]
+        DSP["Dispute<br/>opened→needs_response→submitted→under_review→won/lost/closed"]
+        DSUB["DisputeEvidenceSubmission<br/>append-only 回执（ImmutableError）"]
+        DSV["Disputes::{HandleProviderEvent, ResolveFact, BuildEvidenceSnapshot,<br/>ScanDeadlines, Recover, SubmitEvidence, AcceptDispute,<br/>CaptureFee, PaymentDisputeSummary}"]
+        DJB["DeadlineSweeperJob / RecoverSweeperJob"]
+        ADM["Admin /disputes_ops<br/>只读投影 + 危险操作三件套"]
+        DSV --> DSP
+        DSV --> DSUB
+        DJB -.-> DSV
+        ADM --> DSV
+    end
+
+    SUB["PallasTrade::Events + Subscribers<br/>payment_paid / refund_succeeded / combination_succeeded /<br/>dispute.funds_withdrawn · funds_reinstated · fee_recorded"]
+
+    PSP --> WHEV
+    HW --> OPS
+    HW --> DSV
+    ORD --> ST
+    PFR --> FCT
+    IFR --> RSV
+    FINZ --> ORD
+    RQ --> FCT
+    DSP --> FCT
+    EXE --> FCT
+    CXL --> ORD
+    TXN -.-> SUB
+    LED -.-> SUB
+    DSP -.-> SUB
+    SUB -.-> POS
+```
+
+**读图要点**
+- **唯一资金主链**：`Payment/Refund/Dispute → FinancialFact → FinancialLedgerEntry → Reconciliations`；任何“改钱”的动作只允许在这条链上发生，且账行 append-only。
+- **两条入口**：同步（Checkout → `Transactions::Start`）与异步（PSP webhook → `PaymentWebhookEvent` → `HandleWebhookJob` 按族分流到 payment / dispute）。
+- **反向商业与争议共用账本**：P6 退款与 P7 争议都只往同一不可变账本写事实，彼此不互相写状态。
+- **异步底座**：`PallasTrade::Events` + Subscribers + Sidekiq（`Jobs` 列于图内），所有副作用（入账、收敛、告警）均异步幂等。
+
+---
+
+## 3. 关键实现（按线，含铁律）
+
+| 线 | 关键机制 | 代表文件 | 铁律 / 不变量 |
+|---|---|---|---|
+| **P0** | Webhook 事件入库 + `provider_event_id` 去重 + 重放；PaymentSession↔Payment 正式 FK；Express 幂等（`operation_key`）；服务端金额权威；gateway preferences AR 加密；ErrorCodes/Audit/RequestId | `payments/{handle_webhook,webhook_event_store,replay_webhook_event,error_codes}.rb`、`models/pallastrade/payment_webhook_event.rb`、`lib/pallastrade/payments/*` | 未验签/重复事件不得重复处理；金额以服务端为准；密钥不落明文 |
+| **P2** | 交易聚合状态机（created→…→completed，含 `recovery_required`/`manual_review`）；`Start/Resume` 幂等（operation_key/quote）；`OnPaymentSuccess → Finalize` 终局化；`PaymentFactResolver` provider 只读裁决（paid/unpaid/ambiguous）；`Recover` 锁内守门 + 锁外幂等 | `models/pallastrade/commerce_transaction.rb`、`services/pallastrade/transactions/{start,resume,on_payment_success,finalize,recover,payment_fact_resolver,inventory_fact_resolver}.rb`、`jobs/pallastrade/transactions/{recover_job,recover_sweeper_job}.rb` | **禁止 `payment_confirmed → payment_pending` 回退**；终局化幂等；歧义（AMBIGUOUS）不猜，入人工 |
+| **P3** | Reservation 与物理库存分层；Commit 不重复扣库存；Reservation 生命周期（reserved→committed / released / expired）；过期作业 | `models/pallastrade/stock_reservation.rb`、`services/pallastrade/transactions/{reserve_inventory,inventory_fact_resolver}.rb`、`jobs/pallastrade/stock_reservations/expire_job.rb` | 同一 `stock_item+line_item` 仅一个活跃预留（partial unique）；COMMITTED 仅在物理消费确认后 |
+| **P4** | 四层金融事实（Fact 契约）→ 幂等 Post 原语 → 不可变账行；分域 Posting（Payment/Refund/Dispute/Allocation）；冲销用 `Reverse` 追加；四类对账（payment/refund/transaction/dispute）+ 分类枚举 | `models/pallastrade/{financial_fact,financial_ledger_entry}.rb`、`services/pallastrade/financial_ledger/*`（9）、`services/pallastrade/reconciliations/*`（7）、`jobs/pallastrade/reconciliations/reconcile_sweeper_job.rb` | 账行**不可变**（`ImmutableError`）；幂等键 `fact_posting_key` 稳定派生；对账**零写、零网络** |
+| **P6** | 退款走 `Request`（durable requested）→ `Execute`（Job）两段式，业务事务内不调 provider；失败人工通道（`ManualRetry`/`MarkManualReview`）；provider 孤儿退款配对（`OrphanPairing`）；取消编排与组合取消 | `services/pallastrade/refunds/*`（8）、`jobs/pallastrade/refunds/{execute_job,recover_job,recover_sweeper_job}.rb`、`jobs/pallastrade/reverse_commerce/*`、`subscribers/.../refund_succeeded_subscriber.rb` | 资金副作用不得发生在 durable 行之前（AP-010）；Original Transaction 不回退 |
+| **P7** | 争议聚合（阶段序前向单调状态机）；provider 事件入口与裁决（`ResolveFact`）；证据快照（禁推导）；死线扫描（只提示）；收敛（只修事实）；写契约（提交证据/接受争议，基类抛未实现）；手续费采集与独立入账；能力矩阵 | `models/pallastrade/{dispute,dispute_evidence_submission}.rb`、`services/pallastrade/disputes/*`（15）、`jobs/pallastrade/disputes/{deadline_sweeper_job,recover_sweeper_job}.rb`、`pallastrade_admin/.../disputes_ops_controller.rb` | 资金结果只由 webhook 驱动；危险操作三件套（permission+confirmation+audit）；手续费**永不冲销**；无契约 provider ≡ `UNSUPPORTED` |
+| 旁线（promotions / checkout / admin） | 优惠占用生命周期（reserved→committed→released）；购物车与订单分表 + 部分结算 successor cart；后台导航单一布局+tabs | `services/pallastrade/promotions/*`、`services/pallastrade/carts/*`、`pallastrade_admin` 导航与表格注册 | 优惠码占用唯一性（partial unique）；导航双语硬门（`nav_validate`） |
+
+---
+
+## 4. 关键发现（按严重度）
 
 ### F1 — 【高】P2 线「实现完成、治理未收口」
 - 代码证据：`services/pallastrade/transactions/` **8 个服务**（`start` `resume` `on_payment_success` `finalize` `recover` `payment_fact_resolver` `inventory_fact_resolver` `reserve_inventory`）+ `models/pallastrade/commerce_transaction.rb` + 21 个 spec 文件。
@@ -66,7 +185,7 @@
 
 ---
 
-## 3. 逐线矩阵
+## 5. 逐线矩阵
 
 | 线 | 源规格 | 实现证据（代表工件） | 测试 | 治理状态 | 部署 | 结论 |
 |---|---|---|---|---|---|---|
@@ -83,7 +202,7 @@
 
 ---
 
-## 4. 治理与证据链评价
+## 6. 治理与证据链评价
 
 **做得好的（可复用）**
 1. **gate + 证据链闭环**：`harness gate`（6 层搜索 / Skill 咨询 / 用户确认）、四类证据（test/review/approval/knowledge）、critical 任务的恢复计划、`evidence verify` 与 staged-tree 绑定，实际拦下过"未验证即提交"。
@@ -99,7 +218,7 @@
 
 ---
 
-## 5. 建议行动（按优先级）
+## 7. 建议行动（按优先级）
 
 | 优先级 | 行动 | 产出 | 预估 |
 |---|---|---|---|
@@ -113,7 +232,7 @@
 
 ---
 
-## 6. 未覆盖项（明确声明，避免过度解读）
+## 8. 未覆盖项（明确声明，避免过度解读）
 
 1. 未做**逐 AC 复算**：本报告核查"工件/测试/证据/部署"，未逐条重放历史 AC（P4/P6/P7 的 AC 数量级为数十条/线）。
 2. 未做**逐章节规格覆盖率证明**：P2=108、P3=122、P4=130、P6=151、P7=149 章节与实现的三级映射缺失（见建议 P2-①）。
@@ -123,7 +242,7 @@
 
 ---
 
-## 7. 附录：证据索引
+## 9. 附录：证据索引
 
 - PRD 索引：`docs/prd/README.md`（113 行状态表）
 - 源规格：`豆包梳理业务需求/{P0任务,P2…P7}.md`
