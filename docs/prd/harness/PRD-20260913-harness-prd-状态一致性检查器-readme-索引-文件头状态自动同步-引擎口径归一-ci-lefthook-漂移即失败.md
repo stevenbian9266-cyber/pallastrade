@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved（用户 2026-09-13 明确选择「是：新增检查器（自动同步 + 漂移即失败）并接入 CI / lefthook」） |
+| 状态 | done（2026-09-13 实施完成：脚本 + 9 项回归测试全绿 + lefthook/CI 接线 + 知识同步；实仓 118 文件/118 索引 `--check` exit 0） |
 | 创建日期 | 2026-09-13 |
 | 来源 | 优化：PRD 状态一致性检查器（README 索引 ↔ 文件头状态自动同步 + 引擎口径归一 + CI/lefthook 漂移即失败） |
 | 分类 | harness（自动判定） |
@@ -39,7 +39,7 @@
 - FR-001：新增 `scripts/ci/prd-status-sync.mjs`（Node ESM，**零第三方依赖**），支持 `--check`（默认）/ `--fix` / `--json` / `--root <dir>`。
 - FR-002：**双向解析**：`docs/prd/README.md` 索引行（状态|PRD|分类|日期|REQ）与每份 `docs/prd/**/PRD-*.md` 文件头的 `| 状态 | … |` 行。
 - FR-003：检出四类问题：`state-drift`（两侧不同）、`not-indexed`、`missing-file`、`unparsable-status-row`。
-- FR-004：`--fix` 以**文件头状态为准**回写索引；仅当文件无状态行时以索引为准补齐文件并打印告警；**不新建/不删除文件**。
+- FR-004：`--fix` 以**文件头状态为准**回写索引；仅当文件无状态行时以索引为准补齐文件并打印告警；**不新建/不删除文件**。实施补充：`--fix` 还会把**引擎不可见**（补空格/制表符）的 `| 状态 | … |` 行归一为 `| 状态 | <status> |`（语义不变，仅对齐引擎口径；词表图例行不动）。
 - FR-005：状态词表 = 引擎词表（draft/reviewing/approved/implementing/verifying/done/rejected） ∪ 仓库扩展（merged/obsolete/⛔废弃）。
 - FR-006：接入 `lefthook.yml` pre-commit（glob `docs/prd/**`）与 `.github/workflows/harness-full.yml`（新增 `prd-status` job）。
 - FR-007：退出码：`0` 一致；`1` 存在漂移；`2` 用法/IO 错误（CI 可区分）。
@@ -102,3 +102,4 @@
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-13 | 0.1 | 初稿（基于 P0–P7 收口的实测漂移数据） | AI |
+| 2026-09-13 | 1.0 | 实施完成：`scripts/ci/prd-status-sync.mjs` + `tests/prd-status-sync.test.mjs`（9 用例）+ lefthook pre-commit + harness-full.yml `prd-status` job + AGENTS/Skill/scenarios 同步；实仓回填 5 处历史问题后 `--check` exit 0 | AI |

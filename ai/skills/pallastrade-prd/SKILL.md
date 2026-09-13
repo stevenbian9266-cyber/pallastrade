@@ -48,7 +48,9 @@ description: Use when the user gives a one-line requirement (一句话需求) an
    - 测试计划（新增/更新）
    - 文档同步清单（含接口影响预判）
 5. 状态：`draft`
-6. 更新 `docs/prd/README.md` 索引
+6. 更新 `docs/prd/README.md` 索引；**写完后必须校验状态一致**：
+   `node scripts/ci/prd-status-sync.mjs --check`（漂移会被 pre-commit 与 CI 拦截；
+   `--fix` 会按文件头状态回写索引、并把补空格的 `| 状态 … |` 行归一为引擎可解析格式）
 
 ### 2.4 接口影响预判
 - 若涉及 controller/routes/serializer/API → 在 PRD §9 标记"需更新 store/admin.yaml"

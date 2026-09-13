@@ -2,7 +2,7 @@
 
 | 元数据      | 值                                                                                                                                                                              |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 状态       | done                                                                                                                                                                       |
+| 状态 | done |
 | 创建日期     | 2026-09-06                                                                                                                                                                     |
 | 来源       | 用户任务：「结合 P0-P3 实际实现与 FIN-P4-0 审计，实施 P4 — Transaction Financial Journal & PSP Reconciliation Foundation V2；严格按 PRD 拆包推进」；本 PRD = FIN-P4-1（Financial Fact Resolution）            |
 | 分类       | payments（资金事实解析属于 Payment/CommerceTransaction 交界，但核心 authority 来源为支付域）                                                                                                         |

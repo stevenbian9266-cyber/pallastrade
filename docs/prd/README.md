@@ -156,6 +156,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260905-other-txn-p2-6-sdk-consumption | other | 2026-09-05 | REQ-20260905-txn-p2-6-sdk-consumption.md |
 | done | PRD-20260831-infra-部署脚本固化与容错-deploy-sf-固化-pull-deploy-磁盘预检与-flock-超时-deploy-rea | infra | 2026-08-31 | REQ-20260831-部署脚本固化与容错.md |
 | merged | PRD-20260828-other-p7-逆向链路售后父子单化-flag-灰度 | other | 2026-08-28 | （与 checkout-p7 同需求：历史副本，正式以 checkout 侧为准） |
+| done | PRD-20260913-harness-prd-状态一致性检查器-readme-索引-文件头状态自动同步-引擎口径归一-ci-lefthook-漂移即失败 | harness | 2026-09-13 | （实施时回填） |
 
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 

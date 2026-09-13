@@ -28,6 +28,9 @@ pre-commit:
     harness-nav-validate:
       glob: "**/pallastrade_admin_navigation.rb"
       run: node scripts/nav-validate-static.mjs
+    harness-prd-status:
+      glob: "docs/prd/**/*.md"
+      run: node scripts/ci/prd-status-sync.mjs --check
 
 pre-push:
   commands:

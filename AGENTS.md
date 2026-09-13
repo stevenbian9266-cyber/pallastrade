@@ -40,6 +40,7 @@ You are working on **PallasTrade Commerce**, a self-hosted e-commerce platform b
 | `harness.config.mjs` | Harness 项目配置 | **引擎配置权威**（Task/Brain/Risk/Evidence + layers/gates/standards/supervisor/docImpact/coverage/profiles/syncCheck） | 引擎配置相关任务；引擎默认值见独立包 `pallastrade-harness`（`bin/config-loader.mjs`） | 工程负责人 |
 | `harness升级方案.md` | Harness 产品方案 | 下一代治理能力的已确认产品蓝图（具体规则仍以各权威文件为准） | Harness 能力规划/阶段升级 | 工程负责人 |
 | `harness/scenarios/scenarios.json` | 场景库 | Eval 权威 | 能力变更 | 工程负责人 |
+| `scripts/ci/prd-status-sync.mjs` | 工程脚本 | **PRD 状态一致性检查器**（README 索引 ↔ 文件头；`--check` / `--fix`） | PRD 状态变更 / 写 PRD 后 / pre-commit 失败时 | 工程负责人 |
 | `docs/standards/README.md` | 规范索引 | **规范文件指针权威** | 不确定规范位置时 | 工程负责人 |
 | `docs/prd/_TEMPLATE.md` | PRD 模板 | PRD 权威模板 | 一句话需求 | AI |
 | `ai/commands/doctor.md` | AI 命令 | 命令定义 | 运维诊断 | AI 维护者 |
