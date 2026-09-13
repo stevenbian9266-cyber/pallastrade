@@ -242,7 +242,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
       cart_id: "cart_1",
       payment_method_id: "pm_card",
       payment_mode: "payment_intent",
-      checkout: { use_shipping: true },
+      // PRD-20260913-checkout-billing-mode AC-008：显式账单语义（不再发 use_shipping）
+      checkout: { billing_mode: "same_as_shipping" },
     });
     expect(confirmMock).toHaveBeenCalledWith("sec_1");
     const patchCall = fetchMock.mock.calls[1];
@@ -505,6 +506,36 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     await user.click(billingCheckbox);
     expect(screen.getByText("billingAddress")).toBeInTheDocument();
     expect(screen.getByLabelText("bill-first_name")).toBeInTheDocument();
+  });
+
+  // PRD-20260913-checkout-billing-mode AC-009：购物车已带独立账单地址 → 默认未勾选
+  // （否则提交时会以「同配送」语义静默覆盖用户此前的选择）
+  it("unchecks same-as-shipping when the cart already has a billing address", () => {
+    renderCheckout(
+      makeCart({
+        billing_address: {
+          id: "addr_1",
+          city: "Billingville",
+        } as unknown as NonNullable<ShoppingCart["billing_address"]>,
+      }),
+    );
+
+    expect(screen.getByTestId("billing-use-shipping")).not.toBeChecked();
+  });
+
+  // PRD-20260913-checkout-billing-mode FR-011/AC-010：取消「同配送」但账单地址不完整
+  // 时不得发出 checkout 请求（服务端 FR-003 同样拦截）。
+  it("blocks Pay now when a custom billing address is incomplete", async () => {
+    const user = userEvent.setup();
+    renderCheckout();
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+
+    await user.click(screen.getByTestId("billing-use-shipping"));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   // PRD-20260909-promotions-promo-batch2-discount-projection-unified AC-008

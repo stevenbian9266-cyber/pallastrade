@@ -2172,6 +2172,23 @@ paths:
                   type: string
                   description: Existing address ID to use as billing address
                   example: addr_def456
+                billing_mode:
+                  type: string
+                  enum:
+                    - same_as_shipping
+                    - custom
+                  description: >-
+                    Billing address intent. `same_as_shipping` clears any stored billing
+                    address and the order snapshot falls back to the shipping address;
+                    `custom` stores the explicit `billing_address` (which must be complete).
+                  example: same_as_shipping
+                use_shipping:
+                  type: boolean
+                  deprecated: true
+                  description: >-
+                    Legacy alias for `billing_mode`: `true` maps to `same_as_shipping`,
+                    `false` to `custom`. Prefer `billing_mode`.
+                  example: true
                 billing_address:
                   type: object
                   properties:

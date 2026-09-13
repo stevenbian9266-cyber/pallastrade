@@ -54,6 +54,37 @@ RSpec.describe PallasTrade::Carts::Submit, type: :service do
       expect(cart.converted_at).to be_present
     end
 
+    # PRD-20260913-checkout-billing-mode AC-004：购物车无账单地址 → 回退复制配送地址
+    it 'falls back to the shipping address when the cart has no billing address' do
+      add_item
+
+      result = described_class.call(cart: cart)
+
+      expect(result).to be_success
+      order = result.value
+      shipping = cart.reload.shipping_address
+      expect(order.bill_address).to be_present
+      expect(order.bill_address.id).not_to eq(shipping.id) # 快照副本（dup）
+      expect(order.bill_address.first_name).to eq(shipping.first_name)
+      expect(order.bill_address.city).to eq(shipping.city)
+      expect(order.bill_address.country_iso).to eq(shipping.country_iso)
+    end
+
+    # PRD-20260913-checkout-billing-mode AC-005：显式账单地址优先，不被配送地址覆盖
+    it 'snapshots the explicit billing address when the cart has one' do
+      add_item
+      billing = create(:address, user: nil, first_name: 'Bill', city: 'Billingville')
+      cart.update!(billing_address: billing)
+
+      result = described_class.call(cart: cart)
+
+      expect(result).to be_success
+      order = result.value
+      expect(order.bill_address).to be_present
+      expect(order.bill_address.first_name).to eq('Bill')
+      expect(order.bill_address.city).to eq('Billingville')
+    end
+
     # PRD-20260830-checkout AC-003
     it 'only snapshots selected items and preserves unselected items in a successor cart' do
       add_item(quantity: 1, selected: true)

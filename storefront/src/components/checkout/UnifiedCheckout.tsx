@@ -330,7 +330,11 @@ export function UnifiedCheckout({
 
   // ── Billing address（PRD 3.6：Use shipping address as billing address，
   //    默认勾选；取消时展开独立账单地址表单）──────────────────────────
-  const [useShippingForBilling, setUseShippingForBilling] = useState(true);
+  // PRD-20260913-checkout-billing-mode FR-010：初值按购物车已有的独立账单地址推导，
+  // 避免默认「同配送」在提交时静默清除用户此前填写的账单地址。
+  const [useShippingForBilling, setUseShippingForBilling] = useState(
+    !cart.billing_address,
+  );
   const [billAddress, setBillAddress] = useState<AddressFormData>(
     cart.billing_address
       ? addressToFormData(cart.billing_address)
@@ -563,6 +567,15 @@ export function UnifiedCheckout({
       address.country_iso &&
       (address.state_abbr || address.state_name),
   );
+  // PRD-20260913-checkout-billing-mode FR-011：自定义账单地址完整性
+  const billAddressComplete = Boolean(
+    billAddress.first_name &&
+      billAddress.last_name &&
+      billAddress.address1 &&
+      billAddress.city &&
+      billAddress.postal_code &&
+      billAddress.country_iso,
+  );
   // 注意：email 不参与 canSubmit——PRD 3.2 要求点击 Pay now 时邮箱为空要
   // 弹提示（而非直接 disabled），由 handlePayNow 前置校验处理。
   const canSubmit =
@@ -589,6 +602,12 @@ export function UnifiedCheckout({
       toast.error(emailError);
       return;
     }
+    // PRD-20260913-checkout-billing-mode FR-011：取消「同配送」时必须提供完整
+    // 账单地址（服务端 FR-003 同样拦截，此处避免无谓往返）。
+    if (!useShippingForBilling && !billAddressComplete) {
+      toast.error(t("billingAddressIncomplete"));
+      return;
+    }
     if (isSessionBased && isStripe && !cardFormRef.current?.validate()) return;
 
     setPayError(null);
@@ -606,9 +625,14 @@ export function UnifiedCheckout({
             email: email || undefined,
             shipping_address: formDataToAddress(address),
             shipping_method_id: shippingMethodId || undefined,
+            // PRD-20260913-checkout-billing-mode FR-009：发送服务端显式账单语义
+            // （不再发 `use_shipping` —— 旧字段在 Store API 参数白名单中被丢弃）。
             ...(useShippingForBilling
-              ? { use_shipping: true }
-              : { billing_address: formDataToAddress(billAddress) }),
+              ? { billing_mode: "same_as_shipping" as const }
+              : {
+                  billing_mode: "custom" as const,
+                  billing_address: formDataToAddress(billAddress),
+                }),
           },
         }),
       });

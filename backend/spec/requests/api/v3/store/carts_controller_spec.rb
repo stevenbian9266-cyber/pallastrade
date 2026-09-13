@@ -136,6 +136,31 @@ RSpec.describe 'Store Carts API (standard flow)', type: :request do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    # PRD-20260913-checkout-billing-mode AC-006：`billing_mode` 必须进入参数白名单
+    # （未 permit 时 ActionController 静默丢弃 → 正是订单账单地址为空的根因）
+    it 'accepts billing_mode and clears the billing address when same_as_shipping' do
+      cart.update!(billing_address: create(:address, user: nil))
+      token_headers = headers.merge('x-pallastrade-token' => cart.token)
+
+      patch "/api/v3/store/carts/#{cart.prefixed_id}",
+            params: { billing_mode: 'same_as_shipping' }, headers: token_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(cart.reload.billing_address_id).to be_nil
+    end
+
+    # PRD-20260913-checkout-billing-mode AC-006：legacy `use_shipping` 同样必须在白名单内
+    it 'accepts the legacy use_shipping flag' do
+      cart.update!(billing_address: create(:address, user: nil))
+      token_headers = headers.merge('x-pallastrade-token' => cart.token)
+
+      patch "/api/v3/store/carts/#{cart.prefixed_id}",
+            params: { use_shipping: true }, headers: token_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(cart.reload.billing_address_id).to be_nil
+    end
   end
 
   describe 'POST /api/v3/store/carts/:id/submit' do

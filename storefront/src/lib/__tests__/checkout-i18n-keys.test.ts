@@ -25,6 +25,8 @@ const REQUIRED: Record<string, string[]> = {
     "returnToCart",
     "quoteUpdatedBanner",
     "dismissBanner",
+    // PRD-20260913-checkout-billing-mode AC-011
+    "billingAddressIncomplete",
   ],
   paymentResult: [
     "recoveryTitle",

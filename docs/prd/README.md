@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| done | PRD-20260913-checkout-billing-mode | checkout | 2026-09-13 | REQ-20260913-checkout-billing-mode.md |
 | done | PRD-20260913-checkout-txn-error-routing | checkout | 2026-09-13 | REQ-20260913-checkout-error-routing-and-money-contract.md |
 | done | PRD-20260913-checkout-money-contract | checkout | 2026-09-13 | REQ-20260913-checkout-error-routing-and-money-contract.md |
 | done | PRD-20260913-payments-dsp-p7-9-partial-and-multi-dispute-semantics | payments | 2026-09-13 | REQ-20260913-dsp-p7-9-partial-and-multi-dispute-semantics.md |

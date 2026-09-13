@@ -97,7 +97,11 @@ module PallasTrade
 
         # 地址快照（dup 复制属性；country/state 为 FK 列随复制）——订单不可变
         order.ship_address = cart.shipping_address.dup if cart.shipping_address.present?
-        order.bill_address = cart.billing_address.dup if cart.billing_address.present?
+        # PALLAS-CUSTOM (2026-09-13, PRD-20260913-checkout-billing-mode FR-004):
+        # 账单快照优先级 = 显式账单地址 → 否则配送地址副本（兜底）。修复
+        # 「前端勾选同配送（use_shipping）但订单 bill_address 为空」的缺陷。
+        billing_source = cart.billing_address || cart.shipping_address
+        order.bill_address = billing_source.dup if billing_source.present?
 
         order.save!
 

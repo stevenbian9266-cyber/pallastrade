@@ -415,7 +415,18 @@ export interface UpdateCartParams {
   shipping_address?: AddressParams
   /** P1：订单确认阶段选择的配送方式 */
   shipping_method_id?: string
-  /** When true, copies shipping address to billing address */
+  /**
+   * Billing address intent (PRD-20260913-checkout-billing-mode).
+   * `same_as_shipping` clears any stored billing address and the order snapshot
+   * falls back to the shipping address; `custom` stores the explicit address.
+   */
+  billing_mode?: 'same_as_shipping' | 'custom'
+  /**
+   * When true, copies shipping address to billing address.
+   * @deprecated Use `billing_mode: 'same_as_shipping' | 'custom'`. A value the
+   * server does not permit is silently dropped, which is how orders used to end
+   * up with an empty billing address.
+   */
   use_shipping?: boolean
   /** Items to upsert (sets quantity for existing, creates new) */
   items?: LineItemInput[]

@@ -2803,6 +2803,31 @@
         "savingsScope": 25,
         "noDisplayParsing": 10
       }
+    },
+    {
+      "id": "GS-113",
+      "name": "Billing intent is modelled server-side and the order snapshot always has a billing address",
+      "description": "PRD-20260913-checkout-billing-mode: the storefront sends billing_mode (same_as_shipping | custom) instead of the legacy use_shipping flag, choosing same-as-shipping clears the cart billing address, and Carts::Submit snapshots an explicit billing address first and falls back to the shipping address (RESEARCH-20260913 §9.1 P0-b)",
+      "mustDo": [
+        "Send billing_mode: 'same_as_shipping' | 'custom' from the checkout page and drop use_shipping from the payload",
+        "Treat permitted_params as the contract: a field the server does not permit is silently dropped, so new cart fields must land in the allow-list, the OpenAPI docs and the SDK types together",
+        "Clear the stored billing address when same_as_shipping is chosen, and snapshot the shipping address as the order billing address when the cart has none",
+        "Reject an incomplete custom billing address (server validation failure plus a client-side pre-submit guard) instead of persisting a half-empty address",
+        "Derive the same-as-shipping checkbox default from cart.billing_address so an existing billing address is never silently overwritten",
+        "Cover the cart services with rspec and the payload contract with vitest cases tagged with the PRD AC ids, keeping the five locale files in sync for new keys"
+      ],
+      "mustNotDo": [
+        "Keep sending use_shipping (or any field missing from the server allow-list) and assume it takes effect",
+        "Default the checkbox to checked while the cart already carries a distinct billing address, or persist an incomplete billing address",
+        "Add a database column for billing intent when that intent is already derivable from the stored billing address"
+      ],
+      "scoring": {
+        "explicitBillingMode": 30,
+        "orderSnapshotFallback": 25,
+        "allowListContract": 20,
+        "incompleteAddressRejected": 15,
+        "testAndI18nCoverage": 10
+      }
     }
   ]
 }

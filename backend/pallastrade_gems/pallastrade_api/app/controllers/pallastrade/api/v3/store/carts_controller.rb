@@ -136,6 +136,12 @@ module PallasTrade
               :shipping_address_id,
               :billing_address_id,
               :shipping_method_id,
+              # PALLAS-CUSTOM (2026-09-13, PRD-20260913-checkout-billing-mode FR-005):
+              # `billing_mode` = 服务端显式账单语义（same_as_shipping/custom）；
+              # `use_shipping` 为 legacy 布尔别名（映射见 Carts::Update#resolve_billing_mode）。
+              # 未 permit 时 ActionController 静默丢弃 —— 正是 Order.bill_address 为空的根因。
+              :billing_mode,
+              :use_shipping,
               shipping_address: address_params,
               billing_address: address_params,
               metadata: {},

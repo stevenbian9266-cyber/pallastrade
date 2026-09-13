@@ -309,6 +309,7 @@
     "phone": "Telefon: {phone}",
     "billingAddress": "Rechnungsadresse",
     "sameAsShipping": "Wie Lieferadresse",
+    "billingAddressIncomplete": "Bitte geben Sie eine vollständige Rechnungsadresse ein.",
     "estimatedTaxes": "Geschätzte Steuern",
     "paymentMethod": "Zahlungsmethode",
     "loadingPaymentForm": "Zahlungsformular wird geladen...",

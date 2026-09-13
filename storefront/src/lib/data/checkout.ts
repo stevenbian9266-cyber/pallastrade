@@ -37,6 +37,9 @@ export async function updateOrderAddresses(
     billing_address?: AddressParams;
     shipping_address_id?: string;
     billing_address_id?: string;
+    /** 账单地址语义（PRD-20260913-checkout-billing-mode） */
+    billing_mode?: "same_as_shipping" | "custom";
+    /** @deprecated 改用 billing_mode */
     use_shipping?: boolean;
     email?: string;
   },

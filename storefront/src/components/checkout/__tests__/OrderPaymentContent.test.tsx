@@ -229,6 +229,7 @@ describe("OrderPaymentContent", () => {
     });
   });
 
+  // PRD-20260913-checkout-billing-mode AC-012：`or_` 支付页不涉账单分支，本文件用例为回归基线
   it("renders shipping address, payment methods and order summary", () => {
     renderOrderPayment();
 

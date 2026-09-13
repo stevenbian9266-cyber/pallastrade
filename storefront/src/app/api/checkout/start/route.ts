@@ -26,7 +26,9 @@ interface CheckoutStartBody {
     shipping_method_id?: string;
     /** 独立账单地址（取消 "Same as shipping" 时提供） */
     billing_address?: AddressParams;
-    /** 复用配送地址作为账单地址（默认 true） */
+    /** 账单地址语义（PRD-20260913-checkout-billing-mode）：same_as_shipping | custom */
+    billing_mode?: "same_as_shipping" | "custom";
+    /** @deprecated 改用 billing_mode（保留以兼容旧客户端） */
     use_shipping?: boolean;
   };
 }

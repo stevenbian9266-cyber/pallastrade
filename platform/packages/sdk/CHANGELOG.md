@@ -4,6 +4,10 @@
 
 ### Minor Changes
 
+- Add `billing_mode` to `UpdateCartParams` (`'same_as_shipping' | 'custom'`) for the cart update endpoint.
+
+  `same_as_shipping` clears any stored billing address so the order snapshot falls back to the shipping address; `custom` stores the explicit `billing_address` (an incomplete one is rejected with a validation error). The legacy `use_shipping` boolean still works but is now marked `@deprecated`: it was never in the server's parameter allow-list, so it was silently dropped — which is how orders ended up with an empty billing address (PRD-20260913-checkout-billing-mode).
+
 - Add provider-dispatched login. `client.auth.login()` now accepts third-party identity-provider payloads (e.g. `{ provider: 'auth0', token: '<jwt>' }`) in addition to the existing `{ email, password }` shape — `LoginCredentials` is now a discriminated union of `EmailPasswordLogin | ProviderLogin`, both newly exported. Pairs with the server-side strategy registry at `PallasTrade.store_authentication_strategies`. Existing email/password calls are unchanged.
 
 - Add `client.newsletterSubscribers.create()` and `client.newsletterSubscribers.verify()` for the new Store API newsletter subscription endpoints.
