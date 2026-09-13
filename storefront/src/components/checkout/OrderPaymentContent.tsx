@@ -7,6 +7,7 @@ import type {
   PaymentMethod,
   State,
 } from "@pallastrade/sdk";
+import { X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -44,6 +45,7 @@ import {
   formDataToAddress,
   updateAddressField,
 } from "@/lib/utils/address";
+import { safeParseFloat } from "@/lib/utils/format";
 import { extractBasePath } from "@/lib/utils/path";
 import { extractSessionClientSecret } from "@/lib/utils/stripe";
 
@@ -58,10 +60,14 @@ interface OrderPaymentContentProps {
 /**
  * CHK-P1-4: normalized read model for the pay page — served by the server
  * CheckoutView projection when available, otherwise the Order snapshot.
- * Money always uses display_* (API-authoritative formatting).
+ * Money contract（PRD-20260913-checkout-money-contract）：raw 字段仅用于条件判断，
+ * display_* 仅用于渲染（API 权威格式）。
  */
 interface CheckoutReadModel {
   items: CheckoutView["items"];
+  /** raw 金额——仅用于逻辑判断。 */
+  delivery_total: string | null;
+  tax_total: string | null;
   display_item_total: string | null;
   display_delivery_total: string | null;
   display_tax_total: string | null;
@@ -109,13 +115,13 @@ function OrderPaymentSummary({ read }: { read: CheckoutReadModel }) {
           <dd className="text-gray-900">{read.display_item_total}</dd>
         </div>
         {read.display_delivery_total &&
-          parseFloat(read.display_delivery_total) > 0 && (
+          safeParseFloat(read.delivery_total) > 0 && (
             <div className="flex justify-between">
               <dt className="text-gray-500">{tc("shipping")}</dt>
               <dd className="text-gray-900">{read.display_delivery_total}</dd>
             </div>
           )}
-        {read.display_tax_total && parseFloat(read.display_tax_total) > 0 && (
+        {read.display_tax_total && safeParseFloat(read.tax_total) > 0 && (
           <div className="flex justify-between">
             <dt className="text-gray-500">{tc("tax")}</dt>
             <dd className="text-gray-900">{read.display_tax_total}</dd>
@@ -149,6 +155,10 @@ export function OrderPaymentContent({
   const basePath = extractBasePath(pathname);
   const searchParams = useSearchParams();
   const { setSummaryContent } = useCheckout();
+  // PRD-20260913-checkout-txn-error-routing AC-007：报价变化横幅（?notice=quote_changed）。
+  const [showQuoteNotice, setShowQuoteNotice] = useState(
+    () => searchParams?.get("notice") === "quote_changed",
+  );
 
   const paymentMethods: PaymentMethod[] = order.payment_methods ?? [];
   // 默认选中：URL 预选（?pm=）> 首个可用支付方式
@@ -183,6 +193,8 @@ export function OrderPaymentContent({
       effectiveView
         ? {
             items: effectiveView.items,
+            delivery_total: effectiveView.delivery_total,
+            tax_total: effectiveView.tax_total,
             display_item_total: effectiveView.display_item_total,
             display_delivery_total: effectiveView.display_delivery_total,
             display_tax_total: effectiveView.display_tax_total,
@@ -191,6 +203,8 @@ export function OrderPaymentContent({
           }
         : {
             items: order.items ?? [],
+            delivery_total: order.delivery_total,
+            tax_total: order.tax_total,
             display_item_total: order.display_item_total,
             display_delivery_total: order.display_delivery_total,
             display_tax_total: order.display_tax_total,
@@ -431,6 +445,25 @@ export function OrderPaymentContent({
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">{t("payment")}</h1>
+
+      {/* PRD-20260913-checkout-txn-error-routing AC-007：报价变化横幅 */}
+      {showQuoteNotice && (
+        <div
+          role="status"
+          data-testid="quote-updated-banner"
+          className="mb-6 flex items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"
+        >
+          <p className="text-sm text-amber-800">{t("quoteUpdatedBanner")}</p>
+          <button
+            type="button"
+            aria-label={t("dismissBanner")}
+            className="shrink-0 text-amber-700 hover:text-amber-900"
+            onClick={() => setShowQuoteNotice(false)}
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
 
       <div className="space-y-8">
         {/* 收货信息——CHK-P1-4: 以 CheckoutView 投影为准（回退 order 快照）

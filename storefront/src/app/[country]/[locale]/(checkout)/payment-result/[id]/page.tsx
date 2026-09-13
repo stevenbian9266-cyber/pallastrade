@@ -21,7 +21,7 @@ interface PaymentResultPageProps {
     country: string;
     locale: string;
   }>;
-  searchParams: Promise<{ session?: string }>;
+  searchParams: Promise<{ session?: string; notice?: string }>;
 }
 
 function statusFromSession(session: PaymentSession | null): ResultStatus {
@@ -62,7 +62,7 @@ export default async function PaymentResultPage({
   searchParams,
 }: PaymentResultPageProps) {
   const { id, country, locale } = await params;
-  const { session: sessionId } = await searchParams;
+  const { session: sessionId, notice } = await searchParams;
   const t = await getTranslations("paymentResult");
   const basePath = `/${country}/${locale}`;
 
@@ -109,12 +109,28 @@ export default async function PaymentResultPage({
     );
   }
 
-  const title = t(`${status}Title`);
-  const description = t(`${status}Description`);
+  // PRD-20260913-checkout-txn-error-routing FR-004/FR-005 AC-005/AC-006：
+  // 恢复/处理中 notice 覆盖展示文案，并抑制重试入口（防重复支付）。
+  const forcedNotice =
+    notice === "recovery" || notice === "processing" ? notice : null;
+  const title =
+    forcedNotice === "recovery"
+      ? t("recoveryTitle")
+      : forcedNotice === "processing"
+        ? t("processingNoticeTitle")
+        : t(`${status}Title`);
+  const description =
+    forcedNotice === "recovery"
+      ? t("recoveryDescription")
+      : forcedNotice === "processing"
+        ? t("processingNoticeDescription")
+        : t(`${status}Description`);
 
   return (
     <div className="mx-auto max-w-xl py-16 text-center">
-      {status === "success" ? (
+      {forcedNotice ? (
+        <Clock3 className="mx-auto mb-4 h-16 w-16 text-blue-500" />
+      ) : status === "success" ? (
         <CircleCheckBig className="mx-auto mb-4 h-16 w-16 text-green-500" />
       ) : status === "failed" ? (
         <CircleAlert className="mx-auto mb-4 h-16 w-16 text-red-500" />
@@ -141,12 +157,12 @@ export default async function PaymentResultPage({
       </dl>
 
       <div className="flex flex-col justify-center gap-3 sm:flex-row">
-        {status === "failed" || status === "canceled" ? (
+        {!forcedNotice && (status === "failed" || status === "canceled") ? (
           <Button asChild>
             <Link href={retryHref}>{t("retryPayment")}</Link>
           </Button>
         ) : null}
-        {status === "pending" ? (
+        {!forcedNotice && status === "pending" ? (
           <Button asChild>
             <Link
               href={`${basePath}/payment-result/${id}${sessionId ? `?session=${sessionId}` : ""}`}

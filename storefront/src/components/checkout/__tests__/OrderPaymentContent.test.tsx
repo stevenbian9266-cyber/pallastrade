@@ -18,6 +18,9 @@ vi.mock("@/lib/data/countries", () => ({
 const pushMock = vi.fn();
 const replaceMock = vi.fn();
 
+// PRD-20260913-checkout-txn-error-routing AC-007：notice 参数可控（vi.hoisted 供 mock 工厂读取）。
+const searchParamsState = vi.hoisted(() => ({ notice: null as string | null }));
+
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));
@@ -25,7 +28,9 @@ vi.mock("next-intl", () => ({
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock, replace: replaceMock }),
   usePathname: () => "/us/en/checkout/or_1",
-  useSearchParams: () => ({ get: () => null }),
+  useSearchParams: () => ({
+    get: (key: string) => (key === "notice" ? searchParamsState.notice : null),
+  }),
 }));
 
 const createOrderSessionMock = vi.fn();
@@ -207,6 +212,7 @@ function renderOrderPayment(
 describe("OrderPaymentContent", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    searchParamsState.notice = null;
     confirmMock.mockResolvedValue({});
     createOrderSessionMock.mockResolvedValue({
       success: true,
@@ -231,6 +237,55 @@ describe("OrderPaymentContent", () => {
     expect(screen.getByText("orderSummary")).toBeTruthy();
     expect(screen.getByTestId("order-payment-summary")).toBeInTheDocument();
     expect(screen.getByText("Ada Lovelace")).toBeTruthy();
+  });
+
+  // ── PRD-20260913-checkout-txn-error-routing AC-007：报价变化横幅 ──
+  it("shows the quote-updated banner when ?notice=quote_changed (AC-007)", () => {
+    searchParamsState.notice = "quote_changed";
+
+    renderOrderPayment();
+
+    expect(screen.getByTestId("quote-updated-banner")).toBeInTheDocument();
+    expect(screen.getByText("quoteUpdatedBanner")).toBeTruthy();
+  });
+
+  it("does not show the quote-updated banner without the notice param (AC-007)", () => {
+    renderOrderPayment();
+
+    expect(screen.queryByTestId("quote-updated-banner")).toBeNull();
+  });
+
+  // ── PRD-20260913-checkout-money-contract AC-001/AC-002：raw 判逻辑 / display 仅渲染 ──
+  it("renders shipping and tax rows from raw amounts even when display strings carry symbols (AC-001/AC-002)", () => {
+    const viewWithCharges = {
+      ...checkoutView,
+      delivery_total: "8.00",
+      tax_total: "5.00",
+      display_delivery_total: "$8.00",
+      display_tax_total: "$5.00",
+    } as unknown as CheckoutView;
+
+    renderOrderPayment(order, viewWithCharges);
+
+    expect(screen.getByText("shipping")).toBeTruthy();
+    expect(screen.getByText("$8.00")).toBeTruthy();
+    expect(screen.getByText("tax")).toBeTruthy();
+    expect(screen.getByText("$5.00")).toBeTruthy();
+  });
+
+  it("hides the shipping row when the raw delivery total is zero (AC-002 boundary)", () => {
+    const viewWithoutShipping = {
+      ...checkoutView,
+      delivery_total: "0.0",
+      tax_total: null,
+      display_delivery_total: "$0.00",
+      display_tax_total: null,
+    } as unknown as CheckoutView;
+
+    renderOrderPayment(order, viewWithoutShipping);
+
+    expect(screen.queryByText("$0.00")).toBeNull();
+    expect(screen.queryByText("shipping")).toBeNull();
   });
 
   it("renders the self-drawn card form immediately when Stripe is selected (no client_secret needed)", () => {

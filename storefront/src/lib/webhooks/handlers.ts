@@ -81,6 +81,8 @@ export async function handleOrderCompleted(event: WebhookEvent<Order>) {
       displayDiscountTotal: order.display_discount_total ?? "",
       displayTaxTotal: order.display_tax_total ?? "",
       displayTotal: order.display_total ?? "",
+      discountTotal: order.discount_total ?? null,
+      taxTotal: order.tax_total ?? null,
       shippingAddress: order.shipping_address ?? undefined,
       billingAddress: order.billing_address ?? undefined,
       deliveryMethodName,

@@ -76,3 +76,24 @@ export function normalizeErrorMessage(
 ): string {
   return extractErrorMessage(value) ?? fallback;
 }
+
+/**
+ * 提取结构化错误 code（用于错误分流决策；展示一律走 normalizeErrorMessage）。
+ * 兼容形状（按优先级）：
+ *   1. { error: { code } }   ← 后端 v3 / BFF 统一契约
+ *   2. { code }
+ * 取不到返回 undefined。
+ */
+export function extractErrorCode(value: unknown): string | undefined {
+  if (value && typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    const err = obj.error;
+    if (err && typeof err === "object") {
+      const code = asNonEmptyString((err as StructuredErrorEnvelope).code);
+      if (code) return code;
+    }
+    const code = asNonEmptyString(obj.code);
+    if (code) return code;
+  }
+  return undefined;
+}

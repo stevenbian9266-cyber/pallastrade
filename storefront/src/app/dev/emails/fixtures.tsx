@@ -52,6 +52,8 @@ export const emailFixtures: EmailFixture[] = [
         displayDiscountTotal: "-$10.00",
         displayTaxTotal: "$11.25",
         displayTotal: "$142.20",
+        discountTotal: "-10.00",
+        taxTotal: "11.25",
         shippingAddress: {
           full_name: "Jane Smith",
           address1: "123 Main Street",

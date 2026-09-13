@@ -10,7 +10,8 @@ const pushMock = vi.fn();
 const replaceMock = vi.fn();
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, values?: Record<string, unknown>) =>
+    values ? `${key}:${JSON.stringify(values)}` : key,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -330,6 +331,105 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     toastErrorSpy.mockRestore();
   });
 
+  // ── PRD-20260913-checkout-txn-error-routing：提交后错误按 code 分流 ──
+  // PRD-20260913-checkout-txn-error-routing AC-001（quote 变化 → or_ notice，不自动支付）
+  // PRD-20260913-checkout-txn-error-routing AC-002（库存不足 → 页内提示 + 返回购物车）
+  // PRD-20260913-checkout-txn-error-routing AC-003（库存变化 / 预留过期 → 页内提示）
+  // PRD-20260913-checkout-txn-error-routing AC-004（已收款恢复 → 结果页 notice=recovery）
+  // PRD-20260913-checkout-txn-error-routing AC-008（未就绪 → 页内提示，无 CTA）
+  // PRD-20260913-checkout-txn-error-routing AC-009（未知 code → 结果页兜底）
+
+  async function payWithErrorBody(body: Record<string, unknown>) {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValue({ ok: false, json: async () => body });
+    renderCheckout();
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+  }
+
+  it("routes a changed quote to the order page with a notice, without paying (AC-001)", async () => {
+    await payWithErrorBody({
+      error: { code: "quote_changed", message: "Checkout quote changed" },
+      order_id: "or_123",
+    });
+
+    expect(replaceMock).toHaveBeenCalledWith(
+      "/us/en/checkout/or_123?notice=quote_changed",
+    );
+    expect(confirmMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the user on checkout for insufficient stock with a return-to-cart CTA (AC-002)", async () => {
+    await payWithErrorBody({
+      error: { code: "INSUFFICIENT_STOCK", message: "Product A is sold out" },
+      order_id: "or_123",
+    });
+
+    expect(screen.getByTestId("checkout-error-notice")).toBeInTheDocument();
+    expect(screen.getByText("stockUnavailableTitle")).toBeTruthy();
+    expect(screen.getByText("Product A is sold out")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "returnToCart" })).toHaveAttribute(
+      "href",
+      "/us/en/cart",
+    );
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the user on checkout when inventory changed (AC-003)", async () => {
+    await payWithErrorBody({
+      error: { code: "INVENTORY_CHANGED", message: "Availability changed" },
+      order_id: "or_123",
+    });
+
+    expect(screen.getByTestId("checkout-error-notice")).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the user on checkout when the reservation expired (AC-003)", async () => {
+    await payWithErrorBody({
+      error: { code: "RESERVATION_EXPIRED", message: "Please re-confirm" },
+      order_id: "or_123",
+    });
+
+    expect(screen.getByTestId("checkout-error-notice")).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+
+  it("routes a paid-but-recovering transaction to the recovery notice page (AC-004)", async () => {
+    await payWithErrorBody({
+      error: { code: "INVENTORY_RECOVERY_REQUIRED", message: "Recovering" },
+      order_id: "or_123",
+    });
+
+    expect(replaceMock).toHaveBeenCalledWith(
+      "/us/en/payment-result/or_123?notice=recovery",
+    );
+  });
+
+  it("shows an in-page notice for a not-ready checkout without navigation (AC-008)", async () => {
+    await payWithErrorBody({
+      error: { code: "checkout_not_ready", message: "Missing delivery rate" },
+      order_id: "or_123",
+    });
+
+    expect(screen.getByTestId("checkout-error-notice")).toBeInTheDocument();
+    expect(screen.getByText("checkoutNotReady")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "returnToCart" })).toBeNull();
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the result-page fallback for unknown codes with an order id (AC-009)", async () => {
+    await payWithErrorBody({
+      error: { code: "checkout_failed", message: "Unexpected failure" },
+      order_id: "or_123",
+    });
+
+    expect(replaceMock).toHaveBeenCalledWith("/us/en/payment-result/or_123");
+  });
+
   // ── PRD v1.1（Checkout页面.md）新增对齐测试 ─────────────────────────
 
   it("defaults to the Credit card (Stripe) payment method when available (PRD 3.6)", () => {
@@ -458,5 +558,95 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(screen.getByText("SAVE5")).toBeInTheDocument();
     expect(screen.getByTestId("total-savings")).toBeInTheDocument();
     expect(screen.getByText("$14.98")).toBeInTheDocument();
+  });
+
+  // ── PRD-20260913-checkout-money-contract AC-003/AC-004：节省口径只算促销折扣 ──
+  it("counts only promotion discounts in TOTAL SAVINGS (AC-003)", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/checkout/coupon") {
+        return {
+          ok: true,
+          json: async () => ({
+            cart: {
+              ...makeCart(),
+              currency: "USD",
+              display_total: "$12.98",
+              discount_total: "-5.00",
+              display_discount_total: "-$5.00",
+              gift_card_total: "-3.00",
+              display_gift_card_total: "-$3.00",
+              store_credit_total: "-2.00",
+              display_store_credit_total: "-$2.00",
+              discounts: [
+                {
+                  id: "discount_abc",
+                  promotion_id: "promo_x1",
+                  name: "Save 5",
+                  description: null,
+                  code: "SAVE5",
+                  kind: "coupon_code",
+                  amount: "-5.0",
+                  display_amount: "-$5.00",
+                  breakdown: { items: "0.0", order: "-5.0", shipping: "0.0" },
+                  removable: true,
+                },
+              ],
+            },
+          }),
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({ session: { id: "ps_1" } }),
+      };
+    });
+
+    renderCheckout();
+
+    const input = screen.getByLabelText("placeholder");
+    await user.type(input, "SAVE5");
+    await user.click(screen.getByRole("button", { name: "apply" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    // 节省 = 促销折扣 $5.00（礼品卡 / 店铺余额不计入）
+    const badge = screen.getByTestId("total-savings");
+    expect(badge.textContent).toContain("$5.00");
+    expect(badge.textContent).not.toContain("$10.00");
+  });
+
+  it("hides TOTAL SAVINGS when only gift cards are applied (AC-004)", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/checkout/coupon") {
+        return {
+          ok: true,
+          json: async () => ({
+            cart: {
+              ...makeCart(),
+              currency: "USD",
+              discount_total: null,
+              display_discount_total: null,
+              gift_card_total: "-3.00",
+              display_gift_card_total: "-$3.00",
+              discounts: [],
+            },
+          }),
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({ session: { id: "ps_1" } }),
+      };
+    });
+
+    renderCheckout();
+
+    const input = screen.getByLabelText("placeholder");
+    await user.type(input, "GIFT3");
+    await user.click(screen.getByRole("button", { name: "apply" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(screen.queryByTestId("total-savings")).toBeNull();
   });
 });

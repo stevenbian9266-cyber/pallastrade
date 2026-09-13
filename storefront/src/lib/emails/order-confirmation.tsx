@@ -49,6 +49,9 @@ interface OrderConfirmationEmailProps {
   displayDiscountTotal?: string;
   displayTaxTotal: string;
   displayTotal: string;
+  /** raw 金额——仅用于条件判断（Money 契约；display_* 仅渲染）。 */
+  discountTotal?: string | null;
+  taxTotal?: string | null;
   shippingAddress?: Address;
   billingAddress?: Address;
   deliveryMethodName?: string;
@@ -65,11 +68,16 @@ export function OrderConfirmationEmail({
   displayDiscountTotal,
   displayTaxTotal,
   displayTotal,
+  discountTotal,
+  taxTotal,
   shippingAddress,
   billingAddress,
   deliveryMethodName,
 }: OrderConfirmationEmailProps) {
   const firstName = customerName.split(" ")[0] || "there";
+  // Money 契约（PRD-20260913-checkout-money-contract AC-005）：raw 判定行可见性。
+  const hasDiscount = Number(discountTotal ?? 0) !== 0;
+  const hasTax = Number(taxTotal ?? 0) > 0;
 
   return (
     <Html>
@@ -149,19 +157,15 @@ export function OrderConfirmationEmail({
               <Column style={totalsLabel}>Shipping</Column>
               <Column style={totalsValue}>{displayDeliveryTotal}</Column>
             </Row>
-            {displayDiscountTotal &&
-              Number.parseFloat(
-                displayDiscountTotal.replace(/[^0-9.-]/g, ""),
-              ) !== 0 && (
-                <Row>
-                  <Column style={totalsLabel}>Discount</Column>
-                  <Column style={{ ...totalsValue, color: "#16a34a" }}>
-                    {displayDiscountTotal}
-                  </Column>
-                </Row>
-              )}
-            {Number.parseFloat(displayTaxTotal.replace(/[^0-9.-]/g, "")) >
-              0 && (
+            {hasDiscount && (
+              <Row>
+                <Column style={totalsLabel}>Discount</Column>
+                <Column style={{ ...totalsValue, color: "#16a34a" }}>
+                  {displayDiscountTotal}
+                </Column>
+              </Row>
+            )}
+            {hasTax && (
               <Row>
                 <Column style={totalsLabel}>Tax</Column>
                 <Column style={totalsValue}>{displayTaxTotal}</Column>

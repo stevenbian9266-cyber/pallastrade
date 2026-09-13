@@ -44,7 +44,7 @@ import { Input } from "@/components/ui/input";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { getCountry } from "@/lib/data/countries";
-import { normalizeErrorMessage } from "@/lib/errors";
+import { extractErrorCode, normalizeErrorMessage } from "@/lib/errors";
 import {
   type AddressFormData,
   addressToFormData,
@@ -108,11 +108,9 @@ function UnifiedOrderSummary({
   const tc = useTranslations("common");
   const couponCart = buildCouponCart(cart, discountCart);
 
-  // TOTAL SAVINGS — sum of discount + gift card + store credit amounts.
-  const savings =
-    Math.abs(safeParseFloat(couponCart.discount_total) || 0) +
-    Math.abs(safeParseFloat(couponCart.gift_card_total) || 0) +
-    Math.abs(safeParseFloat(couponCart.store_credit_total) || 0);
+  // TOTAL SAVINGS — promotion discounts only（PRD-20260913-checkout-money-contract AC-003：
+  // 礼品卡/店铺余额是支付手段，不计入“节省”）。
+  const savings = Math.abs(safeParseFloat(couponCart.discount_total) || 0);
   const hasDiscounts =
     discountCart !== null && (savings > 0 || couponCart.discounts?.length > 0);
 
@@ -285,6 +283,14 @@ function buildSavingsLabel(cart: Cart, savings: number): string {
  * 非会话类（Check/Store Credit）→ 提交后直接跳完成页（线下收款）。
  * 参考阿里国际站：确认 + 支付同一页面，选择支付方式即显示对应表单。
  */
+
+/** PRD-20260913-checkout-txn-error-routing：库存类错误码（无 PSP 扣款，不进结果页）。 */
+const STOCK_ERROR_CODES = new Set([
+  "INSUFFICIENT_STOCK",
+  "INVENTORY_CHANGED",
+  "RESERVATION_EXPIRED",
+]);
+
 export function UnifiedCheckout({
   cart,
   shippingMethods,
@@ -344,6 +350,11 @@ export function UnifiedCheckout({
   >("idle");
   const cardFormRef = useRef<CardPaymentFormHandle | null>(null);
   const orderIdRef = useRef<string | null>(null);
+  // PRD-20260913-checkout-txn-error-routing：页内错误提示（库存类 / 未就绪）。
+  const [payError, setPayError] = useState<{
+    kind: "stock" | "not-ready";
+    message: string;
+  } | null>(null);
 
   const selectedMethod =
     paymentMethods.find((m) => m.id === paymentMethodId) ?? paymentMethods[0];
@@ -580,6 +591,7 @@ export function UnifiedCheckout({
     }
     if (isSessionBased && isStripe && !cardFormRef.current?.validate()) return;
 
+    setPayError(null);
     setPayProcessing(true);
     setProcessingStage("submitting");
     try {
@@ -613,13 +625,51 @@ export function UnifiedCheckout({
       if (targetOrderId) orderIdRef.current = targetOrderId;
 
       if (!response.ok || !targetOrderId) {
-        if (targetOrderId) {
-          router.replace(`${basePath}/payment-result/${targetOrderId}`);
-        } else {
-          // 统一错误信封 { error: { code, message } }：先归一化为字符串再展示，
-          // 禁止把对象直传 toast（曾触发 React error #31 整页崩溃，bugfix 2026-09-06）。
-          toast.error(normalizeErrorMessage(result.error, t("checkoutError")));
+        // PRD-20260913-checkout-txn-error-routing：按服务端 code 分流（FR-002..FR-007）。
+        // 展示文案一律经 normalizeErrorMessage（React #31 防线，bugfix 2026-09-06）。
+        const message = normalizeErrorMessage(result.error, t("checkoutError"));
+        const errorCode = extractErrorCode(result.error);
+
+        if (!targetOrderId) {
+          toast.error(message);
+          return;
         }
+        if (
+          errorCode === "quote_changed" ||
+          errorCode === "checkout_version_conflict"
+        ) {
+          // FR-002/AC-001：报价变化 → or_ 页重新确认（绝不自动支付）
+          router.replace(
+            `${basePath}/checkout/${targetOrderId}?notice=quote_changed`,
+          );
+          return;
+        }
+        if (errorCode === "INVENTORY_RECOVERY_REQUIRED") {
+          // FR-004/AC-004：已收款待恢复 → 结果页“无需重复支付”
+          router.replace(
+            `${basePath}/payment-result/${targetOrderId}?notice=recovery`,
+          );
+          return;
+        }
+        if (errorCode === "transaction_not_payable") {
+          // FR-005：不可支付态 → 结果页“订单处理中”
+          router.replace(
+            `${basePath}/payment-result/${targetOrderId}?notice=processing`,
+          );
+          return;
+        }
+        if (errorCode && STOCK_ERROR_CODES.has(errorCode)) {
+          // FR-003/AC-002/003：库存类（无 PSP 扣款）→ 页内提示 + 返回购物车
+          setPayError({ kind: "stock", message });
+          return;
+        }
+        if (errorCode === "checkout_not_ready") {
+          // FR-006/AC-008：未就绪 → 页内提示（无 CTA）
+          setPayError({ kind: "not-ready", message });
+          return;
+        }
+        // FR-007/AC-009：未知 code 且有 order_id → 保留现状跳结果页（防回归）
+        router.replace(`${basePath}/payment-result/${targetOrderId}`);
         return;
       }
 
@@ -682,6 +732,29 @@ export function UnifiedCheckout({
       <h1 className="text-3xl font-bold text-gray-900 mb-8">
         {t("orderConfirmation")}
       </h1>
+
+      {/* PRD-20260913-checkout-txn-error-routing：库存类 / 未就绪错误的页内提示 */}
+      {payError && (
+        <div
+          role="alert"
+          data-testid="checkout-error-notice"
+          className="mb-8 rounded-xl border border-red-200 bg-red-50 px-4 py-3"
+        >
+          <p className="text-sm font-semibold text-red-800">
+            {t(
+              payError.kind === "stock"
+                ? "stockUnavailableTitle"
+                : "checkoutNotReady",
+            )}
+          </p>
+          <p className="mt-1 text-sm text-red-700">{payError.message}</p>
+          {payError.kind === "stock" && (
+            <Button asChild variant="outline" size="sm" className="mt-3">
+              <Link href={`${basePath}/cart`}>{t("returnToCart")}</Link>
+            </Button>
+          )}
+        </div>
+      )}
 
       <div className="space-y-8">
         {/* 1 Contact — 邮箱 + 登录入口 + 营销订阅 */}

@@ -28,10 +28,10 @@ const order = {
   display_total: "$10.00",
 } as Order;
 
-function renderResult(id = "or_1", session = "ps_1") {
+function renderResult(id = "or_1", session = "ps_1", notice?: string) {
   return PaymentResultPage({
     params: Promise.resolve({ id, country: "us", locale: "en" }),
-    searchParams: Promise.resolve({ session }),
+    searchParams: Promise.resolve({ session, ...(notice ? { notice } : {}) }),
   }).then((view) => render(view));
 }
 
@@ -90,5 +90,28 @@ describe("PaymentResultPage (PRD-20260830-checkout AC-009)", () => {
       "href",
       "/us/en/payment-result/pcom_1?session=ps_combo",
     );
+  });
+
+  // ── PRD-20260913-checkout-txn-error-routing AC-005/AC-006：恢复/处理中 notice ──
+  it("forces the recovery notice and hides retry actions when ?notice=recovery (AC-005)", async () => {
+    getOrderMock.mockResolvedValue({ ...order, payment_status: "paid" });
+
+    await renderResult("or_1", "ps_1", "recovery");
+
+    expect(screen.getByRole("heading", { name: "recoveryTitle" })).toBeTruthy();
+    expect(screen.getByText("recoveryDescription")).toBeTruthy();
+    expect(screen.queryByText("retryPayment")).toBeNull();
+    expect(screen.queryByText("refreshStatus")).toBeNull();
+  });
+
+  it("forces the processing notice and hides retry actions when ?notice=processing (AC-006)", async () => {
+    await renderResult("or_1", "ps_1", "processing");
+
+    expect(
+      screen.getByRole("heading", { name: "processingNoticeTitle" }),
+    ).toBeTruthy();
+    expect(screen.getByText("processingNoticeDescription")).toBeTruthy();
+    expect(screen.queryByText("retryPayment")).toBeNull();
+    expect(screen.queryByText("refreshStatus")).toBeNull();
   });
 });

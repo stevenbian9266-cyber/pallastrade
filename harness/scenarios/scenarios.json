@@ -2758,6 +2758,51 @@
         "navigationOnly": 30,
         "countAssertions": 15
       }
+    },
+    {
+      "id": "GS-111",
+      "name": "Checkout post-submit errors route by code, not by the presence of an order id",
+      "description": "PRD-20260913-checkout-txn-error-routing: the single-page checkout must branch on the server error code — quote changes return to the order page for re-confirmation, stock failures stay in page, paid-but-recovering transactions are shown as received without any retry entry, and unknown codes keep the legacy result-page fallback (RESEARCH-20260913 §9.2)",
+      "mustDo": [
+        "Read the error code via lib/errors.ts#extractErrorCode and branch on it; keep normalizeErrorMessage as the single string formatter for display",
+        "Route quote_changed / checkout_version_conflict to the order page with ?notice=quote_changed and never auto-pay after a conflict",
+        "Keep INSUFFICIENT_STOCK / INVENTORY_CHANGED / RESERVATION_EXPIRED in page with a role=alert notice and a return-to-cart CTA, never stating 'payment failed' and never jumping to the result page",
+        "Send INVENTORY_RECOVERY_REQUIRED / transaction_not_payable to the result page with ?notice=recovery|processing and suppress every retry/refresh entry there",
+        "Render an in-page notice without CTA for checkout_not_ready, and keep the legacy result-page fallback for unknown codes that carry an order id",
+        "Cover each branch with vitest cases tagged with the PRD AC ids, and keep the five locale files in sync for the new keys"
+      ],
+      "mustNotDo": [
+        "Branch on whether an order_id exists instead of on the error code, or send stock errors to a pending result page",
+        "Show retry-payment UI for a transaction that already captured money (recovery), or auto-continue a payment after a quote conflict",
+        "Bypass normalizeErrorMessage when surfacing BFF errors, or parse display strings instead of the raw amount fields"
+      ],
+      "scoring": {
+        "codeBasedRouting": 30,
+        "stockErrorsInPage": 20,
+        "recoveryNoRetry": 20,
+        "legacyFallbackKept": 15,
+        "testAndI18nCoverage": 15
+      }
+    },
+    {
+      "id": "GS-112",
+      "name": "Money uses raw fields for logic and display strings only for rendering",
+      "description": "PRD-20260913-checkout-money-contract: conditional rendering must use the raw amount fields (delivery_total / tax_total / discount_total); display_* strings carry currency symbols and must never be parsed — and TOTAL SAVINGS counts promotion discounts only (RESEARCH-20260913 §9.1 P0-a)",
+      "mustDo": [
+        "Judge row visibility from the raw amount fields (safeParseFloat) and keep display_* strictly for rendering",
+        "Extend read models / email props with the raw fields needed for the condition instead of stripping currency symbols",
+        "Keep TOTAL SAVINGS limited to promotion discounts (|discount_total|), leaving gift cards and store credit as separate payment lines"
+      ],
+      "mustNotDo": [
+        "parseFloat/Number a display_* string, or strip non-numeric characters out of it to make logic work",
+        "Merge gift cards or store credit into the savings headline, or recompute totals on the client instead of using API values"
+      ],
+      "scoring": {
+        "rawForLogic": 40,
+        "displayForRender": 25,
+        "savingsScope": 25,
+        "noDisplayParsing": 10
+      }
     }
   ]
 }
