@@ -89,8 +89,8 @@
 
 | # | 挂起项 | 现状 | 解除条件 | 归属 |
 |---|---|---|---|---|
-| 1 | **Adyen / PayPal 适配** | 未开始 | 用户提供 sandbox 凭据 | payments |
-| 2 | **规格 §68「高级争议能力」剩余边界** | 仅落地边界 C（partial / 多争议 / 能力矩阵 / 手续费） | 用户定义剩余范围（自动抗辩 / AI 生成证据 / 自动退款 / 自动补货，源计划 §71） | payments |
+| 1 | **Adyen / PayPal 适配** | 未开始；**用户 2026-09-13 明确确认「不处理」** | 仅当提供 sandbox 凭据 + provider contract 且能做真实 E2E 时重启（§68 先决条件） | payments |
+| 2 | **规格 §68「高级争议能力」剩余边界** | 仅落地边界 C（partial / 多争议 / 能力矩阵 / 手续费）；**已产出条件与 4 个可选方案（A/B/C/D）待裁决** | 用户就 3 个决策点（D1 是否做本地运营增强 / D2 取 B 还是 C / D3 是否修订 §71）给出结论 —— 选项、依赖、验收判据见 `docs/research/RESEARCH-20260913-p7-spec68-advanced-dispute-boundary-options.md` | payments |
 | 3 | **P5-8 Legacy 路径使用计数「量化报告」** | 埋点已实现（`0c5b8f03` finished），未跑出数据 | dev 运行一段时间后导出计数 | admin |
 | 4 | **安全配置管理模块（OSS key/secret 值托管）PRD 正文缺失** | 仅有「草案」门禁记录，`docs/prd/` 无正文 | 补写 PRD 正文，或正式标废弃 | security |
 | 5 | **R1 契约生成在 Windows 本地不可跑** | `contracts.sh` 需 docker+linux；本地 `generated:check` 走 SKIP | 在 CI / linux 环境执行；或在宿主补 Windows 分支 | api/infra |
