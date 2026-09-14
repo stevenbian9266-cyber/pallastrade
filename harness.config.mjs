@@ -182,6 +182,11 @@ export default {
         description: 'Admin store form specs (direct-upload attachment validation + multi-store CRUD)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/stores_attachment_upload_spec.rb spec/requests/pallastrade/admin/stores_multi_spec.rb'],
       },
+      // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
+      'finance-reconciliation-rspec': {
+        description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/reconciliations spec/jobs/pallastrade/reconciliations/reconcile_sweeper_job_spec.rb'],
+      },
       // P1 订单流程改造：本次变更相关 spec（新购物车/提交订单/回归）
       'p1-order-flow-rspec': {
         description: 'P1 order-flow specs (cart/submit/request + regression)',

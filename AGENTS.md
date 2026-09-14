@@ -272,6 +272,7 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | AI Skill file (`ai/skills/`) | + `harness eval ai --check-freshness` | ≤2 min |
 | `deploy/` scripts / repo-level guards (`tests/*.test.mjs`) | + `harness verify repo-guards-test` (前滚检测 + drill crontab 恢复 + PRD 状态同步契约守卫) | ≤1 min |
 | Admin store form / direct-upload attachments | + `harness verify admin-stores-rspec` (logo/mailer_logo 直传失败提示 + 多店 CRUD) | ≤1 min |
+| Financial ledger / reconciliation (`reconciliations/`, `financial_ledger/`) | + `harness verify finance-reconciliation-rspec` (source/transaction/payment/refund/dispute 对账 + sweeper) | ≤2 min |
 | Any change | `harness doc-impact --base origin/dev` — checks knowledge docs are synced | ≤1 min |
 
 ### Verification Evidence Required
