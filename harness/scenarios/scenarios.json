@@ -2814,7 +2814,8 @@
         "Clear the stored billing address when same_as_shipping is chosen, and snapshot the shipping address as the order billing address when the cart has none",
         "Reject an incomplete custom billing address (server validation failure plus a client-side pre-submit guard) instead of persisting a half-empty address",
         "Derive the same-as-shipping checkbox default from cart.billing_address so an existing billing address is never silently overwritten",
-        "Cover the cart services with rspec and the payload contract with vitest cases tagged with the PRD AC ids, keeping the five locale files in sync for new keys"
+        "Cover the cart services with rspec and the payload contract with vitest cases tagged with the PRD AC ids, keeping the five locale files in sync for new keys",
+        "Run the full storefront verification set — pnpm test plus pnpm check (biome) and pnpm typecheck — because duplicate i18n keys are invisible to JSON.parse yet fail the CI lint job"
       ],
       "mustNotDo": [
         "Keep sending use_shipping (or any field missing from the server allow-list) and assume it takes effect",

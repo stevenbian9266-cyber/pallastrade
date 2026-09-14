@@ -365,7 +365,6 @@
     "saved": "Guardado",
     "quoteUpdated": "Sus datos o el total del pedido han cambiado; revíselo antes de pagar.",
     "stockUnavailableTitle": "Algunos artículos ya no están disponibles",
-    "returnToCart": "Volver al carrito",
     "quoteUpdatedBanner": "El total del pedido se actualizó; revise el importe más reciente antes de pagar.",
     "dismissBanner": "Cerrar",
     "failedToUpdateCheckout": "No se pudo actualizar el checkout.",
