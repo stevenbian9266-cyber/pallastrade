@@ -51,11 +51,18 @@ module PallasTrade
           private
 
           # 解析 prefixed 订单 id → 当前用户 + 当前 store 的订单
+          # PALLAS-CUSTOM (2026-09-14, 修复)：必须**保留请求顺序**——调用方约定
+          # `order_ids.first` 为主订单（payment_session 挂在它上面）；原先的
+          # `where(id: ...)` 不带 ORDER BY → PostgreSQL 返回顺序不定，主订单随机翻转，
+          # 导致支付会话归属到另一张订单（顺序性 flake 的真实根因，非仅测试问题）。
           def resolve_orders(ids)
             numeric_ids = Array(ids).filter_map do |prefixed|
               PallasTrade::PrefixedId.decode_prefixed_id(prefixed) if prefixed.is_a?(String)
             end
-            current_user.orders.for_store(current_store).where(id: numeric_ids)
+            return [] if numeric_ids.empty?
+
+            orders_by_id = current_user.orders.for_store(current_store).where(id: numeric_ids).index_by(&:id)
+            numeric_ids.filter_map { |id| orders_by_id[id.to_i] }
           end
 
           # PALLAS-CUSTOM (2026-08-29, bugfix): payment_method_id 可选；缺省选 store

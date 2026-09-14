@@ -46,6 +46,22 @@ RSpec.describe 'Payment combinations (Store API)', type: :request do
         .to contain_exactly(order1, order2)
     end
 
+    # 修复回归（顺序性 flake 的真实根因）：主订单 = `order_ids.first`，与数据库返回顺序无关。
+    # 原先 `where(id: ...)` 无 ORDER BY → 同一请求可能把会话挂到另一张订单。
+    it 'AC-004 treats the first requested order as the primary one regardless of id order' do
+      order1 = unpaid_order
+      order2 = unpaid_order
+
+      post '/api/v3/store/payment_combinations',
+           params: { order_ids: [order2.prefixed_id, order1.prefixed_id],
+                     payment_method_id: payment_method.prefixed_id },
+           headers: headers
+
+      expect(response).to have_http_status(:created)
+      body = JSON.parse(response.body)
+      expect(body['payment_session']['order_id']).to eq(order2.prefixed_id)
+    end
+
     it 'AC-004 rejects paid orders' do
       paid = unpaid_order
       paid.update_column(:payment_total, paid.total)

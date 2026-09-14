@@ -2954,6 +2954,25 @@
         "mutualExclusionEnforced": 15,
         "legacyTrafficMeasurable": 20
       }
+    },
+    {
+      "id": "GS-119",
+      "name": "Request order is part of the contract — payment combinations keep the first requested order as primary",
+      "description": "2026-09-14 bugfix: POST /api/v3/store/payment_combinations resolved order_ids with an unordered where(id: ...), so the primary order varied by database row order and the payment session could attach to a member order instead; this surfaced as an order-dependent spec failure that blocked evidence collection repeatedly and hid a genuine behaviour defect",
+      "mustDo": [
+        "Preserve the caller-supplied order when resolving a batch of prefixed ids (index the queried rows by id, then rebuild the list in the requested order)",
+        "Treat order_ids.first as the primary order and create its payment session there, and pin that contract with a test that passes the ids in reverse order",
+        "When an order-dependent failure appears, treat it as a product defect candidate (unstable primary/selection) before labelling it a flake and re-running"
+      ],
+      "mustNotDo": [
+        "Return `where(id: [...])` (or any unordered set) where the caller's ordering carries meaning",
+        "Re-run a repeatedly failing spec until it passes without identifying why the outcome varies"
+      ],
+      "scoring": {
+        "requestOrderPreserved": 40,
+        "primaryContractPinned": 35,
+        "flakesTreatedAsDefects": 25
+      }
     }
   ]
 }
