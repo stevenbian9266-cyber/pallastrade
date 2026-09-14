@@ -39,6 +39,8 @@ Order durable transactions (P2, 2026-09-05): `orders.transactions.create(orderId
 
 Includes auto-generated TypeScript types and Zod schemas derived from the Rails Alba serializers — see the [type generation pipeline](../CLAUDE.md#type-generation-pipeline) in the root docs.
 
+Cart billing address (PRD-20260913-checkout-billing-mode, 2026-09-13): `carts.update(id, { billing_mode: 'same_as_shipping' | 'custom', billing_address? }, options?)` models the billing address explicitly instead of relying on a flag the server silently drops. `same_as_shipping` clears the stored billing address so the submitted order snapshots the shipping address; `custom` stores the explicit address and rejects an incomplete one. The legacy `use_shipping` boolean still works but is now `@deprecated` — it was never in the server's parameter allow-list (`carts_controller#permitted_params`), which is how orders ended up with an empty billing address. Rebuild the SDK (`pnpm --filter @pallastrade/sdk build`) and commit the refreshed `dist/` (including the new content-hashed `index-<hash>.d.ts`/`.d.cts` via `git add -f`) whenever these types change.
+
 Applied-discount lines (2026-09-10, PRD-20260909-promotions-promo-batch2): `Cart`, `Order` and the
 Checkout types all expose `discounts: Array<{ id, promotion_id, name, description, code, kind,
 amount, display_amount, breakdown, removable }>` — the canonical projection shared by Cart / Order /

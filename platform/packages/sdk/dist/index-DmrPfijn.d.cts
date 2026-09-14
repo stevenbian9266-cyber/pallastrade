@@ -216,7 +216,22 @@ type Cart = {
         message: string;
     }>;
     shipping_eq_billing_address: boolean;
-    discounts: Array<Discount>;
+    discounts: Array<{
+        id: string;
+        promotion_id: string;
+        name: string;
+        description: string | null;
+        code: string | null;
+        kind: string;
+        amount: string | null;
+        display_amount: string | null;
+        breakdown: {
+            items: string;
+            order: string;
+            shipping: string;
+        } | null;
+        removable: boolean;
+    }>;
     items: Array<LineItem>;
     fulfillments: Array<Fulfillment>;
     payments: Array<Payment>;
@@ -590,7 +605,22 @@ type Order = {
     store_credit_total: string | null;
     display_store_credit_total: string | null;
     covered_by_store_credit: boolean;
-    discounts: Array<Discount>;
+    discounts: Array<{
+        id: string;
+        promotion_id: string;
+        name: string;
+        description: string | null;
+        code: string | null;
+        kind: string;
+        amount: string | null;
+        display_amount: string | null;
+        breakdown: {
+            items: string;
+            order: string;
+            shipping: string;
+        } | null;
+        removable: boolean;
+    }>;
     items: Array<LineItem>;
     fulfillments: Array<Fulfillment>;
     payments: Array<Payment>;
@@ -756,6 +786,7 @@ type Promotion = {
 type Refund = {
     id: string;
     transaction_id: string | null;
+    state: string;
     amount: string | null;
     payment_id: string | null;
     refund_reason_id: string | null;
@@ -1184,7 +1215,18 @@ interface UpdateCartParams {
     shipping_address?: AddressParams;
     /** P1：订单确认阶段选择的配送方式 */
     shipping_method_id?: string;
-    /** When true, copies shipping address to billing address */
+    /**
+     * Billing address intent (PRD-20260913-checkout-billing-mode).
+     * `same_as_shipping` clears any stored billing address and the order snapshot
+     * falls back to the shipping address; `custom` stores the explicit address.
+     */
+    billing_mode?: 'same_as_shipping' | 'custom';
+    /**
+     * When true, copies shipping address to billing address.
+     * @deprecated Use `billing_mode: 'same_as_shipping' | 'custom'`. A value the
+     * server does not permit is silently dropped, which is how orders used to end
+     * up with an empty billing address.
+     */
     use_shipping?: boolean;
     /** Items to upsert (sets quantity for existing, creates new) */
     items?: LineItemInput[];
