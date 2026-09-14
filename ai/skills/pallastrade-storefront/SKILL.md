@@ -289,6 +289,8 @@ adjustment id — never treat it as an Adjustment reference.
 
 ### Checkout
 
+**结算页占位控件治理（PRD-20260914-checkout-placeholder-controls-governance，2026-09-14）**：`UnifiedCheckout` 的 `SHOW_PLACEHOLDER_SECTIONS = false` 控制三个**无后端能力**的占位区块（Add-ons 无定价管线 / SMS opt-in 无发送通道 / Save Info 无持久化语义）—— 组件与文案保留，改成 `true` 即恢复；**无后端能力时不要渲染**（对顾客是无效承诺）。Marketing opt-in 已**真正接线**：订单创建成功后经 BFF `POST /api/checkout/newsletter`（服务端 SDK `newsletterSubscribers.create`）best-effort 订阅，**订阅失败绝不阻断下单**（NFR-1）；该 BFF 对跨域 403、空邮箱 422、provider 失败 `202 { ok: false }`（不向买家暴露错误）。
+
 The Store API exposes payment sessions for the checkout flow — a single, provider-agnostic endpoint that works with any session-based gateway (Stripe, Adyen, PayPal); the provider is selected via `payment_method_id`. The pattern:
 
 1. Customer hits checkout — `POST /api/v3/store/carts/:cart_id/payment_sessions` with a payment method choice (cart token in `X-PallasTrade-Token` header).

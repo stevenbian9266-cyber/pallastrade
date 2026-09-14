@@ -188,7 +188,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     confirmMock.mockResolvedValue({});
   });
 
-  it("renders numbered sections, marketing opt-in, add-ons, save info and order summary", () => {
+  // PRD-20260914-checkout-placeholder-controls-governance AC-001
+  it("renders numbered sections, marketing opt-in and order summary; hides backend-less placeholders", () => {
     renderCheckout();
 
     expect(screen.getByText("orderConfirmation")).toBeTruthy();
@@ -196,7 +197,6 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(screen.getByText("shippingAddress")).toBeTruthy();
     expect(screen.getByText("items")).toBeTruthy();
     expect(screen.getByText("shippingMethod")).toBeTruthy();
-    expect(screen.getByText("addOns")).toBeTruthy();
     expect(screen.getByText("paymentMethod")).toBeTruthy();
     expect(screen.getByText("orderSummary")).toBeTruthy();
     expect(screen.getByTestId("unified-order-summary")).toBeInTheDocument();
@@ -206,13 +206,58 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     ).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Standard")).toBeTruthy();
     expect(screen.getByText("Card")).toBeTruthy();
-    // demo 优化元素
+    // Marketing 已接线 → 保留可见（governance FR-001）
     expect(screen.getByTestId("marketing-opt-in")).toBeInTheDocument();
-    expect(screen.getByTestId("save-info-section")).toBeInTheDocument();
-    expect(screen.getByText("addOnsWorryFreeName")).toBeTruthy();
     expect(screen.getByText("whyBuyFromUs")).toBeTruthy();
+    // Add-ons / Save Info 无后端能力 → 默认隐藏（governance FR-002）
+    expect(screen.queryByText("addOns")).toBeNull();
+    expect(screen.queryByText("addOnsWorryFreeName")).toBeNull();
+    expect(screen.queryByTestId("save-info-section")).toBeNull();
     // 金额在商品行与订单小结各出现一次
     expect(screen.getAllByText("$19.98").length).toBeGreaterThanOrEqual(2);
+  });
+
+  // PRD-20260914-checkout-placeholder-controls-governance AC-003
+  it("does not block checkout when the marketing subscribe call fails", async () => {
+    const user = userEvent.setup();
+    const defaultImpl = fetchMock.getMockImplementation();
+    fetchMock.mockImplementation(
+      (input: RequestInfo | URL, init?: RequestInit) => {
+        if (input === "/api/checkout/newsletter") {
+          return Promise.reject(new Error("newsletter down"));
+        }
+        return defaultImpl?.(input, init);
+      },
+    );
+
+    renderCheckout();
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    // 订阅失败 → 下单/支付流程照常走到结果页（NFR-1）
+    await waitFor(() =>
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/us/en/payment-result/or_123?session=ps_1",
+      ),
+    );
+    expect(fetchMock.mock.calls.map(([url]) => url)).toContain(
+      "/api/checkout/newsletter",
+    );
+  });
+
+  // PRD-20260914-checkout-placeholder-controls-governance AC-004
+  it("keeps the hidden placeholder components intact so the switch can be re-enabled", async () => {
+    const { AddOnsSection } = await import(
+      "@/components/checkout/AddOnsSection"
+    );
+    const { SaveInfoSection } = await import(
+      "@/components/checkout/SaveInfoSection"
+    );
+
+    expect(AddOnsSection).toBeTypeOf("function");
+    expect(SaveInfoSection).toBeTypeOf("function");
   });
 
   it("renders the self-drawn card form immediately when Stripe is selected (no client_secret needed)", () => {
@@ -237,7 +282,18 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "payNow" }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    // PRD-20260914-checkout-placeholder-controls-governance AC-002：
+    // 勾选 Marketing（默认 true）→ 提交成功后额外发起一次订阅（start + newsletter + PATCH）
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    const newsletterCall = fetchMock.mock.calls.find(
+      ([url]) => url === "/api/checkout/newsletter",
+    );
+    if (!newsletterCall) {
+      throw new Error("marketing subscribe call was not made");
+    }
+    expect(
+      JSON.parse((newsletterCall[1] as RequestInit).body as string),
+    ).toEqual({ email: "ada@example.com" });
     const postOptions = fetchMock.mock.calls[0]?.[1] as RequestInit;
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/checkout/start");
     expect(postOptions.method).toBe("POST");
@@ -249,9 +305,11 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
       checkout: { billing_mode: "same_as_shipping" },
     });
     expect(confirmMock).toHaveBeenCalledWith("sec_1");
-    const patchCall = fetchMock.mock.calls[1];
+    const patchCall = fetchMock.mock.calls.find(
+      ([, init]) => (init as RequestInit)?.method === "PATCH",
+    );
     expect(patchCall).toBeDefined();
-    const patchOptions = patchCall[1] as RequestInit;
+    const patchOptions = patchCall?.[1] as RequestInit;
     expect(patchOptions.method).toBe("PATCH");
     expect(replaceMock).toHaveBeenCalledWith(
       "/us/en/payment-result/or_123?session=ps_1",
@@ -280,7 +338,11 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     await waitFor(() =>
       expect(replaceMock).toHaveBeenCalledWith("/us/en/payment-result/or_123"),
     );
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // 订阅（best-effort）也计入 fetch；非会话支付本身只有 start 一次
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls.map(([url]) => url)).toContain(
+      "/api/checkout/newsletter",
+    );
   });
 
   it("shows a fallback message when no payment methods are available", () => {
@@ -475,10 +537,11 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(screen.getByTestId("card-payment-form")).toBeInTheDocument();
   });
 
-  it("renders SMS opt-in and shipping options-changed warning (PRD 3.3/3.4)", () => {
+  // PRD-20260914-checkout-placeholder-controls-governance AC-001
+  it("hides the SMS opt-in placeholder and keeps the shipping options-changed warning (PRD 3.4)", () => {
     renderCheckout();
 
-    expect(screen.getByTestId("sms-opt-in")).toBeInTheDocument();
+    expect(screen.queryByTestId("sms-opt-in")).toBeNull();
     expect(screen.getByTestId("shipping-options-changed")).toBeInTheDocument();
   });
 

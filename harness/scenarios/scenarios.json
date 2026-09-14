@@ -2878,6 +2878,30 @@
         "uniquePrefixGuard": 15,
         "knowledgeSync": 10
       }
+    },
+    {
+      "id": "GS-116",
+      "name": "Checkout placeholders are either wired or hidden — never fake controls",
+      "description": "PRD-20260914-checkout-placeholder-controls-governance: the checkout page showed four controls that did nothing (Add-ons, SMS opt-in, Save Info were local-state placeholders; marketing opt-in was a UI stub), so the marketing opt-in is now really subscribed through a same-origin BFF while the three backend-less sections are hidden behind a single reversible switch (research §9.3 P1)",
+      "mustDo": [
+        "Wire the marketing opt-in for real: order created -> same-origin BFF -> server-side SDK newsletterSubscribers.create",
+        "Treat the subscription as best-effort: a provider failure must never change the checkout outcome (BFF answers 202 { ok: false }, never an error status)",
+        "Hide sections whose backend capability does not exist (Add-ons pricing pipeline, SMS channel, Save-Info persistence) behind one explicit switch, keeping the components and copy so re-enabling is a one-constant change",
+        "Keep the marketing opt-in visible because it now works, and keep the checkout flow untouched otherwise (no order/payment/inventory semantics change)",
+        "Re-run the storefront verification set after any edit — pnpm test plus pnpm check (biome) and pnpm typecheck — formatting drift fails the CI lint job"
+      ],
+      "mustNotDo": [
+        "Render a control that silently does nothing (checkbox that never subscribes, save button that persists nothing, selectable add-on with no pricing pipeline)",
+        "Let a newsletter/SMS side effect block or fail the order submission",
+        "Delete the placeholder components so the decision cannot be reverted cheaply"
+      ],
+      "scoring": {
+        "marketingReallyWired": 30,
+        "noBlockingSideEffect": 25,
+        "placeholdersHiddenReversibly": 25,
+        "componentAndCopyKept": 10,
+        "verificationSetRerun": 10
+      }
     }
   ]
 }

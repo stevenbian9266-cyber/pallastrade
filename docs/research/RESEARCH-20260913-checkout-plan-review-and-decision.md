@@ -195,8 +195,8 @@
 
 | 优先级 | 事项 |
 |---|---|
-| P1 | CheckoutView 扩展（`credits / capabilities / available_payment_methods / billing_mode`）→ 前端统一消费；`available_payment_methods` 优先（§28 影响主路径） |
-| P1 | 占位功能治理（§47：Add-ons / Save Info / Marketing / SMS） |
+| P1 | CheckoutView 扩展（`credits / capabilities / available_payment_methods / billing_mode`）→ **已评估：不做**（2026-09-14）——`payment_methods` 已在 Order/Checkout 序列化层、`store_credit_total` 已渲染、`ready/missing_requirements` 即 capabilities、`billing_mode` 已在购物车侧建模；仅剩形式统一，收益不抵改动面 |
+| P1 | 占位功能治理（§47：Add-ons / Save Info / Marketing / SMS）→ **已完成**（2026-09-14，PRD-20260914-checkout-placeholder-controls-governance）：Marketing 真正接线（BFF + best-effort，不阻断下单）；Add-ons / SMS / Save Info 无后端能力 → 单一开关 `SHOW_PLACEHOLDER_SECTIONS=false` 隐藏（组件保留、可逆） |
 | P2 | legacy 六端点收敛 + usage metric（P0-7 流量阈值驱动）；`or_` 页展示小步补齐（折扣/礼卡/余额）；组件级 `CheckoutShell` 拆分（不改交互模型） |
 
 ---

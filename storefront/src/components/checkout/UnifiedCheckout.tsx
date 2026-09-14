@@ -299,6 +299,31 @@ const STOCK_ERROR_CODES = new Set([
   "RESERVATION_EXPIRED",
 ]);
 
+/**
+ * 结算页占位控件开关（PRD-20260914-checkout-placeholder-controls-governance FR-002）。
+ *
+ * Add-ons（无定价管线）、SMS opt-in（无发送通道）、Save Info（无持久化语义）三项的后端
+ * 能力尚不存在 —— 渲染出来等于向顾客做出无效承诺。默认隐藏；组件与文案保留，改为 true
+ * 即恢复（回滚成本 = 一个常量）。
+ */
+const SHOW_PLACEHOLDER_SECTIONS = false;
+
+/**
+ * 结算页 Marketing 订阅（PRD-20260914-checkout-placeholder-controls-governance FR-001）：
+ * best-effort —— 失败只记日志，绝不阻断下单（NFR-1）。
+ */
+async function subscribeToMarketing(emailAddress: string): Promise<void> {
+  try {
+    await fetch("/api/checkout/newsletter", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: emailAddress }),
+    });
+  } catch (error) {
+    console.warn("[checkout] marketing subscribe failed", error);
+  }
+}
+
 export function UnifiedCheckout({
   cart,
   shippingMethods,
@@ -315,9 +340,10 @@ export function UnifiedCheckout({
   const paymentMethods: PaymentMethod[] = cart.payment_methods ?? [];
   const [email, setEmail] = useState(cart.email ?? "");
   const [emailError, setEmailError] = useState<string | null>(null);
-  // Marketing opt-in — UI placeholder (backend subscription API not integrated).
+  // PRD-20260914-checkout-placeholder-controls-governance FR-001：Marketing 已接线
+  // （提交时 best-effort 订阅，失败不阻断下单）。
   const [marketingOptIn, setMarketingOptIn] = useState(true);
-  // SMS opt-in — UI placeholder (backend subscription API not integrated).
+  // SMS opt-in — 占位（无 SMS 后端）：仅在 SHOW_PLACEHOLDER_SECTIONS 下渲染。
   const [smsOptIn, setSmsOptIn] = useState(false);
   const [address, setAddress] = useState<AddressFormData>(
     cart.shipping_address
@@ -667,6 +693,12 @@ export function UnifiedCheckout({
       const targetOrderId = result.order?.id ?? result.order_id;
       if (targetOrderId) orderIdRef.current = targetOrderId;
 
+      // PRD-20260914-checkout-placeholder-controls-governance FR-001 / NFR-1：
+      // 营销订阅 best-effort —— 仅在订单已创建时触发；失败只记日志，绝不阻断下单。
+      if (response.ok && targetOrderId && marketingOptIn && email) {
+        void subscribeToMarketing(email);
+      }
+
       if (!response.ok || !targetOrderId) {
         // PRD-20260913-checkout-txn-error-routing：按服务端 code 分流（FR-002..FR-007）。
         // 展示文案一律经 normalizeErrorMessage（React #31 防线，bugfix 2026-09-06）。
@@ -928,7 +960,7 @@ export function UnifiedCheckout({
             loadingStates={loadingStates}
             onChange={onAddressChange}
             idPrefix="unified"
-            showSmsOptIn
+            showSmsOptIn={SHOW_PLACEHOLDER_SECTIONS}
             smsOptIn={smsOptIn}
             onSmsOptInChange={setSmsOptIn}
           />
@@ -1016,7 +1048,7 @@ export function UnifiedCheckout({
 
         {/* 4 Add-ons — value-added service (UI placeholder) */}
         <section className="bg-white rounded-xl border border-gray-200 p-6">
-          <AddOnsSection />
+          {SHOW_PLACEHOLDER_SECTIONS && <AddOnsSection />}
         </section>
 
         {/* 5 Payment — 支付方式选择 + 对应表单 */}
@@ -1133,7 +1165,9 @@ export function UnifiedCheckout({
 
         {/* Save my information — UI placeholder */}
         <section className="bg-white rounded-xl border border-gray-200 p-6">
-          <SaveInfoSection isAuthenticated={isAuthenticated} />
+          {SHOW_PLACEHOLDER_SECTIONS && (
+            <SaveInfoSection isAuthenticated={isAuthenticated} />
+          )}
         </section>
       </div>
     </div>

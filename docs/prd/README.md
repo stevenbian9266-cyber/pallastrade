@@ -167,6 +167,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260914-checkout-cart-discount-codes-canonical | checkout | 2026-09-14 | （实施时回填） |
 | done | PRD-20260914-other-prefixedid-ownership-validation | other | 2026-09-14 | （实施时回填） |
 | done | PRD-20260914-other-paymentsource-prefix-disambiguation | other | 2026-09-14 | （实施时回填） |
+| done | PRD-20260914-checkout-placeholder-controls-governance | checkout | 2026-09-14 | （实施时回填） |
 
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 
