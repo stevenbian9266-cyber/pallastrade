@@ -57,15 +57,56 @@ RSpec.describe PallasTrade::PrefixedId do
 
   describe 'prefix registry' do
     # PRD-20260914-other-prefixedid-ownership-validation AC-006
-    it 'pins the known ps collision so any new duplicate prefix fails' do
+    # PRD-20260914-other-paymentsource-prefix-disambiguation AC-001
+    it 'keeps every declared prefix globally unique' do
       files = Dir[Rails.root.join('pallastrade_gems/*/app/models/**/*.rb')] +
               Dir[Rails.root.join('app/models/**/*.rb')]
       # 行首声明才算（避免匹配 concern 注释里的示例）
       prefixes = files.flat_map { |file| File.read(file).scan(/^\s*has_prefix_id :([a-z0-9_]+)/).flatten }
       duplicates = prefixes.tally.select { |_prefix, count| count > 1 }.keys
 
-      # 新增重复前缀会让 id 归属校验失效；已知残留：ps = PaymentSession / PaymentSource
-      expect(duplicates).to eq(['ps'])
+      expect(duplicates).to eq([])
+    end
+  end
+
+  # PRD-20260914-other-paymentsource-prefix-disambiguation（AC-002/AC-003）：
+  # PaymentSession(`ps_`) 与 PaymentSource(`src_`) 曾共用 `ps` 前缀 → 二者 id 无法区分，
+  # 依赖前缀判类型的代码（如 PaymentSessionReservationSubscriber）会串单。
+  describe 'resource disambiguation' do
+    it 'declares distinct prefixes for PaymentSession and PaymentSource' do
+      expect(PallasTrade::PaymentSession._prefix_id_prefix).to eq('ps')
+      expect(PallasTrade::PaymentSource._prefix_id_prefix).to eq('src')
+    end
+
+    it 'never resolves one resource through the other resource id' do
+      source = PallasTrade::PaymentSource.new
+      source.id = 4242
+      expect(source.prefixed_id).to start_with('src_')
+
+      # 解码证明：同 payload 换回旧的 ps_ 前缀，旧实现对同 PK 的 PaymentSession 会命中
+      payload = source.prefixed_id.split('_', 2).last
+      expect(PallasTrade::PaymentSession.decode_prefixed_id("ps_#{payload}")).to eq(4242)
+
+      expect(PallasTrade::PaymentSession.find_by_prefix_id(source.prefixed_id)).to be_nil
+
+      session = PallasTrade::PaymentSession.new
+      session.id = 4242
+      expect(session.prefixed_id).to start_with('ps_')
+      expect(PallasTrade::PaymentSource.find_by_prefix_id(session.prefixed_id)).to be_nil
+    end
+
+    # PRD-20260914-other-paymentsource-prefix-disambiguation AC-004
+    it 'emits the src_ prefix on the API surface (payment setup session)' do
+      source = PallasTrade::PaymentSource.new
+      source.id = 7
+      setup_session = PallasTrade::PaymentSetupSession.new
+      setup_session.payment_source = source
+
+      payload = PallasTrade.api.payment_setup_session_serializer.new(setup_session).to_h
+
+      # serializer payload 使用字符串键（API 信封口径）
+      expect(payload['payment_source_id']).to eq(source.prefixed_id)
+      expect(payload['payment_source_id']).to start_with('src_')
     end
   end
 end

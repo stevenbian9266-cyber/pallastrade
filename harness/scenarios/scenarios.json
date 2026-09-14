@@ -2863,7 +2863,7 @@
         "Keep the prefix when decoding (decode_with_prefix / prefix_of) and leave the prefix-agnostic decode only for genuinely generic parsing paths",
         "Enforce ownership in find_by_prefix_id! / find_by_prefix_id: foreign prefixes raise RecordNotFound (404) or return nil / empty set, never another resource",
         "Apply the same ownership check to order param resolution (Order.find_by_param, Orders::FindComplete) while keeping the legacy order-number and numeric-id fallbacks",
-        "Pin the known prefix collision (ps = PaymentSession / PaymentSource) in a spec that fails when any new duplicate has_prefix_id declaration appears",
+        "Keep declared prefixes globally unique: the registry spec requires zero duplicate has_prefix_id declarations (the former `ps` collision between PaymentSession and PaymentSource was removed on 2026-09-14 by moving PaymentSource to `src_`)",
         "Document that the prefix is the resource type (no `type` field) in the data-model and api-v3 skills"
       ],
       "mustNotDo": [

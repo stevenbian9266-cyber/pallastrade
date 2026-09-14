@@ -1,7 +1,13 @@
 # This model is used to store payment sources for non-credit card payments, eg wallet, account, etc.
 module PallasTrade
   class PaymentSource < PallasTrade.base_class
-    has_prefix_id :ps
+    # PALLAS-CUSTOM (2026-09-14, PRD-20260914-other-paymentsource-prefix-disambiguation):
+    # `ps` was shared with PaymentSession, so a `ps_…` id was ambiguous across both
+    # resources (the v3 API implies the resource type from the prefix, and
+    # PaymentSessionReservationSubscriber branches on `ps_` assuming a session).
+    # PaymentSource now owns a unique prefix; PaymentSession keeps `ps` because the
+    # storefront and SDK already depend on it.
+    has_prefix_id :src
 
     include PallasTrade::Metafields
     include PallasTrade::Metadata

@@ -32,7 +32,7 @@
 - **FR-003**（Order 参数解析）：`Order.find_by_param` 的解码分支只接受自有 `or_` 前缀，外来前缀继续走 number/整数回退（→ `nil` 或 `RecordNotFound`），不串单。
 - **FR-004**（唯一性守护）：新增规格扫描所有模型声明的 `has_prefix_id`，把**当前已知重复**固定为 `ps`（`PaymentSession` / `PaymentSource`），任何新增重复前缀都会让规格失败。
 - **FR-005**（知识同步）：`pallastrade-data-model` / `pallastrade-api-v3` Skill 记录"前缀 = 归属约束"与 `ps` 残留；research §9.1 P0-f 标记完成；场景库新增条目。
-- **FR-006**（范围外）：重命名 `ps`（对已发布 API 是破坏性变更，另立 PRD 评估）；`decode_prefixed_id` 的泛用调用点逐一收敛（保持通用语义）。
+- **FR-006**（范围外，**已收口**）：`ps` 前缀冲突（`PaymentSession` / `PaymentSource`）已于同日由 PRD-20260914-other-paymentsource-prefix-disambiguation 消除（PaymentSource → `src_`；侦察确认全仓客户端零依赖，非破坏性）；`decode_prefixed_id` 的泛用调用点保持通用语义。
 
 ## 4. 非功能需求（NFR）
 
@@ -93,3 +93,4 @@
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-14 | 1.0 | 实施：`decode_with_prefix` 暴露前缀；`find_by_prefix_id(!)` 归属校验；`Order.find_by_param` 限自有前缀；新增规格（含唯一性守护 pin `ps`）；Skill×2 + GS-115 + research §9.1/§12 同步 | AI |
+| 2026-09-14 | 1.1 | 残留 `ps` 前缀冲突已由 PRD-20260914-other-paymentsource-prefix-disambiguation 消除（PaymentSource → `src_`）；唯一性守卫升级为零重复 | AI |
