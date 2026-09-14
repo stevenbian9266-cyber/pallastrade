@@ -177,7 +177,7 @@
 | P0-c | **错误落点分流**（新增） | 见 §9.2 |
 | P0-d | 报价确认闭环 | `cart_` 页 Pay Now 携带 `expected_checkout_version / expected_price_version`；409 → 页内差异确认（不跳转） |
 | P0-e | 优惠码断面 | 先决策 `cart_` 阶段端点方向；再建 canonical 端点 + legacy 观测 |
-| P0-f | `PrefixedId` 前缀校验 | `find_by_prefix_id!` 增加前缀归属校验（防串单） |
+| P0-f | `PrefixedId` 前缀校验 | `find_by_prefix_id!` 增加前缀归属校验（防串单）—— **已完成 2026-09-14**：`decode_with_prefix` 保留前缀，`find_by_prefix_id(!)` 校验归属（外来前缀 → 404 / nil / 空集），`Order.find_by_param` 与 `Orders::FindComplete` 限自有 `or_`；规格 `backend/spec/models/pallastrade/prefixed_id_spec.rb`（AC-001..006，含前缀唯一性守护 pin `ps`）。PRD-20260914-other-prefixedid-ownership-validation |
 
 ### 9.2 错误落点分流规则（P0-c）
 
@@ -231,8 +231,8 @@
 ## 12. 未覆盖与待验证
 
 1. **未做运行时验证**（本任务为文档评审）——建议 dev 实测两项以闭环代码级推断：
-   - ① 对 `POST /api/v3/store/carts/cart_xxx/discount_codes` 实际返回码（验证 §5.1/§5.2）；
-   - ② 走一单"勾选同配送地址"，检查 `order.bill_address` 是否为空（验证 §3.1 #3）。
+   - ① 对 `POST /api/v3/store/carts/cart_xxx/discount_codes` 实际返回码（验证 §5.1/§5.2）；→ **已闭环 2026-09-14**：修复前 dev 实测 403，修复后 422 `coupon_code_not_found` / 201（真实码）/ 200（DELETE），见 PRD-20260914-checkout-cart-discount-codes-canonical。
+   - ② 走一单"勾选同配送地址"，检查 `order.bill_address` 是否为空（验证 §3.1 #3）。→ **已闭环**：dev 实测 `same_as_shipping` → 订单 `bill_address` = 配送地址副本；`custom` → 独立地址，见 PRD-20260913-checkout-billing-mode。
 2. 未逐条复算源规格 §3/§4 功能项总表的每一项现状（抽样核验）。
 3. 未评估 §3 推荐页面布局与现状 `UnifiedCheckout` 布局的逐项差异（属 UX 细节，随 PRD 做）。
 4. 源规格 §13「移除 DELETE …」与 §43 的矛盾未裁决（登记为待澄清）。

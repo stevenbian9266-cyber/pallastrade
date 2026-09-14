@@ -165,6 +165,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260913-harness-prd-状态一致性检查器-readme-索引-文件头状态自动同步-引擎口径归一-ci-lefthook-漂移即失败 | harness | 2026-09-13 | （实施时回填） |
 | done | PRD-20260913-payments-争议本地运营增强与-stripe-深化-规格-68-边界-c-证据素材库-提交前校验-证据版本回执-审批复核-运营报表- | payments | 2026-09-13 | （实施时回填） |
 | done | PRD-20260914-checkout-cart-discount-codes-canonical | checkout | 2026-09-14 | （实施时回填） |
+| done | PRD-20260914-other-prefixedid-ownership-validation | other | 2026-09-14 | （实施时回填） |
 
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 

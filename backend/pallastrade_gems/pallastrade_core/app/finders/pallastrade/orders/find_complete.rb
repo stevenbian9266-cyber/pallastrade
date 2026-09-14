@@ -76,15 +76,18 @@ module PallasTrade
       def by_prefix_id(orders)
         return orders unless prefix_id?
 
-        decoded = PallasTrade::Order.decode_prefixed_id(prefix_id)
-        orders.where(id: decoded)
+        # PALLAS-CUSTOM (2026-09-14, PRD-20260914-other-prefixedid-ownership-validation):
+        # 只接受自有 `or_` 前缀；外来前缀 → 空集（不 500，也不串单）。
+        decoded = PallasTrade::Order.decode_owned_prefixed_id(prefix_id)
+        decoded ? orders.where(id: decoded) : orders.none
       end
 
       # Find by param - tries prefixed ID first, then number for backwards compatibility
       def by_param(orders)
         return orders unless param?
 
-        decoded = PallasTrade::Order.decode_prefixed_id(param)
+        # PALLAS-CUSTOM (2026-09-14): 归属校验同上 —— 外来前缀回退 number 查找。
+        decoded = PallasTrade::Order.decode_owned_prefixed_id(param)
         if decoded
           orders.where(id: decoded)
         else

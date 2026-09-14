@@ -195,6 +195,8 @@ The integer PK is **never** in API responses — only the prefixed form. Same on
 
 Computation: `Sqids.encode([integer_pk])` with `min_length: 10`. Deterministic — the same PK always gets the same prefixed ID. There's no database column for it; it's computed on read.
 
+The prefix is a **type assertion, not decoration** (PRD-20260914-other-prefixedid-ownership-validation, research §9.1 P0-f): resolving an id whose prefix belongs to another resource is a contract violation. Server behaviour: resource lookups return **404** (`find_by_prefix_id!` → `RecordNotFound`) and filter/param lookups yield an **empty set / `nil`** — never a different resource that happens to share the integer PK. `Order.find_by_param` and `Orders::FindComplete` accept only `or_…` ids (legacy order number / numeric id fallbacks unchanged). Known residual: `PaymentSession` and `PaymentSource` both declare `ps`, so those two remain mutually ambiguous — renaming is a breaking API change and needs its own PRD.
+
 ## Expand
 
 Resources support an `expand` query param for sideloading related data:

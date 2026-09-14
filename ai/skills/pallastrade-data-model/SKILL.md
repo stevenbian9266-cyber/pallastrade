@@ -294,6 +294,8 @@ variant.prefixed_id  # => "variant_k5nR8xLq"
 
 IDs are computed from the integer PK via Sqids — no database column. The prefix is declared per-class via `has_prefix_id :<prefix>` on the model. The v3 API accepts and emits prefixed IDs everywhere; `find_by_prefix_id!` resolves them back to integer PKs.
 
+The prefix is an **ownership constraint**, not decoration (PRD-20260914-other-prefixedid-ownership-validation, research §9.1 P0-f): `find_by_prefix_id!` / `find_by_prefix_id` only resolve ids carrying the caller class's own declared prefix — a foreign id (`or_…` passed to `Product`) raises `RecordNotFound` (404) or returns `nil` / empty set for filter-style lookups, never the other resource that happens to share the integer PK. `decode_prefixed_id` (module level) stays prefix-agnostic for generic parsing paths (ParamsNormalizer, exports, search providers); ownership-aware paths use `decode_with_prefix` / `decode_owned_prefixed_id`. When adding a model, pick a **globally unique** prefix — `backend/spec/models/pallastrade/prefixed_id_spec.rb` pins the one known collision (`ps` = PaymentSession / PaymentSource) and fails on any new duplicate.
+
 Conventions for the prefix:
 
 - Long form for some resources: `prod` (Product), `variant` (Variant)

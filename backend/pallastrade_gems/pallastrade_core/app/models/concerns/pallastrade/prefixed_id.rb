@@ -70,15 +70,39 @@ module PallasTrade
       value.is_a?(String) && value.match?(/\A[a-z]+_[a-zA-Z0-9]+\z/)
     end
 
-    def self.decode_prefixed_id(prefixed_id_string)
+    # Splits a prefixed id into [prefix, encoded]; nil when malformed.
+    # PALLAS-CUSTOM (2026-09-14, PRD-20260914-other-prefixedid-ownership-validation):
+    # the prefix identifies the owning resource, so it is returned to callers instead of
+    # being discarded — that is what makes ownership validation possible.
+    def self.split(prefixed_id_string)
       return nil if prefixed_id_string.blank?
 
       parts = prefixed_id_string.to_s.split('_', 2)
-      return nil if parts.length != 2
+      return nil if parts.length != 2 || parts[0].blank? || parts[1].blank?
 
-      _prefix, encoded = parts
-      ids = SQIDS.decode(encoded)
-      ids.first
+      parts
+    end
+
+    # => [prefix, integer_pk] or nil (malformed id / undecodable sqid).
+    def self.decode_with_prefix(prefixed_id_string)
+      parts = split(prefixed_id_string)
+      return nil unless parts
+
+      decoded = SQIDS.decode(parts[1]).first
+      return nil unless decoded
+
+      [parts[0], decoded]
+    end
+
+    # Prefix only — for generic parsing paths that legitimately handle heterogeneous
+    # ids (ParamsNormalizer, exports, search providers).
+    def self.prefix_of(prefixed_id_string)
+      split(prefixed_id_string)&.first
+    end
+
+    # Prefix-agnostic decode (unchanged semantics): returns the integer PK only.
+    def self.decode_prefixed_id(prefixed_id_string)
+      decode_with_prefix(prefixed_id_string)&.last
     end
 
     class_methods do
@@ -133,17 +157,44 @@ module PallasTrade
       end
 
       def find_by_prefix_id!(prefixed_id)
-        decoded = PallasTrade::PrefixedId.decode_prefixed_id(prefixed_id)
-        raise ActiveRecord::RecordNotFound.new("Couldn't find #{name} with prefixed id=#{prefixed_id}", name) unless decoded
-
-        find(decoded)
+        find(decode_owned_prefixed_id!(prefixed_id))
       end
 
       def find_by_prefix_id(prefixed_id)
-        decoded = PallasTrade::PrefixedId.decode_prefixed_id(prefixed_id)
+        decoded = decode_owned_prefixed_id(prefixed_id)
         return nil unless decoded
 
         find_by(id: decoded)
+      end
+
+      # PALLAS-CUSTOM (2026-09-14, PRD-20260914-other-prefixedid-ownership-validation):
+      # a prefixed id encodes BOTH the owning resource (prefix) and the integer PK.
+      # Previously the prefix was discarded and the decoded integer was looked up
+      # directly, so an `or_...` order id could resolve as a product/variant sharing
+      # that PK (cross-entity id confusion / 串单). The prefix is now enforced to be
+      # this class's own `has_prefix_id` declaration: foreign ids 404 (bang) or
+      # return nil / empty set (non-bang), matching the documented API contract
+      # that the resource type is implied by the prefix.
+      def decode_owned_prefixed_id!(prefixed_id)
+        pair = PallasTrade::PrefixedId.decode_with_prefix(prefixed_id)
+        raise ActiveRecord::RecordNotFound.new("Couldn't find #{name} with prefixed id=#{prefixed_id.inspect}", name) unless pair
+
+        prefix, decoded = pair
+        expected = _prefix_id_prefix
+        if expected.present? && prefix != expected.to_s
+          raise ActiveRecord::RecordNotFound.new(
+            "Prefixed id #{prefixed_id.inspect} does not belong to #{name} (expected #{expected}_ prefix)",
+            name
+          )
+        end
+
+        decoded
+      end
+
+      def decode_owned_prefixed_id(prefixed_id)
+        decode_owned_prefixed_id!(prefixed_id)
+      rescue ActiveRecord::RecordNotFound
+        nil
       end
 
       def decode_prefixed_id(prefixed_id_string)

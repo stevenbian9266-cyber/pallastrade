@@ -343,11 +343,16 @@ module PallasTrade
     def self.find_by_param(param)
       return nil if param.blank?
 
-      # Try prefixed ID first (new format)
+      # Try prefixed ID first (new format). PALLAS-CUSTOM (2026-09-14,
+      # PRD-20260914-other-prefixedid-ownership-validation): only ids carrying this
+      # class's own prefix may resolve to an integer PK here — a foreign prefix
+      # (prod_/variant_/cart_…) must never be resolved as an order id (串单防护).
       if param.to_s.include?('_')
-        decoded = decode_prefixed_id(param)
-        order = find_by(id: decoded) if decoded
-        return order if order
+        pair = PallasTrade::PrefixedId.decode_with_prefix(param)
+        if pair && pair.first == _prefix_id_prefix.to_s
+          order = find_by(id: pair.last)
+          return order if order
+        end
       end
 
       # Try number (legacy format)
