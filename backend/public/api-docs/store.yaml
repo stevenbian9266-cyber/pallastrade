@@ -2867,6 +2867,13 @@ paths:
       description: |
         Applies a promotion discount code to the cart. The code is matched case-insensitively.
 
+        Cart-scoped (`cart_...`) shopping carts persist the code on the cart
+        (`private_metadata.discount_code`) after validating it against the store's promotions —
+        an unknown code returns `coupon_code_not_found`, an expired one `coupon_code_expired`.
+        Applying does **not** consume the code: redemption happens at checkout submit time
+        (a code that is no longer valid then fails the submission instead of silently
+        dropping the discount).
+
         For gift cards, use the dedicated `POST /carts/{cart_id}/gift_cards` endpoint instead.
       x-codeSamples:
       - lang: javascript
@@ -3129,7 +3136,8 @@ paths:
       - api_key: []
         bearer_auth: []
       description: Removes a previously applied discount code from the cart. The ID
-        is the discount code string itself.
+        is the discount code string itself. For cart-scoped (`cart_...`) shopping
+        carts removal is idempotent (removing an absent code still returns 200).
       x-codeSamples:
       - lang: javascript
         label: PallasTrade SDK

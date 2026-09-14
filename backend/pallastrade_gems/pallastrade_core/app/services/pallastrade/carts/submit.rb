@@ -110,10 +110,28 @@ module PallasTrade
 
         order.update_line_item_prices!
         order.create_tax_charge!
+        # PALLAS-CUSTOM (2026-09-14, PRD-20260914-checkout-cart-discount-codes-canonical FR-004):
+        # 购物车上的优惠码「意图」在此兑现（与 Orders::Create#apply_coupon 同源）；
+        # 不可用 → 抛错回滚（绝不静默按原价下单）。
+        apply_discount_code!(order, cart)
         order.update_with_updater!
         order.save!
 
         order
+      end
+
+      # FR-004：把购物车上的优惠码交给权威套用路径（PromotionHandler::Coupon）。
+      # 应用码不消耗码（占用/核销由 PromotionRedemption reserve/commit 负责）。
+      def apply_discount_code!(order, cart)
+        code = (cart.private_metadata || {})[PallasTrade::Carts::ApplyDiscountCode::METADATA_KEY].presence
+        return if code.blank?
+
+        order.coupon_code = code
+        handler = PallasTrade::PromotionHandler::Coupon.new(order).apply
+        return if handler.successful?
+
+        order.errors.add(:base, handler.error.to_s.presence || PallasTrade::Carts::ApplyDiscountCode::NOT_FOUND)
+        raise ActiveRecord::RecordInvalid, order
       end
 
       # 复用既有履约管线：分配库存单元 → 生成 shipments + 运费 → 选中与购物车一致的

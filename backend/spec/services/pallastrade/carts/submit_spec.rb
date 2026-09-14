@@ -54,6 +54,41 @@ RSpec.describe PallasTrade::Carts::Submit, type: :service do
       expect(cart.converted_at).to be_present
     end
 
+    # PRD-20260914-checkout-cart-discount-codes-canonical AC-004：
+    # 购物车上的优惠码在提交时兑现（金额生效，走权威 PromotionHandler::Coupon）。
+    it 'applies the cart discount code to the submitted order' do
+      create(:promotion_with_order_adjustment, store: store, code: 'SAVE10',
+                                               weighted_order_adjustment_amount: 10)
+      cart.update!(private_metadata: { 'discount_code' => 'save10' })
+      add_item
+
+      result = described_class.call(cart: cart)
+
+      expect(result).to be_success
+      order = result.value
+      expect(order.coupon_code).to eq('save10')
+      # 既有约定：折扣合计为负数（order_adjustments 为负数）
+      expect(order.discount_total).to be < 0
+      expect(PallasTrade::Order.where(cart_id: cart.id).count).to eq(1)
+    end
+
+    # PRD-20260914-checkout-cart-discount-codes-canonical AC-005：
+    # 码不可用 → 提交失败且**不落单**（绝不静默按原价下单）
+    it 'fails the submission and creates no order when the stored code is no longer valid' do
+      cart.update!(private_metadata: { 'discount_code' => 'GONE' })
+      add_item
+
+      result = nil
+      expect do
+        result = described_class.call(cart: cart)
+      end.not_to change { PallasTrade::Order.where(cart_id: cart.id).count }
+
+      expect(result).not_to be_success
+      # 失败原因来自权威 PromotionHandler（本地化用户消息），且购物车未被转换
+      expect(result.error.to_s).to match(/coupon code/i)
+      expect(cart.reload).not_to be_converted
+    end
+
     # PRD-20260913-checkout-billing-mode AC-004：购物车无账单地址 → 回退复制配送地址
     it 'falls back to the shipping address when the cart has no billing address' do
       add_item

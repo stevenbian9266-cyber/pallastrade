@@ -2815,7 +2815,7 @@
         "Reject an incomplete custom billing address (server validation failure plus a client-side pre-submit guard) instead of persisting a half-empty address",
         "Derive the same-as-shipping checkbox default from cart.billing_address so an existing billing address is never silently overwritten",
         "Cover the cart services with rspec and the payload contract with vitest cases tagged with the PRD AC ids, keeping the five locale files in sync for new keys",
-        "Run the full storefront verification set — pnpm test plus pnpm check (biome) and pnpm typecheck — because duplicate i18n keys are invisible to JSON.parse yet fail the CI lint job"
+        "Run the full storefront verification set — pnpm test plus pnpm check (biome) and pnpm typecheck — because duplicate i18n keys are invisible to JSON.parse yet fail the CI lint job, and re-run pnpm check after ANY later edit (including test-only changes) since formatter drift fails the same job"
       ],
       "mustNotDo": [
         "Keep sending use_shipping (or any field missing from the server allow-list) and assume it takes effect",
@@ -2828,6 +2828,31 @@
         "allowListContract": 20,
         "incompleteAddressRejected": 15,
         "testAndI18nCoverage": 10
+      }
+    },
+    {
+      "id": "GS-114",
+      "name": "Cart discount codes resolve for canonical carts and are redeemed (or refused) at submit",
+      "description": "PRD-20260914-checkout-cart-discount-codes-canonical: POST/DELETE /carts/:cart_id/discount_codes resolves cart_ ids through current_store.shopping_carts (storefront and SDK unchanged) while legacy order-backed ids keep the old resolver, the code is stored as an intent on cart.private_metadata and merely validated on apply, and Carts::Submit re-applies it through PromotionHandler::Coupon and fails the submission when the code is no longer valid (RESEARCH-20260913 §9.1 P0-e)",
+      "mustDo": [
+        "Resolve cart_... ids through current_store.shopping_carts (guest/user scoped) instead of the order-backed resolver that answered 403 access_denied",
+        "Persist the applied code as cart intent (private_metadata.discount_code), normalised for case and whitespace, and keep removal idempotent",
+        "Validate only on apply (coupon_code_not_found / coupon_code_expired) because applying a code must never consume it — reservation and commitment belong to PromotionRedemption",
+        "Re-apply the stored code in Carts::Submit through PromotionHandler::Coupon before the amount pipeline, and fail the submission (no Order created) when the code is no longer valid",
+        "Log the legacy resolution path so convergence work is driven by real traffic instead of guesses",
+        "Keep the contract in sync: OpenAPI store.yaml twice (backend + platform docs) and the api-v3 skill, with rspec covering both the endpoint and the submit path"
+      ],
+      "mustNotDo": [
+        "Leave a documented cart_ endpoint routed only through the legacy resolver (the docs promised cart_ support while the implementation returned 403)",
+        "Silently drop an invalid coupon at submit and charge full price, or consume/redeem the code at apply time",
+        "Add a coupon_code column to pallastrade_carts when the intent already fits private_metadata"
+      ],
+      "scoring": {
+        "canonicalResolution": 30,
+        "intentPersistence": 20,
+        "applyDoesNotConsume": 20,
+        "submitRefusalNoOrder": 20,
+        "contractAndTestSync": 10
       }
     }
   ]
