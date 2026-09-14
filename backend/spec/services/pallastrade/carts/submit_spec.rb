@@ -131,11 +131,15 @@ RSpec.describe PallasTrade::Carts::Submit, type: :service do
 
     # 修复（dev 实测缺陷）：店铺里已存在但被**停用**的 store-credit 支付方式 →
     # `Checkout::AddStoreCredit` 的 `available` 作用域取不到 → raise。兑现路径必须自愈（激活并落库）。
+    # 断言只针对**结果**（店铺恢复出可用支付方式）——CI 里店铺可能已有别的支付方式记录，
+    # 断言"spec 造的那条被激活"会过窄（Backend CI 实测：兑现成功但该断言失败）。
     it 'activates an existing but disabled store credit payment method before redeeming' do
       buyer = create(:user)
       cart.update!(user: buyer, email: buyer.email)
       create(:store_credit, store: store, user: buyer, amount: 30.0, currency: 'USD')
-      disabled = create(:store_credit_payment_method, store: store, active: false)
+      # 先让本店 store-credit 支付方式全部停用 → 确定性地覆盖「无可用 → 自愈」路径
+      PallasTrade::PaymentMethod::StoreCredit.where(store: store).update_all(active: false)
+      create(:store_credit_payment_method, store: store, active: false)
       cart.update!(private_metadata: { 'store_credit_amount' => '20' })
       add_item
 
@@ -143,7 +147,7 @@ RSpec.describe PallasTrade::Carts::Submit, type: :service do
 
       expect(result).to be_success
       expect(result.value.payments.store_credits.sum(:amount)).to eq(BigDecimal('20'))
-      expect(disabled.reload).to be_active
+      expect(PallasTrade::PaymentMethod::StoreCredit.available.where(store: store)).to be_present
     end
 
     # AC-005（异常路径）：权威服务 raise（支付方式不可用等）→ 收敛为「提交失败、不落单」，不是 500。
