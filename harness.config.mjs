@@ -171,6 +171,12 @@ export default {
         description: 'Admin page caching specs (no-store headers + back-forward-cache reload guard)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/page_caching_spec.rb'],
       },
+      // 仓库级回归守卫（2026-09-14）：部署脚本前滚检测 + 回滚演练 crontab 恢复 + PRD 状态同步
+      // 台账收口 TASK-20260913113813-6b5a2a47 / TASK-20260913103421-bd645649 的证据来源。
+      'repo-guards-test': {
+        description: 'Repo-level node:test guards (pull-deploy forward roll + drill crontab restore + PRD status sync)',
+        command: ['node', '--test', 'tests/pull-deploy-forward-roll.test.mjs', 'tests/drill-rollback-crontab.test.mjs', 'tests/prd-status-sync.test.mjs'],
+      },
       // P1 订单流程改造：本次变更相关 spec（新购物车/提交订单/回归）
       'p1-order-flow-rspec': {
         description: 'P1 order-flow specs (cart/submit/request + regression)',

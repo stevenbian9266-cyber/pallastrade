@@ -270,6 +270,7 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | UI component / style | + `harness e2e dashboard` or `harness e2e storefront` | ≤15 min |
 | Payment logic | + payment sandbox gate | ≤30 min |
 | AI Skill file (`ai/skills/`) | + `harness eval ai --check-freshness` | ≤2 min |
+| `deploy/` scripts / repo-level guards (`tests/*.test.mjs`) | + `harness verify repo-guards-test` (前滚检测 + drill crontab 恢复 + PRD 状态同步契约守卫) | ≤1 min |
 | Any change | `harness doc-impact --base origin/dev` — checks knowledge docs are synced | ≤1 min |
 
 ### Verification Evidence Required
