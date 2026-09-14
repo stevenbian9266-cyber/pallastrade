@@ -478,4 +478,90 @@ describe("OrderPaymentContent", () => {
     expect(completeAndRedirectMock).not.toHaveBeenCalled();
     expect(pushMock).not.toHaveBeenCalled();
   });
+
+  // ── B1（PRD-20260914-checkout B1）：credits / capabilities / 视图支付方式 ──
+  it("renders gift-card and store-credit rows from CheckoutView credits (AC-010)", () => {
+    const creditsView = {
+      ...checkoutView,
+      credits: {
+        gift_cards: [
+          {
+            id: "gc_1",
+            code: "GIFT-1",
+            amount: "3.0",
+            display_amount: "$3.00",
+          },
+        ],
+        store_credit: { amount: "2.0", display_amount: "$2.00" },
+      },
+    } as unknown as CheckoutView;
+
+    renderOrderPayment(order, creditsView);
+
+    expect(screen.getByTestId("gift-card-row")).toBeInTheDocument();
+    expect(screen.getByTestId("store-credit-row")).toBeInTheDocument();
+    expect(screen.getByText("-$3.00")).toBeTruthy();
+    expect(screen.getByText("-$2.00")).toBeTruthy();
+  });
+
+  it("omits the credits rows when nothing is applied (AC-010 boundary)", () => {
+    renderOrderPayment(order, checkoutView);
+
+    expect(screen.queryByTestId("gift-card-row")).toBeNull();
+    expect(screen.queryByTestId("store-credit-row")).toBeNull();
+  });
+
+  it("disables Pay when capabilities.can_pay is false (AC-011)", () => {
+    const notPayableView = {
+      ...checkoutView,
+      capabilities: {
+        can_edit_address: false,
+        can_change_shipping: false,
+        can_apply_promotion: false,
+        can_pay: false,
+      },
+    } as unknown as CheckoutView;
+
+    renderOrderPayment(order, notPayableView);
+
+    const pay = screen.getByRole("button", {
+      name: "payAmount",
+    }) as HTMLButtonElement;
+    expect(pay.disabled).toBe(true);
+  });
+
+  it("renders payment methods from the CheckoutView when the order snapshot has none (AC-012)", () => {
+    const orderWithoutMethods = {
+      ...order,
+      payment_methods: [],
+    } as unknown as Order;
+    const viewWithMethods = {
+      ...checkoutView,
+      payment: { available_payment_methods: [stripeMethod] },
+    } as unknown as CheckoutView;
+
+    renderOrderPayment(orderWithoutMethods, viewWithMethods);
+
+    expect(screen.getByText("Stripe")).toBeTruthy();
+    expect(screen.getByTestId("card-payment-form")).toBeInTheDocument();
+  });
+
+  // FR-006：编辑入口按 capabilities 控制（不可编辑时禁用按钮）。
+  it("disables the address edit entry when capabilities forbid editing (FR-006)", () => {
+    const frozenView = {
+      ...checkoutView,
+      capabilities: {
+        can_edit_address: false,
+        can_change_shipping: false,
+        can_apply_promotion: false,
+        can_pay: true,
+      },
+    } as unknown as CheckoutView;
+
+    renderOrderPayment(order, frozenView, countries);
+
+    expect(
+      (screen.getByTestId("edit-address") as HTMLButtonElement).disabled,
+    ).toBe(true);
+  });
 });

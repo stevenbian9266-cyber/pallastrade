@@ -123,5 +123,49 @@ RSpec.describe PallasTrade::Api::V3::Store::Checkout::CheckoutSerializer, type: 
         expect(data['missing_requirements']).to include('contact')
       end
     end
+
+    # B1 扩展（PRD-20260914-checkout B1）：credits / capabilities / billing_mode / payment。
+    context 'B1 extensions (AC-001..AC-004, AC-008)' do
+      it 'outputs credits / capabilities / billing_mode / payment blocks' do
+        expect(data['credits']).to eq(gift_cards: [], store_credit: nil)
+        expect(data['capabilities']).to eq(
+          can_edit_address: true, can_change_shipping: true,
+          can_apply_promotion: true, can_pay: true
+        )
+        expect(%w[same_as_shipping custom]).to include(data['billing_mode'])
+        expect(data['payment'][:available_payment_methods]).to be_an(Array)
+      end
+
+      it 'serializes front-end payment methods with stable api_type + session flags (AC-008)' do
+        pm = create(:check_payment_method, store: store, active: true, display_on: 'front_end')
+        serialized = serialize(PallasTrade::OrderCheckout::View.call(order: order))
+
+        entry = serialized['payment'][:available_payment_methods].find { |m| m[:id] == pm.prefixed_id }
+
+        expect(entry).to be_present
+        expect(entry[:type]).to eq('check')
+        expect(entry[:session_required]).to be(false)
+        expect(entry.keys).to contain_exactly(:id, :name, :description, :type, :session_required, :source_required)
+      end
+
+      it 'projects credit amounts from the order (AC-001/AC-003)' do
+        create(:store_credit_payment, order: order, amount: 2, state: 'checkout')
+        serialized = serialize(PallasTrade::OrderCheckout::View.call(order: order.reload))
+
+        order.reload
+        expect(serialized['credits'][:store_credit][:amount]).to eq(order.total_applied_store_credit.to_s)
+        expect(serialized['credits'][:store_credit][:display_amount]).to eq(order.display_total_applied_store_credit.to_s)
+      end
+
+      context 'hide_prices (AC-004)' do
+        it 'nulls credit amounts but keeps the structure' do
+          create(:store_credit_payment, order: order, amount: 2, state: 'checkout')
+          serialized = serialize(PallasTrade::OrderCheckout::View.call(order: order.reload), hide_prices: true)
+
+          expect(serialized['credits'][:store_credit]).to eq(amount: nil, display_amount: nil)
+          expect(serialized['credits'][:gift_cards]).to eq([])
+        end
+      end
+    end
   end
 end

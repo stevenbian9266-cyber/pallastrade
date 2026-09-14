@@ -201,5 +201,103 @@ RSpec.describe PallasTrade::OrderCheckout::View, type: :model do
         expect(view.missing_requirements).to include('contact')
       end
     end
+
+    # B1 扩展（PRD-20260914-checkout B1）：credits / capabilities /
+    # available_payment_methods / billing_mode —— 只读投影。
+    context 'B1 extensions: credits / capabilities / payment methods / billing mode' do
+      subject(:view) { described_class.new.call(order: order.reload) }
+
+      let(:order) { pending_order(store: store, user: user) }
+
+      describe '#gift_cards / #store_credit (AC-002/AC-003)' do
+        it 'returns empty credits when nothing is applied' do
+          expect(view.gift_cards).to eq([])
+          expect(view.store_credit).to be_nil
+          expect(view.credits).to eq(gift_cards: [], store_credit: nil)
+        end
+
+        it 'projects applied store credit as amount + display_amount' do
+          create(:store_credit_payment, order: order, amount: 2, state: 'checkout')
+
+          expect(view.store_credit[:amount]).to eq(order.reload.total_applied_store_credit.to_s)
+          expect(view.store_credit[:display_amount]).to eq(order.display_total_applied_store_credit.to_s)
+        end
+
+        it 'projects an applied gift card (array contract; <=1 card today)' do
+          gift_card = create(:gift_card, store: store, amount: 10, currency: order.currency)
+          card_credit = create(:store_credit, user: user, store: store,
+                                              currency: order.currency, amount: 10,
+                                              originator: gift_card)
+          # StoreCredit 支付方式校验要求 order.gift_card.present? || could_use_store_credit? ——
+          # 先挂卡再建支付，语义上即「礼卡先应用、再产生 store credit 支付记录」。
+          order.update_columns(gift_card_id: gift_card.id)
+          pm = create(:store_credit_payment_method, store: store, active: true, display_on: 'both')
+          create(:payment, order: order, payment_method: pm, amount: 3,
+                           state: 'checkout', source: card_credit)
+
+          expect(view.gift_cards.size).to eq(1)
+          entry = view.gift_cards.first
+          expect(entry[:id]).to eq(gift_card.prefixed_id)
+          expect(entry[:code]).to eq(gift_card.code)
+          expect(entry[:amount]).to eq(order.reload.gift_card_total.to_s)
+          expect(entry[:display_amount]).to eq(order.display_gift_card_total.to_s)
+        end
+      end
+
+      describe '#capabilities (AC-005/AC-006)' do
+        it 'allows editing and paying for a ready pending order' do
+          expect(view.capabilities).to eq(
+            can_edit_address: true, can_change_shipping: true,
+            can_apply_promotion: true, can_pay: true
+          )
+        end
+
+        it 'disables every capability once the order is completed' do
+          order.update_columns(state: 'complete', status: 'complete',
+                               payment_state: 'paid', completed_at: Time.current)
+
+          expect(view.capabilities.values).to all(be(false))
+        end
+
+        it 'disables can_pay when nothing is due' do
+          order.update_columns(payment_total: order.total)
+
+          expect(view.capabilities[:can_pay]).to be(false)
+        end
+      end
+
+      describe '#available_payment_methods (AC-007)' do
+        it 'returns only active front-end methods available for the order' do
+          front = create(:check_payment_method, store: store, active: true, display_on: 'front_end')
+          back = create(:check_payment_method, store: store, active: true, display_on: 'back_end')
+          inactive = create(:check_payment_method, store: store, active: false, display_on: 'front_end')
+
+          ids = view.available_payment_methods.map(&:id)
+
+          expect(ids).to include(front.id)
+          expect(ids).not_to include(back.id, inactive.id)
+        end
+      end
+
+      describe '#billing_mode (AC-009)' do
+        it 'derives same_as_shipping when billing matches the shipping address' do
+          order.update_columns(bill_address_id: order.ship_address_id)
+
+          expect(view.billing_mode).to eq('same_as_shipping')
+        end
+
+        it 'derives custom when billing differs from shipping' do
+          order.update_columns(bill_address_id: create(:address).id)
+
+          expect(view.billing_mode).to eq('custom')
+        end
+
+        it 'derives same_as_shipping when billing is missing' do
+          order.update_columns(bill_address_id: nil)
+
+          expect(view.billing_mode).to eq('same_as_shipping')
+        end
+      end
+    end
   end
 end

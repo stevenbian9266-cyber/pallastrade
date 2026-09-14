@@ -25,6 +25,7 @@ module PallasTrade
         { line_items: [:variant] },
         { shipments: [:stock_location, :shipping_rates, { inventory_units: %i[line_item variant] }] },
         :adjustments,
+        :gift_card,
         :bill_address,
         :ship_address
       ].freeze
@@ -67,6 +68,11 @@ module PallasTrade
         define_method(name) { order.public_send(name) }
       end
 
+      # 账单“同配送”判定的关键地址字段（派生 billing_mode 用；不参与任何写路径）。
+      BILLING_COMPARISON_FIELDS = %i[
+        firstname lastname address1 address2 city zipcode country_id state_id state_name
+      ].freeze
+
       def id
         order.prefixed_id
       end
@@ -107,6 +113,61 @@ module PallasTrade
         readiness.missing_requirements
       end
 
+      # CHK-P1-1 §17 缺口补齐（PRD-20260914-checkout B1）：credits / capabilities /
+      # available_payment_methods / billing_mode —— 全部只读、零副作用、不重算金额。
+      # 抵扣汇总（页面只消费这一处；金额大小写契约与 Order 现有列一致）。
+      def credits
+        { gift_cards: gift_cards, store_credit: store_credit }
+      end
+
+      # 已应用礼品卡（当前数据模型每单至多 1 张；数组化保持契约前向兼容）。
+      def gift_cards
+        card = order.gift_card
+        return [] if card.nil?
+
+        [{
+          id: card.prefixed_id,
+          code: card.code,
+          amount: order.gift_card_total.to_s,
+          display_amount: order.display_gift_card_total.to_s
+        }]
+      end
+
+      # 已应用店铺余额（0 → nil，页面不渲染该行）。
+      def store_credit
+        amount = order.total_applied_store_credit
+        return nil if amount.blank? || !amount.positive?
+
+        { amount: amount.to_s, display_amount: order.display_total_applied_store_credit.to_s }
+      end
+
+      # 服务端能力位：页面据此控制编辑入口与支付按钮（只读判定，不写状态）。
+      def capabilities
+        editable = editable_state?
+        {
+          can_edit_address: editable,
+          can_change_shipping: editable,
+          can_apply_promotion: editable,
+          can_pay: payable?
+        }
+      end
+
+      # 当前订单可支付方式（与 PaymentSessions::Start 校验同源：PaymentMethod#available_for_order?）。
+      def available_payment_methods
+        order.payment_methods
+      end
+
+      # 账单语义派生值（仅用于页面初始态；写路径仍以 billing_mode 请求参数为准）。
+      def billing_mode
+        bill = order.bill_address
+        ship = order.ship_address
+        return 'same_as_shipping' if bill.nil?
+        return 'custom' if ship.nil?
+
+        same = BILLING_COMPARISON_FIELDS.all? { |field| bill.public_send(field) == ship.public_send(field) }
+        same ? 'same_as_shipping' : 'custom'
+      end
+
       # 明细行（非 API 资源，仅供展示解释；不重新求和）。
       class Line
         attr_reader :id, :amount, :currency
@@ -119,6 +180,16 @@ module PallasTrade
       end
 
       private
+
+      # 可编辑态：新流程 or_ 订单在支付完成前均允许编辑地址/配送/优惠。
+      def editable_state?
+        order.state == 'pending' && [nil, 'unpaid', 'balance_due'].include?(order.payment_state)
+      end
+
+      # 可支付态：就绪 + 尚有应付金额 + 订单处于 pending。
+      def payable?
+        order.state == 'pending' && ready && order.amount_due.to_d.positive?
+      end
 
       def readiness
         @readiness ||= PallasTrade::OrderCheckout::Readiness.call(order: order)

@@ -1033,6 +1033,42 @@ interface CheckoutView {
     billing_address: Address | null;
     discounts: Array<CheckoutViewLine>;
     taxes: Array<CheckoutViewLine>;
+    /**
+     * B1 (PRD-20260914-checkout): applied gift cards + store credit.
+     * Amounts follow the order convention — positive values; the UI renders the minus.
+     */
+    credits: {
+        gift_cards: Array<{
+            id: string;
+            code: string;
+            amount: string | null;
+            display_amount: string | null;
+        }>;
+        store_credit: {
+            amount: string | null;
+            display_amount: string | null;
+        } | null;
+    };
+    /** B1: server-computed action gates (editability / payability). */
+    capabilities: {
+        can_edit_address: boolean;
+        can_change_shipping: boolean;
+        can_apply_promotion: boolean;
+        can_pay: boolean;
+    };
+    /** B1: derived billing semantics (display hint only; writes use billing_mode params). */
+    billing_mode: string;
+    /** B1: payment methods the server accepts for this order (same source as PaymentSessions::Start). */
+    payment: {
+        available_payment_methods: Array<{
+            id: string;
+            name: string;
+            description: string | null;
+            type: string;
+            session_required: boolean;
+            source_required: boolean;
+        }>;
+    };
 }
 interface CheckoutUpdateParams {
     contact?: {

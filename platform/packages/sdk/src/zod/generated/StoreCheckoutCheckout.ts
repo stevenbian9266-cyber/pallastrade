@@ -42,8 +42,12 @@ export const StoreCheckoutCheckoutSchema = z.object({
   billing_address: AddressSchema.nullable(),
   items: z.array(LineItemSchema),
   fulfillments: z.array(FulfillmentSchema),
-  discounts: z.array(z.object({ id: z.string(), amount: z.string().nullable(), currency: z.string() })),
+  discounts: z.array(z.object({ id: z.string(), promotion_id: z.string(), name: z.string(), description: z.string().nullable(), code: z.string().nullable(), kind: z.string(), amount: z.string().nullable(), display_amount: z.string().nullable(), breakdown: z.any(), order: z.string(), shipping: z.any(), removable: z.boolean() })),
   taxes: z.array(z.object({ id: z.string(), amount: z.string().nullable(), currency: z.string() })),
+  credits: z.any(),
+  capabilities: z.any(),
+  billing_mode: z.string(),
+  payment: z.any(),
 });
 
 export type StoreCheckoutCheckout = z.infer<typeof StoreCheckoutCheckoutSchema>;

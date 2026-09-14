@@ -14397,6 +14397,14 @@ components:
             "$ref": "#/components/schemas/DiscountLine"
         taxes:
           type: object
+        credits:
+          type: object
+        capabilities:
+          type: object
+        billing_mode:
+          type: string
+        payment:
+          type: object
       required:
       - id
       - number
@@ -14437,6 +14445,10 @@ components:
       - fulfillments
       - discounts
       - taxes
+      - credits
+      - capabilities
+      - billing_mode
+      - payment
       x-typelizer: true
     StoreCommerceTransaction:
       type: object

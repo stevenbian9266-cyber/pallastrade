@@ -170,6 +170,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260914-checkout-placeholder-controls-governance | checkout | 2026-09-14 | （实施时回填） |
 | done | PRD-20260914-checkout-cart-gift-cards-canonical | checkout | 2026-09-14 | （实施时回填） |
 | done | PRD-20260914-checkout-cart-store-credits-canonical | checkout | 2026-09-14 | （实施时回填） |
+| done | PRD-20260914-checkout-checkout-收尾收敛-b1-checkoutview-扩展-credits-capabilities-availa | checkout | 2026-09-14 | （实施时回填） |
 
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 

@@ -60,6 +60,7 @@ export { StateSchema, type State } from './State';
 export { StockLocationSchema, type StockLocation } from './StockLocation';
 export { StockReservationSchema, type StockReservation } from './StockReservation';
 export { StoreCheckoutCheckoutSchema, type StoreCheckoutCheckout } from './StoreCheckoutCheckout';
+export { StoreCommerceTransactionSchema, type StoreCommerceTransaction } from './StoreCommerceTransaction';
 export { StoreCreditSchema, type StoreCredit } from './StoreCredit';
 export { VariantSchema, type Variant } from './Variant';
 export { WishlistSchema, type Wishlist } from './Wishlist';

@@ -72,6 +72,13 @@ interface CheckoutReadModel {
   display_delivery_total: string | null;
   display_tax_total: string | null;
   display_total: string | null;
+  /** B1（PRD-20260914-checkout）：礼卡/余额展示（raw 仅判断，display 仅渲染）。 */
+  gift_card_total: string | null;
+  display_gift_card_total: string | null;
+  store_credit_total: string | null;
+  display_store_credit_total: string | null;
+  /** B1：服务端能力位（view 缺失 → null = 不限制）。 */
+  capabilities: CheckoutView["capabilities"] | null;
   shipping_address: CheckoutView["shipping_address"];
 }
 
@@ -127,6 +134,25 @@ function OrderPaymentSummary({ read }: { read: CheckoutReadModel }) {
             <dd className="text-gray-900">{read.display_tax_total}</dd>
           </div>
         )}
+        {/* B1：礼卡/余额抵扣行（order 口径为正值，展示时加负号；无则不加行） */}
+        {read.gift_card_total && safeParseFloat(read.gift_card_total) > 0 && (
+          <div className="flex justify-between" data-testid="gift-card-row">
+            <dt className="text-gray-500">{tc("giftCard")}</dt>
+            <dd className="text-green-600">-{read.display_gift_card_total}</dd>
+          </div>
+        )}
+        {read.store_credit_total &&
+          safeParseFloat(read.store_credit_total) > 0 && (
+            <div
+              className="flex justify-between"
+              data-testid="store-credit-row"
+            >
+              <dt className="text-gray-500">{tc("storeCredit")}</dt>
+              <dd className="text-green-600">
+                -{read.display_store_credit_total}
+              </dd>
+            </div>
+          )}
         <div className="flex justify-between border-t pt-4">
           <dt className="text-lg font-medium text-gray-900">{tc("total")}</dt>
           <dd className="text-lg font-bold text-gray-900">
@@ -160,7 +186,19 @@ export function OrderPaymentContent({
     () => searchParams?.get("notice") === "quote_changed",
   );
 
-  const paymentMethods: PaymentMethod[] = order.payment_methods ?? [];
+  // B1（PRD-20260914-checkout B1）：服务端 CheckoutView 为页面唯一数据源；
+  // 可被编辑/409 刷新覆盖（初始来自 props.view）。
+  const [liveView, setLiveView] = useState<CheckoutView | null>(view ?? null);
+  const effectiveView = liveView ?? view;
+
+  // B1：支付方式服务端权威（CheckoutView.payment.available_payment_methods），order 快照回退。
+  const paymentMethods: PaymentMethod[] = useMemo(
+    () =>
+      (effectiveView?.payment?.available_payment_methods ??
+        order.payment_methods ??
+        []) as PaymentMethod[],
+    [effectiveView, order.payment_methods],
+  );
   // 默认选中：URL 预选（?pm=）> 首个可用支付方式
   const [selectedMethodId, setSelectedMethodId] = useState(() => {
     const preset = searchParams?.get("pm") ?? "";
@@ -176,11 +214,8 @@ export function OrderPaymentContent({
 
   const isPaid = order.state === "paid" || order.state === "completed";
 
-  // CHK-P1-4B: 服务端 view 可被编辑/409 刷新覆盖（初始来自 props.view）。
-  const [liveView, setLiveView] = useState<CheckoutView | null>(view ?? null);
   const [editing, setEditing] = useState<"address" | "delivery" | null>(null);
   const [saving, setSaving] = useState(false);
-  const effectiveView = liveView ?? view;
 
   const refreshView = useCallback(async () => {
     const fresh = await getOrderCheckout(order.id);
@@ -199,6 +234,15 @@ export function OrderPaymentContent({
             display_delivery_total: effectiveView.display_delivery_total,
             display_tax_total: effectiveView.display_tax_total,
             display_total: effectiveView.display_total,
+            gift_card_total:
+              effectiveView.credits?.gift_cards?.[0]?.amount ?? null,
+            display_gift_card_total:
+              effectiveView.credits?.gift_cards?.[0]?.display_amount ?? null,
+            store_credit_total:
+              effectiveView.credits?.store_credit?.amount ?? null,
+            display_store_credit_total:
+              effectiveView.credits?.store_credit?.display_amount ?? null,
+            capabilities: effectiveView.capabilities ?? null,
             shipping_address: effectiveView.shipping_address,
           }
         : {
@@ -209,6 +253,12 @@ export function OrderPaymentContent({
             display_delivery_total: order.display_delivery_total,
             display_tax_total: order.display_tax_total,
             display_total: order.display_total,
+            gift_card_total: order.gift_card_total ?? null,
+            display_gift_card_total: order.display_gift_card_total ?? null,
+            store_credit_total: order.store_credit_total ?? null,
+            display_store_credit_total:
+              order.display_store_credit_total ?? null,
+            capabilities: null,
             shipping_address: order.shipping_address ?? null,
           },
     [effectiveView, order],
@@ -478,6 +528,7 @@ export function OrderPaymentContent({
                 variant="ghost"
                 size="sm"
                 data-testid="edit-address"
+                disabled={read.capabilities?.can_edit_address === false}
                 onClick={() =>
                   editing === "address" ? setEditing(null) : startAddressEdit()
                 }
@@ -553,6 +604,7 @@ export function OrderPaymentContent({
                 variant="ghost"
                 size="sm"
                 data-testid="edit-delivery"
+                disabled={read.capabilities?.can_change_shipping === false}
                 onClick={() =>
                   editing === "delivery"
                     ? setEditing(null)
@@ -656,7 +708,12 @@ export function OrderPaymentContent({
           <Button
             size="lg"
             className="w-full mt-6"
-            disabled={!selectedMethod || !checkoutReady || processing}
+            disabled={
+              !selectedMethod ||
+              !checkoutReady ||
+              processing ||
+              read.capabilities?.can_pay === false
+            }
             onClick={handlePay}
           >
             {processing

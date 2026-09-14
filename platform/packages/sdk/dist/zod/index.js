@@ -31,15 +31,6 @@ var BackInStockSubscriptionSchema = z.object({
 var BaseSchema = z.object({
   id: z.string()
 });
-var DiscountSchema = z.object({
-  id: z.string(),
-  promotion_id: z.string(),
-  name: z.string(),
-  description: z.string().nullable(),
-  code: z.string().nullable(),
-  amount: z.string().nullable(),
-  display_amount: z.string().nullable()
-});
 var DeliveryMethodSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -265,7 +256,7 @@ var CartSchema = z.object({
   completed_steps: z.array(z.string()),
   requirements: z.array(z.object({ step: z.string(), field: z.string(), message: z.string() })),
   shipping_eq_billing_address: z.boolean(),
-  discounts: z.array(DiscountSchema),
+  discounts: z.array(z.object({ id: z.string(), promotion_id: z.string(), name: z.string(), description: z.string().nullable(), code: z.string().nullable(), kind: z.string(), amount: z.string().nullable(), display_amount: z.string().nullable(), breakdown: z.any(), order: z.string(), shipping: z.any(), removable: z.boolean() })),
   items: z.array(LineItemSchema),
   fulfillments: z.array(FulfillmentSchema),
   payments: z.array(PaymentSchema),
@@ -374,6 +365,15 @@ var DigitalSchema = z.object({
   created_at: z.string(),
   updated_at: z.string(),
   variant_id: z.string().nullable()
+});
+var DiscountSchema = z.object({
+  id: z.string(),
+  promotion_id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  code: z.string().nullable(),
+  amount: z.string().nullable(),
+  display_amount: z.string().nullable()
 });
 var GiftCardBatchSchema = z.object({
   id: z.string(),
@@ -487,7 +487,7 @@ var OrderSchema = z.object({
   store_credit_total: z.string().nullable(),
   display_store_credit_total: z.string().nullable(),
   covered_by_store_credit: z.boolean(),
-  discounts: z.array(DiscountSchema),
+  discounts: z.array(z.object({ id: z.string(), promotion_id: z.string(), name: z.string(), description: z.string().nullable(), code: z.string().nullable(), kind: z.string(), amount: z.string().nullable(), display_amount: z.string().nullable(), breakdown: z.any(), order: z.string(), shipping: z.any(), removable: z.boolean() })),
   items: z.array(LineItemSchema),
   fulfillments: z.array(FulfillmentSchema),
   payments: z.array(PaymentSchema),
@@ -715,6 +715,7 @@ var PromotionSchema = z.object({
 var RefundSchema = z.object({
   id: z.string(),
   transaction_id: z.string().nullable(),
+  state: z.string(),
   amount: z.string().nullable(),
   payment_id: z.string().nullable(),
   refund_reason_id: z.string().nullable(),
@@ -769,7 +770,9 @@ var ShoppingCartSchema = z.object({
   items: z.array(z.any()),
   billing_address: AddressSchema.nullable(),
   shipping_address: AddressSchema.nullable(),
-  payment_methods: z.array(PaymentMethodSchema)
+  payment_methods: z.array(PaymentMethodSchema),
+  gift_card: z.any(),
+  store_credit: z.any()
 });
 var StockReservationSchema = z.object({
   id: z.string()
@@ -812,8 +815,33 @@ var StoreCheckoutCheckoutSchema = z.object({
   billing_address: AddressSchema.nullable(),
   items: z.array(LineItemSchema),
   fulfillments: z.array(FulfillmentSchema),
-  discounts: z.array(z.object({ id: z.string(), amount: z.string().nullable(), currency: z.string() })),
-  taxes: z.array(z.object({ id: z.string(), amount: z.string().nullable(), currency: z.string() }))
+  discounts: z.array(z.object({ id: z.string(), promotion_id: z.string(), name: z.string(), description: z.string().nullable(), code: z.string().nullable(), kind: z.string(), amount: z.string().nullable(), display_amount: z.string().nullable(), breakdown: z.any(), order: z.string(), shipping: z.any(), removable: z.boolean() })),
+  taxes: z.array(z.object({ id: z.string(), amount: z.string().nullable(), currency: z.string() })),
+  credits: z.any(),
+  capabilities: z.any(),
+  billing_mode: z.string(),
+  payment: z.any()
+});
+var StoreCommerceTransactionSchema = z.object({
+  id: z.string(),
+  state: z.string(),
+  purpose: z.string(),
+  currency: z.string(),
+  amount: z.string(),
+  checkout_version: z.number().nullable(),
+  price_version: z.string().nullable(),
+  snapshot_fingerprint: z.string().nullable(),
+  recovery_attempts: z.number(),
+  last_error_class: z.string().nullable(),
+  last_error_code: z.string().nullable(),
+  last_error_message: z.string().nullable(),
+  started_at: z.string().nullable(),
+  payment_confirmed_at: z.string().nullable(),
+  finalizing_at: z.string().nullable(),
+  completed_at: z.string().nullable(),
+  recovery_required_at: z.string().nullable(),
+  manual_review_at: z.string().nullable(),
+  canceled_at: z.string().nullable()
 });
 var StoreCreditSchema = z.object({
   id: z.string(),
@@ -843,6 +871,6 @@ var WishlistSchema = z.object({
   items: z.array(WishlistItemSchema).optional()
 });
 
-export { AddressSchema, BackInStockSubscriptionSchema, BaseSchema, CartItemSchema, CartSchema, CategorySchema, ChannelSchema, ContactMessageSchema, CountrySchema, CreditCardSchema, CurrencySchema, CustomFieldSchema, CustomerSchema, DeliveryMethodSchema, DeliveryRateSchema, DigitalLinkSchema, DigitalSchema, DiscountSchema, FulfillmentSchema, GiftCardBatchSchema, GiftCardSchema, InvitationSchema, LineItemSchema, LocaleSchema, MarketSchema, MediaSchema, NewsletterSubscriberSchema, OptionTypeSchema, OptionValueSchema, OrderSchema, PaymentCombinationSchema, PaymentMethodSchema, PaymentSchema, PaymentSessionSchema, PaymentSetupSessionSchema, PaymentSourceSchema, PolicySchema, PostSchema, PriceHistorySchema, PriceSchema, ProductFilterAvailabilityOptionSchema, ProductFilterAvailabilitySchema, ProductFilterCategoryOptionSchema, ProductFilterCategorySchema, ProductFilterOptionSchema, ProductFilterOptionValueSchema, ProductFilterPriceRangeSchema, ProductFilterSortOptionSchema, ProductFiltersSchema, ProductPublicationSchema, ProductSchema, PromotionSchema, RefundSchema, ReturnAuthorizationSchema, ReturnItemSchema, ReviewSchema, ShoppingCartSchema, StateSchema, StockLocationSchema, StockReservationSchema, StoreCheckoutCheckoutSchema, StoreCreditSchema, VariantSchema, WishlistItemSchema, WishlistSchema };
+export { AddressSchema, BackInStockSubscriptionSchema, BaseSchema, CartItemSchema, CartSchema, CategorySchema, ChannelSchema, ContactMessageSchema, CountrySchema, CreditCardSchema, CurrencySchema, CustomFieldSchema, CustomerSchema, DeliveryMethodSchema, DeliveryRateSchema, DigitalLinkSchema, DigitalSchema, DiscountSchema, FulfillmentSchema, GiftCardBatchSchema, GiftCardSchema, InvitationSchema, LineItemSchema, LocaleSchema, MarketSchema, MediaSchema, NewsletterSubscriberSchema, OptionTypeSchema, OptionValueSchema, OrderSchema, PaymentCombinationSchema, PaymentMethodSchema, PaymentSchema, PaymentSessionSchema, PaymentSetupSessionSchema, PaymentSourceSchema, PolicySchema, PostSchema, PriceHistorySchema, PriceSchema, ProductFilterAvailabilityOptionSchema, ProductFilterAvailabilitySchema, ProductFilterCategoryOptionSchema, ProductFilterCategorySchema, ProductFilterOptionSchema, ProductFilterOptionValueSchema, ProductFilterPriceRangeSchema, ProductFilterSortOptionSchema, ProductFiltersSchema, ProductPublicationSchema, ProductSchema, PromotionSchema, RefundSchema, ReturnAuthorizationSchema, ReturnItemSchema, ReviewSchema, ShoppingCartSchema, StateSchema, StockLocationSchema, StockReservationSchema, StoreCheckoutCheckoutSchema, StoreCommerceTransactionSchema, StoreCreditSchema, VariantSchema, WishlistItemSchema, WishlistSchema };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

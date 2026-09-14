@@ -32,6 +32,15 @@ module PallasTrade
                      amount_due: [:string, { nullable: true }], display_amount_due: [:string, { nullable: true }],
                      discounts: PallasTrade::Api::V3::DiscountRendering::DISCOUNT_LINE_TYPE,
                      taxes: 'Array<{ id: string, amount: string | null, currency: string }>',
+                     credits: '{ gift_cards: Array<{ id: string, code: string, amount: string | null, ' \
+                              'display_amount: string | null }>, store_credit: { amount: string | null, ' \
+                              'display_amount: string | null } | null }',
+                     capabilities: '{ can_edit_address: boolean, can_change_shipping: boolean, ' \
+                                   'can_apply_promotion: boolean, can_pay: boolean }',
+                     billing_mode: :string,
+                     payment: '{ available_payment_methods: Array<{ id: string, name: string, ' \
+                              'description: string | null, type: string, session_required: boolean, ' \
+                              'source_required: boolean }> }',
                      shipping_address: { nullable: true }, billing_address: { nullable: true }
 
             attribute :id, &:id
@@ -81,6 +90,55 @@ module PallasTrade
               next if params[:hide_prices]
 
               view.taxes.map { |t| { id: t.id, amount: t.amount, currency: t.currency } }
+            end
+
+            # CHK-P1-1 §17 缺口补齐（PRD-20260914-checkout B1）：礼品卡/店铺余额、能力位、
+            # 支付方式（服务端权威）、账单语义派生值。金额一律遵守 hide_prices 门控。
+            attribute :credits do |view|
+              {
+                gift_cards: credits_gift_cards(view),
+                store_credit: credits_store_credit(view)
+              }
+            end
+
+            attributes :capabilities, :billing_mode
+
+            attribute :payment do |view|
+              {
+                available_payment_methods: view.available_payment_methods.map { |pm| payment_method_payload(pm) }
+              }
+            end
+
+            private
+
+            def credits_gift_cards(view)
+              view.gift_cards.map do |card|
+                {
+                  id: card[:id],
+                  code: card[:code],
+                  amount: params[:hide_prices] ? nil : card[:amount],
+                  display_amount: params[:hide_prices] ? nil : card[:display_amount]
+                }
+              end
+            end
+
+            def credits_store_credit(view)
+              store_credit = view.store_credit
+              return nil if store_credit.nil?
+              return { amount: nil, display_amount: nil } if params[:hide_prices]
+
+              store_credit
+            end
+
+            def payment_method_payload(payment_method)
+              {
+                id: payment_method.prefixed_id,
+                name: payment_method.name,
+                description: payment_method.description,
+                type: payment_method.class.api_type,
+                session_required: payment_method.session_required?,
+                source_required: payment_method.source_required?
+              }
             end
           end
         end

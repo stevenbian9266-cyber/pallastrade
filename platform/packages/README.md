@@ -49,6 +49,16 @@ Admin Order / Checkout serializers. Regenerate whenever a serializer's `typelize
 copy the generated files into `platform/packages/sdk/src/types/generated/` and
 `platform/docs/api-reference/` (both steps are automated by `scripts/ci/contracts.sh`).
 
+Server CheckoutView credits / capabilities / payment methods (PRD-20260914-checkout B1, 2026-09-14):
+`client.orders.checkout.get(orderId)` now also returns `credits` (`gift_cards[]` + `store_credit`,
+positive amounts — the UI renders the minus), `capabilities` (`can_edit_address` /
+`can_change_shipping` / `can_apply_promotion` / `can_pay`), `billing_mode` (derived display value;
+writes still use the `billing_mode` request param) and `payment.available_payment_methods` — the same
+`PaymentMethod#available_for_order?` scope `PaymentSessions::Start` enforces, so the storefront's
+payment-method list can never offer an option the server rejects. All four blocks are additive, so an
+older payload keeps rendering (the `CheckoutView` type is hand-written in `sdk/src/types/index.ts`
+and must be extended alongside the generated types).
+
 Canonical cart gift card intent (2026-09-14, PRD-20260914-checkout-cart-gift-cards-canonical):
 `ShoppingCart` gains `gift_card: unknown | null` — the cart-stage projection of
 `client.carts.giftCards.apply('cart_…', code)`. The card is validated at cart stage but **no money

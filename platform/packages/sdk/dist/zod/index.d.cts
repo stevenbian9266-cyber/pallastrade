@@ -85,8 +85,13 @@ declare const CartSchema: z.ZodObject<{
         name: z.ZodString;
         description: z.ZodNullable<z.ZodString>;
         code: z.ZodNullable<z.ZodString>;
+        kind: z.ZodString;
         amount: z.ZodNullable<z.ZodString>;
         display_amount: z.ZodNullable<z.ZodString>;
+        breakdown: z.ZodAny;
+        order: z.ZodString;
+        shipping: z.ZodAny;
+        removable: z.ZodBoolean;
     }, z.core.$strip>>;
     items: z.ZodArray<z.ZodObject<{
         id: z.ZodString;
@@ -783,8 +788,13 @@ declare const OrderSchema: z.ZodObject<{
         name: z.ZodString;
         description: z.ZodNullable<z.ZodString>;
         code: z.ZodNullable<z.ZodString>;
+        kind: z.ZodString;
         amount: z.ZodNullable<z.ZodString>;
         display_amount: z.ZodNullable<z.ZodString>;
+        breakdown: z.ZodAny;
+        order: z.ZodString;
+        shipping: z.ZodAny;
+        removable: z.ZodBoolean;
     }, z.core.$strip>>;
     items: z.ZodArray<z.ZodObject<{
         id: z.ZodString;
@@ -1069,8 +1079,13 @@ declare const PaymentCombinationSchema: z.ZodObject<{
             name: z.ZodString;
             description: z.ZodNullable<z.ZodString>;
             code: z.ZodNullable<z.ZodString>;
+            kind: z.ZodString;
             amount: z.ZodNullable<z.ZodString>;
             display_amount: z.ZodNullable<z.ZodString>;
+            breakdown: z.ZodAny;
+            order: z.ZodString;
+            shipping: z.ZodAny;
+            removable: z.ZodBoolean;
         }, z.core.$strip>>;
         items: z.ZodArray<z.ZodObject<{
             id: z.ZodString;
@@ -1876,6 +1891,7 @@ type Promotion = z.infer<typeof PromotionSchema>;
 declare const RefundSchema: z.ZodObject<{
     id: z.ZodString;
     transaction_id: z.ZodNullable<z.ZodString>;
+    state: z.ZodString;
     amount: z.ZodNullable<z.ZodString>;
     payment_id: z.ZodNullable<z.ZodString>;
     refund_reason_id: z.ZodNullable<z.ZodString>;
@@ -1984,6 +2000,8 @@ declare const ShoppingCartSchema: z.ZodObject<{
         session_required: z.ZodBoolean;
         source_required: z.ZodBoolean;
     }, z.core.$strip>>;
+    gift_card: z.ZodAny;
+    store_credit: z.ZodAny;
 }, z.core.$strip>;
 type ShoppingCart = z.infer<typeof ShoppingCartSchema>;
 
@@ -2201,16 +2219,52 @@ declare const StoreCheckoutCheckoutSchema: z.ZodObject<{
     }, z.core.$strip>>;
     discounts: z.ZodArray<z.ZodObject<{
         id: z.ZodString;
+        promotion_id: z.ZodString;
+        name: z.ZodString;
+        description: z.ZodNullable<z.ZodString>;
+        code: z.ZodNullable<z.ZodString>;
+        kind: z.ZodString;
         amount: z.ZodNullable<z.ZodString>;
-        currency: z.ZodString;
+        display_amount: z.ZodNullable<z.ZodString>;
+        breakdown: z.ZodAny;
+        order: z.ZodString;
+        shipping: z.ZodAny;
+        removable: z.ZodBoolean;
     }, z.core.$strip>>;
     taxes: z.ZodArray<z.ZodObject<{
         id: z.ZodString;
         amount: z.ZodNullable<z.ZodString>;
         currency: z.ZodString;
     }, z.core.$strip>>;
+    credits: z.ZodAny;
+    capabilities: z.ZodAny;
+    billing_mode: z.ZodString;
+    payment: z.ZodAny;
 }, z.core.$strip>;
 type StoreCheckoutCheckout = z.infer<typeof StoreCheckoutCheckoutSchema>;
+
+declare const StoreCommerceTransactionSchema: z.ZodObject<{
+    id: z.ZodString;
+    state: z.ZodString;
+    purpose: z.ZodString;
+    currency: z.ZodString;
+    amount: z.ZodString;
+    checkout_version: z.ZodNullable<z.ZodNumber>;
+    price_version: z.ZodNullable<z.ZodString>;
+    snapshot_fingerprint: z.ZodNullable<z.ZodString>;
+    recovery_attempts: z.ZodNumber;
+    last_error_class: z.ZodNullable<z.ZodString>;
+    last_error_code: z.ZodNullable<z.ZodString>;
+    last_error_message: z.ZodNullable<z.ZodString>;
+    started_at: z.ZodNullable<z.ZodString>;
+    payment_confirmed_at: z.ZodNullable<z.ZodString>;
+    finalizing_at: z.ZodNullable<z.ZodString>;
+    completed_at: z.ZodNullable<z.ZodString>;
+    recovery_required_at: z.ZodNullable<z.ZodString>;
+    manual_review_at: z.ZodNullable<z.ZodString>;
+    canceled_at: z.ZodNullable<z.ZodString>;
+}, z.core.$strip>;
+type StoreCommerceTransaction = z.infer<typeof StoreCommerceTransactionSchema>;
 
 declare const StoreCreditSchema: z.ZodObject<{
     id: z.ZodString;
@@ -2558,4 +2612,4 @@ declare const WishlistItemSchema: z.ZodObject<{
 }, z.core.$strip>;
 type WishlistItem = z.infer<typeof WishlistItemSchema>;
 
-export { type Address, AddressSchema, type BackInStockSubscription, BackInStockSubscriptionSchema, type Base, BaseSchema, type Cart, type CartItem, CartItemSchema, CartSchema, type Category, CategorySchema, type Channel, ChannelSchema, type ContactMessage, ContactMessageSchema, type Country, CountrySchema, type CreditCard, CreditCardSchema, type Currency, CurrencySchema, type CustomField, CustomFieldSchema, type Customer, CustomerSchema, type DeliveryMethod, DeliveryMethodSchema, type DeliveryRate, DeliveryRateSchema, type Digital, type DigitalLink, DigitalLinkSchema, DigitalSchema, type Discount, DiscountSchema, type Fulfillment, FulfillmentSchema, type GiftCard, type GiftCardBatch, GiftCardBatchSchema, GiftCardSchema, type Invitation, InvitationSchema, type LineItem, LineItemSchema, type Locale, LocaleSchema, type Market, MarketSchema, type Media, MediaSchema, type NewsletterSubscriber, NewsletterSubscriberSchema, type OptionType, OptionTypeSchema, type OptionValue, OptionValueSchema, type Order, OrderSchema, type Payment, type PaymentCombination, PaymentCombinationSchema, type PaymentMethod, PaymentMethodSchema, PaymentSchema, type PaymentSession, PaymentSessionSchema, type PaymentSetupSession, PaymentSetupSessionSchema, type PaymentSource, PaymentSourceSchema, type Policy, PolicySchema, type Post, PostSchema, type Price, type PriceHistory, PriceHistorySchema, PriceSchema, type Product, type ProductFilterAvailability, type ProductFilterAvailabilityOption, ProductFilterAvailabilityOptionSchema, ProductFilterAvailabilitySchema, type ProductFilterCategory, type ProductFilterCategoryOption, ProductFilterCategoryOptionSchema, ProductFilterCategorySchema, type ProductFilterOption, ProductFilterOptionSchema, type ProductFilterOptionValue, ProductFilterOptionValueSchema, type ProductFilterPriceRange, ProductFilterPriceRangeSchema, type ProductFilterSortOption, ProductFilterSortOptionSchema, type ProductFilters, ProductFiltersSchema, type ProductPublication, ProductPublicationSchema, ProductSchema, type Promotion, PromotionSchema, type Refund, RefundSchema, type ReturnAuthorization, ReturnAuthorizationSchema, type ReturnItem, ReturnItemSchema, type Review, ReviewSchema, type ShoppingCart, ShoppingCartSchema, type State, StateSchema, type StockLocation, StockLocationSchema, type StockReservation, StockReservationSchema, type StoreCheckoutCheckout, StoreCheckoutCheckoutSchema, type StoreCredit, StoreCreditSchema, type Variant, VariantSchema, type Wishlist, type WishlistItem, WishlistItemSchema, WishlistSchema };
+export { type Address, AddressSchema, type BackInStockSubscription, BackInStockSubscriptionSchema, type Base, BaseSchema, type Cart, type CartItem, CartItemSchema, CartSchema, type Category, CategorySchema, type Channel, ChannelSchema, type ContactMessage, ContactMessageSchema, type Country, CountrySchema, type CreditCard, CreditCardSchema, type Currency, CurrencySchema, type CustomField, CustomFieldSchema, type Customer, CustomerSchema, type DeliveryMethod, DeliveryMethodSchema, type DeliveryRate, DeliveryRateSchema, type Digital, type DigitalLink, DigitalLinkSchema, DigitalSchema, type Discount, DiscountSchema, type Fulfillment, FulfillmentSchema, type GiftCard, type GiftCardBatch, GiftCardBatchSchema, GiftCardSchema, type Invitation, InvitationSchema, type LineItem, LineItemSchema, type Locale, LocaleSchema, type Market, MarketSchema, type Media, MediaSchema, type NewsletterSubscriber, NewsletterSubscriberSchema, type OptionType, OptionTypeSchema, type OptionValue, OptionValueSchema, type Order, OrderSchema, type Payment, type PaymentCombination, PaymentCombinationSchema, type PaymentMethod, PaymentMethodSchema, PaymentSchema, type PaymentSession, PaymentSessionSchema, type PaymentSetupSession, PaymentSetupSessionSchema, type PaymentSource, PaymentSourceSchema, type Policy, PolicySchema, type Post, PostSchema, type Price, type PriceHistory, PriceHistorySchema, PriceSchema, type Product, type ProductFilterAvailability, type ProductFilterAvailabilityOption, ProductFilterAvailabilityOptionSchema, ProductFilterAvailabilitySchema, type ProductFilterCategory, type ProductFilterCategoryOption, ProductFilterCategoryOptionSchema, ProductFilterCategorySchema, type ProductFilterOption, ProductFilterOptionSchema, type ProductFilterOptionValue, ProductFilterOptionValueSchema, type ProductFilterPriceRange, ProductFilterPriceRangeSchema, type ProductFilterSortOption, ProductFilterSortOptionSchema, type ProductFilters, ProductFiltersSchema, type ProductPublication, ProductPublicationSchema, ProductSchema, type Promotion, PromotionSchema, type Refund, RefundSchema, type ReturnAuthorization, ReturnAuthorizationSchema, type ReturnItem, ReturnItemSchema, type Review, ReviewSchema, type ShoppingCart, ShoppingCartSchema, type State, StateSchema, type StockLocation, StockLocationSchema, type StockReservation, StockReservationSchema, type StoreCheckoutCheckout, StoreCheckoutCheckoutSchema, type StoreCommerceTransaction, StoreCommerceTransactionSchema, type StoreCredit, StoreCreditSchema, type Variant, VariantSchema, type Wishlist, type WishlistItem, WishlistItemSchema, WishlistSchema };

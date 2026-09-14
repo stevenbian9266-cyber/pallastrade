@@ -20,6 +20,8 @@ export const ShoppingCartSchema = z.object({
   billing_address: AddressSchema.nullable(),
   shipping_address: AddressSchema.nullable(),
   payment_methods: z.array(PaymentMethodSchema),
+  gift_card: z.any(),
+  store_credit: z.any(),
 });
 
 export type ShoppingCart = z.infer<typeof ShoppingCartSchema>;
