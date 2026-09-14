@@ -15,7 +15,8 @@ module PallasTrade
                  converted_at: [:string, nullable: true],
                  shipping_method_id: [:string, nullable: true],
                  billing_address: { nullable: true }, shipping_address: { nullable: true },
-                 items: 'Array<CartItem>'
+                 items: 'Array<CartItem>',
+                 gift_card: { nullable: true }
 
         attribute :id do |cart|
           cart.prefixed_id
@@ -43,6 +44,19 @@ module PallasTrade
         # 下单链路统一化（PRD-20260830-checkout）：统一下单页购物车模式需要可选支付方式。
         # 与 Order serializer 一致：store.payment_methods.active.available_on_front_end。
         many :payment_methods, resource: proc { PallasTrade.api.payment_method_serializer }
+
+        # PRD-20260914-checkout-cart-gift-cards-canonical FR-005：车阶段的礼品卡**意图**。
+        # 金额在提交生成 Order 时由 `apply_gift_card` 落地（车阶段零资金副作用），
+        # 故此处只暴露 code + 余额展示，供 UI 展示「已应用/可移除」。
+        attribute :gift_card do |cart|
+          code = (cart.private_metadata || {})[PallasTrade::Carts::ApplyGiftCard::METADATA_KEY]
+          next if code.blank?
+
+          gift_card = cart.store.gift_cards.find_by(code: code)
+          next if gift_card.nil?
+
+          { code: gift_card.code, display_amount_remaining: gift_card.display_amount_remaining }
+        end
       end
     end
   end

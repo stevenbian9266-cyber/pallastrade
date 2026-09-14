@@ -49,6 +49,13 @@ Admin Order / Checkout serializers. Regenerate whenever a serializer's `typelize
 copy the generated files into `platform/packages/sdk/src/types/generated/` and
 `platform/docs/api-reference/` (both steps are automated by `scripts/ci/contracts.sh`).
 
+Canonical cart gift card intent (2026-09-14, PRD-20260914-checkout-cart-gift-cards-canonical):
+`ShoppingCart` gains `gift_card: unknown | null` — the cart-stage projection of
+`client.carts.giftCards.apply('cart_…', code)`. The card is validated at cart stage but **no money
+moves** (`pallastrade_carts` has no payments); redemption happens on `carts.submit`, so a card that
+became unusable fails the submission instead of silently charging full price. Legacy `or_` carts keep
+their immediate-apply behaviour and share the same error codes.
+
 ### `@pallastrade/sdk-core` — Shared internals
 
 Private package. Provides `createRequestFn()`, `PallasTradeError`, retry logic, and Ransack query-param transformation (`transformListParams()`). Consumed by the SDK; not intended for direct use.

@@ -114,10 +114,35 @@ module PallasTrade
         # 购物车上的优惠码「意图」在此兑现（与 Orders::Create#apply_coupon 同源）；
         # 不可用 → 抛错回滚（绝不静默按原价下单）。
         apply_discount_code!(order, cart)
+        # PALLAS-CUSTOM (2026-09-14, PRD-20260914-checkout-cart-gift-cards-canonical FR-004):
+        # 购物车上的礼品卡码同在提交时兑现（车阶段只承载意图，金额副作用落在 Order）。
+        apply_gift_card!(order, cart)
         order.update_with_updater!
         order.save!
 
         order
+      end
+
+      # FR-004：把购物车上的礼品卡码交给权威套用路径（order.apply_gift_card）。
+      # 车阶段不建 payment；这里才真正创建 store-credit payment 并占用余额。
+      # 不可用 → 抛错回滚（绝不静默按原价下单）。
+      def apply_gift_card!(order, cart)
+        code = (cart.private_metadata || {})[PallasTrade::Carts::ApplyGiftCard::METADATA_KEY].presence
+        return if code.blank?
+
+        # 复用与端点同一套校验（存在/未过期/未核销），保证错误口径一致
+        validation = PallasTrade::Carts::ApplyGiftCard.validate_code(cart.store, code)
+        if validation
+          order.errors.add(:base, validation)
+          raise ActiveRecord::RecordInvalid, order
+        end
+
+        gift_card = cart.store.gift_cards.find_by(code: code)
+        result = order.apply_gift_card(gift_card)
+        return if result.success?
+
+        order.errors.add(:base, result.value.to_s.presence || PallasTrade::Carts::ApplyGiftCard::NOT_FOUND)
+        raise ActiveRecord::RecordInvalid, order
       end
 
       # FR-004：把购物车上的优惠码交给权威套用路径（PromotionHandler::Coupon）。

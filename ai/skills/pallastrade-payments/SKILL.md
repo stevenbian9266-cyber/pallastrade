@@ -229,6 +229,8 @@ Categories are admin-managed via the CRUD pages at `/admin/store_credit_categori
 
 `PallasTrade::GiftCard` is built-in (5.x). Each gift card has a redemption code and a remaining balance. Customers can apply at checkout; partial redemption is supported.
 
+**Two stages, one authority (PRD-20260914-checkout-cart-gift-cards-canonical).** On a `cart_` canonical shopping cart the gift card is only *intent*: `PallasTrade::Carts::ApplyGiftCard` validates it (`gift_card_not_found` / `gift_card_expired` / `gift_card_already_redeemed`) and stores the code in `cart.private_metadata['gift_card_code']` — **no payment is created and no balance is reserved**, because `pallastrade_carts` has no payments (funds live on `Order`/`Transaction` only). The redemption happens at `POST /carts/:id/submit`: `PallasTrade::Carts::Submit#apply_gift_card!` re-validates and calls the same `order.apply_gift_card` used by legacy carts (→ `gift_card_apply_service` → store-credit payment + `amount_used`), and a card that became unusable fails the submission instead of silently charging full price. Only `order.gift_card` / `gift_card_total` carry money; the cart serializer exposes just `code` + `display_amount_remaining`.
+
 Events fired: `gift_card.redeemed`, `gift_card.partially_redeemed`. See the `pallastrade-events-webhooks` skill.
 
 ```ruby

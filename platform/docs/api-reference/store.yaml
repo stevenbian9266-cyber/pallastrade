@@ -3641,6 +3641,12 @@ paths:
         Applies a gift card to the cart. Gift cards are treated as a payment method, not a discount —
         the cart `total` remains unchanged while `amount_due` is reduced.
 
+        Both cart kinds resolve here: a `cart_` canonical shopping cart stores the gift card as
+        cart-stage intent (validated immediately, redeemed when the cart is submitted into an
+        order), while a legacy `or_` cart applies the gift card immediately. Error codes
+        (`gift_card_not_found` → 404, `gift_card_expired` / `gift_card_already_redeemed` → 422)
+        are identical for both kinds.
+
         For promotion discount codes, use the `POST /carts/{cart_id}/discount_codes` endpoint instead.
       x-codeSamples:
       - lang: javascript
@@ -14239,6 +14245,9 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/PaymentMethod"
+        gift_card:
+          type: object
+          nullable: true
       required:
       - id
       - token
@@ -14256,6 +14265,7 @@ components:
       - billing_address
       - shipping_address
       - payment_methods
+      - gift_card
       x-typelizer: true
     StoreCheckoutCheckout:
       type: object

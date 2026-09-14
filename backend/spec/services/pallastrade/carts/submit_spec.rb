@@ -54,6 +54,36 @@ RSpec.describe PallasTrade::Carts::Submit, type: :service do
       expect(cart.converted_at).to be_present
     end
 
+    # PRD-20260914-checkout-cart-gift-cards-canonical AC-004：
+    # 购物车上的礼品卡码在提交时兑现（车阶段零资金副作用 → 订单侧建 store-credit payment）。
+    it 'redeems the cart gift card on the submitted order' do
+      gift_card = create(:gift_card, store: store, amount: 10.00)
+      cart.update!(private_metadata: { 'gift_card_code' => gift_card.code.downcase })
+      add_item
+
+      result = described_class.call(cart: cart)
+
+      expect(result).to be_success
+      expect(result.value.gift_card_id).to eq(gift_card.id)
+      expect(gift_card.reload.amount_used).to be > 0
+      expect(PallasTrade::Order.where(cart_id: cart.id).count).to eq(1)
+    end
+
+    # AC-004：提交时礼品卡不可用 → 提交失败且**不落单**（绝不静默按原价下单）
+    it 'fails the submission and creates no order when the stored gift card is no longer valid' do
+      cart.update!(private_metadata: { 'gift_card_code' => 'GONE' })
+      add_item
+
+      result = nil
+      expect do
+        result = described_class.call(cart: cart)
+      end.not_to change { PallasTrade::Order.where(cart_id: cart.id).count }
+
+      expect(result).not_to be_success
+      expect(result.error.to_s).to include('gift_card_not_found')
+      expect(cart.reload).not_to be_converted
+    end
+
     # PRD-20260914-checkout-cart-discount-codes-canonical AC-004：
     # 购物车上的优惠码在提交时兑现（金额生效，走权威 PromotionHandler::Coupon）。
     it 'applies the cart discount code to the submitted order' do

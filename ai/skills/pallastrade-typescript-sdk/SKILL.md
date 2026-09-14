@@ -76,6 +76,7 @@ New `Cart` entity (`pallastrade_carts`) plus order-domain payments:
 - `client.orders.paymentSessions.create(orderId, { payment_method_id, amount?, external_data? }, options?)` / `.get` / `.complete(orderId, sessionId, { session_result?, external_data? }, options?)` — order-scoped payment sessions (Stripe Checkout `client_secret` etc.).
 - `client.shippingMethods.list(options?)` — `GET /shipping_methods`; `DeliveryMethod` carries `display_estimated_price` for the order-confirmation radio list.
 - Cart line items accept `selected?: boolean` (`UpdateLineItemParams` / `UpdateCartItemParams`) — only selected items are submitted to the order.
+- `client.carts.giftCards.apply(cartId, code, options?)` / `.remove(cartId, code, options?)` — `POST/DELETE /carts/:cart_id/gift_cards[/:id]` (PRD-20260914-checkout-cart-gift-cards-canonical). Both cart kinds resolve: a `cart_` canonical cart validates the code and stores cart-stage intent (`ShoppingCart.gift_card: { code, display_amount_remaining }`, no payment/balance touched — it is redeemed by `carts.submit`), while a legacy `or_` cart applies the card immediately. Error codes are identical for both (`gift_card_not_found` 404, `gift_card_expired` / `gift_card_already_redeemed` 422), and removal is idempotent.
 
 ### Customer auth (JWT)
 

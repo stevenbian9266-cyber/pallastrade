@@ -25738,9 +25738,6 @@ components:
           enum:
           - all
           - any
-        path:
-          type: string
-          nullable: true
         kind:
           type: string
           enum:
@@ -25780,7 +25777,6 @@ components:
       - expires_at
       - usage_limit
       - match_policy
-      - path
       - kind
       - multi_codes
       - number_of_codes
