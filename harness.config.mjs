@@ -177,6 +177,11 @@ export default {
         description: 'Repo-level node:test guards (pull-deploy forward roll + drill crontab restore + PRD status sync)',
         command: ['node', '--test', 'tests/pull-deploy-forward-roll.test.mjs', 'tests/drill-rollback-crontab.test.mjs', 'tests/prd-status-sync.test.mjs'],
       },
+      // 管理后台店铺表单（2026-09-09 bugfix 回归集）：logo/mailer_logo 直传失败提示 + 多店 CRUD
+      'admin-stores-rspec': {
+        description: 'Admin store form specs (direct-upload attachment validation + multi-store CRUD)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/stores_attachment_upload_spec.rb spec/requests/pallastrade/admin/stores_multi_spec.rb'],
+      },
       // P1 订单流程改造：本次变更相关 spec（新购物车/提交订单/回归）
       'p1-order-flow-rspec': {
         description: 'P1 order-flow specs (cart/submit/request + regression)',
