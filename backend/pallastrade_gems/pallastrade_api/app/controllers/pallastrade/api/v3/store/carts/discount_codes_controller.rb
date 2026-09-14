@@ -6,6 +6,7 @@ module PallasTrade
           class DiscountCodesController < Store::BaseController
             include PallasTrade::Api::V3::CartResolvable
             include PallasTrade::Api::V3::OrderLock
+            include PallasTrade::Api::V3::LegacyFlowObservable
 
             # PRD-20260914-checkout-cart-discount-codes-canonical FR-001：
             # 双解析 —— `cart_` 前缀走 `pallastrade_carts`（canonical），否则走 legacy。
@@ -58,8 +59,11 @@ module PallasTrade
                                               .active
                                               .find_by_prefix_id!(params[:cart_id])
               else
-                Rails.logger.info(
-                  "[legacy-discount-codes] legacy cart resolution used (cart_id=#{params[:cart_id]})"
+                # 收敛切片 2：统一结构化流量指标 `cart.legacy_flow.used`
+                # （保留 [legacy-discount-codes] 标记便于既有查询）。
+                log_legacy_flow_usage(
+                  flow_type: 'legacy_cart_discount_codes',
+                  message: '[legacy-discount-codes] legacy cart resolution used'
                 )
                 find_cart!
               end

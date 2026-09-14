@@ -69,7 +69,9 @@ RSpec.describe 'Store Cart discount codes API (canonical cart_)', type: :request
       post '/api/v3/store/carts/or_nonexistent/discount_codes',
            params: { code: 'SAVE10' }, headers: headers
 
-      expect(Rails.logger).to have_received(:info).with(/\[legacy-discount-codes\]/)
+      expect(Rails.logger).to have_received(:info).with(
+        hash_including(message: '[legacy-discount-codes] legacy cart resolution used', flow_type: 'legacy_cart_discount_codes')
+      )
       expect(response).to have_http_status(:not_found).or have_http_status(:forbidden)
     end
   end

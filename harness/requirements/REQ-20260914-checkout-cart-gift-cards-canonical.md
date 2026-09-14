@@ -52,3 +52,4 @@
 | 验证器 | ✅ `p1-order-flow-rspec`（已扩入两个新 spec 文件）→ gate `verify-test` 证据 |
 | 契约产物 | ✅ `typelizer:generate` + `api:docs:schemas`（`ShoppingCart.gift_card`）+ platform 副本同步 |
 | dev 实测 | ✅ 2026-09-14（部署 `87cf3946`）：未知码 → 404 `gift_card_not_found`（修复前 `cart_not_found`）；真实码 `GC-DEV-SMOKE-1` → 201 且载荷 `gift_card.code` + `display_amount_remaining`；移除 → 200；DB `private_metadata={"gift_card_code"…}` 且礼品卡 `amount_used=0.0`/`amount_authorized=0.0`（车阶段零资金副作用） |
+| dev 提交兑现 E2E | ✅ 2026-09-14（部署 `a07db828`，修复后）：真实提交带礼品卡意图 → 订单 `total 89.99` / `gift_card_total 25.0` / `amount_due 64.99` / store-credit payment `25.0` / 礼品卡 `amount_used 25.0`（修复前同一脚本报 `Amount must be greater than 0`） |

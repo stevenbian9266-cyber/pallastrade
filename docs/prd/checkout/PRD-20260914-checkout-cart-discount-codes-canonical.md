@@ -104,3 +104,4 @@
 |---|---|---|---|
 | 2026-09-14 | 0.1 | 初稿：dev 实测 403 确认断链；决策 = 双解析 canonical 端点 + cart 侧意图持久化 + 提交携带（失败即报错不静默）；待实施 | AI |
 | 2026-09-14 | 1.0 | 实施完成：双解析（`cart_` → `shopping_carts`，legacy 分支加观测日志）、`Carts::ApplyDiscountCode`/`RemoveDiscountCode`（`private_metadata['discount_code']`）、`Carts::Submit` 提交前套用码（失败回滚不落单）；新增请求 spec（含过期码）与 submit spec 两例（15 例 0 失败）；OpenAPI ×2 + api-v3 Skill + GS-114 同步 | AI |
+| 2026-09-14 | 1.1 | FR-005 观测增强（PRD-20260914-checkout-cart-store-credits-canonical FR-007 同波次）：legacy 分支日志由裸字符串升为统一结构化指标 `cart.legacy_flow.used`（`flow_type: legacy_cart_discount_codes`，保留 `[legacy-discount-codes]` 标记与 `requested_cart_id` 字段），使五个 legacy cart 端点的真实流量可按同一个 message 计数（payment_sessions 保持历史 key）；请求 spec 断言同步 | AI |

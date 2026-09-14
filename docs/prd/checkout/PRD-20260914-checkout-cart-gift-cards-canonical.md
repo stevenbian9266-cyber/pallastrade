@@ -103,3 +103,4 @@
 | 2026-09-14 | 1.1 | 验证：3 个 spec 文件 23 examples 0 failures（绿）；契约产物重生成并同步 platform 副本（`ShoppingCart.gift_card`）；PRD 状态 → done | AI |
 | 2026-09-14 | 1.2 | dev 实测（部署 `87cf3946`）：未知码 404 `gift_card_not_found`（原 `cart_not_found`）；真实码 201 + 载荷 `gift_card`；移除 200；`private_metadata` 落码且礼品卡 `amount_used=0.0`（车阶段零资金副作用实证） | AI |
 | 2026-09-14 | 1.3 | 修复 GATE-2026-09-14T12-44-52：dev 真实提交暴露缺陷 —— 礼品卡在 `update_with_updater!` **之前**兑现 → `order.total` 尚未落库（dev 为 0）→ StoreCredit 金额 0 → 提交失败（`Amount must be greater than 0`）。改为“金额管线跑完 → 兑现 → 再跑 updater”，并加零额守卫；规格改为断言**金额语义**（`gift_card_total == min(面额, total)`、`amount_due == total - gift_card_total`、`amount_used` 同步）并补零额用例 | AI |
+| 2026-09-14 | 1.4 | dev 提交兑现 E2E（部署 `a07db828`）：真实订单 `total 89.99` / `gift_card_total 25.0` / `amount_due 64.99` / store-credit payment `25.0` / 礼品卡 `amount_used 25.0`（修复前同一脚本 `Amount must be greater than 0`） | AI |
