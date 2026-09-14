@@ -43,6 +43,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
+import {
+  diffQuotes,
+  expectedVersions,
+  normalizeQuote,
+  type QuoteDiffRow,
+  readQuoteSnapshot,
+  writeQuoteSnapshot,
+} from "@/lib/checkout-quote";
 import { getCountry } from "@/lib/data/countries";
 import { extractErrorCode, normalizeErrorMessage } from "@/lib/errors";
 import {
@@ -359,6 +367,12 @@ export function UnifiedCheckout({
     kind: "stock" | "not-ready";
     message: string;
   } | null>(null);
+  // PRD-20260914-checkout-quote-confirmation-loop：报价漂移的页内确认
+  // （零跳转、零自动扣款；用户看得到 Shipping / Promotion / Amount due 的旧→新）
+  const [quoteDiff, setQuoteDiff] = useState<{
+    rows: QuoteDiffRow[];
+    hasQuote: boolean;
+  } | null>(null);
 
   const selectedMethod =
     paymentMethods.find((m) => m.id === paymentMethodId) ?? paymentMethods[0];
@@ -621,6 +635,9 @@ export function UnifiedCheckout({
           cart_id: cart.id,
           payment_method_id: selectedMethod.id,
           ...(isStripe && { payment_mode: "payment_intent" }),
+          // PRD-20260914-checkout-quote-confirmation-loop FR-004：
+          // 带回客户端所见报价版本（顶层字段；无快照 = 首次点击，不带 expected_*）。
+          ...expectedVersions(readQuoteSnapshot(cart.id)),
           checkout: {
             email: email || undefined,
             shipping_address: formDataToAddress(address),
@@ -643,6 +660,8 @@ export function UnifiedCheckout({
           id: string;
           external_data?: Record<string, unknown>;
         } | null;
+        /** PRD-20260914-checkout-quote-confirmation-loop：当前报价（成功/冲突均有） */
+        quote?: unknown;
         error?: unknown;
       };
       const targetOrderId = result.order?.id ?? result.order_id;
@@ -662,10 +681,17 @@ export function UnifiedCheckout({
           errorCode === "quote_changed" ||
           errorCode === "checkout_version_conflict"
         ) {
-          // FR-002/AC-001：报价变化 → or_ 页重新确认（绝不自动支付）
-          router.replace(
-            `${basePath}/checkout/${targetOrderId}?notice=quote_changed`,
-          );
+          // PRD-20260914-checkout-quote-confirmation-loop FR-005/FR-006：
+          // 报价漂移 → **留在页内**展示逐步差异并要求重新点击
+          // （绝不跳转、绝不自动扣款；取代 PRD-20260913 的 or_ 跳转分支）。
+          const latest = normalizeQuote(result.quote);
+          setQuoteDiff({
+            rows: diffQuotes(readQuoteSnapshot(cart.id), latest),
+            hasQuote: latest !== null,
+          });
+          // 用服务端最新报价覆盖快照：用户重新点击时即携带新版本
+          writeQuoteSnapshot(cart.id, result.quote);
+          setPayError(null);
           return;
         }
         if (errorCode === "INVENTORY_RECOVERY_REQUIRED") {
@@ -697,6 +723,8 @@ export function UnifiedCheckout({
         return;
       }
 
+      // FR-002：成功 → 刷新报价快照（下一次点击携带该版本；形状不合法则静默忽略）
+      writeQuoteSnapshot(cart.id, result.quote);
       const session = result.session;
       if (isSessionBased && isStripe && session) {
         const clientSecret = session.external_data?.client_secret;
@@ -756,6 +784,50 @@ export function UnifiedCheckout({
       <h1 className="text-3xl font-bold text-gray-900 mb-8">
         {t("orderConfirmation")}
       </h1>
+
+      {/* PRD-20260914-checkout-quote-confirmation-loop FR-005：报价漂移的页内确认 */}
+      {quoteDiff && (
+        <div
+          role="status"
+          data-testid="checkout-quote-diff"
+          className="mb-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"
+        >
+          <p className="text-sm font-semibold text-amber-900">
+            {t("quoteChangedTitle")}
+          </p>
+          <p className="mt-1 text-sm text-amber-800">{t("quoteChangedBody")}</p>
+          {quoteDiff.rows.length > 0 && (
+            <dl className="mt-3 space-y-1 text-sm">
+              {quoteDiff.rows.map((row) => (
+                <div
+                  key={row.key}
+                  data-testid={`quote-diff-${row.key}`}
+                  data-changed={row.changed}
+                  className="flex items-center justify-between gap-4"
+                >
+                  <dt className="text-amber-900">
+                    {row.key === "shipping"
+                      ? t("quoteRowShipping")
+                      : row.key === "promotion"
+                        ? t("quoteRowPromotion")
+                        : t("quoteRowAmountDue")}
+                  </dt>
+                  <dd className="text-amber-900">
+                    <span className="line-through opacity-70">
+                      {row.before ?? "—"}
+                    </span>
+                    <span className="mx-1">→</span>
+                    <span className="font-semibold">{row.after ?? "—"}</span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          <p className="mt-3 text-sm font-medium text-amber-900">
+            {t("quoteConfirmAgain")}
+          </p>
+        </div>
+      )}
 
       {/* PRD-20260913-checkout-txn-error-routing：库存类 / 未就绪错误的页内提示 */}
       {payError && (

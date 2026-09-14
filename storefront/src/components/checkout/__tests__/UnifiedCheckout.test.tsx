@@ -165,6 +165,9 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     pushMock.mockReset();
     replaceMock.mockReset();
     fetchMock.mockReset();
+    // PRD-20260914-checkout-quote-confirmation-loop：报价快照存 sessionStorage，
+    // 用例间必须隔离，否则快照会泄漏到其它用例的载荷断言。
+    sessionStorage.clear();
     vi.stubGlobal("fetch", fetchMock);
     confirmMock.mockReset();
     fetchMock.mockImplementation(
@@ -351,18 +354,32 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
   }
 
-  it("routes a changed quote to the order page with a notice, without paying (AC-001)", async () => {
+  // PRD-20260914-checkout-quote-confirmation-loop AC-003：报价变化**不再跳转** or_ 页，
+  // 改为 cart_ 页内差异确认（取代 PRD-20260913 的跳转分支；order_id 仍保留在响应里）。
+  it("keeps the user in page with an in-page diff when the quote changed (AC-003)", async () => {
     await payWithErrorBody({
       error: { code: "quote_changed", message: "Checkout quote changed" },
       order_id: "or_123",
+      quote: {
+        checkout_version: 2,
+        price_version: "pv_new",
+        delivery_total: "9.0",
+        display_delivery_total: "$9.00",
+        discount_total: "0.0",
+        display_discount_total: "$0.00",
+        amount_due: "28.98",
+        display_amount_due: "$28.98",
+      },
     });
 
-    expect(replaceMock).toHaveBeenCalledWith(
-      "/us/en/checkout/or_123?notice=quote_changed",
-    );
+    expect(
+      await screen.findByTestId("checkout-quote-diff"),
+    ).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
     expect(confirmMock).not.toHaveBeenCalled();
   });
 
+  // PRD-20260914-checkout-quote-confirmation-loop AC-008：其他错误码分支零回归
   it("keeps the user on checkout for insufficient stock with a return-to-cart CTA (AC-002)", async () => {
     await payWithErrorBody({
       error: { code: "INSUFFICIENT_STOCK", message: "Product A is sold out" },
@@ -521,6 +538,141 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     );
 
     expect(screen.getByTestId("billing-use-shipping")).not.toBeChecked();
+  });
+
+  // PRD-20260914-checkout-quote-confirmation-loop AC-001/AC-002：报价快照 → expected_*
+  it("sends expected quote versions when a snapshot exists and omits them otherwise", async () => {
+    const user = userEvent.setup();
+    sessionStorage.setItem(
+      "pallastrade:quote:cart_1",
+      JSON.stringify({
+        checkout_version: 7,
+        price_version: "pv_7",
+        delivery_total: "5.0",
+        display_delivery_total: "$5.00",
+        discount_total: "0.0",
+        display_discount_total: "$0.00",
+        amount_due: "24.98",
+        display_amount_due: "$24.98",
+      }),
+    );
+
+    renderCheckout();
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const startOptions = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(startOptions.body as string) as Record<string, unknown>;
+    expect(body.expected_checkout_version).toBe(7);
+    expect(body.expected_price_version).toBe("pv_7");
+  });
+
+  it("omits expected versions on the first click without a snapshot", async () => {
+    const user = userEvent.setup();
+    renderCheckout();
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const startOptions = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(startOptions.body as string) as Record<string, unknown>;
+    expect(body.expected_checkout_version).toBeUndefined();
+    expect(body.expected_price_version).toBeUndefined();
+  });
+
+  // PRD-20260914-checkout-quote-confirmation-loop AC-003/AC-004/AC-006：报价漂移 → 页内确认
+  // （AC-006 在此以“服务端信封含 quote”的契约形式被消费：差异行即来自响应里的 quote）。
+  it("keeps the user in page and shows the three-row diff on a 409 conflict", async () => {
+    const user = userEvent.setup();
+    sessionStorage.setItem(
+      "pallastrade:quote:cart_1",
+      JSON.stringify({
+        checkout_version: 1,
+        price_version: "pv_old",
+        delivery_total: "5.0",
+        display_delivery_total: "$5.00",
+        discount_total: "0.0",
+        display_discount_total: "$0.00",
+        amount_due: "24.98",
+        display_amount_due: "$24.98",
+      }),
+    );
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/checkout/start") {
+        return {
+          ok: false,
+          json: async () => ({
+            error: { code: "quote_changed", message: "quote changed" },
+            order_id: "or_123",
+            quote: {
+              checkout_version: 2,
+              price_version: "pv_new",
+              delivery_total: "9.0",
+              display_delivery_total: "$9.00",
+              discount_total: "1.0",
+              display_discount_total: "-$1.00",
+              amount_due: "28.98",
+              display_amount_due: "$28.98",
+            },
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    renderCheckout();
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    const diff = await screen.findByTestId("checkout-quote-diff");
+    expect(diff).toBeInTheDocument();
+    const shippingRow = screen.getByTestId("quote-diff-shipping");
+    expect(shippingRow).toHaveTextContent("$5.00");
+    expect(shippingRow).toHaveTextContent("$9.00");
+    expect(screen.getByTestId("quote-diff-amountDue")).toHaveAttribute(
+      "data-changed",
+      "true",
+    );
+    // 零跳转（不再去 or_ 页）+ 零自动重试（fetch 只发一次）
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  // PRD-20260914-checkout-quote-confirmation-loop AC-005：冲突但响应无 quote → 降级为页内提示
+  it("degrades to an in-page notice when the conflict carries no quote", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/checkout/start") {
+        return {
+          ok: false,
+          json: async () => ({
+            error: { code: "checkout_version_conflict", message: "stale" },
+            order_id: "or_123",
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    renderCheckout();
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    expect(
+      await screen.findByTestId("checkout-quote-diff"),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("quote-diff-shipping")).not.toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   // PRD-20260913-checkout-billing-mode FR-011/AC-010：取消「同配送」但账单地址不完整

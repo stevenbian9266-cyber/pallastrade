@@ -20,6 +20,9 @@ interface CheckoutStartBody {
   cart_id: string;
   payment_method_id: string;
   payment_mode?: "payment_intent";
+  /** PRD-20260914-checkout-quote-confirmation-loop FR-001：客户端所见报价版本（可选） */
+  expected_checkout_version?: number;
+  expected_price_version?: string;
   checkout: {
     email?: string;
     shipping_address?: AddressParams;
@@ -68,12 +71,23 @@ function errorBody(
   code: string,
   message: string,
   orderId?: string,
-): { error: { code: string; message: string }; order_id?: string } {
-  const body: { error: { code: string; message: string }; order_id?: string } =
-    {
-      error: { code, message },
-    };
+  quote?: unknown,
+): {
+  error: { code: string; message: string };
+  order_id?: string;
+  quote?: unknown;
+} {
+  const body: {
+    error: { code: string; message: string };
+    order_id?: string;
+    quote?: unknown;
+  } = {
+    error: { code, message },
+  };
   if (orderId) body.order_id = orderId;
+  // PRD-20260914-checkout-quote-confirmation-loop FR-003：报价冲突时回传当前报价，
+  // 供 cart_ 页做页内差异确认（而不是把用户抛到另一个页面）。
+  if (quote) body.quote = quote;
   return body;
 }
 
@@ -83,10 +97,14 @@ function errorBody(
  * quote_changed / transaction_not_payable 等）与后端 HTTP 状态；Storefront 不自行
  * 判断库存，只消费 Server 权威 code/message（订单保持安全可重试）。
  */
-function errorResponse(error: unknown, orderId?: string): NextResponse {
+function errorResponse(
+  error: unknown,
+  orderId?: string,
+  quote?: unknown,
+): NextResponse {
   if (error instanceof PallasTradeError) {
     return NextResponse.json(
-      errorBody(error.code || "checkout_failed", error.message, orderId),
+      errorBody(error.code || "checkout_failed", error.message, orderId, quote),
       { status: error.status || 422 },
     );
   }
@@ -97,9 +115,40 @@ function errorResponse(error: unknown, orderId?: string): NextResponse {
       "checkout_failed",
       "Checkout could not be completed. Your order is safe to retry.",
       orderId,
+      quote,
     ),
     { status: orderId ? 502 : 422 },
   );
+}
+
+/**
+ * PRD-20260914-checkout-quote-confirmation-loop：订单当前报价（供快照 + 409 差异）。
+ * 读取失败返回 null —— 报价确认是增强能力，不得改变主流程结果。
+ */
+async function readQuote(
+  orderId: string,
+): Promise<Record<string, unknown> | null> {
+  try {
+    const view = (await getClient().orders.checkout.get(
+      orderId,
+      await getCheckoutOptions(orderId),
+    )) as unknown as Record<string, unknown>;
+    const text = (value: unknown) =>
+      typeof value === "string" && value.length > 0 ? value : null;
+
+    return {
+      checkout_version: typeof view.version === "number" ? view.version : null,
+      price_version: text(view.price_version),
+      delivery_total: text(view.delivery_total),
+      display_delivery_total: text(view.display_delivery_total),
+      discount_total: text(view.discount_total),
+      display_discount_total: text(view.display_discount_total),
+      amount_due: text(view.amount_due),
+      display_amount_due: text(view.display_amount_due),
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -176,6 +225,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           ...(body.payment_mode
             ? { external_data: { mode: body.payment_mode } }
             : {}),
+          // PRD-20260914-checkout-quote-confirmation-loop FR-001：把客户端所见报价
+          // 版本交给后端（Transactions::Start / PaymentSessions::Start 判定漂移）。
+          ...(typeof body.expected_checkout_version === "number"
+            ? { expected_checkout_version: body.expected_checkout_version }
+            : {}),
+          ...(typeof body.expected_price_version === "string" &&
+          body.expected_price_version.length > 0
+            ? { expected_price_version: body.expected_price_version }
+            : {}),
         },
         await getCheckoutOptions(submittedOrder.id),
       );
@@ -184,9 +242,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const { successor_cart: _successorCart, ...order } = submittedOrder;
-    return NextResponse.json({ order, transaction, session });
+    // FR-002：成功也回传当前报价，前端据此存快照（下次点击携带 expected_*）。
+    return NextResponse.json({
+      order,
+      transaction,
+      session,
+      quote: await readQuote(submittedOrder.id),
+    });
   } catch (error) {
-    return errorResponse(error, submitted?.id);
+    // FR-003：报价冲突时附带当前报价（读取失败则省略，不改变错误码/状态）。
+    const code = error instanceof PallasTradeError ? error.code : undefined;
+    const quote =
+      submitted?.id &&
+      (code === "quote_changed" || code === "checkout_version_conflict")
+        ? await readQuote(submitted.id)
+        : null;
+    return errorResponse(error, submitted?.id, quote);
   }
 }
 

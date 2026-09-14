@@ -2765,7 +2765,7 @@
       "description": "PRD-20260913-checkout-txn-error-routing: the single-page checkout must branch on the server error code — quote changes return to the order page for re-confirmation, stock failures stay in page, paid-but-recovering transactions are shown as received without any retry entry, and unknown codes keep the legacy result-page fallback (RESEARCH-20260913 §9.2)",
       "mustDo": [
         "Read the error code via lib/errors.ts#extractErrorCode and branch on it; keep normalizeErrorMessage as the single string formatter for display",
-        "Route quote_changed / checkout_version_conflict to the order page with ?notice=quote_changed and never auto-pay after a conflict",
+        "Send the client-seen quote snapshot (expected_checkout_version / expected_price_version) on Pay now and keep the quote diff in page on a 409 conflict — never redirect, never auto-pay, never auto-retry",
         "Keep INSUFFICIENT_STOCK / INVENTORY_CHANGED / RESERVATION_EXPIRED in page with a role=alert notice and a return-to-cart CTA, never stating 'payment failed' and never jumping to the result page",
         "Send INVENTORY_RECOVERY_REQUIRED / transaction_not_payable to the result page with ?notice=recovery|processing and suppress every retry/refresh entry there",
         "Render an in-page notice without CTA for checkout_not_ready, and keep the legacy result-page fallback for unknown codes that carry an order id",
