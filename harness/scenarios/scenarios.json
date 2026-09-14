@@ -2937,13 +2937,15 @@
         "Dual-resolve the cart id: cart_ -> current_store.shopping_carts, anything else -> the legacy CartResolvable lookup with a cart.legacy_flow.used observation entry",
         "Keep authentication mandatory (store credit is account property) and validate credits exist in the cart currency before storing the intent — omitting amount stores the full available total",
         "Redeem at submit through the authoritative Checkout::AddStoreCredit (after the amount pipeline so outstanding_balance is final), creating the PaymentMethod::StoreCredit on demand, and fail the submission with no Order when the credit is gone",
+        "Persist any change when ensuring the store-credit payment method (an existing-but-disabled record must be saved active, otherwise the available scope stays empty and the authoritative service raises), and convert that raise into an order-less submission failure instead of a 500",
         "Enforce gift-card/store-credit mutual exclusivity at intent time in both directions, mirroring GiftCards::Apply gift_card_using_store_credit_error",
         "Emit cart.legacy_flow.used (one flow_type per endpoint) for every remaining legacy cart endpoint — payments, fulfillments, gift cards, store credits, discount codes — instead of guessing which ones to migrate; cart_ requests are never counted as legacy traffic"
       ],
       "mustNotDo": [
         "Create a payment or move store credit balance at cart stage (pallastrade_carts has no payments)",
         "Let the authoritative service raise out of the submit (missing PaymentMethod::StoreCredit) instead of preparing it, turning a shop configuration gap into a 500",
-        "Accept a gift card intent and a store credit intent on the same cart, or count cart_ requests as legacy traffic"
+        "Accept a gift card intent and a store credit intent on the same cart, or count cart_ requests as legacy traffic",
+        "Save the payment method only when it is a new record (silent no-op on an existing disabled row) or let a provider/service exception escape as a 500"
       ],
       "scoring": {
         "dualResolutionAuthenticated": 20,

@@ -107,3 +107,4 @@
 |---|---|---|---|
 | 2026-09-14 | 1.0 | 起草：切片 2 范围（store_credits canonical 化 + 余下 legacy 端点流量观测），含互斥规则与金额顺序约束（沿用切片 1 的 dev 教训） | AI |
 | 2026-09-14 | 1.1 | 实施完成：`Carts::ApplyStoreCredit`/`RemoveStoreCredit`（意图；无余额/币种不符/金额非法/礼品卡冲突 → 明确错误码）；`Submit#apply_store_credit!`（金额管线之后兑现 + 零额跳过 + 按需建 `PaymentMethod::StoreCredit`）；控制器双解析 + 3 个新错误码（含 i18n）；`LegacyFlowObservable` concern + `payments`/`fulfillments` 观测；序列化 `store_credit`；规格 2 新文件 + submit 2 例；验证器扩入新 spec；契约重生成；知识同步（OpenAPI/Skill×3/GS-118/research §9.3/platform README） | AI |
+| 2026-09-14 | 1.2 | 修复 GATE-2026-09-14T14-35-27（dev 提交实测暴露）：店铺已存在但**停用**的 store-credit 支付方式 → 原 ensure 仅 `save! if new_record?` → `active=false` 未落库 → `Checkout::AddStoreCredit` 的 `available` 作用域取不到 → `RuntimeError`（500）。改为**状态有变更即落库**；并且把权威服务的 raise 收敛为「提交失败、不落单」而不是 500；dev 实测：激活后提交成功产出 store-credit payment | AI |

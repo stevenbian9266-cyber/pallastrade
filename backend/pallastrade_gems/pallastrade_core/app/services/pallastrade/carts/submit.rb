@@ -169,23 +169,38 @@ module PallasTrade
         # （不是 service failure）→ 提交变成 500。
         ensure_store_credit_payment_method!(cart.store)
 
-        result = PallasTrade.checkout_add_store_credit_service.call(order: order, amount: amount)
-        return if result.success?
+        result = begin
+          PallasTrade.checkout_add_store_credit_service.call(order: order, amount: amount)
+        rescue StandardError => e
+          # 权威服务在异常路径上直接 raise → 收敛为「提交失败、不落单」，不让金额意图静默丢失。
+          Rails.error.report(e, context: { order_id: order.id, cart_id: cart.id }, source: 'PallasTrade.carts.submit')
+          nil
+        end
 
-        message = result.value.is_a?(String) ? result.value : PallasTrade.t(:error_user_does_not_have_any_store_credits)
+        if result.nil?
+          fail_submission!(order, PallasTrade.t(:store_credit_not_available))
+        elsif !result.success?
+          message = result.value.is_a?(String) ? result.value : PallasTrade.t(:error_user_does_not_have_any_store_credits)
+          fail_submission!(order, message)
+        end
+      end
+
+      def fail_submission!(order, message)
         order.errors.add(:base, message)
         raise ActiveRecord::RecordInvalid, order
       end
 
-      # 与 PallasTrade::GiftCards::Apply#ensure_store_credit_payment_method! 同口径：
-      # 店铺首次使用店铺余额时按需建支付方式（幂等；已存在则只补 active）。
+      # 与 PallasTrade::GiftCards::Apply#ensure_store_credit_payment_method! 同口径，
+      # 但修正了一个真实缺陷：既有记录可能是**停用**状态（dev 实测 active=false）→
+      # Checkout::AddStoreCredit 的 `available` 作用域取不到 → raise；
+      # 因此只要状态有变更就必须落库，不能只在新建时 save。
       def ensure_store_credit_payment_method!(store)
         payment_method = store.payment_methods.find_or_initialize_by(
           type: 'PallasTrade::PaymentMethod::StoreCredit'
         )
         payment_method.name ||= PallasTrade.t(:store_credit_name)
         payment_method.active = true
-        payment_method.save! if payment_method.new_record?
+        payment_method.save! if payment_method.new_record? || payment_method.changed?
         payment_method
       end
 

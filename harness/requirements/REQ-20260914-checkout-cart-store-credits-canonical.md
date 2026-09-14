@@ -54,4 +54,5 @@
 | AC-005 提交规格 | ✅ `spec/services/pallastrade/carts/submit_spec.rb`（兑现 + 不落单 2 例） |
 | 验证器 | ✅ `p1-order-flow-rspec`（已扩入两个新 spec 文件） |
 | 契约产物 | ✅ `typelizer:generate` + `api:docs:schemas`（`ShoppingCart.store_credit`）+ platform 副本同步 |
-| dev 实测 | ⏳ 部署后（guest 401 / 有余额 201 + `private_metadata` / 提交金额正确） |
+| dev 实测 | ✅ 2026-09-14（部署 `8dbda735`）：用户自有 `cart_` 车 + JWT → `POST store_credits {amount:20}` **201** 且载荷 `store_credit {amount:20.0, display_amount:$20.00}`；无 JWT → **401**；移除 → **200**；游客车 + JWT → `store_credit_requires_login`（意图需用户自有车，已在 Skill 记录） |
+| dev 提交兑现 | ✅ 2026-09-14（部署 `8dbda735` + 修复后重跑）：订单产出 store-credit payment 且 `amount_due` 相应减少（修复前 `RuntimeError: Store credit payment method could not be found`） |

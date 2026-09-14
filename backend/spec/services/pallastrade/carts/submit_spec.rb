@@ -129,6 +129,43 @@ RSpec.describe PallasTrade::Carts::Submit, type: :service do
       expect(PallasTrade::Order.where(cart_id: cart.id).count).to eq(1)
     end
 
+    # 修复（dev 实测缺陷）：店铺里已存在但被**停用**的 store-credit 支付方式 →
+    # `Checkout::AddStoreCredit` 的 `available` 作用域取不到 → raise。兑现路径必须自愈（激活并落库）。
+    it 'activates an existing but disabled store credit payment method before redeeming' do
+      buyer = create(:user)
+      cart.update!(user: buyer, email: buyer.email)
+      create(:store_credit, store: store, user: buyer, amount: 30.0, currency: 'USD')
+      disabled = create(:store_credit_payment_method, store: store, active: false)
+      cart.update!(private_metadata: { 'store_credit_amount' => '20' })
+      add_item
+
+      result = described_class.call(cart: cart)
+
+      expect(result).to be_success
+      expect(result.value.payments.store_credits.sum(:amount)).to eq(BigDecimal('20'))
+      expect(disabled.reload).to be_active
+    end
+
+    # AC-005（异常路径）：权威服务 raise（支付方式不可用等）→ 收敛为「提交失败、不落单」，不是 500。
+    it 'turns an authoritative service failure into an order-less submission failure' do
+      buyer = create(:user)
+      cart.update!(user: buyer, email: buyer.email)
+      create(:store_credit, store: store, user: buyer, amount: 30.0, currency: 'USD')
+      cart.update!(private_metadata: { 'store_credit_amount' => '20' })
+      add_item
+      failing_service = instance_double(PallasTrade::Checkout::AddStoreCredit)
+      allow(failing_service).to receive(:call).and_raise('boom')
+      allow(PallasTrade).to receive(:checkout_add_store_credit_service).and_return(failing_service)
+
+      result = nil
+      expect do
+        result = described_class.call(cart: cart)
+      end.not_to change { PallasTrade::Order.where(cart_id: cart.id).count }
+
+      expect(result).not_to be_success
+      expect(cart.reload).not_to be_converted
+    end
+
     # AC-005：提交时余额不可用 → 提交失败且不落单
     it 'fails the submission and creates no order when the store credit is gone' do
       buyer = create(:user)
