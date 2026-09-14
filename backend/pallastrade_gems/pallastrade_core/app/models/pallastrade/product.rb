@@ -956,8 +956,10 @@ module PallasTrade
       return if shipping_category.present?
 
       if new_record?
-        name = I18n.t('pallastrade.seed.shipping.categories.default')
-        self.shipping_category = PallasTrade::ShippingCategory.find_or_create_by!(name: name)
+        # PALLAS-CUSTOM (2026-09-14, PRD-20260914-shipping-category-name-i18n-fallback):
+        # 用规范常量而非 `I18n.t`（缺词条时会把 "Translation missing: …" 写进分类名）。
+        self.shipping_category = PallasTrade::ShippingCategory.default_category ||
+                                 PallasTrade::ShippingCategory.create!(name: PallasTrade::ShippingCategory::DEFAULT_NAME)
       end
     end
 
