@@ -77,6 +77,7 @@ New `Cart` entity (`pallastrade_carts`) plus order-domain payments:
 - `client.shippingMethods.list(options?)` — `GET /shipping_methods`; `DeliveryMethod` carries `display_estimated_price` for the order-confirmation radio list.
 - Cart line items accept `selected?: boolean` (`UpdateLineItemParams` / `UpdateCartItemParams`) — only selected items are submitted to the order.
 - `client.carts.giftCards.apply(cartId, code, options?)` / `.remove(cartId, code, options?)` — `POST/DELETE /carts/:cart_id/gift_cards[/:id]` (PRD-20260914-checkout-cart-gift-cards-canonical). Both cart kinds resolve: a `cart_` canonical cart validates the code and stores cart-stage intent (`ShoppingCart.gift_card: { code, display_amount_remaining }`, no payment/balance touched — it is redeemed by `carts.submit`), while a legacy `or_` cart applies the card immediately. Error codes are identical for both (`gift_card_not_found` 404, `gift_card_expired` / `gift_card_already_redeemed` 422), and removal is idempotent.
+- `client.carts.storeCredits.apply(cartId, amount?, options?)` / `.remove(cartId, options?)` — `POST/DELETE /carts/:cart_id/store_credits` (PRD-20260914-checkout-cart-store-credits-canonical). Requires a Bearer JWT (store credit is account property). On a `cart_` cart it stores cart-stage intent (`ShoppingCart.store_credit: { amount, display_amount }`, redeemed on `carts.submit`); omitting `amount` uses the full available credit. Store credit and gift cards are mutually exclusive per cart, mirroring the order-level rule.
 
 ### Customer auth (JWT)
 

@@ -1009,6 +1009,7 @@ en:
     gift_card_mismatched_customer: This gift card is associated with another user.
     gift_card_not_found: The Gift Card was not found.
     gift_card_removed: The Gift Card was successfully removed from your order
+    gift_card_store_credit_conflict: You can't apply the Gift Card after you applied the store credit.
     gift_card_using_store_credit_error: You can't apply the Gift Card after you applied the store credit.
     gift_cards: Gift Cards
     guest_checkout: Guest Checkout
@@ -1522,7 +1523,11 @@ en:
       credit: Credit
       eligible: Eligible
     store_credit_events: Store Credit Events
+    store_credit_gift_card_conflict: You can't apply the store credit after you applied the Gift Card.
+    store_credit_invalid_amount: Store credit amount must be greater than 0.
     store_credit_name: Store Credit
+    store_credit_not_available: You don't have any store credit available for this store.
+    store_credit_requires_login: You must be signed in to use your store credit.
     store_credit_payment_method:
       currency_mismatch: Store credit currency does not match order currency
       insufficient_authorized_amount: Unable to capture more than authorized amount

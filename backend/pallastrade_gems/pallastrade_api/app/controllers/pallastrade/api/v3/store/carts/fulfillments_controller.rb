@@ -6,8 +6,12 @@ module PallasTrade
           class FulfillmentsController < Store::BaseController
             include PallasTrade::Api::V3::CartResolvable
             include PallasTrade::Api::V3::OrderLock
+            include PallasTrade::Api::V3::LegacyFlowObservable
 
             before_action :find_cart!
+            # P0-7 / PRD-20260914-checkout-cart-store-credits-canonical FR-007：legacy 流量观测
+            # （订单域履约：canonical 等价能力在 /orders/... 与 `PATCH /carts/:id`）。
+            before_action :log_legacy_usage_once_fulfillments
 
             # GET /api/v3/store/carts/:cart_id/fulfillments
             def index
@@ -37,6 +41,10 @@ module PallasTrade
             end
 
             private
+
+            def log_legacy_usage_once_fulfillments
+              log_legacy_usage_once(flow_type: 'legacy_cart_fulfillments', action: action_name)
+            end
 
             def permitted_params
               params.permit(:selected_delivery_rate_id)

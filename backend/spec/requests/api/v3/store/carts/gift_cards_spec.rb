@@ -83,7 +83,9 @@ RSpec.describe 'Store Cart gift cards API (canonical cart_)', type: :request do
       post '/api/v3/store/carts/or_nonexistent/gift_cards',
            params: { code: 'SAVE10' }, headers: headers
 
-      expect(Rails.logger).to have_received(:info).with(/\[legacy-gift-cards\]/)
+      expect(Rails.logger).to have_received(:info).with(
+        hash_including(message: '[legacy-gift-cards] legacy cart resolution used', flow_type: 'legacy_cart_gift_cards')
+      )
       expect(response).to have_http_status(:not_found).or have_http_status(:forbidden)
     end
   end

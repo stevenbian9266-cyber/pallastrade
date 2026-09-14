@@ -5,8 +5,12 @@ module PallasTrade
         module Carts
           class PaymentsController < Store::BaseController
             include PallasTrade::Api::V3::CartResolvable
+            include PallasTrade::Api::V3::LegacyFlowObservable
 
             before_action :find_cart!
+            # P0-7 / PRD-20260914-checkout-cart-store-credits-canonical FR-007：legacy 流量观测
+            # （订单域支付：canonical 等价能力在 /orders/:id/payment_sessions；是否迁移看流量）。
+            before_action :log_legacy_usage_once_payments
 
             # POST /api/v3/store/carts/:cart_id/payments
             # Creates a payment for non-session payment methods (e.g. Check, Cash on Delivery, Bank Transfer)
@@ -42,6 +46,12 @@ module PallasTrade
               else
                 render_errors(@payment.errors)
               end
+            end
+
+            private
+
+            def log_legacy_usage_once_payments
+              log_legacy_usage_once(flow_type: 'legacy_cart_payments', action: action_name)
             end
           end
         end

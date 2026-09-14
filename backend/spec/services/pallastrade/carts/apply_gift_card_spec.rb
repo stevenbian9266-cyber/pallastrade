@@ -51,7 +51,17 @@ RSpec.describe PallasTrade::Carts::ApplyGiftCard do
       expect(gift_card.reload.amount_used).to eq(0)
     end
   end
+  # AC-006（切片 2）：与店铺余额意图互斥（镜像 GiftCards::Apply 的权威约束
+  # `gift_card_using_store_credit_error`，在意图层就拦住，避免提交才失败）。
+  it 'refuses to coexist with a store credit intent' do
+    gift_card = create(:gift_card, store: store)
+    cart.update!(private_metadata: { 'store_credit_amount' => '10.0' })
 
+    result = described_class.call(cart: cart, code: gift_card.code)
+
+    expect(result.error.to_s).to eq('gift_card_store_credit_conflict')
+    expect(metadata_code).to be_nil
+  end
   describe 'removal (AC-003)' do
     it 'clears the intent and is idempotent' do
       gift_card = create(:gift_card, store: store)

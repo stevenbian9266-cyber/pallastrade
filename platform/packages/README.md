@@ -56,6 +56,12 @@ moves** (`pallastrade_carts` has no payments); redemption happens on `carts.subm
 became unusable fails the submission instead of silently charging full price. Legacy `or_` carts keep
 their immediate-apply behaviour and share the same error codes.
 
+Canonical cart store credit intent (2026-09-14, PRD-20260914-checkout-cart-store-credits-canonical):
+`ShoppingCart` gains `store_credit: unknown | null` for `client.carts.storeCredits.apply('cart_…', amount?)`.
+The endpoint keeps requiring a bearer JWT (store credit is account property) and stores intent only —
+`carts.submit` redeems it through `Checkout::AddStoreCredit` (clamped to the final outstanding balance).
+Store credit and gift cards are mutually exclusive per cart, mirroring the order-level rule.
+
 ### `@pallastrade/sdk-core` — Shared internals
 
 Private package. Provides `createRequestFn()`, `PallasTradeError`, retry logic, and Ransack query-param transformation (`transformListParams()`). Consumed by the SDK; not intended for direct use.

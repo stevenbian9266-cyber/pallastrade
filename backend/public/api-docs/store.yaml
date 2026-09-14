@@ -5233,7 +5233,17 @@ paths:
       security:
       - api_key: []
         bearer_auth: []
-      description: Applies store credit to the cart during checkout.
+      description: |
+        Applies store credit to the cart during checkout.
+
+        Both cart kinds resolve here: a `cart_` canonical shopping cart stores the credit as
+        cart-stage intent (validated immediately — login required, credits must exist in the cart
+        currency — and redeemed when the cart is submitted into an order), while a legacy `or_`
+        cart applies the store credit immediately. Omit `amount` to use the customer's full
+        available credit total. Store credit and gift cards are mutually exclusive on one cart
+        (`store_credit_gift_card_conflict` / `gift_card_store_credit_conflict`), mirroring the
+        order-level rule. Error codes: `store_credit_requires_login`, `store_credit_not_available`,
+        `store_credit_invalid_amount`.
       x-codeSamples:
       - lang: javascript
         label: PallasTrade SDK
@@ -14248,6 +14258,9 @@ components:
         gift_card:
           type: object
           nullable: true
+        store_credit:
+          type: object
+          nullable: true
       required:
       - id
       - token
@@ -14266,6 +14279,7 @@ components:
       - shipping_address
       - payment_methods
       - gift_card
+      - store_credit
       x-typelizer: true
     StoreCheckoutCheckout:
       type: object

@@ -122,6 +122,9 @@ module PallasTrade
         # PALLAS-CUSTOM (2026-09-14, PRD-20260914-checkout-cart-gift-cards-canonical FR-004):
         # 购物车上的礼品卡码在提交时兑现（车阶段只承载意图，金额副作用落在 Order）。
         apply_gift_card!(order, cart)
+        # PALLAS-CUSTOM (2026-09-14, PRD-20260914-checkout-cart-store-credits-canonical FR-004):
+        # 店铺余额意图同在金额管线之后兑现（与礼品卡同序；意图层已互斥，不会同时存在）。
+        apply_store_credit!(order, cart)
         # 兑现后重建 payment_total / amount_due / payment_state（store-credit payment 已入账）。
         order.update_with_updater!
         order.save!
@@ -153,6 +156,37 @@ module PallasTrade
 
         order.errors.add(:base, result.value.to_s.presence || PallasTrade::Carts::ApplyGiftCard::NOT_FOUND)
         raise ActiveRecord::RecordInvalid, order
+      end
+
+      # FR-004：把购物车上的店铺余额意图交给权威套用路径（Checkout::AddStoreCredit）。
+      # 金额 = min(意图金额, 最终 outstanding_balance)；零额订单无款可付 → 跳过。
+      def apply_store_credit!(order, cart)
+        amount = PallasTrade::Carts::ApplyStoreCredit.requested_amount(cart)
+        return if amount.nil? || amount.zero? || order.total.zero?
+
+        # 与 GiftCards::Apply 同口径：店铺缺 store-credit 支付方式时补建 —— 否则
+        # Checkout::AddStoreCredit `raise 'Store credit payment method could not be found'`
+        # （不是 service failure）→ 提交变成 500。
+        ensure_store_credit_payment_method!(cart.store)
+
+        result = PallasTrade.checkout_add_store_credit_service.call(order: order, amount: amount)
+        return if result.success?
+
+        message = result.value.is_a?(String) ? result.value : PallasTrade.t(:error_user_does_not_have_any_store_credits)
+        order.errors.add(:base, message)
+        raise ActiveRecord::RecordInvalid, order
+      end
+
+      # 与 PallasTrade::GiftCards::Apply#ensure_store_credit_payment_method! 同口径：
+      # 店铺首次使用店铺余额时按需建支付方式（幂等；已存在则只补 active）。
+      def ensure_store_credit_payment_method!(store)
+        payment_method = store.payment_methods.find_or_initialize_by(
+          type: 'PallasTrade::PaymentMethod::StoreCredit'
+        )
+        payment_method.name ||= PallasTrade.t(:store_credit_name)
+        payment_method.active = true
+        payment_method.save! if payment_method.new_record?
+        payment_method
       end
 
       # FR-004：把购物车上的优惠码交给权威套用路径（PromotionHandler::Coupon）。

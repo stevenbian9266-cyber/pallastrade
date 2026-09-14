@@ -110,6 +110,41 @@ RSpec.describe PallasTrade::Carts::Submit, type: :service do
       expect(cart.reload).not_to be_converted
     end
 
+    # PRD-20260914-checkout-cart-store-credits-canonical AC-005：
+    # 购物车上的店铺余额意图在提交时兑现（权威 Checkout::AddStoreCredit；金额 = min(意图, 最终 outstanding)）。
+    it 'redeems the cart store credit against the final order total' do
+      buyer = create(:user)
+      cart.update!(user: buyer, email: buyer.email)
+      create(:store_credit, store: store, user: buyer, amount: 30.0, currency: 'USD')
+      cart.update!(private_metadata: { 'store_credit_amount' => '20' })
+      add_item
+
+      result = described_class.call(cart: cart)
+
+      expect(result).to be_success
+      order = result.value
+      applied = order.payments.store_credits.sum(:amount)
+      expect(applied).to eq([BigDecimal('20'), order.total].min)
+      expect(order.amount_due).to eq(order.total - applied)
+      expect(PallasTrade::Order.where(cart_id: cart.id).count).to eq(1)
+    end
+
+    # AC-005：提交时余额不可用 → 提交失败且不落单
+    it 'fails the submission and creates no order when the store credit is gone' do
+      buyer = create(:user)
+      cart.update!(user: buyer, email: buyer.email)
+      cart.update!(private_metadata: { 'store_credit_amount' => '20' })
+      add_item
+
+      result = nil
+      expect do
+        result = described_class.call(cart: cart)
+      end.not_to change { PallasTrade::Order.where(cart_id: cart.id).count }
+
+      expect(result).not_to be_success
+      expect(cart.reload).not_to be_converted
+    end
+
     # PRD-20260914-checkout-cart-discount-codes-canonical AC-004：
     # 购物车上的优惠码在提交时兑现（金额生效，走权威 PromotionHandler::Coupon）。
     it 'applies the cart discount code to the submitted order' do

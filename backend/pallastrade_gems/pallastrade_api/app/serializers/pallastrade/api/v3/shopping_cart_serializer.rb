@@ -16,7 +16,8 @@ module PallasTrade
                  shipping_method_id: [:string, nullable: true],
                  billing_address: { nullable: true }, shipping_address: { nullable: true },
                  items: 'Array<CartItem>',
-                 gift_card: { nullable: true }
+                 gift_card: { nullable: true },
+                 store_credit: { nullable: true }
 
         attribute :id do |cart|
           cart.prefixed_id
@@ -56,6 +57,15 @@ module PallasTrade
           next if gift_card.nil?
 
           { code: gift_card.code, display_amount_remaining: gift_card.display_amount_remaining }
+        end
+
+        # PRD-20260914-checkout-cart-store-credits-canonical FR-006：店铺余额意图
+        # （车阶段零资金副作用；金额在提交生成 Order 时由 Checkout::AddStoreCredit 落地）。
+        attribute :store_credit do |cart|
+          amount = PallasTrade::Carts::ApplyStoreCredit.requested_amount(cart)
+          next if amount.nil?
+
+          { amount: amount.to_s('F'), display_amount: PallasTrade::Money.new(amount, currency: cart.currency).to_s }
         end
       end
     end

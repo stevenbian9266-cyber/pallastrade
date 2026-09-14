@@ -19,8 +19,13 @@ module PallasTrade
       NOT_FOUND = 'gift_card_not_found'
       EXPIRED = 'gift_card_expired'
       REDEEMED = 'gift_card_already_redeemed'
+      # FR-005：权威 `GiftCards::Apply` 拒绝「同单混用礼品卡 + 店铺余额」
+      # （`gift_card_using_store_credit_error`）→ 意图层互斥，避免提交时才失败。
+      STORE_CREDIT_CONFLICT = 'gift_card_store_credit_conflict'
 
       def call(cart:, code:)
+        return failure(cart, STORE_CREDIT_CONFLICT) if ApplyStoreCredit.intent?(cart)
+
         normalized = code.to_s.strip.downcase
         return failure(cart, NOT_FOUND) if normalized.blank?
 

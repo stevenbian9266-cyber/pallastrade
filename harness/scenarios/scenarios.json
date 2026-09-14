@@ -2928,6 +2928,30 @@
         "errorContractParity": 15,
         "legacyBehaviourIntact": 15
       }
+    },
+    {
+      "id": "GS-118",
+      "name": "Canonical cart store credit is intent-only, mutually exclusive with gift cards, and legacy cart traffic stays measurable",
+      "description": "PRD-20260914-checkout-cart-store-credits-canonical (legacy convergence slice 2): POST/DELETE /api/v3/store/carts/:cart_id/store_credits answered 404 cart_not_found for cart_ ids, so a logged-in shopper could never use their balance; the endpoint now resolves canonical carts, records cart-stage intent, enforces the order-level gift-card exclusivity up front, and the remaining order-domain legacy endpoints report usage so migration is traffic-driven",
+      "mustDo": [
+        "Dual-resolve the cart id: cart_ -> current_store.shopping_carts, anything else -> the legacy CartResolvable lookup with a cart.legacy_flow.used observation entry",
+        "Keep authentication mandatory (store credit is account property) and validate credits exist in the cart currency before storing the intent — omitting amount stores the full available total",
+        "Redeem at submit through the authoritative Checkout::AddStoreCredit (after the amount pipeline so outstanding_balance is final), creating the PaymentMethod::StoreCredit on demand, and fail the submission with no Order when the credit is gone",
+        "Enforce gift-card/store-credit mutual exclusivity at intent time in both directions, mirroring GiftCards::Apply gift_card_using_store_credit_error",
+        "Emit cart.legacy_flow.used (flow_type per endpoint) for the remaining order-domain legacy cart endpoints instead of guessing which ones to migrate"
+      ],
+      "mustNotDo": [
+        "Create a payment or move store credit balance at cart stage (pallastrade_carts has no payments)",
+        "Let the authoritative service raise out of the submit (missing PaymentMethod::StoreCredit) instead of preparing it, turning a shop configuration gap into a 500",
+        "Accept a gift card intent and a store credit intent on the same cart, or count cart_ requests as legacy traffic"
+      ],
+      "scoring": {
+        "dualResolutionAuthenticated": 25,
+        "intentOnlyNoMoneyAtCart": 25,
+        "submitUsesAuthoritativeService": 20,
+        "mutualExclusionEnforced": 15,
+        "legacyTrafficMeasurable": 15
+      }
     }
   ]
 }

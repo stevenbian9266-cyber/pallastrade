@@ -197,7 +197,7 @@
 |---|---|
 | P1 | CheckoutView 扩展（`credits / capabilities / available_payment_methods / billing_mode`）→ **已评估：不做**（2026-09-14）——`payment_methods` 已在 Order/Checkout 序列化层、`store_credit_total` 已渲染、`ready/missing_requirements` 即 capabilities、`billing_mode` 已在购物车侧建模；仅剩形式统一，收益不抵改动面 |
 | P1 | 占位功能治理（§47：Add-ons / Save Info / Marketing / SMS）→ **已完成**（2026-09-14，PRD-20260914-checkout-placeholder-controls-governance）：Marketing 真正接线（BFF + best-effort，不阻断下单）；Add-ons / SMS / Save Info 无后端能力 → 单一开关 `SHOW_PLACEHOLDER_SECTIONS=false` 隐藏（组件保留、可逆） |
-| P2 | legacy 六端点收敛 + usage metric（P0-7 流量阈值驱动）→ **切片 1 已完成**（2026-09-14，PRD-20260914-checkout-cart-gift-cards-canonical：`cart_` 礼品卡端点 canonical 化，修 404 + 提交兑现 + legacy 观测；余 `store_credits` / `payments` / `payment_sessions` / `fulfillments` 四端点按同一模板续做）；`or_` 页展示小步补齐（折扣/礼卡/余额）；组件级 `CheckoutShell` 拆分（不改交互模型） |
+| P2 | legacy 六端点收敛 + usage metric（P0-7 流量阈值驱动）→ **切片 1 已完成**（2026-09-14，`PRD-20260914-checkout-cart-gift-cards-canonical`：`cart_` 礼品卡端点 canonical 化，修 404 + 提交兑现 + legacy 观测；含 dev E2E 暴露的金额顺序缺陷修复）→ **切片 2 已完成**（2026-09-14，`PRD-20260914-checkout-cart-store-credits-canonical`：`cart_` 店铺余额端点 canonical 化 + 与礼品卡互斥 + `payments`/`fulfillments` 补 `cart.legacy_flow.used` 流量观测；余 `payments` / `payment_sessions` / `fulfillments` 三端点的 canonical 化按观测流量决定）；`or_` 页展示小步补齐（折扣/礼卡/余额）；组件级 `CheckoutShell` 拆分（不改交互模型） |
 
 ---
 
