@@ -565,7 +565,10 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const startOptions = fetchMock.mock.calls[0]?.[1] as RequestInit;
-    const body = JSON.parse(startOptions.body as string) as Record<string, unknown>;
+    const body = JSON.parse(startOptions.body as string) as Record<
+      string,
+      unknown
+    >;
     expect(body.expected_checkout_version).toBe(7);
     expect(body.expected_price_version).toBe("pv_7");
   });
@@ -580,7 +583,10 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const startOptions = fetchMock.mock.calls[0]?.[1] as RequestInit;
-    const body = JSON.parse(startOptions.body as string) as Record<string, unknown>;
+    const body = JSON.parse(startOptions.body as string) as Record<
+      string,
+      unknown
+    >;
     expect(body.expected_checkout_version).toBeUndefined();
     expect(body.expected_price_version).toBeUndefined();
   });
