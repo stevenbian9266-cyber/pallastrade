@@ -334,11 +334,15 @@ module PallasTrade
       end
 
       # 草稿载荷（与 submit_evidence 同形：文本 + 上传文件）
+      # PALLAS-CUSTOM (2026-09-14, Brakeman MassAssignment / pallastrade-security「禁止 permit!」):
+      # 不再 `permit!`（接受任意键并把参数静默标白）。此处只做「参数 → 纯 Hash」转换并剔除
+      # 框架保留键；键的合法性由服务层证据目录强制（`EvidenceCatalog#validate` →
+      # `unknown_evidence_key:*`），与 submit_evidence 的 `to_unsafe_h` 路径保持一致。
       def evidence_payload
         raw = params[:evidence]
-        return {} unless raw.respond_to?(:permit)
+        return {} unless raw.respond_to?(:to_unsafe_h)
 
-        raw.permit!.to_h
+        raw.to_unsafe_h.except('controller', 'action', 'authenticity_token', 'utf8', 'id')
       end
 
       def late_submission?(dispute)
