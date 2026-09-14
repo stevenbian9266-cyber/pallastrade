@@ -29,7 +29,7 @@
 - **FR-001（双解析）**：`carts/gift_cards_controller.rb` 支持 `cart_` → `current_store.shopping_carts`（顾客/游客作用域）；否则沿用 legacy `find_cart!` 并记 `[legacy-gift-cards]` 观测日志。
 - **FR-002（应用）**：新增 `PallasTrade::Carts::ApplyGiftCard`：规范化码（strip/downcase）、在 `cart.store.gift_cards` 校验存在/未过期/未核销（错误码与 legacy 一致），通过则写 `cart.private_metadata['gift_card_code']` 并保存。
 - **FR-003（移除）**：新增 `PallasTrade::Carts::RemoveGiftCard`：清除意图，幂等（无卡也成功）。
-- **FR-004（提交兑现）**：`Carts::Submit` 在金额管线前，把购物车上的礼品卡码交给既有 `PromotionHandler::Coupon`（其礼品卡分支会 `order.apply_gift_card`）→ 成功则订单占用礼品卡；**失败 → 提交失败（不落单、不静默）**。
+- **FR-004（提交兑现）**：`Carts::Submit` 在**金额管线跑完之后**（`order.update_with_updater!` 已落 `order.total`）把购物车上的礼品卡码交给既有 `order.apply_gift_card`（其内部调用 `GiftCards::Apply`，金额 = `min(remaining, order.total)`）；再跑一次 updater 重建 `payment_total / amount_due / payment_state`；**失败 → 提交失败（不落单、不静默）**；零额订单（全额折扣/免费商品 + 免运费）无款可付 → 不动礼品卡也不建 0 额 store credit。
 - **FR-005（可见性）**：购物车序列化器暴露 `gift_card`（`code` + `display_amount_remaining`，来自服务端 Money 格式化），供 UI 展示"已应用/可移除"；不改变 `amount_due` 语义（车阶段不含礼品卡金额）。
 - **FR-006（知识同步）**：OpenAPI ×2 标注双解析与错误码；api-v3 / payments Skill 记录"礼品卡车阶段=意图、金额在提交时兑现"；场景库新增 GS-117；research §9.3 P2 记录切片 1 完成、其余切片待办。
 
@@ -101,3 +101,5 @@
 |---|---|---|---|
 | 2026-09-14 | 1.0 | 实施：`Carts::ApplyGiftCard` / `RemoveGiftCard`（`private_metadata['gift_card_code']`）；`gift_cards` 端点双解析 + legacy 观测；`Carts::Submit` 经 `PromotionHandler::Coupon` 礼品卡分支兑现（失败不落单）；购物车序列化器暴露 `gift_card`；规格 3 文件 + Skill×2 + GS-117 + research §9.3 | AI |
 | 2026-09-14 | 1.1 | 验证：3 个 spec 文件 23 examples 0 failures（绿）；契约产物重生成并同步 platform 副本（`ShoppingCart.gift_card`）；PRD 状态 → done | AI |
+| 2026-09-14 | 1.2 | dev 实测（部署 `87cf3946`）：未知码 404 `gift_card_not_found`（原 `cart_not_found`）；真实码 201 + 载荷 `gift_card`；移除 200；`private_metadata` 落码且礼品卡 `amount_used=0.0`（车阶段零资金副作用实证） | AI |
+| 2026-09-14 | 1.3 | 修复 GATE-2026-09-14T12-44-52：dev 真实提交暴露缺陷 —— 礼品卡在 `update_with_updater!` **之前**兑现 → `order.total` 尚未落库（dev 为 0）→ StoreCredit 金额 0 → 提交失败（`Amount must be greater than 0`）。改为“金额管线跑完 → 兑现 → 再跑 updater”，并加零额守卫；规格改为断言**金额语义**（`gift_card_total == min(面额, total)`、`amount_due == total - gift_card_total`、`amount_used` 同步）并补零额用例 | AI |

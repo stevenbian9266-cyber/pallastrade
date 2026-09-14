@@ -2911,13 +2911,15 @@
         "Dual-resolve the cart id: cart_ -> current_store.shopping_carts (guest/user scoped, active only), anything else -> the legacy CartResolvable lookup with a [legacy-gift-cards] observation log",
         "Keep cart stage money-free: validate the code (gift_card_not_found / gift_card_expired / gift_card_already_redeemed) and persist cart.private_metadata['gift_card_code'] without creating a payment or reserving balance",
         "Redeem at submit through the existing order.apply_gift_card authority, and fail the submission (no Order) when the stored card is no longer usable instead of silently charging full price",
+        "Apply the card only after the amount pipeline has persisted the final order.total (then re-run update_with_updater! so payment_total/amount_due refresh), and skip redemption entirely on a zero-total order",
         "Keep the error contract identical to the legacy endpoint (404 gift_card_not_found, 422 expired/already redeemed) so one BFF mapping serves both cart kinds",
         "Expose only code + display_amount_remaining on the shopping-cart serializer, and keep removal idempotent"
       ],
       "mustNotDo": [
         "Create a store-credit payment or consume gift card balance at cart stage (pallastrade_carts has no payments)",
         "Duplicate gift card money logic outside order.apply_gift_card / gift_card_apply_service",
-        "Change legacy cart behaviour, or drop the [legacy-gift-cards] log that tracks remaining legacy traffic"
+        "Change legacy cart behaviour, or drop the [legacy-gift-cards] log that tracks remaining legacy traffic",
+        "Compute the redemption amount from a stale order.total (applying before the updater made the store credit zero and failed the submission), or write money logic that only asserts 'amount_used > 0' instead of the amount relationship"
       ],
       "scoring": {
         "dualResolution": 25,

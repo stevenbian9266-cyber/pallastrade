@@ -56,7 +56,9 @@ RSpec.describe PallasTrade::Carts::Submit, type: :service do
 
     # PRD-20260914-checkout-cart-gift-cards-canonical AC-004：
     # 购物车上的礼品卡码在提交时兑现（车阶段零资金副作用 → 订单侧建 store-credit payment）。
-    it 'redeems the cart gift card on the submitted order' do
+    # 金额必须以**最终**订单 total 为上限（dev E2E 发现：在 update_with_updater! 之前兑现
+    # 会读到 total=0 → store credit 金额 0 → 校验报「Amount must be greater than 0」）。
+    it 'redeems the cart gift card against the final order total' do
       gift_card = create(:gift_card, store: store, amount: 10.00)
       cart.update!(private_metadata: { 'gift_card_code' => gift_card.code.downcase })
       add_item
@@ -64,9 +66,33 @@ RSpec.describe PallasTrade::Carts::Submit, type: :service do
       result = described_class.call(cart: cart)
 
       expect(result).to be_success
-      expect(result.value.gift_card_id).to eq(gift_card.id)
-      expect(gift_card.reload.amount_used).to be > 0
+      order = result.value
+      expect(order.gift_card_id).to eq(gift_card.id)
+      expect(order.total).to be > 0
+      expect(order.gift_card_total).to eq([BigDecimal('10.00'), order.total].min)
+      expect(order.payments.store_credits.sum(:amount)).to eq(order.gift_card_total)
+      expect(order.amount_due).to eq(order.total - order.gift_card_total)
+      expect(gift_card.reload.amount_used).to eq(order.gift_card_total)
       expect(PallasTrade::Order.where(cart_id: cart.id).count).to eq(1)
+    end
+
+    # AC-004 边界：零额订单（全额折扣/免费商品）无款可付 → 不创建 0 额 store credit，
+    # 也不占用礼品卡余额，提交本身照常成功。
+    it 'leaves the gift card untouched when there is nothing to pay' do
+      variant.set_price('USD', 0)
+      # 免运费（FlatRate 置 0）+ 免费商品 → 订单 total 0（无款可付）
+      PallasTrade::ShippingMethod.find_each { |method| method.calculator.update!(preferred_amount: 0) }
+      add_item
+      gift_card = create(:gift_card, store: store, amount: 10.00)
+      cart.update!(private_metadata: { 'gift_card_code' => gift_card.code.downcase })
+
+      result = described_class.call(cart: cart)
+
+      expect(result).to be_success
+      order = result.value
+      expect(order.total).to eq(0)
+      expect(order.payments.store_credits).to be_empty
+      expect(gift_card.reload.amount_used).to eq(0)
     end
 
     # AC-004：提交时礼品卡不可用 → 提交失败且**不落单**（绝不静默按原价下单）

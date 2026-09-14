@@ -38,7 +38,7 @@
 |---|---|
 | FR-001 双解析 + 观测 | ✅ `gift_cards_controller.rb#find_cart_or_shopping_cart!` + `[legacy-gift-cards]` |
 | FR-002/003 应用/移除服务 | ✅ `Carts::ApplyGiftCard` / `Carts::RemoveGiftCard`（`private_metadata['gift_card_code']`，零资金副作用） |
-| FR-004 提交兑现（失败不落单） | ✅ `Carts::Submit#apply_gift_card!` → `order.apply_gift_card`（经同一校验口径） |
+| FR-004 提交兑现（失败不落单） | ✅ `Carts::Submit#apply_gift_card!` → `order.apply_gift_card`（经同一校验口径）；**修复（GATE-2026-09-14T12-44-52）**：改为金额管线之后兑现（读得到最终 `total`）+ 零额守卫 |
 | FR-005 序列化 `gift_card` | ✅ `ShoppingCartSerializer`（`code` + `display_amount_remaining`） |
 | FR-006 知识同步 | ✅ OpenAPI + Skill×2 + GS-117 + research §9.3 + 契约产物重生成 |
 
@@ -51,4 +51,4 @@
 | AC-004 提交规格 | ✅ `spec/services/pallastrade/carts/submit_spec.rb`（2 新例） |
 | 验证器 | ✅ `p1-order-flow-rspec`（已扩入两个新 spec 文件）→ gate `verify-test` 证据 |
 | 契约产物 | ✅ `typelizer:generate` + `api:docs:schemas`（`ShoppingCart.gift_card`）+ platform 副本同步 |
-| dev 实测 | ⏳ 部署后（未知码 404 `gift_card_not_found`；真实码 201 + `private_metadata`） |
+| dev 实测 | ✅ 2026-09-14（部署 `87cf3946`）：未知码 → 404 `gift_card_not_found`（修复前 `cart_not_found`）；真实码 `GC-DEV-SMOKE-1` → 201 且载荷 `gift_card.code` + `display_amount_remaining`；移除 → 200；DB `private_metadata={"gift_card_code"…}` 且礼品卡 `amount_used=0.0`/`amount_authorized=0.0`（车阶段零资金副作用） |

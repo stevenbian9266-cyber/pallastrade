@@ -114,9 +114,15 @@ module PallasTrade
         # 购物车上的优惠码「意图」在此兑现（与 Orders::Create#apply_coupon 同源）；
         # 不可用 → 抛错回滚（绝不静默按原价下单）。
         apply_discount_code!(order, cart)
+        # PALLAS-CUSTOM (2026-09-14, 修复 GATE-2026-09-14T12-44-52): 先让金额管线跑完（行价 + 税 + 运费 →
+        # order.total 落库），再兑现礼品卡。否则 GiftCards::Apply 的
+        # amount = min(remaining, order.total) 会读到尚未计算的 total（dev E2E 实测为 0）
+        # → store credit 金额 0 → 校验报「Amount must be greater than 0」且提交失败。
+        order.update_with_updater!
         # PALLAS-CUSTOM (2026-09-14, PRD-20260914-checkout-cart-gift-cards-canonical FR-004):
-        # 购物车上的礼品卡码同在提交时兑现（车阶段只承载意图，金额副作用落在 Order）。
+        # 购物车上的礼品卡码在提交时兑现（车阶段只承载意图，金额副作用落在 Order）。
         apply_gift_card!(order, cart)
+        # 兑现后重建 payment_total / amount_due / payment_state（store-credit payment 已入账）。
         order.update_with_updater!
         order.save!
 
@@ -138,6 +144,10 @@ module PallasTrade
         end
 
         gift_card = cart.store.gift_cards.find_by(code: code)
+        # 零额订单（全额折扣 / 免费商品 + 免运费）无款可付：不建 0 额 store credit（StoreCredit
+        # 校验 amount > 0），也不占用礼品卡余额。校验已在此前完成，故非法码仍然会失败。
+        return if order.total.zero?
+
         result = order.apply_gift_card(gift_card)
         return if result.success?
 
