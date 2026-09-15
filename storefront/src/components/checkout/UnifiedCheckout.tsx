@@ -300,6 +300,17 @@ const STOCK_ERROR_CODES = new Set([
 ]);
 
 /**
+ * PRD-20260915-checkout B3 FR-001：库存三态的专属标题。/ 恢复中。
+ * （`not-ready` 仍用 `checkoutNotReady`，不在此表内。）
+ */
+const STOCK_ERROR_TITLES: Record<string, string> = {
+  "insufficient-stock": "stockInsufficientTitle",
+  "inventory-changed": "stockChangedTitle",
+  "reservation-expired": "reservationExpiredTitle",
+  "reservation-retrying": "reservationRetryingTitle",
+};
+
+/**
  * 结算页占位控件开关（PRD-20260914-checkout-placeholder-controls-governance FR-002）。
  *
  * Add-ons（无定价管线）、SMS opt-in（无发送通道）、Save Info（无持久化语义）三项的后端
@@ -390,9 +401,29 @@ export function UnifiedCheckout({
   const orderIdRef = useRef<string | null>(null);
   // PRD-20260913-checkout-txn-error-routing：页内错误提示（库存类 / 未就绪）。
   const [payError, setPayError] = useState<{
-    kind: "stock" | "not-ready";
+    kind:
+      | "insufficient-stock"
+      | "inventory-changed"
+      | "reservation-expired"
+      | "reservation-retrying"
+      | "not-ready";
     message: string;
   } | null>(null);
+  /**
+   * 预留过期自动重试守卫（PRD-20260915-checkout B3 FR-001，用户 2026-09-15 决策）：
+   * **仅** `RESERVATION_EXPIRED` 允许自动重试一次；失败后回落为手动动作，绝不循环。
+   */
+  const stockRetryRef = useRef(false);
+  /** 自动重试触发器（需等 handlePayNow 的 finally 复位 payProcessing）。 */
+  const [reservationRetryPending, setReservationRetryPending] = useState(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 触发条件只看「待重试」与「本轮已结束」（handlePayNow 每次渲染都会重建，不能进依赖）
+  useEffect(() => {
+    // 入口守卫 `if (!canSubmit || payProcessing || !selectedMethod) return;`
+    // 会拦掉同一轮内的递归调用 → 等 payProcessing 落回 false 再重试。
+    if (!reservationRetryPending || payProcessing) return;
+    setReservationRetryPending(false);
+    void handlePayNow();
+  }, [reservationRetryPending, payProcessing]);
   // PRD-20260914-checkout-quote-confirmation-loop：报价漂移的页内确认
   // （零跳转、零自动扣款；用户看得到 Shipping / Promotion / Amount due 的旧→新）
   const [quoteDiff, setQuoteDiff] = useState<{
@@ -742,7 +773,24 @@ export function UnifiedCheckout({
         }
         if (errorCode && STOCK_ERROR_CODES.has(errorCode)) {
           // FR-003/AC-002/003：库存类（无 PSP 扣款）→ 页内提示 + 返回购物车
-          setPayError({ kind: "stock", message });
+          // PRD-20260915-checkout B3 FR-001：三态各自专属文案与动作。
+          if (errorCode === "RESERVATION_EXPIRED" && !stockRetryRef.current) {
+            // 用户决策：预留过期允许自动重试**一次**（仅重走库存确认/启动，
+            // 幂等于同一订单 —— 不新建 Order / Transaction）。
+            stockRetryRef.current = true;
+            setPayError({ kind: "reservation-retrying", message });
+            setReservationRetryPending(true);
+            return;
+          }
+          setPayError({
+            kind:
+              errorCode === "RESERVATION_EXPIRED"
+                ? "reservation-expired"
+                : errorCode === "INVENTORY_CHANGED"
+                  ? "inventory-changed"
+                  : "insufficient-stock",
+            message,
+          });
           return;
         }
         if (errorCode === "checkout_not_ready") {
@@ -869,17 +917,41 @@ export function UnifiedCheckout({
           className="mb-8 rounded-xl border border-red-200 bg-red-50 px-4 py-3"
         >
           <p className="text-sm font-semibold text-red-800">
-            {t(
-              payError.kind === "stock"
-                ? "stockUnavailableTitle"
-                : "checkoutNotReady",
-            )}
+            {t(STOCK_ERROR_TITLES[payError.kind] ?? "checkoutNotReady")}
           </p>
           <p className="mt-1 text-sm text-red-700">{payError.message}</p>
-          {payError.kind === "stock" && (
+          {payError.kind === "insufficient-stock" && (
             <Button asChild variant="outline" size="sm" className="mt-3">
               <Link href={`${basePath}/cart`}>{t("returnToCart")}</Link>
             </Button>
+          )}
+          {payError.kind === "inventory-changed" && (
+            <>
+              <p className="mt-1 text-sm text-red-700">
+                {t("stockChangedHint")}
+              </p>
+              <Button asChild variant="outline" size="sm" className="mt-3">
+                <Link href={`${basePath}/cart`}>{t("reviewCart")}</Link>
+              </Button>
+            </>
+          )}
+          {payError.kind === "reservation-expired" && (
+            <>
+              <p className="mt-1 text-sm text-red-700">
+                {t("reservationExpiredHint")}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => {
+                  void handlePayNow();
+                }}
+              >
+                {t("retryInventoryCheck")}
+              </Button>
+            </>
           )}
         </div>
       )}

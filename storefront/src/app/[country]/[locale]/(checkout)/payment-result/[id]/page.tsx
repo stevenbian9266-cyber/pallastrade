@@ -6,12 +6,16 @@ import type {
 import { CircleAlert, CircleCheckBig, Clock3, XCircle } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { AddressBlock } from "@/components/order/AddressBlock";
+import { ShippingGroups } from "@/components/order/ShippingGroups";
 import { Button } from "@/components/ui/button";
+import { isAuthenticated } from "@/lib/data/cookies";
 import {
   getOrderForCheckout,
   getOrderPaymentSession,
 } from "@/lib/data/order-payment";
 import { getPaymentCombination } from "@/lib/data/payment-combination";
+import { safeParseFloat } from "@/lib/utils/format";
 
 type ResultStatus = "success" | "failed" | "canceled" | "pending";
 
@@ -71,6 +75,7 @@ export default async function PaymentResultPage({
   let amount = "";
   let retryHref = `${basePath}/account/orders`;
   let found = false;
+  let order: Order | null = null;
 
   if (id.startsWith("pcom_")) {
     const result = await getPaymentCombination(id);
@@ -81,15 +86,16 @@ export default async function PaymentResultPage({
       found = true;
     }
   } else {
-    const order = await getOrderForCheckout(id);
-    if (order) {
+    const orderData = await getOrderForCheckout(id);
+    if (orderData) {
       const session = sessionId
         ? await getOrderPaymentSession(id, sessionId)
         : null;
-      status = statusFromOrder(order, session);
-      reference = order.number ? `#${order.number}` : id;
-      amount = order.display_total ?? "";
-      retryHref = `${basePath}/checkout/${order.id}`;
+      status = statusFromOrder(orderData, session);
+      reference = orderData.number ? `#${orderData.number}` : id;
+      amount = orderData.display_total ?? "";
+      retryHref = `${basePath}/checkout/${orderData.id}`;
+      order = orderData;
       found = true;
     }
   }
@@ -126,6 +132,17 @@ export default async function PaymentResultPage({
         ? t("processingNoticeDescription")
         : t(`${status}Description`);
 
+  const tOrder = await getTranslations("order");
+  // 方案 §37：履约信息对已找到的订单**所有状态**展示（用户 2026-09-15 决策）；
+  // 非成功态用「订单内容」标题，绝不出现 “Order confirmed” 以免被误读。
+  const isConfirmed = status === "success" && !forcedNotice;
+  const hasSavings = order
+    ? Math.abs(safeParseFloat(order.discount_total)) > 0
+    : false;
+  const orderHref = order
+    ? `${basePath}/${(await isAuthenticated()) ? "account/orders" : "order-placed"}/${order.id}`
+    : "";
+
   return (
     <div className="mx-auto max-w-xl py-16 text-center">
       {forcedNotice ? (
@@ -155,6 +172,107 @@ export default async function PaymentResultPage({
           </div>
         ) : null}
       </dl>
+
+      {/* 履约摘要（方案 §37）：产品组 / 发货去向 / 实付 / 促销节省。
+          仅消费显式业务字段 —— transaction / reservation / payment session 标识
+          一律不进入 DOM（AC-006）。 */}
+      {order ? (
+        <div
+          className="mb-8 rounded-xl border border-gray-200 bg-white p-5 text-left"
+          data-testid="order-summary"
+        >
+          {!isConfirmed ? (
+            <p
+              className="mb-3 text-sm font-semibold text-gray-900"
+              data-testid="order-summary-heading"
+            >
+              {tOrder("orderContents")}
+            </p>
+          ) : null}
+
+          {order.shipping_address ? (
+            <div className="mb-4">
+              <p className="text-xs font-medium tracking-wide text-gray-500 uppercase">
+                {tOrder("shipTo")}
+              </p>
+              <div className="mt-1" data-testid="order-summary-ship-to">
+                <AddressBlock address={order.shipping_address} />
+              </div>
+            </div>
+          ) : null}
+
+          {order.fulfillments && order.fulfillments.length > 0 ? (
+            <div className="mb-4">
+              <p className="text-xs font-medium tracking-wide text-gray-500 uppercase">
+                {tOrder("delivery")}
+              </p>
+              <div className="mt-1" data-testid="order-summary-delivery">
+                <ShippingGroups
+                  items={order.items ?? []}
+                  fulfillments={order.fulfillments}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {order.items && order.items.length > 0 ? (
+            <div className="mb-4">
+              <p className="text-xs font-medium tracking-wide text-gray-500 uppercase">
+                {tOrder("items")}
+              </p>
+              <ul className="mt-1 space-y-1">
+                {order.items.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex justify-between gap-4 text-sm text-gray-700"
+                    data-testid="order-summary-item"
+                  >
+                    <span>
+                      {item.name} · {tOrder("qty", { quantity: item.quantity })}
+                    </span>
+                    <span className="font-medium text-gray-900">
+                      {item.display_total}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <div className="space-y-2 border-t border-gray-100 pt-3">
+            {order.display_total ? (
+              <div
+                className="flex justify-between text-sm"
+                data-testid="order-summary-paid"
+              >
+                <span className="text-gray-500">{tOrder("paid")}</span>
+                <span className="font-semibold text-gray-900">
+                  {order.display_total}
+                </span>
+              </div>
+            ) : null}
+            {hasSavings ? (
+              <div
+                className="flex justify-between text-sm"
+                data-testid="order-summary-savings"
+              >
+                <span className="text-gray-500">
+                  {tOrder("promotionSavings")}
+                </span>
+                <span className="text-green-700">
+                  {order.display_discount_total}
+                </span>
+              </div>
+            ) : null}
+          </div>
+
+          <Button variant="outline" size="sm" className="mt-4" asChild>
+            <Link href={orderHref} data-testid="view-order-link">
+              {tOrder("viewOrder")}
+            </Link>
+          </Button>
+        </div>
+      ) : null}
 
       <div className="flex flex-col justify-center gap-3 sm:flex-row">
         {!forcedNotice && (status === "failed" || status === "canceled") ? (

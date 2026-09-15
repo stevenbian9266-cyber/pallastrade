@@ -34,12 +34,36 @@ const REQUIRED: Record<string, string[]> = {
     "quoteRowShipping",
     "quoteRowPromotion",
     "quoteRowAmountDue",
+    // PRD-20260915-checkout-checkout-收尾收敛-b3-库存错误四态与履约结果页-recovery-语义-shipment-groups AC-008：
+    // 库存三态各自的标题/说明/动作（§26/§27 + 错误码表）。
+    "stockInsufficientTitle",
+    "stockChangedTitle",
+    "stockChangedHint",
+    "reservationExpiredTitle",
+    "reservationExpiredHint",
+    "reservationRetryingTitle",
+    "reviewCart",
+    "retryInventoryCheck",
   ],
   paymentResult: [
     "recoveryTitle",
     "recoveryDescription",
     "processingNoticeTitle",
     "processingNoticeDescription",
+  ],
+  order: [
+    // PRD-20260915-checkout-checkout-收尾收敛-b3-库存错误四态与履约结果页-recovery-语义-shipment-groups AC-008：
+    // 履约结果页（§37）的 Ship to / Delivery / Items / Paid / savings 与多 Shipment 分组文案。
+    "orderContents",
+    "shipTo",
+    "delivery",
+    "items",
+    "paid",
+    "promotionSavings",
+    "viewOrder",
+    "shipment",
+    "qty",
+    "deliveryFallback",
   ],
   cart: [
     // PRD-20260914-checkout-checkout-收尾收敛-b2-购物车页店铺余额入口与订单摘要三合一 AC-010：

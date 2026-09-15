@@ -413,7 +413,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     await user.type(screen.getByLabelText("email"), "ada@example.com");
     await user.click(screen.getByRole("radio", { name: /Standard/ }));
     await user.click(screen.getByRole("button", { name: "payNow" }));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    // 只断言"已发起提交"：预留过期会在同一流程内自动重试一次，次数由各用例自行断言。
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
   }
 
   // PRD-20260914-checkout-quote-confirmation-loop AC-003：报价变化**不再跳转** or_ 页，
@@ -442,6 +443,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
   });
 
   // PRD-20260914-checkout-quote-confirmation-loop AC-008：其他错误码分支零回归
+  // PRD-20260915-checkout-checkout-收尾收敛-b3-库存错误四态与履约结果页-recovery-语义-shipment-groups AC-001 AC-007
   it("keeps the user on checkout for insufficient stock with a return-to-cart CTA (AC-002)", async () => {
     await payWithErrorBody({
       error: { code: "INSUFFICIENT_STOCK", message: "Product A is sold out" },
@@ -449,15 +451,19 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     });
 
     expect(screen.getByTestId("checkout-error-notice")).toBeInTheDocument();
-    expect(screen.getByText("stockUnavailableTitle")).toBeTruthy();
+    // PRD-...-b3-... AC-001：库存不足的专属标题（不共用通用文案）
+    expect(screen.getByText("stockInsufficientTitle")).toBeTruthy();
     expect(screen.getByText("Product A is sold out")).toBeTruthy();
     expect(screen.getByRole("link", { name: "returnToCart" })).toHaveAttribute(
       "href",
       "/us/en/cart",
     );
     expect(replaceMock).not.toHaveBeenCalled();
+    // PRD-...-b3-... AC-007：库存不足**不**自动重试（不得继续创建新 PaymentSession）
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  // PRD-20260915-checkout-checkout-收尾收敛-b3-库存错误四态与履约结果页-recovery-语义-shipment-groups AC-001 AC-007
   it("keeps the user on checkout when inventory changed (AC-003)", async () => {
     await payWithErrorBody({
       error: { code: "INVENTORY_CHANGED", message: "Availability changed" },
@@ -465,16 +471,35 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     });
 
     expect(screen.getByTestId("checkout-error-notice")).toBeInTheDocument();
+    // 专属标题 + 「检查购物车」动作（与「返回购物车」区分）
+    expect(screen.getByText("stockChangedTitle")).toBeTruthy();
+    expect(screen.getByText("stockChangedHint")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "reviewCart" })).toHaveAttribute(
+      "href",
+      "/us/en/cart",
+    );
     expect(replaceMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps the user on checkout when the reservation expired (AC-003)", async () => {
+  // PRD-20260915-checkout-checkout-收尾收敛-b3-库存错误四态与履约结果页-recovery-语义-shipment-groups AC-001 AC-007
+  it("auto-retries an expired reservation once, then offers a manual retry (AC-003)", async () => {
     await payWithErrorBody({
       error: { code: "RESERVATION_EXPIRED", message: "Please re-confirm" },
       order_id: "or_123",
     });
 
-    expect(screen.getByTestId("checkout-error-notice")).toBeInTheDocument();
+    // 自动重试一次（仅该码）：第二次仍是同一 code → 回落为手动入口
+    expect(await screen.findByText("reservationExpiredTitle")).toBeTruthy();
+    expect(screen.getByText("reservationExpiredHint")).toBeTruthy();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+    // 手动动作仍可用，且绝不会无限循环（第三次由用户触发）
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: "retryInventoryCheck" }),
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
     expect(replaceMock).not.toHaveBeenCalled();
   });
 

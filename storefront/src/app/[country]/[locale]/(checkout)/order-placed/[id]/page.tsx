@@ -1,7 +1,7 @@
 "use client";
 
 import type { Cart } from "@pallastrade/sdk";
-import { CircleCheckBig, Package } from "lucide-react";
+import { CircleCheckBig } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -9,6 +9,7 @@ import { use, useEffect, useRef, useState } from "react";
 import { AddressBlock } from "@/components/order/AddressBlock";
 import { OrderTotals } from "@/components/order/OrderTotals";
 import { PaymentInfo } from "@/components/order/PaymentInfo";
+import { ShippingGroups } from "@/components/order/ShippingGroups";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
@@ -178,29 +179,17 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
       {/* Shipping & Payment */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200">
-          {/* Shipping Method */}
+          {/* Shipping Method — 多履约按 Shipment 分组
+              （PRD-20260915-checkout B3 FR-005；单履约退化为单列表） */}
           {order.fulfillments && order.fulfillments.length > 0 && (
             <div className="px-6 py-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">
                 {t("shippingMethod")}
               </h3>
-              {order.fulfillments.map((fulfillment) => (
-                <div
-                  key={fulfillment.id}
-                  className="flex items-start gap-3 mb-2 last:mb-0"
-                >
-                  <Package className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {fulfillment.delivery_method?.name ||
-                        t("standardShipping")}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {fulfillment.display_cost}
-                    </p>
-                  </div>
-                </div>
-              ))}
+              <ShippingGroups
+                items={order.items ?? []}
+                fulfillments={order.fulfillments}
+              />
             </div>
           )}
 
