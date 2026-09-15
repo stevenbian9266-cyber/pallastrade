@@ -190,3 +190,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260915-admin-catalog-health-v1 | admin | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-catalog-batch-c1-discovery | catalog | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-catalog-batch-c2-sku-back-in-stock | catalog | 2026-09-15 | （实施时回填） |
+| done | PRD-20260915-catalog-batch-d1-product-history | catalog | 2026-09-15 | （实施时回填） |

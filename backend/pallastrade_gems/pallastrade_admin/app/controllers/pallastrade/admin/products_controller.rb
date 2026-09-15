@@ -57,6 +57,9 @@ module PallasTrade
 
       def update
         invoke_callbacks(:update, :before)
+        # Product history（PRD-20260915-catalog-batch-d1-product-history）：
+        # 先取快照，成功后再记录差异（只存真正变化的字段）。
+        history_before = PallasTrade::ProductHistory::Recorder.snapshot(@product)
 
         success = ActiveRecord::Base.transaction do
           @prepare_params_service&.variants_to_discontinue&.each(&:discontinue!)
@@ -71,6 +74,7 @@ module PallasTrade
         if success
           set_current_store
           invoke_callbacks(:update, :after)
+          record_product_history('product.updated', before: history_before, metadata: nested_history_metadata)
           flash[:success] = flash_message_for(@product, :successfully_updated)
           redirect_to location_after_save
         else
@@ -98,6 +102,7 @@ module PallasTrade
         bulk_collection.update_all(status: params[:status], updated_at: Time.current)
         bulk_collection.each(&:enqueue_search_index) # reindex products
         invoke_callbacks(:bulk_status_update, :after)
+        record_bulk_history('product.bulk_status_updated', metadata: { 'status' => params[:status] })
 
         handle_bulk_operation_response
       end
@@ -129,7 +134,11 @@ module PallasTrade
       end
 
       def bulk_update_price
-        run_bulk_operation(bulk_price_update, 'admin.bulk_ops.products.result.price_updated')
+        run_bulk_operation(
+          bulk_price_update,
+          'admin.bulk_ops.products.result.price_updated',
+          history_action: 'product.bulk_price_updated'
+        )
       end
 
       def bulk_inventory_preview
@@ -141,7 +150,11 @@ module PallasTrade
       end
 
       def bulk_adjust_inventory
-        run_bulk_operation(bulk_inventory_adjust, 'admin.bulk_ops.products.result.inventory_updated')
+        run_bulk_operation(
+          bulk_inventory_adjust,
+          'admin.bulk_ops.products.result.inventory_updated',
+          history_action: 'product.bulk_inventory_adjusted'
+        )
       end
 
       def bulk_channels_preview
@@ -153,7 +166,11 @@ module PallasTrade
       end
 
       def bulk_update_channels
-        run_bulk_operation(bulk_channel_assignment, 'admin.bulk_ops.products.result.channels_updated')
+        run_bulk_operation(
+          bulk_channel_assignment,
+          'admin.bulk_ops.products.result.channels_updated',
+          history_action: 'product.bulk_channels_updated'
+        )
       end
 
       def select_options
@@ -409,12 +426,59 @@ module PallasTrade
         )
       end
 
-      def run_bulk_operation(service, message_key)
+      def run_bulk_operation(service, message_key, history_action: nil)
         result = service.call
+
+        if history_action
+          record_bulk_history(
+            history_action,
+            metadata: {
+              'updated_count' => result.updated_count,
+              'skipped_count' => result.skipped_count
+            }
+          )
+        end
+
         flash[:success] = PallasTrade.t(
           message_key, count: result.updated_count, skipped: result.skipped_count
         )
         handle_bulk_operation_response
+      end
+
+      # --- Product history（PRD-20260915-catalog-batch-d1-product-history）---
+
+      def record_product_history(action, before: nil, metadata: {})
+        PallasTrade::ProductHistory::Recorder.record_product(
+          product: @product,
+          action: action,
+          actor: try_pallastrade_current_user,
+          before: before,
+          metadata: metadata
+        )
+      end
+
+      def record_bulk_history(action, metadata: {})
+        PallasTrade::ProductHistory::Recorder.record_bulk(
+          products: bulk_collection,
+          action: action,
+          actor: try_pallastrade_current_user,
+          metadata: metadata
+        )
+      end
+
+      # 表单里改动的嵌套区块（变体/媒体/分类）——时间线只标注「改过哪些区块」。
+      def nested_history_metadata
+        product_params = params[:product] || {}
+        sections = []
+        if product_params[:variants_attributes].present? || product_params[:master_attributes].present?
+          sections << 'variants'
+        end
+        sections << 'media' if product_params[:media].present?
+        if product_params[:taxon_ids].present? || product_params[:category_ids].present?
+          sections << 'categories'
+        end
+
+        sections.empty? ? {} : { 'sections' => sections }
       end
 
       def permitted_resource_params

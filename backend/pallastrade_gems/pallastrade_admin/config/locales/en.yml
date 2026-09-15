@@ -819,6 +819,30 @@ en:
         schedule: Schedule
         scheduled: Price list has been scheduled
         unschedule: Unschedule
+      product_history:
+        title: History
+        empty: No history recorded yet.
+        system_actor: System
+        sku: SKU
+        fields:
+          available_on: Available since
+          currency: Currency
+          description: Description
+          discontinue_on: Discontinue on
+          meta_description: Meta description
+          meta_title: Meta title
+          name: Name
+          price: Price
+          slug: Slug
+          status: Status
+        kinds:
+          bulk_channels_updated: Bulk channel update
+          bulk_inventory_adjusted: Bulk inventory update
+          bulk_price_updated: Bulk price update
+          bulk_status_updated: Bulk status update
+          created: Created
+          price: Price change
+          updated: Updated
       product_translations:
         coverage: Translation coverage
         locale: Locale

@@ -219,6 +219,12 @@ export default {
         description: 'Back-in-stock subscription specs (SKU-level subscriptions, split notification channels, admin SKU column)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/back_in_stock_subscription_spec.rb spec/jobs/pallastrade/back_in_stock_subscriber_spec.rb spec/requests/api/v3/store/back_in_stock_subscriptions_spec.rb spec/requests/pallastrade/admin/back_in_stock_subscriptions_spec.rb spec/mailers/pallastrade/back_in_stock_mailer_spec.rb'],
       },
+      // 商品级 Product History 时间线（PRD-20260915-catalog-batch-d1-product-history）：
+      // 审计表即时间线（零迁移）+ 只记变化字段 + 批量每商品一条含计数 + 与 PriceHistory 合并倒序 + 后台侧栏渲染
+      'product-history-rspec': {
+        description: 'Product history specs (diff-only recorder writes, batch attribution, merged audit+price timeline, admin sidebar)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/product_history/recorder_spec.rb spec/services/pallastrade/product_history/timeline_spec.rb spec/requests/pallastrade/admin/product_history_spec.rb'],
+      },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {
         description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',

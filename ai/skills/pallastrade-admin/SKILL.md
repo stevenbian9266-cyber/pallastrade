@@ -501,6 +501,25 @@ Products → **Catalog Health**（`/admin/catalog_health`）是商品运营的�
 
 回归验证：`harness verify admin-catalog-health-rspec`（含导航一致性回归）。
 
+### Product History —— 商品级时间线（2026-09-15，PRD-20260915-catalog-batch-d1-product-history）
+
+商品编辑页右栏的「历史时间线」定式是 **审计表即时间线**（零迁移）：写侧统一走 `PallasTrade::ProductHistory::Recorder`，读侧 `PallasTrade::ProductHistory::Timeline` 把审计条目与改价历史合并倒序。
+
+| 关注点 | 做法 |
+|---|---|
+| 存储 | 复用 `pallastrade_audit_logs`（`resource_type='PallasTrade::Product'`），**不新增表/迁移**；`before`/`after` 只存**真正变化的受跟踪字段**（`name/slug/status/description/meta_title/meta_description/available_on/discontinue_on`） |
+| 写侧（单商品） | `Recorder.snapshot(product)` 在 `update` 前取快照 → 成功后 `record_product(product:, action:, actor:, before:, metadata:)`；**无变化且无 `metadata` 直接跳过**（避免空保存刷屏） |
+| 写侧（批量） | `record_bulk`：**每个受影响商品一条**，`metadata['source']='bulk'` 携带 `updated_count`/`skipped_count`——时间线既能回答「谁改的」也能回答「这批影响了几条」 |
+| actor 归一 | `{type, id, label}`（label 取 email/name/full_name，回退 `#id`）；`nil` → `'system'`，视图直接用 label |
+| 嵌套区块 | 改变体/媒体/分类不落在受跟踪列 → 用 `metadata['sections']`（`variants`/`media`/`categories`）标注，面板显示「改过哪些区块」 |
+| 读侧 | `Timeline.call(product:, limit: 20)` 合并 `AuditLog.for_resource` + `PriceHistory.where(variant_id: ...)`，按 `occurred_at` 倒序截断；价格条目的 `before` 由**同 `price_id` 的下一条更旧记录**推导（`metadata` 带 `variant_sku`/`variant_id`） |
+| 注入点 | 注册到 `product_form_sidebar_partials`：`PallasTrade.admin.partials.product_form_sidebar << 'pallastrade/admin/products/history'`（初始器 `pallastrade_admin_partials.rb`），**零 gem 表单覆盖** |
+| i18n | `admin.product_history.*`：`title`/`empty`/`system_actor`/`sku` + `kinds`（created/updated/price/bulk_*）+ `fields`（每个受跟踪字段 + `price`/`currency`） |
+
+接线位置：`ProductsController#update`（快照 + 记录）、`bulk_status_update`、`run_bulk_operation(..., history_action:)` 包办三个批量入口。
+
+回归验证：`harness verify product-history-rspec`。
+
 ## Overriding views
 
 Drop the same-pathed file in the host app and Rails uses it. The gem ships `pallastrade/admin/app/views/pallastrade/admin/products/index.html.erb`; you override it at `backend/app/views/pallastrade/admin/products/index.html.erb`.
