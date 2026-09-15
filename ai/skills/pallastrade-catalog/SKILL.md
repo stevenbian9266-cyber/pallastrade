@@ -258,6 +258,14 @@ product.get_metafield('catalog.season')&.value   # => "fall-2026" (get_metafield
 改这类能力时的铁律：**事件载荷必须自带解析所需的 id**（事件总线不持有上下文）；发送后立即 `mark_notified!`（幂等）；
 邮件失败记日志且保持 `active`（可重试），绝不静默标已读。
 
+## 重复商品（Duplicate Detection，2026-09-15 Batch D-2）
+
+商品层**没有任何防重约束**，所以重复商品会真实存在：`variant.sku` 的唯一性校验可被 `disable_sku_validation` 关闭、允许为空且仅限未删除行；
+`pallastrade_variants.barcode` **有列有索引，但完全无校验**；`product.name` 无约束。唯一“自动去重”的是 slug（`Product::Slugs#ensure_slug_is_unique` 冲突时补 uuid）——因此 **slug 不能当重复信号**。
+
+后台 `Products → Duplicate Products`（`PallasTrade::Products::DuplicateCandidates`）按 `duplicate_barcode` / `duplicate_sku` / `duplicate_name` 三类信号给候选分组（只读，合并仍属 D-3）。
+口径：`LOWER(TRIM(...))` 分组 + `HAVING COUNT(DISTINCT products.id) > 1`，同店 + 未删除 + 非 archived。
+
 ## Where to read further
 
 - **Core concepts:** `node_modules/@pallastrade/docs/dist/developer/core-concepts/products.md`
