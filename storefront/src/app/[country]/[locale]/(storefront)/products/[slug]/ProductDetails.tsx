@@ -197,12 +197,18 @@ export function ProductDetails({
             )}
           </div>
 
-          {/* Availability status — in stock / pre-order / backorder / sold out */}
-          <div className="mt-4">
+          {/* Availability status + wishlist toggle. The toggle is a light
+              secondary action (`outline` + `sm`) and lives with the stock line
+              so it never squeezes Add to Cart / Buy Now out of their row. */}
+          <div
+            className="mt-4 flex items-center justify-between gap-4"
+            data-testid="availability-row"
+          >
             <AvailabilityStatus
               availability={availability}
               preorderShipsAt={preorderShipsAt}
             />
+            <WishlistButton product={product} />
           </div>
 
           {/* Back-in-stock notification — only when the item cannot be bought.
@@ -276,9 +282,6 @@ export function ProductDetails({
                 />
               </div>
             </div>
-
-            {/* Wishlist（PRD-20260915-catalog-batch-c1-discovery FR-003）：本地优先 V1 */}
-            <WishlistButton product={product} className="mt-3 w-full" />
           </div>
 
           {/* Description */}

@@ -425,7 +425,7 @@ PRD-20260915-catalog-batch-c1-discovery：PDP 从「交易终点」变成「发�
 |---|---|---|---|
 | Related | `components/products/RelatedProducts.tsx`（服务端） | Store API 列表（`in_categories` + `in_stock`） | 同分类（含子分类）→ 在售 → 排除当前商品 → ≤8；空则不渲染整块（含标题）；数据在 `lib/data/products.ts#getRelatedProducts`，复用 `cachedListProducts`（10 分钟缓存 + `products` tag） |
 | Recently viewed | `RecentlyViewed.tsx` + `RecentlyViewedTracker.tsx`（客户端） | `localStorage['pt.recently_viewed']` | 倒序、按 id 去重（重访移到最前）、上限 12；展示时排除当前商品 |
-| Wishlist | `WishlistButton.tsx` / `WishlistHeaderButton.tsx` / `/wishlist` 页 | `localStorage['pt.wishlist']` | 切换加入/移除、上限 100、头部数量徽章、空态引导 |
+| Wishlist | `WishlistButton.tsx` / `WishlistHeaderButton.tsx` / `/wishlist` 页 | `localStorage['pt.wishlist']` | 切换加入/移除、上限 100、头部数量徽章、空态引导。PDP 上的开关是**轻量次级动作**（`variant="outline"` + `size="sm"`），挂在**库存状态行**（`data-testid="availability-row"`）右侧，**不得**放进 数量行 / Add to Cart / Buy Now 的 flex 行（否则桌面端成为第三个 flex 子项，把主 CTA 挤扁 —— 2026-09-15 修复） |
 
 新增同类能力时照做的约定：
 
@@ -435,6 +435,7 @@ PRD-20260915-catalog-batch-c1-discovery：PDP 从「交易终点」变成「发�
 4. **i18n 5 语言 + 守护**：新键必须进 `messages/{de,en,es,fr,pl}.json`，并在 `lib/__tests__/checkout-i18n-keys.test.ts` 的 `REQUIRED` 登记（缺键 = 用户可见缺陷）。
 5. **埋点复用**：新 rail 直接用 `ProductCard` 的 `select_item`（传 `listId` / `listName` 区分区块），不新增埋点代码。
 6. 服务端 rail 的 `locale` 用全局 `Locale` 类型（`src/types/next-intl.d.ts`），页面传参需要 `locale as Locale`；`currency` 这种可空字段要 `?? undefined`。
+7. **PDP 按钮层级**（2026-09-15 修复）：主 CTA 行只放 数量选择 + Add to Cart + Buy Now；收藏/分享这类弱动作一律 `outline` + `sm` 且贴到信息行（库存状态行），**禁用 `size="lg"` + `w-full`**：那是主 CTA 的形制，放进行级 flex 会直接挤压主按钮。
 
 回归验证：`harness verify storefront-test`（vitest 全量，自动含本批新增用例）。
 

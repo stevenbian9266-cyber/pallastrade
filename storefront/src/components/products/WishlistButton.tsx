@@ -30,6 +30,10 @@ interface WishlistButtonProps {
  * FR-003). The saved state is read after mount so the server render and the
  * first client render agree (hydration-safe), and the same-page event keeps the
  * header badge in sync.
+ *
+ * A lightweight secondary action (`outline` + `sm`) on purpose: it sits next to
+ * the availability line and must never compete with Add to Cart / Buy Now for
+ * the same row.
  */
 export function WishlistButton({ product, className }: WishlistButtonProps) {
   const t = useTranslations("wishlist");
@@ -53,7 +57,7 @@ export function WishlistButton({ product, className }: WishlistButtonProps) {
     <Button
       type="button"
       variant="outline"
-      size="lg"
+      size="sm"
       className={className}
       onClick={handleToggle}
       aria-pressed={saved}

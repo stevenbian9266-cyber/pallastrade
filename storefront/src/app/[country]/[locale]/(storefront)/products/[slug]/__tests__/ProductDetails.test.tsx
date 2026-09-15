@@ -232,4 +232,27 @@ describe("ProductDetails PDP state (PRD-20260915-catalog-pdp-state-correctness)"
     expect(screen.getAllByText("outOfStock").length).toBeGreaterThan(0);
     expect(screen.getByText("backInStockTitle")).toBeTruthy();
   });
+
+  // 修复（2026-09-15）：Save（收藏）按钮不再与 Add to Cart / Buy Now 争抢同一行 ——
+  // 它降级为轻量次级动作并移入库存状态行。
+  it("keeps the wishlist toggle small and inside the availability row", () => {
+    const inStock = variant({
+      id: "variant_1",
+      sku: "SKU-1",
+      purchasable: true,
+      in_stock: true,
+    });
+
+    renderDetails({ variants: [inStock], default_variant: inStock });
+
+    const row = screen.getByTestId("availability-row");
+    const toggle = screen.getByRole("button", { name: "add" });
+
+    expect(row.contains(toggle)).toBe(true);
+    expect(toggle.getAttribute("data-size")).toBe("sm");
+    expect(row.textContent).toContain("inStock");
+
+    const addToCart = screen.getByRole("button", { name: "addToCart" });
+    expect(addToCart.closest('[data-testid="availability-row"]')).toBeNull();
+  });
 });
