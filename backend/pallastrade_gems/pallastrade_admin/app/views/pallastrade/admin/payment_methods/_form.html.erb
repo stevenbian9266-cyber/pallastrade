@@ -10,6 +10,20 @@
     <div class="card-body">
       <%= preference_fields(@object, f) unless preference_fields(@object, f).empty? %>
 
+      <%# PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片3）—— 凭证脱敏回显（FR-006）：
+          只显示掩码（•••• + 后 4 位），页面不落明文；留空保持不变。 %>
+      <% masked_preferences = masked_password_preferences(@object) %>
+      <% if masked_preferences.any? %>
+        <div class="mt-2">
+          <% masked_preferences.each do |key, masked| %>
+            <p class="form-text mb-1">
+              <%= PallasTrade.t('admin.payment_methods.credential_masked',
+                                name: PallasTrade.t(key, default: key.to_s.humanize), value: masked) %>
+            </p>
+          <% end %>
+        </div>
+      <% end %>
+
       <% if @object.respond_to?(:custom_form_fields_partial_name) %>
         <%= render "pallastrade/admin/payment_methods/custom_form_fields/#{@object.custom_form_fields_partial_name}", f: f %>
       <% end %>

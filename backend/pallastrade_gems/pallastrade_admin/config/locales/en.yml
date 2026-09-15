@@ -705,8 +705,26 @@ en:
         youtube_video_url: Youtube video URL
       payment_methods:
         available_payment_methods: Available Payment Methods
+        credential_masked: "Saved %{name}: %{value} — leave blank to keep it"
         find_more_payment_methods_html: Find more payment methods in %{integrations_link}
+        frontend_kind_express: Wallet button (express)
+        frontend_kind_inline: Inline form
+        frontend_kind_manual: Instructions only
+        frontend_kind_redirect: Redirect
+        last_test_connection: Last connection check
         name_help: This name will be used to identify the payment method on the storefront
+        payment_option_display_name: Storefront name
+        payment_option_frontend_kind: Frontend form
+        payment_option_method: Payment method
+        payment_option_position: Position
+        payment_options: Storefront payment options
+        payment_options_help: Each enabled option becomes an entry offered at checkout. Disable an option to hide it from the storefront immediately; the checkout list follows the position order.
+        payment_options_not_optionized: This provider is not optionized yet — checkout keeps offering a single default entry. Enable at least one option and save to switch to this list.
+        payment_options_optionized: "Checkout now uses this option list (%{total} enabled)."
+        test_connection: Test connection
+        test_connection_error: Could not run the connection test
+        test_connection_failed: "Connection check failed (%{code}): %{message}"
+        test_connection_ok: "Connection check passed (%{code}). %{message}"
       personal_details: Personal Details
       previous_page: Previous page
       price_lists:

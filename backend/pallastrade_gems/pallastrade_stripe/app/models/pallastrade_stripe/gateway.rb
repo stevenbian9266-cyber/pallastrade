@@ -60,6 +60,17 @@ module PallasTradeStripe
       end
     end
 
+    # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915-admin 切片3）—— 能力目录（业务方案 §63.3）：
+    # Stripe 可配置的前台入口 = 卡支付 + 两个钱包（express）。商家在后台逐项启停 / 命名 / 排序；
+    # 未选项化（metadata["optionized"] 缺失）时前台仍按单一默认入口渲染 —— 零感迁移。
+    def payment_option_catalog
+      [
+        { 'kind' => 'card', 'frontend_kind' => 'inline', 'display_name' => 'Card' },
+        { 'kind' => 'apple_pay', 'frontend_kind' => 'express', 'display_name' => 'Apple Pay' },
+        { 'kind' => 'google_pay', 'frontend_kind' => 'express', 'display_name' => 'Google Pay' }
+      ]
+    end
+
     def parse_webhook_event(raw_body, headers)
       event = verify_webhook_signature(raw_body, headers)
 

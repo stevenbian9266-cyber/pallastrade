@@ -8,6 +8,8 @@
     <div class="col-span-12 lg:col-span-6 lg:col-start-4">
       <%= render partial: 'pallastrade/admin/shared/error_messages', locals: { target: @payment_method } %>
       <%= render 'form', f: f %>
+      <%# PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片3）—— 「支付方式」页签（随主表单提交） %>
+      <%= render 'options' %>
       <%= render 'pallastrade/admin/shared/edit_resource_links', f: f %>
     </div>
   </div>

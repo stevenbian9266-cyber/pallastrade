@@ -1,0 +1,84 @@
+<%# PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915-admin 切片3）—— 「支付方式」页签（能力目录表，FR-001/002/004）。
+    表单结构 payment_method[payment_options][<kind>][active|display_name|position]，
+    由 PallasTrade::Admin::PaymentMethodsController 归一写入 metadata['options'] / ['optionized']。
+    勾选任一入口并保存后才置 optionized（未选项化 → 前台仍按单一默认入口，零回归）。 %>
+<% option_rows = payment_option_rows(@payment_method) %>
+<% last_check = @payment_method.metadata&.[]('last_test_connection') %>
+
+<div class="card mb-6">
+  <div class="card-header flex items-center justify-between">
+    <h5 class="card-title mb-0"><%= PallasTrade.t('admin.payment_methods.payment_options') %></h5>
+    <%= link_to PallasTrade.t('admin.payment_methods.test_connection'),
+                PallasTrade.test_connection_admin_payment_method_path(@payment_method),
+                class: 'btn btn-secondary btn-sm',
+                data: { turbo_method: :post, turbo_frame: '_top' } %>
+  </div>
+  <div class="card-body">
+    <p class="text-gray-600 mb-4"><%= PallasTrade.t('admin.payment_methods.payment_options_help') %></p>
+
+    <% if @payment_method.optionized? %>
+      <div class="alert alert-info mb-4">
+        <%= PallasTrade.t('admin.payment_methods.payment_options_optionized',
+                          total: @payment_method.available_payment_options.size) %>
+      </div>
+    <% else %>
+      <div class="alert alert-info mb-4"><%= PallasTrade.t('admin.payment_methods.payment_options_not_optionized') %></div>
+    <% end %>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col"><%= PallasTrade.t('admin.payment_methods.payment_option_method') %></th>
+            <th scope="col"><%= PallasTrade.t(:active) %></th>
+            <th scope="col"><%= PallasTrade.t('admin.payment_methods.payment_option_display_name') %></th>
+            <th scope="col"><%= PallasTrade.t('admin.payment_methods.payment_option_position') %></th>
+            <th scope="col"><%= PallasTrade.t('admin.payment_methods.payment_option_frontend_kind') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% option_rows.each do |row| %>
+            <% field_name = "payment_method[payment_options][#{row[:kind]}]" %>
+            <% switch_id = "payment_option_active_#{@payment_method.id}_#{row[:kind]}" %>
+            <tr>
+              <td class="whitespace-normal">
+                <span class="badge badge-light border"><%= row[:kind] %></span>
+              </td>
+              <td>
+                <div class="custom-control custom-switch">
+                  <%= hidden_field_tag "#{field_name}[active]", '0', id: nil %>
+                  <%= check_box_tag "#{field_name}[active]", '1', row[:active], class: 'custom-control-input', id: switch_id %>
+                  <%= label_tag "#{field_name}[active]", '&nbsp;'.html_safe, class: 'custom-control-label', for: switch_id %>
+                </div>
+              </td>
+              <td>
+                <%= text_field_tag "#{field_name}[display_name]", row[:display_name], class: 'form-input' %>
+              </td>
+              <td class="w-20">
+                <%= number_field_tag "#{field_name}[position]", row[:position], min: 0, class: 'form-input' %>
+              </td>
+              <td class="whitespace-normal">
+                <span class="text-gray-600">
+                  <%= PallasTrade.t("admin.payment_methods.frontend_kind_#{row[:frontend_kind]}", default: row[:frontend_kind]) %>
+                </span>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if last_check.present? %>
+      <p class="text-gray-600 mt-2">
+        <%= PallasTrade.t('admin.payment_methods.last_test_connection') %>:
+        <span class="badge <%= last_check['ok'] ? 'badge-success' : 'badge-danger' %>">
+          <%= last_check['ok'] ? PallasTrade.t(:say_yes) : PallasTrade.t(:say_no) %>
+        </span>
+        <%= "#{last_check['code']} · #{last_check['checked_at']}" %>
+        <% if last_check['message'].present? %>
+          <br /><%= last_check['message'] %>
+        <% end %>
+      </p>
+    <% end %>
+  </div>
+</div>

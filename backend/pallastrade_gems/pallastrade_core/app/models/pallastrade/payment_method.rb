@@ -436,6 +436,31 @@ module PallasTrade
       session_required? ? 'inline' : 'manual'
     end
 
+    # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915-admin 切片3）—— 能力目录（Capability Catalog）：
+    # 该 provider **声明支持**的前台入口清单（业务方案 §63.3 / §65.2），provider gem 可覆盖。
+    # 条目：{ 'kind' =>, 'frontend_kind' =>, 'display_name' => }；不含状态（启停/排序在 options 里）。
+    # 默认只有隐式默认入口 —— 未声明能力的 provider 行为不变（零回归）。
+    def payment_option_catalog
+      [
+        {
+          'kind' => default_option_kind,
+          'frontend_kind' => default_option_frontend_kind,
+          'display_name' => name
+        }
+      ]
+    end
+
+    # PALLAS-CUSTOM: PAY-OPT-1（切片3）—— 凭证体检钩子（Test connection 的远端探测）。
+    # provider gem 可选覆盖，执行一次**只读**探测（不得产生资金 / 配置副作用；不得落明文凭证）。
+    # 契约：
+    #   nil                     → 该 provider 无远端探测能力（仅做本地凭证体检）
+    #   true / false            → 探测通过 / 未通过（无附加说明）
+    #   { ok:, code:, message: } → 结构化结果（code 为 provider 自定义短码，如 invalid_credentials）
+    # 抛错 → 由 PallasTrade::PaymentMethods::TestConnection 归类（网络类 → network_unreachable）。
+    def test_connection
+      nil
+    end
+
     protected
 
     def public_preference_keys

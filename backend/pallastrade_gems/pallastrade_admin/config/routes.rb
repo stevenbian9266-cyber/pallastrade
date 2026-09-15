@@ -235,7 +235,12 @@ PallasTrade::Core::Engine.add_routes do
       resources :links, controller: 'page_links', only: [:create]
     end
     resources :policies, except: :show
-    resources :payment_methods, except: :show
+    # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片3）—— provider 凭证体检（Test connection）
+    resources :payment_methods, except: :show do
+      member do
+        post :test_connection
+      end
+    end
     resources :shipping_methods, except: :show
     resources :shipping_categories, except: :show
     resources :channels, except: :show

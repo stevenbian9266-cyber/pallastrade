@@ -187,6 +187,13 @@ export default {
         description: 'Admin design-token contract specs (brand scales, semantic + density tokens, no direct palette usage, WCAG AA contrast)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/design/admin_theme_tokens_spec.rb'],
       },
+      // 管理后台支付方式选项化（D1 切片3，PRD-20260915-admin）：页签渲染/保存归一 + Test connection +
+      // 凭证脱敏；含切片1/2 回归（optionized 门控 + Start 入口级同源校验）
+      // PRD-20260915-admin-管理后台支付配置选项化-支付商-支付方式-前台入口 AC-008
+      'admin-payment-methods-rspec': {
+        description: 'Admin payment-method option-config specs (options tab render/save + test connection + credential masking + optionized/start regression)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/payment_methods_spec.rb spec/services/pallastrade/payment_methods/test_connection_spec.rb spec/models/pallastrade/payment_method_options_spec.rb spec/services/pallastrade/payment_sessions/start_spec.rb'],
+      },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {
         description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',

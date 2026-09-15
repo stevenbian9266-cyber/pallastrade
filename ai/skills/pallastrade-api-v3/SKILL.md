@@ -381,6 +381,22 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
 - Serializer output: `id, title, slug, excerpt, author, published_at, cover_image_url, body, body_html,
   seo_title, seo_description` (Admin also `status`, timestamps).
 
+### Payment methods — option projection (2026-09-15, D1 PRD-20260915-admin)
+
+支付配置选项化（支付商 × 支付方式 → 前台入口）是**纯 additive** 契约增量，**无端点增删**：
+
+- Store `PaymentMethodSerializer`（cart/order 的 `payment_methods[]`）新增：
+  - `kind` — 前台入口身份；未选项化 provider 为默认入口（= `api_type`，如 `stripe`）
+  - `frontend_kind` — 前端形态（`inline` / `manual`；选项化后取 provider 能力目录，如钱包 `express`）
+- Store checkout serializer 的 `payment_method_payload` 同步这两个字段（两处契约必须一致）。
+- Admin `PaymentMethodSerializer` 新增：
+  - `optionized` — 是否已选项化（决定「0 入口」语义）
+  - `options` — 生效入口目录：`kind` / `name` / `frontend_kind` / `active` / `position`
+- `PallasTrade::PaymentSessions::Start`：provider 级新增 `frontend_visible?` 门控（选项化且 0 可用入口 →
+  拒绝建会话）；新增**可选** `option_kind`（入口级同源校验，不传 = 行为完全不变）。
+- 后台写入口不走 API：`/admin/payment_methods/:id` 表单（选项化页签 + Test connection，见 `pallastrade-admin`）；
+  OpenAPI schemas 由 `scripts/ci/contracts.sh`（typelizer + `rake api:docs:schemas`）生成，勿手改。
+
 ### Admin promotions — writable/readable fields (2026-09-11 batch6 cleanup)
 
 `path` (and the never-exposed `advertise`) are gone from the Admin promotion contract: the v3 admin

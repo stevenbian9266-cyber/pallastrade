@@ -49,6 +49,7 @@ RSpec.describe PallasTrade::PaymentMethod do
   end
 
   describe 'optionized 门控（AC-006）' do
+    # PRD-20260915-admin-管理后台支付配置选项化-支付商-支付方式-前台入口 AC-006
     it 'falls back to a single default option when not optionized' do
       pm = method_with({})
 
@@ -91,6 +92,7 @@ RSpec.describe PallasTrade::PaymentMethod do
   describe 'order projections（AC-002/AC-007）' do
     let(:order) { create(:order_with_line_items, store: store) }
 
+    # PRD-20260915-admin-管理后台支付配置选项化-支付商-支付方式-前台入口 AC-007
     it 'hides optionized providers with zero entries, keeps legacy providers visible' do
       legacy = create(:check_payment_method, store: store, active: true, display_on: 'front_end')
       hidden = create(:check_payment_method, store: store, active: true, display_on: 'front_end',

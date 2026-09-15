@@ -1,0 +1,25 @@
+# Host-app zh-CN translations for the admin payment-method option configuration
+# (PRD-20260915-admin 支付配置选项化，切片3 —— 「支付方式」页签 + Test connection + 凭证脱敏).
+# en defaults live in pallastrade_admin/config/locales/en.yml（同一 pallastrade.admin.payment_methods 命名空间）。
+zh-CN:
+  pallastrade:
+    admin:
+      payment_methods:
+        credential_masked: "已保存 %{name}：%{value} —— 留空保持不变"
+        frontend_kind_express: 钱包按钮（极速）
+        frontend_kind_inline: 内嵌表单
+        frontend_kind_manual: 仅说明文案
+        frontend_kind_redirect: 跳转支付
+        last_test_connection: 最近一次连接检查
+        payment_option_display_name: 前台显示名
+        payment_option_frontend_kind: 前端形态
+        payment_option_method: 支付方式
+        payment_option_position: 排序
+        payment_options: 前台支付方式（入口）
+        payment_options_help: 每个启用的方式都是结账页的一个入口；停用后前台立即隐藏，展示顺序按「排序」渲染。
+        payment_options_not_optionized: 该支付商尚未选项化 —— 前台仍按单一默认入口展示。勾选至少一个方式并保存后，前台改按本列表展示。
+        payment_options_optionized: 前台已按本列表展示（%{total} 个启用入口）。
+        test_connection: 测试连接
+        test_connection_error: 无法执行连接检查
+        test_connection_failed: "连接检查失败（%{code}）：%{message}"
+        test_connection_ok: "连接检查通过（%{code}）。%{message}"

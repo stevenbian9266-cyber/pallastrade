@@ -3143,6 +3143,31 @@
         "walletAndLegacyCompatibility": 15,
         "quoteDriftInPage": 10
       }
+    },
+    {
+      "id": "GS-127",
+      "name": "Payment providers are configured per method (option), not per provider",
+      "description": "PRD-20260915-admin 支付配置选项化 (D1 slices 1-3): one payment provider record can expose several storefront entries (methods). Entries live in metadata (optionized + options[]) until the dedicated table lands; the admin edits them on the provider edit page (catalog table + Test connection + masked credentials), and the gateway-side contract (collect_frontend_payment_methods / PaymentSessions::Start) reads the same source so a disabled option can never be offered and then rejected at payment time.",
+      "mustDo": [
+        "Keep the entry API behind the payment_option* prefix (Gateway#options already exists on gateway providers) and read/write metadata['options'] with kind/active/position/frontend_kind/display_name only",
+        "Treat optionized as the migration gate: absent means one implicit default entry (legacy behaviour unchanged); true means exactly the enabled options, and zero enabled options means zero storefront entries",
+        "Normalize on write: only kinds from the provider capability catalog (payment_option_catalog) are accepted, any enabled option flips optionized to true, and existing kinds missing from the submitted form are preserved",
+        "Run Test connection through PallasTrade::PaymentMethods::TestConnection, persist {ok, code, message, checked_at} into metadata['last_test_connection'] and audit the action",
+        "Mask :password typed preferences everywhere (page and API return only the masked last-4 value; provider error messages are sanitized before they are stored or logged)"
+      ],
+      "mustNotDo": [
+        "Overwrite or shadow Gateway#options, or store option state anywhere except metadata['options']/['optionized']",
+        "Flip optionized from a save that enabled nothing (a name-only or display_on-only edit must not silently empty the storefront list)",
+        "Let an option kind outside the catalog reach metadata, or drop configured kinds that the admin form did not render",
+        "Trigger provider validations (network calls) just to persist a Test connection result, or let a credential value reach a log/message/report"
+      ],
+      "scoring": {
+        "optionizedGateSemantics": 30,
+        "adminWriteNormalization": 25,
+        "catalogBoundWrites": 15,
+        "testConnectionAudited": 15,
+        "credentialMasking": 15
+      }
     }
   ]
 }

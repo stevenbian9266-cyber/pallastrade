@@ -13166,6 +13166,10 @@ components:
           nullable: true
         type:
           type: string
+        kind:
+          type: string
+        frontend_kind:
+          type: string
         session_required:
           type: boolean
         source_required:
@@ -13175,6 +13179,8 @@ components:
       - name
       - description
       - type
+      - kind
+      - frontend_kind
       - session_required
       - source_required
       x-typelizer: true

@@ -250,6 +250,30 @@ Order → Address (bill_address, ship_address)
 - **Shipment** has its own state machine (`pending → ready → shipped` with `canceled`). Column is `state`.
 - **ShippingRate** is a per-Shipment offer (e.g. UPS Ground $5.99, USPS Priority $8.99). The customer picks one.
 
+## Payment options — 过渡期 metadata 形态（D1, 2026-09-15）
+
+「支付商 × 支付方式 → 前台入口」过渡期**不建表**：`pallastrade_payment_methods` 一行 = 一个支付商账户
+（Provider），商家启用的入口存 `private_metadata`（`metadata` 是其 API 别名，Stripe 式 write-only）：
+
+```json
+{
+  "optionized": true,
+  "options": [
+    { "kind": "card", "active": true, "position": 1, "frontend_kind": "inline", "display_name": "Credit Card" }
+  ],
+  "last_test_connection": { "ok": true, "code": "credentials_present", "message": "…", "checked_at": "2026-09-15T08:00:00Z" }
+}
+```
+
+- **门控（§63.4 零感迁移）**：`optionized` 缺失 = 未迁移 → `effective_payment_options` 回落 1 个默认入口
+  （行为与今天一致）；`optionized=true` → 只认配置的可用入口，**0 可用 = 0 前台入口**（`frontend_visible?`
+  从 `collect_frontend_payment_methods` 过滤掉整个 provider）。
+- **只读安全**：`PaymentMethod#payment_options` 归一化——非 Hash 条目 / 缺 `kind` 一律忽略；
+  `available_payment_options` 按 `position` 升序（相同保持配置顺序）。
+- **命名避让**：入口 API 一律 `payment_option*` 前缀（`Gateway#options` 已存在，网关型 provider 会覆盖）。
+- **正式形态**：D1 后半/D2 落 `pallastrade_payment_options`（provider_id/kind/…unique(provider_id, kind)），
+  迁移时每个 provider 生成一条默认 option（业务方案 §74）。
+
 ## Customer / User
 
 ```

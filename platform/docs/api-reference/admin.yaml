@@ -25071,6 +25071,10 @@ components:
           nullable: true
         type:
           type: string
+        kind:
+          type: string
+        frontend_kind:
+          type: string
         session_required:
           type: boolean
         source_required:
@@ -25094,11 +25098,17 @@ components:
           type: object
         preference_schema:
           type: object
+        optionized:
+          type: boolean
+        options:
+          type: object
       required:
       - id
       - name
       - description
       - type
+      - kind
+      - frontend_kind
       - session_required
       - source_required
       - metadata
@@ -25110,6 +25120,8 @@ components:
       - updated_at
       - preferences
       - preference_schema
+      - optionized
+      - options
       x-typelizer: true
     Payment:
       type: object

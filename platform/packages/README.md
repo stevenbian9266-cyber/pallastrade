@@ -83,6 +83,17 @@ typelize types for `gift_card` / `store_credit`, so `@pallastrade/sdk` no longer
 the shopper apply/remove them via server actions, but nothing is redeemed until `carts.submit`
 (`@pallastrade/sdk` carries the hand-written `ShoppingCart` fields in `src/types/index.ts`).
 
+Payment-method option projection (PRD-20260915-admin 支付配置选项化, D1 slices 1–3, 2026-09-15): the
+generated `PaymentMethod` type gains `kind` (the storefront entry identity — `api_type` such as
+`stripe` while a provider is not optionized yet) and `frontend_kind` (`inline` / `manual`, or a
+capability value such as `express` once the provider is optionized). The admin SDK type additionally
+gains `optionized` (whether the provider has switched to per-method entries — zero enabled entries
+then means zero storefront entries) and `options` (the effective entry list: `kind` / `name` /
+`frontend_kind` / `active` / `position`). Entries are configured in the Rails admin (provider edit
+page → 「支付方式」tab with Test connection), not through this SDK; both fields are additive, so older
+consumers keep working. Regenerate with `scripts/ci/contracts.sh` whenever a payment serializer's
+`typelize` changes.
+
 ### `@pallastrade/sdk-core` — Shared internals
 
 Private package. Provides `createRequestFn()`, `PallasTradeError`, retry logic, and Ransack query-param transformation (`transformListParams()`). Consumed by the SDK; not intended for direct use.

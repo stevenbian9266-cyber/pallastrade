@@ -352,6 +352,31 @@ end
 - **权限**：split/split_create 授权映射 `:update`（兼容 function 权限只授 update 的角色）。
 - **flag 关闭**：入口不显示；直接访问 split 页 → redirect 回订单页。
 
+## 支付方式选项化：Provider 详情「支付方式」页签（D1 切片3, 2026-09-15，PRD-20260915-admin）
+
+商家按 method（前台入口）配置一个支付商：`views/.../payment_methods/_options.html.erb` 挂在
+`edit.html.erb` 的**主表单内**（随保存一起提交，勿再嵌套 `<form>`）；数据源 =
+`PaymentMethod#payment_option_catalog`（provider 声明，Stripe = card/apple_pay/google_pay）∪ 已配置
+`metadata['options']`（目录外条目保留，避免保存丢数据）。
+
+- **写入口**：`Admin::PaymentMethodsController#permitted_resource_params` 归一表单参数
+  `payment_method[payment_options][<kind>][active|display_name|position]` → `metadata['options']`。
+  **勾选任一入口才置 `optionized=true`**；未选项化 provider 保持原语义（前台回落默认入口，零回归）；
+  目录外 kind 一律忽略（防注入任意入口）。
+- **Test connection**：member route `post :test_connection` → `PallasTrade::PaymentMethods::TestConnection`
+  （core 服务：本地凭证体检 + provider 可选远端探测 `PaymentMethod#test_connection`）→ 报告写
+  `metadata['last_test_connection'] = {ok, code, message, checked_at}` + `AuditLog`
+  （action `payment_method_test_connection`）。按钮用
+  `link_to …, data: { turbo_method: :post, turbo_frame: '_top' }`（Turbo 栈约定，非嵌套表单）。
+- **落库细节**：`metadata` 只是 `private_metadata` 的 API 别名（`PallasTrade::Metadata`）——低层写入用
+  `update_columns(private_metadata: …)`；`update_columns` 同时避免触发 provider 校验（Stripe 的
+  `validate_secret_key` 会发远端请求）。
+- **凭证脱敏（FR-006）**：`_form.html.erb` 在 preferences 下方回显 `masked_password_preferences(@object)`
+  （`PallasTrade::Preferences::Masking`，`••••` + 后 4 位）；页面/日志不出明文（表单参数已被
+  `filter_parameter_logging.rb` 的 `:secret`/`:_key` 过滤）。
+- **回归**：`harness verify admin-payment-methods-rspec`（页签渲染/保存归一 + Test connection + 脱敏 +
+  optionized 门控/Start 同源校验）。
+
 ## Customizing admin tables
 
 ```ruby

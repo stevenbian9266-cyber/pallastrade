@@ -90,6 +90,7 @@ RSpec.describe PallasTrade::PaymentSessions::Start, type: :service do
   end
 
   # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915-admin 支付配置选项化 切片2 / FR-003 / AC-002）
+  # PRD-20260915-admin-管理后台支付配置选项化-支付商-支付方式-前台入口 AC-002
   # provider 下钻到「入口（method kind）」粒度的同源校验：停用/未知入口一律拒绝建会话。
   describe 'PAY-OPT-1 option-level availability' do
     def optionized_method(options)
