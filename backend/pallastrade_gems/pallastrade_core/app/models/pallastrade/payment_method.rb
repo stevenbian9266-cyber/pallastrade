@@ -345,6 +345,94 @@ module PallasTrade
       end
     end
 
+    # PALLAS-CUSTOM: PAY-OPT-1 (PRD-20260915-admin 支付配置选项化，切片1)
+    # 前台入口（PaymentOption）: 一个 provider 可配多个「入口」（method），各自独立启停/排序/命名。
+    # 过渡期不建表 —— 入口存 `metadata["options"]`（业务方案 §65 / §74 的阶段一形态）：
+    #
+    #   metadata = {
+    #     "optionized" => true,                    # 是否已转为选项化（决定 0 options 的语义）
+    #     "options" => [
+    #       { "kind" => "card", "active" => true, "position" => 1, "frontend_kind" => "inline" },
+    #       { "kind" => "apple_pay", "active" => true, "position" => 2, "frontend_kind" => "express" }
+    #     ]
+    #   }
+    #
+    # 门控语义（§0.1-12）：
+    #   optionized=false → 0 options 视作「未迁移」→ 回落 1 个默认入口（行为与今天一致）
+    #   optionized=true  → 0 options 就是 0 个前台入口（配置语义，禁止自动兜底）
+    OPTIONIZED_KEY = 'optionized'
+    OPTIONS_KEY = 'options'
+
+    # 归一化后的入口列表（未筛选/未排序）；非法结构一律忽略，保证只读安全。
+    def options
+      raw = metadata&.[](OPTIONS_KEY)
+      return [] unless raw.is_a?(Array)
+
+      raw.filter_map do |entry|
+        next unless entry.is_a?(Hash)
+
+        normalized = entry.each_with_object({}) { |(key, value), acc| acc[key.to_s] = value }
+        next if normalized['kind'].blank?
+
+        normalized
+      end
+    end
+
+    # 已启用入口，按 position 升序（position 相同保持配置顺序）。
+    def available_options
+      options.select { |option| option['active'] != false }
+             .each_with_index.sort_by { |option, index| [option['position'].to_i, index] }
+             .map(&:first)
+    end
+
+    def option_for(kind)
+      options.find { |option| option['kind'] == kind.to_s }
+    end
+
+    def optionized?
+      metadata&.[](OPTIONIZED_KEY) == true
+    end
+
+    # 生效入口：已选项化 → 仅用配置的；未选项化 → 有配置用配置，否则回落默认入口。
+    def effective_options
+      available = available_options
+      return available if optionized? || available.any?
+
+      [default_option]
+    end
+
+    # 是否应出现在前台列表：已选项化且没有任何可用入口 → 不出现。
+    def frontend_visible?
+      return true unless optionized?
+
+      available_options.any?
+    end
+
+    # 未选项化 provider 的隐式默认入口（与今天的单入口行为一致）。
+    def default_option
+      {
+        'kind' => default_option_kind,
+        'active' => true,
+        'position' => 0,
+        'display_name' => name,
+        'frontend_kind' => default_option_frontend_kind
+      }
+    end
+
+    # 默认 kind：优先用网关的 `api_type`（stripe / adyen / paypal…），否则从类名推导。
+    def default_option_kind
+      return api_type.to_s if respond_to?(:api_type) && api_type.present?
+
+      type.to_s.demodulize.underscore
+    rescue StandardError
+      type.to_s.demodulize.underscore
+    end
+
+    # 前端形态：会话类 → inline（自绘壳/官方字段）；非会话类 → manual（仅说明文案）。
+    def default_option_frontend_kind
+      session_required? ? 'inline' : 'manual'
+    end
+
     protected
 
     def public_preference_keys
