@@ -14,7 +14,8 @@ export default class extends Controller {
     endpoint: String,
     productId: String,
     kind: String,
-    mode: { type: String, default: 'generate' }
+    mode: { type: String, default: 'generate' },
+    locale: String
   }
 
   connect() {
@@ -55,6 +56,8 @@ export default class extends Controller {
     if (this.kindValue === 'seo') {
       this.writeValue(this.titleFieldTarget, this.pending.meta_title)
       this.writeValue(this.metaDescriptionFieldTarget, this.pending.meta_description)
+    } else if (this.kindValue === 'translation') {
+      this.acceptTranslation(this.pending.translations)
     } else {
       this.writeValue(this.fieldTarget, this.pending.text)
     }
@@ -71,6 +74,19 @@ export default class extends Controller {
     this.renderIdle()
   }
 
+  /**
+   * Writes every translated field into its own row of the translations drawer.
+   * The inputs are named "<field>_<normalized locale>" — the same suffix the
+   * drawer's own form uses — so the regular drawer save picks the values up.
+   */
+  acceptTranslation(translations) {
+    Object.entries(translations || {}).forEach(([field, value]) => {
+      const row = this.element.querySelector(`[data-ai-translation-row="${field}"]`)
+      const input = row?.querySelector('input, textarea')
+      this.writeValue(input, value)
+    })
+  }
+
   async request() {
     const response = await fetch(this.endpointValue, {
       method: 'POST',
@@ -80,11 +96,18 @@ export default class extends Controller {
         Accept: 'application/json',
         'X-CSRF-Token': this.csrfToken()
       },
-      body: JSON.stringify({ product_id: this.productIdValue, mode: this.modeValue })
+      body: JSON.stringify(this.requestBody())
     })
 
     const data = await response.json().catch(() => ({}))
     return { ok: response.ok, data }
+  }
+
+  requestBody() {
+    const body = { product_id: this.productIdValue, mode: this.modeValue }
+    // Only the translation assistant targets a locale.
+    if (this.hasLocaleValue) body.target_locale = this.localeValue
+    return body
   }
 
   csrfToken() {
@@ -92,17 +115,29 @@ export default class extends Controller {
   }
 
   renderPreview(data) {
-    const lines =
-      this.kindValue === 'seo'
-        ? [
-            `${this.label('MetaTitle')}: ${data.meta_title || ''}`,
-            `${this.label('MetaDescription')}: ${data.meta_description || ''}`
-          ]
-        : [data.text || '']
+    let lines
+
+    if (this.kindValue === 'seo') {
+      lines = [
+        `${this.label('MetaTitle')}: ${data.meta_title || ''}`,
+        `${this.label('MetaDescription')}: ${data.meta_description || ''}`
+      ]
+    } else if (this.kindValue === 'translation') {
+      lines = Object.entries(data.translations || {}).map(([field, value]) => {
+        const name = this.label(this.camelize(field)) || field
+        return `${name}: ${value}`
+      })
+    } else {
+      lines = [data.text || '']
+    }
 
     this.previewBodyTarget.textContent = lines.join('\n\n')
     this.previewTarget.classList.remove('hidden')
     this.renderStatus(this.label('Review'))
+  }
+
+  camelize(field) {
+    return String(field).replace(/(^|_)([a-z])/g, (_match, _prefix, char) => char.toUpperCase())
   }
 
   renderError(code) {

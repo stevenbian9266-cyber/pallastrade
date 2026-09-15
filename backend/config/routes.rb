@@ -30,6 +30,7 @@ Rails.application.routes.draw do
       get 'ai/runs', to: 'ai#runs', as: :admin_ai_runs
       post 'ai/product_description', to: 'ai#product_description', as: :admin_ai_product_description
       post 'ai/product_seo', to: 'ai#product_seo', as: :admin_ai_product_seo
+      post 'ai/product_translation', to: 'ai#product_translation', as: :admin_ai_product_translation
       patch 'ai/settings', to: 'ai#update_settings', as: :admin_ai_update_settings
     end
   end

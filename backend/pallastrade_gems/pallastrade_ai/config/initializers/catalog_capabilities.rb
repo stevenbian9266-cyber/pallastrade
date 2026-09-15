@@ -39,4 +39,22 @@ Rails.application.reloader.to_prepare do
     data_classification: 'internal',
     version: '1.0.0'
   )
+
+  # Batch E-2 — AI Translate Missing（PRD-20260915-catalog-batch-e2-ai-translate-missing FR-001）。
+  next if PallasTrade::AI.capabilities.registered?('catalog.product_translation')
+
+  PallasTrade::AI.capabilities.register(
+    'catalog.product_translation',
+    handler: 'PallasTrade::AI::Schemas::Catalog::ProductTranslation::Handler',
+    input_schema: 'PallasTrade::AI::Schemas::Catalog::ProductTranslation::Input',
+    output_schema: 'PallasTrade::AI::Schemas::Catalog::ProductTranslation::Output',
+    authorization: { action: :update, subject: 'PallasTrade::Product' },
+    execution: :sync,
+    allowed_parameters: %i[temperature max_output_tokens],
+    required_model_capabilities: %i[text],
+    display_name: 'Product translation',
+    description: 'Translates the product fields that are still missing in a locale, for the admin to review before saving.',
+    data_classification: 'internal',
+    version: '1.0.0'
+  )
 end

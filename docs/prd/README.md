@@ -197,3 +197,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260915-payments-d10-client-config | payments | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-catalog-batch-e1-ai-copilot | catalog | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-payments-d12-webhook-governance | payments | 2026-09-15 | （实施时回填） |
+| approved | PRD-20260915-catalog-batch-e2-ai-translate-missing | catalog | 2026-09-15 | （实施时回填） |

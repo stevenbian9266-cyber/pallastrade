@@ -244,6 +244,12 @@ export default {
         description: 'AI product copilot specs (capability registration, schemas, gateway service with run audit, admin draft endpoints, degradation, permissions, no-write guarantee)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/ai/catalog/product_copy_spec.rb spec/requests/pallastrade/admin/products_ai_copilot_spec.rb'],
       },
+      // AI Translate Missing（PRD-20260915-catalog-batch-e2-ai-translate-missing）：能力注册 + schema
+      // + 缺失字段口径（fallback:false，排除 slug）+ 无缺失零 Run + 端点 + 降级/权限 + 抽屉渲染
+      'ai-translate-rspec': {
+        description: 'AI translate-missing specs (capability registration, schemas, missing-field detection, gateway service, nothing-to-translate guard, admin endpoint, degradation, permissions, drawer rendering)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/ai/catalog/product_translation_spec.rb spec/requests/pallastrade/admin/products_ai_translation_spec.rb'],
+      },
       // 前台密钥下发（PRD-20260915-payments-d10-client-config）：client_config 组装（仅 publishable）
       // + env: 引用解析 + Checkout 契约下发 + Stripe publishable 声明（secret 不泄漏）
       'd10-client-config-rspec': {

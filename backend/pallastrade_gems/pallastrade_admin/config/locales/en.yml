@@ -1209,6 +1209,13 @@ en:
       total_orders: Total Orders
       translations:
         no_translations_configured: No translations configured. Please setup Markets to use translations.
+        ai:
+          translate_missing: AI Translate Missing
+          review_hint: Review the translation, then Accept to put it in the form.
+          no_missing_fields: No missing fields for this locale.
+          errors:
+            unsupported_locale: This locale is not enabled for the store.
+            ai_credentials_missing: The AI provider has no credentials configured yet.
       upload_new_asset: Upload new media
       user:
         last_order_placed: Last order placed

@@ -189,6 +189,20 @@ PallasTrade::Config[:always_use_translations] = true    # never fallback — onl
 
 `true` is the right choice for stores where the column value is meaningless (e.g. it's the merchant's internal admin-only string) and only translations are customer-facing. `false` is right for single-locale stores starting out.
 
+### Detecting missing translations（含 AI 补全）
+
+`fallback: false` 是**检测「这个语言还没翻译」**的官方方式：
+
+```ruby
+product.get_field_with_locale('zh-CN', :name, fallback: false)  # => nil 表示该语言缺这个字段
+```
+
+原因见上：请求上下文里 `PallasTrade::Locales::SetFallbackLocaleForStore` 把每个支持语言回退到店铺默认语言，读数会「看起来已翻译」。
+
+**两种语言写法别混**：Mobility 存取用**语言代码**（`zh-CN`；写成 `zh_cn` 会抛 `Mobility::InvalidLocale`），而后台翻译抽屉的表单字段名用**归一化后缀**（`name_zh_cn` = downcase + `-`→`_`）。后端要处理抽屉来的参数时，先按 `Store#supported_locales_list` 把后缀映射回代码。
+
+**AI 补全（Batch E-2）**：翻译抽屉的 `[AI Translate Missing]` 走 `PallasTrade::AI::Catalog::ProductTranslation` —— 源 = 店铺默认语言，**只补空字段、绝不覆盖已有译文**，无缺失时不发请求；结果只进预览，Accept 后写入表单、由商家保存（`harness verify ai-translate-rspec`）。
+
 ## RTL languages (Arabic, Hebrew, Persian)
 
 For RTL support:

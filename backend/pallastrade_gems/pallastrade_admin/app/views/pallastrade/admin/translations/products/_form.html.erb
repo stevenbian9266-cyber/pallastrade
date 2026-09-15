@@ -1,14 +1,76 @@
 <%# locals: (f:, resource:, locale:) %>
 
-<% resource.class.translatable_fields.each do |field| %>
-  <% case field%>
-  <% when :description %>
-    <%= render "pallastrade/admin/translations/translation_rows/tinymce_row", f: f, field: field, locale: locale %>
-  <% when :meta_description %>
-    <%= render "pallastrade/admin/translations/translation_rows/textarea_row", f: f, field: field, locale: locale %>
-  <% else %>
-    <%= render "pallastrade/admin/translations/translation_rows/text_field_row", f: f, field: field, locale: locale %>
+<%# PALLAS-CUSTOM: AI Translate Missing（PRD-20260915-catalog-batch-e2-ai-translate-missing FR-004/FR-005）
+    只翻译当前语言下仍为空的字段：Generate → Preview → Accept → Save，AI 不落库；
+    保存仍由抽屉自己的表单完成。ai_state 为 nil（未装 AI 引擎 / 记录未持久化）时保持原样。 %>
+<% ai_state = defined?(PallasTrade::AI::Catalog::ProductTranslation) && resource.persisted? ? ai_assist_state(PallasTrade::AI::Catalog::ProductTranslation::CAPABILITY) : nil %>
+<% ai_data = if ai_state
+                {
+                  controller: 'ai-assist',
+                  ai_assist_endpoint_value: PallasTrade.admin_ai_product_translation_path,
+                  ai_assist_product_id_value: resource.prefixed_id,
+                  ai_assist_kind_value: 'translation',
+                  ai_assist_locale_value: locale,
+                  ai_assist_idle_label: PallasTrade.t('admin.products.ai.idle'),
+                  ai_assist_generating_label: PallasTrade.t('admin.products.ai.generating'),
+                  ai_assist_review_label: PallasTrade.t('admin.translations.ai.review_hint'),
+                  ai_assist_accepted_label: PallasTrade.t('admin.products.ai.accepted'),
+                  ai_assist_name_label: PallasTrade.t(:name),
+                  ai_assist_description_label: PallasTrade.t(:description),
+                  ai_assist_meta_title_label: PallasTrade.t(:meta_title),
+                  ai_assist_meta_description_label: PallasTrade.t(:meta_description),
+                  'ai_assist_error:no_missing_fields_label': PallasTrade.t('admin.translations.ai.no_missing_fields'),
+                  'ai_assist_error:unsupported_locale_label': PallasTrade.t('admin.translations.ai.errors.unsupported_locale'),
+                  'ai_assist_error:ai_capability_disabled_label': PallasTrade.t('admin.products.ai.errors.ai_capability_disabled', default: PallasTrade.t('admin.products.ai.errors.default')),
+                  'ai_assist_error:ai_disabled_label': PallasTrade.t('admin.products.ai.errors.ai_disabled', default: PallasTrade.t('admin.products.ai.errors.default')),
+                  'ai_assist_error:ai_model_disabled_label': PallasTrade.t('admin.products.ai.errors.ai_model_disabled', default: PallasTrade.t('admin.products.ai.errors.default')),
+                  'ai_assist_error:ai_provider_disabled_label': PallasTrade.t('admin.products.ai.errors.ai_provider_disabled', default: PallasTrade.t('admin.products.ai.errors.default')),
+                  'ai_assist_error:ai_budget_exceeded_label': PallasTrade.t('admin.products.ai.errors.ai_budget_exceeded', default: PallasTrade.t('admin.products.ai.errors.default')),
+                  'ai_assist_error:ai_credentials_missing_label': PallasTrade.t('admin.translations.ai.errors.ai_credentials_missing', default: PallasTrade.t('admin.products.ai.errors.default')),
+                  'ai_assist_error:ai_unavailable_label': PallasTrade.t('admin.products.ai.errors.default')
+                }
+              else
+                {}
+              end %>
+
+<div <%= tag.attributes(ai_data) %>>
+  <% if ai_state %>
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      <button type="button" class="btn btn-light btn-sm" data-ai-assist-role="generate"
+              data-action="click->ai-assist#generate"
+              <% unless ai_state[:available] %>disabled title="<%= ai_assist_reason_label(ai_state) %>"<% end %>>
+        <%= PallasTrade.t('admin.translations.ai.translate_missing') %>
+      </button>
+      <span class="text-xs text-muted" data-ai-assist-target="status"></span>
+    </div>
+
+    <div class="hidden mb-3 border rounded p-3 bg-gray-25" data-ai-assist-target="preview"
+         data-testid="ai-translation-preview">
+      <div class="font-medium text-sm mb-2"><%= PallasTrade.t('admin.products.ai.preview_heading') %></div>
+      <div class="text-sm whitespace-pre-wrap" data-ai-assist-target="previewBody"></div>
+      <div class="flex items-center gap-2 mt-3">
+        <button type="button" class="btn btn-primary btn-sm" data-action="click->ai-assist#accept">
+          <%= PallasTrade.t('admin.products.ai.accept') %>
+        </button>
+        <button type="button" class="btn btn-light btn-sm" data-action="click->ai-assist#discard">
+          <%= PallasTrade.t('admin.products.ai.discard') %>
+        </button>
+      </div>
+    </div>
   <% end %>
-<% end %>
+
+  <% resource.class.translatable_fields.each do |field| %>
+    <div data-ai-translation-row="<%= field %>">
+      <% case field %>
+      <% when :description %>
+        <%= render "pallastrade/admin/translations/translation_rows/tinymce_row", f: f, field: field, locale: locale %>
+      <% when :meta_description %>
+        <%= render "pallastrade/admin/translations/translation_rows/textarea_row", f: f, field: field, locale: locale %>
+      <% else %>
+        <%= render "pallastrade/admin/translations/translation_rows/text_field_row", f: f, field: field, locale: locale %>
+      <% end %>
+    </div>
+  <% end %>
+</div>
 
 <div class="pb-12"></div>

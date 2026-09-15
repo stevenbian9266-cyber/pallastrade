@@ -569,6 +569,21 @@ Products → **Duplicate Products**（`/admin/duplicate_products`）是商品治
 
 回归验证：`harness verify ai-copilot-rspec`。
 
+### AI Translate Missing —— 翻译抽屉的缺失字段补全（2026-09-15，PRD-20260915-catalog-batch-e2-ai-translate-missing）
+
+商品编辑页 → 翻译抽屉（`/admin/translations/PallasTrade::Product/:slug/edit`，语言 tab）里有 `[AI Translate Missing]`：以**店铺默认语言**为源，只补当前 tab 语言下**仍为空**的字段 `name / description / meta_title / meta_description`（**不含 slug**），预览后 Accept 填入表单，保存仍走抽屉自己的 `PUT admin_translation_path`。
+
+| 关注点 | 做法 |
+|---|---|
+| 缺失口径 | **必须 `get_field_with_locale(locale, field, fallback: false)`**——请求上下文里 Mobility 会回退到店铺默认语言，缺翻译看起来「已翻译」（`pallastrade-i18n` 明说 `fallback: false` 才是检测缺失的官方方式） |
+| 语言两种写法 | 抽屉表单字段后缀是**归一化**的（`normalized_locale`：downcase + `-`→`_`，如 `name_zh_cn`），Mobility 读写用**语言代码**（`zh-CN`，`zh_cn` 会抛 `Mobility::InvalidLocale`）。服务端要按店铺 `supported_locales_list` 把后缀映射回代码（`resolve_locale`），映射不到 → `unsupported_locale` |
+| 能力/服务 | `catalog.product_translation`（同一 `catalog_capabilities.rb`，幂等）+ `PallasTrade::AI::Catalog::ProductTranslation`：只读商品、只补缺失；**无缺失直接 `no_missing_fields`，不发请求不建 Run** |
+| 端点 | `POST /admin/ai/product_translation`（`product_id` 前缀 id + `target_locale`）；成功 200 `{ translations, locale, fields, run_id }`，失败 422 `{ error: { code } }`（沿用 `find_copilot_product` / `render_copilot_result`） |
+| 抽屉接线 | `translations/products/_form.html.erb` 里每个字段行包 `data-ai-translation-row="<field>"`（**不动共享的 `translation_rows/*` partial**，其它可翻译资源不受影响）；`ai-assist` Stimulus 的 `translation` 分支按字段写行内输入（`description` 同步 TinyMCE） |
+| 绝不覆盖 | 目标语言已有值 → 不进缺失列表（回归断言：请求前后翻译值逐字段一致） |
+
+回归验证：`harness verify ai-translate-rspec`。
+
 ## Overriding views
 
 Drop the same-pathed file in the host app and Rails uses it. The gem ships `pallastrade/admin/app/views/pallastrade/admin/products/index.html.erb`; you override it at `backend/app/views/pallastrade/admin/products/index.html.erb`.

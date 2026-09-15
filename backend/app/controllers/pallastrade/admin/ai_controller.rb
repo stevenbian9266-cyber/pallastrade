@@ -206,6 +206,32 @@ module PallasTrade
         )
       end
 
+      # POST /admin/ai/product_translation
+      # AI Translate Missing（PRD-20260915-catalog-batch-e2-ai-translate-missing FR-003）：
+      # 只翻译目标语言下仍为空的字段（不覆盖已有译文），只返回草稿供商家 Accept，
+      # 写入仍由翻译抽屉自己的表单完成。
+      def product_translation
+        product = find_copilot_product
+        return if product.nil?
+
+        authorize! :update, product
+
+        result = PallasTrade::AI::Catalog::ProductTranslation.generate_missing(
+          product: product,
+          actor: try_pallastrade_current_user,
+          target_locale: params[:target_locale]
+        )
+
+        render_copilot_result(
+          result,
+          payload: {
+            translations: result.translations,
+            locale: result.target_locale,
+            fields: result.missing_fields
+          }
+        )
+      end
+
       # GET /admin/ai/runs
       def runs
         @runs = PallasTrade::AI::Run.where(store: current_store).recent
