@@ -121,12 +121,18 @@ module PallasTrade
           PallasTrade::Product.arel_table
         end
 
+        # 原始 SQL 一律经 `sanitize_sql_array` 组装（参数化入口）。
+        # 动态部分仅允许：常量表名、白名单列名（`TRANSLATED_FIELDS`）、绑参值。
+        def raw_sql(fragment, *binds)
+          ActiveRecord::Base.sanitize_sql_array([fragment, *binds])
+        end
+
         # Products (and all their variants, master included) without a single
         # asset. Reads `pallastrade_assets` instead of the `media_count`
         # counters because `PallasTrade::Asset` does not declare a counter
         # cache — the rows are the truth.
         def missing_media(scope)
-          scope.where(<<~SQL.squish)
+          scope.where(raw_sql(<<~SQL.squish))
             NOT EXISTS (
               SELECT 1
               FROM #{PallasTrade::Asset.table_name} assets
@@ -145,12 +151,12 @@ module PallasTrade
           raise ArgumentError, "unsupported field #{field}" unless TRANSLATED_FIELDS.include?(field)
 
           translation_join(scope, locale).where(
-            "COALESCE(NULLIF(catalog_health_translations.#{field}, ''), NULLIF(#{product_table}.#{field}, '')) IS NULL"
+            raw_sql("COALESCE(NULLIF(catalog_health_translations.#{field}, ''), NULLIF(#{product_table}.#{field}, '')) IS NULL")
           )
         end
 
         def missing_seo(scope, locale:)
-          translation_join(scope, locale).where(<<~SQL.squish)
+          translation_join(scope, locale).where(raw_sql(<<~SQL.squish))
             COALESCE(NULLIF(catalog_health_translations.meta_title, ''), NULLIF(#{product_table}.meta_title, '')) IS NULL
             OR COALESCE(NULLIF(catalog_health_translations.meta_description, ''), NULLIF(#{product_table}.meta_description, '')) IS NULL
           SQL
@@ -158,12 +164,11 @@ module PallasTrade
 
         def translation_join(scope, locale)
           translations = PallasTrade::Product::Translation.table_name
-          quoted_locale = ActiveRecord::Base.connection.quote(locale)
 
-          scope.joins(<<~SQL.squish)
+          scope.joins(raw_sql(<<~SQL.squish, locale))
             LEFT OUTER JOIN #{translations} catalog_health_translations
               ON catalog_health_translations.pallastrade_product_id = #{product_table}.id
-             AND catalog_health_translations.locale = #{quoted_locale}
+             AND catalog_health_translations.locale = ?
              AND catalog_health_translations.deleted_at IS NULL
           SQL
         end
@@ -172,7 +177,7 @@ module PallasTrade
         # preorderable, in stock or backorderable. Pre-order/backorder SKUs stay
         # out of the report because they are still purchasable.
         def active_zero_stock(scope)
-          scope.where(status: 'active').where(<<~SQL.squish)
+          scope.where(status: 'active').where(raw_sql(<<~SQL.squish))
             NOT EXISTS (
               SELECT 1
               FROM #{PallasTrade::Variant.table_name} variants
