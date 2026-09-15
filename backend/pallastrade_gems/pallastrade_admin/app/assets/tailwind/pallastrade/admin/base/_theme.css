@@ -1,13 +1,69 @@
 /* ==========================================================================
    THEME - Design Tokens (CSS Custom Properties)
+   `static`：所有 token 必须**恒定输出**到产物（即使当前没有组件使用），
+   否则 Tailwind 会把"仅定义未使用"的品牌色阶/语义 token 摇树掉，
+   宿主覆盖（pallastrade_admin.css）与 B6-2/B6-3 的组件改造会引用到不存在的变量。
    ========================================================================== */
 
-@theme {
+@theme static {
   /* Gray Scale */
   --color-gray-25: #FAFAFA;
 
+  /* ── B6-1 品牌色阶（PRD-20260915-admin-…-b6-1）─────────────────────────────
+     由品牌 logo 基色确定性派生：navy #0A2540 / teal #0F9D94。
+     派生规则（可复核）：固定基色色相，L 取 96→13%，S = 基色 S × 系数(0.9~1)；
+     -600 为主色档（白底对比 5.87:1），-50/-100 浅底，-900/-950 深底/深字。
+     ⚠️ 组件层（components/*.css）不得再直接引 Tailwind 调色板；用这些档或语义 token。 */
+  --color-primary-50: #EEF5FB;
+  --color-primary-100: #DDEBF8;
+  --color-primary-200: #BED9F3;
+  --color-primary-300: #95C2EE;
+  --color-primary-400: #60A3E6;
+  --color-primary-500: #2B85DE;
+  --color-primary-600: #1C66B0;
+  --color-primary-700: #16528D;
+  --color-primary-800: #11406E;
+  --color-primary-900: #0D2E4F;
+  --color-primary-950: #0A2138;
+
+  /* accent（teal）B6-1 只定义不启用（强调/成功态场景在 B6-2/B6-3 落地） */
+  --color-accent-50: #EDFCFB;
+  --color-accent-100: #DBFAF8;
+  --color-accent-200: #BBF7F3;
+  --color-accent-300: #8FF4EE;
+  --color-accent-400: #57EFE5;
+  --color-accent-500: #20EADD;
+  --color-accent-600: #12BAB0;
+  --color-accent-700: #0E958C;
+  --color-accent-800: #0B746E;
+  --color-accent-900: #09534E;
+  --color-accent-950: #073B38;
+
+  /* ── B6-1 语义 token ────────────────────────────────────────────────────
+     文字/背景：-text 16.1:1、-text-muted 7.5:1、-text-subtle 4.8:1（均 ≥4.5）；
+     焦点环 primary-500 白底 3.81:1（≥3）；-border/-border-strong 为装饰/分隔用，不属对比度门槛。 */
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #F9FAFB;
+  --color-background: #FAFAFA;
+  --color-border: #E5E7EB;
+  --color-border-strong: #D1D5DB;
+  --color-text: #111827;
+  --color-text-muted: #4B5563;
+  --color-text-subtle: #6B7280;
+  --color-focus-ring: #2B85DE;
+
+  /* ── B6-1 密度变量（默认档 = compact；comfortable 见文件末尾 :root[data-admin-density]）── */
+  --admin-density-row-padding-y: 0.375rem;
+  --admin-density-row-padding-x: 0.75rem;
+  --admin-density-control-height: 2rem;
+  --admin-density-control-padding-x: 0.625rem;
+  --admin-density-label-gap: 0.25rem;
+  --admin-density-section-gap: 1rem;
+  --admin-density-font-size-base: 0.813rem;
+  --admin-density-line-height-base: 1.25rem;
+
   /* Legacy Colors, kept for old HTML from extensions/developer apps work properly */
-  --color-primary: var(--color-zinc-950);
+  --color-primary: var(--color-primary-600);
   --color-success: var(--color-green-900);
   --color-danger: var(--color-red-600);
   --color-warning: var(--color-yellow-900);
@@ -60,4 +116,18 @@
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* ── B6-1 密度档位 ──────────────────────────────────────────────────────────
+   默认 compact（@theme 中的值）；<html data-admin-density="comfortable"> 时放宽。
+   切换入口 UI 在 B6-2；无属性时由 :root 默认值兜底（admin_wizard/minimal/内嵌页）。 */
+:root[data-admin-density="comfortable"] {
+  --admin-density-row-padding-y: 0.5rem;
+  --admin-density-row-padding-x: 1rem;
+  --admin-density-control-height: 2.25rem;
+  --admin-density-control-padding-x: 0.75rem;
+  --admin-density-label-gap: 0.375rem;
+  --admin-density-section-gap: 1.5rem;
+  --admin-density-font-size-base: 0.875rem;
+  --admin-density-line-height-base: 1.375rem;
 }

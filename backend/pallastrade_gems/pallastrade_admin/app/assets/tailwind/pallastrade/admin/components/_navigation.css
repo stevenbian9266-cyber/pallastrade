@@ -14,7 +14,7 @@
 
   .nav-link:hover,
   .nav-link:focus {
-    @apply text-zinc-950;
+    @apply text-primary-700;
   }
 
   .nav-link.disabled {
@@ -26,11 +26,11 @@
     @apply gap-1;
   }
   .nav-pills .nav-link {
-    @apply bg-none rounded-xl py-1.5 px-3 cursor-pointer transition-colors duration-300 ease-in-out text-gray-900 hover:bg-gray-25;
+    @apply bg-none rounded-xl py-1.5 px-3 cursor-pointer transition-colors duration-300 ease-in-out text-gray-900 hover:bg-primary-50;
   }
 
   .nav-pills .nav-link.active {
-    @apply bg-gray-100;
+    @apply bg-primary-50 text-primary-900;
   }
 
   /* Nav fill and justified */

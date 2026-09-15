@@ -524,6 +524,21 @@ To add your own Stimulus controller, drop it at `backend/app/javascript/controll
 
 For Turbo Streams (server-pushed UI updates), the same patterns apply as any Rails 7+ Hotwire app — render `turbo_stream.*` from the controller, target frames by ID.
 
+## Design tokens & density（B6-1，PRD-20260915-admin-…-b6-1，2026-09-15）
+
+后台的观感只有两个杠杆：**token** 与 **密度档位**。改颜色/面/文字/间距前先看这里，不要逐组件找硬编码值。
+
+- **token 定义在 gem**：`pallastrade_admin/app/assets/tailwind/pallastrade/admin/base/_theme.css`（`@theme static`）：
+  - 品牌色阶：`--color-primary-{50…950}`（navy `#0A2540` 派生，**-600 为主色档**，白底对比 5.87:1）、`--color-accent-{50…950}`（teal `#0F9D94`；B6-1 **只定义不启用**，强调态场景在 B6-2/B6-3 落地）；
+  - 语义 token：`--color-surface` / `-surface-muted` / `-background` / `-border` / `-border-strong` / `-text` / `-text-muted` / `-text-subtle` / `-focus-ring`；
+  - 密度变量：`--admin-density-{row-padding-y,row-padding-x,control-height,control-padding-x,label-gap,section-gap,font-size-base,line-height-base}`。
+- **`@theme static` 不能去掉**：Tailwind v4 默认会把“仅定义、尚未被任何 utility 引用”的主题变量摇树掉，宿主覆盖与后续批次会引用到不存在的变量（产物里 grep 不到即为此因）。
+- **组件层禁止直引 Tailwind 调色板**（`bg-zinc-950` / `bg-blue-50` …）：主色/语义一律走 token（例：`.btn-primary` = `bg-primary-600` + hover `-700`；`.nav-pills .nav-link.active` = `bg-primary-50 text-primary-900`）。中性色与状态色的全面 token 化在 B6-2。
+- **密度档位**：`<html data-admin-density="compact|comfortable">`（三个 layout 已输出 **compact** 默认；UI 切换入口在 B6-2）。未设属性时由 `:root` 的 compact 默认值兜底。
+- **宿主覆盖**：`backend/app/assets/tailwind/pallastrade_admin.css`（`@theme` 覆盖 + `[data-admin-density]` 覆盖示例已就位）——宿主改品牌只改这里，**不要改 gem 组件**。
+- **守护**：`harness verify admin-theme-rspec`（`backend/spec/design/admin_theme_tokens_spec.rb`：token 集合、组件零直引、三 layout 属性、WCAG AA 对比度 ≥4.5/≥3）。
+- **构建与验证**：`bin/rails pallastrade:admin:tailwindcss:build`（dev 由 `pallastrade-admin-css-1` watcher 自动重建；`assets:precompile` 已挂钩）。改完 CSS/布局后必须**重建 + 重新加载页面**确认——Rails 进程会缓存模板与资产清单，本地容器需 `docker restart pallastrade-web-1` 才会反映布局改动与新的资产 digest。
+
 ## Decision tree: what kind of admin change is this?
 
 | Want to... | Use |
@@ -538,6 +553,7 @@ For Turbo Streams (server-pushed UI updates), the same patterns apply as any Rai
 | Make a form field interactive | Stimulus controller + `data-controller="..."` in the view |
 | Push real-time updates to the UI | Turbo Stream broadcasts from a subscriber or service |
 | Change admin styling globally | Edit `backend/app/assets/tailwind/pallastrade_admin.css` (created by the installer) — it imports the gem's base styles from `app/assets/tailwind/pallastrade/admin/index.css`; add `@theme` overrides and custom Tailwind there |
+| Change a colour, surface or spacing **for the whole product** | Edit the gem's tokens: `pallastrade_admin/app/assets/tailwind/pallastrade/admin/base/_theme.css` (`@theme static`) — see “Design tokens & density” below |
 
 
 ## Where to read further

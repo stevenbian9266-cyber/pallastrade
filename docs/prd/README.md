@@ -175,6 +175,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260915-checkout-checkout-收尾收敛-b3-库存错误四态与履约结果页-recovery-语义-shipment-groups | checkout | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-checkout-checkout-收尾收敛-b4-express-钱包-canonicalize-legacy-会话-transacti | checkout | 2026-09-15 | （实施时回填） |
 | approved | PRD-20260915-checkout-checkout-收尾收敛-b5-legacy-端点治理-usage-metric-收口与零新增调用守护 | checkout | 2026-09-15 | （实施时回填） |
+| done | PRD-20260915-admin-管理后台-ui-b6-1-品牌色-token-语义-token-与密度变量基础层 | admin | 2026-09-15 | （实施时回填） |
 
 ## 使用流程（摘要，详见 `ai/skills/pallastrade-prd/SKILL.md`）
 

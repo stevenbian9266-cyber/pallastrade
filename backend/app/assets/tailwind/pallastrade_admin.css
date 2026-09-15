@@ -47,3 +47,35 @@
  *      --header-height: 70px;
  *    }
  */
+
+/*
+ * B6-1（PRD-20260915-admin-…-b6-1）：品牌 token 与密度档位覆盖示例
+ * ================================================================
+ * 后台的默认设计 token（品牌色阶 / 语义色 / 密度变量）定义在 gem 的 base/_theme.css。
+ * 宿主若要改品牌观感或默认密度，**只改这里**（不要改 gem 内组件）：
+ *
+ * 1) 换品牌主色（示例：改回旧的近黑主色 —— 取消注释即生效）
+ *    @theme {
+ *      --color-primary-50: #FAFAFA;
+ *      --color-primary-500: #52525B;
+ *      --color-primary-600: #18181B;
+ *      --color-primary-700: #27272A;
+ *      --color-primary-900: #09090B;
+ *      --color-focus-ring: #52525B;
+ *    }
+ *
+ * 2) 覆盖语义色（如把卡片面/文字换成自有色板）
+ *    @theme {
+ *      --color-surface: #FFFFFF;
+ *      --color-text: #111827;
+ *      --color-text-muted: #4B5563;
+ *    }
+ *
+ * 3) 改默认密度（不写属性则用 compact；此处可把 comfortable 调成自家口径）
+ *    :root[data-admin-density="comfortable"] {
+ *      --admin-density-row-padding-y: 0.625rem;
+ *      --admin-density-control-height: 2.5rem;
+ *    }
+ *
+ * 注意：`@theme` 覆盖必须在 `@import` 之后（即本文件此处或之后），否则会被 gem 默认值覆盖。
+ */
