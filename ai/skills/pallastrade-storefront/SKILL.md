@@ -417,6 +417,27 @@ export async function POST(req: Request) {
 
 The PallasTrade backend ships outbound webhooks as `PallasTrade::WebhookEndpoint` records. Configure URL + events under Settings → Webhooks in the admin.
 
+## PDP discovery rails — Related / Recently viewed / Wishlist (2026-09-15)
+
+PRD-20260915-catalog-batch-c1-discovery：PDP 从「交易终点」变成「发现节点」，三块能力分工明确：
+
+| 能力 | 位置 | 数据来源 | 规则 |
+|---|---|---|---|
+| Related | `components/products/RelatedProducts.tsx`（服务端） | Store API 列表（`in_categories` + `in_stock`） | 同分类（含子分类）→ 在售 → 排除当前商品 → ≤8；空则不渲染整块（含标题）；数据在 `lib/data/products.ts#getRelatedProducts`，复用 `cachedListProducts`（10 分钟缓存 + `products` tag） |
+| Recently viewed | `RecentlyViewed.tsx` + `RecentlyViewedTracker.tsx`（客户端） | `localStorage['pt.recently_viewed']` | 倒序、按 id 去重（重访移到最前）、上限 12；展示时排除当前商品 |
+| Wishlist | `WishlistButton.tsx` / `WishlistHeaderButton.tsx` / `/wishlist` 页 | `localStorage['pt.wishlist']` | 切换加入/移除、上限 100、头部数量徽章、空态引导 |
+
+新增同类能力时照做的约定：
+
+1. **纯函数下沉**：状态计算进 `lib/utils/{related-products,recently-viewed,wishlist}.ts`（解析/去重/截断/切换 + 事件名常量），组件只做读写与渲染 → 纯函数 100% 可测。
+2. **浏览器存储统一走 `lib/utils/local-store.ts`**（`readLocalValue` / `writeLocalValue` / `dispatchLocalEvent`）——全部 try/catch：隐私模式与配额满必须静默降级，绝不炸页面。
+3. **hydration 安全**：首帧不读 localStorage（组件返回 `null` / 徽章为 0），挂载后 effect 再同步；同页同步用自定义事件（`pt:recently-viewed` / `pt:wishlist`），跨标签用 `storage` 事件。
+4. **i18n 5 语言 + 守护**：新键必须进 `messages/{de,en,es,fr,pl}.json`，并在 `lib/__tests__/checkout-i18n-keys.test.ts` 的 `REQUIRED` 登记（缺键 = 用户可见缺陷）。
+5. **埋点复用**：新 rail 直接用 `ProductCard` 的 `select_item`（传 `listId` / `listName` 区分区块），不新增埋点代码。
+6. 服务端 rail 的 `locale` 用全局 `Locale` 类型（`src/types/next-intl.d.ts`），页面传参需要 `locale as Locale`；`currency` 这种可空字段要 `?? undefined`。
+
+回归验证：`harness verify storefront-test`（vitest 全量，自动含本批新增用例）。
+
 ## Storefront vs backend — where does the change belong
 
 | Want to... | Belongs in |
@@ -462,3 +483,4 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 - PRD-20260913-checkout-txn-error-routing + PRD-20260913-checkout-money-contract (2026-09-13, RESEARCH-20260913 §9.2/§9.1)：错误落点按 `code` 分流（见上方新增段落；`lib/errors.ts#extractErrorCode`；`payment-result` 支持 `?notice=recovery|processing` 覆盖文案并抑制重试入口）+ Money 契约（`OrderPaymentContent` 运费/税行与 `order-confirmation` 邮件改用 raw 判逻辑；TOTAL SAVINGS 仅促销折扣）+ i18n 5 语言新增 8 键；测试：`chk-p1-4b-storefront` / `chk-p1-4c-storefront` / 全量 storefront 套件绿。
 - PRD-20260915-checkout B4 (2026-09-15)：Express 钱包 canonicalize——`ExpressCheckoutButton` 改走同源 BFF（新的 `lib/checkout/express-canonical.ts`：start/complete/错误路由/结果页 URL），删除 `lib/data/express-checkout-flow.ts` 的 legacy 会话包装与 `lib/data/payment.ts`、删除 `/confirm-payment/[id]` 页；组合完成改 Order 域 `orders.paymentSessions.complete`；后端仅补规格（Order 域 complete 已内置组合分支，`payment_combinations_controller_spec.rb` 7 examples 绿）；新增守护测试 `legacy-payment-sessions-guard.test.ts`（零 `carts.paymentSessions`）+ 组件测试 `ExpressCheckoutButton.test.tsx`；i18n 无新增键（错误文案用服务端 `message`）；GS-123。
 - 踩坑（2026-09-15）：删除含 `[country]` / `(checkout)` 的路径时，PowerShell 默认把 `[ ] ( )` 当通配符 —— `Remove-Item` / `Test-Path` 会静默失配（表现为“删除成功但文件还在”、`Test-Path` 返回 `False`）；一律用 `-LiteralPath`，并且 `biome.cmd` 也无法接受这类路径（改用 `node node_modules/@biomejs/biome/bin/biome check --write src`）。`pnpm typecheck` 若报 `.next/dev/types/validator.ts` 找不到已删路由，删掉 `.next/{dev/,}types` 后重跑即可（生成物）。
+- PRD-20260915-catalog-batch-c1-discovery (2026-09-15)：PDP 发现三件套——Related（服务端规则：同分类 + 在售 + 排除自身，`lib/data/products.ts#getRelatedProducts` 复用缓存列表并 over-fetch 1 条）、Recently viewed（本地 12 条，Tracker + rail）、Wishlist V1（本地切换 + `/wishlist` 页 + 头部徒章）；新增纯函数 3 个 + 浏览器存储封装 `lib/utils/local-store.ts` + 组件 5 个 + 页 1 个；i18n 5 语言新增 8 键（`products.relatedTitle` / `products.recentlyViewedTitle` / `wishlist.*`）；测试 12 文件 85 例绿；GS-132。

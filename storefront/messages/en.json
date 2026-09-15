@@ -221,6 +221,8 @@
     "backInStockEmpty": "Please enter your email address.",
     "backInStockInvalid": "Please enter a valid email address.",
     "backInStockError": "Something went wrong. Please try again.",
+    "recentlyViewedTitle": "Recently viewed",
+    "relatedTitle": "You may also like",
     "addToCart": "Add to Cart",
     "buyNow": "Buy Now",
     "adding": "Adding...",
@@ -789,6 +791,14 @@
     "empty": "No posts yet. Check back soon.",
     "notFound": "Post Not Found",
     "noContent": "No content available for this post."
+  },
+  "wishlist": {
+    "title": "Wishlist",
+    "empty": "Your wishlist is empty.",
+    "browse": "Browse products",
+    "add": "Save",
+    "remove": "Remove",
+    "removeAria": "Remove from wishlist"
   },
   "expressCheckout": {
     "shipping": "Shipping",

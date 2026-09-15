@@ -2,6 +2,9 @@ import type { Category } from "@pallastrade/sdk";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/navigation/Breadcrumbs";
+import { RecentlyViewed } from "@/components/products/RecentlyViewed";
+import { RecentlyViewedTracker } from "@/components/products/RecentlyViewedTracker";
+import { RelatedProducts } from "@/components/products/RelatedProducts";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { getCachedProduct, PRODUCT_PAGE_EXPAND } from "@/lib/data/cached";
 import { isAuthenticated } from "@/lib/data/cookies";
@@ -111,6 +114,21 @@ export default async function ProductPage({
         averageRating={product.average_rating ?? null}
         reviewCount={product.review_count ?? 0}
         isAuthenticated={authenticated}
+      />
+
+      {/* Discovery rails (PRD-20260915-catalog-batch-c1-discovery) */}
+      <RecentlyViewedTracker product={product} />
+      <RelatedProducts
+        product={product}
+        basePath={basePath}
+        locale={locale as Locale}
+        country={country}
+        currency={product.price?.currency ?? undefined}
+      />
+      <RecentlyViewed
+        basePath={basePath}
+        currentProductId={product.id}
+        currency={product.price?.currency ?? undefined}
       />
     </>
   );

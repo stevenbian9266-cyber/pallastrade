@@ -1,8 +1,10 @@
 "use server";
 
-import type { ProductListParams } from "@pallastrade/sdk";
+import type { Product, ProductListParams } from "@pallastrade/sdk";
 import { cacheLife, cacheTag } from "next/cache";
+import { PRODUCT_CARD_FIELDS } from "@/lib/data/cached";
 import { getAccessToken, getClient, getLocaleOptions } from "@/lib/pallastrade";
+import { buildRelatedQuery, pickRelated } from "@/lib/utils/related-products";
 
 /**
  * Cached product list fetch. Cache key is derived from all function
@@ -29,6 +31,41 @@ export async function getProducts(params?: ProductListParams) {
   const options = await getLocaleOptions();
   const userToken = await getAccessToken();
   return cachedListProducts(params, options, userToken);
+}
+
+/**
+ * Related products rail (PRD-20260915-catalog-batch-c1-discovery FR-001):
+ * rule-based, no algorithm — same categories, buyable now, and never the product
+ * the shopper is looking at. Shares the cached list fetch (and its cache tag).
+ */
+export async function getRelatedProducts(params: {
+  categoryIds: string[];
+  excludeProductId?: string | number;
+  limit?: number;
+  locale?: string;
+  country?: string;
+}): Promise<Product[]> {
+  if (params.categoryIds.length === 0) return [];
+
+  const options =
+    params.locale && params.country
+      ? { locale: params.locale, country: params.country }
+      : await getLocaleOptions();
+  const userToken = await getAccessToken();
+
+  const response = await cachedListProducts(
+    {
+      ...buildRelatedQuery(params.categoryIds, { limit: params.limit }),
+      fields: PRODUCT_CARD_FIELDS,
+    },
+    options,
+    userToken,
+  );
+
+  return pickRelated(response.data ?? [], {
+    excludeIds: [params.excludeProductId],
+    limit: params.limit,
+  });
 }
 
 /**

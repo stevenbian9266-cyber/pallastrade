@@ -221,6 +221,8 @@
     "backInStockEmpty": "Please enter your email address.",
     "backInStockInvalid": "Please enter a valid email address.",
     "backInStockError": "Something went wrong. Please try again.",
+    "recentlyViewedTitle": "Ostatnio oglądane",
+    "relatedTitle": "Może Ci się spodobać",
     "addToCart": "Dodaj do koszyka",
     "adding": "Dodawanie...",
     "description": "Opis",
@@ -789,6 +791,14 @@
     "empty": "Brak wpisów. Zajrzyj wkrótce.",
     "notFound": "Nie znaleziono wpisu",
     "noContent": "Brak treści dla tego wpisu."
+  },
+  "wishlist": {
+    "title": "Lista życzeń",
+    "empty": "Twoja lista życzeń jest pusta.",
+    "browse": "Przeglądaj produkty",
+    "add": "Zapisz",
+    "remove": "Usuń",
+    "removeAria": "Usuń z listy życzeń"
   },
   "expressCheckout": {
     "shipping": "Dostawa",

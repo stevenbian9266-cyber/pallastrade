@@ -93,7 +93,13 @@ const REQUIRED: Record<string, string[]> = {
     "preorderShipsBy",
     "backorder",
     "backorderNote",
+    // PRD-20260915-catalog-batch-c1-discovery AC-010：
+    // 发现区块（相关商品 / 最近浏览）标题。
+    "relatedTitle",
+    "recentlyViewedTitle",
   ],
+  // PRD-20260915-catalog-batch-c1-discovery AC-010：Wishlist V1 全量文案。
+  wishlist: ["title", "empty", "browse", "add", "remove", "removeAria"],
 };
 
 describe("Checkout error i18n keys (PRD-20260913-checkout-txn-error-routing AC-010)", () => {

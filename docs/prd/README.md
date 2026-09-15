@@ -188,3 +188,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260915-catalog-pdp-state-correctness | catalog | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-admin-bulk-operations-2 | admin | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-admin-catalog-health-v1 | admin | 2026-09-15 | （实施时回填） |
+| done | PRD-20260915-catalog-batch-c1-discovery | catalog | 2026-09-15 | （实施时回填） |

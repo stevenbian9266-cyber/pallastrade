@@ -15,6 +15,7 @@ import {
   type ReviewView,
 } from "@/components/products/ProductReviews";
 import { VariantPicker } from "@/components/products/VariantPicker";
+import { WishlistButton } from "@/components/products/WishlistButton";
 import { Button } from "@/components/ui/button";
 import { QuantityPicker } from "@/components/ui/quantity-picker";
 import { useCart } from "@/contexts/CartContext";
@@ -270,6 +271,9 @@ export function ProductDetails({
                 />
               </div>
             </div>
+
+            {/* Wishlist（PRD-20260915-catalog-batch-c1-discovery FR-003）：本地优先 V1 */}
+            <WishlistButton product={product} className="mt-3 w-full" />
           </div>
 
           {/* Description */}

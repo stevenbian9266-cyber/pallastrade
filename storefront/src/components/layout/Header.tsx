@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { CartButton } from "@/components/layout/CartButton";
 import { SearchToggle } from "@/components/layout/SearchToggle";
+import { WishlistHeaderButton } from "@/components/layout/WishlistHeaderButton";
 import { Button } from "@/components/ui/button";
 import { getStoreName } from "@/lib/store";
 
@@ -83,6 +84,9 @@ export async function Header({
               <User className="size-5" />
             </Link>
           </Button>
+
+          {/* Wishlist（PRD-20260915-catalog-batch-c1-discovery FR-003） */}
+          <WishlistHeaderButton basePath={basePath} />
 
           {/* Cart */}
           <CartButton />
