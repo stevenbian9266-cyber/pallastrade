@@ -1229,6 +1229,14 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   Stripe 覆写为 `{ supported: true, evidence_submission:, accept_dispute:, fee_capture:, evidence_text_keys:, evidence_file_keys: }`；
   控制台只读卡片按矩阵渲染，不支持时给出原因且不渲染写表单。
 
+## Credentials & environments — 凭据生命周期（D9 首版, 2026-09-15；PRD-20260915-payments-d9）
+
+- **环境维度**：`PallasTrade::PaymentMethod#environment`（`test` / `live`，列默认 `live` → 存量零回归）。`test` provider 不产生真实资金：前台列表过滤（Resolver frontend）+ `PaymentSessions::Start` 在 `session_data['test_mode'] = true`，`PaymentSession#find_or_create_payment!` 同步写入 Payment `metadata['test_mode']`。
+- **切换不重启**：后台改 `environment` 即生效（无进程缓存/环境变量依赖）；切到 test 时强制 `storefront_visible = false`。
+- **凭据读取**：`PaymentMethod#{credential_level, credential_status, credentials_status, resolved_preference}`；`env:` 引用只在读取侧解析（写路径只存引用）。
+- **到期巡检**：`PaymentMethods::CredentialExpiryCheckJob`（日）—— 30/7/1/expired 阈值，同级别幂等（`credential_alerts` + `AuditLog`），零 provider 网络调用。
+- 回归：`harness verify d9-credentials-rspec`。
+
 ## Payment availability scope —— 适用范围引擎（D8 首版, 2026-09-15；PRD-20260915-payments-d8）
 
 入口（PaymentOption）级可用范围，栖于入口层 `metadata['options'][i]['rule_set']`（业务方案 §66）：

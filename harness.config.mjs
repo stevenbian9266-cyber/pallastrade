@@ -201,6 +201,13 @@ export default {
         description: 'Payment availability engine specs (rule-set normalize/evaluate + order frontend filtering + start option gate + admin scope editing/serializer)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/payments/availability/resolver_spec.rb spec/models/pallastrade/payment_method_options_spec.rb spec/services/pallastrade/payment_sessions/start_spec.rb spec/requests/pallastrade/admin/payment_methods_spec.rb'],
       },
+      // D9 支付凭据与环境（PRD-20260915-payments-d9）：环境隔离（test 不进前台 + test_mode 标记）+
+      // 凭据分级/env 引用 + 轮换到期巡检 + reveal 权限审计 + 后台环境/凭据/Webhook 卡（含 D1/D8 支付回归）
+      // PRD-20260915-payments-d9-支付凭据与环境 AC-008
+      'd9-credentials-rspec': {
+        description: 'Payment credential & environment specs (env isolation + credential levels/env refs + expiry job + reveal audit + admin cards + D1/D8 regression)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d9_payment_method_environment_spec.rb spec/jobs/pallastrade/payment_methods/credential_expiry_check_job_spec.rb spec/requests/pallastrade/admin/payment_method_credentials_spec.rb spec/requests/pallastrade/admin/payment_methods_spec.rb spec/services/pallastrade/payment_methods/test_connection_spec.rb spec/models/pallastrade/payment_method_options_spec.rb spec/services/pallastrade/payment_sessions/start_spec.rb spec/services/pallastrade/payments/availability/resolver_spec.rb'],
+      },
       // 管理后台商品批量运营 2.0（PRD-20260915-admin-bulk-operations-2）：批量价格/库存/渠道
       // + 预览零写入与计数一致性 + 逐条权限跳过 + i18n + 模态接线
       'admin-products-bulk-rspec': {
@@ -225,6 +232,12 @@ export default {
         description: 'Product history specs (diff-only recorder writes, batch attribution, merged audit+price timeline, admin sidebar)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/product_history/recorder_spec.rb spec/services/pallastrade/product_history/timeline_spec.rb spec/requests/pallastrade/admin/product_history_spec.rb'],
       },
+      // 重复商品检测（PRD-20260915-catalog-batch-d2-duplicate-detection）：三类信号（条码/SKU/名称）
+      // + 计数与列表同源 + 店铺/软删除作用域 + 只读工作台与对比视图 + 导航子项一致性
+      'duplicate-products-rspec': {
+        description: 'Duplicate detection specs (three signals, count/list consistency, store + soft-delete scoping, admin worklist and compare view, navigation)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/duplicate_products_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
+      },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {
         description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',
@@ -232,12 +245,6 @@ export default {
       },
       // P1 订单流程改造：本次变更相关 spec（新购物车/提交订单/回归）
       // 2026-09-14（PRD-20260914-checkout-cart-gift-cards-canonical）：补 cart_ canonical 端点规格
-      // 重复商品检测（PRD-20260915-catalog-batch-d2-duplicate-detection）：三类信号（条码/SKU/名称）
-      // + 计数与列表同源 + 店铺/软删除作用域 + 只读工作台与对比视图 + 导航子项一致性
-      'duplicate-products-rspec': {
-        description: 'Duplicate detection specs (three signals, count/list consistency, store + soft-delete scoping, admin worklist and compare view, navigation)',
-        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/duplicate_products_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
-      },
       'p1-order-flow-rspec': {
         description: 'P1 order-flow specs (cart/submit/request + canonical cart gift cards / store credits + regression)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/cart_spec.rb spec/services/pallastrade/carts/submit_spec.rb spec/services/pallastrade/carts/apply_gift_card_spec.rb spec/services/pallastrade/carts/store_credit_spec.rb spec/requests/api/v3/store/carts_controller_spec.rb spec/requests/api/v3/store/carts/gift_cards_spec.rb spec/requests/api/v3/store/carts/store_credits_spec.rb spec/requests/api/v3/store/carts/discount_codes_spec.rb spec/models/pallastrade/order_parent_child_spec.rb spec/requests/api/v3/store/payment_combinations_controller_spec.rb spec/services/pallastrade/carts/auto_split_spec.rb'],

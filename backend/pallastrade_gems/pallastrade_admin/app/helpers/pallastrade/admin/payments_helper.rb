@@ -86,6 +86,42 @@ module PallasTrade
           acc[key] = masked if masked.present?
         end
       end
+
+      # PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 环境选项（test / live）。
+      def environment_options
+        PallasTrade::PaymentMethod::ENVIRONMENTS.map do |value|
+          [PallasTrade.t("admin.payment_methods.environment_#{value}", default: value.humanize), value]
+        end
+      end
+
+      # 凭据健康行：key + 分级 + 轮换/到期 + 告警级别（值不进表，单独经 reveal 查看）。
+      def credential_health_rows(payment_method)
+        payment_method.class.password_preference_keys.map do |key|
+          payment_method.credential_status(key).merge('level' => payment_method.credential_level(key))
+        end
+      end
+
+      # PSP webhook 端点（不含 API key 鉴权；带环境标识）。
+      def payment_webhook_endpoint_url(payment_method)
+        path = "/api/v3/webhooks/payments/#{payment_method.prefixed_id}"
+        store_url = payment_method.store.respond_to?(:url) ? payment_method.store.url.to_s : ''
+
+        store_url.present? ? "#{store_url.chomp('/')}#{path}" : path
+      end
+
+      # 签名密钥（provider 可选能力）；只读展示，永远回掩码。
+      def payment_webhook_signing_keys(payment_method)
+        return [] unless payment_method.respond_to?(:webhook_keys)
+
+        payment_method.webhook_keys.to_a
+      end
+
+      def masked_webhook_signing_key(key)
+        secret = key.respond_to?(:signing_secret) ? key.signing_secret.to_s : ''
+        return PallasTrade.t('admin.payment_methods.credential_not_set') if secret.blank?
+
+        "#{PallasTrade::Preferences::Masking::TOKEN}#{secret.last(4)}"
+      end
     end
   end
 end

@@ -248,9 +248,11 @@ PallasTrade::Core::Engine.add_routes do
     end
     resources :policies, except: :show
     # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片3）—— provider 凭证体检（Test connection）
+    # PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 凭据明文查看（reveal，owner 权限 + 审计）
     resources :payment_methods, except: :show do
       member do
         post :test_connection
+        post :reveal_credential
       end
     end
     resources :shipping_methods, except: :show

@@ -10,6 +10,8 @@
       <%= render 'form', f: f %>
       <%# PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片3）—— 「支付方式」页签（随主表单提交） %>
       <%= render 'options' %>
+      <%# PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 凭据健康（轮换/到期/reveal）+ Webhook 卡 %>
+      <%= render 'credentials' %>
       <%= render 'pallastrade/admin/shared/edit_resource_links', f: f %>
     </div>
   </div>

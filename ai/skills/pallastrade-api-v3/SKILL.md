@@ -397,6 +397,17 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
 - 后台写入口不走 API：`/admin/payment_methods/:id` 表单（选项化页签 + Test connection，见 `pallastrade-admin`）；
   OpenAPI schemas 由 `scripts/ci/contracts.sh`（typelizer + `rake api:docs:schemas`）生成，勿手改。
 
+### Payment credentials & environment (D9, 2026-09-15, PRD-20260915-payments-d9)
+
+凭据与环境同样是 **additive** 契约增量，**无 store 侧变更**：
+
+- Admin `PaymentMethodSerializer` 新增：
+  - `environment` —— `test` / `live`（列默认 `live`，存量零回归）
+  - `credential_status` —— `[{ key, level(secret|publishable|internal), rotated_at, expires_on, days_left, alert_level(none|30d|7d|1d|expired) }]`，**不含任何凭据值**
+- Admin 新增动作 `POST /admin/payment_methods/:id/reveal_credential`（body `key`）：仅 owner 等价权限；返回 `{ key, value }`（JSON）或 turbo_stream；**必写审计**（记 key 不记值）；未知 key → 422。
+- store 侧无字段变更：test provider 由服务端过滤，不在 `available_payment_methods[]`；测试会话仅在 `PaymentSession#external_data.test_mode` 里可观测。
+- 契约经 `scripts/ci/contracts.sh` 再生成（typelizer → admin SDK + `api-docs/admin.yaml`）。
+
 ### Payment availability scope (D8, 2026-09-15, PRD-20260915-payments-d8)
 
 支付适用范围（入口级 `rule_set`：market / country / zone / currency）同样是 **additive** 契约增量，**无端点增删**：

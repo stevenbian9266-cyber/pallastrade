@@ -46,6 +46,9 @@ module PallasTrade
             ctx = context || Context.for_order(order)
             relation = order.store.payment_methods.active
             relation = scope == :back_end ? relation.available_on_back_end : relation.available_on_front_end
+            # D9（PRD-20260915-payments-d9 切片1）：test 环境 provider 不进前台（业务方案 §68.1）；
+            # 后台录单（back_end）不受限，便于沙箱/培训。
+            relation = relation.where.not(environment: 'test') unless scope == :back_end
 
             relation.select { |payment_method| provider_available?(order: order, payment_method: payment_method, context: ctx) }
           end

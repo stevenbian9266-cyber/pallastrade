@@ -481,6 +481,64 @@ module PallasTrade
       end
     end
 
+    # PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片1）—— 环境维度 + 凭据生命周期（业务方案 §68.1/§68.2）。
+    # 环境：`test` 不产生真实资金 —— 不进前台列表（Resolver frontend scope），会话/支付打 `test_mode`。
+    ENVIRONMENTS = %w[test live].freeze
+
+    validates :environment, inclusion: { in: ENVIRONMENTS }, allow_nil: true
+
+    def test_environment?
+      environment == 'test'
+    end
+
+    def live_environment?
+      !test_environment?
+    end
+
+    # 凭据分级（secret / publishable / internal）—— 后台与 API 投影共用。
+    def credential_level(key)
+      PallasTrade::PaymentMethods::Credentials.level(self, key)
+    end
+
+    # `env:NAME` → ENV['NAME']（缺失 nil）；普通值原样返回（引用不落明文）。
+    # 兼容 string/symbol 键（preferences 为 YAML 序列化 Hash，provider 声明多为 symbol）。
+    def resolved_preference(key)
+      raw = preferences[key] if preferences.respond_to?(:[])
+      raw = preferences[key.to_sym] if raw.nil?
+
+      PallasTrade::PaymentMethods::Credentials.resolve(raw)
+    end
+
+    # 轮换/过期状态（来源：`private_metadata['credentials'][key]`）。
+    # @return [Hash] { 'key', 'rotated_at', 'expires_on', 'days_left', 'alert_level' }
+    def credential_status(key, now: Time.current)
+      entry = credential_metadata(key) || {}
+      expires_on = PallasTrade::PaymentMethods::Credentials.parse_date(entry['expires_on'])
+      days_left = expires_on ? (expires_on - now.to_date).to_i : nil
+
+      {
+        'key' => key.to_s,
+        'rotated_at' => entry['rotated_at'].presence&.to_s,
+        'expires_on' => expires_on&.iso8601,
+        'days_left' => days_left,
+        'alert_level' => PallasTrade::PaymentMethods::Credentials.alert_level(days_left)
+      }
+    end
+
+    # 全部声明的密文型凭据的轮换/过期状态（按 preference schema 顺序）。
+    def credentials_status(now: Time.current)
+      self.class.password_preference_keys.map { |key| credential_status(key, now: now) }
+    end
+
+    # @return [Hash, nil] `private_metadata['credentials'][key]`（非 Hash 一律忽略）
+    def credential_metadata(key)
+      credentials = metadata&.[]('credentials')
+      return nil unless credentials.is_a?(Hash)
+
+      entry = credentials[key.to_s]
+      entry.is_a?(Hash) ? entry : nil
+    end
+
     # PALLAS-CUSTOM: PAY-OPT-1（切片3）—— 凭证体检钩子（Test connection 的远端探测）。
     # provider gem 可选覆盖，执行一次**只读**探测（不得产生资金 / 配置副作用；不得落明文凭证）。
     # 契约：

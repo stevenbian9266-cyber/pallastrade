@@ -634,6 +634,8 @@ function useCreateCart() {
 
 ## Changelog (P0 Payment, 2026-09-03)
 
+- D9 (2026-09-15, PRD-20260915-payments-d9): Admin SDK `PaymentMethod` 增 `environment: string` 与
+  `credential_status: [{ key, level, rotated_at, expires_on, days_left, alert_level }]`（typelizer 再生成；含 reveal 动作，非 SDK 面）；store 侧无变更。
 - D8 (2026-09-15, PRD-20260915-payments-d8): Admin SDK `PaymentMethod.options[]` 增 `rule_set`
   （`Record<string, unknown> | null`）与 `scope_summary`（string）；store 侧类型不变（过滤在服务端）。
 - P0 (2026-09-03): Cart 类型新增 express_payment（typelizer 再生成；platform SDK src+dist 已同步）。

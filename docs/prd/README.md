@@ -187,8 +187,10 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260915-admin-管理后台支付配置选项化-支付商-支付方式-前台入口 | admin | 2026-09-15 | N/A |
 | done | PRD-20260915-catalog-pdp-state-correctness | catalog | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-admin-bulk-operations-2 | admin | 2026-09-15 | （实施时回填） |
+| done | PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 | payments | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-admin-catalog-health-v1 | admin | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-catalog-batch-c1-discovery | catalog | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-catalog-batch-c2-sku-back-in-stock | catalog | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-catalog-batch-d1-product-history | catalog | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-catalog-batch-d2-duplicate-detection | catalog | 2026-09-15 | （实施时回填） |
+| done | PRD-20260915-payments-d9-支付凭据与环境 | payments | 2026-09-15 | （实施时回填） |

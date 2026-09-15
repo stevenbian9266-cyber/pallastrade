@@ -377,6 +377,14 @@ end
 - **回归**：`harness verify admin-payment-methods-rspec`（页签渲染/保存归一 + Test connection + 脱敏 +
   optionized 门控/Start 同源校验）。
 
+## 支付凭据与环境：provider 详情页（D9 切片2, 2026-09-15，PRD-20260915-payments-d9）
+
+- **环境控件**：显示设置卡增 `f.pallastrade_select :environment, environment_options`（helper 在 `PaymentsHelper#environment_options`）；控制器 `merge_environment_into` 从 **`params`** 读取（`environment` 不在 permit 名单内），白名单外的值忽略，切 `test` 时强制 `storefront_visible = false`。
+- **归一链順序坑**：`permitted_resource_params` 必须 `merge_environment_into(merge_payment_options_into(attributes))` —— `merge_payment_options_into` **返回新 Hash**（`attributes.to_h.merge(metadata:)`），不接返回值会丢掉入口配置（实测回归：optionized/rule_set 全失效）。
+- **「凭据健康」卡 + 「Webhook」卡**（`_credentials.html.erb`，在 `edit.html.erb` 的 options 之后 render）：分级/轮换/到期/告警行 + reveal 按钮（`data: { turbo_method: :post, turbo_confirm: … }`，命中 Turbo 栈约定）；值只回掩码（`masked_password_preferences`）；Webhook 卡展示 `/api/v3/webhooks/payments/<pm_prefixed_id>` 与签名密钥**只读掩码**（`masked_webhook_signing_key`）。
+- **reveal 动作**：`POST /admin/payment_methods/:id/reveal_credential`（member route）——`authorize! :update` + `can?(:manage, PallasTrade::Role.default_admin_role)` 双重门禁；响应 `turbo_stream`（就地替换 `#credential_value_<key>`）或 `json`；审计只记 key。
+- 回归：`harness verify d9-credentials-rspec`。
+
 ## 支付适用范围编辑：Provider 详情「支付方式」页签（D8 切片2, 2026-09-15，PRD-20260915-payments-d8）
 
 同一页签每行新增「适用范围」编辑器 + 摘要列（改 `_options.html.erb`；**不新增页面**）：
@@ -519,6 +527,31 @@ Products → **Catalog Health**（`/admin/catalog_health`）是商品运营的�
 接线位置：`ProductsController#update`（快照 + 记录）、`bulk_status_update`、`run_bulk_operation(..., history_action:)` 包办三个批量入口。
 
 回归验证：`harness verify product-history-rspec`。
+
+### Duplicate Detection —— 重复商品候选（2026-09-15，PRD-20260915-catalog-batch-d2-duplicate-detection）
+
+Products → **Duplicate Products**（`/admin/duplicate_products`）是商品治理第三步：列出**看起来重复**的商品候选，并给你并排对比。只读——**合并商品（Merge）是独立专项 D-3**（要收拾 Variant / Reviews / Redirects / 历史交易关系）。
+
+| 信号 | 口径（一律：同店 + 商品未删除 + 非 archived + 变体未删除） |
+|---|---|
+| `duplicate_barcode` | 变体 `LOWER(TRIM(barcode))` 相同且非空，且组内**商品数 > 1** |
+| `duplicate_sku` | 变体 `LOWER(TRIM(sku))` 相同且非空 |
+| `duplicate_name` | 商品 `LOWER(TRIM(name))` 相同且非空 |
+
+为什么这三个信号真实存在：`Variant#sku` 的唯一性校验**可被 `disable_sku_validation` 关闭且允许为空**；`variants.barcode` **有列有索引但没有任何唯一性校验**；商品 `name` 无约束。
+`slug` **不是**信号——`Product::Slugs` 冲突时自动补 uuid，看不到重复。
+
+实现定式（校验过自的两次踩坑）：
+
+1. **口径单一权威**：`PallasTrade::Products::DuplicateCandidates`（`SIGNALS` + `call(store, signal:)` + `counts(store)`）；`counts` 从**同一份 groups** 派生 → 计数与列表**构造上不可能不一致**；页面过滤在同一数组上 `select`（不重跑查询）。
+2. **聚合零插值**：分组表达式用 `Arel::Nodes::NamedFunction`（`LOWER(TRIM(col))`）+ `having(table[:id].count(true).gt(1))`，**类内不拼任何 SQL 字符串**（B-2 的 Brakeman 教训）。
+3. **变量无店铺列**：`pallastrade_variants` 无 `store_id` → 必须 `joins(:product).merge(product_scope)` 才能把别店的 SKU/条码挡在组外。
+4. **空白值靠分组后剔键**，**不要** `where.not(col: [nil, ''])`：那会生成 `NOT (col = NULL OR col IS NULL)` —— 对真实行恒为 NULL（永不命中）；Mobility 翻译属性上 `not_eq('')` 还会被转成 `!= NULL`。现写法：分组 → `keys.reject(&:blank?)` → `where(expr.in(keys))`。
+5. **导航与权限**：`products.add :duplicate_products`（`if: -> { can?(:read, PallasTrade::Product) }`）+ `BaseController` + `model_class`；**必同步 `navigation_consistency_spec.rb` 子项数组**（现为 `products_list catalog_health duplicate_products price_lists …`）。
+
+页面：概览（三信号计数 → 带 `?signal=` 链接）+ 候选表（组键 / 商品链接 / `+N more`）+ 对比页 `compare?product_ids[]=…`（名称/slug/状态/变体·SKU/条码/基础价/库存/渠道/分类/时间，缺失值占位）。
+
+回归验证：`harness verify duplicate-products-rspec`。
 
 ## Overriding views
 

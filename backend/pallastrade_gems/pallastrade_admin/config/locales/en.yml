@@ -842,6 +842,30 @@ en:
         scope_help: Leave empty to keep the option available everywhere. Markets and zones are limited to this store.
         scope_market: Markets
         scope_zone: Zones
+        environment: Environment
+        environment_help: Test credentials never reach the storefront — switching to test hides this provider at checkout.
+        environment_test: Test (sandbox)
+        environment_live: Live (production)
+        credential_health: Credential health
+        credential_key: Credential
+        credential_level: Level
+        credential_level_secret: Secret
+        credential_level_publishable: Publishable
+        credential_level_internal: Internal
+        credential_rotated_at: Last rotated
+        credential_expires_on: Expires on
+        credential_days_left: "%{days} days left"
+        credential_value: Value
+        credential_not_set: Not set
+        credential_none: This provider declares no credentials.
+        credential_alert: "%{key} credential alert: %{level} (days left: %{days})"
+        reveal_credential: Reveal
+        reveal_credential_confirm: Revealing shows the plaintext credential once and is recorded in the audit log. Continue?
+        webhook_settings: Webhook
+        webhook_endpoint_help: Point the provider's webhook at this URL (no API key required; the payment-method id is part of the path).
+        webhook_signing_keys: Signing keys
+        webhook_signing_key: "Signing secret %{value}"
+        webhook_signing_key_none: No signing key registered yet.
         payment_options: Storefront payment options
         payment_options_help: Each enabled option becomes an entry offered at checkout. Disable an option to hide it from the storefront immediately; the checkout list follows the position order.
         payment_options_not_optionized: This provider is not optionized yet — checkout keeps offering a single default entry. Enable at least one option and save to switch to this list.

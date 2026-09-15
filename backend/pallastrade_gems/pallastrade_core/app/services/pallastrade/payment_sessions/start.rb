@@ -57,6 +57,8 @@ module PallasTrade
         session_data = data.merge('idempotency_key' => operation_key)
         session_data['price_version'] = price_version if price_version.present?
         session_data['quote_refreshed'] = true if quote_refreshed
+        # D9（PRD-20260915-payments-d9 切片1）：test 环境凭据产生的会话打标（对账/报表可排除非真实资金）。
+        session_data['test_mode'] = true if payment_method.test_environment?
         session = payment_method.create_payment_session(
           order: order,
           amount: amount,

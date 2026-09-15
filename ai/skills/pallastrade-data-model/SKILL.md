@@ -274,6 +274,14 @@ Order → Address (bill_address, ship_address)
 - **正式形态**：D1 后半/D2 落 `pallastrade_payment_options`（provider_id/kind/…unique(provider_id, kind)），
   迁移时每个 provider 生成一条默认 option（业务方案 §74）。
 
+### Payment environment & credential metadata（D9, 2026-09-15）
+
+- **新列**：`pallastrade_payment_methods.environment`（string，`default: 'live'`，`null: false`）—— 存量数据零回归；白名单 `PallasTrade::PaymentMethod::ENVIRONMENTS`。
+- **凭据生命周期元数据**（不建表）：`private_metadata['credentials'][key] = { 'rotated_at' => ISO8601, 'expires_on' => 'YYYY-MM-DD' }`；告警状态写 `private_metadata['credential_alerts'][key] = { 'level' => '30d|7d|1d|expired', 'alerted_at' => ISO8601 }`。
+- **凭据值**仍存 `preferences`（YAML 序列化列，provider 声明 symbol 键）；值可为 `env:VAR` 引用（**只存引用**）。
+- 写入用 `update_columns(private_metadata: …)`（脱开校验/回调），读用 `credential_status/credential_metadata`。
+- 会话/支付测试标记：`PaymentSession#external_data['test_mode']` → `Payment#metadata['test_mode']`（`find_or_create_payment!` 自动继承）。
+
 ### Payment availability rule_set —— 同一过渡期 metadata 形态（D8, 2026-09-15）
 
 同一份 `private_metadata['options'][i]` **additive** 增加 `rule_set`（无新表、无 migration；正式表仍待 §74 的

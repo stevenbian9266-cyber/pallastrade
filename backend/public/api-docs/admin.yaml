@@ -25090,6 +25090,8 @@ components:
           type: boolean
         position:
           type: number
+        environment:
+          type: string
         created_at:
           type: string
         updated_at:
@@ -25097,6 +25099,8 @@ components:
         preferences:
           type: object
         preference_schema:
+          type: object
+        credential_status:
           type: object
         optionized:
           type: boolean
@@ -25116,10 +25120,12 @@ components:
       - auto_capture
       - storefront_visible
       - position
+      - environment
       - created_at
       - updated_at
       - preferences
       - preference_schema
+      - credential_status
       - optionized
       - options
       x-typelizer: true

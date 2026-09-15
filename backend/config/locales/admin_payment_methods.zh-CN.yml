@@ -22,6 +22,30 @@ zh-CN:
         scope_market: 市场
         scope_zone: Zone
         payment_options: 前台支付方式（入口）
+        environment: 环境
+        environment_help: 测试环境凭据不会到达前台 —— 切换到 test 后该支付商在结账页隐藏。
+        environment_test: 测试（沙箱）
+        environment_live: 生产（Live）
+        credential_health: 凭据健康
+        credential_key: 凭据
+        credential_level: 分级
+        credential_level_secret: 密钥（Secret）
+        credential_level_publishable: 公开（Publishable）
+        credential_level_internal: 内部
+        credential_rotated_at: 最近轮换
+        credential_expires_on: 到期日
+        credential_days_left: 剩余 %{days} 天
+        credential_value: 值
+        credential_not_set: 未设置
+        credential_none: 该支付商未声明凭据。
+        credential_alert: "%{key} 凭据告警：%{level}（剩余 %{days} 天）"
+        reveal_credential: 查看明文
+        reveal_credential_confirm: 查看明文只在本次回显，且会写入审计日志。继续？
+        webhook_settings: Webhook
+        webhook_endpoint_help: 把支付商的 webhook 指向该地址（无需 API key，路径含支付方式 ID）。
+        webhook_signing_keys: 签名密钥
+        webhook_signing_key: "签名密钥 %{value}"
+        webhook_signing_key_none: 尚未登记签名密钥。
         payment_options_help: 每个启用的方式都是结账页的一个入口；停用后前台立即隐藏，展示顺序按「排序」渲染。
         payment_options_not_optionized: 该支付商尚未选项化 —— 前台仍按单一默认入口展示。勾选至少一个方式并保存后，前台改按本列表展示。
         payment_options_optionized: 前台已按本列表展示（%{total} 个启用入口）。

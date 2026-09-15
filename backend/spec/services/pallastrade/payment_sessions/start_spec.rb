@@ -401,4 +401,25 @@ RSpec.describe PallasTrade::PaymentSessions::Start, type: :service do
       expect(result).to be_success
     end
   end
+
+  # PRD-20260915-payments-d9-支付凭据与环境 AC-002
+  describe '测试环境标记（D9）' do
+    it 'marks test-environment sessions and their payments with test_mode' do
+      sandbox = create(:bogus_payment_method, store: store, active: true, display_on: 'both', environment: 'test')
+
+      result = described_class.call(order: order, payment_method: sandbox, external_data: {})
+      expect(result).to be_success
+      expect(result.value.external_data['test_mode']).to be(true)
+
+      payment = result.value.find_or_create_payment!
+      expect(payment.metadata['test_mode']).to be(true)
+    end
+
+    it 'leaves live-environment sessions unmarked（零回归）' do
+      result = described_class.call(order: order, payment_method: payment_method, external_data: {})
+
+      expect(result).to be_success
+      expect(result.value.external_data).not_to have_key('test_mode')
+    end
+  end
 end

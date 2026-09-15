@@ -5,6 +5,16 @@ description: Use when the user is hardening a PallasTrade app, responding to a s
 
 # PallasTrade Security
 
+## Payment credential levels & environment（D9, 2026-09-15；PRD-20260915-payments-d9）
+
+- **分级（勿自创字段）**：`:password` 型 preference = `secret`；provider 在 `public_preference_keys` 声明的 = `publishable`；其余 = `internal`。读分级用 `PaymentMethod#credential_level(key)`（webhook 签名密钥不在 preference 体系内，见 provider 的 webhook key 表）。
+- **`env:NAME` 引用**：凭证值可写成 `env:STRIPE_SECRET_KEY` —— **库中只存引用**（绝不落明文），读取侧用 `PaymentMethod#resolved_preference(key)` 解析（ENV 缺失 → `nil`，**不得 raise**）。写入/展示路径继续走 `Preferences::Masking`（`••••` + 后 4 位）。
+- **reveal（看明文）**：唯一的明文出口，必须同时满足①资源 `update` 权限②默认管理员角色（owner 等价）；成功**必须**写审计 `payment_method_credential_revealed`（只记 `key` + actor，**绝不记值**）；未知 key → 422。
+- **环境隔离**：`environment = test` 的 provider 不进前台列表（`Payments::Availability::Resolver` frontend scope），会话/支付打 `test_mode`；切 test 时强制 `storefront_visible = false`。
+- **轮换/到期**：元数据在 `private_metadata['credentials'][key] = { rotated_at, expires_on }`；日巡检 `PaymentMethods::CredentialExpiryCheckJob` 在 30/7/1/expired 档告警（同级别幂等，写 `credential_alerts` + 审计）。
+- 回归：`harness verify d9-credentials-rspec`。
+
+
 PallasTrade inherits Rails' security model and adds an e-commerce attack surface (payment data, customer PII, admin credentials, webhook endpoints). This skill covers both.
 
 ## The threat model in three sentences

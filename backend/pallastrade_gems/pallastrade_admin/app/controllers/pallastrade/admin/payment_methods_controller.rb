@@ -26,7 +26,57 @@ module PallasTrade
         redirect_to PallasTrade.edit_admin_payment_method_path(@object), status: :see_other
       end
 
+      # POST /admin/payment_methods/:id/reveal_credential
+      # PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 凭据明文查看（敏感动作）：
+      # owner 等价权限（默认管理员角色）+ 审计（只记 key 与 actor，**不记值**）。
+      # 响应：turbo_stream（就地替换掩码元素） / json（`{ key, value }`）。
+      def reveal_credential
+        authorize_admin!
+        return render_unknown_credential unless revealable_credential?(reveal_key)
+
+        audit_credential_reveal(reveal_key)
+        value = @object.resolved_preference(reveal_key)
+
+        respond_to do |format|
+          format.turbo_stream do
+            render turbo_stream: turbo_stream.update("credential_value_#{reveal_key}", plain: value.to_s)
+          end
+          format.json { render json: { key: reveal_key, value: value }, status: :ok }
+          format.html { redirect_to PallasTrade.edit_admin_payment_method_path(@object), status: :see_other }
+        end
+      end
+
       private
+
+      # D9（切片2）：reveal 是敏感动作 —— 资源 update 权限 + 默认管理员角色（owner 等价）。
+      def authorize_admin!
+        authorize! :update, @object
+        return if current_ability.can?(:manage, PallasTrade::Role.default_admin_role)
+
+        raise CanCan::AccessDenied
+      end
+
+      def reveal_key
+        params[:key].to_s
+      end
+
+      def revealable_credential?(key)
+        @object.class.password_preference_keys.map(&:to_s).include?(key)
+      end
+
+      def render_unknown_credential
+        render json: { error: 'unknown_credential' }, status: :unprocessable_entity
+      end
+
+      # 审计只记 key（不记值）—— 满足「看明文可追溯」且不落密钥。
+      def audit_credential_reveal(key)
+        PallasTrade::Audit.record(
+          action: 'payment_method_credential_revealed',
+          actor: audit_actor,
+          resource: @object,
+          metadata: { key: key }
+        )
+      end
 
       def build_resource
         if params[:payment_method].present?
@@ -56,7 +106,20 @@ module PallasTrade
 
       def permitted_resource_params
         attributes = params.require(:payment_method).permit(permitted_payment_method_attributes + @object.preferences.keys.map { |key| "preferred_#{key}" })
-        merge_payment_options_into(attributes)
+        # 归一按顺序叠加：入口（返回合并后的新 Hash）→ 环境（同一 Hash 上追加）。
+        merge_environment_into(merge_payment_options_into(attributes))
+      end
+
+      # PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 环境归一（业务方案 §68.1）：
+      #   1. 仅接受白名单值（test / live），其余值忽略（不报错，保持后台可用）；
+      #   2. 切到 `test` 时强制 `storefront_visible = false`（沙箱默认不进前台）。
+      def merge_environment_into(attributes)
+        submitted = params.dig(:payment_method, :environment).to_s
+        return attributes unless PallasTrade::PaymentMethod::ENVIRONMENTS.include?(submitted)
+
+        attributes[:environment] = submitted
+        attributes[:storefront_visible] = false if submitted == 'test'
+        attributes
       end
 
       # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915-admin 切片3）—— 后台「支付方式」页签写入口。

@@ -275,12 +275,13 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | Admin 样式 / 设计 token（`pallastrade_admin/app/assets/tailwind/**`、`pallastrade_admin.css`、后台 layout） | + `harness verify admin-theme-rspec`（品牌色阶/语义 token/密度双档 + 组件零直引 + WCAG AA 对比度契约） | ≤1 min |
 | 支付商选项化（`pallastrade_admin` payment_methods 视图/控制器、core `payment_method(s)` 服务、`pallastrade_stripe` 能力目录） | + `harness verify admin-payment-methods-rspec`（选项化页签/保存归一 + Test connection + 凭证脱敏 + optionized 门控/Start 同源校验回归） | ≤1 min |
 | 支付适用范围引擎（`payments/availability/**`、`PaymentMethod#payment_option_rule_set`、`Order#payment_methods`、admin scope 编辑/序列化） | + `harness verify d8-availability-rspec`（规则集归一/求值 + 前台收集过滤 + Start 入口门禁 + 后台范围编辑与投影） | ≤3 min |
+| 支付凭据与环境（`payment_methods.environment`、`Payments::Availability::Resolver` 前台过滤、`PaymentMethods::{Credentials,CredentialExpiryCheckJob}`、admin reveal/凭据卡/Webhook 卡） | + `harness verify d9-credentials-rspec`（环境隔离 + 凭据分级/env 引用 + 到期告警幂等 + reveal 权限与审计 + 后台卡片 + D1/D8 回归） | ≤4 min |
 | Admin 商品批量运营（批量价格/库存/渠道 + 预览确认） | + `harness verify admin-products-bulk-rspec`（预览零写入 + 预览/执行计数一致 + 逐条权限跳过 + 模态接线） | ≤2 min |
 | Admin Catalog Health（7 类商品健康 issue + 一键过滤列表） | + `harness verify admin-catalog-health-rspec`（口径逐项 + 计数==列表条数 + 筛选横幅 + 导航子项一致性） | ≤2 min |
 | 到货订阅（SKU 级，`back_in_stock_subscriptions` / 事件层 / store API / 后台 SKU 列） | + `harness verify back-in-stock-rspec`（SKU 唯一约束 + 双通道分流不重复 + API variant_id + 后台 SKU 列） | ≤2 min |
 | 商品级 Product History 时间线（`product_history/**` + 后台 `_history` 侧栏注入） | + `harness verify product-history-rspec`（只记变化字段/无变化跳过 + 批量每商品一条含计数 + 审计与改价合并倒序 + 编辑页渲染与空态） | ≤2 min |
-| Financial ledger / reconciliation (`reconciliations/`, `financial_ledger/`) | + `harness verify finance-reconciliation-rspec` (source/transaction/payment/refund/dispute 对账 + sweeper) | ≤2 min |
 | 重复商品检测（`products/duplicate_candidates.rb` + 后台 Duplicate Products 工作台/对比视图） | + `harness verify duplicate-products-rspec`（三类信号口径 + 计数==组数 + 店铺/软删除作用域 + 对比渲染 + 导航子项） | ≤2 min |
+| Financial ledger / reconciliation (`reconciliations/`, `financial_ledger/`) | + `harness verify finance-reconciliation-rspec` (source/transaction/payment/refund/dispute 对账 + sweeper) | ≤2 min |
 | Any change | `harness doc-impact --base origin/dev` — checks knowledge docs are synced | ≤1 min |
 
 ### Verification Evidence Required

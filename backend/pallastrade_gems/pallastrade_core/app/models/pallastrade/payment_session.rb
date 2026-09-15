@@ -101,6 +101,8 @@ module PallasTrade
     def find_or_create_payment!(_metadata = {})
       return payment if payment.present?
 
+      test_mode = external_data.to_h.stringify_keys['test_mode'] == true
+
       order.payments.find_or_create_by!(
         payment_method: payment_method,
         response_code: external_id
@@ -108,6 +110,8 @@ module PallasTrade
         p.payment_session = self
         p.amount = amount
         p.skip_source_requirement = true
+        # D9（PRD-20260915-payments-d9 切片1）：test 环境会话产生的支付打标（非真实资金）。
+        p.metadata = (p.metadata || {}).merge('test_mode' => true) if test_mode
       end
     rescue ActiveRecord::RecordNotUnique
       order.payments.find_by!(

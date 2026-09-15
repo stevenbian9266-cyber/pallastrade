@@ -39,6 +39,9 @@
     <%= f.pallastrade_text_field :name, help: PallasTrade.t('admin.payment_methods.name_help') %>
 
     <%= f.pallastrade_select :display_on, display_on_options, { label: PallasTrade.t(:display) } %>
+    <%# PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 环境（test / live）：
+        切到 test 即不进前台（业务方案 §68.1）；保存即生效，不重启不重建镜像。 %>
+    <%= f.pallastrade_select :environment, environment_options, { label: PallasTrade.t('admin.payment_methods.environment'), help: PallasTrade.t('admin.payment_methods.environment_help') } %>
     <%= f.pallastrade_select :auto_capture, [["#{PallasTrade.t(:use_app_default)} (#{PallasTrade::Config[:auto_capture]})", ''], [PallasTrade.t(:say_yes).to_s, true], [PallasTrade.t(:say_no).to_s, false]], { label: PallasTrade.t(:auto_capture) } %>
 
     <%= f.pallastrade_check_box :active %>
