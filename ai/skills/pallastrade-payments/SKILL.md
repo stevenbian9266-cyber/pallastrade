@@ -1237,6 +1237,18 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **到期巡检**：`PaymentMethods::CredentialExpiryCheckJob`（日）—— 30/7/1/expired 阈值，同级别幂等（`credential_alerts` + `AuditLog`），零 provider 网络调用。
 - 回归：`harness verify d9-credentials-rspec`。
 
+## Frontend key delivery — 前台密钥下发（D10 首版, 2026-09-15；PRD-20260915-payments-d10-client-config）
+
+凭据**下发面**（业务方案 §68.4/§76.1）：服务端在支付方式 payload 里下发 `client_config`，取代构建期 `NEXT_PUBLIC_*`（换环境/换支付商不再重建镜像）：
+
+- **唯一组装点**：`PallasTrade::PaymentMethods::ClientConfig.call(payment_method)` → `{ provider:, environment:, publishable: {...}, session_token: nil }`。
+  - `provider` = `Gateway.api_type`；`environment` = D9 的 test/live；`session_token` 是**短时令牌预留位**（本期恒 nil，provider 侧签发属后续批次）。
+- **只下发 publishable 级**：键来源 = `PaymentMethod#public_preferences`（provider 用 `public_preference_keys` 声明）；`secret` / `internal` 永不进入 payload。
+  声明的键**必须是 symbol**（preferences 以 symbol 存储，string 键会取到 nil）；Stripe 声明 `[:publishable_key]`。
+- **`env:` 引用**：值形如 `env:STRIPE_PUBLISHABLE_KEY` 时写路径只存引用，下发前经 `resolved_preference` 解析（缺 ENV → 省略该键）。
+- **下发通道**：store `CheckoutSerializer.payment.available_payment_methods[].client_config` + store `PaymentMethodSerializer`（cart / order / shopping_cart）→ admin 序列化器继承同字段（publishable 非密）。
+- 回归：`harness verify d10-client-config-rspec`；前端 `storefront-test`。
+
 ## Payment availability scope —— 适用范围引擎（D8 首版, 2026-09-15；PRD-20260915-payments-d8）
 
 入口（PaymentOption）级可用范围，栖于入口层 `metadata['options'][i]['rule_set']`（业务方案 §66）：

@@ -151,6 +151,7 @@ type Address = {
 type BackInStockSubscription = {
     id: string;
     product_id: string | null;
+    variant_id: string | null;
     email: string;
     status: string;
     created_at: string;
@@ -647,8 +648,16 @@ type PaymentMethod = {
     name: string;
     description: string | null;
     type: string;
+    kind: string;
+    frontend_kind: string;
     session_required: boolean;
     source_required: boolean;
+    client_config: {
+        provider: string;
+        environment: string | null;
+        publishable: Record<string, string>;
+        session_token: string | null;
+    };
 };
 
 type Payment = {

@@ -40,7 +40,9 @@ module PallasTrade
                      billing_mode: :string,
                      payment: '{ available_payment_methods: Array<{ id: string, name: string, ' \
                               'description: string | null, type: string, session_required: boolean, ' \
-                              'source_required: boolean }> }',
+                              'source_required: boolean, kind: string, frontend_kind: string, ' \
+                              'client_config: { provider: string, environment: string | null, ' \
+                              'publishable: Record<string, string>, session_token: string | null } }> }',
                      shipping_address: { nullable: true }, billing_address: { nullable: true }
 
             attribute :id, &:id
@@ -140,7 +142,12 @@ module PallasTrade
                 source_required: payment_method.source_required?,
                 # PALLAS-CUSTOM: PAY-OPT-1（切片2）—— 与 store PaymentMethodSerializer 契约一致。
                 kind: payment_method.default_option_kind,
-                frontend_kind: payment_method.default_option_frontend_kind
+                frontend_kind: payment_method.default_option_frontend_kind,
+                # PALLAS-CUSTOM: D10（PRD-20260915-payments-d10-client-config 切片1）——
+                # 前台密钥下发（业务方案 §68.4/§76.1）：服务端下发 **publishable 级**凭据，
+                # 前端「先读 API、回落 NEXT_PUBLIC_*」，摆脱构建期内联依赖。
+                # 唯一组装点：PallasTrade::PaymentMethods::ClientConfig（secret 永不下发）。
+                client_config: PallasTrade::PaymentMethods::ClientConfig.call(payment_method)
               }
             end
           end

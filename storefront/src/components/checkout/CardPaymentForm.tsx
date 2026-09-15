@@ -19,7 +19,7 @@ import {
   useState,
 } from "react";
 import { Input } from "@/components/ui/input";
-import { stripePromise } from "@/lib/utils/stripe";
+import { getStripePromise, type PaymentClientConfig } from "@/lib/utils/stripe";
 
 export interface CardPaymentFormHandle {
   /** 校验卡字段并用 Elements 卡号字段 confirmCardPayment(pi_secret)。 */
@@ -31,6 +31,11 @@ export interface CardPaymentFormHandle {
 interface CardPaymentFormProps {
   /** 加载后回调 handle（父组件存 ref 供 Pay Now 调用）。 */
   onReady: (handle: CardPaymentFormHandle) => void;
+  /**
+   * PALLAS-CUSTOM: D10 —— 服务端下发的支付方式客户端配置（CheckoutView.payment
+   * .available_payment_methods[].client_config）；缺省时回落 `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`。
+   */
+  clientConfig?: PaymentClientConfig | null;
 }
 
 /**
@@ -71,9 +76,9 @@ const cardElementOptions = {
 export const CardPaymentForm = forwardRef<
   CardPaymentFormHandle,
   CardPaymentFormProps
->(function CardPaymentForm({ onReady }, ref) {
+>(function CardPaymentForm({ onReady, clientConfig }, ref) {
   return (
-    <Elements stripe={stripePromise}>
+    <Elements stripe={getStripePromise(clientConfig)}>
       <CardPaymentFormInner onReady={onReady} ref={ref} />
     </Elements>
   );

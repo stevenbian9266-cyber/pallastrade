@@ -149,7 +149,27 @@ RSpec.describe PallasTrade::Api::V3::Store::Checkout::CheckoutSerializer, type: 
         expect(entry[:kind]).to eq('check')
         expect(entry[:frontend_kind]).to eq('manual')
         expect(entry.keys).to contain_exactly(:id, :name, :description, :type, :session_required, :source_required,
-                                              :kind, :frontend_kind)
+                                              :kind, :frontend_kind, :client_config)
+      end
+
+      # PALLAS-CUSTOM: D10（PRD-20260915-payments-d10-client-config AC-005 / FR-003）——
+      # 前台密钥下发：契约 additive 新增 `client_config`（publishable 级凭据 + 环境），
+      # 取代构建期 `NEXT_PUBLIC_*`；secret 级凭据永不出现在响应里。
+      it 'exposes client_config with publishable credentials only (AC-005)' do
+        gateway = create(:stripe_gateway, store: store, active: true, display_on: 'both')
+        gateway.set_preference(:publishable_key, 'pk_test_d10_payload')
+        gateway.set_preference(:secret_key, 'sk_test_d10_payload_secret')
+        gateway.save!
+
+        serialized = serialize(PallasTrade::OrderCheckout::View.call(order: order))
+        entry = serialized['payment'][:available_payment_methods].find { |m| m[:id] == gateway.reload.prefixed_id }
+
+        expect(entry).to be_present
+        expect(entry[:client_config]).to eq(
+          provider: 'stripe', environment: 'live',
+          publishable: { 'publishable_key' => 'pk_test_d10_payload' }, session_token: nil
+        )
+        expect(serialized.to_s).not_to include('sk_test_d10_payload_secret')
       end
 
       # PALLAS-CUSTOM: PAY-OPT-1（切片2 / AC-002 / AC-006）—— 已选项化且零可用入口的 provider

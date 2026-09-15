@@ -18,8 +18,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/utils/stripe", () => ({
-  isStripeConfigured: true,
-  stripePromise: Promise.resolve(null),
+  isStripeConfigured: () => true,
+  getStripePromise: () => Promise.resolve(null),
+  resolveStripePublishableKey: () => "pk_test_mock",
 }));
 
 vi.mock("@/lib/data/express-checkout-flow", () => ({

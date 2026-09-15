@@ -421,12 +421,16 @@ RSpec.describe PallasTradeStripe::Gateway, type: :model do
   # ── STR-012: Log / secret safety ──────────────────────────────────────
 
   describe "STR-012: Log / secret safety" do
-    it "does not expose private Stripe preferences through public preferences" do
+    # PALLAS-CUSTOM: D10（PRD-20260915-payments-d10-client-config AC-001）——
+    # `publishable_key` 现在**有意**列为 public preference（前台密钥下发，Stripe.js 必需；
+    # 见 `Gateway#public_preference_keys`）。安全约束不变：secret 级凭据永不进入 public 投影。
+    it "never exposes private Stripe preferences through public preferences" do
       gateway.preferred_secret_key = "sk_test_super_secret_12345"
       gateway.preferred_publishable_key = "pk_test_public_12345"
 
-      expect(gateway.public_preferences).not_to include(:secret_key, :publishable_key)
-      expect(gateway.public_preferences.values.join).not_to include("sk_test_", "pk_test_")
+      expect(gateway.public_preferences).not_to include(:secret_key)
+      expect(gateway.public_preferences.values.join).not_to include("sk_test_")
+      expect(gateway.public_preferences).to include(:publishable_key)
     end
 
     it "filters Stripe credentials, signatures, and authorization headers" do

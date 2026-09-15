@@ -25079,6 +25079,8 @@ components:
           type: boolean
         source_required:
           type: boolean
+        client_config:
+          type: object
         metadata:
           type: object
         active:
@@ -25115,6 +25117,7 @@ components:
       - frontend_kind
       - session_required
       - source_required
+      - client_config
       - metadata
       - active
       - auto_capture

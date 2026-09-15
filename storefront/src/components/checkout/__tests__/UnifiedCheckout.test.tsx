@@ -26,7 +26,9 @@ vi.mock("@/lib/data/countries", () => ({
 const fetchMock = vi.fn();
 
 vi.mock("@/lib/utils/stripe", () => ({
-  stripePromise: Promise.resolve(null),
+  getStripePromise: () => Promise.resolve(null),
+  isStripeConfigured: () => false,
+  resolveStripePublishableKey: () => null,
   normalizeClientSecret: (s: string) => s,
   extractSessionClientSecret: (
     session: {

@@ -790,6 +790,7 @@ var StoreClient = class {
   backInStockSubscriptions = {
     /**
      * Subscribe an email to be notified when an out-of-stock product is back in stock.
+     * Pass `variant_id` to subscribe to one SKU only (Batch C-2).
      */
     create: (productId, params, options) => this.request("POST", `/products/${productId}/back_in_stock_subscriptions`, {
       ...options,

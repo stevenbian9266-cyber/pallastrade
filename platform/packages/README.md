@@ -61,6 +61,13 @@ payment-method list can never offer an option the server rejects. All four block
 older payload keeps rendering (the `CheckoutView` type is hand-written in `sdk/src/types/index.ts`
 and must be extended alongside the generated types).
 
+D10 (PRD-20260915-payments-d10-client-config) adds `client_config` to every payment-method payload —
+`{ provider, environment, publishable, session_token }` on `payment.available_payment_methods[]` (checkout)
+and on `cart/order.payment_methods[]` (the store `PaymentMethodSerializer`). Only **publishable-level**
+credentials ever appear (secrets are never projected), and `env:` references are resolved server-side, so the
+storefront reads its Stripe publishable key from the API (`resolveStripePublishableKey`) with a temporary
+fallback to `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` during the migration window.
+
 Canonical cart gift card intent (2026-09-14, PRD-20260914-checkout-cart-gift-cards-canonical):
 `ShoppingCart` gains `gift_card: { code, display_amount_remaining } | null` (typed as of B2) — the
 cart-stage projection of `client.carts.giftCards.apply('cart_…', code)`. The card is validated at

@@ -13214,6 +13214,8 @@ components:
           type: boolean
         source_required:
           type: boolean
+        client_config:
+          type: object
       required:
       - id
       - name
@@ -13223,6 +13225,7 @@ components:
       - frontend_kind
       - session_required
       - source_required
+      - client_config
       x-typelizer: true
     Payment:
       type: object

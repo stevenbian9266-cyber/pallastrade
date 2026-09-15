@@ -691,7 +691,11 @@ export function OrderPaymentContent({
           {selectedMethod?.type === "stripe" &&
           selectedMethod.session_required ? (
             <div className="mt-4 rounded-lg border border-gray-200 p-4">
-              <CardPaymentForm onReady={handleCardReady} />
+              {/* PALLAS-CUSTOM: D10 —— 服务端下发 client_config（回落 NEXT_PUBLIC_*） */}
+              <CardPaymentForm
+                onReady={handleCardReady}
+                clientConfig={selectedMethod.client_config ?? null}
+              />
             </div>
           ) : null}
 

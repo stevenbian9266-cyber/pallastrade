@@ -4,7 +4,9 @@ module PallasTrade
       class PaymentMethodSerializer < BaseSerializer
         typelize name: :string, description: [:string, nullable: true], type: :string,
                  session_required: :boolean, source_required: :boolean,
-                 kind: :string, frontend_kind: :string
+                 kind: :string, frontend_kind: :string,
+                 client_config: '{ provider: string, environment: string | null, ' \
+                                 'publishable: Record<string, string>, session_token: string | null }'
 
         attributes :name, :description
 
@@ -29,6 +31,14 @@ module PallasTrade
 
         attribute :source_required do |payment_method|
           payment_method.source_required?
+        end
+
+        # PALLAS-CUSTOM: D10（PRD-20260915-payments-d10-client-config 切片1）——
+        # 前台密钥下发：cart / order / checkout 三条通道同源下发 **publishable 级**凭据，
+        # 前端「先读 API、回落 NEXT_PUBLIC_*」（业务方案 §68.4/§76.1）。
+        # 唯一组装点 PallasTrade::PaymentMethods::ClientConfig（secret 永不下发）。
+        attribute :client_config do |payment_method|
+          PallasTrade::PaymentMethods::ClientConfig.call(payment_method)
         end
       end
     end

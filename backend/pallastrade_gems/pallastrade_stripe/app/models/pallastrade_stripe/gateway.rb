@@ -770,5 +770,15 @@ module PallasTradeStripe
       secrets << ENV['STRIPE_SIGNING_SECRET'] if ENV['STRIPE_SIGNING_SECRET'].present?
       secrets
     end
+
+    # PALLAS-CUSTOM: D10（PRD-20260915-payments-d10-client-config 切片1）——
+    # 声明可下发前台的 publishable 凭据（`Credentials.level` 判级依据，业务方案 §68.4）。
+    # 仅 **publishable key** 可下发（Stripe.js 客户端初始化必需，公开值）；
+    # `secret_key` 保持 `:password` → 判为 `secret`，永不下发。
+    # ⚠️ 键必须是 **symbol**（preferences 以 symbol 存储；string 键会取到 nil）。
+    # @return [Array<Symbol>]
+    def public_preference_keys
+      [:publishable_key]
+    end
   end
 end

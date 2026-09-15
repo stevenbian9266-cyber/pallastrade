@@ -238,6 +238,12 @@ export default {
         description: 'Duplicate detection specs (three signals, count/list consistency, store + soft-delete scoping, admin worklist and compare view, navigation)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/duplicate_products_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
       },
+      // 前台密钥下发（PRD-20260915-payments-d10-client-config）：client_config 组装（仅 publishable）
+      // + env: 引用解析 + Checkout 契约下发 + Stripe publishable 声明（secret 不泄漏）
+      'd10-client-config-rspec': {
+        description: 'Frontend key delivery specs (client_config envelope, publishable-only projection, env: references, checkout payload, Stripe public preference declaration)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/payment_methods/client_config_spec.rb spec/serializers/pallastrade/api/v3/store/checkout/checkout_serializer_spec.rb spec/serializers/pallastrade/api/v3/cart_serializer_spec.rb pallastrade_gems/pallastrade_stripe/spec/models/gateway_spec.rb'],
+      },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {
         description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',

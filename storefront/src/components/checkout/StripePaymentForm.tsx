@@ -8,7 +8,7 @@ import {
 import { CircleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { stripePromise } from "@/lib/utils/stripe";
+import { getStripePromise, type PaymentClientConfig } from "@/lib/utils/stripe";
 
 export interface StripePaymentFormHandle {
   confirmPayment: (returnUrl: string) => Promise<{ error?: string }>;
@@ -18,6 +18,8 @@ export interface StripePaymentFormHandle {
 interface StripePaymentFormProps {
   clientSecret: string;
   onReady: (handle: StripePaymentFormHandle) => void;
+  /** PALLAS-CUSTOM: D10 —— 服务端下发的 client_config（缺省回落环境变量）。 */
+  clientConfig?: PaymentClientConfig | null;
 }
 
 function StripePaymentFormInner({
@@ -98,10 +100,11 @@ function StripePaymentFormInner({
 export function StripePaymentForm({
   clientSecret,
   onReady,
+  clientConfig,
 }: StripePaymentFormProps) {
   return (
     <CheckoutProvider
-      stripe={stripePromise}
+      stripe={getStripePromise(clientConfig)}
       options={{
         // Stripe Checkout Session client_secret 需要标准格式（/ 而非 %2F）。
         // 后端 external_data 中为 URL 编码值，调用方已 decodeURIComponent 后传入。

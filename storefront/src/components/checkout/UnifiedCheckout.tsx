@@ -1245,7 +1245,11 @@ export function UnifiedCheckout({
                 // Stripe 自绘卡字段（PRD-20260831-payments-stripe-自绘卡支付表单）：
                 // 纯 HTML 卡字段立即渲染，不依赖 client_secret / js.stripe.com iframe。
                 <div className="rounded-lg border border-gray-200 p-4">
-                  <CardPaymentForm onReady={handleCardReady} />
+                  {/* PALLAS-CUSTOM: D10 —— 服务端下发 client_config（回落 NEXT_PUBLIC_*） */}
+                  <CardPaymentForm
+                    onReady={handleCardReady}
+                    clientConfig={selectedMethod?.client_config ?? null}
+                  />
                   {/* PRD 3.6：Use shipping address as billing address（默认勾选） */}
                   <div className="mt-4">
                     <label

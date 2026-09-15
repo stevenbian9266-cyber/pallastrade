@@ -36,7 +36,11 @@ import {
   expressLineItems,
   parseName,
 } from "@/lib/utils/express-checkout";
-import { isStripeConfigured, stripePromise } from "@/lib/utils/stripe";
+import {
+  getStripePromise,
+  isStripeConfigured,
+  type PaymentClientConfig,
+} from "@/lib/utils/stripe";
 
 export interface ExpressCheckoutButtonProps {
   cart: Cart;
@@ -46,6 +50,8 @@ export interface ExpressCheckoutButtonProps {
   onAvailabilityChange?: (available: boolean) => void;
   maxColumns?: number;
   showDivider?: boolean;
+  /** PALLAS-CUSTOM: D10 —— 服务端下发的 client_config（缺省回落环境变量）。 */
+  clientConfig?: PaymentClientConfig | null;
 }
 
 function ExpressCheckoutInner({
@@ -463,6 +469,7 @@ function ExpressCheckoutWithElements({
   onAvailabilityChange,
   maxColumns,
   showDivider,
+  clientConfig,
 }: ExpressCheckoutButtonProps) {
   const currency = cart.currency.toLowerCase();
 
@@ -482,7 +489,7 @@ function ExpressCheckoutWithElements({
   );
 
   return (
-    <Elements stripe={stripePromise} options={options}>
+    <Elements stripe={getStripePromise(clientConfig)} options={options}>
       <ExpressCheckoutInner
         cart={cart}
         basePath={basePath}
@@ -497,15 +504,16 @@ function ExpressCheckoutWithElements({
 }
 
 export function ExpressCheckoutButton(props: ExpressCheckoutButtonProps) {
-  const { onAvailabilityChange } = props;
+  const { onAvailabilityChange, clientConfig } = props;
+  const configured = isStripeConfigured(clientConfig);
 
   useEffect(() => {
-    if (!isStripeConfigured) {
+    if (!configured) {
       onAvailabilityChange?.(false);
     }
-  }, [onAvailabilityChange]);
+  }, [configured, onAvailabilityChange]);
 
-  if (!isStripeConfigured) {
+  if (!configured) {
     return null;
   }
 

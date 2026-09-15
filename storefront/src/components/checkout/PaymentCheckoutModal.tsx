@@ -411,7 +411,11 @@ export function PaymentCheckoutModal({
             始终渲染，不依赖 client_secret / js.stripe.com iframe */}
         {!loading && isSingle && isStripe ? (
           <div className="rounded-lg border border-gray-200 p-4">
-            <CardPaymentForm onReady={handleCardReady} />
+            {/* PALLAS-CUSTOM: D10 —— 服务端下发 client_config（回落 NEXT_PUBLIC_*） */}
+            <CardPaymentForm
+              onReady={handleCardReady}
+              clientConfig={selectedMethod?.client_config ?? null}
+            />
           </div>
         ) : null}
 
@@ -419,6 +423,7 @@ export function PaymentCheckoutModal({
           <StripePaymentForm
             clientSecret={stripeSecret}
             onReady={handleStripeReady}
+            clientConfig={selectedMethod?.client_config ?? null}
           />
         ) : null}
 
