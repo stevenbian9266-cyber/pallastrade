@@ -1,0 +1,246 @@
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.webhook_events.title') %>
+<% end %>
+
+<p class="text-gray-500 mb-6"><%= PallasTrade.t('admin.webhook_events.intro') %></p>
+
+<%# D12：只读聚合（异常降级 nil -> 区块不渲染，页面恒 200） %>
+<% if @health.present? %>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="card-lg">
+      <div class="card-header">
+        <h3 class="card-title"><%= PallasTrade.t('admin.webhook_events.health_inbound') %></h3>
+      </div>
+      <div class="card-body">
+        <dl class="grid grid-cols-2 gap-3">
+          <div>
+            <dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.health_total') %></dt>
+            <dd class="text-lg font-medium"><%= @health[:inbound][:total] %></dd>
+          </div>
+          <div>
+            <dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.health_backlog') %></dt>
+            <dd class="text-lg font-medium"><%= @health[:inbound][:backlog] %></dd>
+          </div>
+          <div>
+            <dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.health_failure_rate') %></dt>
+            <dd class="text-lg font-medium"><%= number_to_percentage(@health[:inbound][:failure_rate] * 100, precision: 2) %></dd>
+          </div>
+          <div>
+            <dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.health_avg_duration') %></dt>
+            <dd class="text-lg font-medium">
+              <%= @health[:inbound][:avg_processing_seconds].nil? ? '—' : "#{@health[:inbound][:avg_processing_seconds].round(2)} s" %>
+            </dd>
+          </div>
+        </dl>
+        <p class="text-gray-500 text-sm mt-3">
+          <%= PallasTrade.t('admin.webhook_events.health_window') %>: <%= @health[:window] %>
+        </p>
+      </div>
+    </div>
+
+    <div class="card-lg">
+      <div class="card-header">
+        <h3 class="card-title"><%= PallasTrade.t('admin.webhook_events.health_outbound') %></h3>
+      </div>
+      <div class="card-body">
+        <dl class="grid grid-cols-2 gap-3">
+          <div>
+            <dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.health_total') %></dt>
+            <dd class="text-lg font-medium"><%= @health[:outbound][:total] %></dd>
+          </div>
+          <div>
+            <dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.health_backlog') %></dt>
+            <dd class="text-lg font-medium"><%= @health[:outbound][:backlog] %></dd>
+          </div>
+          <div>
+            <dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.health_success_rate') %></dt>
+            <dd class="text-lg font-medium"><%= number_to_percentage(@health[:outbound][:success_rate] * 100, precision: 2) %></dd>
+          </div>
+          <div>
+            <dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.health_last_failure') %></dt>
+            <dd class="text-lg font-medium"><%= @health[:outbound][:last_failure_at]&.strftime('%Y-%m-%d %H:%M') || '—' %></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<% if @checklist.present? %>
+  <div class="card-lg mb-6">
+    <div class="card-header">
+      <h3 class="card-title"><%= PallasTrade.t('admin.webhook_events.checklist_heading') %></h3>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th><%= PallasTrade.t('admin.webhook_events.checklist_provider') %></th>
+              <th class="text-center"><%= PallasTrade.t('admin.webhook_events.checklist_expected') %></th>
+              <th class="text-center"><%= PallasTrade.t('admin.webhook_events.checklist_observed') %></th>
+              <th><%= PallasTrade.t('admin.webhook_events.checklist_missing') %></th>
+              <th><%= PallasTrade.t('admin.webhook_events.checklist_unknown') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @checklist.each do |row| %>
+              <tr>
+                <td>
+                  <span class="font-medium"><%= row[:provider] %></span>
+                  <% if row[:configured] %>
+                    <span class="badge badge-light"><%= PallasTrade.t('admin.webhook_events.checklist_configured') %></span>
+                  <% else %>
+                    <span class="badge badge-warning"><%= PallasTrade.t('admin.webhook_events.checklist_unconfigured') %></span>
+                  <% end %>
+                </td>
+                <td class="text-center"><%= row[:expected].size %></td>
+                <td class="text-center"><%= row[:observed].size %></td>
+                <td>
+                  <% if row[:missing].empty? %>
+                    <span class="text-gray-400"><%= PallasTrade.t('admin.webhook_events.checklist_none') %></span>
+                  <% else %>
+                    <% row[:missing].each do |action| %>
+                      <span class="badge badge-danger mr-1"><%= action %></span>
+                    <% end %>
+                  <% end %>
+                </td>
+                <td>
+                  <% if row[:unknown].empty? %>
+                    <span class="text-gray-400"><%= PallasTrade.t('admin.webhook_events.checklist_none') %></span>
+                  <% else %>
+                    <% row[:unknown].each do |action| %>
+                      <span class="badge badge-warning mr-1"><%= action %></span>
+                    <% end %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<div class="card-lg mb-6">
+  <div class="card-header">
+    <h3 class="card-title"><%= PallasTrade.t('admin.webhook_events.filters_heading') %></h3>
+  </div>
+  <div class="card-body">
+    <%= form_tag PallasTrade.admin_webhook_events_path, method: :get, class: 'flex flex-wrap items-end gap-4' do %>
+      <div>
+        <label class="block text-gray-500 text-sm mb-1"><%= PallasTrade.t('admin.webhook_events.filter_provider') %></label>
+        <%= select_tag :provider,
+                       options_for_select(@providers.map { |p| [p, p] }, @filters[:provider]),
+                       include_blank: PallasTrade.t('admin.webhook_events.filter_any'), class: 'form-select' %>
+      </div>
+      <div>
+        <label class="block text-gray-500 text-sm mb-1"><%= PallasTrade.t('admin.webhook_events.filter_action') %></label>
+        <%= select_tag :event_action,
+                       options_for_select(@actions.map { |a| [a, a] }, @filters[:event_action]),
+                       include_blank: PallasTrade.t('admin.webhook_events.filter_any'), class: 'form-select' %>
+      </div>
+      <div>
+        <label class="block text-gray-500 text-sm mb-1"><%= PallasTrade.t('admin.webhook_events.filter_status') %></label>
+        <%= select_tag :status,
+                       options_for_select(@statuses.map { |s| [s, s] }, @filters[:status]),
+                       include_blank: PallasTrade.t('admin.webhook_events.filter_any'), class: 'form-select' %>
+      </div>
+      <div>
+        <label class="block text-gray-500 text-sm mb-1"><%= PallasTrade.t('admin.webhook_events.filter_order') %></label>
+        <%= text_field_tag :order_number, @filters[:order_number], class: 'form-input', placeholder: 'R123456789' %>
+      </div>
+      <div>
+        <label class="block text-gray-500 text-sm mb-1"><%= PallasTrade.t('admin.webhook_events.filter_from') %></label>
+        <%= text_field_tag :from, params[:from], class: 'form-input', placeholder: 'YYYY-MM-DD' %>
+      </div>
+      <div>
+        <label class="block text-gray-500 text-sm mb-1"><%= PallasTrade.t('admin.webhook_events.filter_to') %></label>
+        <%= text_field_tag :to, params[:to], class: 'form-input', placeholder: 'YYYY-MM-DD' %>
+      </div>
+      <div>
+        <%= submit_tag PallasTrade.t('admin.webhook_events.filter_submit'), class: 'btn btn-primary' %>
+        <%= link_to PallasTrade.t('admin.webhook_events.filter_reset'), PallasTrade.admin_webhook_events_path, class: 'btn btn-light' %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card-lg">
+  <div class="card-header">
+    <h3 class="card-title"><%= PallasTrade.t('admin.webhook_events.events_heading') %></h3>
+    <span class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.total', count: @total) %></span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.webhook_events.col_received_at') %></th>
+            <th><%= PallasTrade.t('admin.webhook_events.col_provider') %></th>
+            <th><%= PallasTrade.t('admin.webhook_events.col_event') %></th>
+            <th><%= PallasTrade.t('admin.webhook_events.col_status') %></th>
+            <th><%= PallasTrade.t('admin.webhook_events.col_attempts') %></th>
+            <th><%= PallasTrade.t('admin.webhook_events.col_duration') %></th>
+            <th><%= PallasTrade.t('admin.webhook_events.col_order') %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @events.empty? %>
+            <tr>
+              <td colspan="8" class="text-center text-gray-500 py-6"><%= PallasTrade.t('admin.webhook_events.empty') %></td>
+            </tr>
+          <% end %>
+          <% @events.each do |event| %>
+            <tr>
+              <td class="whitespace-nowrap"><%= event.received_at&.strftime('%Y-%m-%d %H:%M:%S') || '—' %></td>
+              <td><%= event.provider %></td>
+              <td>
+                <div class="font-medium"><%= event.action || event.event_type || '—' %></div>
+                <div class="text-gray-500 text-sm"><%= event.event_type %></div>
+              </td>
+              <td>
+                <span class="badge <%= webhook_event_status_class(event.status) %>"><%= event.status %></span>
+              </td>
+              <td class="text-center"><%= event.attempt_count %></td>
+              <td class="whitespace-nowrap"><%= webhook_event_duration(event) %></td>
+              <td>
+                <% order = event.order %>
+                <% if order %>
+                  <%= link_to order.number, PallasTrade.admin_order_path(order) %>
+                <% else %>
+                  <span class="text-gray-400">—</span>
+                <% end %>
+              </td>
+              <td class="text-right">
+                <%= link_to PallasTrade.t('admin.webhook_events.view'), PallasTrade.admin_webhook_event_path(event), class: 'btn btn-sm btn-light' %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <% total_pages = (([@total, 1].max.to_f / @per_page).ceil) %>
+  <% if total_pages > 1 %>
+    <div class="card-footer flex items-center justify-between">
+      <span class="text-gray-500 text-sm">
+        <%= PallasTrade.t('admin.webhook_events.page_of', page: @page, pages: total_pages) %>
+      </span>
+      <span>
+        <% if @page > 1 %>
+          <%= link_to PallasTrade.t('admin.webhook_events.prev_page'),
+                      PallasTrade.admin_webhook_events_path(params.permit(:provider, :event_action, :status, :order_number, :from, :to).merge(page: @page - 1)),
+                      class: 'btn btn-sm btn-light' %>
+        <% end %>
+        <% if @page < total_pages %>
+          <%= link_to PallasTrade.t('admin.webhook_events.next_page'),
+                      PallasTrade.admin_webhook_events_path(params.permit(:provider, :event_action, :status, :order_number, :from, :to).merge(page: @page + 1)),
+                      class: 'btn btn-sm btn-light' %>
+        <% end %>
+      </span>
+    </div>
+  <% end %>
+</div>

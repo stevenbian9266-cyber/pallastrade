@@ -1,0 +1,118 @@
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.webhook_events.show_title', id: @event.id) %>
+<% end %>
+
+<%= content_for(:page_actions) do %>
+  <% if @event.replayable? %>
+    <%= button_to PallasTrade.t('admin.webhook_events.action_replay'),
+                  PallasTrade.replay_admin_webhook_event_path(@event),
+                  method: :post, class: 'btn btn-primary',
+                  data: { turbo_confirm: PallasTrade.t('admin.webhook_events.confirm_replay') } %>
+  <% end %>
+  <%= button_to PallasTrade.t('admin.webhook_events.action_mark_processed'),
+                PallasTrade.mark_processed_admin_webhook_event_path(@event),
+                method: :post, class: 'btn btn-light',
+                data: { turbo_confirm: PallasTrade.t('admin.webhook_events.confirm_mark_processed') } %>
+  <%= link_to PallasTrade.t('actions.back'), PallasTrade.admin_webhook_events_path, class: 'btn btn-light' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title">#<%= @event.id %></h5>
+    <span class="badge <%= webhook_event_status_class(@event.status) %>"><%= @event.status %></span>
+    <% unless @event.replayable? %>
+      <span class="text-gray-500 text-sm ml-2"><%= PallasTrade.t('admin.webhook_events.not_replayable') %></span>
+    <% end %>
+  </div>
+  <div class="card-body">
+    <dl class="grid grid-cols-2 gap-4">
+      <div><dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.col_provider') %></dt><dd><%= @event.provider %></dd></div>
+      <div><dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.field_event_id') %></dt><dd><%= @event.provider_event_id %></dd></div>
+      <div><dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.field_event_type') %></dt><dd><%= @event.event_type || '—' %></dd></div>
+      <div><dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.field_action') %></dt><dd><%= @event.action || '—' %></dd></div>
+      <div><dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.col_attempts') %></dt><dd><%= @event.attempt_count %></dd></div>
+      <div><dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.col_duration') %></dt><dd><%= webhook_event_duration(@event) %></dd></div>
+      <div><dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.field_received_at') %></dt><dd><%= @event.received_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.field_processed_at') %></dt><dd><%= @event.processed_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.field_provider_created_at') %></dt><dd><%= @event.provider_created_at&.iso8601 || '—' %></dd></div>
+      <div><dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.field_payment_method') %></dt><dd><%= @event.payment_method&.name || '—' %></dd></div>
+      <div><dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.field_order') %></dt><dd><%= @order ? link_to(@order.number, PallasTrade.admin_order_path(@order)) : '—' %></dd></div>
+      <div><dt class="text-gray-500 text-sm"><%= PallasTrade.t('admin.webhook_events.field_payment_session') %></dt><dd><%= @payment_session&.prefixed_id || '—' %></dd></div>
+    </dl>
+
+    <% if @event.quarantined_at.present? %>
+      <div class="mt-4 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <strong><%= PallasTrade.t('admin.webhook_events.quarantined_at') %>:</strong>
+        <%= @event.quarantined_at.iso8601 %> —
+        <%= @event.quarantine_reason %>
+      </div>
+    <% end %>
+
+    <% if @event.last_error_message.present? %>
+      <div class="mt-4 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <strong><%= @event.last_error_class %></strong>: <%= @event.last_error_message %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.webhook_events.actions_heading') %></h5>
+  </div>
+  <div class="card-body">
+    <p class="text-gray-500 text-sm mb-3"><%= PallasTrade.t('admin.webhook_events.actions_help') %></p>
+    <%= form_tag PallasTrade.quarantine_admin_webhook_event_path(@event), method: :post, class: 'flex flex-wrap items-end gap-4' do %>
+      <div class="grow">
+        <label class="block text-gray-500 text-sm mb-1"><%= PallasTrade.t('admin.webhook_events.quarantine_reason') %></label>
+        <%= text_field_tag :reason, nil, class: 'form-input', maxlength: 500,
+                           placeholder: PallasTrade.t('admin.webhook_events.quarantine_reason_placeholder') %>
+      </div>
+      <div>
+        <%= submit_tag PallasTrade.t('admin.webhook_events.action_quarantine'), class: 'btn btn-danger' %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.webhook_events.payload_heading') %></h5>
+  </div>
+  <div class="card-body">
+    <pre class="text-sm overflow-auto max-h-96 bg-gray-50 rounded-sm p-3" data-testid="webhook-event-payload"><%= payload_preview(@event) %></pre>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.webhook_events.audits_heading') %></h5>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.webhook_events.audit_action') %></th>
+            <th><%= PallasTrade.t('admin.webhook_events.audit_actor') %></th>
+            <th><%= PallasTrade.t('admin.webhook_events.audit_occurred_at') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @audits.empty? %>
+            <tr>
+              <td colspan="3" class="text-center text-gray-500 py-4"><%= PallasTrade.t('admin.webhook_events.audits_empty') %></td>
+            </tr>
+          <% end %>
+          <% @audits.each do |audit| %>
+            <tr>
+              <td><%= audit.action %></td>
+              <td><%= audit.actor_label || audit.actor_type || '—' %></td>
+              <td class="whitespace-nowrap"><%= audit.occurred_at&.strftime('%Y-%m-%d %H:%M:%S') || '—' %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,87 @@
+# PALLAS-CUSTOM: D12（PRD-20260915-payments-d12-webhook-governance）--
+# 入站 webhook 事件运营台（后台 → 开发者 → Webhook 事件）中文文案。
+zh-CN:
+  pallastrade:
+    admin:
+      webhook_events:
+        title: Webhook 事件
+        show_title: "Webhook 事件 #%{id}"
+        intro: >-
+          每个已验签的 provider webhook 都会以持久行落在这里。筛选定位、打开查看原始 payload
+          与处理结果，然后可重放、隔离或人工标记已处理 —— 排障不再从连数据库写 SQL 开始。
+        health_inbound: 入站事件（近 24 小时）
+        health_outbound: 出站投递（近 24 小时）
+        health_total: 总数
+        health_backlog: 积压
+        health_failure_rate: 失败率
+        health_success_rate: 成功率
+        health_avg_duration: 平均处理耗时
+        health_last_failure: 最近失败
+        health_window: 统计窗口
+        checklist_heading: 订阅核对清单（期望 vs 实收，近 30 天）
+        checklist_provider: 支付商
+        checklist_expected: 期望事件
+        checklist_observed: 实收事件
+        checklist_missing: 未见（疑似漏订）
+        checklist_unknown: 未声明事件
+        checklist_configured: 已配置
+        checklist_unconfigured: 无对应支付商配置
+        checklist_none: 无
+        filters_heading: 筛选
+        filter_provider: 支付商
+        filter_action: 动作
+        filter_status: 状态
+        filter_order: 订单号
+        filter_from: 起始日期
+        filter_to: 截止日期
+        filter_any: 全部
+        filter_submit: 筛选
+        filter_reset: 重置
+        events_heading: 事件流
+        total: 共 %{count} 条
+        col_received_at: 接收时间
+        col_provider: 支付商
+        col_event: 事件
+        col_status: 状态
+        col_attempts: 尝试次数
+        col_duration: 处理耗时
+        col_order: 订单
+        empty: 没有符合筛选条件的事件。
+        view: 查看
+        page_of: 第 %{page} / %{pages} 页
+        prev_page: 上一页
+        next_page: 下一页
+        field_event_id: Provider 事件 ID
+        field_event_type: 事件类型
+        field_action: 动作
+        field_received_at: 接收时间
+        field_processed_at: 处理完成时间
+        field_provider_created_at: Provider 创建时间
+        field_payment_method: 支付方式
+        field_order: 订单
+        field_payment_session: 支付会话
+        quarantined_at: 隔离时间
+        not_replayable: 当前状态不可重放
+        actions_heading: 处置动作
+        actions_help: >-
+          重放会重新执行原处理链（写审计）。隔离保留留痕但不再处理 —— 适用于未知或不可信的事件类型。
+          人工标记已处理用于「已线下核实」的场景，不会重放业务链。
+        quarantine_reason: 隔离原因
+        quarantine_reason_placeholder: 例如：未知事件类型，等待 provider 文档
+        action_replay: 重放
+        action_mark_processed: 标记已处理
+        action_quarantine: 隔离
+        confirm_replay: 确认重放该事件（将重新执行处理链）？
+        confirm_mark_processed: 确认将该事件标记为已处理（不重放）？
+        payload_heading: 原始 payload
+        audits_heading: 审计记录
+        audit_action: 动作
+        audit_actor: 操作者
+        audit_occurred_at: 时间
+        audits_empty: 该事件暂无审计记录。
+        replayed: 已入队重放该 webhook 事件。
+        replay_failed: 重放失败
+        quarantined: 已隔离该 webhook 事件。
+        quarantine_failed: 隔离失败
+        marked_processed: 已标记为已处理。
+        mark_failed: 标记失败

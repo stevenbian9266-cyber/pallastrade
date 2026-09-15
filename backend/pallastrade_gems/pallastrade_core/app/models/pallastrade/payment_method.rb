@@ -550,6 +550,22 @@ module PallasTrade
       nil
     end
 
+    # PALLAS-CUSTOM: D12（PRD-20260915-payments-d12-webhook-governance 切片1）——
+    # provider 期望收到的事件订阅（业务方案 §69「订阅清单：防漏订」）。
+    # 返回 **provider 侧事件名**（如 Stripe `payment_intent.succeeded`）；本地 action 映射见
+    # `webhook_expected_actions`。默认空集（不假设任何 provider 的订阅面）。
+    # @return [Array<String>]
+    def webhook_event_subscriptions
+      []
+    end
+
+    # 本地 action 维度的期望集（与 `PaymentWebhookEvent#action` 同口径，用于缺口比对）；
+    # 默认与 `webhook_event_subscriptions` 一致（provider 事件名 == 本地 action 的 provider）。
+    # @return [Array<String>]
+    def webhook_expected_actions
+      webhook_event_subscriptions.map(&:to_s)
+    end
+
     protected
 
     def public_preference_keys

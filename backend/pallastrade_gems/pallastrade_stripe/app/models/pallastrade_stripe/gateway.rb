@@ -771,6 +771,25 @@ module PallasTradeStripe
       secrets
     end
 
+    # PALLAS-CUSTOM: D12（PRD-20260915-payments-d12-webhook-governance 切片1）——
+    # 期望订阅面（业务方案 §69「订阅清单」）：Stripe 后台需启用的事件名集合。
+    # `webhook_expected_actions` 由基类映射为本地 action 维度（缺口比对口径）。
+    # ⚠️ 必须保持 **public**（运营页/清单服务从实例外部调用；此文件在此处处于 private 区段后方）。
+    public
+
+    # @return [Array<String>]
+    def webhook_event_subscriptions
+      WEBHOOK_EVENT_ACTIONS.keys
+    end
+
+    # 本地 action 维度的期望集（去重；与 `PaymentWebhookEvent#action` 同口径）。
+    # @return [Array<String>]
+    def webhook_expected_actions
+      WEBHOOK_EVENT_ACTIONS.values.uniq.map(&:to_s)
+    end
+
+    private
+
     # PALLAS-CUSTOM: D10（PRD-20260915-payments-d10-client-config 切片1）——
     # 声明可下发前台的 publishable 凭据（`Credentials.level` 判级依据，业务方案 §68.4）。
     # 仅 **publishable key** 可下发（Stripe.js 客户端初始化必需，公开值）；

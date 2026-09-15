@@ -51,6 +51,9 @@ module PallasTrade
         # Webhooks
         can :manage, PallasTrade::WebhookEndpoint
         can :manage, PallasTrade::WebhookDelivery
+        # PALLAS-CUSTOM: D12（PRD-20260915-payments-d12-webhook-governance）——
+        # 入站 webhook 事件运营面（事件流 + 重放/隔离/人工标记）。`:manage` 覆盖全部动作。
+        can :manage, PallasTrade::PaymentWebhookEvent
 
         # General configuration
         can :manage, PallasTrade::RefundReason

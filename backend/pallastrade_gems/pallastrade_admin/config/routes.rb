@@ -308,6 +308,16 @@ PallasTrade::Core::Engine.add_routes do
         end
       end
     end
+    # PALLAS-CUSTOM: D12（PRD-20260915-payments-d12-webhook-governance）——
+    # 入站 provider 事件流（Developers → Webhook Events）：只读检视 + 安全动作
+    # （replay 复用 P0-2 重放链；quarantine 隔离未知事件；mark_processed 人工标记）。
+    resources :webhook_events, only: [:index, :show], controller: 'webhook_events' do
+      member do
+        post :replay
+        post :quarantine
+        post :mark_processed
+      end
+    end
     resources :allowed_origins, except: :show
     resources :redirects
     resources :back_in_stock_subscriptions, only: [:index, :destroy]

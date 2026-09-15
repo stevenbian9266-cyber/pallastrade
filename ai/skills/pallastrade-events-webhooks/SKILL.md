@@ -568,6 +568,22 @@ quantity/release_reason；复用既有 Events/audit_logs 通道，不新建 Audi
 订阅方可用于审计落库、指标（payment_confirmed→committed 时延等）、告警；StockMovement 事件仍见上文
 `stock_movement.created/updated/deleted`。
 
+## Inbound provider events — 入站事件的运营面（D12, 2026-09-15）
+
+出站（本站 → 商户）与入站（provider → 本站）是**两条不同的可靠性链路**，不要互相套用：
+
+| | 出站 | 入站 |
+|---|---|---|
+| 模型 | `WebhookEndpoint` / `WebhookDelivery`（`success`/`response_code`/`execution_time`） | `PaymentWebhookEvent`（`status`/`attempt_count`/`payload`/`last_error_*`） |
+| 投递 | `WebhookDeliveryJob`（商户端点） | `HandleWebhookJob`（业务链：`Payments::HandleWebhook` / dispute 分流） |
+| 重试 | 端点自带重试 | Job `retry_on` + 人工 `Payments::ReplayWebhookEvent` |
+| 运营面 | Developers → Webhook endpoints / deliveries（`redeliver`） | Developers → **Webhook events**（筛选 / 详情 / 重放 / 隔离 / 人工标记） |
+
+- **状态机**（入站）：`received → processing → processed | failed`，加上 D12 的 `quarantined`（隔离未知/不可信事件，保留留痕）。
+- **不可妥协**：未知/transient 异常仍必须 `raise` 让 Job 重试（禁止 swallow）；治只改事件壳状态，
+  业务幂等仍归 `Payments::HandleWebhook`。
+- **漏订检查**：provider 声明期望事件（`PaymentMethod#webhook_event_subscriptions`）vs 近 30 天实收 action → `missing`/`unknown`。
+
 ## Where to read further
 
 - **Subscriber base class:** `PallasTrade::Subscriber` source.

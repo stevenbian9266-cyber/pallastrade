@@ -1,0 +1,89 @@
+# PALLAS-CUSTOM: D12（PRD-20260915-payments-d12-webhook-governance）--
+# 入站 webhook 事件运营台（Developers -> Webhook Events）文案。
+en:
+  pallastrade:
+    admin:
+      webhook_events:
+        title: Webhook events
+        show_title: "Webhook event #%{id}"
+        intro: >-
+          Every verified provider webhook lands here as a durable row. Filter to find one,
+          open it to see the raw payload and what the handler did, then replay, quarantine
+          or mark it processed. Troubleshooting no longer starts with a SQL session.
+        health_inbound: Inbound events (24h)
+        health_outbound: Outbound deliveries (24h)
+        health_total: Total
+        health_backlog: Backlog
+        health_failure_rate: Failure rate
+        health_success_rate: Success rate
+        health_avg_duration: Avg. processing time
+        health_last_failure: Last failure
+        health_window: Window
+        checklist_heading: Subscription checklist (expected vs. received, last 30 days)
+        checklist_provider: Provider
+        checklist_expected: Expected
+        checklist_observed: Received
+        checklist_missing: Missing (possible unsubscribed events)
+        checklist_unknown: Undeclared events
+        checklist_configured: configured
+        checklist_unconfigured: no provider configured
+        checklist_none: None
+        filters_heading: Filters
+        filter_provider: Provider
+        filter_action: Action
+        filter_status: Status
+        filter_order: Order number
+        filter_from: From
+        filter_to: To
+        filter_any: Any
+        filter_submit: Filter
+        filter_reset: Reset
+        events_heading: Event stream
+        total: "%{count} event(s)"
+        col_received_at: Received
+        col_provider: Provider
+        col_event: Event
+        col_status: Status
+        col_attempts: Attempts
+        col_duration: Duration
+        col_order: Order
+        empty: No events match these filters.
+        view: View
+        page_of: "Page %{page} of %{pages}"
+        prev_page: Previous
+        next_page: Next
+        field_event_id: Provider event id
+        field_event_type: Event type
+        field_action: Action
+        field_received_at: Received at
+        field_processed_at: Processed at
+        field_provider_created_at: Provider created at
+        field_payment_method: Payment method
+        field_order: Order
+        field_payment_session: Payment session
+        quarantined_at: Quarantined at
+        not_replayable: Not replayable in this state
+        actions_heading: Actions
+        actions_help: >-
+          Replay re-runs the original handler chain (audited). Quarantine keeps the row for
+          the record but stops any further processing - use it for unknown or untrusted event
+          types. Mark processed closes the loop when it was already handled out of band.
+        quarantine_reason: Quarantine reason
+        quarantine_reason_placeholder: e.g. unknown event type, waiting for provider docs
+        action_replay: Replay
+        action_mark_processed: Mark processed
+        action_quarantine: Quarantine
+        confirm_replay: Replay this event through the handler chain?
+        confirm_mark_processed: Mark this event as processed without replaying it?
+        payload_heading: Raw payload
+        audits_heading: Audit trail
+        audit_action: Action
+        audit_actor: Actor
+        audit_occurred_at: When
+        audits_empty: No audit entries for this event yet.
+        replayed: Webhook event queued for replay.
+        replay_failed: Replay failed
+        quarantined: Webhook event quarantined.
+        quarantine_failed: Quarantine failed
+        marked_processed: Webhook event marked as processed.
+        mark_failed: Marking failed

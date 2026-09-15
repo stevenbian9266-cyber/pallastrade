@@ -708,6 +708,17 @@ For Turbo Streams (server-pushed UI updates), the same patterns apply as any Rai
 | Change a colour, surface or spacing **for the whole product** | Edit the gem's tokens: `pallastrade_admin/app/assets/tailwind/pallastrade/admin/base/_theme.css` (`@theme static`) — see “Design tokens & density” below |
 
 
+## Webhook events console（D12, 2026-09-15；PRD-20260915-payments-d12-webhook-governance）
+
+- 新页面 `/admin/webhook_events`（Developers 区，position 15；导航与 tabs 两处都要注册）：
+  入站 provider 事件流（筛选：支付商/动作/状态/订单号/日期）+ 详情（payload/关联/审计/耗时）+ 三个动作。
+- 动作均用 `button_to`（后台**无 rails-ujs**，`link_to method:` 无效）+ `turbo_confirm`；权限锚点 `can?(:manage, PallasTrade::PaymentWebhookEvent)`。
+- 自定义 console 的授权：`BaseController#authorize_admin` 用 `model_class` + `authorize! action, model_class`；
+  自定义动作（replay/quarantine/mark_processed）靠 `can :manage, …` 覆盖（`:manage` = 任意动作）。
+- 只读聚合（健康/清单）**逐个降级**（异常 → nil → 区块不渲染），页面恒 200（同 disputes_ops 口径）。
+- ⚠️ i18n 命名：导航 `label:` 用**点号字符串**（`'admin.webhook_events.title'`），因为
+  `admin.webhook_events` 本身是一个哈希（含 title/intro/…），不能当 label 用。
+
 ## Where to read further
 
 - **Admin source:** `bundle show pallastrade_admin` to find the installed gem path. The README at the root of the gem covers the philosophy.

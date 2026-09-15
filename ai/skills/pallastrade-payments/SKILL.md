@@ -1249,6 +1249,25 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **下发通道**：store `CheckoutSerializer.payment.available_payment_methods[].client_config` + store `PaymentMethodSerializer`（cart / order / shopping_cart）→ admin 序列化器继承同字段（publishable 非密）。
 - 回归：`harness verify d10-client-config-rspec`；前端 `storefront-test`。
 
+## Webhook 治理 — 入站事件运营面（D12 首版, 2026-09-15；PRD-20260915-payments-d12-webhook-governance）
+
+business方案 §69：把「已具备但看不见」的入站事件变成可看/可筛/可处置（排障不再写 SQL）。
+
+- **事件壳状态机**：`PaymentWebhookEvent` 新增 `quarantined`（+ `quarantined_at` / `quarantine_reason` 两列）。
+  `replayable?` = `!processing? && !quarantined?`（隔离事件不得直接进业务链）；`unquarantine!` 回到 `failed`。
+- **人工标记**：`mark_processed_manually!`（已线下核实，不重放）；`mark_quarantined!(reason:)` 拒绝在 `processing` 时调用。
+- **筛选**：`PaymentWebhookEvent.filter_by(provider:, action:, status:, from:, to:, order_number:)`
+  （订单号经 `payment_session` → `order` 反查）；`#order` / `#processing_duration_seconds` 供详情页。
+- **处置服务**（均写 `Audit` + trace；不做业务写）：`Payments::QuarantineWebhookEvent`、
+  `Payments::MarkWebhookEventProcessed`；重放仍走既有 `Payments::ReplayWebhookEvent`。
+- **健康聚合**：`Payments::WebhookHealth.call` → 入站（24h 各状态/失败率/积压/平均耗时）+ 出站（成功失败/积压/成功率）。
+- **订阅清单**：`Payments::WebhookSubscriptionChecklist.call` → 每 provider `missing`（期望 − 实收 = **漏订候选**）/ `unknown`（实收 − 期望）。
+  provider 声明：`PaymentMethod#webhook_event_subscriptions`（provider 事件名，基类空集）→ `#webhook_expected_actions`（本地 action 口径）；
+  Stripe 覆写为 `WEBHOOK_EVENT_ACTIONS`（12 事件名 / 9 个 action）——覆写方法必须 **public**（该文件此处处于 private 区段后方）。
+- **后台**：`/admin/webhook_events`（Developers 区，`can?(:manage, PallasTrade::PaymentWebhookEvent)`）：筛选 + 详情 + 三个动作
+  （重放/隔离/人工标记），健康与清单卡逐个降级（异常 → 区块不渲染，页面恒 200）。
+- 回归：`harness verify d12-webhook-governance-rspec`。
+
 ## Payment availability scope —— 适用范围引擎（D8 首版, 2026-09-15；PRD-20260915-payments-d8）
 
 入口（PaymentOption）级可用范围，栖于入口层 `metadata['options'][i]['rule_set']`（业务方案 §66）：

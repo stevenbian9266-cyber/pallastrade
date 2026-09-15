@@ -20,7 +20,7 @@ module PallasTrade
     # 原始 provider payload 已落 payload jsonb 列，无需 Metafields/Metadata
     # （后者依赖 public_metadata/private_metadata 列，本表不需要）。
 
-    STATUSES = %w[received processing processed failed].freeze
+    STATUSES = %w[received processing processed failed quarantined].freeze
     ACTIONS  = %w[captured authorized failed canceled].freeze
     # PRD-20260911-payments-dsp-p7-1 (DSP-P7-1)：provider 发起的资金逆转事件族。
     # 这些事件不绑定 payment_session（parse 层分流），落库后由 HandleWebhookJob 分流到
@@ -54,6 +54,25 @@ module PallasTrade
     scope :processing, -> { where(status: 'processing') }
     scope :processed, -> { where(status: 'processed') }
     scope :failed, -> { where(status: 'failed') }
+    scope :quarantined, -> { where(status: 'quarantined') }
+
+    # PALLAS-CUSTOM: D12（PRD-20260915-payments-d12-webhook-governance 切片1）——
+    # 运营面筛选（业务方案 §69「事件流」）：单一入口，控制器只做参数校验，
+    # 避免把筛选口径散落在视图/控制器里。`order_number` 经 payment_session → order 反查。
+    # @return [ActiveRecord::Relation]
+    def self.filter_by(provider: nil, action: nil, status: nil, from: nil, to: nil, order_number: nil)
+      scope = all
+      scope = scope.where(provider: provider) if provider.present?
+      scope = scope.where(action: action) if action.present?
+      scope = scope.where(status: status) if status.present?
+      scope = scope.where(received_at: from..) if from.present?
+      scope = scope.where(received_at: ..to) if to.present?
+      if order_number.present?
+        scope = scope.joins(payment_session: :order)
+                     .where(pallastrade_orders: { number: order_number.to_s.strip })
+      end
+      scope
+    end
 
     STATUSES.each do |status_name|
       define_method("#{status_name}?") { status == status_name }
@@ -123,8 +142,58 @@ module PallasTrade
     # rubocop:enable Naming/PredicateMethod
 
     # Manual Replay：从 failed（或任何非 processing）状态重新进入 processing。
+    # D12：隔离事件不可直接重放（需先解除隔离，避免把被判定为“未知/可疑”的事件直接送入业务链）。
     def replayable?
-      status != 'processing'
+      !processing? && !quarantined?
+    end
+
+    # PALLAS-CUSTOM: D12（切片1）—— 隔离（“忽略未知事件”）：保留留痕、不参与处理。
+    # @param reason [String] 必填理由（≤ 500 字，落库前截断）
+    # @return [Boolean] 状态迁移是否发生
+    def mark_quarantined!(reason:)
+      return false if processing?
+
+      update!(
+        status: 'quarantined',
+        quarantined_at: Time.current,
+        quarantine_reason: reason.to_s.strip.truncate(500)
+      )
+      true
+    end
+
+    # PALLAS-CUSTOM: D12（切片1）—— 解除隔离：回到 failed（可重放 / 可人工处置）。
+    def unquarantine!
+      return false unless quarantined?
+
+      update!(status: 'failed', quarantined_at: nil, quarantine_reason: nil)
+      true
+    end
+
+    # PALLAS-CUSTOM: D12（切片1）—— 人工标记已处理（业务上已线下核实，不再重放）。
+    def mark_processed_manually!
+      return false if processing?
+
+      update!(
+        status: 'processed',
+        processed_at: Time.current,
+        quarantined_at: nil,
+        quarantine_reason: nil,
+        last_error_class: nil,
+        last_error_message: nil
+      )
+      true
+    end
+
+    # D12：关联订单（经 payment_session；dispute 事件族无 session → nil）。
+    def order
+      payment_session&.order
+    end
+
+    # D12：处理耗时（入站 → 处理完成；未完成返回 nil）。
+    def processing_duration_seconds
+      return nil if received_at.nil? || processed_at.nil?
+
+      (processed_at - received_at).round(3)
     end
   end
 end

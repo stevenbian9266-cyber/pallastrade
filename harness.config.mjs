@@ -250,6 +250,12 @@ export default {
         description: 'Frontend key delivery specs (client_config envelope, publishable-only projection, env: references, checkout payload, Stripe public preference declaration)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/payment_methods/client_config_spec.rb spec/serializers/pallastrade/api/v3/store/checkout/checkout_serializer_spec.rb spec/serializers/pallastrade/api/v3/cart_serializer_spec.rb pallastrade_gems/pallastrade_stripe/spec/models/gateway_spec.rb'],
       },
+      // Webhook 治理（PRD-20260915-payments-d12-webhook-governance）：入站事件流 + 隔离/人工标记
+      // + 健康聚合 + 订阅核对清单 + 后台页面与导航
+      'd12-webhook-governance-rspec': {
+        description: 'Webhook governance specs (quarantine state machine + filters, event ops services with audits, health aggregation, subscription checklist, admin console + navigation)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d12_webhook_event_quarantine_spec.rb spec/services/pallastrade/payments/d12_webhook_event_ops_spec.rb spec/services/pallastrade/payments/d12_webhook_health_spec.rb spec/services/pallastrade/payments/d12_webhook_subscription_checklist_spec.rb spec/requests/pallastrade/admin/d12_webhook_events_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
+      },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {
         description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',

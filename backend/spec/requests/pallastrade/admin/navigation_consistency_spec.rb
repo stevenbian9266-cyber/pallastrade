@@ -29,6 +29,7 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
       PallasTrade::Admin::GiftCardsController,
       PallasTrade::Admin::AdminUsersController,
       PallasTrade::Admin::WebhookEndpointsController,
+      PallasTrade::Admin::WebhookEventsController,
       PallasTrade::Admin::TaxRatesController,
       PallasTrade::Admin::RolesController,
       PallasTrade::Admin::StorefrontController,
@@ -115,7 +116,7 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
     end
 
     it '设置模块子菜单完整（Developers / Users / Tax / Shipping / Audit / Return Settings）' do
-      expect(sidebar.find(:developers).children.map(&:key)).to eq(%i[api_keys webhook_endpoints allowed_origins redirects])
+      expect(sidebar.find(:developers).children.map(&:key)).to eq(%i[api_keys webhook_endpoints webhook_events allowed_origins redirects])
       expect(sidebar.find(:users).children.map(&:key)).to eq(%i[admin_users invitations roles])
       expect(sidebar.find(:tax).children.map(&:key)).to eq(%i[tax_rates tax_categories])
       expect(sidebar.find(:shipping).children.map(&:key)).to eq(%i[shipping_methods shipping_categories])

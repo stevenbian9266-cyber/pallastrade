@@ -606,6 +606,13 @@ Rails.application.config.after_initialize do
                    position: 10,
                    active: -> { %w[webhook_endpoints webhook_deliveries].include?(controller_name) },
                    if: -> { can?(:manage, PallasTrade::WebhookEndpoint) }
+    # PALLAS-CUSTOM: D12（PRD-20260915-payments-d12-webhook-governance）——入站事件流
+    developers.add :webhook_events,
+                   label: 'admin.webhook_events.title',
+                   url: :admin_webhook_events_path,
+                   position: 15,
+                   active: -> { controller_name == 'webhook_events' },
+                   if: -> { can?(:manage, PallasTrade::PaymentWebhookEvent) }
     developers.add :allowed_origins,
                    label: :allowed_origins,
                    url: :admin_allowed_origins_path,
@@ -781,6 +788,14 @@ Rails.application.config.after_initialize do
           position: 20,
           active: -> { %w[webhook_endpoints webhook_deliveries].include?(controller_name) },
           if: -> { can?(:manage, PallasTrade::WebhookEndpoint) }
+
+  # PALLAS-CUSTOM: D12（PRD-20260915-payments-d12-webhook-governance）——入站事件流 tab
+  developers_tabs_nav.add :webhook_events,
+          label: 'admin.webhook_events.title',
+          url: :admin_webhook_events_path,
+          position: 30,
+          active: -> { controller_name == 'webhook_events' },
+          if: -> { can?(:manage, PallasTrade::PaymentWebhookEvent) }
 
   developers_tabs_nav.add :allowed_origins,
           label: :allowed_origins,
