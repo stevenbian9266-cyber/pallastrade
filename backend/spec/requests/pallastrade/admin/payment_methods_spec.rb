@@ -29,6 +29,11 @@ RSpec.describe 'Admin payment methods option configuration', type: :request do
     entries.transform_keys(&:to_s)
   end
 
+  # 测试库（CI）可能已预置国家数据 → 复用既有记录，避免因唯一索引而失败
+  def country_for(iso)
+    PallasTrade::Country.find_by(iso: iso) || create(:country, iso: iso)
+  end
+
   before do
     # 测试环境 host 不匹配触发 OpenRedirectError（环境 default_url host=localhost:3000）
     # —— 沿用 roles_permissions_spec 的既有做法。
@@ -266,7 +271,7 @@ RSpec.describe 'Admin payment methods option configuration', type: :request do
     # PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-005
     it 'persists the submitted scope as normalized include conditions' do
       gateway = stripe_gateway
-      market = create(:market, store: store, countries: [create(:country, iso: 'AT')])
+      market = create(:market, store: store, countries: [country_for('AT')])
       zone = create(:zone, name: "D8 scope #{SecureRandom.hex(3)}")
       # 币种白名单 = 店铺支持的币种（有 market 时按 market 币种推导，故动态取值）
       valid_currency = store.reload.supported_currencies_list.first.iso_code.upcase
@@ -311,7 +316,7 @@ RSpec.describe 'Admin payment methods option configuration', type: :request do
       gateway = stripe_gateway
       zone = create(:zone, name: "D8 zone #{SecureRandom.hex(3)}")
       foreign_store = create(:store, code: "d8_foreign_#{SecureRandom.hex(4)}")
-      foreign_market = create(:market, store: foreign_store, countries: [create(:country, iso: 'NZ')])
+      foreign_market = create(:market, store: foreign_store, countries: [country_for('NZ')])
       sign_in_as_superuser
 
       patch "/admin/payment_methods/#{gateway.prefixed_id}", params: {
@@ -388,7 +393,7 @@ RSpec.describe 'Admin payment methods option configuration', type: :request do
 
     # PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-005
     it 'renders the scope editor and the human summary on the edit page' do
-      market = create(:market, store: store, countries: [create(:country, iso: 'AT')])
+      market = create(:market, store: store, countries: [country_for('AT')])
       gateway = stripe_gateway(
         metadata: {
           'optionized' => true,
@@ -419,7 +424,7 @@ RSpec.describe 'Admin payment methods option configuration', type: :request do
 
     # PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-007
     it 'projects the normalized rule set and a readable summary in the admin API payload' do
-      market = create(:market, store: store, countries: [create(:country, iso: 'AT')])
+      market = create(:market, store: store, countries: [country_for('AT')])
       gateway = stripe_gateway(
         metadata: {
           'optionized' => true,

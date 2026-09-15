@@ -106,6 +106,17 @@ RSpec.describe PallasTrade::PaymentMethod do
 
   # D8（PRD-20260915-payments-d8 切片1）：入口级「适用范围」（market / country / zone / currency）
   describe '适用范围规则（AC-001 / AC-003 / AC-006）' do
+    # CI 预置店铺与本地不同 → 本块显式声明所需币种（订单币种校验取 store.supported_currencies_list）
+    let(:store) do
+      create(:store, default: true, default_currency: 'USD', supported_currencies: 'USD,EUR,GBP',
+                     code: "d8_opts_#{SecureRandom.hex(4)}")
+    end
+
+    # 测试库（CI）可能已预置国家数据 → 复用既有记录，避免唯一索引冲突
+    def country_for(iso)
+      PallasTrade::Country.find_by(iso: iso) || create(:country, iso: iso)
+    end
+
     def optionized_provider_for(kind, rule_set)
       option = { 'kind' => kind, 'active' => true, 'position' => 1 }
       option['rule_set'] = rule_set if rule_set
@@ -151,8 +162,8 @@ RSpec.describe PallasTrade::PaymentMethod do
 
     # PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-003
     it 'filters frontend providers by shipping country and zone membership' do
-      de = create(:country, iso: 'DE')
-      fr = create(:country, iso: 'FR')
+      de = country_for('DE')
+      fr = country_for('FR')
 
       zone = create(:zone, name: "EU zone #{SecureRandom.hex(3)}")
       zone.zone_members.create!(zoneable: de)
@@ -176,8 +187,8 @@ RSpec.describe PallasTrade::PaymentMethod do
 
     # PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-003
     it 'filters frontend providers by order market' do
-      default_market = create(:market, store: store, countries: [create(:country, iso: 'CA')], default: true)
-      target_market = create(:market, store: store, countries: [create(:country, iso: 'AT')])
+      default_market = create(:market, store: store, countries: [country_for('CA')], default: true)
+      target_market = create(:market, store: store, countries: [country_for('AT')])
       market_only = optionized_provider_for(
         'card', 'include' => [{ 'dimension' => 'market', 'operator' => 'in', 'values' => [target_market.id.to_s] }]
       )
