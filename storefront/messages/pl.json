@@ -171,7 +171,18 @@
     "selectedCount": "{count, plural, one {# wybrany produkt} other {# wybranych produktów}}",
     "selectItemLabel": "Wybierz {name}",
     "checkoutSelectedHint": "Wybrałeś produkty do zapłaty.",
-    "checkoutDisabledHint": "Wybierz co najmniej jeden produkt, aby kontynuować."
+    "checkoutDisabledHint": "Wybierz co najmniej jeden produkt, aby kontynuować.",
+    "creditsTitle": "Rabaty i środki",
+    "discountCode": "Kod rabatowy",
+    "discountCalculatedAtSubmit": "Obliczane przy płatności",
+    "useStoreCredit": "Użyj środków sklepowych",
+    "storeCreditApplied": "Zastosowano środki sklepowe: {amount}",
+    "removeStoreCredit": "Usuń środki sklepowe",
+    "storeCreditLoginRequired": "Zaloguj się, aby użyć środków sklepowych.",
+    "storeCreditGiftCardConflict": "Usuń kartę podarunkową, aby użyć środków sklepowych.",
+    "storeCreditNotAvailable": "Brak dostępnych środków sklepowych.",
+    "storeCreditInvalidAmount": "Ta kwota środków jest nieprawidłowa.",
+    "logIn": "Zaloguj się"
   },
   "products": {
     "allProducts": "Wszystkie produkty",
@@ -629,7 +640,10 @@
     "removeGiftCard": "Usuń kartę podarunkową",
     "giftCardCode": "Karta podarunkowa {code}",
     "applying": "Stosowanie...",
-    "removing": "Usuwanie..."
+    "removing": "Usuwanie...",
+    "giftCardNotFound": "Nie znaleziono karty podarunkowej",
+    "giftCardExpired": "Ta karta podarunkowa wygasła",
+    "giftCardAlreadyRedeemed": "Ta karta podarunkowa została już wykorzystana"
   },
   "checkoutLayout": {
     "backToStore": "Wróć do sklepu",

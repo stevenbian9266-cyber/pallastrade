@@ -171,7 +171,18 @@
     "selectedCount": "{count, plural, one {# item selected} other {# items selected}}",
     "selectItemLabel": "Select {name}",
     "checkoutSelectedHint": "You have selected items to check out.",
-    "checkoutDisabledHint": "Select at least one item to continue."
+    "checkoutDisabledHint": "Select at least one item to continue.",
+    "creditsTitle": "Discounts & credits",
+    "discountCode": "Discount code",
+    "discountCalculatedAtSubmit": "Calculated at checkout",
+    "useStoreCredit": "Use store credit",
+    "storeCreditApplied": "Store credit applied: {amount}",
+    "removeStoreCredit": "Remove store credit",
+    "storeCreditLoginRequired": "Log in to use your store credit.",
+    "storeCreditGiftCardConflict": "Remove the gift card to use store credit.",
+    "storeCreditNotAvailable": "No store credit available for this store.",
+    "storeCreditInvalidAmount": "That store credit amount isn't valid.",
+    "logIn": "Log in"
   },
   "products": {
     "allProducts": "All Products",
@@ -629,7 +640,10 @@
     "removeGiftCard": "Remove gift card",
     "giftCardCode": "Gift card {code}",
     "applying": "Applying...",
-    "removing": "Removing..."
+    "removing": "Removing...",
+    "giftCardNotFound": "Gift card not found",
+    "giftCardExpired": "This gift card has expired",
+    "giftCardAlreadyRedeemed": "This gift card has already been redeemed"
   },
   "checkoutLayout": {
     "backToStore": "Back to store",

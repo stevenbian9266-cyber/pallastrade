@@ -60,17 +60,26 @@ older payload keeps rendering (the `CheckoutView` type is hand-written in `sdk/s
 and must be extended alongside the generated types).
 
 Canonical cart gift card intent (2026-09-14, PRD-20260914-checkout-cart-gift-cards-canonical):
-`ShoppingCart` gains `gift_card: unknown | null` — the cart-stage projection of
-`client.carts.giftCards.apply('cart_…', code)`. The card is validated at cart stage but **no money
+`ShoppingCart` gains `gift_card: { code, display_amount_remaining } | null` (typed as of B2) — the
+cart-stage projection of `client.carts.giftCards.apply('cart_…', code)`. The card is validated at
+cart stage but **no money
 moves** (`pallastrade_carts` has no payments); redemption happens on `carts.submit`, so a card that
 became unusable fails the submission instead of silently charging full price. Legacy `or_` carts keep
 their immediate-apply behaviour and share the same error codes.
 
 Canonical cart store credit intent (2026-09-14, PRD-20260914-checkout-cart-store-credits-canonical):
-`ShoppingCart` gains `store_credit: unknown | null` for `client.carts.storeCredits.apply('cart_…', amount?)`.
+`ShoppingCart` gains `store_credit: { amount, display_amount } | null` (typed as of B2) for
+`client.carts.storeCredits.apply('cart_…', amount?)`.
 The endpoint keeps requiring a bearer JWT (store credit is account property) and stores intent only —
 `carts.submit` redeems it through `Checkout::AddStoreCredit` (clamped to the final outstanding balance).
 Store credit and gift cards are mutually exclusive per cart, mirroring the order-level rule.
+
+Cart credit intents are now typed (PRD-20260914-checkout B2, 2026-09-14): `ShoppingCartSerializer`
+declares `discount_code` (the customer's own, already-validated coupon code) plus object-literal
+typelize types for `gift_card` / `store_credit`, so `@pallastrade/sdk` no longer exposes them as
+`unknown`. All three stay **cart-stage intent** — the cart page renders them as summary rows and lets
+the shopper apply/remove them via server actions, but nothing is redeemed until `carts.submit`
+(`@pallastrade/sdk` carries the hand-written `ShoppingCart` fields in `src/types/index.ts`).
 
 ### `@pallastrade/sdk-core` — Shared internals
 

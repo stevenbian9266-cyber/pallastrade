@@ -773,6 +773,7 @@ var ShoppingCartSchema = zod.z.object({
   billing_address: AddressSchema.nullable(),
   shipping_address: AddressSchema.nullable(),
   payment_methods: zod.z.array(PaymentMethodSchema),
+  discount_code: zod.z.string().nullable(),
   gift_card: zod.z.any(),
   store_credit: zod.z.any()
 });

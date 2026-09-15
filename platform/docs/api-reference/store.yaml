@@ -14255,6 +14255,9 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/PaymentMethod"
+        discount_code:
+          type: string
+          nullable: true
         gift_card:
           type: object
           nullable: true
@@ -14278,6 +14281,7 @@ components:
       - billing_address
       - shipping_address
       - payment_methods
+      - discount_code
       - gift_card
       - store_credit
       x-typelizer: true

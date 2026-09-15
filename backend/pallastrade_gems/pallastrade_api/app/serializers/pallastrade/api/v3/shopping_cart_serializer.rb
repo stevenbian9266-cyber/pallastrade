@@ -16,8 +16,11 @@ module PallasTrade
                  shipping_method_id: [:string, nullable: true],
                  billing_address: { nullable: true }, shipping_address: { nullable: true },
                  items: 'Array<CartItem>',
-                 gift_card: { nullable: true },
-                 store_credit: { nullable: true }
+                 # PRD-20260914-checkout B2 FR-009：车阶段抵扣意图的类型精度化
+                 # （此前 `{ nullable: true }` → SDK 生成 `unknown`，前端只能断言式读取）。
+                 discount_code: [:string, { nullable: true }],
+                 gift_card: '{ code: string, display_amount_remaining: string } | null',
+                 store_credit: '{ amount: string, display_amount: string } | null'
 
         attribute :id do |cart|
           cart.prefixed_id
@@ -45,6 +48,15 @@ module PallasTrade
         # 下单链路统一化（PRD-20260830-checkout）：统一下单页购物车模式需要可选支付方式。
         # 与 Order serializer 一致：store.payment_methods.active.available_on_front_end。
         many :payment_methods, resource: proc { PallasTrade.api.payment_method_serializer }
+
+        # PRD-20260914-checkout B2 FR-009：回显车阶段优惠码**意图**（用户自己输入、
+        # 已校验；存于 private_metadata，金额在提交生成 Order 时由促销引擎计算）。
+        attribute :discount_code do |cart|
+          code = (cart.private_metadata || {})[PallasTrade::Carts::ApplyDiscountCode::METADATA_KEY]
+          next if code.blank?
+
+          code
+        end
 
         # PRD-20260914-checkout-cart-gift-cards-canonical FR-005：车阶段的礼品卡**意图**。
         # 金额在提交生成 Order 时由 `apply_gift_card` 落地（车阶段零资金副作用），

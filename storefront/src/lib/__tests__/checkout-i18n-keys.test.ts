@@ -41,6 +41,27 @@ const REQUIRED: Record<string, string[]> = {
     "processingNoticeTitle",
     "processingNoticeDescription",
   ],
+  cart: [
+    // PRD-20260914-checkout-checkout-收尾收敛-b2-购物车页店铺余额入口与订单摘要三合一 AC-010：
+    // 购物车页「优惠与抵扣」模块 + 服务端错误码文案，五语言齐备。
+    "creditsTitle",
+    "discountCode",
+    "discountCalculatedAtSubmit",
+    "useStoreCredit",
+    "storeCreditApplied",
+    "removeStoreCredit",
+    "storeCreditLoginRequired",
+    "storeCreditGiftCardConflict",
+    "storeCreditNotAvailable",
+    "storeCreditInvalidAmount",
+    "logIn",
+  ],
+  coupon: [
+    // PRD-20260914-checkout-checkout-收尾收敛-b2-购物车页店铺余额入口与订单摘要三合一 AC-010
+    "giftCardNotFound",
+    "giftCardExpired",
+    "giftCardAlreadyRedeemed",
+  ],
 };
 
 describe("Checkout error i18n keys (PRD-20260913-checkout-txn-error-routing AC-010)", () => {

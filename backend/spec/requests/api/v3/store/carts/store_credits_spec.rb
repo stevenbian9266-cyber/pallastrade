@@ -22,6 +22,10 @@ RSpec.describe 'Store Cart store credits API (canonical cart_)', type: :request 
       expect(cart.reload.private_metadata['store_credit_amount']).to eq('20.0')
       expect(json_response[:store_credit][:amount]).to eq('20.0')
       expect(json_response[:store_credit][:display_amount]).to be_present
+      # PRD-20260914-checkout-checkout-收尾收敛-b2-购物车页店铺余额入口与订单摘要三合一 AC-009：
+      # 抵扣意图三者互斥 —— 只有余额时可读，其余两个字段为 null（前端不渲染多余行）。
+      expect(json_response[:discount_code]).to be_nil
+      expect(json_response[:gift_card]).to be_nil
     end
 
     # PRD-20260914-checkout-cart-store-credits-canonical AC-003：省略金额 → 用尽可用余额

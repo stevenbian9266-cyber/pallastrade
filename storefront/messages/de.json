@@ -171,7 +171,18 @@
     "selectedCount": "{count, plural, one {# Artikel ausgewählt} other {# Artikel ausgewählt}}",
     "selectItemLabel": "{name} auswählen",
     "checkoutSelectedHint": "Sie haben Artikel zum Bezahlen ausgewählt.",
-    "checkoutDisabledHint": "Wählen Sie mindestens einen Artikel aus, um fortzufahren."
+    "checkoutDisabledHint": "Wählen Sie mindestens einen Artikel aus, um fortzufahren.",
+    "creditsTitle": "Rabatte & Guthaben",
+    "discountCode": "Rabattcode",
+    "discountCalculatedAtSubmit": "Wird an der Kasse berechnet",
+    "useStoreCredit": "Guthaben verwenden",
+    "storeCreditApplied": "Guthaben angewendet: {amount}",
+    "removeStoreCredit": "Guthaben entfernen",
+    "storeCreditLoginRequired": "Melden Sie sich an, um Ihr Guthaben zu verwenden.",
+    "storeCreditGiftCardConflict": "Entfernen Sie die Geschenkkarte, um das Guthaben zu verwenden.",
+    "storeCreditNotAvailable": "Kein Guthaben für diesen Shop verfügbar.",
+    "storeCreditInvalidAmount": "Dieser Guthabenbetrag ist ungültig.",
+    "logIn": "Anmelden"
   },
   "products": {
     "allProducts": "Alle Produkte",
@@ -629,7 +640,10 @@
     "removeGiftCard": "Geschenkkarte entfernen",
     "giftCardCode": "Geschenkkarte {code}",
     "applying": "Wird angewendet...",
-    "removing": "Wird entfernt..."
+    "removing": "Wird entfernt...",
+    "giftCardNotFound": "Geschenkkarte nicht gefunden",
+    "giftCardExpired": "Diese Geschenkkarte ist abgelaufen",
+    "giftCardAlreadyRedeemed": "Diese Geschenkkarte wurde bereits eingelöst"
   },
   "checkoutLayout": {
     "backToStore": "Zurück zum Shop",

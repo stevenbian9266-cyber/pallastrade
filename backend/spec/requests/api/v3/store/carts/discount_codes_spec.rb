@@ -25,6 +25,20 @@ RSpec.describe 'Store Cart discount codes API (canonical cart_)', type: :request
       expect(response).to have_http_status(:created)
       expect(json_response[:id]).to eq(cart.prefixed_id)
       expect(cart.reload.private_metadata['discount_code']).to eq('save10')
+      # PRD-20260914-checkout-checkout-收尾收敛-b2-购物车页店铺余额入口与订单摘要三合一 AC-009：
+      # 车阶段优惠码意图需对外可读（购物车页「已应用」行），金额到提交时才算。
+      expect(json_response[:discount_code]).to eq('save10')
+    end
+
+    # PRD-20260914-checkout-checkout-收尾收敛-b2-购物车页店铺余额入口与订单摘要三合一 AC-009：
+    # 三种抵扣意图未应用时字段均为 null → 前端据此不渲染对应行。
+    it 'reports null credit intents on a bare cart_' do
+      get "/api/v3/store/carts/#{cart.prefixed_id}", headers: cart_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response[:discount_code]).to be_nil
+      expect(json_response[:gift_card]).to be_nil
+      expect(json_response[:store_credit]).to be_nil
     end
 
     # AC-002：码大小写 / 空白不敏感，规范化后存储

@@ -171,7 +171,18 @@
     "selectedCount": "{count, plural, one {# artículo seleccionado} other {# artículos seleccionados}}",
     "selectItemLabel": "Seleccionar {name}",
     "checkoutSelectedHint": "Has seleccionado artículos para pagar.",
-    "checkoutDisabledHint": "Selecciona al menos un artículo para continuar."
+    "checkoutDisabledHint": "Selecciona al menos un artículo para continuar.",
+    "creditsTitle": "Descuentos y saldos",
+    "discountCode": "Código de descuento",
+    "discountCalculatedAtSubmit": "Se calcula al pagar",
+    "useStoreCredit": "Usar saldo de la tienda",
+    "storeCreditApplied": "Saldo de la tienda aplicado: {amount}",
+    "removeStoreCredit": "Quitar saldo de la tienda",
+    "storeCreditLoginRequired": "Inicia sesión para usar el saldo de la tienda.",
+    "storeCreditGiftCardConflict": "Quita la tarjeta regalo para usar el saldo de la tienda.",
+    "storeCreditNotAvailable": "No hay saldo disponible en esta tienda.",
+    "storeCreditInvalidAmount": "Ese importe de saldo no es válido.",
+    "logIn": "Iniciar sesión"
   },
   "products": {
     "allProducts": "Todos los productos",
@@ -629,7 +640,10 @@
     "removeGiftCard": "Eliminar tarjeta regalo",
     "giftCardCode": "Tarjeta regalo {code}",
     "applying": "Aplicando...",
-    "removing": "Eliminando..."
+    "removing": "Eliminando...",
+    "giftCardNotFound": "Tarjeta regalo no encontrada",
+    "giftCardExpired": "Esta tarjeta regalo ha caducado",
+    "giftCardAlreadyRedeemed": "Esta tarjeta regalo ya se ha canjeado"
   },
   "checkoutLayout": {
     "backToStore": "Volver a la tienda",

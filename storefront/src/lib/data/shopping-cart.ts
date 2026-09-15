@@ -161,3 +161,141 @@ export async function getShippingMethods() {
     return getClient().shippingMethods.list(options);
   }, []);
 }
+
+// ---------------------------------------------------------------------------
+// 车阶段抵扣动作（PRD-20260914-checkout B2 FR-002/003/004）
+//
+// 三种抵扣（折扣码 / 礼品卡 / 店铺余额）在 canonical `cart_` 上都只是**意图**：
+// 服务端写入 `private_metadata`（零资金副作用），真正兑现发生在提交生成 Order 时
+// （`Carts::Submit` → 促销引擎 / `Checkout::AddStoreCredit`）。
+// 因此这里只做两件事：记住/忘掉意图、把服务端返回的 cart 快照透传给 UI。
+// 金额一律以快照为准，前端不重算（money 契约：raw 判逻辑、display 仅渲染）。
+//
+// 错误：`actionResult` 透传 v3 错误信封的 `code`（如 coupon_code_not_found /
+// gift_card_expired / store_credit_requires_login / store_credit_gift_card_conflict），
+// 供 UI 映射 i18n 文案。
+// ---------------------------------------------------------------------------
+
+/**
+ * 应用优惠码到购物车（服务端规范化存储，大小写不敏感）。
+ */
+export async function applyDiscountCode(
+  cartId: string,
+  code: string,
+): Promise<
+  | ({ success: true } & { cart: ShoppingCart })
+  | { success: false; error: string; code?: string }
+> {
+  return actionResult(async () => {
+    const options = await getCartOptions();
+    const cart = await getClient().carts.discountCodes.apply(
+      cartId,
+      code,
+      options,
+    );
+    updateTag("cart");
+    return { cart: cart as unknown as ShoppingCart };
+  }, "Failed to apply discount code");
+}
+
+/**
+ * 移除已应用优惠码。
+ */
+export async function removeDiscountCode(
+  cartId: string,
+  code: string,
+): Promise<
+  | ({ success: true } & { cart: ShoppingCart })
+  | { success: false; error: string; code?: string }
+> {
+  return actionResult(async () => {
+    const options = await getCartOptions();
+    const cart = await getClient().carts.discountCodes.remove(
+      cartId,
+      code,
+      options,
+    );
+    updateTag("cart");
+    return { cart: cart as unknown as ShoppingCart };
+  }, "Failed to remove discount code");
+}
+
+/**
+ * 应用礼品卡到购物车（车阶段只记意图；与店铺余额互斥）。
+ */
+export async function applyGiftCard(
+  cartId: string,
+  code: string,
+): Promise<
+  | ({ success: true } & { cart: ShoppingCart })
+  | { success: false; error: string; code?: string }
+> {
+  return actionResult(async () => {
+    const options = await getCartOptions();
+    const cart = await getClient().carts.giftCards.apply(cartId, code, options);
+    updateTag("cart");
+    return { cart: cart as unknown as ShoppingCart };
+  }, "Failed to apply gift card");
+}
+
+/**
+ * 移除礼品卡（车阶段一车一卡；canonical 分支按卡码定位，id 位传 code 即可）。
+ */
+export async function removeGiftCard(
+  cartId: string,
+  giftCardCode: string,
+): Promise<
+  | ({ success: true } & { cart: ShoppingCart })
+  | { success: false; error: string; code?: string }
+> {
+  return actionResult(async () => {
+    const options = await getCartOptions();
+    const cart = await getClient().carts.giftCards.remove(
+      cartId,
+      giftCardCode,
+      options,
+    );
+    updateTag("cart");
+    return { cart: cart as unknown as ShoppingCart };
+  }, "Failed to remove gift card");
+}
+
+/**
+ * 应用店铺余额：**省略金额 = 用尽可用余额**（服务端 `Carts::ApplyStoreCredit` 语义，
+ * 提交时按 `min(请求额, 订单应付)` 收敛）。余额是账户资产 → 需要登录（JWT），
+ * 未登录时服务端返回 401 `store_credit_requires_login`。
+ */
+export async function applyStoreCredit(
+  cartId: string,
+): Promise<
+  | ({ success: true } & { cart: ShoppingCart })
+  | { success: false; error: string; code?: string }
+> {
+  return actionResult(async () => {
+    const options = await getCartOptions();
+    const cart = await getClient().carts.storeCredits.apply(
+      cartId,
+      undefined,
+      options,
+    );
+    updateTag("cart");
+    return { cart: cart as unknown as ShoppingCart };
+  }, "Failed to apply store credit");
+}
+
+/**
+ * 移除购物车上的店铺余额意图。
+ */
+export async function removeStoreCredit(
+  cartId: string,
+): Promise<
+  | ({ success: true } & { cart: ShoppingCart })
+  | { success: false; error: string; code?: string }
+> {
+  return actionResult(async () => {
+    const options = await getCartOptions();
+    const cart = await getClient().carts.storeCredits.remove(cartId, options);
+    updateTag("cart");
+    return { cart: cart as unknown as ShoppingCart };
+  }, "Failed to remove store credit");
+}

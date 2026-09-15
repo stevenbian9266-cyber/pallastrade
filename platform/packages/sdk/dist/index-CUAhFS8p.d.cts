@@ -1202,6 +1202,20 @@ interface ShoppingCart {
     shipping_address: Address | null;
     /** 下单链路统一化（PRD-20260830-checkout）：可选支付方式（store 前端可用） */
     payment_methods?: PaymentMethod[];
+    /**
+     * 车阶段抵扣意图（PRD-20260914-checkout B2）。三者都**只在提交生成 Order 时兑现**
+     * （车阶段零资金副作用）：`discount_code` 金额在结算时计算，`gift_card` 只有 code +
+     * 卡内余额，`store_credit.amount` 是已固化的请求额（提交时按订单金额收敛）。
+     */
+    discount_code?: string | null;
+    gift_card?: {
+        code: string;
+        display_amount_remaining: string;
+    } | null;
+    store_credit?: {
+        amount: string;
+        display_amount: string;
+    } | null;
 }
 /** Result of the standard Cart submit command. The Order remains the top-level
  * resource for backward compatibility; a successor Cart is returned only when

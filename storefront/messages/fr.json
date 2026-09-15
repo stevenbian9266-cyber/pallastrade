@@ -171,7 +171,18 @@
     "selectedCount": "{count, plural, one {# article sélectionné} other {# articles sélectionnés}}",
     "selectItemLabel": "Sélectionner {name}",
     "checkoutSelectedHint": "Vous avez sélectionné des articles à payer.",
-    "checkoutDisabledHint": "Sélectionnez au moins un article pour continuer."
+    "checkoutDisabledHint": "Sélectionnez au moins un article pour continuer.",
+    "creditsTitle": "Remises et crédits",
+    "discountCode": "Code de réduction",
+    "discountCalculatedAtSubmit": "Calculé au moment du paiement",
+    "useStoreCredit": "Utiliser le crédit boutique",
+    "storeCreditApplied": "Crédit boutique appliqué : {amount}",
+    "removeStoreCredit": "Retirer le crédit boutique",
+    "storeCreditLoginRequired": "Connectez-vous pour utiliser votre crédit boutique.",
+    "storeCreditGiftCardConflict": "Retirez la carte cadeau pour utiliser le crédit boutique.",
+    "storeCreditNotAvailable": "Aucun crédit boutique disponible pour cette boutique.",
+    "storeCreditInvalidAmount": "Ce montant de crédit est invalide.",
+    "logIn": "Se connecter"
   },
   "products": {
     "allProducts": "Tous les produits",
@@ -629,7 +640,10 @@
     "removeGiftCard": "Supprimer la carte cadeau",
     "giftCardCode": "Carte cadeau {code}",
     "applying": "Application...",
-    "removing": "Suppression..."
+    "removing": "Suppression...",
+    "giftCardNotFound": "Carte cadeau introuvable",
+    "giftCardExpired": "Cette carte cadeau a expiré",
+    "giftCardAlreadyRedeemed": "Cette carte cadeau a déjà été utilisée"
   },
   "checkoutLayout": {
     "backToStore": "Retour a la boutique",

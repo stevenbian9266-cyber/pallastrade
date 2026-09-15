@@ -7,9 +7,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { CartCreditsPanel } from "@/components/cart/CartCreditsPanel";
+import { CartCreditsSummary } from "@/components/cart/CartCreditsSummary";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { QuantityPicker } from "@/components/ui/quantity-picker";
+import { isAuthenticated } from "@/lib/data/cookies";
 import {
   getShoppingCart,
   removeCartItem,
@@ -35,10 +38,16 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [busyItem, setBusyItem] = useState<string | null>(null);
+  // PRD-20260914-checkout B2 FR-005：店铺余额是账户资产 → 仅登录可用。
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const refresh = useCallback(async () => {
-    const data = await getShoppingCart();
+    const [data, authenticated] = await Promise.all([
+      getShoppingCart(),
+      isAuthenticated(),
+    ]);
     setCart(data);
+    setIsLoggedIn(authenticated);
     setLoading(false);
   }, []);
 
@@ -250,11 +259,22 @@ export default function CartPage() {
               {tc("orderSummary")}
             </h2>
 
+            {/* 优惠与抵扣：折扣码 / 礼品卡 / 店铺余额（PRD-20260914-checkout B2） */}
+            <CartCreditsPanel
+              cart={cart}
+              isLoggedIn={isLoggedIn}
+              loginHref={`${basePath}/account?redirect=${encodeURIComponent(pathname)}`}
+              onCartUpdated={setCart}
+            />
+
             <dl className="mt-6 space-y-4">
               <div className="flex justify-between">
                 <dt className="text-gray-500">{tc("subtotal")}</dt>
                 <dd className="text-gray-900">{cart.display_item_total}</dd>
               </div>
+
+              <CartCreditsSummary cart={cart} />
+
               <div className="border-t pt-4 flex justify-between">
                 <dt className="text-lg font-medium text-gray-900">
                   {tc("total")}
@@ -264,6 +284,9 @@ export default function CartPage() {
                 </dd>
               </div>
             </dl>
+
+            {/* 车阶段金额语义：运费/税费/优惠在提交生成订单时由服务端计算 */}
+            <p className="mt-2 text-xs text-gray-400">{t("shippingNote")}</p>
 
             <div className="mt-6">
               <Button

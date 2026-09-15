@@ -771,6 +771,7 @@ var ShoppingCartSchema = z.object({
   billing_address: AddressSchema.nullable(),
   shipping_address: AddressSchema.nullable(),
   payment_methods: z.array(PaymentMethodSchema),
+  discount_code: z.string().nullable(),
   gift_card: z.any(),
   store_credit: z.any()
 });

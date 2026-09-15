@@ -2000,6 +2000,7 @@ declare const ShoppingCartSchema: z.ZodObject<{
         session_required: z.ZodBoolean;
         source_required: z.ZodBoolean;
     }, z.core.$strip>>;
+    discount_code: z.ZodNullable<z.ZodString>;
     gift_card: z.ZodAny;
     store_credit: z.ZodAny;
 }, z.core.$strip>;
