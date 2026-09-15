@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-15 |
 | 来源 | 需求：Checkout 收尾收敛 B5 —— legacy 端点治理、usage metric 收口与零新增调用守护 |
 | 分类 | checkout（自动判定，见 `harness/policies/prd-categories.json`） |
