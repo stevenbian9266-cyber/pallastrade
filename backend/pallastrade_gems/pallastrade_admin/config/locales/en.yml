@@ -306,6 +306,53 @@ en:
         issues_heading: Issues
         title: Catalog Health
         view: View
+      duplicate_products:
+        action: Action
+        attribute: Attribute
+        attributes:
+          barcodes: Barcodes
+          categories: Categories
+          channels: Channels
+          created_at: Created
+          name: Name
+          price: Base price
+          slug: Slug
+          status: Status
+          stock: Stock on hand
+          updated_at: Updated
+          variants: Variants (SKU)
+        blank_value: '—'
+        candidates_heading: Duplicate candidates
+        compare: Compare
+        compare_empty: Pick at least two products to compare.
+        compare_intro: Compare the candidates side by side, then fix the data on one of them. Merging products is not available yet.
+        compare_title: Compare duplicates
+        count: Groups
+        empty: No duplicate products found for this signal.
+        filter:
+          active: 'Filtered by duplicate signal:'
+          clear: Clear filter
+        hints:
+          duplicate_barcode: Variants in this store sharing the same barcode.
+          duplicate_name: Products in this store sharing the same name (case and spacing ignored).
+          duplicate_sku: Variants in this store sharing the same SKU (case-insensitive).
+        intro: Products that look like duplicates, with a link to compare them. Fix the product data here — merging is a separate project.
+        more: '+%{count} more'
+        products: Products
+        shared_value: Shared value
+        signal: Signal
+        signals_heading: Signals
+        signals:
+          duplicate_barcode: Duplicate barcode
+          duplicate_name: Duplicate name
+          duplicate_sku: Duplicate SKU
+        statuses:
+          active: Active
+          archived: Archived
+          draft: Draft
+          paused: Paused
+        title: Duplicate Products
+        view: View
       blog:
         blog_list: Blog List
       channels:

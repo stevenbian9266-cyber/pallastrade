@@ -1,0 +1,39 @@
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.duplicate_products.compare_title') %>
+<% end %>
+
+<p class="text-gray-500 mb-6"><%= PallasTrade.t('admin.duplicate_products.compare_intro') %></p>
+
+<% if @products.size < 2 %>
+  <p class="text-gray-500" data-testid="compare-empty"><%= PallasTrade.t('admin.duplicate_products.compare_empty') %></p>
+<% else %>
+  <div class="card-lg">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table mb-0" data-testid="duplicate-comparison">
+          <thead>
+            <tr>
+              <th><%= PallasTrade.t('admin.duplicate_products.attribute') %></th>
+              <% @products.each do |product| %>
+                <th>
+                  <%= link_to product.name, PallasTrade.edit_admin_product_path(product) %>
+                  <div class="text-gray-500 text-sm"><%= product.slug %></div>
+                </th>
+              <% end %>
+            </tr>
+          </thead>
+          <tbody>
+            <% @rows.each do |row| %>
+              <tr data-testid="compare-row" data-attribute="<%= row[:label_key] %>">
+                <th class="font-medium"><%= PallasTrade.t("admin.duplicate_products.attributes.#{row[:label_key]}") %></th>
+                <% row[:values].each do |value| %>
+                  <td><%= value.presence || PallasTrade.t('admin.duplicate_products.blank_value') %></td>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<% end %>

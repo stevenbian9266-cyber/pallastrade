@@ -232,6 +232,12 @@ export default {
       },
       // P1 订单流程改造：本次变更相关 spec（新购物车/提交订单/回归）
       // 2026-09-14（PRD-20260914-checkout-cart-gift-cards-canonical）：补 cart_ canonical 端点规格
+      // 重复商品检测（PRD-20260915-catalog-batch-d2-duplicate-detection）：三类信号（条码/SKU/名称）
+      // + 计数与列表同源 + 店铺/软删除作用域 + 只读工作台与对比视图 + 导航子项一致性
+      'duplicate-products-rspec': {
+        description: 'Duplicate detection specs (three signals, count/list consistency, store + soft-delete scoping, admin worklist and compare view, navigation)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/duplicate_products_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
+      },
       'p1-order-flow-rspec': {
         description: 'P1 order-flow specs (cart/submit/request + canonical cart gift cards / store credits + regression)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/cart_spec.rb spec/services/pallastrade/carts/submit_spec.rb spec/services/pallastrade/carts/apply_gift_card_spec.rb spec/services/pallastrade/carts/store_credit_spec.rb spec/requests/api/v3/store/carts_controller_spec.rb spec/requests/api/v3/store/carts/gift_cards_spec.rb spec/requests/api/v3/store/carts/store_credits_spec.rb spec/requests/api/v3/store/carts/discount_codes_spec.rb spec/models/pallastrade/order_parent_child_spec.rb spec/requests/api/v3/store/payment_combinations_controller_spec.rb spec/services/pallastrade/carts/auto_split_spec.rb'],

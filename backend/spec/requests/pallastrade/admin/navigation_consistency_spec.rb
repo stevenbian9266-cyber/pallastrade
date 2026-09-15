@@ -104,7 +104,7 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
       # REV-P6-8h: Orders 下新增 Payment Ops 项（:payments_ops，只读）
       # DSP-P7-7: Orders 下新增 Dispute Ops 项（:disputes_ops，只读展现 + 安全动作）
       expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders transactions refunds payment_combinations payments_ops disputes_ops])
-      expect(sidebar.find(:products).children.map(&:key)).to eq(%i[products_list catalog_health price_lists stock translations taxonomies options])
+      expect(sidebar.find(:products).children.map(&:key)).to eq(%i[products_list catalog_health duplicate_products price_lists stock translations taxonomies options])
       expect(sidebar.find(:customers).children.map(&:key)).to eq(%i[customers_list customer_groups newsletter_subscribers])
       # PRD-20260910-promo-batch3c AC-004: Promotions 组新增只读核销台账子项
       # PRD-20260911-promo-batch6 (PR-P9-2, D2=A): Promotions 组新增促销分类子项

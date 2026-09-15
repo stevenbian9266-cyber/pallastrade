@@ -38,6 +38,9 @@ PallasTrade::Core::Engine.add_routes do
     resources :product_translations, only: [:index]
     # catalog health（PRD-20260915-admin-catalog-health-v1）：商品健康待办中心（只读）
     get 'catalog_health', to: 'catalog_health#index', as: :catalog_health
+    # duplicate detection（PRD-20260915-catalog-batch-d2-duplicate-detection）：重复商品候选 + 对比（只读）
+    get 'duplicate_products', to: 'duplicate_products#index', as: :duplicate_products
+    get 'duplicate_products/compare', to: 'duplicate_products#compare', as: :compare_duplicate_products
     # stock
     resources :stock_items, only: [:index, :update, :destroy]
     resources :stock_movements, only: [:index]

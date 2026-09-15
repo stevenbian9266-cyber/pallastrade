@@ -165,6 +165,14 @@ Rails.application.config.after_initialize do
                 active: -> { controller_name == 'catalog_health' },
                 if: -> { can?(:read, PallasTrade::Product) }
 
+    # Duplicate Detection（PRD-20260915-catalog-batch-d2-duplicate-detection）：重复商品候选工作台
+    products.add :duplicate_products,
+                label: 'admin.duplicate_products.title',
+                url: :admin_duplicate_products_path,
+                position: 9,
+                active: -> { controller_name == 'duplicate_products' },
+                if: -> { can?(:read, PallasTrade::Product) }
+
     # Price Lists
     products.add :price_lists,
                 label: :price_lists,

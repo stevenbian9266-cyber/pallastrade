@@ -1,0 +1,110 @@
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.duplicate_products.title') %>
+<% end %>
+
+<p class="text-gray-500 mb-6"><%= PallasTrade.t('admin.duplicate_products.intro') %></p>
+
+<div class="card-lg mb-6">
+  <div class="card-header">
+    <h3 class="card-title"><%= PallasTrade.t('admin.duplicate_products.signals_heading') %></h3>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0" data-testid="duplicate-signals">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.duplicate_products.signal') %></th>
+            <th class="text-center"><%= PallasTrade.t('admin.duplicate_products.count') %></th>
+            <th class="text-right"><%= PallasTrade.t('admin.duplicate_products.action') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% PallasTrade::Products::DuplicateCandidates::SIGNALS.each do |signal| %>
+            <% count = @counts.fetch(signal, 0) %>
+            <tr data-testid="duplicate-signal" data-signal="<%= signal %>">
+              <td>
+                <%= PallasTrade.t("admin.duplicate_products.signals.#{signal}") %>
+                <div class="text-gray-500 text-sm"><%= PallasTrade.t("admin.duplicate_products.hints.#{signal}") %></div>
+              </td>
+              <td class="text-center">
+                <% if count.positive? %>
+                  <%= link_to count, PallasTrade.admin_duplicate_products_path(signal: signal), class: 'font-medium' %>
+                <% else %>
+                  <span class="text-gray-400">0</span>
+                <% end %>
+              </td>
+              <td class="text-right">
+                <% if count.positive? %>
+                  <%= link_to PallasTrade.t('admin.duplicate_products.view'),
+                              PallasTrade.admin_duplicate_products_path(signal: signal),
+                              class: 'btn btn-sm btn-light' %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<% if @signal.present? %>
+  <div class="alert alert-info flex items-center justify-between mb-6" data-testid="duplicate-filter-banner">
+    <div>
+      <span class="font-medium"><%= PallasTrade.t('admin.duplicate_products.filter.active') %></span>
+      <span class="text-gray-500 ml-1"><%= PallasTrade.t("admin.duplicate_products.signals.#{@signal}") %></span>
+    </div>
+    <%= link_to PallasTrade.t('admin.duplicate_products.filter.clear'),
+                PallasTrade.admin_duplicate_products_path,
+                class: 'btn btn-sm btn-light' %>
+  </div>
+<% end %>
+
+<div class="card-lg">
+  <div class="card-header">
+    <h3 class="card-title"><%= PallasTrade.t('admin.duplicate_products.candidates_heading') %></h3>
+  </div>
+  <div class="card-body">
+    <% if @candidates.empty? %>
+      <p class="text-gray-500" data-testid="duplicate-empty"><%= PallasTrade.t('admin.duplicate_products.empty') %></p>
+    <% else %>
+      <div class="table-responsive">
+        <table class="table mb-0" data-testid="duplicate-candidates">
+          <thead>
+            <tr>
+              <th><%= PallasTrade.t('admin.duplicate_products.signal') %></th>
+              <th><%= PallasTrade.t('admin.duplicate_products.shared_value') %></th>
+              <th><%= PallasTrade.t('admin.duplicate_products.products') %></th>
+              <th class="text-right"><%= PallasTrade.t('admin.duplicate_products.action') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @candidates.each do |group| %>
+              <tr data-testid="duplicate-candidate" data-signal="<%= group.signal %>">
+                <td><%= PallasTrade.t("admin.duplicate_products.signals.#{group.signal}") %></td>
+                <td><code><%= group.key %></code></td>
+                <td>
+                  <ul class="list-none">
+                    <% group.products.each do |product| %>
+                      <li><%= link_to product.name, PallasTrade.edit_admin_product_path(product) %></li>
+                    <% end %>
+                  </ul>
+                  <% if group.hidden_count.positive? %>
+                    <div class="text-gray-500 text-sm">
+                      <%= PallasTrade.t('admin.duplicate_products.more', count: group.hidden_count) %>
+                    </div>
+                  <% end %>
+                </td>
+                <td class="text-right">
+                  <%= link_to PallasTrade.t('admin.duplicate_products.compare'),
+                              PallasTrade.admin_compare_duplicate_products_path(product_ids: group.products.map(&:id)),
+                              class: 'btn btn-sm btn-light' %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  </div>
+</div>
