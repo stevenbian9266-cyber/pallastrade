@@ -37,11 +37,20 @@ RSpec.describe 'Admin product AI copilot', type: :request do
     allow_any_instance_of(PallasTrade::AI::Providers::DeepSeek).to receive(:generate).and_return(response)
   end
 
+  # CI 不注入 ACTIVE_RECORD_ENCRYPTION_*，而 ProviderSecret 的 fail-closed 守卫会拒绝真实写入
+  # （设计如此：无密钥不落库）。可用性 Gate 7 只要求 secret「已配置」，且本用例已把 provider
+  # adapter stub 掉、不会真正取用密钥 —— 因此用内存替身满足前置条件，让用例在
+  # 「有/无加密密钥」的环境下行为一致。
+  def configure_provider_secret!(provider)
+    allow(PallasTrade::AI::ProviderSecret).to receive(:find_by)
+      .and_return(instance_double(PallasTrade::AI::ProviderSecret, configured?: true))
+  end
+
   def configure_capability!(capability_key)
     PallasTrade::AI::ProvisionProviders.call(store: store)
     provider = store.ai_providers.find_by(type: 'PallasTrade::AI::Provider::DeepSeek')
     provider.update!(active: true)
-    PallasTrade::AI::ProviderSecret.find_or_create_by!(provider: provider) { |s| s.credentials = 'sk-test' }
+    configure_provider_secret!(provider)
     PallasTrade::AI::ProvisionModels.call(provider: provider)
     model = PallasTrade::AI::Model.where(provider: provider, active: false).order(:name).first
     model.update!(active: true)
