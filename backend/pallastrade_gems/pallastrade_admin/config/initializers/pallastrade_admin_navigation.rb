@@ -157,6 +157,14 @@ Rails.application.config.after_initialize do
                 position: 5,
                 active: -> { controller_name == 'products' && action_name == 'index' }
 
+    # Catalog Health（PRD-20260915-admin-catalog-health-v1）：商品健康待办中心
+    products.add :catalog_health,
+                label: 'admin.catalog_health.title',
+                url: :admin_catalog_health_path,
+                position: 8,
+                active: -> { controller_name == 'catalog_health' },
+                if: -> { can?(:read, PallasTrade::Product) }
+
     # Price Lists
     products.add :price_lists,
                 label: :price_lists,

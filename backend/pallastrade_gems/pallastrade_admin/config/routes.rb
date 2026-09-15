@@ -36,6 +36,8 @@ PallasTrade::Core::Engine.add_routes do
     get 'variants/search', defaults: { format: :json }
     # product translations
     resources :product_translations, only: [:index]
+    # catalog health（PRD-20260915-admin-catalog-health-v1）：商品健康待办中心（只读）
+    get 'catalog_health', to: 'catalog_health#index', as: :catalog_health
     # stock
     resources :stock_items, only: [:index, :update, :destroy]
     resources :stock_movements, only: [:index]

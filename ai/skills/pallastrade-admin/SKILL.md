@@ -377,6 +377,21 @@ end
 - **回归**：`harness verify admin-payment-methods-rspec`（页签渲染/保存归一 + Test connection + 脱敏 +
   optionized 门控/Start 同源校验）。
 
+## 支付适用范围编辑：Provider 详情「支付方式」页签（D8 切片2, 2026-09-15，PRD-20260915-payments-d8）
+
+同一页签每行新增「适用范围」编辑器 + 摘要列（改 `_options.html.erb`；**不新增页面**）：
+
+- **表单**：`payment_method[payment_options][<kind>][rule_set][<dimension>][]`（4 组多选：market / country /
+  zone / currency）+ 隐藏位 `[rule_set][present]=1`（标记「范围区已提交」——全空选择必须能**清空**规则，
+  否则与「未提交」无法区分）。
+- **归一（控制器 `merged_payment_option_rule_set`）**：prefix ID → 原始 ID（market 限**本店** `store.markets`、
+  zone 全局表）；country 校验 ISO 存在；currency 走**店铺支持币种白名单**（`supported_currencies_list`，
+  有 market 时按 market 币种推导）；非法值**静默丢弃**；无有效条件 → 删除 `rule_set`（= 不限）。
+  **已有 `exclude` 条件原样保留**（v1 不做排除 UI，摘要列可见）。
+- **回填/摘要**：`payment_option_scope_form_values` 把已存原始 ID 转回 prefix ID（前台可读）；
+  摘要用 `PaymentMethod#payment_option_scope_summary(kind)`（维度名走 i18n：`pallastrade.payment_option_dimensions`）。
+- **回归**：`harness verify d8-availability-rspec`（范围编辑/拒绝跨店 market/清空/未提交保留/摘要渲染）。
+
 ## Customizing admin tables
 
 ```ruby
@@ -462,6 +477,29 @@ Member routes (`PATCH /admin/reviews/:id/approve` etc.) live in
 - **库存安全**：`find_or_initialize_by` + `set_count_on_hand`，下限 0 收敛（计入 `clamped_at_zero`）；不追踪库存的变体跳过。
 - **i18n**：新增动作/表单/预览/结果/warning 必须补 `admin.bulk_ops.products.*` 键；规格断言用 `PallasTrade.t(key, default: nil)`（裸 `I18n.exists?` 在此环境查不到引擎翻译，含既有键）。
 - 回归验证：`harness verify admin-products-bulk-rspec`。
+
+### Catalog Health —— 商品健康待办中心（2026-09-15，PRD-20260915-admin-catalog-health-v1）
+
+Products → **Catalog Health**（`/admin/catalog_health`）是商品运营的「待办中心」：不是报表，也不做健康分，直接给 **7 类 Actionable Issue 计数 + 一键下钻**。
+
+| issue key | 口径（一律排除 archived） | 下钻目标 |
+|---|---|---|
+| `missing_media` | 产品层与变体层（含 master）**都没有资产**（读 `pallastrade_assets` 事实表，`Asset` 无 counter_cache 时不要信 `media_count`） | `/admin/products?health_issue=missing_media` |
+| `missing_description` | **默认语言**有效 `description` 为空（翻译行优先，回退模型列——Mobility `column_fallback`） | 同上（`health_issue=missing_description`） |
+| `missing_seo` | 默认语言 `meta_title` **或** `meta_description` 为空 | 同上（`health_issue=missing_seo`） |
+| `missing_translations` | 非默认受支持语言的 (产品 × 语言) 缺 `name` 对数（与翻译页同口径 `where.not(name: [nil,''])`） | `/admin/product_translations` |
+| `active_zero_stock` | active 且**无任何可卖变体**：不存在 `track_inventory=false`、`preorderable=true`、`count_on_hand>0` 或 `backorderable=true` 的未删除变体 | 同上（`health_issue=active_zero_stock`） |
+| `redirect_unresolved` | `ProductUrlChange.call(store)` 中 `handled=false` 的 URL 变更条数 | `/admin/redirects` |
+| `old_drafts` | `draft` 且 `updated_at` 早于 30 天前 | 同上（`health_issue=old_drafts`） |
+
+接线定式（四件套，已沉淀为可复制范式）：
+
+1. **口径单一权威**：`PallasTrade::CatalogHealth::Issues`（`PRODUCT_FILTER_KEYS` 的 scope 构造器 + 两个专页计数），计数与过滤列表**共用同一构造器**——规格断言「计数 == 列表条数」；`Report` 逐项 `safe_count` 降级（单项异常记日志、页面恒 200）。
+2. **过滤接线**：`ProductsController#scope` 覆写（`super` 之后按合法 `health_issue` 追加过滤），**不新增列表页**；非法 key 静默忽略。
+3. **横幅注入**：注册到 `products_header_partials`（`PallasTrade.admin.partials.products_header << '...'`，初始器 `pallastrade_admin_partials.rb`），**零 gem 视图覆盖**。
+4. **导航与权限**：`products.add :catalog_health`（`if: -> { can?(:read, PallasTrade::Product) }`）；控制器 `BaseController` + `model_class = PallasTrade::Product` 把授权锚定到商品权限（`ProductDisplay` 已授予 `[:read, :admin, :index]`），**必须同步 `navigation_consistency_spec.rb` 子项数组**。
+
+回归验证：`harness verify admin-catalog-health-rspec`（含导航一致性回归）。
 
 ## Overriding views
 

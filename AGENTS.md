@@ -274,7 +274,9 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | Admin store form / direct-upload attachments | + `harness verify admin-stores-rspec` (logo/mailer_logo 直传失败提示 + 多店 CRUD) | ≤1 min |
 | Admin 样式 / 设计 token（`pallastrade_admin/app/assets/tailwind/**`、`pallastrade_admin.css`、后台 layout） | + `harness verify admin-theme-rspec`（品牌色阶/语义 token/密度双档 + 组件零直引 + WCAG AA 对比度契约） | ≤1 min |
 | 支付商选项化（`pallastrade_admin` payment_methods 视图/控制器、core `payment_method(s)` 服务、`pallastrade_stripe` 能力目录） | + `harness verify admin-payment-methods-rspec`（选项化页签/保存归一 + Test connection + 凭证脱敏 + optionized 门控/Start 同源校验回归） | ≤1 min |
+| 支付适用范围引擎（`payments/availability/**`、`PaymentMethod#payment_option_rule_set`、`Order#payment_methods`、admin scope 编辑/序列化） | + `harness verify d8-availability-rspec`（规则集归一/求值 + 前台收集过滤 + Start 入口门禁 + 后台范围编辑与投影） | ≤3 min |
 | Admin 商品批量运营（批量价格/库存/渠道 + 预览确认） | + `harness verify admin-products-bulk-rspec`（预览零写入 + 预览/执行计数一致 + 逐条权限跳过 + 模态接线） | ≤2 min |
+| Admin Catalog Health（7 类商品健康 issue + 一键过滤列表） | + `harness verify admin-catalog-health-rspec`（口径逐项 + 计数==列表条数 + 筛选横幅 + 导航子项一致性） | ≤2 min |
 | Financial ledger / reconciliation (`reconciliations/`, `financial_ledger/`) | + `harness verify finance-reconciliation-rspec` (source/transaction/payment/refund/dispute 对账 + sweeper) | ≤2 min |
 | Any change | `harness doc-impact --base origin/dev` — checks knowledge docs are synced | ≤1 min |
 

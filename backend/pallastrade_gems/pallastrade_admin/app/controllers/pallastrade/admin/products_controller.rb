@@ -267,6 +267,18 @@ module PallasTrade
         'name asc'
       end
 
+      # Catalog Health drill-down (PRD-20260915-admin-catalog-health-v1, FR-002):
+      # `/admin/products?health_issue=missing_media` reuses the very scopes the
+      # worklist counts with, so the list length always matches the number the
+      # merchant clicked. Unknown keys are ignored (no filtering, no banner).
+      def scope
+        base_scope = super
+        health_issue = params[:health_issue].presence
+        return base_scope unless health_issue && PallasTrade::CatalogHealth::Issues.valid_filter?(health_issue)
+
+        PallasTrade::CatalogHealth::Issues.product_relation(base_scope, health_issue, store: current_store) || base_scope
+      end
+
       def collection_includes
         {
           primary_media: [attachment_attachment: :blob],

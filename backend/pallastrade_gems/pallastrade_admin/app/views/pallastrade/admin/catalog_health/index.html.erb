@@ -1,0 +1,46 @@
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.catalog_health.title') %>
+<% end %>
+
+<p class="text-gray-500 mb-6"><%= PallasTrade.t('admin.catalog_health.intro') %></p>
+
+<div class="card-lg mb-6">
+  <div class="card-header">
+    <h3 class="card-title"><%= PallasTrade.t('admin.catalog_health.issues_heading') %></h3>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.catalog_health.issue') %></th>
+            <th class="text-center"><%= PallasTrade.t('admin.catalog_health.count') %></th>
+            <th class="text-right"><%= PallasTrade.t('admin.catalog_health.action') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @report.issues.each do |issue| %>
+            <tr>
+              <td>
+                <%= PallasTrade.t("admin.catalog_health.issues.#{issue.key}") %>
+                <div class="text-gray-500 text-sm"><%= PallasTrade.t("admin.catalog_health.hints.#{issue.key}") %></div>
+              </td>
+              <td class="text-center">
+                <% if issue.count.positive? %>
+                  <%= link_to issue.count, catalog_health_target_path(issue), class: 'font-medium' %>
+                <% else %>
+                  <span class="text-gray-400">0</span>
+                <% end %>
+              </td>
+              <td class="text-right">
+                <% if issue.count.positive? %>
+                  <%= link_to PallasTrade.t('admin.catalog_health.view'), catalog_health_target_path(issue), class: 'btn btn-sm btn-light' %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

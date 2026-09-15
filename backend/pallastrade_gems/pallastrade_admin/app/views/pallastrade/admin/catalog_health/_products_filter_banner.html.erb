@@ -1,0 +1,16 @@
+<%# Catalog Health drill-down banner (PRD-20260915-admin-catalog-health-v1 FR-006).
+    Rendered through the `products_header` injection point, so the products list
+    stays untouched. Hidden for unknown keys — an unknown `health_issue` is
+    ignored by the controller too. %>
+<% health_issue = params[:health_issue].presence %>
+<% if health_issue && PallasTrade::CatalogHealth::Issues.valid_filter?(health_issue) %>
+  <div class="card-lg mb-4">
+    <div class="card-body flex items-center justify-between gap-3">
+      <div class="text-sm">
+        <span class="font-medium"><%= PallasTrade.t('admin.catalog_health.filter.active') %></span>
+        <span class="text-gray-500 ml-1"><%= PallasTrade.t("admin.catalog_health.issues.#{health_issue}") %></span>
+      </div>
+      <%= link_to PallasTrade.t('admin.catalog_health.filter.clear'), PallasTrade.admin_products_path, class: 'btn btn-sm btn-light' %>
+    </div>
+  </div>
+<% end %>

@@ -278,6 +278,33 @@ en:
           title:
             add_tags: Add tags
             remove_tags: Remove tags
+      catalog_health:
+        action: Action
+        count: Count
+        filter:
+          active: 'Filtered by catalog health issue:'
+          clear: Clear filter
+        hints:
+          active_zero_stock: Active products with nothing sellable (no stock, no backorder, no pre-order).
+          missing_description: No description in the store default locale.
+          missing_media: No product images and no variant images.
+          missing_seo: Meta title or meta description is missing in the store default locale.
+          missing_translations: Products missing a translated name in a supported locale.
+          old_drafts: Drafts that have not been touched for 30 days or more.
+          redirect_unresolved: Old product URLs that never received a 301 redirect.
+        intro: Everything that needs attention, with a link to where it can be fixed.
+        issue: Issue
+        issues:
+          active_zero_stock: Active + zero stock
+          missing_description: Missing description
+          missing_media: Missing image
+          missing_seo: Missing SEO
+          missing_translations: Missing translations
+          old_drafts: Old drafts
+          redirect_unresolved: Redirect unresolved
+        issues_heading: Issues
+        title: Catalog Health
+        view: View
       blog:
         blog_list: Blog List
       channels:
@@ -761,6 +788,12 @@ en:
         payment_option_frontend_kind: Frontend form
         payment_option_method: Payment method
         payment_option_position: Position
+        payment_option_scope: Availability
+        scope_country: Countries
+        scope_currency: Currencies
+        scope_help: Leave empty to keep the option available everywhere. Markets and zones are limited to this store.
+        scope_market: Markets
+        scope_zone: Zones
         payment_options: Storefront payment options
         payment_options_help: Each enabled option becomes an entry offered at checkout. Disable an option to hide it from the storefront immediately; the checkout list follows the position order.
         payment_options_not_optionized: This provider is not optionized yet — checkout keeps offering a single default entry. Enable at least one option and save to switch to this list.
@@ -1157,6 +1190,13 @@ en:
     assigned_variants_help: Pick the variants this image represents. Leave blank to apply to all variants.
     authorization_failure: Authorization Failure
     automatic_promotion: Automatic
+    payment_option_dimensions:
+      market: Markets
+      country: Countries
+      zone: Zones
+      currency: Currencies
+    payment_option_scope_all: All
+    payment_option_scope_exclude: Exclude
     breadcrumbs: Breadcrumbs
     calculated_reimbursements: Calculated Reimbursements
     cancel_order: Cancel order

@@ -194,11 +194,24 @@ export default {
         description: 'Admin payment-method option-config specs (options tab render/save + test connection + credential masking + optionized/start regression)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/payment_methods_spec.rb spec/services/pallastrade/payment_methods/test_connection_spec.rb spec/models/pallastrade/payment_method_options_spec.rb spec/services/pallastrade/payment_sessions/start_spec.rb'],
       },
+      // D8 支付适用范围引擎（PRD-20260915-payments-d8）：入口/支付商按 market/country/zone/currency
+      // PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-009
+      // 求值 + 前台/后台收集过滤 + Start 入口级校验 + 后台范围编辑与序列化投影
+      'd8-availability-rspec': {
+        description: 'Payment availability engine specs (rule-set normalize/evaluate + order frontend filtering + start option gate + admin scope editing/serializer)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/payments/availability/resolver_spec.rb spec/models/pallastrade/payment_method_options_spec.rb spec/services/pallastrade/payment_sessions/start_spec.rb spec/requests/pallastrade/admin/payment_methods_spec.rb'],
+      },
       // 管理后台商品批量运营 2.0（PRD-20260915-admin-bulk-operations-2）：批量价格/库存/渠道
       // + 预览零写入与计数一致性 + 逐条权限跳过 + i18n + 模态接线
       'admin-products-bulk-rspec': {
         description: 'Admin products bulk operations specs (preview-first price/inventory/channel batches + warnings + modal wiring)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/products_bulk_operations_spec.rb'],
+      },
+      // 管理后台 Catalog Health V1（PRD-20260915-admin-catalog-health-v1）：7 类 issue 口径
+      // + 计数与过滤列表同源一致性 + 筛选横幅 + 导航子项（含 navigation_consistency 回归）
+      'admin-catalog-health-rspec': {
+        description: 'Admin catalog health specs (issue semantics + filtered products list + banner + navigation consistency)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/catalog_health_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
       },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {

@@ -3222,6 +3222,62 @@
         "moneyAndStockSafety": 15,
         "i18nAndWiring": 10
       }
+    },
+    {
+      "id": "GS-130",
+      "name": "Payment availability scope evaluated by one shared resolver",
+      "description": "PRD-20260915-payments-d8 (D8 first slice): a payment option (kind) can be scoped by market / country / zone / currency through an entry-level `rule_set` stored in the payment method metadata — the storefront list, the admin back-end list and `PaymentSessions::Start` must all evaluate it through the same `PallasTrade::Payments::Availability::Resolver`, and the admin payment-method tab gains a scope editor plus a human summary.",
+      "mustDo": [
+        "Store the rule set as additive JSON: `metadata['options'][i]['rule_set'] = { match: 'all'|'any', include: [ { dimension, operator, values } ], exclude: [...] }` with dimensions market/country/zone/currency and operators in/not_in/eq — normalized on read and write (market/zone raw ids, country/currency uppercase ISO, invalid dimensions/operators/blank values dropped, both sides empty => nil = available everywhere)",
+        "Evaluate through `Availability::RuleSet` + `Context` + `Evaluator` + `Resolver`: exclude wins over include, `match: any` needs one include hit, unresolvable observed values never match, and the resolver additionally narrows by provider scope (frontend/back_end) and the provider capability catalog (declared currencies/countries)",
+        "Route every consumer through the resolver — `Order#payment_methods`, `collect_frontend_payment_methods`, `collect_backend_payment_methods` — so no caller re-implements the rule semantics",
+        "Re-check the requested option inside `PaymentSessions::Start` (option kind -> available options) and fail with `payment_option_not_available` without creating a session when the option is out of scope",
+        "Expose the scope in the admin API as `options[].rule_set` (normalized) plus `options[].scope_summary` (i18n dimension names), and refresh generated contracts via `scripts/ci/contracts.sh` instead of hand-editing SDK types",
+        "Accept prefix ids in the admin form (`mkt_`/`zone_`) but persist raw ids, validating markets against the provider store and countries/currencies against real ISO data plus the store supported-currency list",
+        "Cover the behaviour with the registered `d8-availability-rspec` verifier (resolver + order projection + start gate + admin scope editing)"
+      ],
+      "mustNotDo": [
+        "Let the storefront list, the admin list and Start compute availability from different code paths (that is the 'selectable but unpayable' failure mode)",
+        "Treat an unknown context as available through the include branch (or unavailable through the exclude branch) — observed values that cannot be resolved must not match",
+        "Persist prefix ids, lowercase ISO codes or capability-unknown dimensions into the rule set, or keep a rule when every submitted value was dropped (empty scope = 不限)",
+        "Drop pre-existing `exclude` conditions when the admin form only manages include conditions",
+        "Change behaviour for providers without a rule set, non-optionized providers or stores without markets (zero-regression behaviour must stay identical)"
+      ],
+      "scoring": {
+        "singleSharedResolver": 30,
+        "ruleNormalization": 25,
+        "startGateSameSource": 20,
+        "adminScopeEditing": 15,
+        "contractsAndVerifier": 10
+      }
+    },
+    {
+      "id": "GS-131",
+      "name": "Catalog Health turns scattered catalog gaps into an actionable worklist",
+      "description": "PRD-20260915-admin-catalog-health-v1 (Batch B-2 of the catalog upgrade plan): Products gains a Catalog Health page that reports seven actionable issues (missing media / description / SEO / translations, active + zero stock, unresolved redirects, old drafts) with a drill-down per count — the five product-level issues reuse the very scopes the counts were computed with, so the filtered products list always matches the number that was clicked, and the merchant can continue into the bulk operations built in Batch B-1.",
+      "mustDo": [
+        "Keep one source of truth for the seven issues (PallasTrade::CatalogHealth::Issues) and let both the worklist page and the products-list filter resolve through it, so a count equals the length of the filtered list",
+        "Count missing media from pallastrade_assets across the product and its variants (master included) — Asset declares no counter cache, so the rows are the truth",
+        "Compare description/SEO against the effective default-locale value (Mobility translation row first, model column as fallback), and flag SEO when either meta_title or meta_description is missing",
+        "Treat an active product as zero-stock only when no variant is sellable: track_inventory = false, preorderable, a stock item with count_on_hand > 0 or backorderable — pre-order and backorder SKUs stay out of the report",
+        "Reuse the existing surfaces for remediation: missing translations links to the Product Translations coverage page (same `name` rule), unresolved redirects links to the URL-changes section of the Redirects page (ProductUrlChange handled: false)",
+        "Filter the products list by overriding `scope` behind a validated `health_issue` param, render the filter banner through the `products_header_partials` injection point, and register the sidebar entry under Products guarded by can?(:read, PallasTrade::Product)",
+        "Keep the page read-only and 200 on failure: each counter degrades to 0 with a logged warning instead of taking the worklist down, and sync the navigation consistency spec whenever a Products sub-item is added"
+      ],
+      "mustNotDo": [
+        "Compute counts and filters with two different definitions (they drift and the drill-down shows a different number than the badge)",
+        "Rely on media_count counters or instance-only helpers (has_media?) for the missing-media scope, or count archived products",
+        "Report pre-order/backorderable or untracked-inventory products as out of stock, or count drafts as sellable",
+        "Invent a new locale rule for translations instead of the one the Product Translations page already applies",
+        "Add write paths (no create/update/destroy, no one-click fixes) on the health page, or copy gem views to the host app instead of using the documented injection point"
+      ],
+      "scoring": {
+        "singleSourceOfTruth": 30,
+        "issueSemantics": 25,
+        "drillDownParity": 20,
+        "readOnlyAndDegradation": 15,
+        "navigationAndI18n": 10
+      }
     }
   ]
 }
