@@ -41,7 +41,11 @@ export function BackInStockNotify({
     }
     setError(null);
     setState("loading");
-    const result = await createBackInStockSubscription(productId, value, variantId);
+    const result = await createBackInStockSubscription(
+      productId,
+      value,
+      variantId,
+    );
     if (result.success) {
       setState("done");
     } else {
