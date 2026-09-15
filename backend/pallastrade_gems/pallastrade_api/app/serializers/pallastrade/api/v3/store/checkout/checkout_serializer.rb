@@ -137,7 +137,10 @@ module PallasTrade
                 description: payment_method.description,
                 type: payment_method.class.api_type,
                 session_required: payment_method.session_required?,
-                source_required: payment_method.source_required?
+                source_required: payment_method.source_required?,
+                # PALLAS-CUSTOM: PAY-OPT-1（切片2）—— 与 store PaymentMethodSerializer 契约一致。
+                kind: payment_method.default_option_kind,
+                frontend_kind: payment_method.default_option_frontend_kind
               }
             end
           end

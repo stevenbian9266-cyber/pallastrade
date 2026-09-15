@@ -145,7 +145,23 @@ RSpec.describe PallasTrade::Api::V3::Store::Checkout::CheckoutSerializer, type: 
         expect(entry).to be_present
         expect(entry[:type]).to eq('check')
         expect(entry[:session_required]).to be(false)
-        expect(entry.keys).to contain_exactly(:id, :name, :description, :type, :session_required, :source_required)
+        # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片2）—— 入口身份（kind）与前端形态 additive 新增
+        expect(entry[:kind]).to eq('check')
+        expect(entry[:frontend_kind]).to eq('manual')
+        expect(entry.keys).to contain_exactly(:id, :name, :description, :type, :session_required, :source_required,
+                                              :kind, :frontend_kind)
+      end
+
+      # PALLAS-CUSTOM: PAY-OPT-1（切片2 / AC-002 / AC-006）—— 已选项化且零可用入口的 provider
+      # 不出现在下单前的结账契约里（前台列表与 payload 同源）。
+      it 'omits optionized providers with zero entries from the payment payload (AC-002/AC-006)' do
+        hidden = create(:check_payment_method, store: store, active: true, display_on: 'front_end',
+                                               metadata: { 'optionized' => true, 'options' => [] })
+        serialized = serialize(PallasTrade::OrderCheckout::View.call(order: order))
+
+        ids = serialized['payment'][:available_payment_methods].map { |m| m[:id] }
+
+        expect(ids).not_to include(hidden.prefixed_id)
       end
 
       it 'projects credit amounts from the order (AC-001/AC-003)' do

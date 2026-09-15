@@ -7,6 +7,9 @@ module PallasTrade
                    auto_capture: [:boolean, nullable: true],
                    storefront_visible: :boolean,
                    position: :number,
+                   optionized: :boolean,
+                   options: 'Array<{ kind: string; name: string; frontend_kind: string; ' \
+                            'active: boolean; position: number }>',
                    metadata: 'Record<string, unknown>',
                    preferences: 'Record<string, unknown>',
                    preference_schema: "Array<{ key: string; type: string; default: unknown }>"
@@ -16,6 +19,25 @@ module PallasTrade
 
           attribute :preferences, &:serialized_preferences
           attribute :preference_schema, &:serialized_preference_schema
+
+          # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片2）—— 后台「支付方式」页签的数据源：
+          # 该 provider 的生效入口目录（kind / 前台显示名 / 前端形态 / 启停 / 排序）。
+          # optionized = 是否已转为选项化（决定「0 入口」语义，供后台提示）。
+          attribute :optionized do |payment_method|
+            payment_method.optionized?
+          end
+
+          attribute :options do |payment_method|
+            payment_method.effective_payment_options.each_with_index.map do |option, index|
+              {
+                kind: option['kind'],
+                name: option['display_name'].presence || option['kind'],
+                frontend_kind: option['frontend_kind'],
+                active: option['active'] != false,
+                position: option['position'].to_i.zero? ? index : option['position'].to_i
+              }
+            end
+          end
         end
       end
     end

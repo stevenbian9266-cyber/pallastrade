@@ -31,7 +31,9 @@ module PallasTrade
                 payment_method: payment_method,
                 external_data: permitted_params[:external_data] || {},
                 expected_version: permitted_params[:expected_version],
-                expected_price_version: permitted_params[:expected_price_version]
+                expected_price_version: permitted_params[:expected_price_version],
+                # PALLAS-CUSTOM: PAY-OPT-1（切片2）—— 可选入口（method kind）同源校验参数。
+                option_kind: permitted_params[:option_kind]
               )
 
               if result.success?
@@ -121,7 +123,7 @@ module PallasTrade
 
             def permitted_params
               params.permit(*(PallasTrade::PermittedAttributes.payment_session_attributes +
-                              [:expected_version, :expected_price_version]))
+                              [:expected_version, :expected_price_version, :option_kind]))
             end
 
             def complete_params

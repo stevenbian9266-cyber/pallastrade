@@ -13,7 +13,8 @@ module PallasTrade
       REUSE_WINDOW = 30.minutes
 
       # CHK-P1-5: expected_* 可选——客户端所见 quote 期望值；不匹配 → checkout_version_conflict。
-      def call(order:, payment_method:, external_data: {}, expected_version: nil, expected_price_version: nil)
+      def call(order:, payment_method:, external_data: {}, expected_version: nil, expected_price_version: nil,
+               option_kind: nil)
         data = external_data.to_h.stringify_keys
         mode = data['mode'].presence
 
@@ -33,7 +34,7 @@ module PallasTrade
           order.reload
           amount = order.amount_due
           return failure(order, 'Order has no outstanding balance') unless amount.to_d.positive?
-          return failure(order, 'Payment method is not available for this order') unless payment_method_available?(order, payment_method)
+          return failure(order, 'Payment method is not available for this order') unless payment_method_available?(order, payment_method, option_kind: option_kind)
 
           active_session = reusable_session(order, payment_method, amount, mode)
           return success(active_session) if active_session.present?
@@ -161,10 +162,30 @@ module PallasTrade
 
       # Do not use Order#payment_methods here: it is memoized for rendering and
       # can be stale when a gateway is enabled immediately before checkout.
-      def payment_method_available?(order, payment_method)
-        order.store.payment_methods.active.available_on_front_end.
+      def payment_method_available?(order, payment_method, option_kind: nil)
+        available = order.store.payment_methods.active.available_on_front_end.
           where(id: payment_method.id).
-          any? { |method| method.available_for_order?(order) }
+          any? { |method| method.frontend_visible? && method.available_for_order?(order) }
+        return false unless available
+
+        option_available?(payment_method, option_kind)
+      end
+
+      # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片2 / FR-003 / AC-002）
+      # 入口（method kind）级同源校验：
+      # - 未传 option_kind → 不校验（行为与改动前完全一致，零回归）；
+      # - 传了 option_kind → 必须存在且未被停用；未配置 options 的 provider
+      #   只接受自己的默认入口 kind（默认回落语义，见 PaymentMethod#effective_payment_options）。
+      def option_available?(payment_method, option_kind)
+        return true if option_kind.blank?
+
+        kind = option_kind.to_s
+        return payment_method.default_option_kind == kind if payment_method.payment_options.empty?
+
+        found = payment_method.payment_option_for(kind)
+        return false if found.nil?
+
+        found['active'] != false
       end
 
       # P0-3 (PRD FR-030/FR-031): operation_key = 稳定业务意图标识（禁随机）：

@@ -89,6 +89,77 @@ RSpec.describe PallasTrade::PaymentSessions::Start, type: :service do
     expect(order.payment_sessions).to be_empty
   end
 
+  # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915-admin 支付配置选项化 切片2 / FR-003 / AC-002）
+  # provider 下钻到「入口（method kind）」粒度的同源校验：停用/未知入口一律拒绝建会话。
+  describe 'PAY-OPT-1 option-level availability' do
+    def optionized_method(options)
+      create(:bogus_payment_method, store: store, active: true, display_on: 'both',
+                                    metadata: { 'optionized' => true, 'options' => options })
+    end
+
+    it 'keeps legacy behaviour when no option_kind is sent (zero regression)' do
+      result = described_class.call(order: order, payment_method: payment_method, external_data: {})
+
+      expect(result).to be_success
+    end
+
+    it 'accepts the implicit default entry kind for a provider without configured options' do
+      result = described_class.call(order: order, payment_method: payment_method, external_data: {},
+                                    option_kind: payment_method.default_option_kind)
+
+      expect(result).to be_success
+    end
+
+    it 'rejects a kind that is not the implicit default entry of an unconfigured provider' do
+      result = described_class.call(order: order, payment_method: payment_method, external_data: {},
+                                    option_kind: 'apple_pay')
+
+      expect(result).to be_failure
+      expect(order.payment_sessions).to be_empty
+    end
+
+    it 'accepts an enabled configured entry' do
+      method = optionized_method([{ 'kind' => 'card', 'active' => true, 'position' => 1 }])
+
+      result = described_class.call(order: order, payment_method: method, external_data: {},
+                                    option_kind: 'card')
+
+      expect(result).to be_success
+    end
+
+    it 'rejects a disabled entry without creating a session (AC-002)' do
+      method = optionized_method([
+                                   { 'kind' => 'card', 'active' => true, 'position' => 1 },
+                                   { 'kind' => 'apple_pay', 'active' => false, 'position' => 2 }
+                                 ])
+
+      result = described_class.call(order: order, payment_method: method, external_data: {},
+                                    option_kind: 'apple_pay')
+
+      expect(result).to be_failure
+      expect(order.payment_sessions).to be_empty
+    end
+
+    it 'rejects an unknown entry kind' do
+      method = optionized_method([{ 'kind' => 'card', 'active' => true, 'position' => 1 }])
+
+      result = described_class.call(order: order, payment_method: method, external_data: {},
+                                    option_kind: 'google_pay')
+
+      expect(result).to be_failure
+      expect(order.payment_sessions).to be_empty
+    end
+
+    it 'rejects the whole provider when optionized with zero entries (AC-006/AC-007)' do
+      method = optionized_method([])
+
+      result = described_class.call(order: order, payment_method: method, external_data: {})
+
+      expect(result).to be_failure
+      expect(order.payment_sessions).to be_empty
+    end
+  end
+
   # P0-3 (PRD FR-030): 金额变化后不得复用旧支付意图——即使旧 active 会话仍在。
   it 'does not reuse an active session when the amount changed, and issues a fresh operation key' do
     first = described_class.call(order: order, payment_method: payment_method, external_data: {}).value

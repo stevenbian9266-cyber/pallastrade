@@ -360,11 +360,14 @@ module PallasTrade
     # 门控语义（§0.1-12）：
     #   optionized=false → 0 options 视作「未迁移」→ 回落 1 个默认入口（行为与今天一致）
     #   optionized=true  → 0 options 就是 0 个前台入口（配置语义，禁止自动兜底）
+    #
+    # ⚠️ 命名避让：`PallasTrade::Gateway#options` 已存在（网关偏好项），因此本能力一律
+    # 使用 `payment_option(s)` 前缀命名，避免网关型 provider（Stripe / Bogus…）上被覆盖。
     OPTIONIZED_KEY = 'optionized'
     OPTIONS_KEY = 'options'
 
     # 归一化后的入口列表（未筛选/未排序）；非法结构一律忽略，保证只读安全。
-    def options
+    def payment_options
       raw = metadata&.[](OPTIONS_KEY)
       return [] unless raw.is_a?(Array)
 
@@ -379,14 +382,14 @@ module PallasTrade
     end
 
     # 已启用入口，按 position 升序（position 相同保持配置顺序）。
-    def available_options
-      options.select { |option| option['active'] != false }
-             .each_with_index.sort_by { |option, index| [option['position'].to_i, index] }
-             .map(&:first)
+    def available_payment_options
+      payment_options.select { |option| option['active'] != false }
+                     .each_with_index.sort_by { |option, index| [option['position'].to_i, index] }
+                     .map(&:first)
     end
 
-    def option_for(kind)
-      options.find { |option| option['kind'] == kind.to_s }
+    def payment_option_for(kind)
+      payment_options.find { |option| option['kind'] == kind.to_s }
     end
 
     def optionized?
@@ -394,22 +397,22 @@ module PallasTrade
     end
 
     # 生效入口：已选项化 → 仅用配置的；未选项化 → 有配置用配置，否则回落默认入口。
-    def effective_options
-      available = available_options
+    def effective_payment_options
+      available = available_payment_options
       return available if optionized? || available.any?
 
-      [default_option]
+      [default_payment_option]
     end
 
     # 是否应出现在前台列表：已选项化且没有任何可用入口 → 不出现。
     def frontend_visible?
       return true unless optionized?
 
-      available_options.any?
+      available_payment_options.any?
     end
 
     # 未选项化 provider 的隐式默认入口（与今天的单入口行为一致）。
-    def default_option
+    def default_payment_option
       {
         'kind' => default_option_kind,
         'active' => true,
