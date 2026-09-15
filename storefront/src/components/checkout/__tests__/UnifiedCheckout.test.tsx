@@ -171,19 +171,34 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     vi.stubGlobal("fetch", fetchMock);
     confirmMock.mockReset();
     fetchMock.mockImplementation(
-      async (_input: RequestInfo | URL, init?: RequestInit) => ({
-        ok: true,
-        json: async () =>
-          init?.method === "POST"
-            ? {
-                order: { id: "or_123" },
-                session: {
-                  id: "ps_1",
-                  external_data: { client_secret: "sec_1" },
-                },
-              }
-            : { session: { id: "ps_1", status: "completed" } },
-      }),
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        // PRD-20260915-checkout-单页两段语义：首次 Pay 先走 Prepare（建单 + 权威报价）。
+        // 默认 mock 不带 quote（服务端降级路径）→ 组件直接进入 Pay，保持既有断言；
+        // 需要「确认区」的用例自行覆写该分支。
+        if (input === "/api/checkout/prepare") {
+          return {
+            ok: true,
+            json: async () => ({
+              order_id: "or_123",
+              order: { id: "or_123" },
+              quote: null,
+            }),
+          };
+        }
+        return {
+          ok: true,
+          json: async () =>
+            init?.method === "POST"
+              ? {
+                  order: { id: "or_123" },
+                  session: {
+                    id: "ps_1",
+                    external_data: { client_secret: "sec_1" },
+                  },
+                }
+              : { session: { id: "ps_1", status: "completed" } },
+        };
+      },
     );
     confirmMock.mockResolvedValue({});
   });
@@ -283,8 +298,9 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     await user.click(screen.getByRole("button", { name: "payNow" }));
 
     // PRD-20260914-checkout-placeholder-controls-governance AC-002：
-    // 勾选 Marketing（默认 true）→ 提交成功后额外发起一次订阅（start + newsletter + PATCH）
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    // 勾选 Marketing（默认 true）→ 提交成功后额外发起一次订阅；
+    // PRD-20260915 两段语义 = prepare + start + newsletter + PATCH
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4));
     const newsletterCall = fetchMock.mock.calls.find(
       ([url]) => url === "/api/checkout/newsletter",
     );
@@ -294,15 +310,31 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(
       JSON.parse((newsletterCall[1] as RequestInit).body as string),
     ).toEqual({ email: "ada@example.com" });
-    const postOptions = fetchMock.mock.calls[0]?.[1] as RequestInit;
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/checkout/start");
-    expect(postOptions.method).toBe("POST");
-    expect(JSON.parse(postOptions.body as string)).toMatchObject({
+    // PRD-20260915-checkout-单页两段语义：
+    // 第一段 Prepare 携带结账输入（cart_id + checkout），第二段 Pay 只携带订单与支付方式。
+    const prepareCall = fetchMock.mock.calls.find(
+      ([url]) => url === "/api/checkout/prepare",
+    );
+    expect(prepareCall).toBeDefined();
+    expect(
+      JSON.parse((prepareCall?.[1] as RequestInit).body as string),
+    ).toMatchObject({
       cart_id: "cart_1",
-      payment_method_id: "pm_card",
-      payment_mode: "payment_intent",
       // PRD-20260913-checkout-billing-mode AC-008：显式账单语义（不再发 use_shipping）
       checkout: { billing_mode: "same_as_shipping" },
+    });
+
+    const startCall = fetchMock.mock.calls.find(
+      ([url]) => url === "/api/checkout/start",
+    );
+    const postOptions = startCall?.[1] as RequestInit;
+    expect(startCall?.[0]).toBe("/api/checkout/start");
+    expect(postOptions.method).toBe("POST");
+    expect(JSON.parse(postOptions.body as string)).toMatchObject({
+      order_id: "or_123",
+      payment_method_id: "pm_card",
+      payment_mode: "payment_intent",
+      session_required: true,
     });
     expect(confirmMock).toHaveBeenCalledWith("sec_1");
     const patchCall = fetchMock.mock.calls.find(
@@ -338,8 +370,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     await waitFor(() =>
       expect(replaceMock).toHaveBeenCalledWith("/us/en/payment-result/or_123"),
     );
-    // 订阅（best-effort）也计入 fetch；非会话支付本身只有 start 一次
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    // 订阅（best-effort）也计入 fetch；两段语义 = prepare + start（非会话）+ 订阅
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock.mock.calls.map(([url]) => url)).toContain(
       "/api/checkout/newsletter",
     );
@@ -407,7 +439,17 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
 
   async function payWithErrorBody(body: Record<string, unknown>) {
     const user = userEvent.setup();
-    fetchMock.mockResolvedValue({ ok: false, json: async () => body });
+    // PRD-20260915-checkout-单页两段语义：Prepare 正常建单，错误发生在 Pay
+    // （orders.transactions.create）——错误码分流路径保持不变。
+    const defaultImpl = fetchMock.getMockImplementation();
+    fetchMock.mockImplementation(
+      (input: RequestInfo | URL, init?: RequestInit) => {
+        if (input === "/api/checkout/prepare") {
+          return defaultImpl?.(input, init);
+        }
+        return Promise.resolve({ ok: false, json: async () => body });
+      },
+    );
     renderCheckout();
     await fillRequiredFields(user);
     await user.type(screen.getByLabelText("email"), "ada@example.com");
@@ -460,7 +502,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     );
     expect(replaceMock).not.toHaveBeenCalled();
     // PRD-...-b3-... AC-007：库存不足**不**自动重试（不得继续创建新 PaymentSession）
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // 两段语义 = prepare（建单）+ start（库存失败），无第三次
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   // PRD-20260915-checkout-checkout-收尾收敛-b3-库存错误四态与履约结果页-recovery-语义-shipment-groups AC-001 AC-007
@@ -479,7 +522,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
       "/us/en/cart",
     );
     expect(replaceMock).not.toHaveBeenCalled();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   // PRD-20260915-checkout-checkout-收尾收敛-b3-库存错误四态与履约结果页-recovery-语义-shipment-groups AC-001 AC-007
@@ -492,14 +535,15 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     // 自动重试一次（仅该码）：第二次仍是同一 code → 回落为手动入口
     expect(await screen.findByText("reservationExpiredTitle")).toBeTruthy();
     expect(screen.getByText("reservationExpiredHint")).toBeTruthy();
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    // 两段语义：prepare + start×2（首次 + 自动重试一次）
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
 
-    // 手动动作仍可用，且绝不会无限循环（第三次由用户触发）
+    // 手动动作仍可用，且绝不会无限循环（第四次由用户触发）
     const user = userEvent.setup();
     await user.click(
       screen.getByRole("button", { name: "retryInventoryCheck" }),
     );
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4));
     expect(replaceMock).not.toHaveBeenCalled();
   });
 
@@ -652,7 +696,10 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     await user.click(screen.getByRole("button", { name: "payNow" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    const startOptions = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const startCall = fetchMock.mock.calls.find(
+      ([url]) => url === "/api/checkout/start",
+    );
+    const startOptions = startCall?.[1] as RequestInit;
     const body = JSON.parse(startOptions.body as string) as Record<
       string,
       unknown
@@ -716,6 +763,13 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
           }),
         };
       }
+      if (String(input) === "/api/checkout/prepare") {
+        // 两段语义：Prepare 先建单（返回 or_ 订单），冲突发生在 Pay
+        return {
+          ok: true,
+          json: async () => ({ order_id: "or_123", order: { id: "or_123" } }),
+        };
+      }
       return { ok: true, json: async () => ({}) };
     });
 
@@ -734,9 +788,9 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
       "data-changed",
       "true",
     );
-    // 零跳转（不再去 or_ 页）+ 零自动重试（fetch 只发一次）
+    // 零跳转（不再去 or_ 页）+ 零自动重试；两段语义 = prepare + start 各一次
     expect(replaceMock).not.toHaveBeenCalled();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   // PRD-20260914-checkout-quote-confirmation-loop AC-005：冲突但响应无 quote → 降级为页内提示
@@ -750,6 +804,12 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
             error: { code: "checkout_version_conflict", message: "stale" },
             order_id: "or_123",
           }),
+        };
+      }
+      if (String(input) === "/api/checkout/prepare") {
+        return {
+          ok: true,
+          json: async () => ({ order_id: "or_123", order: { id: "or_123" } }),
         };
       }
       return { ok: true, json: async () => ({}) };
@@ -766,7 +826,98 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     ).toBeInTheDocument();
     expect(screen.queryByTestId("quote-diff-shipping")).not.toBeInTheDocument();
     expect(replaceMock).not.toHaveBeenCalled();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  // PRD-20260915-checkout-单页两段语义 AC-002/AC-004：
+  // Prepare 返回 Order 权威报价 → 页内确认区展示最终金额；确认前绝不发起 Pay。
+  it("shows the authoritative final amount and waits for confirmation before paying (AC-002)", async () => {
+    const user = userEvent.setup();
+    const defaultImpl = fetchMock.getMockImplementation();
+    fetchMock.mockImplementation(
+      (input: RequestInfo | URL, init?: RequestInit) => {
+        if (input === "/api/checkout/prepare") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              order_id: "or_123",
+              order: { id: "or_123" },
+              quote: {
+                checkout_version: 3,
+                price_version: "pv_3",
+                delivery_total: "9.0",
+                display_delivery_total: "$9.00",
+                discount_total: "-2.0",
+                display_discount_total: "-$2.00",
+                amount_due: "31.98",
+                display_amount_due: "$31.98",
+              },
+            }),
+          });
+        }
+        return defaultImpl?.(input, init);
+      },
+    );
+
+    renderCheckout();
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    // ① 确认区展示 Order 权威金额（运费 / 折扣 / 应付，全部 display_* 仅渲染）
+    const confirm = await screen.findByTestId("order-quote-confirm");
+    expect(confirm).toBeInTheDocument();
+    expect(screen.getByTestId("quote-delivery")).toHaveTextContent("$9.00");
+    expect(screen.getByTestId("quote-discount")).toHaveTextContent("-$2.00");
+    expect(screen.getByTestId("quote-amount-due")).toHaveTextContent("$31.98");
+    // ② 确认前**绝不**发起 Pay（只发了 prepare）
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      "/api/checkout/prepare",
+    ]);
+    expect(confirmMock).not.toHaveBeenCalled();
+    expect(replaceMock).not.toHaveBeenCalled();
+
+    // ③ 确认后走 Pay：只对已建订单启动交易，并携带已确认的报价版本
+    await user.click(screen.getByRole("button", { name: "confirmAndPay" }));
+    await waitFor(() =>
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/us/en/payment-result/or_123?session=ps_1",
+      ),
+    );
+    const startCall = fetchMock.mock.calls.find(
+      ([url]) => url === "/api/checkout/start",
+    );
+    expect(
+      JSON.parse((startCall?.[1] as RequestInit).body as string),
+    ).toMatchObject({
+      order_id: "or_123",
+      expected_checkout_version: 3,
+      expected_price_version: "pv_3",
+    });
+    // 确认后不再重复提交购物车（防重复建单）
+    expect(
+      fetchMock.mock.calls.filter(([url]) => url === "/api/checkout/prepare")
+        .length,
+    ).toBe(1);
+  });
+
+  // PRD-20260915-checkout-单页两段语义 AC-005：
+  // Prepare 未返回权威报价（服务端降级）→ 不展示空确认区，保持一次点击直付。
+  it("degrades to a single click when Prepare carries no authoritative quote (AC-005)", async () => {
+    const user = userEvent.setup();
+    renderCheckout();
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    await waitFor(() =>
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/us/en/payment-result/or_123?session=ps_1",
+      ),
+    );
+    expect(screen.queryByTestId("order-quote-confirm")).toBeNull();
   });
 
   // PRD-20260913-checkout-billing-mode FR-011/AC-010：取消「同配送」但账单地址不完整

@@ -44,6 +44,7 @@ import { Input } from "@/components/ui/input";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import {
+  type CheckoutQuote,
   diffQuotes,
   expectedVersions,
   normalizeQuote,
@@ -430,6 +431,14 @@ export function UnifiedCheckout({
     rows: QuoteDiffRow[];
     hasQuote: boolean;
   } | null>(null);
+  /**
+   * PRD-20260915-checkout-单页两段语义：Prepare 之后的「最终金额确认区」。
+   * 点 Pay Now 先 prepare（update + submit → Order 权威报价），金额展示后才发起 Pay。
+   */
+  const [preparedOrder, setPreparedOrder] = useState<{
+    id: string;
+    quote: CheckoutQuote | null;
+  } | null>(null);
 
   const selectedMethod =
     paymentMethods.find((m) => m.id === paymentMethodId) ?? paymentMethods[0];
@@ -658,6 +667,67 @@ export function UnifiedCheckout({
     cardFormRef.current = handle;
   }, []);
 
+  /** Prepare / Pay 共用的结账载荷（邮箱 / 地址 / 物流 / 账单语义）。 */
+  const buildCheckoutPayload = () => ({
+    email: email || undefined,
+    shipping_address: formDataToAddress(address),
+    shipping_method_id: shippingMethodId || undefined,
+    // PRD-20260913-checkout-billing-mode FR-009：发送服务端显式账单语义
+    // （不再发 `use_shipping` —— 旧字段在 Store API 参数白名单中被丢弃）。
+    ...(useShippingForBilling
+      ? { billing_mode: "same_as_shipping" as const }
+      : {
+          billing_mode: "custom" as const,
+          billing_address: formDataToAddress(billAddress),
+        }),
+  });
+
+  /**
+   * PRD-20260915-checkout-单页两段语义 **第一段 Prepare**：保存填写内容并提交订单，
+   * 取回 Order 权威报价（含运费/税费）。返回值后页面据此展示确认区；
+   * 失败（含未建单）返回 null（已提示用户）。
+   */
+  const prepareOrder = async (): Promise<{
+    id: string;
+    quote: CheckoutQuote | null;
+  } | null> => {
+    setPayError(null);
+    setPayProcessing(true);
+    setProcessingStage("submitting");
+    try {
+      const response = await fetch("/api/checkout/prepare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cart_id: cart.id,
+          checkout: buildCheckoutPayload(),
+        }),
+      });
+      const result = (await response.json()) as {
+        order_id?: string;
+        order?: { id?: string };
+        quote?: unknown;
+        error?: unknown;
+      };
+      const orderId = result.order_id ?? result.order?.id;
+
+      if (!response.ok || !orderId) {
+        toast.error(normalizeErrorMessage(result.error, t("checkoutError")));
+        return null;
+      }
+
+      orderIdRef.current = orderId;
+      writeQuoteSnapshot(cart.id, result.quote);
+      return { id: orderId, quote: normalizeQuote(result.quote) };
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("checkoutError"));
+      return null;
+    } finally {
+      setPayProcessing(false);
+      setProcessingStage("idle");
+    }
+  };
+
   // The same-origin Route Handler performs Cart update + idempotent submit +
   // PaymentSession start without a Server Action/RSC refresh. Stripe confirmation
   // therefore remains in this single Pay click.
@@ -681,6 +751,22 @@ export function UnifiedCheckout({
     }
     if (isSessionBased && isStripe && !cardFormRef.current?.validate()) return;
 
+    // 两段语义（§0.1-1/2）：首次点击先 Prepare 拿 Order 权威报价；
+    // 有权威金额 → 展示页内确认区，等用户确认再 Pay；
+    // 无权威金额（服务端降级/读取失败）→ 直接 Pay，金额由支付控件自身展示。
+    let target = preparedOrder;
+    if (!target) {
+      const prepared = await prepareOrder();
+      if (!prepared) return;
+      // 订单已建：必须记住它，否则重试（如预留过期自动重试）会重新提交购物车。
+      setPreparedOrder(prepared);
+      // 有权威金额 → 等用户确认后再 Pay；无权威金额（降级）→ 直接 Pay。
+      if (prepared.quote) return;
+      target = prepared;
+    }
+    const orderId = target.id;
+    const confirmedQuote = target.quote;
+
     setPayError(null);
     setPayProcessing(true);
     setProcessingStage("submitting");
@@ -689,25 +775,14 @@ export function UnifiedCheckout({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          cart_id: cart.id,
+          // 两段语义 Pay：只对 Prepare 建好的订单启动交易（不再 update/submit）。
+          order_id: orderId,
           payment_method_id: selectedMethod.id,
+          session_required: isSessionBased,
           ...(isStripe && { payment_mode: "payment_intent" }),
           // PRD-20260914-checkout-quote-confirmation-loop FR-004：
-          // 带回客户端所见报价版本（顶层字段；无快照 = 首次点击，不带 expected_*）。
-          ...expectedVersions(readQuoteSnapshot(cart.id)),
-          checkout: {
-            email: email || undefined,
-            shipping_address: formDataToAddress(address),
-            shipping_method_id: shippingMethodId || undefined,
-            // PRD-20260913-checkout-billing-mode FR-009：发送服务端显式账单语义
-            // （不再发 `use_shipping` —— 旧字段在 Store API 参数白名单中被丢弃）。
-            ...(useShippingForBilling
-              ? { billing_mode: "same_as_shipping" as const }
-              : {
-                  billing_mode: "custom" as const,
-                  billing_address: formDataToAddress(billAddress),
-                }),
-          },
+          // 带回客户端已确认的报价版本（来自 Prepare 返回的 Order 权威报价）。
+          ...expectedVersions(confirmedQuote ?? readQuoteSnapshot(cart.id)),
         }),
       });
       const result = (await response.json()) as {
@@ -1216,6 +1291,40 @@ export function UnifiedCheckout({
             </div>
           ) : null}
 
+          {preparedOrder?.quote ? (
+            <div
+              data-testid="order-quote-confirm"
+              className="mt-6 rounded-sm border border-gray-200 bg-gray-50 px-4 py-3"
+            >
+              <h3 className="text-sm font-bold text-gray-900">
+                {t("quoteConfirmTitle")}
+              </h3>
+              <dl className="mt-2 space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">{t("quoteDelivery")}</dt>
+                  <dd className="text-gray-900" data-testid="quote-delivery">
+                    {preparedOrder.quote?.display_delivery_total ?? "—"}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">{t("quoteDiscount")}</dt>
+                  <dd className="text-gray-900" data-testid="quote-discount">
+                    {preparedOrder.quote?.display_discount_total ?? "—"}
+                  </dd>
+                </div>
+                <div className="flex justify-between font-medium">
+                  <dt className="text-gray-900">{t("quoteAmountDue")}</dt>
+                  <dd className="text-gray-900" data-testid="quote-amount-due">
+                    {preparedOrder.quote?.display_amount_due ?? "—"}
+                  </dd>
+                </div>
+              </dl>
+              <p className="mt-2 text-xs text-gray-500">
+                {t("quoteConfirmNote")}
+              </p>
+            </div>
+          ) : null}
+
           <Button
             size="lg"
             className="w-full mt-6"
@@ -1229,6 +1338,8 @@ export function UnifiedCheckout({
                   ? t("processing")
                   : t("submitting")}
               </>
+            ) : preparedOrder?.quote ? (
+              t("confirmAndPay")
             ) : (
               t("payNow")
             )}
