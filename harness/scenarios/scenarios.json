@@ -3417,6 +3417,33 @@
         "contractRegeneration": 15,
         "testCoverage": 10
       }
+    },
+    {
+      "id": "GS-137",
+      "name": "AI drafts product copy but never saves it",
+      "description": "PRD-20260915-catalog-batch-e1-ai-copilot (§7 and §15 of the catalog upgrade plan): the AI engine already ships a gateway, a capability registry, run/artifact audit and its availability gates — what was missing was the wiring. Two capabilities (catalog.product_description, catalog.product_seo) now feed the product edit page, where the merchant gets a preview and must Accept before anything reaches the form. Saving stays a separate human action.",
+      "mustDo": [
+        "Register the product capabilities in code for every environment (not in the dev/test-only registry), declare execution :sync, data classification internal and the product update authorization on the capability itself",
+        "Assemble prompts in a business service that reads the product facts and calls PallasTrade::AI::Gateway, and keep the handler classes contract-compatible without duplicating prompt logic",
+        "Keep the run audit: every generation creates a PallasTrade::AI::Run with the actor, capability, model and usage, and only the input digest is persisted (never the prompt or the response body)",
+        "Return the draft to the admin and require an explicit Accept before the textarea/meta fields change — the endpoint itself must not write the product, and saving remains the merchant's own action",
+        "Check availability before use (side-effect free) so an unconfigured store renders disabled buttons with the reason, and answer failures with a stable error code the UI can translate",
+        "Keep the admin engine free of a hard dependency on the AI engine: no AI installed means the product form renders exactly as before"
+      ],
+      "mustNotDo": [
+        "Auto-save AI output, auto-fill the form without consent, or touch price, inventory, channel or publish state",
+        "Bypass the gateway (direct provider calls) or the availability gates, or build a second prompt layer inside the handler",
+        "Persist prompt text, provider payloads or credentials in the run records or the response",
+        "Let another store's product be drafted by passing its id, or leak another store's catalog facts into a prompt",
+        "Ship the assistant as a hard requirement for the admin engine (breaking apps without pallastrade_ai)"
+      ],
+      "scoring": {
+        "capabilityWiring": 30,
+        "humanInTheLoop": 25,
+        "auditAndPrivacy": 20,
+        "degradation": 15,
+        "pluginDecoupling": 10
+      }
     }
   ]
 }

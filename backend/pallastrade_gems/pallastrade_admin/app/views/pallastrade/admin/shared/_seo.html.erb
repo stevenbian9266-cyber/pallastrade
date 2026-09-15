@@ -1,6 +1,38 @@
-<div class="card mb-6 seo-form">
+<%# PALLAS-CUSTOM: AI Product Copilot（PRD-20260915-catalog-batch-e1-ai-copilot FR-004/FR-005）。
+    products 传入 ai_seo_state / ai_seo_product_id；其他调用方（如 taxons）不传，保持原样。 %>
+<% ai_seo = defined?(ai_seo_state) ? ai_seo_state : nil %>
+<% ai_seo_data = if ai_seo && defined?(ai_seo_product_id) && ai_seo_product_id.present?
+                   {
+                     controller: 'ai-assist',
+                     ai_assist_endpoint_value: PallasTrade.admin_ai_product_seo_path,
+                     ai_assist_product_id_value: ai_seo_product_id,
+                     ai_assist_kind_value: 'seo',
+                     ai_assist_idle_label: PallasTrade.t('admin.products.ai.idle'),
+                     ai_assist_generating_label: PallasTrade.t('admin.products.ai.generating'),
+                     ai_assist_review_label: PallasTrade.t('admin.products.ai.review_hint'),
+                     ai_assist_accepted_label: PallasTrade.t('admin.products.ai.accepted'),
+                     ai_assist_meta_title_label: PallasTrade.t('admin.products.ai.meta_title'),
+                     ai_assist_meta_description_label: PallasTrade.t('admin.products.ai.meta_description'),
+                     'ai_assist_error:ai_capability_disabled_label': PallasTrade.t('admin.products.ai.errors.ai_capability_disabled', default: PallasTrade.t('admin.products.ai.errors.default')),
+                     'ai_assist_error:ai_disabled_label': PallasTrade.t('admin.products.ai.errors.ai_disabled', default: PallasTrade.t('admin.products.ai.errors.default')),
+                     'ai_assist_error:ai_model_disabled_label': PallasTrade.t('admin.products.ai.errors.ai_model_disabled', default: PallasTrade.t('admin.products.ai.errors.default')),
+                     'ai_assist_error:ai_provider_disabled_label': PallasTrade.t('admin.products.ai.errors.ai_provider_disabled', default: PallasTrade.t('admin.products.ai.errors.default')),
+                     'ai_assist_error:ai_budget_exceeded_label': PallasTrade.t('admin.products.ai.errors.ai_budget_exceeded', default: PallasTrade.t('admin.products.ai.errors.default')),
+                     'ai_assist_error:ai_unavailable_label': PallasTrade.t('admin.products.ai.errors.default')
+                   }
+                 else
+                   {}
+                 end %>
+<div class="card mb-6 seo-form" <%= tag.attributes(ai_seo_data) %>>
   <div class="card-header flex justify-between">
     <h5 class="card-title"><%= PallasTrade.t(:search_engine_listing) %></h5>
+    <% if ai_seo_data.present? %>
+      <button class="btn btn-light btn-sm" type="button" data-ai-assist-role="generate"
+              data-action="click->ai-assist#generate"
+              <% unless ai_seo[:available] %>disabled title="<%= ai_assist_reason_label(ai_seo) %>"<% end %>>
+        <%= PallasTrade.t('admin.products.ai.generate_seo') %>
+      </button>
+    <% end %>
     <button class="btn btn-light btn-sm ms-auto" data-action="click->seo-form#toggleInputs" type="button"><%= PallasTrade.t('actions.edit') %></button>
   </div>
   <div class="card-body flex flex-col">
@@ -17,8 +49,8 @@
       <%= placeholder %>
     </div>
     <div class="seo__inputs hidden" data-seo-form-target="inputsContainer">
-      <%= f.pallastrade_text_field :meta_title, data: { seo_form_target: 'titleInput', action: 'input->seo-form#updatePreviews' } %>
-      <%= f.pallastrade_text_area :meta_description, rows: 4, data: { seo_form_target: 'descriptionInput', action: 'input->seo-form#updatePreviews' } %>
+      <%= f.pallastrade_text_field :meta_title, data: { seo_form_target: 'titleInput', action: 'input->seo-form#updatePreviews', ai_assist_target: 'titleField' } %>
+      <%= f.pallastrade_text_area :meta_description, rows: 4, data: { seo_form_target: 'descriptionInput', action: 'input->seo-form#updatePreviews', ai_assist_target: 'metaDescriptionField' } %>
       
       <div class="form-group">
         <% if defined?(slug_attribute_name) %>
@@ -29,6 +61,22 @@
           <%= f.text_field :slug, class: 'form-input', data: { seo_form_target: 'slugInput', action: 'input->seo-form#updatePreviews', slug_form_target: 'url' } %>
         <% end %>
       </div>
+
+      <% if ai_seo_data.present? %>
+        <div class="hidden mt-3 border rounded p-3 bg-gray-25" data-ai-assist-target="preview" data-testid="ai-seo-preview">
+          <div class="font-medium text-sm mb-2"><%= PallasTrade.t('admin.products.ai.preview_heading') %></div>
+          <div class="text-sm whitespace-pre-wrap" data-ai-assist-target="previewBody"></div>
+          <div class="flex items-center gap-2 mt-3">
+            <button type="button" class="btn btn-primary btn-sm" data-action="click->ai-assist#accept">
+              <%= PallasTrade.t('admin.products.ai.accept') %>
+            </button>
+            <button type="button" class="btn btn-light btn-sm" data-action="click->ai-assist#discard">
+              <%= PallasTrade.t('admin.products.ai.discard') %>
+            </button>
+            <span class="text-xs text-muted" data-ai-assist-target="status"></span>
+          </div>
+        </div>
+      <% end %>
     </div>
   </div>
 </div>

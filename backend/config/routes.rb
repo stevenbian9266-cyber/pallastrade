@@ -28,6 +28,8 @@ Rails.application.routes.draw do
       get 'ai/capabilities', to: 'ai#capabilities', as: :admin_ai_capabilities
       patch 'ai/capabilities/:capability_key', to: 'ai#update_capability', as: :admin_ai_update_capability
       get 'ai/runs', to: 'ai#runs', as: :admin_ai_runs
+      post 'ai/product_description', to: 'ai#product_description', as: :admin_ai_product_description
+      post 'ai/product_seo', to: 'ai#product_seo', as: :admin_ai_product_seo
       patch 'ai/settings', to: 'ai#update_settings', as: :admin_ai_update_settings
     end
   end

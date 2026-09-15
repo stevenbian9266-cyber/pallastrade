@@ -44,6 +44,7 @@ import Reveal from 'stimulus-reveal-controller'
 import Sortable from 'stimulus-sortable'
 import ActiveStorageUpload from 'pallastrade/admin/controllers/active_storage_upload_controller'
 import AdminController from 'pallastrade/admin/controllers/admin_controller'
+import AiAssistController from 'pallastrade/admin/controllers/ai_assist_controller'
 import AssetUploaderController from 'pallastrade/admin/controllers/asset_uploader_controller'
 import AutocompleteSelectController from 'pallastrade/admin/controllers/autocomplete_select_controller'
 import AutoScrollController from 'pallastrade/admin/controllers/auto_scroll_controller'
@@ -108,6 +109,7 @@ application.register('active-storage-upload', ActiveStorageUpload)
 application.register('address-autocomplete', AddressAutocompleteController)
 application.register('address-form', AddressFormController)
 application.register('admin', AdminController)
+application.register('ai-assist', AiAssistController)
 application.register('asset-uploader', AssetUploaderController)
 application.register('auto-scroll', AutoScrollController)
 application.register('auto-submit', AutoSubmit)

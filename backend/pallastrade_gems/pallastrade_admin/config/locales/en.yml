@@ -946,6 +946,33 @@ en:
           no_products: We couldn't find any products matching your search :(
         seo:
           placeholder: Add a title and description to see how this product might appear in a search engine listing
+        ai:
+          accept: Accept
+          accepted: Draft applied — review it and save the product when you are happy.
+          discard: Discard
+          disabled_reason:
+            ai_budget_exceeded: The AI budget for this store is used up.
+            ai_capability_disabled: This assistant is turned off in AI Tools.
+            ai_disabled: AI is turned off for this store.
+            ai_model_disabled: No AI model is configured for this assistant.
+            ai_provider_disabled: The AI provider is inactive or has no credentials.
+            default: AI is not configured for this store yet.
+          errors:
+            ai_budget_exceeded: The monthly AI budget for this store is used up.
+            ai_capability_disabled: This assistant is turned off in AI Tools.
+            ai_disabled: AI is turned off for this store.
+            ai_model_disabled: No AI model is configured for this assistant.
+            ai_provider_disabled: The AI provider is inactive or has no credentials.
+            default: The AI request could not be completed. Check AI Tools and try again.
+          generate: Generate with AI
+          generate_seo: Generate SEO
+          generating: Generating…
+          idle: ''
+          meta_description: Meta description
+          meta_title: Meta title
+          preview_heading: AI draft (not saved yet)
+          review_hint: Review the draft, then Accept to put it in the form.
+          rewrite: Rewrite
         status_form:
           status: Draft products aren't available for purchase. Active products are live.
         status_options:

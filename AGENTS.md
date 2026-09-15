@@ -282,6 +282,7 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | 到货订阅（SKU 级，`back_in_stock_subscriptions` / 事件层 / store API / 后台 SKU 列） | + `harness verify back-in-stock-rspec`（SKU 唯一约束 + 双通道分流不重复 + API variant_id + 后台 SKU 列） | ≤2 min |
 | 商品级 Product History 时间线（`product_history/**` + 后台 `_history` 侧栏注入） | + `harness verify product-history-rspec`（只记变化字段/无变化跳过 + 批量每商品一条含计数 + 审计与改价合并倒序 + 编辑页渲染与空态） | ≤2 min |
 | 重复商品检测（`products/duplicate_candidates.rb` + 后台 Duplicate Products 工作台/对比视图） | + `harness verify duplicate-products-rspec`（三类信号口径 + 计数==组数 + 店铺/软删除作用域 + 对比渲染 + 导航子项） | ≤2 min |
+| AI Product Copilot（`ai/catalog/product_copy.rb` + 商品编辑页 Generate/Preview/Accept + 两个 admin 端点） | + `harness verify ai-copilot-rspec`（能力注册/schema + Gateway 调用与 Run 审计 + **接受前不落库** + 降级/权限） | ≤2 min |
 | Financial ledger / reconciliation (`reconciliations/`, `financial_ledger/`) | + `harness verify finance-reconciliation-rspec` (source/transaction/payment/refund/dispute 对账 + sweeper) | ≤2 min |
 | Any change | `harness doc-impact --base origin/dev` — checks knowledge docs are synced | ≤1 min |
 

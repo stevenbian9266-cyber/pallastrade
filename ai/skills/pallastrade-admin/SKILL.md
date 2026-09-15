@@ -553,6 +553,22 @@ Products → **Duplicate Products**（`/admin/duplicate_products`）是商品治
 
 回归验证：`harness verify duplicate-products-rspec`。
 
+### AI Product Copilot —— 商品编辑页 AI 助手（2026-09-15，PRD-20260915-catalog-batch-e1-ai-copilot）
+
+商品编辑页的描述与 SEO 卡片接入 AI：`[Generate with AI]` / `[Rewrite]` / `[Generate SEO]`。**安全边界是硬要求**（方案 §7.2）：`Generate → Preview → Accept → Save` —— AI 只出草稿，Accept 才写入表单控件，保存仍由商家点 Save；AI 不得改价格/库存/渠道/上架。
+
+| 关注点 | 做法 |
+|---|---|
+| 能力定义 | 代码级注册（`pallastrade_ai/config/initializers/catalog_capabilities.rb`，**全环境生效**；`test_capabilities.rb` 才是 dev/test 专用）：`catalog.product_description` / `catalog.product_seo`，`execution: :sync`、`data_classification: 'internal'`、`authorization: { action: :update, subject: 'PallasTrade::Product' }` |
+| 提示词组装 | 在**业务服务**里（`PallasTrade::AI::Catalog::ProductCopy`）拼 `messages` + `system_instructions`，Gateway 不会调 handler 的 `build_messages`（它直接用 `input[:messages]`）；handler 只保留契约壳 |
+| 审计 | 每次生成自动落 `PallasTrade::AI::Run`（actor/能力/模型/用量）；只存 `input_digest`，**提示词与响应正文不落库** |
+| 端点 | 宿主 app `PallasTrade::Admin::AIController#product_description/product_seo`（JSON，422 + `error.code`）；商品用 **前缀 id**（`current_store.products.find_by_prefix_id!`），且要自行处理 404（`ResourceController#resource_not_found` 在 `skip_before_action :load_resource` 的控制器上会爆） |
+| 按钮状态 | helper `ai_assist_state(capability)` 调 `AvailabilityService.check`（零副作用）→ 未配置就 `disabled + title=<原因>`；**AI 引擎未安装时返回 nil，页面保持原样**（admin 引擎不硬依赖 AI 引擎） |
+| 前端 | `ai-assist` Stimulus（fetch → 预览 → Accept/Discard）；Accept 写值后要 `dispatchEvent(new Event('input'))` 并同步 TinyMCE（`tinymce.get(id).setContent`），否则描述框与 SEO 预览不同步 |
+| Zeitwerk 坑 | admin 引擎注册了 `inflect.acronym 'AI'` → `ai_assist_helper.rb` 必须定义 `AIAssistHelper`（写成 `AiAssistHelper` 会启动即炸） |
+
+回归验证：`harness verify ai-copilot-rspec`。
+
 ## Overriding views
 
 Drop the same-pathed file in the host app and Rails uses it. The gem ships `pallastrade/admin/app/views/pallastrade/admin/products/index.html.erb`; you override it at `backend/app/views/pallastrade/admin/products/index.html.erb`.

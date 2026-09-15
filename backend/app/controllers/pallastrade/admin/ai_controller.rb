@@ -170,6 +170,42 @@ module PallasTrade
         redirect_to PallasTrade.admin_ai_capabilities_path
       end
 
+      # POST /admin/ai/product_description
+      # AI Product Copilot（PRD-20260915-catalog-batch-e1-ai-copilot FR-003）：
+      # 只返回草稿（Generate → Preview → Accept → Save），不写入商品。
+      def product_description
+        product = find_copilot_product
+        return if product.nil?
+
+        authorize! :update, product
+
+        result = PallasTrade::AI::Catalog::ProductCopy.generate_description(
+          product: product,
+          actor: try_pallastrade_current_user,
+          mode: params[:mode]
+        )
+
+        render_copilot_result(result, payload: { text: result.text })
+      end
+
+      # POST /admin/ai/product_seo
+      def product_seo
+        product = find_copilot_product
+        return if product.nil?
+
+        authorize! :update, product
+
+        result = PallasTrade::AI::Catalog::ProductCopy.generate_seo(
+          product: product,
+          actor: try_pallastrade_current_user
+        )
+
+        render_copilot_result(
+          result,
+          payload: { meta_title: result.meta_title, meta_description: result.meta_description }
+        )
+      end
+
       # GET /admin/ai/runs
       def runs
         @runs = PallasTrade::AI::Run.where(store: current_store).recent
@@ -206,6 +242,28 @@ module PallasTrade
           unless PROVIDER_TYPES.include?(provider.type)
             raise ActiveRecord::RecordNotFound, "Not an AI provider"
           end
+        end
+      end
+
+      # @return [PallasTrade::Product, nil] store-scoped product for the copilot
+      #   actions; renders 404 JSON (and returns nil) when it is not this store's
+      def find_copilot_product
+        current_store.products.find_by_prefix_id!(params[:product_id])
+      rescue ActiveRecord::RecordNotFound
+        # ResourceController#resource_not_found assumes a single-model controller,
+        # which this AI controller is not — answer in the JSON shape the copilot
+        # Stimulus controller expects.
+        render json: { error: { code: 'product_not_found' } }, status: :not_found
+        nil
+      end
+
+      # Renders the draft for the preview panel; failures carry a stable reason
+      # code so the Stimulus controller can show a readable message.
+      def render_copilot_result(result, payload:)
+        if result.success?
+          render json: payload.merge(run_id: result.run_id)
+        else
+          render json: { error: { code: result.error_code || 'ai_unavailable' } }, status: 422
         end
       end
 

@@ -238,6 +238,12 @@ export default {
         description: 'Duplicate detection specs (three signals, count/list consistency, store + soft-delete scoping, admin worklist and compare view, navigation)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/duplicate_products_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
       },
+      // AI Product Copilot（PRD-20260915-catalog-batch-e1-ai-copilot）：两个能力注册 + schema 校验
+      // + 业务服务（商品事实 → Gateway → Run 审计）+ 两个 admin 端点 + 降级/权限 + 「接受前不落库」
+      'ai-copilot-rspec': {
+        description: 'AI product copilot specs (capability registration, schemas, gateway service with run audit, admin draft endpoints, degradation, permissions, no-write guarantee)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/ai/catalog/product_copy_spec.rb spec/requests/pallastrade/admin/products_ai_copilot_spec.rb'],
+      },
       // 前台密钥下发（PRD-20260915-payments-d10-client-config）：client_config 组装（仅 publishable）
       // + env: 引用解析 + Checkout 契约下发 + Stripe publishable 声明（secret 不泄漏）
       'd10-client-config-rspec': {

@@ -20,6 +20,8 @@
     <%= render 'pallastrade/admin/products/form/tax', f: f %>
     <%= render_admin_partials(:product_form_sidebar_partials, f: f, product: @product) %>
 
+    <%# PALLAS-CUSTOM: AI Product Copilot（FR-004/FR-006）—— 未安装 AI 引擎时为 nil，SEO 卡片保持原样 %>
+    <% ai_seo_state = defined?(PallasTrade::AI::Catalog::ProductCopy) ? ai_assist_state(PallasTrade::AI::Catalog::ProductCopy::SEO_CAPABILITY) : nil %>
     <%= render 'pallastrade/admin/shared/seo',
           f: f,
           title: @product.name,
@@ -27,6 +29,8 @@
           description: @product.description,
           slug: @product.slug,
           slug_path: 'products',
-          placeholder: PallasTrade.t('admin.products.seo.placeholder') %>
+          placeholder: PallasTrade.t('admin.products.seo.placeholder'),
+          ai_seo_state: ai_seo_state,
+          ai_seo_product_id: (@product.persisted? ? @product.prefixed_id : nil) %>
   </div>
 </div>
