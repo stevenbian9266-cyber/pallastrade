@@ -86,6 +86,14 @@ const REQUIRED: Record<string, string[]> = {
     "giftCardExpired",
     "giftCardAlreadyRedeemed",
   ],
+  products: [
+    // PRD-20260915-catalog-pdp-state-correctness AC-012：
+    // PDP 预售 / 缺货可超卖四态文案，五语言齐备。
+    "preorder",
+    "preorderShipsBy",
+    "backorder",
+    "backorderNote",
+  ],
 };
 
 describe("Checkout error i18n keys (PRD-20260913-checkout-txn-error-routing AC-010)", () => {

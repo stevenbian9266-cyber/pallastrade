@@ -1,9 +1,11 @@
 "use client";
 
 import type { Media, Product, Variant } from "@pallastrade/sdk";
-import { CircleCheckBig, CircleX, Loader2, ShoppingBag } from "lucide-react";
+import { Loader2, ShoppingBag } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AvailabilityStatus } from "@/components/products/AvailabilityStatus";
 import { BackInStockNotify } from "@/components/products/BackInStockNotify";
 import { BuyNowButton } from "@/components/products/BuyNowButton";
 import { MediaGallery } from "@/components/products/MediaGallery";
@@ -18,10 +20,19 @@ import { QuantityPicker } from "@/components/ui/quantity-picker";
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/contexts/StoreContext";
 import { trackAddToCart, trackViewItem } from "@/lib/analytics/gtm";
+import {
+  applyVariantDeepLink,
+  availabilityFlagsForProduct,
+  availabilityFlagsForVariant,
+  deriveAvailabilityState,
+  resolveInitialVariant,
+} from "@/lib/utils/variant-selection";
 
 interface ProductDetailsProps {
   product: Product;
   basePath: string;
+  /** Deep-link variant from the server (`?variant=`), if any. */
+  initialVariantId?: string | null;
   reviews?: ReviewView[];
   averageRating?: number | null;
   reviewCount?: number;
@@ -31,6 +42,7 @@ interface ProductDetailsProps {
 export function ProductDetails({
   product,
   basePath,
+  initialVariantId = null,
   reviews = [],
   averageRating = null,
   reviewCount = 0,
@@ -39,6 +51,8 @@ export function ProductDetails({
   const { addItem } = useCart();
   const { currency } = useStore();
   const t = useTranslations("products");
+  const router = useRouter();
+  const pathname = usePathname();
 
   // Filter variants list
   const variants = useMemo(() => {
@@ -48,25 +62,37 @@ export function ProductDetails({
   const hasVariants = variants.length > 0;
   const optionTypes = product.option_types || [];
 
-  // Initialize with default variant or first available variant
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(() => {
-    if (product.default_variant) {
-      return product.default_variant;
-    }
-    if (hasVariants) {
-      return variants.find((v) => v.purchasable) || variants[0];
-    }
-    // For products without variants, use default variant
-    return product.default_variant || null;
-  });
+  // Deep link (`?variant=`) wins over the default variant; unknown ids fall
+  // back deterministically (PRD-20260915-catalog-pdp-state-correctness
+  // AC-001 / AC-002).
+  const [initialVariant] = useState<Variant | null>(() =>
+    resolveInitialVariant(product, initialVariantId),
+  );
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
+    initialVariant,
+  );
+
+  // Keep the URL in sync with the selected SKU so links stay shareable
+  // (AC-003); other query params (e.g. category_id) are preserved.
+  const handleVariantChange = useCallback(
+    (variant: Variant | null) => {
+      setSelectedVariant(variant);
+      applyVariantDeepLink(pathname, variant?.id, (href) =>
+        router.replace(href, { scroll: false }),
+      );
+    },
+    [pathname, router],
+  );
 
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Track product view (analytics - client-only side effect)
+  // Track the view once per product with the variant the page was opened with
+  // so GA4 `view_item` SKU matches the shared / advertised URL variant
+  // (AC-004). Variant switches deliberately do not re-fire this event.
   useEffect(() => {
-    trackViewItem(product, currency);
-  }, [product, currency]);
+    trackViewItem(product, currency, initialVariant);
+  }, [product, currency, initialVariant]);
 
   const galleryImages = useMemo((): Media[] => {
     return product.media || [];
@@ -108,9 +134,17 @@ export function ProductDetails({
     ? (selectedVariant?.purchasable ?? false)
     : (product.purchasable ?? false);
 
-  const inStock = hasVariants
-    ? (selectedVariant?.in_stock ?? false)
-    : (product.in_stock ?? false);
+  // Availability presentation state — derived from the Store API flags only
+  // (FR-002 / AC-008): in stock > pre-order > backorder > sold out.
+  const availability = deriveAvailabilityState(
+    hasVariants && selectedVariant
+      ? availabilityFlagsForVariant(selectedVariant)
+      : availabilityFlagsForProduct(product),
+  );
+
+  const preorderShipsAt = hasVariants
+    ? selectedVariant?.preorder_ships_at
+    : product.preorder_ships_at;
 
   const handleAddToCart = async () => {
     const variantId =
@@ -162,23 +196,20 @@ export function ProductDetails({
             )}
           </div>
 
-          {/* Stock Status */}
+          {/* Availability status — in stock / pre-order / backorder / sold out */}
           <div className="mt-4">
-            {inStock ? (
-              <span className="inline-flex items-center gap-1.5 text-green-600">
-                <CircleCheckBig className="w-5 h-5" />
-                {t("inStock")}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-red-600">
-                <CircleX className="w-5 h-5" />
-                {t("outOfStock")}
-              </span>
-            )}
+            <AvailabilityStatus
+              availability={availability}
+              preorderShipsAt={preorderShipsAt}
+            />
           </div>
 
-          {/* Back-in-stock notification (only when out of stock) */}
-          {!inStock && <BackInStockNotify productId={product.id} />}
+          {/* Back-in-stock notification — only when the item cannot be bought.
+              Pre-order / backorder stay purchasable and must not trade a sale
+              for an email address. */}
+          {availability === "out_of_stock" && (
+            <BackInStockNotify productId={product.id} />
+          )}
 
           {/* Variant Picker */}
           {hasVariants && optionTypes.length > 0 && (
@@ -187,7 +218,7 @@ export function ProductDetails({
                 variants={variants}
                 optionTypes={optionTypes}
                 selectedVariant={selectedVariant}
-                onVariantChange={setSelectedVariant}
+                onVariantChange={handleVariantChange}
               />
             </div>
           )}

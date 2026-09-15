@@ -23,6 +23,7 @@ interface ProductPageProps {
   }>;
   searchParams: Promise<{
     category_id?: string;
+    variant?: string;
   }>;
 }
 
@@ -50,7 +51,7 @@ export default async function ProductPage({
   searchParams,
 }: ProductPageProps) {
   const { country, locale, slug } = await params;
-  const { category_id } = await searchParams;
+  const { category_id, variant } = await searchParams;
   const basePath = `/${country}/${locale}`;
 
   let product;
@@ -105,6 +106,7 @@ export default async function ProductPage({
       <ProductDetails
         product={product}
         basePath={basePath}
+        initialVariantId={variant ?? null}
         reviews={reviews}
         averageRating={product.average_rating ?? null}
         reviewCount={product.review_count ?? 0}

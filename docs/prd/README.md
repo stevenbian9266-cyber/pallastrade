@@ -185,3 +185,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 3. `harness gate` → 生成 REQ → 实施 → 测试
 4. 验证 → done → 知识同步门（更新本索引）
 | done | PRD-20260915-admin-管理后台支付配置选项化-支付商-支付方式-前台入口 | admin | 2026-09-15 | N/A |
+| done | PRD-20260915-catalog-pdp-state-correctness | catalog | 2026-09-15 | （实施时回填） |

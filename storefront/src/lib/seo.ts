@@ -1,5 +1,18 @@
-import type { Category, Media, Product } from "@pallastrade/sdk";
+import type {
+  Category,
+  CustomField,
+  Media,
+  Product,
+  Variant,
+} from "@pallastrade/sdk";
 import { ensureProtocol, getStoreName, getStoreUrl } from "@/lib/store";
+import {
+  type AvailabilityState,
+  aggregateAvailability,
+  availabilityFlagsForProduct,
+  availabilityFlagsForVariant,
+  deriveAvailabilityState,
+} from "@/lib/utils/variant-selection";
 
 /**
  * Default social image path (stored in public/).
@@ -21,6 +34,42 @@ export function buildCanonicalUrl(storeUrl: string, path: string): string {
  */
 export function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "").trim();
+}
+
+/** schema.org availability URL for a presentation state. */
+const AVAILABILITY_URL: Record<AvailabilityState, string> = {
+  in_stock: "https://schema.org/InStock",
+  preorder: "https://schema.org/PreOrder",
+  backorder: "https://schema.org/BackOrder",
+  out_of_stock: "https://schema.org/OutOfStock",
+};
+
+function productAvailabilityState(product: Product): AvailabilityState {
+  return deriveAvailabilityState(availabilityFlagsForProduct(product));
+}
+
+function variantAvailabilityState(variant: Variant): AvailabilityState {
+  return deriveAvailabilityState(availabilityFlagsForVariant(variant));
+}
+
+/**
+ * Brand comes from a merchant-managed custom field while there is no Brand
+ * model — `catalog.brand` / `brand` / `*.brand` keys, or a field labelled
+ * "brand". Missing → omitted from the schema (never invent a value).
+ */
+function findBrandName(product: Product): string | null {
+  const fields = (product.custom_fields || []) as CustomField[];
+  const field = fields.find((candidate) => {
+    const key = candidate.key?.toLowerCase() ?? "";
+    return (
+      key === "brand" ||
+      key === "catalog.brand" ||
+      key.endsWith(".brand") ||
+      candidate.label?.trim().toLowerCase() === "brand"
+    );
+  });
+  const value = field?.value;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 /**
@@ -57,16 +106,47 @@ export function buildProductJsonLd(
     schema.image = imageUrls;
   }
 
-  if (product.price?.amount && product.price?.currency) {
+  // Offers (PRD-20260915-catalog-pdp-state-correctness AC-009/AC-010): a
+  // single SKU keeps a plain Offer; multi-SKU products expose the price range
+  // via AggregateOffer with the most favourable availability across variants.
+  const variants = (product.variants || []).filter(Boolean);
+  const variantAmounts = variants
+    .map((variant) => variant.price?.amount)
+    .filter((amount): amount is string => amount != null)
+    .map((amount) => Number.parseFloat(amount))
+    .filter((amount) => Number.isFinite(amount));
+
+  if (
+    variants.length > 1 &&
+    variantAmounts.length > 0 &&
+    product.price?.currency
+  ) {
+    schema.offers = {
+      "@type": "AggregateOffer",
+      url: canonicalUrl,
+      priceCurrency: product.price.currency,
+      lowPrice: Math.min(...variantAmounts),
+      highPrice: Math.max(...variantAmounts),
+      offerCount: variants.length,
+      availability:
+        AVAILABILITY_URL[
+          aggregateAvailability(variants.map(variantAvailabilityState))
+        ],
+    };
+  } else if (product.price?.amount && product.price?.currency) {
     schema.offers = {
       "@type": "Offer",
       url: canonicalUrl,
       priceCurrency: product.price.currency,
       price: product.price.amount,
-      availability: product.in_stock
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
+      availability: AVAILABILITY_URL[productAvailabilityState(product)],
     };
+  }
+
+  // Brand from a custom field (FR-003 / AC-011).
+  const brandName = findBrandName(product);
+  if (brandName) {
+    schema.brand = { "@type": "Brand", name: brandName };
   }
 
   // P0-4: aggregate rating over approved reviews (only when there is at
