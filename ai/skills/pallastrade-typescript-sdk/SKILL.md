@@ -81,6 +81,14 @@ New `Cart` entity (`pallastrade_carts`) plus order-domain payments:
 - `client.carts.storeCredits.apply(cartId, amount?, options?)` / `.remove(cartId, options?)` — `POST/DELETE /carts/:cart_id/store_credits` (PRD-20260914-checkout-cart-store-credits-canonical). Requires a Bearer JWT (store credit is account property). On a `cart_` cart it stores cart-stage intent (`ShoppingCart.store_credit: { amount, display_amount }`, redeemed on `carts.submit`); omitting `amount` uses the full available credit. Store credit and gift cards are mutually exclusive per cart, mirroring the order-level rule.
 - `ShoppingCart` 抵扣意图字段（PRD-20260914-checkout B2，2026-09-14）：`discount_code?: string | null`、`gift_card?: { code, display_amount_remaining } | null`、`store_credit?: { amount, display_amount } | null` —— 三者都是**车阶段意图**（零资金副作用，`carts.submit` 时兑现），类型来自 `ShoppingCartSerializer` 的 typelize 对象字面量 + `sdk/src/types/index.ts` 手写接口（两者需同步扩展）；错误码（`coupon_code_not_found` / `gift_card_expired` / `store_credit_requires_login` / `store_credit_gift_card_conflict`）由 `PallasTradeError.code` 透出，供 UI 映射文案；`carts.storeCredits.apply` 省略 amount = 用尽可用余额（未登录 → 401 `store_credit_requires_login`）。
 
+### Cart-domain legacy methods are @deprecated (PRD-20260915-checkout B5, 2026-09-15)
+
+`client.carts.{discountCodes,giftCards,fulfillments,payments,paymentSessions,storeCredits}` 都带 `@deprecated` JSDoc：这些路由是 §45 legacy matrix 的**双用途**形式（`cart_` canonical 购物车与 Order-表旧购物车共用同一路由形状）。
+
+- `cart_` 购物车沿这一形状是**当前 canonical 流程**（例：车阶段意图 → `carts.submit` 兑现）；
+- 非 `cart_`（`or_…`）调用 = legacy 流量：后端回 `Deprecation: true` + `Warning: 299` + `Link: rel="successor-version"`，并计入 `cart.legacy_flow.used`（`payment_sessions` 仍为 `payment.legacy_flow.used`）；canonical 替代：`orders.paymentSessions` / `orders.transactions` / `PATCH /orders/:id/checkout`。
+- 新代码不得新增 legacy 消费者（storefront 有守护测试）；SDK 方法本身**不删**，等流量到退役阀值后由独立 PRD 处理。
+
 ### Customer auth (JWT)
 
 After login, attach the JWT per request via `options.token`. There is no `setAccessToken` — the SDK doesn't hold customer tokens in client state.

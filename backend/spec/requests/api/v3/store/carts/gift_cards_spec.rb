@@ -88,5 +88,46 @@ RSpec.describe 'Store Cart gift cards API (canonical cart_)', type: :request do
       )
       expect(response).to have_http_status(:not_found).or have_http_status(:forbidden)
     end
+
+    # PRD-20260915-checkout-checkout-收尾收敛-b5-legacy-端点治理-usage-metric-收口与零新增调用守护 AC-002 AC-004
+    # B5 FR-002/FR-004：统一字段（身份/动作/弃用/successor）+ 机器可读弃用头。
+    it 'logs the unified contract and marks the response as deprecated for legacy ids' do
+      allow(Rails.logger).to receive(:info).and_call_original
+
+      post '/api/v3/store/carts/or_nonexistent/gift_cards',
+           params: { code: 'SAVE10' }, headers: headers
+
+      expect(Rails.logger).to have_received(:info).with(
+        hash_including(
+          message: '[legacy-gift-cards] legacy cart resolution used',
+          flow_type: 'legacy_cart_gift_cards',
+          requested_cart_id: 'or_nonexistent',
+          legacy_identity: 'order_table_cart',
+          action: 'create',
+          deprecated: true,
+          canonical_successor: '/api/v3/store/carts'
+        )
+      )
+      expect(response.headers['Deprecation']).to eq('true')
+      expect(response.headers['Warning']).to include('299')
+      expect(response.headers['Link']).to eq('</api/v3/store/carts>; rel="successor-version"')
+    end
+
+    # PRD-20260915-checkout-checkout-收尾收敛-b5-legacy-端点治理-usage-metric-收口与零新增调用守护 AC-005
+    # B5 FR-004/S1：`cart_` canonical 流量不得被标弃用、不得计入 legacy 度量。
+    it 'never marks canonical cart_ traffic as deprecated' do
+      allow(Rails.logger).to receive(:info).and_call_original
+
+      post "/api/v3/store/carts/#{cart.prefixed_id}/gift_cards",
+           params: { code: gift_card.code }, headers: cart_headers
+
+      expect(response).to have_http_status(:created)
+      expect(response.headers['Deprecation']).to be_nil
+      expect(response.headers['Warning']).to be_nil
+      expect(response.headers['Link']).to be_nil
+      expect(Rails.logger).not_to have_received(:info).with(
+        hash_including(message: '[legacy-gift-cards] legacy cart resolution used')
+      )
+    end
   end
 end

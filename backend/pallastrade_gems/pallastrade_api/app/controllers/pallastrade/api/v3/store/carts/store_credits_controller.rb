@@ -62,6 +62,12 @@ module PallasTrade
               end
             end
 
+            # §45 matrix：本行 canonical = Order Checkout Credit（canonical `cart_` 车流程
+            # 同路由 + 提交时兑现）；legacy（订单型购物车）应迁至 `cart_` 购物车再走 /submit。
+            def legacy_canonical_successor
+              '/api/v3/store/carts'
+            end
+
             # 车阶段错误码 → HTTP 状态（与错误码同名文案在 core en.yml）。
             STORE_CREDIT_ERROR_STATUS = {
               PallasTrade::Carts::ApplyStoreCredit::REQUIRES_LOGIN => :unauthorized,

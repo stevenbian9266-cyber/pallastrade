@@ -58,13 +58,20 @@ module PallasTrade
                                               .active
                                               .find_by_prefix_id!(params[:cart_id])
               else
-                # 收敛切片 2：统一结构化流量日志（保留 [legacy-gift-cards] 标记便于既有查询）。
-                log_legacy_flow_usage(
+                # 收敛切片 2：统一结构化流量日志（保留 [legacy-gift-cards] 标记便于既有查询）
+                # + B5 弃用信号。
+                log_legacy_usage_once(
                   flow_type: 'legacy_cart_gift_cards',
                   message: '[legacy-gift-cards] legacy cart resolution used'
                 )
                 find_cart!
               end
+            end
+
+            # §45 matrix：本行 canonical = Order Checkout GiftCard（canonical `cart_` 车流程
+            # 同路由 + 提交时兑现）；legacy（订单型购物车）应迁至 `cart_` 购物车再走 /submit。
+            def legacy_canonical_successor
+              '/api/v3/store/carts'
             end
 
             # `cart_` 分支：车阶段**零资金副作用**（只记意图）+ 错误码与 legacy 一致。

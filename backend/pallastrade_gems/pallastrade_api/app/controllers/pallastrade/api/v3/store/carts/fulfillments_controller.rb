@@ -46,6 +46,11 @@ module PallasTrade
               log_legacy_usage_once(flow_type: 'legacy_cart_fulfillments', action: action_name)
             end
 
+            # §45 matrix：本行 canonical = OrderCheckout Shipping（订单域 checkout 门面）。
+            def legacy_canonical_successor
+              '/api/v3/store/orders/:order_id/checkout'
+            end
+
             def permitted_params
               params.permit(:selected_delivery_rate_id)
             end

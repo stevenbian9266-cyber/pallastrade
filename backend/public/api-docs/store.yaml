@@ -2859,6 +2859,8 @@ paths:
   "/api/v3/store/carts/{cart_id}/discount_codes":
     post:
       summary: Apply discount code
+      x-cart-domain-legacy: true
+      x-canonical-successor: /api/v3/store/carts
       tags:
       - Carts
       security:
@@ -3130,6 +3132,8 @@ paths:
   "/api/v3/store/carts/{cart_id}/discount_codes/{id}":
     delete:
       summary: Remove discount code
+      x-cart-domain-legacy: true
+      x-canonical-successor: /api/v3/store/carts
       tags:
       - Carts
       security:
@@ -3374,6 +3378,8 @@ paths:
   "/api/v3/store/carts/{cart_id}/fulfillments/{id}":
     patch:
       summary: Select delivery rate for fulfillment
+      x-cart-domain-legacy: true
+      x-canonical-successor: /api/v3/store/orders/:order_id/checkout
       tags:
       - Carts
       security:
@@ -3632,6 +3638,8 @@ paths:
   "/api/v3/store/carts/{cart_id}/gift_cards":
     post:
       summary: Apply gift card
+      x-cart-domain-legacy: true
+      x-canonical-successor: /api/v3/store/carts
       tags:
       - Carts
       security:
@@ -3949,6 +3957,8 @@ paths:
   "/api/v3/store/carts/{cart_id}/gift_cards/{id}":
     delete:
       summary: Remove gift card
+      x-cart-domain-legacy: true
+      x-canonical-successor: /api/v3/store/carts
       tags:
       - Carts
       security:
@@ -4753,6 +4763,9 @@ paths:
   "/api/v3/store/carts/{cart_id}/payment_sessions":
     post:
       summary: Create payment session
+      deprecated: true
+      x-cart-domain-legacy: true
+      x-canonical-successor: /api/v3/store/orders/:order_id/payment_sessions
       tags:
       - Carts
       security:
@@ -4886,6 +4899,9 @@ paths:
         type: string
     get:
       summary: Get payment session
+      deprecated: true
+      x-cart-domain-legacy: true
+      x-canonical-successor: /api/v3/store/orders/:order_id/payment_sessions
       tags:
       - Carts
       security:
@@ -4945,6 +4961,9 @@ paths:
                 "$ref": "#/components/schemas/ErrorResponse"
     patch:
       summary: Update payment session
+      deprecated: true
+      x-cart-domain-legacy: true
+      x-canonical-successor: /api/v3/store/orders/:order_id/payment_sessions
       tags:
       - Carts
       security:
@@ -5041,6 +5060,9 @@ paths:
         type: string
     patch:
       summary: Complete payment session
+      deprecated: true
+      x-cart-domain-legacy: true
+      x-canonical-successor: /api/v3/store/orders/:order_id/payment_sessions
       tags:
       - Carts
       security:
@@ -5122,6 +5144,9 @@ paths:
   "/api/v3/store/carts/{cart_id}/payments":
     post:
       summary: Create payment
+      deprecated: true
+      x-cart-domain-legacy: true
+      x-canonical-successor: /api/v3/store/orders/:order_id/transactions
       tags:
       - Carts
       security:
@@ -5228,6 +5253,8 @@ paths:
   "/api/v3/store/carts/{cart_id}/store_credits":
     post:
       summary: Apply store credit
+      x-cart-domain-legacy: true
+      x-canonical-successor: /api/v3/store/carts
       tags:
       - Carts
       security:

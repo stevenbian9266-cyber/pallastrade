@@ -66,6 +66,67 @@ RSpec.describe 'Cart payment sessions (Store API, cart domain)', type: :request 
       )
     end
 
+    # PRD-20260915-checkout-checkout-收尾收敛-b5-legacy-端点治理-usage-metric-收口与零新增调用守护 AC-002
+    # B5 FR-002：六类 legacy 路由的统一字段契约（身份 / 动作 / 弃用 / successor）。
+    it 'carries the unified legacy metric contract fields' do
+      order = legacy_cart_order
+      logger = Rails.logger
+      original_info = logger.method(:info)
+      allow(logger).to receive(:info) do |*args, **kwargs, &block|
+        original_info.call(*args, **kwargs, &block)
+      end
+
+      post "/api/v3/store/carts/#{order.prefixed_id}/payment_sessions",
+           params: { payment_method_id: payment_method.prefixed_id },
+           headers: create_session_headers(order)
+
+      expect(response).to have_http_status(:created)
+      expect(logger).to have_received(:info).with(
+        hash_including(
+          requested_cart_id: order.prefixed_id,
+          legacy_identity: 'order_table_cart',
+          action: 'create',
+          deprecated: true,
+          canonical_successor: '/api/v3/store/orders/:order_id/payment_sessions'
+        )
+      )
+    end
+
+    # PRD-20260915-checkout-checkout-收尾收敛-b5-legacy-端点治理-usage-metric-收口与零新增调用守护 AC-004
+    # B5 FR-004：legacy 身份请求带机器可读弃用信号（Deprecation / Warning / Link）。
+    it 'marks legacy traffic with machine-readable deprecation headers' do
+      order = legacy_cart_order
+
+      post "/api/v3/store/carts/#{order.prefixed_id}/payment_sessions",
+           params: { payment_method_id: payment_method.prefixed_id },
+           headers: create_session_headers(order)
+
+      expect(response).to have_http_status(:created)
+      expect(response.headers['Deprecation']).to eq('true')
+      expect(response.headers['Warning']).to include('299')
+      expect(response.headers['Link']).to eq('</api/v3/store/orders/:order_id/payment_sessions>; rel="successor-version"')
+    end
+
+    # PRD-20260915-checkout-checkout-收尾收敛-b5-legacy-端点治理-usage-metric-收口与零新增调用守护 AC-008
+    # B5 FR-008：§45 matrix 六行均声明 canonical successor（防“声明缺口”回归）。
+    it 'declares a canonical successor on every legacy cart controller' do
+      api_root = 'pallastrade_gems/pallastrade_api/app/controllers/pallastrade/api/v3/store/carts'
+      controllers = %w[
+        payment_sessions_controller.rb payments_controller.rb fulfillments_controller.rb
+        discount_codes_controller.rb gift_cards_controller.rb store_credits_controller.rb
+      ]
+
+      controllers.each do |file|
+        source = File.read(Rails.root.join(api_root, file))
+        expect(source).to include('def legacy_canonical_successor'), "#{file} 未声明 canonical successor"
+      end
+
+      observable = File.read(
+        Rails.root.join('pallastrade_gems/pallastrade_api/app/controllers/concerns/pallastrade/api/v3/legacy_flow_observable.rb')
+      )
+      expect(observable).to include("Deprecation").and include("successor-version")
+    end
+
     it 'reuses the same active session for a duplicate create (double click / HTTP retry)' do
       order = legacy_cart_order
       headers = create_session_headers(order)

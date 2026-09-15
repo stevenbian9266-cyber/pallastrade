@@ -60,13 +60,19 @@ module PallasTrade
                                               .find_by_prefix_id!(params[:cart_id])
               else
                 # 收敛切片 2：统一结构化流量指标 `cart.legacy_flow.used`
-                # （保留 [legacy-discount-codes] 标记便于既有查询）。
-                log_legacy_flow_usage(
+                # （保留 [legacy-discount-codes] 标记便于既有查询）+ B5 弃用信号。
+                log_legacy_usage_once(
                   flow_type: 'legacy_cart_discount_codes',
                   message: '[legacy-discount-codes] legacy cart resolution used'
                 )
                 find_cart!
               end
+            end
+
+            # §45 matrix：本行 canonical = OrderCheckout ApplyPromotion（canonical `cart_` 车流程
+            # 同路由 + 提交时兑现）；legacy（订单型购物车）应迁至 `cart_` 购物车再走 /submit。
+            def legacy_canonical_successor
+              '/api/v3/store/carts'
             end
 
             # `cart_` 分支：应用/移除优惠码并回传购物车

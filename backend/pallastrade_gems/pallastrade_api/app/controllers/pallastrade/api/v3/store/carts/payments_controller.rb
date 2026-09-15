@@ -53,6 +53,11 @@ module PallasTrade
             def log_legacy_usage_once_payments
               log_legacy_usage_once(flow_type: 'legacy_cart_payments', action: action_name)
             end
+
+            # §45 matrix：本行 canonical = Transaction/Payment（订单域会话）。
+            def legacy_canonical_successor
+              '/api/v3/store/orders/:order_id/payment_sessions'
+            end
           end
         end
       end

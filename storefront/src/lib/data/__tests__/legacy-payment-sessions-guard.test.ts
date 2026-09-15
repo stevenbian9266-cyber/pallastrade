@@ -65,4 +65,56 @@ describe("legacy payment-session consumers are gone", () => {
       expect(() => statSync(join(SRC_ROOT, "..", target))).toThrow();
     }
   });
+
+  // PRD-20260915-checkout-checkout-收尾收敛-b5-legacy-端点治理-usage-metric-收口与零新增调用守护 AC-007
+  // §45 matrix 剩余行：`/carts/:id/payments` 与 cart 域 complete 亦不得出现（零新增调用）。
+  it("keeps zero cart-domain payment and cart-complete calls", () => {
+    const forbidden =
+      /carts\s*\.\s*(payments|paymentSessions)\b|carts\s*\.\s*complete\b/;
+    const offenders = collectSourceFiles(SRC_ROOT)
+      .map((file) => ({
+        file: relative(SRC_ROOT, file),
+        hits: readFileSync(file, "utf8")
+          .split(/\r?\n/)
+          .map((line, index) => ({ line, index: index + 1 }))
+          .filter(({ line }) => !isCommentLine(line) && forbidden.test(line)),
+      }))
+      .filter(({ hits }) => hits.length > 0);
+
+    expect(offenders).toEqual([]);
+  });
+
+  // PRD-20260915-checkout-checkout-收尾收敛-b5-legacy-端点治理-usage-metric-收口与零新增调用守护 AC-007
+  // 其余四行（gift_cards / store_credits / discount_codes / fulfillments）在 canonical `cart_`
+  // 流程里合法使用，但**只允许出现在白名单文件**里（新文件使用 → 失败 = 拦住新增 legacy 消费者）。
+  it("confines the shared cart-domain routes to the canonical whitelist", () => {
+    const sharedRoute =
+      /carts\s*\.\s*(fulfillments|giftCards|storeCredits|discountCodes)\b/;
+    const allowed = new Set([
+      "lib/data/shopping-cart.ts",
+      "lib/data/checkout.ts",
+      "lib/data/express-checkout-flow.ts",
+      "app/api/checkout/coupon/route.ts",
+    ]);
+
+    const offenders = collectSourceFiles(SRC_ROOT)
+      .filter((file) => !file.includes("__tests__"))
+      .map((file) => ({
+        file: relative(SRC_ROOT, file).replace(/\\/g, "/"),
+        hits: readFileSync(file, "utf8")
+          .split(/\r?\n/)
+          .map((line, index) => ({ line, index: index + 1 }))
+          .filter(({ line }) => !isCommentLine(line) && sharedRoute.test(line)),
+      }))
+      .filter(({ hits }) => hits.length > 0)
+      .filter(({ file }) => !allowed.has(file));
+
+    expect(offenders).toEqual([]);
+
+    // 反向自检：白名单文件确实承载这些调用（否则白名单会随代码漂移而失效）
+    const whitelistWithCalls = [...allowed].filter((file) =>
+      sharedRoute.test(readFileSync(join(SRC_ROOT, file), "utf8")),
+    );
+    expect(whitelistWithCalls.length).toBeGreaterThan(0);
+  });
 });

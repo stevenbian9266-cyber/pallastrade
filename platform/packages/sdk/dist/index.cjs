@@ -480,6 +480,11 @@ var StoreClient = class {
     },
     /**
      * Nested resource: Discount codes
+     * @deprecated PRD-20260915-checkout B5: cart-domain route shared by canonical `cart_`
+     * carts (apply now, redeem at submit) and legacy order-table carts. Legacy-identity
+     * (`or_…`) requests answer with `Deprecation: true` + `Warning: 299` + `Link:
+     * rel="successor-version"` and are counted as `cart.legacy_flow.used`. New code must
+     * use a canonical `cart_` cart (`POST /carts` → apply → `POST /carts/{id}/submit`).
      */
     discountCodes: {
       /**
@@ -500,6 +505,11 @@ var StoreClient = class {
     },
     /**
      * Nested resource: Gift cards
+     * @deprecated PRD-20260915-checkout B5: cart-domain route shared by canonical `cart_`
+     * carts (intent only; redeemed at submit) and legacy order-table carts. Legacy-identity
+     * (`or_…`) requests answer with `Deprecation: true` + `Warning: 299` + `Link:
+     * rel="successor-version"` and are counted as `cart.legacy_flow.used`. New code must
+     * use a canonical `cart_` cart (`POST /carts` → apply → `POST /carts/{id}/submit`).
      */
     giftCards: {
       /**
@@ -522,6 +532,10 @@ var StoreClient = class {
     },
     /**
      * Nested resource: Fulfillments
+     * @deprecated PRD-20260915-checkout B5: cart-domain route. For placed orders use the
+     * order-domain checkout facade (`PATCH /orders/{order_id}/checkout` — SelectShipping),
+     * which is the canonical successor and is what the `Link` header advertises on
+     * legacy-identity (`or_…`) requests (also counted as `cart.legacy_flow.used`).
      */
     fulfillments: {
       /**
@@ -536,6 +550,10 @@ var StoreClient = class {
     },
     /**
      * Nested resource: Payments
+     * @deprecated PRD-20260915-checkout B5: cart-domain payment creation. Canonical flow is
+     * `carts.submit` → `orders.transactions.create` / `orders.paymentSessions`; legacy-identity
+     * (`or_…`) requests answer with `Deprecation: true` + `Warning: 299` + `Link:
+     * rel="successor-version"` and are counted as `cart.legacy_flow.used`.
      */
     payments: {
       /**
@@ -547,6 +565,12 @@ var StoreClient = class {
     },
     /**
      * Nested resource: Payment sessions
+     * @deprecated PRD-20260915-checkout B5 (P0-7): cart-domain payment sessions are
+     * compatibility-only. Use the order-domain `orders.paymentSessions`
+     * (`PATCH /orders/{order_id}/payment_sessions/{id}/complete`) instead — the storefront
+     * has zero cart-domain consumers since B4. Legacy-identity (`or_…`) requests answer with
+     * `Deprecation: true` + `Warning: 299` + `Link: rel="successor-version"` and keep the
+     * historical `payment.legacy_flow.used` metric.
      */
     paymentSessions: {
       /**
@@ -589,6 +613,11 @@ var StoreClient = class {
     },
     /**
      * Store credits
+     * @deprecated PRD-20260915-checkout B5: cart-domain route shared by canonical `cart_`
+     * carts (intent only; redeemed at submit) and legacy order-table carts. Legacy-identity
+     * (`or_…`) requests answer with `Deprecation: true` + `Warning: 299` + `Link:
+     * rel="successor-version"` and are counted as `cart.legacy_flow.used`. New code must
+     * use a canonical `cart_` cart (`POST /carts` → apply → `POST /carts/{id}/submit`).
      */
     storeCredits: {
       /**

@@ -13,6 +13,8 @@ module PallasTrade
           class PaymentSessionsController < Store::BaseController
             include PallasTrade::Api::V3::CartResolvable
             include PallasTrade::Api::V3::OrderLock
+            # B5 FR-003：纳入统一 legacy 观测（字段契约与六类路由一致）+ 弃用信号。
+            include PallasTrade::Api::V3::LegacyFlowObservable
 
             before_action :find_cart!
             before_action :set_payment_session, only: [:show, :update, :complete]
@@ -27,7 +29,15 @@ module PallasTrade
               payment_method = current_store.payment_methods.find_by_prefix_id!(permitted_params[:payment_method_id])
 
               # P0-7: Legacy usage metric（每次调用计数，供统计 Legacy 真实流量）。
-              log_legacy_flow_usage(payment_method)
+              # B5 FR-002/FR-003：统一字段契约（legacy_identity / action / deprecated /
+              # canonical_successor）+ 弃用响应头；**历史 key 保持 `payment.legacy_flow.used`**。
+              log_legacy_usage_once(
+                flow_type: 'legacy_cart_session_create',
+                message: 'payment.legacy_flow.used',
+                entry_point: legacy_entry_point,
+                payment_method_id: payment_method.prefixed_id,
+                order_id: @cart.prefixed_id
+              )
 
               result = PallasTrade::PaymentSessions::Start.call(
                 order: @cart,
@@ -127,27 +137,25 @@ module PallasTrade
             # P0-7 (FR-071): Legacy usage metric —— 固定 key `payment.legacy_flow.used`
             # 供日志管道按 message 计数（flow_type / entry_point / method / order）。
             # entry_point 由 external_data 启发式推断（服务端无法区分时归 unknown）。
-            def log_legacy_flow_usage(payment_method)
+            # B5 FR-003：日志分支改由 `LegacyFlowObservable#log_legacy_usage_once` 统一输出
+            # （本方法只保留 entry_point 推断）。
+            def legacy_entry_point
               ext = permitted_params[:external_data] || {}
               ext = ext.to_h if ext.respond_to?(:to_h) && !ext.is_a?(Hash)
               ext = ext.with_indifferent_access if ext.respond_to?(:with_indifferent_access)
 
-              entry_point =
-                if ext[:return_url].present?
-                  'legacy_one_page'
-                elsif ext[:stripe_payment_method_id].present?
-                  'express_checkout'
-                else
-                  'unknown'
-                end
+              if ext[:return_url].present?
+                'legacy_one_page'
+              elsif ext[:stripe_payment_method_id].present?
+                'express_checkout'
+              else
+                'unknown'
+              end
+            end
 
-              Rails.logger.info(
-                message: 'payment.legacy_flow.used',
-                flow_type: 'legacy_cart_session_create',
-                entry_point: entry_point,
-                payment_method_id: payment_method.prefixed_id,
-                order_id: @cart.prefixed_id
-              )
+            # §45 matrix：本行 canonical = Transaction → PaymentSession（订单域）。
+            def legacy_canonical_successor
+              '/api/v3/store/orders/:order_id/payment_sessions'
             end
 
             def set_payment_session

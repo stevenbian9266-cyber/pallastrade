@@ -3069,6 +3069,30 @@
         "bestEffortCompletion": 15,
         "zeroLegacySession": 15
       }
+    },
+    {
+      "id": "GS-124",
+      "name": "Legacy cart routes stay served, become machine-readably deprecated, and never gain new consumers",
+      "description": "PRD-20260915-checkout B5: the six legacy cart-domain routes of the §45 migration matrix must keep serving existing traffic unchanged, carry a machine-readable deprecation signal only for legacy identity (never for canonical cart_ traffic), log one unified usage-metric contract that preserves the historical keys, and stay free of new consumers until the 30-day zero-traffic retirement threshold is met",
+      "mustDo": [
+        "Emit Deprecation/Warning/Link successor headers on legacy-identity (non cart_) requests only, keeping status codes, bodies and side effects unchanged",
+        "Log one unified metric per request with flow_type, entry_point, requested_cart_id, legacy_identity, action, deprecated and canonical_successor, preserving the historical payment.legacy_flow.used key and legacy markers",
+        "Mark the routes as deprecated in the OpenAPI contract (backend copy plus platform mirror) and in the SDK method docs, pointing at the canonical successor each time",
+        "Document the retirement threshold (30 consecutive days of zero legacy traffic before an independent removal project) and the ban on adding new capability to legacy routes",
+        "Keep the storefront/mobile consumer guard green: no cart-domain payment sessions, payments or cart-complete calls, and shared cart routes confined to the canonical cart_ whitelist"
+      ],
+      "mustNotDo": [
+        "Deprecate-mark canonical cart_ traffic that shares the same route shape, or count it as legacy traffic",
+        "Change or drop the historical metric keys/markers that existing log pipelines already consume",
+        "Delete legacy controllers or routes to 'clean up' before the traffic threshold is met, or add new features to a legacy route"
+      ],
+      "scoring": {
+        "legacyIdentityOnlySignal": 30,
+        "unifiedMetricContract": 25,
+        "contractAndSdkDeprecation": 20,
+        "retirementPolicy": 15,
+        "zeroNewConsumers": 10
+      }
     }
   ]
 }
