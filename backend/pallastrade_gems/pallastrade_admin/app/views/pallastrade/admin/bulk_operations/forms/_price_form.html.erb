@@ -1,0 +1,26 @@
+<%# PRD-20260915-admin-bulk-operations-2: 批量定价表单（Set Price / Adjust Price %）。 %>
+<%# locals: mode（'set' | 'adjust_percent'）由 add_bulk_action 的 form_partial_locals 传入。 %>
+<% form_mode = local_assigns.fetch(:mode, 'set') %>
+<%= hidden_field_tag :mode, form_mode %>
+
+<div class="form-group">
+  <%= label_tag :currency, PallasTrade.t('admin.bulk_ops.products.form.currency'), class: 'form-label' %>
+  <%= select_tag :currency,
+                 options_for_select(
+                   supported_currencies.map { |currency| [currency.to_s.upcase, currency.to_s.upcase] },
+                   current_currency.to_s.upcase
+                 ),
+                 class: 'form-select' %>
+</div>
+
+<% if form_mode == 'set' %>
+  <div class="form-group mb-0">
+    <%= label_tag :amount, PallasTrade.t('admin.bulk_ops.products.form.amount'), class: 'form-label' %>
+    <%= number_field_tag :amount, nil, step: 0.01, min: 0, class: 'form-input', required: true %>
+  </div>
+<% else %>
+  <div class="form-group mb-0">
+    <%= label_tag :percent, PallasTrade.t('admin.bulk_ops.products.form.percent'), class: 'form-label' %>
+    <%= number_field_tag :percent, nil, step: 0.1, class: 'form-input', required: true %>
+  </div>
+<% end %>

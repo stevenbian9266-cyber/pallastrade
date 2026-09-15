@@ -213,20 +213,64 @@ en:
         products:
           body:
             add_tags: 'Select tags to add to the products:'
+            add_to_channels: Publish the selected products on the chosen channels.
             add_to_taxons: 'Select which categories to add the products to:'
+            adjust_inventory: Adjust the on-hand count at one stock location. Products that do not track inventory are skipped.
+            adjust_price_percent: Increase or decrease the base price by a percentage. Products without a price in the chosen currency are skipped.
+            remove_from_channels: Unpublish the selected products from the chosen channels.
             remove_from_taxons: 'Select which categories to remove the products from:'
             remove_tags: 'Select tags to remove from the products:'
             set_active: Setting products to active will make those products available on the storefront.
             set_archived: Setting products to archived will hide them from storefront.
             set_draft: Setting products to draft will hide them from storefront.
+            set_price: Overwrite the base price (per currency) for every variant of the selected products.
+          form:
+            amount: New price
+            channels: Channels
+            currency: Currency
+            delta: Quantity change
+            delta_hint: Positive numbers add stock, negative numbers remove it. Counts never go below zero.
+            percent: Percentage change
+            stock_location: Stock location
+          preview:
+            confirm: Confirm and apply
+            intro: Nothing has been changed yet. Review the numbers below, then confirm.
+            selected: Selected products
+            title: Review changes
+            warnings_heading: Warnings
+            will_skip: Will be skipped
+            will_update: Will be updated
+          result:
+            channels_updated: 'Updated %{count} product(s) (%{skipped} skipped).'
+            inventory_updated: 'Updated %{count} product(s) (%{skipped} skipped).'
+            price_updated: 'Updated %{count} product(s) (%{skipped} skipped).'
           title:
             add_tags: Add tags
+            add_to_channels: Add to channels
             add_to_taxons: Add to categories
+            adjust_inventory: Adjust inventory
+            adjust_price_percent: Adjust price by %
+            remove_from_channels: Remove from channels
             remove_from_taxons: Remove from categories
             remove_tags: Remove tags
             set_active: Set as Active
             set_archived: Set as Archived
             set_draft: Set as Draft
+            set_price: Set price
+          warnings:
+            above_maximum: '%{count} variant(s) skipped — the new price would exceed the maximum.'
+            clamped_at_zero: '%{count} stock item(s) clamped at zero.'
+            inventory_not_tracked: '%{count} product(s) skipped — inventory tracking is off.'
+            invalid_amount: The amount is invalid.
+            invalid_percent: The percentage is invalid.
+            invalid_request: The request parameters are invalid.
+            negative_result: '%{count} variant(s) skipped — the new price would be negative.'
+            no_channels: Select at least one channel.
+            no_price: '%{count} product(s) skipped — no price in the selected currency.'
+            not_published: '%{count} product/channel pair(s) were not published.'
+            permission_denied: '%{count} product(s) skipped — you cannot manage their prices or stock.'
+            stock_location_missing: Select a stock location.
+            zero_delta: Enter a non-zero quantity change.
         users:
           body:
             add_tags: 'Select tags to add to the customers:'

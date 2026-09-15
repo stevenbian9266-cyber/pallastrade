@@ -194,6 +194,12 @@ export default {
         description: 'Admin payment-method option-config specs (options tab render/save + test connection + credential masking + optionized/start regression)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/payment_methods_spec.rb spec/services/pallastrade/payment_methods/test_connection_spec.rb spec/models/pallastrade/payment_method_options_spec.rb spec/services/pallastrade/payment_sessions/start_spec.rb'],
       },
+      // 管理后台商品批量运营 2.0（PRD-20260915-admin-bulk-operations-2）：批量价格/库存/渠道
+      // + 预览零写入与计数一致性 + 逐条权限跳过 + i18n + 模态接线
+      'admin-products-bulk-rspec': {
+        description: 'Admin products bulk operations specs (preview-first price/inventory/channel batches + warnings + modal wiring)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/products_bulk_operations_spec.rb'],
+      },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {
         description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',

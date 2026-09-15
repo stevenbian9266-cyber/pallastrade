@@ -3194,6 +3194,34 @@
         "purchasableSemantics": 15,
         "i18nAndFallbacks": 10
       }
+    },
+    {
+      "id": "GS-129",
+      "name": "Admin bulk operations preview first, then apply through one code path",
+      "description": "PRD-20260915-admin-bulk-operations-2 (Batch B-1 of the catalog upgrade plan): the products table gains five preview-first bulk actions (set price / adjust price % / adjust inventory / add channel / remove channel) on top of the existing add_bulk_action framework — each action renders a modal form, a dry-run preview that writes nothing, and an apply step that reuses the same service so preview and apply counts agree.",
+      "mustDo": [
+        "Keep the domain logic in pallastrade_core services (Products::BulkPriceUpdate / BulkInventoryAdjust / BulkChannelAssignment) whose preview and apply share one `run(dry_run:)` and return a Result struct with selected/updated/skipped counts plus warnings",
+        "Write prices only to base prices in the selected currency (Price.currency upcased): update amount (+ PriceHistory) when the row exists, create it when missing, leave price-list entries untouched, and round percentage adjustments with (amount * factor).round(2)",
+        "Clamp inventory at zero, skip untracked items (inventory_not_tracked) and zero deltas (zero_delta), and require a stock location (stock_location_missing) before touching StockItem counts",
+        "Assign channels through ProductPublication with add/remove modes, counting already-published pairs on remove instead of failing",
+        "Register each action via add_bulk_action with a `condition` guard (can? :manage on Price/StockItem/ProductPublication) and a `*_preview` PUT route that answers with a turbo_stream replacing #bulk_dialog, so the confirm form posts to the apply route",
+        "Collect per-record refusals (permission_denied, no_price, negative_result, above_maximum, clamped_at_zero, not_published…) as warnings, apply to the rest, and flash a localized result message",
+        "Ship the admin.bulk_ops.products.* keys for every action/form/preview/result/warning and cover the flow with the registered `admin-products-bulk-rspec` verifier"
+      ],
+      "mustNotDo": [
+        "Let the preview step write anything (no price rows, no StockItem counts, no publications) or compute its counts differently from the apply step",
+        "Abort the whole batch when one record is not permitted or not applicable — that record is skipped with a warning while the rest proceed",
+        "Downcase the currency when looking up/creating a Price, or widen the change beyond base prices into price lists",
+        "Route the apply step through a second implementation that can drift from the previewed counts",
+        "Assert admin engine translations with a raw I18n lookup (the environment misses them, including pre-existing keys) instead of PallasTrade.t, or render a modal form without its i18n keys"
+      ],
+      "scoring": {
+        "previewWritesNothing": 30,
+        "serviceParity": 25,
+        "perRecordSkips": 20,
+        "moneyAndStockSafety": 15,
+        "i18nAndWiring": 10
+      }
     }
   ]
 }

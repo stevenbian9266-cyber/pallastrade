@@ -118,6 +118,44 @@ module PallasTrade
         handle_bulk_operation_response
       end
 
+      # PRD-20260915-admin-bulk-operations-2（批量运营 2.0）：
+      # 每个动作先经 `*_preview`（零写入：将更新/将跳过/警告），确认后执行。
+      def bulk_price_preview
+        render_bulk_preview(
+          bulk_price_update,
+          path: pallastrade.bulk_update_price_admin_products_path,
+          fields: bulk_preview_fields('ids[]', 'mode', 'currency', 'amount', 'percent')
+        )
+      end
+
+      def bulk_update_price
+        run_bulk_operation(bulk_price_update, 'admin.bulk_ops.products.result.price_updated')
+      end
+
+      def bulk_inventory_preview
+        render_bulk_preview(
+          bulk_inventory_adjust,
+          path: pallastrade.bulk_adjust_inventory_admin_products_path,
+          fields: bulk_preview_fields('ids[]', 'stock_location_id', 'delta')
+        )
+      end
+
+      def bulk_adjust_inventory
+        run_bulk_operation(bulk_inventory_adjust, 'admin.bulk_ops.products.result.inventory_updated')
+      end
+
+      def bulk_channels_preview
+        render_bulk_preview(
+          bulk_channel_assignment,
+          path: pallastrade.bulk_update_channels_admin_products_path,
+          fields: bulk_preview_fields('ids[]', 'mode', 'channel_ids[]')
+        )
+      end
+
+      def bulk_update_channels
+        run_bulk_operation(bulk_channel_assignment, 'admin.bulk_ops.products.result.channels_updated')
+      end
+
       def select_options
         render json: current_store.products.not_archived.accessible_by(current_ability, :index).to_tom_select_json
       end
@@ -309,6 +347,62 @@ module PallasTrade
       def check_slug_availability
         new_slug = permitted_resource_params[:slug]
         permitted_resource_params[:slug] = @product.ensure_slug_is_unique(new_slug)
+      end
+
+      # --- 批量运营 2.0（PRD-20260915-admin-bulk-operations-2）---
+
+      def bulk_price_update
+        PallasTrade::Products::BulkPriceUpdate.new(
+          products: bulk_collection,
+          ability: current_ability,
+          currency: params[:currency],
+          mode: params[:mode],
+          amount: params[:amount],
+          percent: params[:percent]
+        )
+      end
+
+      def bulk_inventory_adjust
+        PallasTrade::Products::BulkInventoryAdjust.new(
+          products: bulk_collection,
+          ability: current_ability,
+          stock_location: PallasTrade::StockLocation.find_by(id: params[:stock_location_id]),
+          delta: params[:delta].to_i
+        )
+      end
+
+      def bulk_channel_assignment
+        PallasTrade::Products::BulkChannelAssignment.new(
+          products: bulk_collection,
+          ability: current_ability,
+          channels: current_store.channels.where(id: params[:channel_ids]),
+          mode: params[:mode]
+        )
+      end
+
+      # Builds hidden-field payload for the confirmation step. Array names keep
+      # the `[]` suffix (ids[]), scalar names render a single value.
+      def bulk_preview_fields(*names)
+        names.index_with { |name| Array(params[name.delete_suffix('[]')]).compact_blank }
+      end
+
+      def render_bulk_preview(service, path:, fields:)
+        @preview_result = service.preview
+        @preview_path = path
+        @preview_fields = fields
+
+        render turbo_stream: turbo_stream.replace(
+          :bulk_dialog,
+          partial: 'pallastrade/admin/bulk_operations/preview'
+        )
+      end
+
+      def run_bulk_operation(service, message_key)
+        result = service.call
+        flash[:success] = PallasTrade.t(
+          message_key, count: result.updated_count, skipped: result.skipped_count
+        )
+        handle_bulk_operation_response
       end
 
       def permitted_resource_params

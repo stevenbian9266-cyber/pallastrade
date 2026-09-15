@@ -1,0 +1,55 @@
+<%# PRD-20260915-admin-bulk-operations-2: 预览确认页（零写入）——替换 bulk_dialog 内容， %>
+<%# 提供“将更新/将跳过/警告”计数与携带相同参数的确认表单。 %>
+<%= turbo_frame_tag :bulk_dialog do %>
+  <%= dialog_header(PallasTrade.t('admin.bulk_ops.products.preview.title'), 'bulk-dialog') %>
+  <div class="dialog-body overflow-visible">
+    <p class="mb-3"><%= PallasTrade.t('admin.bulk_ops.products.preview.intro') %></p>
+
+    <dl class="grid grid-cols-3 gap-3 mb-4">
+      <div>
+        <dt class="text-xs text-gray-500"><%= PallasTrade.t('admin.bulk_ops.products.preview.selected') %></dt>
+        <dd class="text-xl font-semibold mb-0"><%= @preview_result.selected_count %></dd>
+      </div>
+      <div>
+        <dt class="text-xs text-gray-500"><%= PallasTrade.t('admin.bulk_ops.products.preview.will_update') %></dt>
+        <dd class="text-xl font-semibold text-green-600 mb-0"><%= @preview_result.updated_count %></dd>
+      </div>
+      <div>
+        <dt class="text-xs text-gray-500"><%= PallasTrade.t('admin.bulk_ops.products.preview.will_skip') %></dt>
+        <dd class="text-xl font-semibold text-amber-600 mb-0"><%= @preview_result.skipped_count %></dd>
+      </div>
+    </dl>
+
+    <% if @preview_result.warnings.any? %>
+      <div class="alert alert-warning mb-0">
+        <p class="font-medium mb-1"><%= PallasTrade.t('admin.bulk_ops.products.preview.warnings_heading') %></p>
+        <ul class="list-disc ms-4 mb-0">
+          <% @preview_result.warnings.each do |code, count| %>
+            <li>
+              <%= PallasTrade.t(
+                    "admin.bulk_ops.products.warnings.#{code}",
+                    count: count,
+                    default: code.to_s.humanize
+                  ) %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+  </div>
+  <div class="dialog-footer">
+    <%= dialog_discard_button('bulk-dialog') %>
+    <%= form_tag(@preview_path, method: :put) do %>
+      <% @preview_fields.each do |name, values| %>
+        <% if name.end_with?('[]') %>
+          <% values.each do |value| %>
+            <%= hidden_field_tag name, value %>
+          <% end %>
+        <% elsif values.first.present? %>
+          <%= hidden_field_tag name, values.first %>
+        <% end %>
+      <% end %>
+      <%= turbo_save_button_tag(PallasTrade.t('admin.bulk_ops.products.preview.confirm')) %>
+    <% end %>
+  </div>
+<% end %>

@@ -442,6 +442,27 @@ Member routes (`PATCH /admin/reviews/:id/approve` etc.) live in
 `PallasTrade.approve_admin_review_path(record)`). Turbo links need
 `data: { turbo_method: :patch, turbo_frame: '_top' }`.
 
+### Bulk operations — 批量运营 2.0（预览优先，2026-09-15，PRD-20260915-admin-bulk-operations-2）
+
+批量动作由 `add_bulk_action(table, key, ...)` 注册（`pallastrade_admin_tables.rb`），框架渲染批量工具条并把选中 ids 交给动作。**破坏性批量（价格/库存/渠道）一律走"预览 → 确认 → 执行"三段式**，五个部件缺一不可：
+
+| 部件 | 位置 | 要点 |
+|---|---|---|
+| 服务对象 | `pallastrade_core/app/services/pallastrade/products/bulk_*.rb` | `preview = run(dry_run: true)`、`call = run(dry_run: false)`；返回 `Result = Struct.new(:selected_count, :updated_count, :skipped_count, :warnings)` |
+| 预览路由 | `products_controller.rb` + `config/routes.rb` | `*_preview`（collection PUT）→ `render turbo_stream: turbo_stream.replace(:bulk_dialog, partial: 'pallastrade/admin/bulk_operations/preview')` |
+| 表单 partial | `bulk_operations/forms/_price_form.html.erb` 等 | 通过 `add_bulk_action(..., form_partial_locals: { mode: ... })` 传参区分动作变体 |
+| 预览 partial | `bulk_operations/_preview.html.erb` | 计数 dl + warnings 列表 + `form_tag(@preview_path, method: :put)` 隐藏字段 + `turbo_save_button_tag` |
+| 执行路由 | `bulk_update_price` 等（collection PUT） | 复用同一服务实例调 `call` → flash → `handle_bulk_operation_response` |
+
+不变量（回归规格 `admin-products-bulk-rspec` 强制）：
+
+- **预览零写入**：dry-run 与执行走同一 `run`，预览前后数据库无变化且两面计数一致。
+- **逐条跳过而非整体失败**：权限（`can? :manage`）与适用性在服务内逐条判定，拒绝原因进 `warnings`（`permission_denied` / `no_price` / `negative_result` / `above_maximum` / `clamped_at_zero` / `inventory_not_tracked` / `zero_delta` / `stock_location_missing` / `not_published` / `no_channels`），其余记录继续处理。
+- **金额安全**：`Price.currency` 一律**大写**（`VND`/`USD`）；只写 base price（`prices` 默认 price list），**不碰** `price_list` 行；调价只作用于所选币种；百分比调价 `(amount * factor).round(2)`，负值/超上限跳过。
+- **库存安全**：`find_or_initialize_by` + `set_count_on_hand`，下限 0 收敛（计入 `clamped_at_zero`）；不追踪库存的变体跳过。
+- **i18n**：新增动作/表单/预览/结果/warning 必须补 `admin.bulk_ops.products.*` 键；规格断言用 `PallasTrade.t(key, default: nil)`（裸 `I18n.exists?` 在此环境查不到引擎翻译，含既有键）。
+- 回归验证：`harness verify admin-products-bulk-rspec`。
+
 ## Overriding views
 
 Drop the same-pathed file in the host app and Rails uses it. The gem ships `pallastrade/admin/app/views/pallastrade/admin/products/index.html.erb`; you override it at `backend/app/views/pallastrade/admin/products/index.html.erb`.

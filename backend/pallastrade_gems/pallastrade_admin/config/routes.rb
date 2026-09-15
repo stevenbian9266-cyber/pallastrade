@@ -17,6 +17,13 @@ PallasTrade::Core::Engine.add_routes do
         put :bulk_remove_from_taxons
         put :bulk_add_tags
         put :bulk_remove_tags
+        # PRD-20260915-admin-bulk-operations-2：批量价格/库存/渠道（预览 → 确认）
+        put :bulk_price_preview
+        put :bulk_update_price
+        put :bulk_inventory_preview
+        put :bulk_adjust_inventory
+        put :bulk_channels_preview
+        put :bulk_update_channels
       end
       member do
         post :clone

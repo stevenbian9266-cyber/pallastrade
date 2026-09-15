@@ -1,0 +1,18 @@
+<%# PRD-20260915-admin-bulk-operations-2: 批量库存调整表单（按库存点 ±）。 %>
+<div class="form-group">
+  <%= label_tag :stock_location_id, PallasTrade.t('admin.bulk_ops.products.form.stock_location'), class: 'form-label' %>
+  <%= select_tag :stock_location_id,
+                 options_from_collection_for_select(
+                   PallasTrade::StockLocation.order_default.active.accessible_by(current_ability),
+                   :id, :display_name
+                 ),
+                 class: 'form-select' %>
+</div>
+
+<div class="form-group mb-0">
+  <%= label_tag :delta, PallasTrade.t('admin.bulk_ops.products.form.delta'), class: 'form-label' %>
+  <%= number_field_tag :delta, nil, step: 1, class: 'form-input', required: true %>
+  <small class="text-muted text-xs d-block">
+    <%= PallasTrade.t('admin.bulk_ops.products.form.delta_hint') %>
+  </small>
+</div>

@@ -1,0 +1,12 @@
+<%# PRD-20260915-admin-bulk-operations-2: 批量渠道上下架表单。 %>
+<%# locals: mode（'add' | 'remove'）由 add_bulk_action 的 form_partial_locals 传入。 %>
+<%= hidden_field_tag :mode, local_assigns.fetch(:mode, 'add') %>
+
+<div class="form-group mb-0">
+  <%= label_tag :channel_ids, PallasTrade.t('admin.bulk_ops.products.form.channels'), class: 'form-label' %>
+  <%= tom_select_tag 'channel_ids',
+                     multiple: true,
+                     class: 'w-full',
+                     options: current_store.channels.order(:name).map { |channel| [channel.name, channel.id] },
+                     required: true %>
+</div>

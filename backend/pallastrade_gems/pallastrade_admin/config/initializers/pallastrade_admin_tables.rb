@@ -202,6 +202,56 @@ Rails.application.config.after_initialize do
                                                     position: 70,
                                                     condition: -> { can?(:manage_tags, PallasTrade::Product) }
 
+  # PRD-20260915-admin-bulk-operations-2：批量价格 / 库存 / 渠道（预览 → 确认）
+  PallasTrade.admin.tables.products.add_bulk_action :set_price,
+                                                    label: 'admin.bulk_ops.products.title.set_price',
+                                                    icon: 'adjustments',
+                                                    action_path: ->(view_context) { view_context.pallastrade.bulk_price_preview_admin_products_path },
+                                                    body: 'admin.bulk_ops.products.body.set_price',
+                                                    form_partial: 'pallastrade/admin/bulk_operations/forms/price_form',
+                                                    form_partial_locals: { mode: 'set' },
+                                                    position: 80,
+                                                    condition: -> { can?(:manage, PallasTrade::Price) }
+
+  PallasTrade.admin.tables.products.add_bulk_action :adjust_price_percent,
+                                                    label: 'admin.bulk_ops.products.title.adjust_price_percent',
+                                                    icon: 'adjustments',
+                                                    action_path: ->(view_context) { view_context.pallastrade.bulk_price_preview_admin_products_path },
+                                                    body: 'admin.bulk_ops.products.body.adjust_price_percent',
+                                                    form_partial: 'pallastrade/admin/bulk_operations/forms/price_form',
+                                                    form_partial_locals: { mode: 'adjust_percent' },
+                                                    position: 90,
+                                                    condition: -> { can?(:manage, PallasTrade::Price) }
+
+  PallasTrade.admin.tables.products.add_bulk_action :adjust_inventory,
+                                                    label: 'admin.bulk_ops.products.title.adjust_inventory',
+                                                    icon: 'package',
+                                                    action_path: ->(view_context) { view_context.pallastrade.bulk_inventory_preview_admin_products_path },
+                                                    body: 'admin.bulk_ops.products.body.adjust_inventory',
+                                                    form_partial: 'pallastrade/admin/bulk_operations/forms/inventory_form',
+                                                    position: 100,
+                                                    condition: -> { can?(:manage, PallasTrade::StockItem) }
+
+  PallasTrade.admin.tables.products.add_bulk_action :add_to_channels,
+                                                    label: 'admin.bulk_ops.products.title.add_to_channels',
+                                                    icon: 'send',
+                                                    action_path: ->(view_context) { view_context.pallastrade.bulk_channels_preview_admin_products_path },
+                                                    body: 'admin.bulk_ops.products.body.add_to_channels',
+                                                    form_partial: 'pallastrade/admin/bulk_operations/forms/channels_form',
+                                                    form_partial_locals: { mode: 'add' },
+                                                    position: 110,
+                                                    condition: -> { can?(:manage, PallasTrade::ProductPublication) }
+
+  PallasTrade.admin.tables.products.add_bulk_action :remove_from_channels,
+                                                    label: 'admin.bulk_ops.products.title.remove_from_channels',
+                                                    icon: 'send',
+                                                    action_path: ->(view_context) { view_context.pallastrade.bulk_channels_preview_admin_products_path },
+                                                    body: 'admin.bulk_ops.products.body.remove_from_channels',
+                                                    form_partial: 'pallastrade/admin/bulk_operations/forms/channels_form',
+                                                    form_partial_locals: { mode: 'remove' },
+                                                    position: 120,
+                                                    condition: -> { can?(:manage, PallasTrade::ProductPublication) }
+
   # Register Orders table
   PallasTrade.admin.tables.register(:orders, model_class: PallasTrade::Order, search_param: :search, date_range_param: :completed_at)
 
