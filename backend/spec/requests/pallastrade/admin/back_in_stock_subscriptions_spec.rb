@@ -27,5 +27,18 @@ RSpec.describe 'Admin back-in-stock subscriptions pages', type: :request do
       expect(response.body).to include('waiting@example.com')
       expect(response.body).to include('Sold Out Blender')
     end
+
+    # Batch C-2（PRD-20260915-catalog-batch-c2-sku-back-in-stock）：按 SKU 查看
+    it 'shows the SKU of a variant-level subscription' do
+      product = create(:product, store: store, name: 'Sold Out Blender')
+      variant = product.default_variant
+      variant.update_columns(sku: 'BLENDER-RED')
+      create(:back_in_stock_subscription, store: store, product: product, variant: variant, email: 'sku@example.com')
+
+      get '/admin/back_in_stock_subscriptions'
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('BLENDER-RED')
+    end
   end
 end

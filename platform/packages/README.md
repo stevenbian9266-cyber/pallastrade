@@ -94,6 +94,13 @@ page → 「支付方式」tab with Test connection), not through this SDK; both
 consumers keep working. Regenerate with `scripts/ci/contracts.sh` whenever a payment serializer's
 `typelize` changes.
 
+Back-in-stock subscriptions are SKU-aware (PRD-20260915-catalog-batch-c2-sku-back-in-stock, 2026-09-15):
+`backInStockSubscriptions.create(productId, { email, variant_id? })` now takes an optional prefixed
+`variant_id` (`variant_…`) so a customer watches one SKU; the response gains `variant_id` (null for the
+legacy product-level subscription). The generated `BackInStockSubscription` type carries the new field —
+regenerate it with `scripts/ci/contracts.sh` when the serializer's `typelize` changes (the SDK method
+itself is hand-written in `sdk/src/store-client.ts`).
+
 ### `@pallastrade/sdk-core` — Shared internals
 
 Private package. Provides `createRequestFn()`, `PallasTradeError`, retry logic, and Ransack query-param transformation (`transformListParams()`). Consumed by the SDK; not intended for direct use.

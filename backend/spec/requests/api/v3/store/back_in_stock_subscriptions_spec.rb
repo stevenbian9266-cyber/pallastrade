@@ -46,5 +46,41 @@ RSpec.describe 'POST /api/v3/store/products/:product_id/back_in_stock_subscripti
 
       expect(response).to have_http_status(:not_found)
     end
+
+    # Batch C-2（PRD-20260915-catalog-batch-c2-sku-back-in-stock）
+    it 'creates a SKU-level subscription when variant_id is given' do
+      variant = product.default_variant
+
+      post path, params: { email: 'sku@example.com', variant_id: variant.prefixed_id }, headers: headers
+
+      expect(response).to have_http_status(:created)
+      expect(json_response[:variant_id]).to eq(variant.prefixed_id)
+      expect(PallasTrade::BackInStockSubscription.for_store(store).last.variant).to eq(variant)
+    end
+
+    it 'counts SKU subscriptions separately from the product-level one' do
+      variant = product.default_variant
+      other_variant = create(:variant, product: product)
+
+      post path, params: { email: 'same@example.com' }, headers: headers
+      post path, params: { email: 'same@example.com', variant_id: variant.prefixed_id }, headers: headers
+      post path, params: { email: 'same@example.com', variant_id: other_variant.prefixed_id }, headers: headers
+
+      expect(PallasTrade::BackInStockSubscription.for_store(store).count).to eq(3)
+    end
+
+    it 'returns 404 for an unknown variant' do
+      post path, params: { email: 'a@b.com', variant_id: 'variant_doesnotexist' }, headers: headers
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it 'returns 404 when the variant belongs to another product' do
+      other_variant = create(:product, store: store, name: 'Other Product').default_variant
+
+      post path, params: { email: 'a@b.com', variant_id: other_variant.prefixed_id }, headers: headers
+
+      expect(response).to have_http_status(:not_found)
+    end
   end
 end

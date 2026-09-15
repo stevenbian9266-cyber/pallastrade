@@ -3306,6 +3306,34 @@
         "emptyAndEdgeStates": 15,
         "i18nAndReuse": 10
       }
+    },
+    {
+      "id": "GS-133",
+      "name": "Back-in-stock subscriptions become SKU-aware without double-notifying anyone",
+      "description": "PRD-20260915-catalog-batch-c2-sku-back-in-stock (§9 of the catalog upgrade plan): back-in-stock subscriptions gain an optional variant dimension. StockMovement::CustomEvents publishes variant.back_in_stock when one SKU becomes buyable again, the subscriber routes that event only to that SKU's subscribers while the product-level event keeps serving the historical variant_id IS NULL rows, the Store API accepts an optional variant_id, and the admin list shows the SKU.",
+      "mustDo": [
+        "Keep variant_id nullable on pallastrade_back_in_stock_subscriptions and encode both semantics with two partial unique indexes: (product_id, variant_id, email) WHERE variant_id IS NOT NULL and (product_id, email) WHERE variant_id IS NULL — Postgres does not de-duplicate NULLs, so a single three-column index would let legacy rows duplicate",
+        "Validate in the model that a subscription's variant belongs to its product, scope the email uniqueness by variant_id, and expose for_variant/product_level scopes for the notification split",
+        "Publish variant.back_in_stock from StockMovement::CustomEvents when the variant transitions from unbuyable to buyable, carrying the variant's prefixed id in the payload, and leave product.out_of_stock/product.back_in_stock semantics untouched",
+        "Route variant.back_in_stock only to that variant's active subscriptions and product.back_in_stock only to the legacy product-level rows, so nobody is emailed twice and SKU subscribers never get another SKU's restock",
+        "Accept an optional variant_id on POST /api/v3/store/products/:product_id/back_in_stock_subscriptions (prefixed or integer, must belong to the product → otherwise 404), return variant_id in the response, and regenerate the OpenAPI/SDK contracts",
+        "Subscribe from the product page with the selected variant, and show the SKU in the admin subscriptions table (product-level rows stay readable as —)",
+        "Mark a subscription notified right after the email is queued and keep it active when delivery raises, so a failure stays retryable"
+      ],
+      "mustNotDo": [
+        "Replace the legacy product-level uniqueness rule or make variant_id NOT NULL (historical rows must keep working)",
+        "Notify SKU subscribers from the product-level event (or the reverse) — that reintroduces either the wrong-SKU email or a duplicate email",
+        "Match a variant id without checking it belongs to the product in the path, or return a 201 for a variant from another product",
+        "Send a raw integer primary key in the API response instead of the prefixed variant id",
+        "Hand-edit generated contracts (OpenAPI schemas / SDK types) instead of regenerating them, or ship the API change without generated:check staying green"
+      ],
+      "scoring": {
+        "dataModelIntegrity": 30,
+        "notificationSplit": 25,
+        "apiContract": 20,
+        "backwardCompatibility": 15,
+        "adminAndStorefront": 10
+      }
     }
   ]
 }

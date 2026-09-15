@@ -22,6 +22,40 @@ RSpec.describe PallasTrade::BackInStockSubscription, type: :model do
       expect(build(:back_in_stock_subscription, store: store, product: other, email: 'a@b.com')).to be_valid
     end
 
+    # Batch C-2（PRD-20260915-catalog-batch-c2-sku-back-in-stock）
+    it 'rejects a duplicate (product, variant, email) subscription' do
+      variant = product.default_variant
+      create(:back_in_stock_subscription, store: store, product: product, variant: variant, email: 'a@b.com')
+
+      expect(
+        build(:back_in_stock_subscription, store: store, product: product, variant: variant, email: 'a@b.com')
+      ).to be_invalid
+    end
+
+    it 'allows the same email on two different SKUs of one product' do
+      variant = product.default_variant
+      other_variant = create(:variant, product: product)
+      create(:back_in_stock_subscription, store: store, product: product, variant: variant, email: 'a@b.com')
+
+      expect(
+        build(:back_in_stock_subscription, store: store, product: product, variant: other_variant, email: 'a@b.com')
+      ).to be_valid
+    end
+
+    it 'keeps the legacy product-level rule (one per product + email)' do
+      create(:back_in_stock_subscription, store: store, product: product, email: 'a@b.com')
+
+      expect(build(:back_in_stock_subscription, store: store, product: product, email: 'a@b.com')).to be_invalid
+    end
+
+    it 'rejects a variant that belongs to another product' do
+      other_variant = create(:product, store: store, name: 'Other').default_variant
+
+      expect(
+        build(:back_in_stock_subscription, store: store, product: product, variant: other_variant, email: 'a@b.com')
+      ).to be_invalid
+    end
+
     it 'rejects an invalid email' do
       expect(build(:back_in_stock_subscription, store: store, product: product, email: 'nope')).to be_invalid
     end

@@ -2273,7 +2273,7 @@ Rails.application.config.after_initialize do
                                          position: 50
 
   # Register Back-in-stock subscriptions table (customer notifications)
-  PallasTrade.admin.tables.register(:back_in_stock_subscriptions, model_class: PallasTrade::BackInStockSubscription, search_param: :email_or_product_name_cont, row_actions: true, row_actions_edit: false, row_actions_delete: true, new_resource: false)
+  PallasTrade.admin.tables.register(:back_in_stock_subscriptions, model_class: PallasTrade::BackInStockSubscription, search_param: :email_or_product_name_or_variant_sku_cont, row_actions: true, row_actions_edit: false, row_actions_delete: true, new_resource: false)
 
   PallasTrade.admin.tables.back_in_stock_subscriptions.add :product,
                                          label: :product,
@@ -2283,6 +2283,17 @@ Rails.application.config.after_initialize do
                                          default: true,
                                          position: 10,
                                          method: ->(subscription) { subscription.product&.name }
+
+  # Batch C-2（PRD-20260915-catalog-batch-c2-sku-back-in-stock）：SKU 级订阅可见
+  # SKU 列；历史商品级订阅（variant_id 为空）显示为 —。
+  PallasTrade.admin.tables.back_in_stock_subscriptions.add :variant,
+                                         label: :variant,
+                                         type: :association,
+                                         sortable: true,
+                                         filterable: true,
+                                         default: true,
+                                         position: 15,
+                                         method: ->(subscription) { subscription.variant&.sku }
 
   PallasTrade.admin.tables.back_in_stock_subscriptions.add :email,
                                          label: :email,

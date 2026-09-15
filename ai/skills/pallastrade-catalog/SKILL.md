@@ -236,6 +236,28 @@ product.get_metafield('catalog.season')&.value   # => "fall-2026" (get_metafield
 
 `display_on: front_end` (or `both`) surfaces the metafield on the Store API; `back_end` is admin-only. See `PallasTrade::Metafields` concern and the `pallastrade-resource` skill (`--metafields` flag) for built-in support.
 
+## Back-in-stock subscriptions（SKU 级，2026-09-15 Batch C-2）
+
+`PallasTrade::BackInStockSubscription` 现在**两个粒度共存**（PRD-20260915-catalog-batch-c2-sku-back-in-stock）：
+
+| 粒度 | `variant_id` | 事件 | 通知对象 |
+|---|---|---|---|
+| SKU 级（推荐） | 有值 | `variant.back_in_stock`（`StockMovement::CustomEvents` 在**该变体**从不可买→可买时发布，载荷 `{ id: 变体前缀 id, product_id: 商品前缀 id }`） | 仅该变体的 `active` 订阅 |
+| 商品级（历史兼容） | `NULL` | `product.back_in_stock`（整个商品回到可买） | 仅 `variant_id IS NULL` 的 `active` 订阅（SKU 订阅者由自己的事件服务，**不再被商品级事件误发**） |
+
+数据库约束（迁移 `20260915130000`）：Postgres 唯一索引对 NULL 不去重，所以用**两个 partial 唯一索引**同时保住两套语义——
+`(product_id, variant_id, email) WHERE variant_id IS NOT NULL` + `(product_id, email) WHERE variant_id IS NULL`。模型层同步：
+`belongs_to :variant, optional: true` + `variant` 必须属于该 `product` + 唯一性 scope 纳入 `variant_id`；scope `for_variant(id)` / `product_level`。
+
+链路与调用点：
+- Store API：`POST /api/v3/store/products/:product_id/back_in_stock_subscriptions`（可选 `variant_id`，前缀 `variant_…` 或整数 id，不属于该商品 → 404；幂等按 (商品, SKU, 邮箱)）
+- 前台：PDP `BackInStockNotify` 按**所选变体**订阅（`ProductDetails` 传 `selectedVariant?.id`）
+- 后台：订阅表格 `variant` 列显示 SKU（商品级显示 —），搜索 `email_or_product_name_or_variant_sku_cont`
+- 回归验证：`harness verify back-in-stock-rspec`
+
+改这类能力时的铁律：**事件载荷必须自带解析所需的 id**（事件总线不持有上下文）；发送后立即 `mark_notified!`（幂等）；
+邮件失败记日志且保持 `active`（可重试），绝不静默标已读。
+
 ## Where to read further
 
 - **Core concepts:** `node_modules/@pallastrade/docs/dist/developer/core-concepts/products.md`

@@ -933,16 +933,18 @@ export class StoreClient {
   readonly backInStockSubscriptions = {
     /**
      * Subscribe an email to be notified when an out-of-stock product is back in stock.
+     * Pass `variant_id` to subscribe to one SKU only (Batch C-2).
      */
     create: (
       productId: string,
-      params: { email: string },
+      params: { email: string; variant_id?: string },
       options?: RequestOptions,
     ): Promise<{
       id: string
       email: string
       status: string
       product_id: string | null
+      variant_id: string | null
       created_at: string
     }> =>
       this.request('POST', `/products/${productId}/back_in_stock_subscriptions`, {

@@ -9,14 +9,20 @@ import { createBackInStockSubscription } from "@/lib/data/backInStock";
 
 interface BackInStockNotifyProps {
   productId: string;
+  /** Selected SKU (Batch C-2) — subscribe to the variant the shopper picked. */
+  variantId?: string | null;
 }
 
 /**
  * Back-in-stock notification — shown on a product page when the product is out
  * of stock. The customer leaves an email; we POST it to the Store API and the
- * backend notifies them via the `product.back_in_stock` event.
+ * backend notifies them via the `variant.back_in_stock` event (per SKU) or
+ * `product.back_in_stock` when no SKU is selected.
  */
-export function BackInStockNotify({ productId }: BackInStockNotifyProps) {
+export function BackInStockNotify({
+  productId,
+  variantId,
+}: BackInStockNotifyProps) {
   const t = useTranslations("products");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +41,7 @@ export function BackInStockNotify({ productId }: BackInStockNotifyProps) {
     }
     setError(null);
     setState("loading");
-    const result = await createBackInStockSubscription(productId, value);
+    const result = await createBackInStockSubscription(productId, value, variantId);
     if (result.success) {
       setState("done");
     } else {

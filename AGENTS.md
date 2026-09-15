@@ -277,6 +277,7 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | 支付适用范围引擎（`payments/availability/**`、`PaymentMethod#payment_option_rule_set`、`Order#payment_methods`、admin scope 编辑/序列化） | + `harness verify d8-availability-rspec`（规则集归一/求值 + 前台收集过滤 + Start 入口门禁 + 后台范围编辑与投影） | ≤3 min |
 | Admin 商品批量运营（批量价格/库存/渠道 + 预览确认） | + `harness verify admin-products-bulk-rspec`（预览零写入 + 预览/执行计数一致 + 逐条权限跳过 + 模态接线） | ≤2 min |
 | Admin Catalog Health（7 类商品健康 issue + 一键过滤列表） | + `harness verify admin-catalog-health-rspec`（口径逐项 + 计数==列表条数 + 筛选横幅 + 导航子项一致性） | ≤2 min |
+| 到货订阅（SKU 级，`back_in_stock_subscriptions` / 事件层 / store API / 后台 SKU 列） | + `harness verify back-in-stock-rspec`（SKU 唯一约束 + 双通道分流不重复 + API variant_id + 后台 SKU 列） | ≤2 min |
 | Financial ledger / reconciliation (`reconciliations/`, `financial_ledger/`) | + `harness verify finance-reconciliation-rspec` (source/transaction/payment/refund/dispute 对账 + sweeper) | ≤2 min |
 | Any change | `harness doc-impact --base origin/dev` — checks knowledge docs are synced | ≤1 min |
 

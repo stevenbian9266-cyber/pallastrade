@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_13_000011) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_15_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -439,9 +439,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_13_000011) do
     t.string "status", default: "active", null: false
     t.bigint "store_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["product_id", "email"], name: "index_bis_subscriptions_on_product_and_email", unique: true
+    t.bigint "variant_id"
+    t.index ["product_id", "email"], name: "index_bis_subscriptions_on_product_and_email", unique: true, where: "(variant_id IS NULL)"
+    t.index ["product_id", "variant_id", "email"], name: "index_bis_subscriptions_on_product_variant_and_email", unique: true, where: "(variant_id IS NOT NULL)"
     t.index ["product_id"], name: "index_pallastrade_back_in_stock_subscriptions_on_product_id"
     t.index ["store_id"], name: "index_pallastrade_back_in_stock_subscriptions_on_store_id"
+    t.index ["variant_id"], name: "index_bis_subscriptions_on_variant_id"
   end
 
   create_table "pallastrade_calculators", force: :cascade do |t|
@@ -2954,6 +2957,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_13_000011) do
   add_foreign_key "pallastrade_ai_settings", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_back_in_stock_subscriptions", "pallastrade_products", column: "product_id"
   add_foreign_key "pallastrade_back_in_stock_subscriptions", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_back_in_stock_subscriptions", "pallastrade_variants", column: "variant_id"
   add_foreign_key "pallastrade_carts", "pallastrade_shipping_methods", column: "shipping_method_id"
   add_foreign_key "pallastrade_commerce_transactions", "pallastrade_payment_combinations", column: "payment_combination_id"
   add_foreign_key "pallastrade_commerce_transactions", "pallastrade_stores", column: "store_id"

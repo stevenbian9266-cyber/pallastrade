@@ -8,18 +8,22 @@ RSpec.describe PallasTrade::BackInStockSubscriber, type: :job do
   let(:subscriber) { PallasTrade::BackInStockSubscriber.new }
 
   # Drive the subscriber directly (events run through Sidekiq in the test env,
-  # so we call the handler with the same payload shape the event bus would).
-  def fire_back_in_stock
-    subscriber.send(:notify_subscribers, double(payload: { 'id' => product.prefixed_id }))
+  # so we call the handlers with the same payload shape the event bus would).
+  def fire_product_back_in_stock
+    subscriber.send(:notify_product_subscribers, double(payload: { 'id' => product.prefixed_id }))
   end
 
-  describe '#notify_subscribers (product.back_in_stock)' do
-    it 'emails active subscriptions and marks them notified' do
+  def fire_variant_back_in_stock(variant)
+    subscriber.send(:notify_variant_subscribers, double(payload: { 'id' => variant.prefixed_id }))
+  end
+
+  describe '#notify_product_subscribers (product.back_in_stock)' do
+    it 'emails active product-level subscriptions and marks them notified' do
       subscription = create(:back_in_stock_subscription, store: store, product: product)
 
       expect(PallasTrade::BackInStockMailer).to receive(:back_in_stock).with(subscription).and_return(double(deliver_later: true))
 
-      fire_back_in_stock
+      fire_product_back_in_stock
 
       expect(subscription.reload.status).to eq('notified')
     end
@@ -29,7 +33,7 @@ RSpec.describe PallasTrade::BackInStockSubscriber, type: :job do
 
       expect(PallasTrade::BackInStockMailer).not_to receive(:back_in_stock)
 
-      fire_back_in_stock
+      fire_product_back_in_stock
     end
 
     it 'emails each active subscription once' do
@@ -40,7 +44,7 @@ RSpec.describe PallasTrade::BackInStockSubscriber, type: :job do
         expect(PallasTrade::BackInStockMailer).to receive(:back_in_stock).with(sub).and_return(double(deliver_later: true))
       end
 
-      fire_back_in_stock
+      fire_product_back_in_stock
 
       expect(subs.map { |s| s.reload.status }).to all(eq('notified'))
     end
@@ -48,7 +52,42 @@ RSpec.describe PallasTrade::BackInStockSubscriber, type: :job do
     it 'does nothing for a product without subscriptions' do
       expect(PallasTrade::BackInStockMailer).not_to receive(:back_in_stock)
 
-      fire_back_in_stock
+      fire_product_back_in_stock
+    end
+
+    # Batch C-2：SKU 订阅者等自己的事件，不被商品级事件误发。
+    it 'leaves SKU-level subscriptions alone' do
+      variant = product.default_variant
+      sku_sub = create(:back_in_stock_subscription, store: store, product: product, variant: variant, email: 'sku@example.com')
+
+      expect(PallasTrade::BackInStockMailer).not_to receive(:back_in_stock)
+
+      fire_product_back_in_stock
+
+      expect(sku_sub.reload.status).to eq('active')
+    end
+  end
+
+  describe '#notify_variant_subscribers (variant.back_in_stock)' do
+    it 'emails only the subscribers of that SKU' do
+      variant = product.default_variant
+      other_variant = create(:variant, product: product)
+      sku_sub = create(:back_in_stock_subscription, store: store, product: product, variant: variant, email: 'sku@example.com')
+      create(:back_in_stock_subscription, store: store, product: product, variant: other_variant, email: 'other@example.com')
+      create(:back_in_stock_subscription, store: store, product: product, email: 'product-level@example.com')
+
+      expect(PallasTrade::BackInStockMailer).to receive(:back_in_stock).with(sku_sub).and_return(double(deliver_later: true))
+      expect(PallasTrade::BackInStockMailer).not_to receive(:back_in_stock).with(satisfy { |s| s.variant_id != variant.id })
+
+      fire_variant_back_in_stock(variant)
+
+      expect(sku_sub.reload.status).to eq('notified')
+    end
+
+    it 'ignores an unknown variant and does nothing' do
+      expect(PallasTrade::BackInStockMailer).not_to receive(:back_in_stock)
+
+      subscriber.send(:notify_variant_subscribers, double(payload: { 'id' => 'variant_doesnotexist' }))
     end
   end
 end

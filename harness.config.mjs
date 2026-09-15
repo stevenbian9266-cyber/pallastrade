@@ -213,6 +213,12 @@ export default {
         description: 'Admin catalog health specs (issue semantics + filtered products list + banner + navigation consistency)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/catalog_health_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
       },
+      // SKU 级到货订阅（PRD-20260915-catalog-batch-c2-sku-back-in-stock）：variant_id 唯一约束
+      // + 双通道通知（variant.back_in_stock → 该 SKU 订阅者；product.back_in_stock → 历史商品级）+ 后台 SKU 列
+      'back-in-stock-rspec': {
+        description: 'Back-in-stock subscription specs (SKU-level subscriptions, split notification channels, admin SKU column)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/back_in_stock_subscription_spec.rb spec/jobs/pallastrade/back_in_stock_subscriber_spec.rb spec/requests/api/v3/store/back_in_stock_subscriptions_spec.rb spec/requests/pallastrade/admin/back_in_stock_subscriptions_spec.rb spec/mailers/pallastrade/back_in_stock_mailer_spec.rb'],
+      },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {
         description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',

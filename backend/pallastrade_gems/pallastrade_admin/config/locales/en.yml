@@ -5,6 +5,7 @@ en:
   pallastrade:
     redirects: Redirects
     emails: Emails
+    variant: Variant
     blog: Blog
     back_in_stock_subscriptions: Back in Stock Subscriptions
     abandoned_cart_notifications: Abandoned Cart Notifications

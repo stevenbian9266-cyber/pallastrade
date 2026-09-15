@@ -209,7 +209,12 @@ export function ProductDetails({
               Pre-order / backorder stay purchasable and must not trade a sale
               for an email address. */}
           {availability === "out_of_stock" && (
-            <BackInStockNotify productId={product.id} />
+            <BackInStockNotify
+              productId={product.id}
+              variantId={
+                selectedVariant?.id ?? product.default_variant?.id ?? null
+              }
+            />
           )}
 
           {/* Variant Picker */}

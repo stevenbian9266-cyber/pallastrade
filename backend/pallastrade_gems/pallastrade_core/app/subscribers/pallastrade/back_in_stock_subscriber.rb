@@ -1,30 +1,53 @@
 # frozen_string_literal: true
 
 module PallasTrade
-  # Sends back-in-stock notifications when a product comes back in stock.
+  # Sends back-in-stock notifications.
   #
-  # The `product.back_in_stock` event is published by `StockMovement::CustomEvents`
-  # when a product transitions from out-of-stock → in-stock. We scan active
-  # subscriptions for all of the product's variants, send an email and mark each
-  # subscription as notified (idempotent — a subscription never fires twice).
+  # Batch C-2 (PRD-20260915-catalog-batch-c2-sku-back-in-stock) splits the two
+  # audiences so nobody is emailed about the wrong SKU:
+  #
+  # - `variant.back_in_stock` (published by `StockMovement::CustomEvents` with the
+  #   variant that became buyable) → only the subscriptions for that variant.
+  # - `product.back_in_stock` (the product as a whole is back) → the legacy
+  #   product-level subscriptions (`variant_id` IS NULL) only, because SKU
+  #   subscribers are served by their own event.
+  #
+  # Each subscription is marked notified after send, so it never fires twice.
   class BackInStockSubscriber < PallasTrade::Subscriber
-    subscribes_to 'product.back_in_stock'
+    subscribes_to 'product.back_in_stock', 'variant.back_in_stock'
 
-    on 'product.back_in_stock', :notify_subscribers
+    on 'product.back_in_stock', :notify_product_subscribers
+    on 'variant.back_in_stock', :notify_variant_subscribers
 
     private
 
-    def notify_subscribers(event)
+    def notify_product_subscribers(event)
       product = PallasTrade::Product.find_by_param(event.payload['id'])
       return unless product
 
-      PallasTrade::BackInStockSubscription
-        .where(product_id: product.id)
-        .active
-        .includes(:product)
-        .find_each do |subscription|
-          notify_subscription(subscription)
-        end
+      notify_each(
+        PallasTrade::BackInStockSubscription
+          .where(product_id: product.id)
+          .product_level
+          .active
+          .includes(:product, :variant)
+      )
+    end
+
+    def notify_variant_subscribers(event)
+      variant = PallasTrade::Variant.find_by_prefix_id(event.payload['id'])
+      return unless variant
+
+      notify_each(
+        PallasTrade::BackInStockSubscription
+          .for_variant(variant.id)
+          .active
+          .includes(:product, :variant)
+      )
+    end
+
+    def notify_each(subscriptions)
+      subscriptions.find_each { |subscription| notify_subscription(subscription) }
     end
 
     def notify_subscription(subscription)

@@ -7,7 +7,8 @@ module PallasTrade
     # Events:
     # - product.out_of_stock: Product has no stock left for any variant
     # - product.back_in_stock: Product was out of stock and now has stock again
-    #
+    # - variant.back_in_stock: One SKU went from out of stock to buyable again
+    #   (Batch C-2 — carry the variant so only its subscribers are notified)
     module CustomEvents
       extend ActiveSupport::Concern
 
@@ -21,13 +22,27 @@ module PallasTrade
         return yield unless PallasTrade::Events.enabled?
 
         the_product = product
+        the_variant = stock_item.variant
         product_was_in_stock = the_product.any_variant_in_stock_or_backorderable?
+        variant_was_in_stock = the_variant.in_stock_or_backorderable?
 
         yield
 
         # Reload to get fresh stock data
         the_product.reload
+        the_variant.reload
         product_now_in_stock = the_product.any_variant_in_stock_or_backorderable?
+        variant_now_in_stock = the_variant.in_stock_or_backorderable?
+
+        if !variant_was_in_stock && variant_now_in_stock
+          the_product.publish_event(
+            'variant.back_in_stock',
+            {
+              'id' => the_variant.prefixed_id,
+              'product_id' => the_product.prefixed_id
+            }
+          )
+        end
 
         if product_was_in_stock && !product_now_in_stock
           the_product.publish_event('product.out_of_stock')
