@@ -3117,6 +3117,31 @@
         "contractSpec": 15,
         "hostOverridePath": 10
       }
+    },
+    {
+      "id": "GS-126",
+      "name": "Checkout stays single-page, but the server contract is two-stage: prepare the order quote, then pay against it",
+      "description": "PRD-20260915-checkout-单页两段语义: the cart page must never charge against a client-side estimate, because the cart carries no money columns and tax/shipping are produced by the order. The storefront first prepares the order (carts.update + carts.submit) to obtain the authoritative Order quote, shows an in-page confirmation with shipping / discounts / amount due, and only then starts the transaction on that order with expected_checkout_version and expected_price_version. The combined cart_id form stays for wallet express, and the prepared order is remembered so retries never re-submit the cart.",
+      "mustDo": [
+        "Add a prepare step (POST /api/checkout/prepare) that runs carts.update + carts.submit and returns { order_id, order, quote } without creating any PaymentSession or Transaction",
+        "Render the authoritative order amounts (shipping / discounts / amount due, display_* for rendering only) in an in-page confirmation block before any pay request is issued",
+        "Send the pay request against the prepared order (order_id + payment_method_id + session_required + expected_checkout_version / expected_price_version) instead of re-submitting the cart",
+        "Remember the prepared order so retries -- including the automatic reservation retry -- target the same order instead of creating a second one",
+        "Keep the wallet/express combined form and the existing cart_id payload working, and degrade to a single-click payment when prepare returns no authoritative quote"
+      ],
+      "mustNotDo": [
+        "Charge or start a transaction before the user has seen the Order-authoritative amount",
+        "Re-submit the cart on retry, or create a second order when the shopper retries payment",
+        "Bypass the existing quote-drift contract: drift must stay in-page with no automatic charge",
+        "Render an empty confirmation block with placeholder amounts when no quote is available"
+      ],
+      "scoring": {
+        "twoStageContract": 30,
+        "authoritativeAmountConsent": 25,
+        "noDuplicateSubmitOnRetry": 20,
+        "walletAndLegacyCompatibility": 15,
+        "quoteDriftInPage": 10
+      }
     }
   ]
 }
