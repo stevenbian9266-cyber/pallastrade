@@ -1,20 +1,15 @@
 "use server";
 
-// P0-7 (FR-070/FR-071): LEGACY / COMPATIBILITY ONLY — Cart 域 Express 支付入口。
-// Canonical = Order 域（submit 后 orders.paymentSessions）。后端已在
-// carts payment_sessions create 记录 payment.legacy_flow.used 用于统计。
-// ⛔ DO NOT ADD NEW PAYMENT FEATURES TO LEGACY FLOW.
-import type { AddressParams, Cart } from "@pallastrade/sdk";
+// P0-7 (FR-070/FR-071) → PRD-20260915-checkout B4：Cart 域 Express 入口已 **canonicalize**——
+// 会话创建/完成不再经过 `carts.paymentSessions.*`（钱包确认改走 `lib/checkout/express-canonical.ts`
+// 的同源 BFF：carts.update → submit → orders.transactions.create）。
+// 本文件只保留**车阶段**（提交前）的准备动作：地址解析与配送费率选择。
+import type { Cart } from "@pallastrade/sdk";
 import {
   getCheckoutOrder,
   selectDeliveryRate,
   updateOrderAddresses,
 } from "@/lib/data/checkout";
-import {
-  completeCheckoutOrder,
-  completeCheckoutPaymentSession,
-  createCheckoutPaymentSession,
-} from "@/lib/data/payment";
 import { actionResult } from "@/lib/data/utils";
 
 export interface ExpressCheckoutPartialAddress {
@@ -76,63 +71,6 @@ export async function expressCheckoutSelectRates(
   }, "Failed to select shipping rates");
 }
 
-export async function expressCheckoutPreparePayment(
-  cartId: string,
-  params: {
-    email: string;
-    shipAddress: AddressParams;
-    billAddress: AddressParams;
-  },
-): Promise<{ success: true; cart: Cart } | { success: false; error: string }> {
-  return actionResult(async () => {
-    const result = await updateOrderAddresses(cartId, {
-      email: params.email,
-      shipping_address: {
-        ...params.shipAddress,
-        quick_checkout: true,
-      },
-      billing_address: {
-        ...params.billAddress,
-        quick_checkout: true,
-      },
-    });
-
-    if (!result.success) {
-      throw new Error(result.error);
-    }
-
-    return { cart: result.cart };
-  }, "Failed to prepare payment");
-}
-
-export async function expressCheckoutCreateSession(
-  cartId: string,
-  paymentMethodId: string,
-  gatewayPaymentMethodId: string,
-): ReturnType<typeof createCheckoutPaymentSession> {
-  return createCheckoutPaymentSession(cartId, paymentMethodId, {
-    stripe_payment_method_id: gatewayPaymentMethodId,
-  });
-}
-
-export async function expressCheckoutFinalize(
-  cartId: string,
-  sessionId: string,
-): Promise<
-  { success: true; order: unknown } | { success: false; error: string }
-> {
-  return actionResult(async () => {
-    const sessionResult = await completeCheckoutPaymentSession(
-      cartId,
-      sessionId,
-    );
-    if (!sessionResult.success) {
-      throw new Error(sessionResult.error);
-    }
-
-    const orderResult = await completeCheckoutOrder(cartId);
-    // CORE-P5-5：completeCheckoutOrder 恒 success；order 为 null = 仍在处理/未知，
-    // 由调用方（ExpressCheckoutButton）以 success + null 处理并跳结果页轮询。
-    return { order: orderResult.order };
-  }, "Failed to finalize order");
-}
+// 说明：`expressCheckoutPreparePayment` / `expressCheckoutCreateSession` /
+// `expressCheckoutFinalize` 已于 B4 删除——地址/邮箱由 canonical start 的
+// `checkout` 负载一并写入，会话创建/完成由 BFF（`orders.transactions` 链）承担。

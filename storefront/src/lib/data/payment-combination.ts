@@ -46,19 +46,23 @@ export async function getPaymentCombination(id: string) {
 
 /**
  * Completes the combined-payment session (P5).
- * PATCH /api/v3/store/carts/:cart_id/payment_sessions/:id/complete
- * — when the session belongs to a combination, the backend completes all member
- * orders (PaymentCombinations::Complete).
+ *
+ * PRD-20260915-checkout B4 FR-010：改走 **Order 域** `orders.paymentSessions.complete`
+ * —— 后端 `Store::Orders::PaymentSessionsController#complete` 内置组合分支
+ * （TXN-P2：txn 化组合 → `Transactions::OnPaymentSuccess`；legacy 组合 → `Complete` 适配器），
+ * 因此不再需要 legacy `carts.paymentSessions.complete`（§45 矩阵 /carts/:id/payment_sessions）。
+ *
+ * @param orderId 组合主订单（`session.order_id`，会话挂在 primary order 上）
  */
 export async function completeCombinationSession(
-  cartId: string,
+  orderId: string,
   sessionId: string,
   params?: { session_result?: string },
 ) {
   return actionResult(async () => {
     const session = await withAuthRefresh(async (options) => {
-      return getClient().carts.paymentSessions.complete(
-        cartId,
+      return getClient().orders.paymentSessions.complete(
+        orderId,
         sessionId,
         params,
         options,

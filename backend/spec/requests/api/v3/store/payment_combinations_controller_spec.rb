@@ -123,4 +123,36 @@ RSpec.describe 'Payment combinations (Store API)', type: :request do
       expect(order2.reload).to be_completed
     end
   end
+
+  # PRD-20260915-checkout-checkout-收尾收敛-b4-express-钱包-canonicalize-legacy-会话-transacti AC-012：
+  # 钱包/收银台改走 **Order 域**完成端点（§45 矩阵 /carts/:id/payment_sessions 的 canonical 目标）。
+  # 控制器内置组合分支（txn 组合 → Transactions::OnPaymentSuccess；legacy 组合 → Complete 适配器），
+  # 本规格钉住该路径，避免 storefront 改道后才发现服务端未覆盖组合。
+  describe 'PATCH /api/v3/store/orders/:order_id/payment_sessions/:id/complete (combination, canonical)' do
+    # Order 域解析排除 legacy checkout 态（cart/address/delivery/payment/confirm）→
+    # 用 pending（新流程已提交的 or_ 订单，与收银台实际场景一致）。
+    def submitted_unpaid_order
+      order = unpaid_order
+      order.update_columns(state: 'pending', completed_at: nil)
+      PallasTrade::OrderUpdater.new(order).update
+      order.reload
+    end
+
+    it 'completes every member order through the Order-domain endpoint' do
+      order1 = submitted_unpaid_order
+      order2 = submitted_unpaid_order
+      combination = PallasTrade::Payments::PaymentCombinations::Create.call(
+        store: store, customer: user, orders: [order1, order2], payment_method: payment_method
+      ).value
+      session = combination.payment_session
+
+      patch "/api/v3/store/orders/#{order1.prefixed_id}/payment_sessions/#{session.prefixed_id}/complete",
+            headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(combination.reload.status).to eq('succeeded')
+      expect(order1.reload).to be_completed
+      expect(order2.reload).to be_completed
+    end
+  end
 end

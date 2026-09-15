@@ -18,9 +18,14 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  expressCheckoutCreateSession,
-  expressCheckoutFinalize,
-  expressCheckoutPreparePayment,
+  completeExpressCheckout,
+  expressClientSecret,
+  expressErrorRoute,
+  expressNoticeFor,
+  expressResultUrl,
+  startExpressCheckout,
+} from "@/lib/checkout/express-canonical";
+import {
   expressCheckoutResolveShipping,
   expressCheckoutSelectRates,
 } from "@/lib/data/express-checkout-flow";
@@ -247,18 +252,6 @@ function ExpressCheckoutInner({
           return;
         }
 
-        const prepareResult = await expressCheckoutPreparePayment(orderId, {
-          email,
-          shipAddress: buildPallasTradeAddress(shippingName, shipAddr, phone),
-          billAddress: buildPallasTradeAddress(billingName, billAddr, phone),
-        });
-
-        if (!prepareResult.success) {
-          fail("invalid_shipping_address", prepareResult.error);
-          return;
-        }
-        const advancedOrder = prepareResult.cart;
-
         const submitResult = await elements.submit();
         if (submitResult.error) {
           fail(
@@ -268,19 +261,7 @@ function ExpressCheckoutInner({
           return;
         }
 
-        const { error: pmError, paymentMethod } =
-          await stripe.createPaymentMethod({ elements });
-        if (pmError || !paymentMethod) {
-          fail(
-            "invalid_payment_data",
-            pmError?.message || "Failed to create payment method",
-          );
-          return;
-        }
-
-        const orderPaymentMethods =
-          advancedOrder?.payment_methods ?? cart.payment_methods;
-        const sessionPaymentMethod = orderPaymentMethods?.find(
+        const sessionPaymentMethod = cart.payment_methods?.find(
           (pm) => pm.session_required,
         );
         if (!sessionPaymentMethod) {
@@ -288,43 +269,64 @@ function ExpressCheckoutInner({
           return;
         }
 
-        const sessionResult = await expressCheckoutCreateSession(
-          orderId,
-          sessionPaymentMethod.id,
-          paymentMethod.id,
-        );
+        // PRD-20260915-checkout B4 FR-001：地址/邮箱并入 canonical start body；
+        // BFF 内部完成 carts.update → 幂等 submit → orders.transactions.create
+        // （Transactions::Start → StockReserve → PaymentSessions::Start）。
+        const startResult = await startExpressCheckout({
+          cart_id: cart.id,
+          payment_method_id: sessionPaymentMethod.id,
+          payment_mode: "payment_intent",
+          checkout: {
+            email: email || undefined,
+            shipping_address: buildPallasTradeAddress(
+              shippingName,
+              shipAddr,
+              phone,
+            ),
+            billing_address: buildPallasTradeAddress(
+              billingName,
+              billAddr,
+              phone,
+            ),
+            billing_mode: "custom",
+          },
+        });
 
-        if (!sessionResult.success || !sessionResult.session) {
-          fail(
-            "fail",
-            !sessionResult.success
-              ? sessionResult.error
-              : "Failed to create payment session",
-          );
+        if (!startResult.ok) {
+          // FR-005：已收款/处理中 → 结果页（禁止重付）；其余 canonical 错误 → 抽屉内提示。
+          if (expressErrorRoute(startResult.error.code) === "recovery") {
+            stripePaymentConfirmed = true; // 已发生资金事实：不得再报 paymentFailed
+            const notice = expressNoticeFor(startResult.error.code);
+            router.push(
+              `${expressResultUrl(window.location.origin, basePath, orderId)}?notice=${notice ?? "recovery"}`,
+            );
+            return;
+          }
+          fail("fail", startResult.error.message);
           return;
         }
 
-        const clientSecret = sessionResult.session.external_data
-          ?.client_secret as string | undefined;
-        const sessionId = sessionResult.session.id;
+        const canonicalOrderId = startResult.data.order.id;
+        const session = startResult.data.session;
+        const clientSecret = expressClientSecret(session);
+        const sessionId = session?.id ?? null;
 
-        if (!clientSecret) {
+        if (!sessionId || !clientSecret) {
           fail("fail", "Failed to initialize payment");
           return;
         }
 
-        const returnUrl = `${window.location.origin}${basePath}/confirm-payment/${orderId}?session=${sessionId}`;
-        // PALLAS-CUSTOM (2026-08-29, PRD-20260829-payments): after migrating to
-        // Checkout Sessions, the client_secret is a `cs_` session secret and
-        // `confirmParams.payment_method` is no longer accepted — the payment
-        // method comes from the Elements (ExpressCheckoutElement already
-        // created it via createPaymentMethod + elements.submit()).
+        // FR-004：return_url 指向 canonical 结果页（不再进 legacy /confirm-payment）
+        const returnUrl = expressResultUrl(
+          window.location.origin,
+          basePath,
+          canonicalOrderId,
+          sessionId,
+        );
         const { error: confirmError } = await stripe.confirmPayment({
           elements,
           clientSecret,
-          confirmParams: {
-            return_url: returnUrl,
-          },
+          confirmParams: { return_url: returnUrl },
           redirect: "if_required",
         });
 
@@ -334,27 +336,10 @@ function ExpressCheckoutInner({
         }
         stripePaymentConfirmed = true;
 
-        try {
-          const finalizeResult = await expressCheckoutFinalize(
-            orderId,
-            sessionId,
-          );
-          if (!finalizeResult.success) {
-            console.warn(
-              "Express checkout finalization failed (payment confirmed, backend will reconcile):",
-              finalizeResult.error,
-            );
-          } else if (finalizeResult.order) {
-            const { cacheCompletedOrder } = await import(
-              "@/lib/utils/completed-order-cache"
-            );
-            cacheCompletedOrder(orderId, finalizeResult.order);
-          }
-        } catch (_completeErr) {
-          /* non-blocking — backend will reconcile */
-        }
+        // FR-003/FR-007：best-effort 驱动服务端完成（失败不阻塞，webhook 兜底）
+        await completeExpressCheckout(canonicalOrderId, sessionId);
 
-        router.push(`${basePath}/order-placed/${orderId}`);
+        router.push(returnUrl);
         try {
           await onComplete();
         } catch (_onCompleteErr) {
