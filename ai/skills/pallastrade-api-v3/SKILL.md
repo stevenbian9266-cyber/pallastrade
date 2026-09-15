@@ -397,6 +397,18 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
 - 后台写入口不走 API：`/admin/payment_methods/:id` 表单（选项化页签 + Test connection，见 `pallastrade-admin`）；
   OpenAPI schemas 由 `scripts/ci/contracts.sh`（typelizer + `rake api:docs:schemas`）生成，勿手改。
 
+### Payment availability scope (D8, 2026-09-15, PRD-20260915-payments-d8)
+
+支付适用范围（入口级 `rule_set`：market / country / zone / currency）同样是 **additive** 契约增量，**无端点增删**：
+
+- Admin `PaymentMethodSerializer#options[]` 新增：
+  - `rule_set` — 归一后的规则集（`{ match, include[], exclude[] }`；无规则 = `null`）
+  - `scope_summary` — 后台可读摘要（i18n；如 `Markets: EU · Currencies: EUR`，排除项带 `Exclude` 前缀）
+- Store 侧**请求/响应形状不变**：范围过滤在服务端（`Order#payment_methods`），被拒入口不出现在列表；
+  唯一新增是失败码——`POST /orders/{order_id}/payment_sessions`（及 legacy cart 同形端点）422
+  `payment_option_not_available`（入口在 Start 被范围/`frontend_visible?` 判不可用），store.yaml 两端点已补示例。
+- 前台消费：收到该码 → 刷新支付方式列表 + 提示重选（**不得**拿旧列表重试）。
+
 ### Admin promotions — writable/readable fields (2026-09-11 batch6 cleanup)
 
 `path` (and the never-exposed `advertise`) are gone from the Admin promotion contract: the v3 admin
@@ -565,6 +577,8 @@ Admin API **只读**端点（scope `read_orders`/ability read；**扁平 seriali
 **零新增调用**：`cart_` canonical 流程是唯一允许的前端路径（B4 已清掉最后一个 `carts.paymentSessions` 消费者）；`storefront` 的守护测试 `src/lib/data/__tests__/legacy-payment-sessions-guard.test.ts` 机器化该约束（零 `carts.{paymentSessions,payments,complete}`；其余四行只允许出现在白名单文件）。
 
 ## Changelog (P0 Payment, 2026-09-03)
+
+- D8 适用范围 (2026-09-15, PRD-20260915-payments-d8): admin `options[]` 增 `rule_set`/`scope_summary`（typelizer → SDK 生成类型）；store 侧新增失败码 `payment_option_not_available`（两个 payment_sessions 创建端点 422 示例）；无端点增删。
 
 - B5 legacy 治理 (2026-09-15, PRD-20260915-checkout-…-b5-…): 六行 legacy matrix 补齐三件套——`LegacyFlowObservable` 统一字段（`legacy_identity`/`action`/`deprecated`/`canonical_successor`）+ legacy 身份注入 `Deprecation`/`Warning`/`Link` 三头 + `carts/payment_sessions` 纳入 concern（**保留** `payment.legacy_flow.used`）+ `store.yaml`/SDK 弃用标注 + 退役阀值（连绞 30 天为 0 可立项删除）；storefront 守护测试扩到六行。
 

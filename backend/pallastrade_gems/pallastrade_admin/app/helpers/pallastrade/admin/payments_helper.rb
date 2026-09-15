@@ -38,9 +38,42 @@ module PallasTrade
             position: option&.[]('position').to_i.nonzero? || index + 1,
             frontend_kind: option&.[]('frontend_kind').presence ||
                            entry['frontend_kind'].presence ||
-                           payment_method.default_option_frontend_kind
+                           payment_method.default_option_frontend_kind,
+            # PALLAS-CUSTOM: D8（PRD-20260915-payments-d8 切片2）—— 适用范围（include 侧 4 维度）
+            scope_form_values: payment_option_scope_form_values(payment_method, option&.[]('rule_set')),
+            scope_summary: payment_method.payment_option_scope_summary(kind)
           }
         end
+      end
+
+      # PALLAS-CUSTOM: D8（切片2）—— 范围编辑器数据源：市场 / 国家（市场国家集合）/ Zone /
+      # 币种（店铺支持币种）；市场与 Zone 提交 prefixed ID，国家/币种提交 ISO 码。
+      def payment_option_scope_sources(payment_method)
+        store = payment_method.store
+
+        {
+          market: (store&.markets || PallasTrade::Market.none).order(:name).map { |market| [market.name, market.prefixed_id] },
+          country: (store&.countries_from_markets || PallasTrade::Country.none).order(:name).map { |country| [country.name, country.iso] },
+          zone: PallasTrade::Zone.order(:name).map { |zone| [zone.name, zone.prefixed_id] },
+          currency: Array(store&.supported_currencies_list).map { |code| [code.to_s.upcase, code.to_s.upcase] }
+        }
+      end
+
+      # 已存规则（raw 值）→ 表单字面量（市场/Zone 为 prefixed ID，国家/币种为 ISO 码）
+      def payment_option_scope_form_values(payment_method, rule_set)
+        selections = { market: [], country: [], zone: [], currency: [] }
+        Array(PallasTrade::Payments::Availability::RuleSet.normalize(rule_set)&.[]('include')).each do |condition|
+          dimension = condition['dimension'].to_sym
+          next unless selections.key?(dimension)
+
+          selections[dimension].concat(Array(condition['values']).map(&:to_s))
+        end
+
+        selections[:market] = selections[:market].filter_map { |id| payment_method.store&.markets&.find_by(id: id)&.prefixed_id }
+        selections[:zone] = selections[:zone].filter_map { |id| PallasTrade::Zone.find_by(id: id)&.prefixed_id }
+        selections[:country] = selections[:country].map(&:upcase)
+        selections[:currency] = selections[:currency].map(&:upcase)
+        selections
       end
 
       # PALLAS-CUSTOM: PAY-OPT-1（切片3）—— 凭证脱敏（FR-006）：已保存的 `:password` 型凭证

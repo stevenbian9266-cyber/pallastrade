@@ -4846,6 +4846,16 @@ paths:
                   source_required: true
               schema:
                 "$ref": "#/components/schemas/PaymentSession"
+        '422':
+          description: payment method is outside the configured scope (D8 availability rules)
+          content:
+            application/json:
+              example:
+                error:
+                  code: payment_option_not_available
+                  message: Payment method is not available for this order
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
       requestBody:
         content:
           application/json:
@@ -6231,6 +6241,10 @@ paths:
           description: session could not be created
           content:
             application/json:
+              example:
+                error:
+                  code: payment_option_not_available
+                  message: Payment method is not available for this order
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
   "/api/v3/store/orders/{order_id}/payment_sessions/{id}":

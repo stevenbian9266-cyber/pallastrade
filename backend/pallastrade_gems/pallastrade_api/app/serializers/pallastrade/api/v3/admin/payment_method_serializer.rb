@@ -9,7 +9,8 @@ module PallasTrade
                    position: :number,
                    optionized: :boolean,
                    options: 'Array<{ kind: string; name: string; frontend_kind: string; ' \
-                            'active: boolean; position: number }>',
+                            'active: boolean; position: number; ' \
+                            'rule_set: Record<string, unknown> | null; scope_summary: string }>',
                    metadata: 'Record<string, unknown>',
                    preferences: 'Record<string, unknown>',
                    preference_schema: "Array<{ key: string; type: string; default: unknown }>"
@@ -34,7 +35,10 @@ module PallasTrade
                 name: option['display_name'].presence || option['kind'],
                 frontend_kind: option['frontend_kind'],
                 active: option['active'] != false,
-                position: option['position'].to_i.zero? ? index : option['position'].to_i
+                position: option['position'].to_i.zero? ? index : option['position'].to_i,
+                # PALLAS-CUSTOM: D8（PRD-20260915-payments-d8 切片2）—— 入口适用范围（归一后）与后台摘要
+                rule_set: PallasTrade::Payments::Availability::RuleSet.normalize(option['rule_set']),
+                scope_summary: payment_method.payment_option_scope_summary(option['kind'])
               }
             end
           end

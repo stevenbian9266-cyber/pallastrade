@@ -450,6 +450,37 @@ module PallasTrade
       ]
     end
 
+    # PALLAS-CUSTOM: D8（PRD-20260915-payments-d8 切片1）—— 入口「适用范围」读取（业务方案 §66.2）。
+    # @return [Hash, nil] 归一后的 rule_set；nil = 不限（无规则 / 非法配置一律视同不限）
+    def payment_option_rule_set(kind)
+      option = payment_option_for(kind)
+      return nil if option.nil?
+
+      PallasTrade::Payments::Availability::RuleSet.normalize(option['rule_set'])
+    end
+
+    # 后台摘要（labels: (dimension, value) → 展示名 的可选解析器；缺省用 default_option_scope_labels）。
+    # @return [String] 如 "市场: EU · 币种: EUR"；无规则 → "全部"
+    def payment_option_scope_summary(kind, labels: nil)
+      option = payment_option_for(kind)
+      return PallasTrade::Payments::Availability::RuleSet.summary(nil) if option.nil?
+
+      PallasTrade::Payments::Availability::RuleSet.summary(
+        option['rule_set'], labels: labels || default_option_scope_labels
+      )
+    end
+
+    # D8（切片2）—— 摘要默认展示名：market/zone 回记录名（找不到回原值），country/currency 本就是展示值。
+    def default_option_scope_labels
+      lambda do |dimension, value|
+        case dimension
+        when 'market' then store&.markets&.find_by(id: value)&.name || value
+        when 'zone' then PallasTrade::Zone.find_by(id: value)&.name || value
+        else value
+        end
+      end
+    end
+
     # PALLAS-CUSTOM: PAY-OPT-1（切片3）—— 凭证体检钩子（Test connection 的远端探测）。
     # provider gem 可选覆盖，执行一次**只读**探测（不得产生资金 / 配置副作用；不得落明文凭证）。
     # 契约：

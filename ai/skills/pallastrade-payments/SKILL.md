@@ -1229,7 +1229,32 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
   Stripe 覆写为 `{ supported: true, evidence_submission:, accept_dispute:, fee_capture:, evidence_text_keys:, evidence_file_keys: }`；
   控制台只读卡片按矩阵渲染，不支持时给出原因且不渲染写表单。
 
+## Payment availability scope —— 适用范围引擎（D8 首版, 2026-09-15；PRD-20260915-payments-d8）
+
+入口（PaymentOption）级可用范围，栖于入口层 `metadata['options'][i]['rule_set']`（业务方案 §66）：
+
+- **规则集**：`{ match: "all"|"any", include: [cond], exclude: [cond] }`，`cond = { dimension, operator, values }`；
+  **维度上线 4/14**：`market` / `country` / `zone` / `currency`（§66.1 余下 10 个维度待续）。
+  归一在 `PallasTrade::Payments::Availability::RuleSet`（读/写都过一遍）：market/zone 用**原始 ID**、
+  country/currency 用**大写 ISO**；非法维度/算子/空 values 丢失；`exclude` 命中即排除；**无规则 = 全局可用**。
+- **求值**：`Availability::Resolver` 组合「Provider 级 scope（`frontend` / `back_end`）+ 入口级 `rule_set` +
+  目录收窄（provider 声明 `currencies`/国家时）」；`Context` 从订单取四维上下文（country 由国家 + 州成员
+  推导、zone 含 `order.market.tax_zone`），`Evaluator` 返回 `{ allowed:, reasons: [{dimension, operator,
+  values, observed, outcome}] }`（**可解释**，排障可读）。
+- **同源硬约束（§66.5）**：`Order#payment_methods`（前台/后台收集）与 `PaymentSessions::Start`（入口级门禁）
+  **必须**用同一份 `Resolver` 求值——禁止任何一侧自算（『选得上、付不了』的根因防线）。
+- **失败语义**：Start 判不可用 → 422 `payment_option_not_available`（**不建会话**）；前台收到该码 →
+  刷新支付方式列表 + 提示重选（不得拿旧列表重试）。
+- **零回归**：无 `rule_set` 的 provider / 未选项化 provider / 无 market 上下文的店铺 → 行为与 D8 前一致。
+- **回归**：`harness verify d8-availability-rspec`。
+
 ## Changelog (P0 Payment, 2026-09-03)
+
+- D8 (2026-09-15, PRD-20260915-payments-d8): Payment availability scope —— 入口级 `rule_set`
+  （market/country/zone/currency 首版 4 维度）+ `Payments::Availability::{RuleSet,Context,Evaluator,Resolver}`
+  + `Order#payment_methods` 三处投影接入 + `PaymentSessions::Start` 入口级同源门禁（422
+  `payment_option_not_available`，不建会话）+ 后台「适用范围」编辑/摘要 + admin API `options[].rule_set` /
+  `scope_summary`。零 migration（`private_metadata` additive）。
 
 - DSP-P7-8 (2026-09-13, PRD-20260913-payments-dsp-p7-8): Dispute 危险操作与证据提交 —— provider 写契约
   （`submit_dispute_evidence` / `accept_dispute`，capability-gated）+ 证据目录（Stripe 16 文本 + 8 文件键）+

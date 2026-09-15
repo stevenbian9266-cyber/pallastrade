@@ -106,7 +106,65 @@ module PallasTrade
                              @object.default_option_frontend_kind
         }
         option['display_name'] = display_name if display_name.present?
+
+        rule_set = merged_payment_option_rule_set(entry, existing_option)
+        option['rule_set'] = rule_set if rule_set.present?
         option
+      end
+
+      # PALLAS-CUSTOM: D8（PRD-20260915-payments-d8 切片2）—— 后台「适用范围」写入口。
+      #
+      # 表单结构：payment_method[payment_options][<kind>][rule_set][<dimension>][]（多选值）。
+      #   - v1 仅管理 include 条件；已有的 exclude 条件**原样保留**（不做排除 UI，摘要列可见）；
+      #   - prefixed ID（mkt_ / zone_）解码为 raw id，并以**当前 provider 所属店铺**做作用域校验；
+      #   - 国家（ISO2 白名单）/ 币种（当前店铺支持币种）校验；非法值静默丢弃；
+      #   - 无有效条件 → 删除 rule_set（= 不限，零回归）。
+      def merged_payment_option_rule_set(entry, existing_option)
+        existing = existing_option&.[]('rule_set')
+        submitted = entry[:rule_set]
+        return PallasTrade::Payments::Availability::RuleSet.normalize(existing) unless submitted.respond_to?(:[])
+
+        existing_exclude = Array(PallasTrade::Payments::Availability::RuleSet.normalize(existing)&.[]('exclude'))
+        include_conditions = rule_scope_sources.filter_map do |dimension, scope|
+          values = Array(submitted[dimension]).map { |value| value.to_s.strip }.reject(&:blank?).uniq
+          normalized = values.filter_map { |value| decode_rule_value(dimension, value, scope) }
+          next if normalized.empty?
+
+          { 'dimension' => dimension, 'operator' => 'in', 'values' => normalized }
+        end
+
+        PallasTrade::Payments::Availability::RuleSet.normalize(
+          'match' => 'all',
+          'include' => include_conditions,
+          'exclude' => existing_exclude
+        )
+      end
+
+      def rule_scope_sources
+        {
+          'market' => @object.store&.markets,
+          'zone' => PallasTrade::Zone.all,
+          'country' => nil,
+          'currency' => nil
+        }
+      end
+
+      def decode_rule_value(dimension, value, scope)
+        case dimension
+        when 'market', 'zone'
+          scope&.find_by_prefix_id(value)&.id&.to_s
+        when 'country'
+          iso = value.upcase
+          iso if PallasTrade::Country.exists?(iso: iso)
+        when 'currency'
+          currency = value.upcase
+          currency if rule_currency_whitelist.include?(currency)
+        end
+      end
+
+      # 币种白名单 = 当前店铺支持的币种（避免配出永远不可用的入口）
+      def rule_currency_whitelist
+        @rule_currency_whitelist ||= Array(@object.store&.supported_currencies_list).map { |code| code.to_s.upcase }
       end
 
       # 只写观测值：update_columns 不触发 provider 校验（如 Stripe 的密钥校验会发远端请求）。

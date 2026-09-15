@@ -349,4 +349,56 @@ RSpec.describe PallasTrade::PaymentSessions::Start, type: :service do
       expect(result.value.external_data['quote_refreshed']).to eq(true)
     end
   end
+
+  # PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-004
+  describe 'D8 availability（适用范围）同源复算' do
+    def method_with_rules(options)
+      create(:bogus_payment_method, store: store, active: true, display_on: 'both',
+                                    metadata: { 'optionized' => true, 'options' => options })
+    end
+
+    def currency_restricted(values: %w[EUR], kind: 'card')
+      method_with_rules([
+                          { 'kind' => kind, 'active' => true, 'position' => 1,
+                            'rule_set' => { 'include' => [{ 'dimension' => 'currency', 'operator' => 'in', 'values' => values }] } }
+                        ])
+    end
+
+    it 'rejects a provider whose every entry is excluded by availability rules (no session created)' do
+      restricted = currency_restricted
+
+      result = described_class.call(order: order, payment_method: restricted, external_data: {})
+
+      expect(result).to be_failure
+      expect(result.error.value).to include(code: 'payment_option_not_available')
+      expect(order.payment_sessions).to be_empty
+    end
+
+    it 'rejects an option_kind excluded by availability rules even when the option is active' do
+      restricted = currency_restricted
+
+      result = described_class.call(order: order, payment_method: restricted, external_data: {}, option_kind: 'card')
+
+      expect(result).to be_failure
+      expect(result.error.value).to include(code: 'payment_option_not_available')
+      expect(order.payment_sessions).to be_empty
+    end
+
+    it 'accepts an option whose rules match the order context' do
+      matching = currency_restricted(values: %w[USD])
+
+      result = described_class.call(order: order, payment_method: matching, external_data: {}, option_kind: 'card')
+
+      expect(result).to be_success
+      expect(order.payment_sessions.count).to eq(1)
+    end
+
+    it 'keeps rule-less providers payable (零回归)' do
+      plain = method_with_rules([{ 'kind' => 'card', 'active' => true, 'position' => 1 }])
+
+      result = described_class.call(order: order, payment_method: plain, external_data: {})
+
+      expect(result).to be_success
+    end
+  end
 end

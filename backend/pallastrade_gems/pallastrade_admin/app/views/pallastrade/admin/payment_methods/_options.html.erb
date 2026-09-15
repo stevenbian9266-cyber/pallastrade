@@ -3,6 +3,7 @@
     由 PallasTrade::Admin::PaymentMethodsController 归一写入 metadata['options'] / ['optionized']。
     勾选任一入口并保存后才置 optionized（未选项化 → 前台仍按单一默认入口，零回归）。 %>
 <% option_rows = payment_option_rows(@payment_method) %>
+<% scope_sources = payment_option_scope_sources(@payment_method) %>
 <% last_check = @payment_method.metadata&.[]('last_test_connection') %>
 
 <div class="card mb-6">
@@ -34,6 +35,8 @@
             <th scope="col"><%= PallasTrade.t('admin.payment_methods.payment_option_display_name') %></th>
             <th scope="col"><%= PallasTrade.t('admin.payment_methods.payment_option_position') %></th>
             <th scope="col"><%= PallasTrade.t('admin.payment_methods.payment_option_frontend_kind') %></th>
+            <%# PALLAS-CUSTOM: D8（PRD-20260915-payments-d8 切片2）—— 入口「适用范围」（市场/国家/Zone/币种） %>
+            <th scope="col"><%= PallasTrade.t('admin.payment_methods.payment_option_scope') %></th>
           </tr>
         </thead>
         <tbody>
@@ -61,6 +64,22 @@
                 <span class="text-gray-600">
                   <%= PallasTrade.t("admin.payment_methods.frontend_kind_#{row[:frontend_kind]}", default: row[:frontend_kind]) %>
                 </span>
+              </td>
+              <td class="whitespace-normal">
+                <div class="text-gray-600 mb-1"><%= row[:scope_summary] %></div>
+                <%# 标记「范围区已渲染并提交」：全空选择也要能清空规则（否则与「未提交」无法区分） %>
+                <%= hidden_field_tag "#{field_name}[rule_set][present]", '1', id: nil %>
+                <div class="grid grid-cols-2 gap-2">
+                  <% %i[market country zone currency].each do |dimension| %>
+                    <label class="block">
+                      <span class="text-gray-600 text-sm"><%= PallasTrade.t("admin.payment_methods.scope_#{dimension}") %></span>
+                      <%= select_tag "#{field_name}[rule_set][#{dimension}][]",
+                                     options_for_select(scope_sources[dimension], row[:scope_form_values][dimension]),
+                                     multiple: true, size: 3, class: 'form-select form-select-sm' %>
+                    </label>
+                  <% end %>
+                </div>
+                <p class="form-text mb-0"><%= PallasTrade.t('admin.payment_methods.scope_help') %></p>
               </td>
             </tr>
           <% end %>

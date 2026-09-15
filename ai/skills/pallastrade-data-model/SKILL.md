@@ -274,6 +274,32 @@ Order → Address (bill_address, ship_address)
 - **正式形态**：D1 后半/D2 落 `pallastrade_payment_options`（provider_id/kind/…unique(provider_id, kind)），
   迁移时每个 provider 生成一条默认 option（业务方案 §74）。
 
+### Payment availability rule_set —— 同一过渡期 metadata 形态（D8, 2026-09-15）
+
+同一份 `private_metadata['options'][i]` **additive** 增加 `rule_set`（无新表、无 migration；正式表仍待 §74 的
+`pallastrade_payment_options`）：
+
+```json
+{
+  "kind": "card", "active": true, "position": 1,
+  "rule_set": {
+    "match": "all",
+    "include": [
+      { "dimension": "market", "operator": "in", "values": ["12"] },
+      { "dimension": "currency", "operator": "in", "values": ["EUR"] }
+    ],
+    "exclude": [ { "dimension": "country", "operator": "in", "values": ["US"] } ]
+  }
+}
+```
+
+- **读归一**：`PaymentMethod#payment_option_rule_set(kind)` / `payment_option_scope_summary(kind, labels:)`；
+  规则集归一在 `PallasTrade::Payments::Availability::RuleSet.normalize`（非法维度/算子/空 values 丢弃；
+  include+exclude 皆空 → `nil` = 全局可用）。
+- **值域**：`market`/`zone` = **原始整型 ID 字符串**（非 prefix ID；prefix 只存在于后台表单与 API 投影）；
+  `country` = 大写 ISO2；`currency` = 大写 ISO 4217。
+- **后台不落库的输入**：capability 之外的维度（如 `amount`）、跨店 market ID、未知国家/币种 —— 写入时丢弃。
+
 ## Customer / User
 
 ```

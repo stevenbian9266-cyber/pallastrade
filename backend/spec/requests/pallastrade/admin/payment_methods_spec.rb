@@ -261,4 +261,192 @@ RSpec.describe 'Admin payment methods option configuration', type: :request do
       expect(payload).to include("#{PallasTrade::Preferences::Masking::TOKEN}#{secret.last(4)}")
     end
   end
+
+  describe 'D8 适用范围（FR-001/003/004/006）' do
+    # PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-005
+    it 'persists the submitted scope as normalized include conditions' do
+      gateway = stripe_gateway
+      market = create(:market, store: store, countries: [create(:country, iso: 'AT')])
+      zone = create(:zone, name: "D8 scope #{SecureRandom.hex(3)}")
+      # 币种白名单 = 店铺支持的币种（有 market 时按 market 币种推导，故动态取值）
+      valid_currency = store.reload.supported_currencies_list.first.iso_code.upcase
+      sign_in_as_superuser
+
+      patch "/admin/payment_methods/#{gateway.prefixed_id}", params: {
+        payment_method: {
+          name: gateway.name,
+          payment_options: option_params(
+            'card' => {
+              'active' => '1',
+              'rule_set' => {
+                'present' => '1',
+                'market' => [market.prefixed_id],
+                'zone' => [zone.prefixed_id],
+                # 小写 ISO / 未知国家 → 归一为大写 / 丢弃
+                'country' => %w[at zz],
+                'currency' => [valid_currency.downcase, 'xyz'],
+                # 未上线维度（amount）不落库：capability 之外的输入一律忽略
+                'amount' => %w[50]
+              }
+            }
+          )
+        }
+      }
+
+      expect(response).to have_http_status(:see_other)
+
+      rule_set = gateway.reload.payment_option_rule_set('card')
+      expect(rule_set['match']).to eq('all')
+      # 前台提交前缀 ID / 小写 ISO，落库必须是原始 ID / 大写 ISO（AC-005 归一）
+      expect(rule_set['include']).to contain_exactly(
+        { 'dimension' => 'market', 'operator' => 'in', 'values' => [market.id.to_s] },
+        { 'dimension' => 'zone', 'operator' => 'in', 'values' => [zone.id.to_s] },
+        { 'dimension' => 'country', 'operator' => 'in', 'values' => %w[AT] },
+        { 'dimension' => 'currency', 'operator' => 'in', 'values' => [valid_currency] }
+      )
+    end
+
+    # PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-005
+    it 'drops a cross-store market id (store scope enforced)' do
+      gateway = stripe_gateway
+      zone = create(:zone, name: "D8 zone #{SecureRandom.hex(3)}")
+      foreign_store = create(:store, code: "d8_foreign_#{SecureRandom.hex(4)}")
+      foreign_market = create(:market, store: foreign_store, countries: [create(:country, iso: 'NZ')])
+      sign_in_as_superuser
+
+      patch "/admin/payment_methods/#{gateway.prefixed_id}", params: {
+        payment_method: {
+          name: gateway.name,
+          payment_options: option_params(
+            'card' => {
+              'active' => '1',
+              'rule_set' => {
+                'present' => '1',
+                'market' => [foreign_market.prefixed_id],
+                'zone' => [zone.prefixed_id]
+              }
+            }
+          )
+        }
+      }
+
+      expect(response).to have_http_status(:see_other)
+
+      rule_set = gateway.reload.payment_option_rule_set('card')
+      expect(rule_set['include']).to contain_exactly(
+        { 'dimension' => 'zone', 'operator' => 'in', 'values' => [zone.id.to_s] }
+      )
+    end
+
+    # PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-006
+    it 'clears the rule when the scope section is submitted empty' do
+      gateway = stripe_gateway(
+        metadata: {
+          'optionized' => true,
+          'options' => [
+            {
+              'kind' => 'card', 'active' => true, 'position' => 1,
+              'rule_set' => { 'include' => [{ 'dimension' => 'currency', 'operator' => 'in', 'values' => %w[EUR] }] }
+            }
+          ]
+        }
+      )
+      sign_in_as_superuser
+
+      patch "/admin/payment_methods/#{gateway.prefixed_id}", params: {
+        payment_method: {
+          name: gateway.name,
+          payment_options: option_params('card' => { 'active' => '1', 'rule_set' => { 'present' => '1' } })
+        }
+      }
+
+      # 全空选择 = 不限：规则被清空（回到全局可用）
+      expect(gateway.reload.payment_option_rule_set('card')).to be_nil
+    end
+
+    # PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-006
+    it 'preserves stored rules when the scope section is not submitted (inline list edits)' do
+      gateway = stripe_gateway(
+        metadata: {
+          'optionized' => true,
+          'options' => [
+            {
+              'kind' => 'card', 'active' => true, 'position' => 1,
+              'rule_set' => { 'include' => [{ 'dimension' => 'currency', 'operator' => 'in', 'values' => %w[EUR] }] }
+            }
+          ]
+        }
+      )
+      sign_in_as_superuser
+
+      patch "/admin/payment_methods/#{gateway.prefixed_id}", params: {
+        payment_method: { name: 'Renamed provider', payment_options: option_params('card' => { 'active' => '1' }) }
+      }
+
+      expect(gateway.reload.payment_option_for('card')['rule_set']).to be_present
+    end
+
+    # PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-005
+    it 'renders the scope editor and the human summary on the edit page' do
+      market = create(:market, store: store, countries: [create(:country, iso: 'AT')])
+      gateway = stripe_gateway(
+        metadata: {
+          'optionized' => true,
+          'options' => [
+            {
+              'kind' => 'card', 'active' => true, 'position' => 1,
+              'rule_set' => {
+                'include' => [{ 'dimension' => 'market', 'operator' => 'in', 'values' => [market.id.to_s] }]
+              }
+            }
+          ]
+        }
+      )
+      sign_in_as_superuser
+
+      get "/admin/payment_methods/#{gateway.prefixed_id}/edit"
+      expect(response).to have_http_status(:ok)
+
+      doc = Nokogiri::HTML(response.body)
+      %w[market country zone currency].each do |dimension|
+        expect(doc.at_css("select[name='payment_method[payment_options][card][rule_set][#{dimension}][]']")).to be_present
+      end
+      # 已存规则回填为前缀 ID（前台可读），摘要展示已存范围
+      expect(doc.at_css("select[name='payment_method[payment_options][card][rule_set][market][]'] option[selected]")&.attr('value'))
+        .to eq(market.prefixed_id)
+      expect(response.body).to include(market.prefixed_id)
+    end
+
+    # PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-007
+    it 'projects the normalized rule set and a readable summary in the admin API payload' do
+      market = create(:market, store: store, countries: [create(:country, iso: 'AT')])
+      gateway = stripe_gateway(
+        metadata: {
+          'optionized' => true,
+          'options' => [
+            {
+              'kind' => 'card', 'active' => true, 'position' => 1,
+              'rule_set' => {
+                'match' => 'all',
+                'include' => [{ 'dimension' => 'market', 'operator' => 'in', 'values' => [market.id.to_s] }],
+                # 未上线维度（amount）与非法算子不得进入投影（读归一）
+                'exclude' => [{ 'dimension' => 'amount', 'operator' => 'gte', 'values' => %w[50] }]
+              }
+            }
+          ]
+        }
+      )
+
+      payload = JSON.parse(PallasTrade.api.admin_payment_method_serializer.new(gateway, params: {}).to_h.to_json)
+      option = payload['options'].first
+
+      expect(option['rule_set']).to eq(
+        'match' => 'all',
+        'include' => [{ 'dimension' => 'market', 'operator' => 'in', 'values' => [market.id.to_s] }],
+        'exclude' => []
+      )
+      # 摘要对人可读：市场回记录名（默认 labels），不是内部 ID
+      expect(option['scope_summary']).to include(market.name)
+    end
+  end
 end

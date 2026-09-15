@@ -911,8 +911,10 @@ module PallasTrade
     end
 
     def payment_methods
-      @payment_methods ||= store.payment_methods.active.available_on_front_end.select do |pm|
+      @payment_methods ||= PallasTrade::Payments::Availability::Resolver.providers(order: self, scope: :frontend).select do |pm|
         # PALLAS-CUSTOM: PAY-OPT-1 —— 选项化门控（§0.1-12）：已选项化且无可用入口的 provider 不上前台
+        # PALLAS-CUSTOM: D8（PRD-20260915-payments-d8）—— 入口级适用范围（market/country/zone/currency）
+        # 由 Resolver 统一过滤（§66.3 单一求值点；未知上下文 → include fail closed）
         pm.available_for_order?(self) && pm.frontend_visible?
       end
     end
@@ -1229,13 +1231,17 @@ module PallasTrade
         payments.offset_payment.exists? # how old versions of pallastrade stored refunds
     end
 
-    # PALLAS-CUSTOM: PAY-OPT-1 —— 选项化门控（§0.1-12）
+    # PALLAS-CUSTOM: PAY-OPT-1 —— 选项化门控（§0.1-12）；D8 —— 入口级适用范围（Resolver 单一求值点）
     def collect_backend_payment_methods
-      store.payment_methods.active.available_on_back_end.select { |pm| pm.available_for_order?(self) && pm.frontend_visible? }
+      PallasTrade::Payments::Availability::Resolver.providers(order: self, scope: :back_end).select do |pm|
+        pm.available_for_order?(self) && pm.frontend_visible?
+      end
     end
 
     def collect_frontend_payment_methods
-      store.payment_methods.active.available_on_front_end.select { |pm| pm.available_for_order?(self) && pm.frontend_visible? }
+      PallasTrade::Payments::Availability::Resolver.providers(order: self, scope: :frontend).select do |pm|
+        pm.available_for_order?(self) && pm.frontend_visible?
+      end
     end
 
     # determines whether the inventory is fully discounted

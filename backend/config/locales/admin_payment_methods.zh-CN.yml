@@ -15,6 +15,12 @@ zh-CN:
         payment_option_frontend_kind: 前端形态
         payment_option_method: 支付方式
         payment_option_position: 排序
+        payment_option_scope: 适用范围
+        scope_country: 国家
+        scope_currency: 币种
+        scope_help: 留空 = 不限（所有市场/国家/币种均可用）；市场与 Zone 仅限当前店铺。
+        scope_market: 市场
+        scope_zone: Zone
         payment_options: 前台支付方式（入口）
         payment_options_help: 每个启用的方式都是结账页的一个入口；停用后前台立即隐藏，展示顺序按「排序」渲染。
         payment_options_not_optionized: 该支付商尚未选项化 —— 前台仍按单一默认入口展示。勾选至少一个方式并保存后，前台改按本列表展示。
@@ -23,3 +29,10 @@ zh-CN:
         test_connection_error: 无法执行连接检查
         test_connection_failed: "连接检查失败（%{code}）：%{message}"
         test_connection_ok: "连接检查通过（%{code}）。%{message}"
+    payment_option_dimensions:
+      market: 市场
+      country: 国家
+      zone: Zone
+      currency: 币种
+    payment_option_scope_all: 全部
+    payment_option_scope_exclude: 排除

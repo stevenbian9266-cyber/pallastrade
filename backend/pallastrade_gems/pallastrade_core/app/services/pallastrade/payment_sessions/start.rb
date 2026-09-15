@@ -34,7 +34,14 @@ module PallasTrade
           order.reload
           amount = order.amount_due
           return failure(order, 'Order has no outstanding balance') unless amount.to_d.positive?
-          return failure(order, 'Payment method is not available for this order') unless payment_method_available?(order, payment_method, option_kind: option_kind)
+          # D8（PRD-20260915-payments-d8 切片1）：入口级可用性同源复算（§66.5）——被范围规则/配置
+          # 排除的入口 → 结构化错误 payment_option_not_available（§76.4），且不建会话。
+          unless payment_method_available?(order, payment_method, option_kind: option_kind)
+            return failure(order, {
+              code: 'payment_option_not_available',
+              message: 'Payment method is not available for this order'
+            })
+          end
 
           active_session = reusable_session(order, payment_method, amount, mode)
           return success(active_session) if active_session.present?
@@ -168,24 +175,26 @@ module PallasTrade
           any? { |method| method.frontend_visible? && method.available_for_order?(order) }
         return false unless available
 
-        option_available?(payment_method, option_kind)
+        option_available?(order, payment_method, option_kind)
       end
 
       # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片2 / FR-003 / AC-002）
-      # 入口（method kind）级同源校验：
-      # - 未传 option_kind → 不校验（行为与改动前完全一致，零回归）；
-      # - 传了 option_kind → 必须存在且未被停用；未配置 options 的 provider
-      #   只接受自己的默认入口 kind（默认回落语义，见 PaymentMethod#effective_payment_options）。
-      def option_available?(payment_method, option_kind)
-        return true if option_kind.blank?
+      #                 D8（PRD-20260915-payments-d8 切片1 / AC-004）—— 同源复算（§66.5）
+      # 入口（method kind）级校验：
+      # - 该 provider 无任何可用入口（含被「适用范围」规则排除）→ 拒绝；
+      # - 未传 option_kind → 不校验具体入口（行为与改动前一致，零回归）；
+      # - 传了 option_kind → 必须落在「配置 ∪ 范围规则」都通过的可用入口集合内；
+      #   未配置 options 的 provider 只接受自己的默认入口 kind（默认回落语义，见 effective_payment_options）。
+      def option_available?(order, payment_method, option_kind)
+        available_options = PallasTrade::Payments::Availability::Resolver.available_options(
+          order: order, payment_method: payment_method
+        )
+        return false if available_options.empty?
 
-        kind = option_kind.to_s
-        return payment_method.default_option_kind == kind if payment_method.payment_options.empty?
+        kind = option_kind.to_s.presence
+        return true if kind.blank?
 
-        found = payment_method.payment_option_for(kind)
-        return false if found.nil?
-
-        found['active'] != false
+        available_options.any? { |option| option['kind'] == kind }
       end
 
       # P0-3 (PRD FR-030/FR-031): operation_key = 稳定业务意图标识（禁随机）：
