@@ -316,9 +316,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
       ([url]) => url === "/api/checkout/prepare",
     );
     expect(prepareCall).toBeDefined();
-    expect(
-      JSON.parse((prepareCall?.[1] as RequestInit).body as string),
-    ).toMatchObject({
+    const prepareInit = prepareCall?.[1] as RequestInit;
+    expect(JSON.parse(prepareInit.body as string)).toMatchObject({
       cart_id: "cart_1",
       // PRD-20260913-checkout-billing-mode AC-008：显式账单语义（不再发 use_shipping）
       checkout: { billing_mode: "same_as_shipping" },
@@ -888,9 +887,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     const startCall = fetchMock.mock.calls.find(
       ([url]) => url === "/api/checkout/start",
     );
-    expect(
-      JSON.parse((startCall?.[1] as RequestInit).body as string),
-    ).toMatchObject({
+    const startInit = startCall?.[1] as RequestInit;
+    expect(JSON.parse(startInit.body as string)).toMatchObject({
       order_id: "or_123",
       expected_checkout_version: 3,
       expected_price_version: "pv_3",

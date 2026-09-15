@@ -3133,7 +3133,8 @@
         "Charge or start a transaction before the user has seen the Order-authoritative amount",
         "Re-submit the cart on retry, or create a second order when the shopper retries payment",
         "Bypass the existing quote-drift contract: drift must stay in-page with no automatic charge",
-        "Render an empty confirmation block with placeholder amounts when no quote is available"
+        "Render an empty confirmation block with placeholder amounts when no quote is available",
+        "Ship lint or format violations that only surface under the full biome check (unsafe optional chaining inside test assertions, unformatted message JSON)"
       ],
       "scoring": {
         "twoStageContract": 30,
