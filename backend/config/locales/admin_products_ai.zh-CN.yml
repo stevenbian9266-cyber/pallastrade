@@ -1,0 +1,41 @@
+# PALLAS-CUSTOM: 后台「商品」页的 AI 助手（AI Copilot / 翻译 / 修复建议）宿主 zh-CN 覆盖。
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.products.ai 一一对应。
+#
+# 为什么必须补（2026-09-16 实测）：
+#   缺 key 时 `ai_assist_reason_label` 拿到的兜底文本会带 `<span class="translation_missing">`，
+#   而它被写进 button 的 `title` 属性 → 属性被撕开，残渣 `Default">` 泄漏成可见文本：
+#   `/admin/catalog_health` 的 AI 按钮曾显示成 `Default"> AI 修复建议`。
+#   helper 已改为返回纯文本（不会再撕 HTML），但文案本身也必须真的存在。
+
+zh-CN:
+  pallastrade:
+    admin:
+      products:
+        ai:
+          accept: 采纳
+          accepted: 草稿已应用 —— 请检查，满意后保存商品。
+          discard: 丢弃
+          disabled_reason:
+            ai_budget_exceeded: 该门店的 AI 预算已用完。
+            ai_capability_disabled: 该助手已在「AI 工具」中关闭。
+            ai_disabled: 该门店已关闭 AI。
+            ai_model_disabled: 该助手尚未配置 AI 模型。
+            ai_provider_disabled: AI 服务商未启用或缺少凭据。
+            default: 该门店尚未配置 AI。
+          errors:
+            ai_budget_exceeded: 该门店本月的 AI 预算已用完。
+            ai_capability_disabled: 该助手已在「AI 工具」中关闭。
+            ai_disabled: 该门店已关闭 AI。
+            ai_model_disabled: 该助手尚未配置 AI 模型。
+            ai_provider_disabled: AI 服务商未启用或缺少凭据。
+            default: AI 请求未能完成，请检查「AI 工具」后重试。
+          generate: 用 AI 生成
+          generate_seo: 生成 SEO
+          generating: 正在生成…
+          # en 侧就是空串（按钮 idle 态不显示文案），这里保持一致
+          idle: ''
+          meta_description: Meta 描述
+          meta_title: Meta 标题
+          preview_heading: AI 草稿（尚未保存）
+          review_hint: 请检查草稿，满意后点「采纳」填回表单。
+          rewrite: 重新生成

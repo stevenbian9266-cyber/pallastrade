@@ -284,6 +284,38 @@ gem `pallastrade_admin/config/locales/en.yml` 只带 **en**，中文由**宿主*
 一次就能拿到**全部**缺失键（含自己没意识到的其它域）。2026-09-16 正是这样发现
 后台外壳（侧边栏/快速新建/退出/confirm 等 15 键）一直是缺的。
 
+#### 第二个陷阱：i18n 结果**不能**直接放进 HTML 属性（2026-09-16 实测）
+
+`PallasTrade.t` 走的是 Rails 的 `TranslationHelper`。**缺 key 时它返回的不是纯文本，而是 HTML**：
+
+```html
+<span class="translation_missing" title="translation missing: ...">默认值</span>
+```
+
+把它写进 HTML 属性（`title="<%= helper %>"`）会把属性**撕开** —— 引号与尖括号当场破坏 DOM，
+残渣泄漏成可见文本。实测：zh-CN 缺 `admin.products.ai.disabled_reason.*` 时，
+`/admin/catalog_health` 的 AI 按钮渲染成 `Default"> AI 修复建议`，`title` 里塞满破碎的 span
+（en 下 key 存在，所以这个缺陷**从未在英文环境暴露过**）。
+
+**规则**：
+
+| 文案去向 | 用什么 | 为什么 |
+|---|---|---|
+| **HTML 属性**（`title` / `aria-label` / `data-*`） | `I18n.t` + **纯文本兜底** | 必须保证返回纯字符串，绝不能带标签 |
+| **HTML 正文** | `PallasTrade.t` 可用 | 缺失时的 span 在正文里反而是有用的定位信号 |
+
+```ruby
+# ✅ 属性安全：两级兜底，永不出现 translation missing，也永不带 HTML
+fallback = I18n.t('pallastrade.admin.x.default', default: 'AI is not configured for this store yet.')
+I18n.t(key, default: fallback).to_s.strip.presence
+
+# ❌ 会把 <span class="translation_missing"> 写进属性
+PallasTrade.t(key, default: PallasTrade.t('admin.x.default'))
+```
+
+**根治**：既然缺文案会连带撕坏 HTML，那么"补齐那个 locale 的键"才是真修复；
+上面只是让**下一次**漏键时不至于连页面结构都坏掉。
+
 ### "Product name shows English even after I set Spanish"
 
 Walk this list:

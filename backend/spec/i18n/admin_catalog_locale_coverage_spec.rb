@@ -14,7 +14,8 @@ require 'rails_helper'
 #   2. 两边的**键集完全一致**（多出一个孤儿中文键同样是缺陷）。
 RSpec.describe 'Admin zh-CN locale coverage' do
   # 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.<domain> 一一对应。
-  DOMAINS = %w[catalog_health catalog_operations].freeze
+  # products.ai 是 2026-09-16 实测发现的：缺它会让 AI 按钮的 title 属性被 HTML 撕开。
+  DOMAINS = %w[catalog_health catalog_operations products.ai].freeze
 
   def keys_for(locale, domain)
     tree = I18n.t("pallastrade.admin.#{domain}", locale: locale, default: {})

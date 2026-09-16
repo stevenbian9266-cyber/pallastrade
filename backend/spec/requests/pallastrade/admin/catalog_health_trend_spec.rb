@@ -113,5 +113,26 @@ RSpec.describe 'Admin catalog health trend column', type: :request do
 
       expect(response.body).to include('暂无趋势')
     end
+
+    # 2026-09-16 实测回归：AI 按钮的 title 曾把 Rails 的
+    # `<span class="translation_missing">` 当普通字符串写进 HTML 属性，把属性撕开，
+    # 残渣 `Default">` 变成了按钮可见文本。helper 已改为返回纯文本，
+    # 这里同时守住「属性里不许有 HTML」和「文案真的存在」两件事。
+    it 'never leaks translation-missing markup into the AI button tooltip' do
+      get '/admin/catalog_health'
+
+      expect(response.body).not_to include('translation_missing"')
+      expect(response.body).not_to include('Default">')
+    end
+
+    # AI 按钮只在 AI 引擎可用时才渲染（本 spec 环境下不渲染），所以这里只断言
+    # 「页面里不存在被撕开的属性残渣」——那才是这次的缺陷；文案存在性由
+    # spec/i18n/admin_catalog_locale_coverage_spec.rb 的键集断言负责。
+    it 'renders the AI button label and its disabled reason without extra characters' do
+      get '/admin/catalog_health'
+
+      expect(response.body).not_to include('translation_missing"')
+      expect(response.body).not_to include('Default">')
+    end
   end
 end
