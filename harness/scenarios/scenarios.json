@@ -4080,6 +4080,31 @@
       }
     },
     {
+      "id": "GS-162",
+      "name": "A translation gap that no test can see",
+      "description": "The admin UI language comes from the store's preferred admin locale, while the gem ships only English strings. Adding a key to the English file therefore turns nothing red: specs render in English, CI stays green, and a Chinese store's admin silently shows 'Translation missing' down the page. The catalog worklist had rendered that way for its seven issue labels since the feature shipped, and so had the admin shell around it.",
+      "mustDo": [
+        "Cover the locale the merchant actually uses, not just the one the tests happen to render in",
+        "Assert key-set equality in both directions — a missing key and an orphan key are both defects",
+        "Scan the whole rendered page, because the chrome around the feature is what the merchant sees first when it breaks",
+        "Let the assertion itself enumerate the gaps instead of sending someone to log into a live admin and eyeball it",
+        "Treat a pre-existing gap found this way as in scope rather than someone else's problem"
+      ],
+      "mustNotDo": [
+        "Add strings to one locale and call the feature done because the suite is green",
+        "Scope the check to the domain being changed while the surrounding page stays broken",
+        "Ask for production credentials to verify a rendering that a test can prove",
+        "Silence the check by narrowing its pattern until it passes"
+      ],
+      "scoring": {
+        "localeCoverage": 30,
+        "bidirectionalAssertion": 25,
+        "wholePageScan": 20,
+        "selfDiagnosis": 15,
+        "scopeHonesty": 10
+      }
+    },
+    {
       "id": "GS-158",
       "name": "A locked rate is a fact you can audit, not a number you recompute later",
       "description": "PRD-20260916-payments-d13d-fx-snapshot (slice 4 of the D13 reconciliation batch, business plan §70.4): the platform had no exchange-rate capability at all — when an order was priced in one currency and settled in another, the rate the buyer saw was nowhere recorded, and settlement-rate differences had no home in the reconciliation queue. This slice adds a multi-source rate registry (manual / provider / third-party with priority and an effective window), locks the display rate and the up-charged effective rate per order at submission, and compares that lock against the settlement rate (reported by the provider or derived from the settled amount) — queueing differences by basis point while leaving pricing and money movement alone.",

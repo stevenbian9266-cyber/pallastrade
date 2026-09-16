@@ -245,6 +245,45 @@ The key doesn't exist in the active locale. Either:
 - Install `pallastrade_i18n` gem if the missing key is a PallasTrade-core string.
 - Add a fallback: `config.i18n.fallbacks = [:en]` in `config/application.rb` or an environment file (the standard Rails production.rb already sets `config.i18n.fallbacks = true`).
 
+#### 后台专属陷阱：只加 `en` 不会让任何测试变红（2026-09-16 实测）
+
+**admin 的 UI 语言不是默认 locale，而是门店偏好**：
+
+```ruby
+# pallastrade_admin/app/controllers/pallastrade/admin/base_controller.rb
+def default_locale
+  @default_locale ||= current_store&.preferred_admin_locale.presence || super
+end
+```
+
+gem `pallastrade_admin/config/locales/en.yml` 只带 **en**，中文由**宿主**覆盖。因此：
+
+- 只往 gem `en.yml` 加键 → **所有 spec 绿**（spec 用 en 渲染）、CI 绿；
+- 但中文门店的后台**静默**整页 `Translation missing: zh-CN.pallastrade…`。
+
+**惯例**：一个功能域一个宿主文件 `backend/config/locales/admin_<域>.zh-CN.yml`，
+键集与 gem `en.yml` 的 `admin.<域>` **一一对应**（先例：`admin_ai`、`admin_currency_fx`、
+`admin_dispute_rates`、`admin_payment_methods`、`admin_payouts`、`admin_nav`、`admin_shell`）。
+
+**两条必做断言**（缺一条就会漏）：
+
+1. **键集双向**——en 有的 zh-CN 必须有，zh-CN 也不能有 en 没有的孤儿键：
+
+   ```ruby
+   expect(zh_keys(domain) - en_keys(domain)).to be_empty   # 缺失
+   expect(en_keys(domain) - zh_keys(domain)).to be_empty   # 孤儿
+   ```
+
+2. **页面级整页扫描**——只盯自己那个域会漏掉**外壳**（侧边栏 / 快速新建 / confirm 对话框）：
+
+   ```ruby
+   expect(response.body.scan(/translation missing: [^<"&]+/i)).to be_empty
+   ```
+
+**排查手法**：与其登录后台逐页比对，不如在 spec 里加上面的扫描并 `warn` 出来 ——
+一次就能拿到**全部**缺失键（含自己没意识到的其它域）。2026-09-16 正是这样发现
+后台外壳（侧边栏/快速新建/退出/confirm 等 15 键）一直是缺的。
+
 ### "Product name shows English even after I set Spanish"
 
 Walk this list:
