@@ -7,13 +7,19 @@ import { Button } from "@/components/ui/button";
 import {
   createProductReview,
   getMoreProductReviews,
-  REVIEW_IMAGE_LIMIT,
-  REVIEW_IMAGE_MAX_BYTES,
   uploadReviewImage,
 } from "@/lib/data/reviews";
 
 /** Photo types the API accepts (`PallasTrade::Review::ALLOWED_IMAGE_TYPES`). */
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+/**
+ * Client-side guards mirroring `PallasTrade::Review` (the API validates
+ * again). They live here — not in `@/lib/data/reviews` — because a
+ * `"use server"` module may only export async functions.
+ */
+const REVIEW_IMAGE_LIMIT = 3;
+const REVIEW_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
 export interface ReviewView {
   id: string;
@@ -111,7 +117,9 @@ export function ProductReviews({
 
   // F-1: photos upload before the review is submitted, so what the customer
   // sees is exactly what the API attaches (up to REVIEW_IMAGE_LIMIT).
-  const [photos, setPhotos] = useState<{ signedId: string; name: string }[]>([]);
+  const [photos, setPhotos] = useState<{ signedId: string; name: string }[]>(
+    [],
+  );
   const [uploading, setUploading] = useState(false);
 
   // F-1: "load more" appends pages; the API drives the next page number.
@@ -240,16 +248,15 @@ export function ProductReviews({
 
       {/* F-1: rating distribution — same population as the average above */}
       {showSummary && distribution && (
-        <div
+        <ul
           className="mt-4 max-w-sm space-y-1"
           data-testid="rating-distribution"
-          role="group"
           aria-label={t("ratingBreakdown")}
         >
           {[5, 4, 3, 2, 1].map((star) => {
             const count = distribution[String(star)] ?? 0;
             return (
-              <div
+              <li
                 key={star}
                 className="flex items-center gap-3 text-xs text-gray-600"
               >
@@ -268,10 +275,10 @@ export function ProductReviews({
                 <span className="w-6 shrink-0 text-right tabular-nums">
                   {count}
                 </span>
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
 
       {visibleReviews.length > 0 ? (

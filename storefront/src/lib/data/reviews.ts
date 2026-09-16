@@ -34,11 +34,10 @@ export interface ProductReviewList {
 
 const EMPTY_REVIEW_LIST: ProductReviewList = { reviews: [], meta: null };
 
-/** Mirrors `PallasTrade::Review::MAX_IMAGES` for a fast client-side guard. */
-export const REVIEW_IMAGE_LIMIT = 3;
-
-/** Mirrors `PallasTrade::Review::MAX_IMAGE_BYTES` (5 MB). */
-export const REVIEW_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+// NOTE: a "use server" module may only export async functions, so the
+// client-side image guards (limit / max bytes) live in `ProductReviews.tsx`.
+/** Mirrors `PallasTrade::Review::MAX_IMAGE_BYTES` (5 MB) for the pre-flight. */
+const REVIEW_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
 /**
  * First page of approved reviews (F-1). The API answers with the v3 envelope,

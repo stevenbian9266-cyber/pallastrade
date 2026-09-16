@@ -1,9 +1,4 @@
-import type {
-  AddressParams,
-  ListParams,
-  ListResponse,
-  PaginationMeta,
-} from '@pallastrade/sdk-core'
+import type { AddressParams, ListParams, ListResponse, PaginationMeta } from '@pallastrade/sdk-core'
 import type {
   Address as AddressType,
   Cart as CartType,
@@ -56,9 +51,9 @@ export type {
   Product,
   Promotion,
   Refund,
-  Review,
   ReturnAuthorization,
   ReturnItem,
+  Review,
   State,
   StockLocation,
   StoreCredit,

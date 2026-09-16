@@ -186,7 +186,6 @@ export class StoreClient {
           body: params,
         }),
     },
-
   }
 
   /**
@@ -195,10 +194,7 @@ export class StoreClient {
    * only attachable by the customer who uploaded it.
    */
   readonly directUploads = {
-    create: (
-      params: DirectUploadParams,
-      options?: RequestOptions,
-    ): Promise<DirectUploadResponse> =>
+    create: (params: DirectUploadParams, options?: RequestOptions): Promise<DirectUploadResponse> =>
       this.request('POST', '/direct_uploads', {
         ...options,
         body: params,
