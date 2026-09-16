@@ -4014,7 +4014,8 @@
         "Leave acceptance unrecorded and quietly estimate it from run counts",
         "Store an unknown state, or overwrite a decision with a retry of the same state",
         "Let a cross-store identifier touch another tenant's row",
-        "Make the merchant's action fail because observability failed"
+        "Make the merchant's action fail because observability failed",
+        "Treat a missing acceptance value as a rejection — 'not decided' must stay visibly undecided"
       ],
       "scoring": {
         "recordHonesty": 30,

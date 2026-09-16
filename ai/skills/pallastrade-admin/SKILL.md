@@ -595,7 +595,7 @@ Member routes (`PATCH /admin/reviews/:id/approve` etc.) live in
 
 | 部件 | 位置 | 要点 |
 |---|---|---|
-| 服务对象 | `pallastrade_core/app/services/pallastrade/products/bulk_*.rb` | `preview = run(dry_run: true)`、`call = run(dry_run: false)`；返回 `Result = Struct.new(:selected_count, :updated_count, :skipped_count, :warnings)` |
+| 服务对象 | `backend/pallastrade_gems/pallastrade_core/app/services/pallastrade/products/bulk_operation.rb`（同目录另有 bulk_price_update / bulk_inventory_adjust / bulk_channel_assignment） | `preview = run(dry_run: true)`、`call = run(dry_run: false)`；返回 `Result = Struct.new(:selected_count, :updated_count, :skipped_count, :warnings)` |
 | 预览路由 | `products_controller.rb` + `config/routes.rb` | `*_preview`（collection PUT）→ `render turbo_stream: turbo_stream.replace(:bulk_dialog, partial: 'pallastrade/admin/bulk_operations/preview')` |
 | 表单 partial | `bulk_operations/forms/_price_form.html.erb` 等 | 通过 `add_bulk_action(..., form_partial_locals: { mode: ... })` 传参区分动作变体 |
 | 预览 partial | `bulk_operations/_preview.html.erb` | 计数 dl + warnings 列表 + `form_tag(@preview_path, method: :put)` 隐藏字段 + `turbo_save_button_tag` |

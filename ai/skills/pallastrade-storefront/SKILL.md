@@ -335,7 +335,7 @@ Keys: cart items use `selected`; submitted Orders get short-lived HttpOnly check
 4. `expressClientSecret(session)` 为空 → 不调 `stripe.confirmPayment`；有值 → `confirmPayment({ elements, clientSecret, confirmParams: { return_url: expressResultUrl(origin, basePath, orderId, sessionId) }, redirect: "if_required" })`；
 5. `await completeExpressCheckout(orderId, sessionId)`（`PATCH /api/checkout/start`，**best-effort**：失败仅 `console.warn`，webhook / `Transactions::OnPaymentSuccess` 兜底）→ `router.push(returnUrl)` → `onComplete()`。
 
-**禁止**（回归守护 `src/lib/data/__tests__/legacy-payment-sessions-guard.test.ts` 已机器化）：storefront 任何源码出现 `carts.paymentSessions.*`；恢复 `/confirm-payment` 页（已删，历史 3DS return_url 深链由 `/payment-result` 承接）、`lib/data/payment.ts`；钱包把用户送到 `order-placed` 或第二张支付页。`stripe.createPaymentMethod` 已从钱包移除（canonical 会话创建不接受网关侧 PM id）。组合/多单支付同样改走 Order 域 `orders.paymentSessions.complete`（`lib/data/payment-combination.ts#completeCombinationSession`）。
+**禁止**（回归守护 `src/lib/data/__tests__/legacy-payment-sessions-guard.test.ts` 已机器化）：storefront 任何源码出现 `carts.paymentSessions.*`；恢复 `/confirm-payment` 页（已删，历史 3DS return_url 深链由 `/payment-result` 承接）、lib/data/payment.ts（已删除，勿恢复）；钱包把用户送到 `order-placed` 或第二张支付页。`stripe.createPaymentMethod` 已从钱包移除（canonical 会话创建不接受网关侧 PM id）。组合/多单支付同样改走 Order 域 `orders.paymentSessions.complete`（`lib/data/payment-combination.ts#completeCombinationSession`）。
 
 **零 legacy 调用（B5 扩展，2026-09-15）**：守护测试 `src/lib/data/__tests__/legacy-payment-sessions-guard.test.ts` 现在覆盖 §45 六行 —— ① 全仓源码（注释豁免）零 `carts.paymentSessions` / `carts.payments` / `carts.complete`；② `carts.{fulfillments,giftCards,storeCredits,discountCodes}` **只允许**出现在白名单四个文件（`lib/data/shopping-cart.ts`、`lib/data/checkout.ts`、`lib/data/express-checkout-flow.ts`、`app/api/checkout/coupon/route.ts`）——新增文件使用即失败。后端对 legacy 身份（非 `cart_`）回 `Deprecation`/`Warning`/`Link` 三头（B5），`cart_` 流量不受影响。
 
@@ -448,7 +448,7 @@ PRD-20260915-catalog-batch-c1-discovery：PDP 从「交易终点」变成「发�
    ⚠️ **必须真的传**：`ProductCarousel` 曾把 `listId` **硬编码**成 `featured-products`，于是 Related /
    Recently Viewed 的点击全被记到 Featured（比"没有归因"更糟）。现在它接受 `listId` / `listName`
    （默认仍是 featured，首页 rail 行为不变），**每个 rail 必须显式传自己的标识**
-   （`related-products` / `recently-viewed`）；机制回归见 `__tests__/ProductCarousel.test.tsx`。
+   （`related-products` / `recently-viewed`）；机制回归见 `storefront/src/components/products/__tests__/ProductCarousel.test.tsx`。
    ⚠️ **转化类动作也要发事件**：缺货订阅成功后发 `back_in_stock_subscribe`
    （`lib/analytics/gtm.ts#trackBackInStockSubscribe`，带 `product_id` / `variant_id` / `success`）；
    该 helper **自己吞异常** —— 埋点失败绝不能让订阅显示为失败（AP-009b 精神，回归见 `BackInStockNotify.test.tsx`）。
