@@ -1288,6 +1288,39 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   缺失 `display_name` 的行**必须**回落 provider 名（老数据零回归）。
 - **回归**：`harness verify d16-payment-presentation-rspec` + 前端 `storefront-test`。
 
+## 熔断与健康 — 入口级软置灰（D11 切片1, 2026-09-16；PRD-20260916-payments-d11-circuit-breaker-health）
+
+业务方案 §67.3：provider 抖动时**先把入口从前台摘掉**（软置灰），而不是让用户一路踩到支付失败。
+铁律：**零资金副作用** —— 只写 `metadata` + 审计；不取消会话、不改支付/订单/库存，零 provider 调用。
+
+- **状态机**（`PallasTrade::PaymentMethod`，状态存 metadata）：
+  - 已选项化 provider → `metadata['options'][i]['breaker']`（**入口级**）；未选项化 → `metadata['breaker']`（单入口）。
+  - 字段：`opened_at` / `until` / `reason` / `manual` / `failure_rate` / `sample_size`。
+  - `soft_disabled?(kind = nil, now:)` —— 手动置灰（`manual: true`）**粘性**（生效至人工解除）；
+    自动置灰**到期即失效**（状态行由 `Evaluate`/`SweepJob` 清理）。
+  - 写入口：`soft_disable!(kind:, reason:, manual:, until_at: nil, ...)` / `soft_enable!(kind = nil)`；
+    底层 `update_columns(private_metadata:)`（不触发 provider 校验/远端调用）。
+  - 阈值：`breaker_thresholds` = 默认 `{ min_samples: 10, failure_rate_threshold: 0.5, cooldown_seconds: 900 }`
+    + `metadata['breaker_thresholds']` 覆盖。
+- **指标口径**（`Payments::Health::Metrics.call(payment_method:, window: 24.hours, now:)`，卡面/判定**唯一口径**）：
+  `attempts`（窗口内 `PaymentSession` 行数）/ `failed`（status = failed；canceled/expired 不计）/ `failure_rate` /
+  `avg_seconds`（终态会话 `updated_at - created_at` 近似；无终态 = nil）/ `top_error_codes`
+  （入站事件 `action='failed'` 的 `last_error_class` Top5）。
+  ⚠️ **粒度是 provider 级**：会话不持久化入口（`PaymentSessions::Start#option_kind` 只做建会话前校验，D8），
+  入口级失败率无数据来源 → 自动判定按 provider 级聚合，对**全部生效入口**落状态；入口级粒度体现在状态与手工动作。
+- **判定/恢复**（`Payments::CircuitBreaker::Evaluate.call(payment_method:, now:)`，返回 `{ opened:, restored:, observed: }`）：
+  样本 ≥ `min_samples` 且失败率 ≥ 阈值 → 自动软置灰 `cooldown_seconds`（审计 `payment_option_auto_soft_disabled`）；
+  到期且非手动 → 自动恢复（`payment_option_breaker_restored`）；未达标/小样本/冷却中 → 不动（幂等）。
+- **巡检**：`Payments::CircuitBreaker::SweepJob`（`config/sidekiq_schedule.rb` 每小时 `15 * * * *`，
+  name `payment_circuit_breaker_sweep`）；单个 provider 异常只 warn 不中断；`perform(now:)` 传 **Time**（传字符串精度只到秒）。
+- **前台/Start 门禁**：`Availability::Resolver#option_allowed?` 先判 `soft_disabled?` → 软置灰入口从
+  「可用入口」消失（前台列表与 `PaymentSessions::Start` 同源）；`Resolver.evaluate` 额外给
+  `{ dimension: 'breaker', reason: 'breaker_open' }` 便于解释「为什么这个入口没出现」。
+- **后台**：provider 编辑页「熔断与健康」卡（24h 指标 + 逐入口状态/动作）；
+  `POST /admin/payment_methods/:id/soft_disable`（**必填 reason**，`manual: true` 粘性）/ `soft_enable`，
+  两者写审计（`payment_option_manually_soft_disabled` / `payment_option_manually_soft_enabled`），权限 = 资源 `update`。
+- **回归**：`harness verify d11-circuit-breaker-rspec`。
+
 ## Payment availability scope —— 适用范围引擎（D8 首版, 2026-09-15；PRD-20260915-payments-d8）
 
 入口（PaymentOption）级可用范围，栖于入口层 `metadata['options'][i]['rule_set']`（业务方案 §66）：

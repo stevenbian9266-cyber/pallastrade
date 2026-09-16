@@ -61,10 +61,15 @@ module PallasTrade
             payment_method.effective_payment_options.map do |option|
               rule_set = RuleSet.normalize(option['rule_set'])
               outcome = Evaluator.evaluate(rule_set, ctx)
+              # D11：熔断（软置灰）作为独立 reason 暴露，便于后台/调试面板解释「为什么这个入口没出现」。
+              reasons = outcome['reasons'].dup
+              reasons << { 'dimension' => 'breaker', 'reason' => 'breaker_open' } if breaker_open?(payment_method, option)
+
               {
                 'kind' => option['kind'],
-                'allowed' => outcome['allowed'] && !capability_rejects?(payment_method, option, ctx),
-                'reasons' => outcome['reasons']
+                'allowed' => outcome['allowed'] && !capability_rejects?(payment_method, option, ctx) &&
+                             !breaker_open?(payment_method, option),
+                'reasons' => reasons
               }
             end
           end
@@ -72,10 +77,23 @@ module PallasTrade
           private
 
           def option_allowed?(payment_method, option, context)
+            # D11（PRD-20260916-payments-d11）：软置灰（熔断）入口不可用 —— 与规则/能力判定同源，
+            # 因此前台列表与 `PaymentSessions::Start` 同时生效（§66.5 同源硬约束）。
+            return false if breaker_open?(payment_method, option)
+
             rule_set = RuleSet.normalize(option['rule_set'])
             return false if rule_set.present? && !Evaluator.allowed?(rule_set, context)
 
             !capability_rejects?(payment_method, option, context)
+          end
+
+          # 熔断状态判定（到期即视为未置灰 —— 状态行由 SweepJob 清理）。
+          def breaker_open?(payment_method, option)
+            return false unless payment_method.respond_to?(:soft_disabled?)
+
+            payment_method.soft_disabled?(option['kind'])
+          rescue StandardError
+            false
           end
 
           # FR-010：能力目录（Capability）可声明 currencies / countries → 商家只能收窄（§0.1-9）。

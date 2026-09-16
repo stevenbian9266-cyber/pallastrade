@@ -281,6 +281,28 @@ en:
             remove_tags: Remove tags
       catalog_health:
         action: Action
+        ai:
+          button: AI Fix Suggestion
+          dismiss: Dismiss
+          entries:
+            product_edit_ai: Product edit page (AI description / SEO)
+            product_media: Product media
+            publishing: Publishing status
+            redirects: Redirects
+            translations_drawer: Product translations drawer
+            variant_inventory: Variant inventory
+          errors:
+            default: The AI request could not be completed. Check AI Tools and try again.
+            nothing_to_fix: Nothing to fix here right now.
+            unknown_issue: That catalog health issue is not one we track.
+          generating: Working out a plan…
+          summary_heading: AI fix suggestion (nothing is saved automatically)
+        card:
+          ai_heading: AI fix suggestion for this product
+          empty: No catalog health issue found for this product.
+          issues_heading: This product needs attention
+          nothing_to_fix: Nothing to fix for this product right now.
+          title: Catalog Health
         count: Count
         filter:
           active: 'Filtered by catalog health issue:'
@@ -874,6 +896,29 @@ en:
         test_connection_error: Could not run the connection test
         test_connection_failed: "Connection check failed (%{code}): %{message}"
         test_connection_ok: "Connection check passed (%{code}). %{message}"
+        breaker_health: Circuit breaker & health
+        breaker_help: Soft-disabling an entry only removes it from checkout — it never touches existing payment sessions, payments, orders or inventory (no financial side effects).
+        breaker_entry: Entry
+        breaker_status: Status
+        breaker_status_enabled: Live
+        breaker_status_disabled: Soft-disabled
+        breaker_attempts: Attempts (24h)
+        breaker_failed: Failed (24h)
+        breaker_failure_rate: Failure rate
+        breaker_avg_seconds: Avg duration
+        breaker_top_errors: Top errors
+        breaker_window: Window
+        breaker_manual_until: Until manually re-enabled
+        breaker_auto_until: Auto re-enable at %{time}
+        breaker_reason: Reason
+        breaker_reason_placeholder: Why is this entry being soft-disabled? (recorded in the audit log)
+        breaker_reason_required: A reason is required to soft-disable an entry
+        breaker_confirm: This only changes whether the entry is offered at checkout. It never touches existing payment sessions, payments or orders. Continue?
+        breaker_disable_action: Soft-disable
+        breaker_enable_action: Re-enable
+        breaker_soft_disabled: "%{name} is now soft-disabled at checkout."
+        breaker_soft_enabled: "%{name} is available at checkout again."
+        breaker_none: This provider declares no storefront entry.
       personal_details: Personal Details
       previous_page: Previous page
       price_lists:

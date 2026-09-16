@@ -46,7 +46,62 @@ module PallasTrade
         end
       end
 
+      # POST /admin/payment_methods/:id/soft_disable
+      # PALLAS-CUSTOM: D11 切片1（PRD-20260916-payments-d11）—— 手动软置灰（熔断兜底，业务方案 §67.3）：
+      # 「摘掉一个入口」是运营动作 —— 入口级（选项化）软置灰，**必须填原因**（审计留痕），
+      # 粘性生效至人工解除（`manual: true`，巡检不会自动恢复）。
+      # 铁律：零资金副作用 —— 只改 metadata + 审计；不影响已建会话/已发起的支付。
+      def soft_disable
+        authorize! :update, @object
+
+        reason = params[:reason].to_s.strip
+        if reason.blank?
+          flash[:error] = PallasTrade.t('admin.payment_methods.breaker_reason_required')
+          return redirect_to PallasTrade.edit_admin_payment_method_path(@object), status: :see_other
+        end
+
+        kind = breaker_kind_param
+        @object.soft_disable!(kind: kind, reason: reason, manual: true)
+        audit_breaker_action('payment_option_manually_soft_disabled', kind, reason: reason)
+        flash[:success] = PallasTrade.t('admin.payment_methods.breaker_soft_disabled', name: breaker_display_name(kind))
+
+        redirect_to PallasTrade.edit_admin_payment_method_path(@object), status: :see_other
+      end
+
+      # POST /admin/payment_methods/:id/soft_enable
+      # PALLAS-CUSTOM: D11 切片1 —— 解除软置灰（自动/手动通用）：清除状态 + 审计。
+      def soft_enable
+        authorize! :update, @object
+
+        kind = breaker_kind_param
+        state = @object.breaker_state(kind)
+        @object.soft_enable!(kind)
+        audit_breaker_action('payment_option_manually_soft_enabled', kind, reason: state&.[]('reason'))
+        flash[:success] = PallasTrade.t('admin.payment_methods.breaker_soft_enabled', name: breaker_display_name(kind))
+
+        redirect_to PallasTrade.edit_admin_payment_method_path(@object), status: :see_other
+      end
+
       private
+
+      # D11：入口 kind（选项化 provider 的入口级动作参数）。
+      def breaker_kind_param
+        params[:kind].presence
+      end
+
+      def breaker_display_name(kind)
+        kind.present? ? @object.option_display_name(kind) : @object.name
+      end
+
+      # 熔断是运营动作：审计 actor = 后台用户 + 记录原因（`manual` 语义可回溯）。
+      def audit_breaker_action(action, kind, reason: nil)
+        PallasTrade::Audit.record(
+          action: action,
+          actor: audit_actor,
+          resource: @object,
+          metadata: { kind: kind, reason: reason }.compact
+        )
+      end
 
       # D9（切片2）：reveal 是敏感动作 —— 资源 update 权限 + 默认管理员角色（owner 等价）。
       def authorize_admin!

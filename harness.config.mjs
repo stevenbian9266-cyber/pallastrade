@@ -250,6 +250,12 @@ export default {
         description: 'AI translate-missing specs (capability registration, schemas, missing-field detection, gateway service, nothing-to-translate guard, admin endpoint, degradation, permissions, drawer rendering)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/ai/catalog/product_translation_spec.rb spec/requests/pallastrade/admin/products_ai_translation_spec.rb'],
       },
+      // Catalog Health AI 修复建议（PRD-20260916-catalog-batch-e3-ai-fix-suggestion）：能力注册（read 授权）
+      // + schema + 采样范围/字段最小化 + 计数 0/未知 issue 零 Run + 入口白名单 + 两种粒度端点 + 零写库 + 渲染
+      'ai-health-suggestion-rspec': {
+        description: 'Catalog health AI suggestion specs (read authorization, schemas, scoped and minimal sampling, nothing-to-fix guard, entry whitelist, worklist and product endpoints, no-write guarantee, worklist and product-card rendering)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/ai/catalog/health_fix_suggestion_spec.rb spec/requests/pallastrade/admin/catalog_health_ai_suggestion_spec.rb'],
+      },
       // 前台密钥下发（PRD-20260915-payments-d10-client-config）：client_config 组装（仅 publishable）
       // + env: 引用解析 + Checkout 契约下发 + Stripe publishable 声明（secret 不泄漏）
       'd10-client-config-rspec': {
@@ -267,6 +273,12 @@ export default {
       'd16-payment-presentation-rspec': {
         description: 'Payment entry presentation specs (effective option read model, option_id/method_key/display_name serialization, optionized regression)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d16_payment_option_presentation_spec.rb spec/models/pallastrade/payment_method_options_spec.rb spec/serializers/pallastrade/api/v3/store/checkout/checkout_serializer_spec.rb spec/serializers/pallastrade/api/v3/cart_serializer_spec.rb'],
+      },
+      // 支付熔断与健康（PRD-20260916-payments-d11-circuit-breaker-health 切片1）：软置灰状态机
+      // + 窗口健康指标 + 自动判定/到期恢复 + 巡检作业 + 前台可用性门禁 + 后台动作与卡面
+      'd11-circuit-breaker-rspec': {
+        description: 'Payment circuit breaker specs (soft-disable state machine + health metrics + evaluate/auto-recover + sweep job + resolver gating + admin actions/card)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d11_soft_disable_spec.rb spec/services/pallastrade/payments/d11_health_metrics_spec.rb spec/services/pallastrade/payments/d11_circuit_breaker_spec.rb spec/jobs/pallastrade/payments/d11_circuit_breaker_sweep_job_spec.rb spec/services/pallastrade/payments/availability/d11_breaker_gating_spec.rb spec/services/pallastrade/payments/availability/resolver_spec.rb spec/requests/pallastrade/admin/d11_payment_method_soft_disable_spec.rb'],
       },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {

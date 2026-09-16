@@ -12,6 +12,8 @@
       <%= render 'options' %>
       <%# PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 凭据健康（轮换/到期/reveal）+ Webhook 卡 %>
       <%= render 'credentials' %>
+      <%# PALLAS-CUSTOM: D11（PRD-20260916-payments-d11 切片1）—— 熔断与健康（软置灰/解除 + 24h 指标） %>
+      <%= render 'breaker' %>
       <%= render 'pallastrade/admin/shared/edit_resource_links', f: f %>
     </div>
   </div>

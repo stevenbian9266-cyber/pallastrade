@@ -122,6 +122,60 @@ module PallasTrade
 
         "#{PallasTrade::Preferences::Masking::TOKEN}#{secret.last(4)}"
       end
+
+      # PALLAS-CUSTOM: D11 切片1（PRD-20260916-payments-d11）—— 「熔断与健康」数据面（业务方案 §67.3）：
+      #   * `breaker_health_metrics`：窗口指标（provider 级口径，唯一权威 = `Health::Metrics`）
+      #   * `breaker_health_rows`：逐入口状态行（选项化 provider 逐入口；未选项化 = 单入口）
+      def breaker_health_metrics(payment_method, window: PallasTrade::Payments::Health::Metrics::DEFAULT_WINDOW)
+        PallasTrade::Payments::Health::Metrics.call(payment_method: payment_method, window: window)
+      end
+
+      def breaker_health_rows(payment_method)
+        payment_method.effective_payment_options.map do |option|
+          kind = option['kind'].to_s
+          state = payment_method.breaker_state(kind)
+
+          {
+            'kind' => kind,
+            'display_name' => payment_method.option_display_name(kind),
+            'disabled' => payment_method.soft_disabled?(kind),
+            'state' => state,
+            'until' => state&.[]('until'),
+            'manual' => state&.[]('manual') == true
+          }
+        end
+      end
+
+      # 失败率展示（百分比；样本为 0 → 「—」）。
+      def breaker_failure_rate_label(metrics)
+        return '—' if metrics[:attempts].to_i.zero?
+
+        "#{(metrics[:failure_rate].to_f * 100).round(1)}%"
+      end
+
+      # 平均时长展示（秒 → 「12.3s」；无终态 → 「—」）。
+      def breaker_average_seconds_label(metrics)
+        seconds = metrics[:avg_seconds]
+        return '—' if seconds.nil?
+
+        format('%.1fs', seconds)
+      end
+
+      # 错误类 Top 列表展示（`Err::X ×3, Err::Y ×1`；无 → 「—」）。
+      def breaker_top_error_codes_label(metrics)
+        codes = metrics[:top_error_codes]
+        return '—' if codes.blank?
+
+        codes.map { |entry| "#{entry['code']} ×#{entry['count']}" }.join(', ')
+      end
+
+      # 置灰窗口展示：手动 = 「人工解除」；自动 = 「自动恢复 时间」。
+      def breaker_window_label(row)
+        return PallasTrade.t('admin.payment_methods.breaker_manual_until') if row['manual']
+        return '—' if row['until'].blank?
+
+        PallasTrade.t('admin.payment_methods.breaker_auto_until', time: row['until'])
+      end
     end
   end
 end

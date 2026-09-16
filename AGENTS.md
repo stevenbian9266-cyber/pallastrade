@@ -279,6 +279,7 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | 前台密钥下发（`PaymentMethods::ClientConfig`、`public_preference_keys`、`client_config` 下发面） | + `harness verify d10-client-config-rspec`（envelope + 仅 publishable 投影 + `env:` 解析 + Checkout payload + Stripe 声明） | ≤3 min |
 | Webhook 治理（`PaymentWebhookEvent` quarantine、`Payments::{QuarantineWebhookEvent,MarkWebhookEventProcessed,WebhookHealth,WebhookSubscriptionChecklist}`、`/admin/webhook_events`） | + `harness verify d12-webhook-governance-rspec`（隔离状态机 + 筛选 + 处置审计 + 健康聚合 + 订阅清单 + 导航一致性） | ≤3 min |
 | 支付入口展示元数据（`PaymentMethod#effective_payment_option/option_display_name/option_identifier` + checkout/支付方式序列化三字段 + 前台方法行 `display_name ?? name`） | + `harness verify d16-payment-presentation-rspec`（读模型口径 + option_id/method_key/display_name 契约 + 选项化回归）+ 前端 `storefront-test` | ≤3 min |
+| 支付熔断与健康（`payment_method` breaker 状态机、`payments/health/metrics.rb`、`payments/circuit_breaker/**`、Resolver 门禁、admin `soft_disable`/`soft_enable` + 熔断卡） | + `harness verify d11-circuit-breaker-rspec`（软置灰状态机 + 窗口指标 + 自动判定/到期恢复 + 巡检作业 + 前台可用性 + 后台动作/卡面 + D8 回归） | ≤3 min |
 | Admin Catalog Health（7 类商品健康 issue + 一键过滤列表） | + `harness verify admin-catalog-health-rspec`（口径逐项 + 计数==列表条数 + 筛选横幅 + 导航子项一致性） | ≤2 min |
 | Admin 商品批量运营（批量价格/库存/渠道 + 预览确认） | + `harness verify admin-products-bulk-rspec`（预览零写入 + 预览/执行计数一致 + 逐条权限跳过 + 模态接线） | ≤2 min |
 | 到货订阅（SKU 级，`back_in_stock_subscriptions` / 事件层 / store API / 后台 SKU 列） | + `harness verify back-in-stock-rspec`（SKU 唯一约束 + 双通道分流不重复 + API variant_id + 后台 SKU 列） | ≤2 min |
@@ -286,6 +287,7 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | 重复商品检测（`products/duplicate_candidates.rb` + 后台 Duplicate Products 工作台/对比视图） | + `harness verify duplicate-products-rspec`（三类信号口径 + 计数==组数 + 店铺/软删除作用域 + 对比渲染 + 导航子项） | ≤2 min |
 | AI Product Copilot（`ai/catalog/product_copy.rb` + 商品编辑页 Generate/Preview/Accept + 两个 admin 端点） | + `harness verify ai-copilot-rspec`（能力注册/schema + Gateway 调用与 Run 审计 + **接受前不落库** + 降级/权限） | ≤2 min |
 | AI Translate Missing（`ai/catalog/product_translation.rb` + 翻译抽屉 `[AI Translate Missing]` + `POST /admin/ai/product_translation`） | + `harness verify ai-translate-rspec`（能力注册/schema + 缺失口径 `fallback:false` 排除 slug + 无缺失零 Run + 接受前不落库 + 降级/权限/抽屉渲染） | ≤2 min |
+| Catalog Health AI 修复建议（`ai/catalog/health_fix_suggestion.rb` + 工作台行内面板 + 商品侧栏卡片 + `POST /admin/ai/catalog_health_suggestion`） | + `harness verify ai-health-suggestion-rspec`（能力注册 read 授权/schema + 采样范围与字段最小化 + 计数 0/未知 issue 零 Run + 入口白名单 + 零写库 + 两种粒度渲染） | ≤2 min |
 | Financial ledger / reconciliation (`reconciliations/`, `financial_ledger/`) | + `harness verify finance-reconciliation-rspec` (source/transaction/payment/refund/dispute 对账 + sweeper) | ≤2 min |
 | Any change | `harness doc-impact --base origin/dev` — checks knowledge docs are synced | ≤1 min |
 

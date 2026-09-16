@@ -433,9 +433,13 @@ module PallasTrade
     end
 
     # 入口显示名（前台支付方式行；运营在后台配置的「门店显示名」优先，回落 provider 名）。
+    # @param kind [String, nil] 指定入口（D11 后台逐入口展示用）；缺省用生效入口
     # @return [String]
-    def option_display_name
-      effective_payment_option['display_name'].presence || name
+    def option_display_name(kind = nil)
+      return effective_payment_option['display_name'].presence || name if kind.blank?
+
+      option = effective_payment_options.find { |candidate| candidate['kind'].to_s == kind.to_s }
+      option&.[]('display_name').presence || name
     end
 
     # 入口稳定标识（前台行键 `option_id`）：`"<prefixed_id>:<kind>"`（确定性、可读、与既有 id 同源）。
@@ -458,6 +462,103 @@ module PallasTrade
     # 前端形态：会话类 → inline（自绘壳/官方字段）；非会话类 → manual（仅说明文案）。
     def default_option_frontend_kind
       session_required? ? 'inline' : 'manual'
+    end
+
+    # PALLAS-CUSTOM: D11 切片1（PRD-20260916-payments-d11-circuit-breaker-health）--
+    # 熔断（软置灰）状态机 API（业务方案 §67.3）。状态存 metadata：
+    #   已选项化 provider → `metadata['options'][i]['breaker']`（入口级粒度）
+    #   未选项化         → `metadata['breaker']`（该 provider 唯一入口）
+    # 字段：opened_at / until / reason / manual / failure_rate / sample_size。
+    # 铁律：熔断**零资金副作用** —— 只改 metadata + 写审计；不影响已建会话/已发起的支付。
+    BREAKER_KEY = 'breaker'
+    # 默认阈值（可经 `metadata['breaker_thresholds']` 覆盖）
+    BREAKER_DEFAULTS = {
+      'min_samples' => 10,
+      'failure_rate_threshold' => 0.5,
+      'cooldown_seconds' => 900
+    }.freeze
+
+    # @param kind [String, nil] 入口 kind；缺省用生效入口
+    # @return [Hash, nil] breaker 状态（字符串键）
+    def breaker_state(kind = nil)
+      entry = if optionized?
+                resolved = (kind.presence || effective_payment_option['kind']).to_s
+                option = Array(metadata&.[]('options')).find do |candidate|
+                  candidate.is_a?(Hash) && candidate['kind'].to_s == resolved
+                end
+                option&.dig(BREAKER_KEY)
+              else
+                metadata&.[](BREAKER_KEY)
+              end
+
+      entry.is_a?(Hash) ? entry : nil
+    end
+
+    # 软置灰是否**当前**生效。
+    #   - 手动置灰（`manual: true`）＝ 粘性：生效至人工解除（忽略 until）
+    #   - 自动置灰：到期即视为未置灰（状态行由 Evaluate/SweepJob 清理）
+    def soft_disabled?(kind = nil, now: Time.current)
+      state = breaker_state(kind)
+      return false if state.blank?
+      return true if state['manual'] == true
+
+      until_at = PallasTrade::Payments::CircuitBreaker.parse_time(state['until'])
+      until_at.present? && until_at > now
+    end
+
+    # 写入软置灰状态（幂等：重复写同一入口会覆盖窗口）。
+    # @param until_at [Time, nil] nil = 无自动恢复时间（人工解除为准，配合 manual: true）
+    # @return [Boolean]
+    def soft_disable!(kind: nil, reason:, manual: false, until_at: nil, failure_rate: nil, sample_size: nil)
+      state = {
+        'opened_at' => Time.current.iso8601,
+        'until' => until_at&.iso8601,
+        'reason' => reason.to_s.strip.truncate(500),
+        'manual' => manual
+      }
+      state['failure_rate'] = failure_rate unless failure_rate.nil?
+      state['sample_size'] = sample_size unless sample_size.nil?
+
+      write_breaker_state(kind, state)
+    end
+
+    # 清除软置灰状态（手动解除 / 到期自动解除共用）。
+    # @return [Boolean]
+    def soft_enable!(kind = nil)
+      write_breaker_state(kind, nil)
+    end
+
+    # 生效阈值（默认 + metadata 覆盖；字符串/符号键都接受）。
+    # @return [Hash] { 'min_samples' =>, 'failure_rate_threshold' =>, 'cooldown_seconds' => }
+    def breaker_thresholds
+      override = metadata&.[]('breaker_thresholds')
+      return BREAKER_DEFAULTS.dup unless override.is_a?(Hash)
+
+      BREAKER_DEFAULTS.merge(override.slice(*BREAKER_DEFAULTS.keys))
+    end
+
+    # 写入/清除 metadata 中的 breaker 状态（选项化 → 入口级；否则 provider 级）。
+    # ⚠️ 用 `update_columns(private_metadata:)`（D9 已验证范式）：不触发 provider 校验/远端调用，
+    #    且 `metadata` 是 `private_metadata` 的 API 别名。
+    private def write_breaker_state(kind, state)
+      data = (metadata || {}).deep_dup
+
+      if optionized?
+        resolved = (kind.presence || effective_payment_option['kind']).to_s
+        data['options'] = Array(data['options']).map do |option|
+          next option unless option.is_a?(Hash) && option['kind'].to_s == resolved
+
+          option = option.deep_dup
+          state.nil? ? option.except(BREAKER_KEY) : option.merge(BREAKER_KEY => state)
+        end
+      elsif state.nil?
+        data.delete(BREAKER_KEY)
+      else
+        data[BREAKER_KEY] = state
+      end
+
+      update_columns(private_metadata: data)
+      true
     end
 
     # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915-admin 切片3）—— 能力目录（Capability Catalog）：

@@ -385,6 +385,20 @@ end
 - **reveal 动作**：`POST /admin/payment_methods/:id/reveal_credential`（member route）——`authorize! :update` + `can?(:manage, PallasTrade::Role.default_admin_role)` 双重门禁；响应 `turbo_stream`（就地替换 `#credential_value_<key>`）或 `json`；审计只记 key。
 - 回归：`harness verify d9-credentials-rspec`。
 
+## 支付熔断与健康：provider 详情页（D11 切片1, 2026-09-16，PRD-20260916-payments-d11-circuit-breaker-health）
+
+- **「熔断与健康」卡**（`_breaker.html.erb`，`edit.html.erb` 在 `_credentials` 之后 render；锚点 `#payment_method_breaker`）：
+  上表 = 24h provider 级指标（尝试/失败/失败率/平均时长/主要错误）；下表 = 逐入口状态（正常/已软置灰 + 恢复时间）+ 动作。
+  指标**只调** `Payments::Health::Metrics`（`PaymentsHelper#breaker_health_metrics`），页面不重算口径。
+- **手动动作**（member route）：`POST /admin/payment_methods/:id/soft_disable`（**必填 reason**，缺原因 → `flash[:error]` 且不改状态）
+  与 `POST /admin/payment_methods/:id/soft_enable`；权限 = `authorize! :update`；审计
+  `payment_option_manually_soft_disabled` / `payment_option_manually_soft_enabled`（metadata 记 kind + reason）。
+  手动置灰 = **粘性**（`manual: true`，巡检不会自动恢复）；自动置灰到期由 `Evaluate` 清理。
+- **页面自洽**：入口状态经 `PaymentMethod#breaker_state(kind)` / `soft_disabled?(kind)`；逐入口名用 `option_display_name(kind)`
+  （D16 读模型**扩参**，未传参行为不变）。
+- ⚠️ 历史坑：admin 编辑页路径参数是 **`prefixed_id`**（`pm_xxx`），spec 里写 `payment_method.id` 会 404。
+- **回归**：`harness verify d11-circuit-breaker-rspec`。
+
 ## 支付适用范围编辑：Provider 详情「支付方式」页签（D8 切片2, 2026-09-15，PRD-20260915-payments-d8）
 
 同一页签每行新增「适用范围」编辑器 + 摘要列（改 `_options.html.erb`；**不新增页面**）：

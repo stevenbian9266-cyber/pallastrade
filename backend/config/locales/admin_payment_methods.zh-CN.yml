@@ -53,6 +53,29 @@ zh-CN:
         test_connection_error: 无法执行连接检查
         test_connection_failed: "连接检查失败（%{code}）：%{message}"
         test_connection_ok: "连接检查通过（%{code}）。%{message}"
+        breaker_health: 熔断与健康
+        breaker_help: 软置灰只是把入口从前台摘掉 —— 不影响已建会话、已发起的支付、订单与库存（零资金副作用）。
+        breaker_entry: 入口
+        breaker_status: 状态
+        breaker_status_enabled: 正常
+        breaker_status_disabled: 已软置灰
+        breaker_attempts: 尝试数（24h）
+        breaker_failed: 失败数（24h）
+        breaker_failure_rate: 失败率
+        breaker_avg_seconds: 平均时长
+        breaker_top_errors: 主要错误
+        breaker_window: 窗口
+        breaker_manual_until: 人工解除为准
+        breaker_auto_until: 自动恢复 %{time}
+        breaker_reason: 原因
+        breaker_reason_placeholder: 为什么要摘掉这个入口？（会写入审计日志）
+        breaker_reason_required: 软置灰必须填写原因
+        breaker_confirm: 该操作只影响前台是否展示该入口 —— 不会改动已建会话、支付与订单。继续？
+        breaker_disable_action: 软置灰
+        breaker_enable_action: 解除
+        breaker_soft_disabled: "%{name} 已从前台摘除。"
+        breaker_soft_enabled: "%{name} 已恢复前台可用。"
+        breaker_none: 该支付商未声明前台入口。
     payment_option_dimensions:
       market: 市场
       country: 国家
