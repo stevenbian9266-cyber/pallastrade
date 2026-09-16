@@ -1,6 +1,12 @@
 "use client";
 
-import { CircleCheckBig, CircleX, Clock, PackageCheck } from "lucide-react";
+import {
+  CircleCheckBig,
+  CircleX,
+  Clock,
+  Flame,
+  PackageCheck,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { AvailabilityState } from "@/lib/utils/variant-selection";
 
@@ -8,6 +14,12 @@ interface AvailabilityStatusProps {
   availability: AvailabilityState;
   /** Pre-order ship-by date (ISO); ignored outside the pre-order state. */
   preorderShipsAt?: string | null;
+  /**
+   * Catalog F-2: the API's stock bucket. `low_stock` replaces the plain
+   * in-stock line with the scarcity phrasing — exact quantities never reach
+   * the browser.
+   */
+  stockStatus?: string | null;
 }
 
 function formatShipsBy(iso: string, locale: string): string {
@@ -31,9 +43,22 @@ function formatShipsBy(iso: string, locale: string): string {
 export function AvailabilityStatus({
   availability,
   preorderShipsAt,
+  stockStatus,
 }: AvailabilityStatusProps) {
   const t = useTranslations("products");
   const locale = useLocale();
+
+  if (availability === "in_stock" && stockStatus === "low_stock") {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 text-amber-600"
+        data-testid="stock-badge-low"
+      >
+        <Flame className="w-5 h-5" />
+        {t("onlyFewLeft")}
+      </span>
+    );
+  }
 
   if (availability === "in_stock") {
     return (

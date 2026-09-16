@@ -2828,6 +2828,75 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/shipping_estimate":
+    get:
+      summary: Shipping window for a product (Catalog F-2)
+      tags:
+      - Shipping
+      security:
+      - api_key: []
+      description: |-
+        Advisory read model behind the PDP shipping block: the widest transit
+        window across front-end delivery methods, the free-shipping hint, and a
+        digital-product answer. Read-only — nothing here priced an order; the
+        authoritative cost is computed when the order is submitted.
+
+        Transit days are counted in **weekdays** (Mon–Fri, no holiday
+        calendar), published as `business_day_source`.
+      parameters:
+      - name: product_id
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Prefixed product id (`prod_…`). Without it the answer is store-wide.
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+        description: ISO country code of the visitor (e.g. `US`).
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+          const client = createClient({ baseUrl: 'https://your-store.com', publishableKey: '<api-key>' })
+          const estimate = await client.shippingEstimate.get({ product_id: 'prod_x', country: 'US' })
+      responses:
+        "200":
+          description: Shipping estimate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      available:
+                        type: boolean
+                      digital:
+                        type: boolean
+                      min_days:
+                        type: number
+                        nullable: true
+                      max_days:
+                        type: number
+                        nullable: true
+                      free_shipping:
+                        type: boolean
+                      free_shipping_threshold:
+                        type: number
+                        nullable: true
+                      business_day_source:
+                        type: string
+                      methods:
+                        type: array
+                        items:
+                          type: object
+        "401":
+          description: Missing or invalid publishable key
   "/api/v3/store/shipping_methods":
     get:
       summary: List front-end shipping methods (P1)
@@ -2838,8 +2907,19 @@ paths:
       description: |-
         Front-end delivery-method list for the order-confirmation page
         (`display_on` both/front_end). Each item carries
-        `display_estimated_price`; the authoritative shipping cost is computed
-        at order submit.
+        `display_estimated_price` and the published transit window
+        (`estimated_transit_business_days_min/max`, counted in weekdays);
+        the authoritative shipping cost is computed at order submit.
+        Optional `country` narrows the list to matching zones; when no zone
+        matches it falls back to the full set rather than claiming there is
+        no delivery.
+      parameters:
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+        description: ISO country code of the visitor (e.g. `US`).
       x-codeSamples:
       - lang: javascript
         label: PallasTrade SDK
@@ -12285,11 +12365,19 @@ components:
         display_estimated_price:
           type: string
           nullable: true
+        estimated_transit_business_days_min:
+          type: number
+          nullable: true
+        estimated_transit_business_days_max:
+          type: number
+          nullable: true
       required:
       - id
       - name
       - code
       - display_estimated_price
+      - estimated_transit_business_days_min
+      - estimated_transit_business_days_max
       x-typelizer: true
     DeliveryRate:
       type: object
@@ -13863,6 +13951,17 @@ components:
           type: string
         slug:
           type: string
+        stock_status:
+          type: string
+          enum:
+          - in_stock
+          - low_stock
+          - preorder
+          - backorder
+          - out_of_stock
+          description: |-
+            Bucketed availability for shoppers (Catalog F-2). Never a quantity:
+            the exact on-hand count is deliberately not published.
         meta_title:
           type: string
           nullable: true
@@ -14220,6 +14319,16 @@ components:
           type: boolean
         preorder:
           type: boolean
+        stock_status:
+          type: string
+          enum:
+          - in_stock
+          - low_stock
+          - preorder
+          - backorder
+          - out_of_stock
+          description: |-
+            Bucketed availability for shoppers (Catalog F-2). Never a quantity.
         weight:
           type: number
           nullable: true

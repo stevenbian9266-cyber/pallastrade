@@ -114,6 +114,17 @@ export const ProductCard = memo(function ProductCard({
         {!product.purchasable && (
           <span className="mt-2 text-sm text-gray-500">{t("outOfStock")}</span>
         )}
+
+        {/* Catalog F-2: scarcity is a bucket, never a quantity. Only the
+            low-stock bucket earns a badge — plain in-stock stays quiet. */}
+        {product.purchasable && product.stock_status === "low_stock" && (
+          <span
+            className="mt-2 inline-flex w-fit items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800"
+            data-testid="stock-badge-low"
+          >
+            {t("onlyFewLeft")}
+          </span>
+        )}
       </div>
     </Link>
   );

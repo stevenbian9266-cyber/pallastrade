@@ -97,6 +97,17 @@ const REQUIRED: Record<string, string[]> = {
     // 发现区块（相关商品 / 最近浏览）标题。
     "relatedTitle",
     "recentlyViewedTitle",
+    // PRD-20260916-catalog-batch-f2-stock-shipping AC-009：
+    // 库存稀缺（分桶）与配送时效 / 免运费提示，五语言齐备。
+    "onlyFewLeft",
+    "shippingEstimate",
+    "transitDaysRange",
+    "transitDaysSingle",
+    "estimatedArrival",
+    "shippingAtCheckout",
+    "instantDownload",
+    "freeShipping",
+    "freeShippingOver",
   ],
   // PRD-20260915-catalog-batch-c1-discovery AC-010：Wishlist V1 全量文案。
   wishlist: ["title", "empty", "browse", "add", "remove", "removeAria"],

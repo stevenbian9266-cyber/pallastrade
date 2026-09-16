@@ -132,6 +132,8 @@ const shippingMethods = [
     name: "Standard",
     code: "STANDARD",
     display_estimated_price: "$5.00",
+    estimated_transit_business_days_min: 3,
+    estimated_transit_business_days_max: 5,
   },
 ];
 

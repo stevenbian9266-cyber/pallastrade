@@ -1,6 +1,11 @@
 "use client";
 
-import type { Media, Product, Variant } from "@pallastrade/sdk";
+import type {
+  Media,
+  Product,
+  ShippingEstimate as ShippingEstimateData,
+  Variant,
+} from "@pallastrade/sdk";
 import { Loader2, ShoppingBag } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -15,6 +20,7 @@ import {
   type ReviewMeta,
   type ReviewView,
 } from "@/components/products/ProductReviews";
+import { ShippingEstimate } from "@/components/products/ShippingEstimate";
 import { VariantPicker } from "@/components/products/VariantPicker";
 import { WishlistButton } from "@/components/products/WishlistButton";
 import { Button } from "@/components/ui/button";
@@ -41,6 +47,8 @@ interface ProductDetailsProps {
   averageRating?: number | null;
   reviewCount?: number;
   isAuthenticated?: boolean;
+  /** Catalog F-2: advisory shipping window for the PDP block. */
+  shippingEstimate?: ShippingEstimateData | null;
 }
 
 export function ProductDetails({
@@ -52,6 +60,7 @@ export function ProductDetails({
   averageRating = null,
   reviewCount = 0,
   isAuthenticated = false,
+  shippingEstimate = null,
 }: ProductDetailsProps) {
   const { addItem } = useCart();
   const { currency } = useStore();
@@ -115,7 +124,9 @@ export function ProductDetails({
   const originalPrice =
     selectedVariant?.original_price ?? product.original_price;
   const displayPrice = price?.display_amount;
-
+  // Catalog F-2: the selected SKU's bucket wins over the product's.
+  const stockStatus =
+    selectedVariant?.stock_status ?? product.stock_status ?? null;
   const currentAmountCents = price?.amount_in_cents;
   const originalAmountCents = originalPrice?.amount_in_cents;
   const compareAtAmountCents = price?.compare_at_amount_in_cents;
@@ -211,9 +222,13 @@ export function ProductDetails({
             <AvailabilityStatus
               availability={availability}
               preorderShipsAt={preorderShipsAt}
+              stockStatus={stockStatus}
             />
             <WishlistButton product={product} />
           </div>
+
+          {/* Catalog F-2: shipping window straight under the price/stock row. */}
+          <ShippingEstimate estimate={shippingEstimate ?? null} />
 
           {/* Back-in-stock notification — only when the item cannot be bought.
               Pre-order / backorder stay purchasable and must not trade a sale

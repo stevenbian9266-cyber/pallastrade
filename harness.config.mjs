@@ -262,6 +262,13 @@ export default {
         description: 'Review upgrade specs (paginated list with rating_distribution, load-more pages, image ownership/limit/signed-id errors, model photo limits, admin photo column)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/api/v3/store/reviews_spec.rb spec/requests/api/v3/store/reviews_pagination_spec.rb spec/requests/api/v3/store/reviews_images_spec.rb spec/models/pallastrade/review_spec.rb spec/requests/pallastrade/admin/reviews_spec.rb'],
       },
+      // 库存阈值化与配送信息（PRD-20260916-catalog-batch-f2-stock-shipping）：
+      // 分桶口径（与 Variant#in_stock? 同源、tracking off 不制造稀缺）+ 阈值归一 +
+      // 配送时效/免运费读模型 + 只增字段的序列化契约 + 列表不随条数放大查询
+      'f2-stock-shipping-rspec': {
+        description: 'Stock bucket + shipping estimate specs (buckets agree with in_stock?, threshold normalization, no exact quantity in any response, transit/free-shipping matrix, list query count constant)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/catalog/stock_status_spec.rb spec/services/pallastrade/shipping/estimate_spec.rb spec/requests/api/v3/store/stock_status_and_shipping_spec.rb'],
+      },
       // 前台密钥下发（PRD-20260915-payments-d10-client-config）：client_config 组装（仅 publishable）
       // + env: 引用解析 + Checkout 契约下发 + Stripe publishable 声明（secret 不泄漏）
       'd10-client-config-rspec': {
@@ -297,6 +304,12 @@ export default {
       'd13b-payouts-rspec': {
         description: 'Payout settlement ledger specs (status synthesis/totals/uniqueness + CSV import idempotency/errors + match anchors/tolerance + case sync/auto-close/supersede + admin ledger filters/detail/import/match/permissions)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d13b_payout_spec.rb spec/services/pallastrade/reconciliations/payouts/d13b_import_csv_spec.rb spec/services/pallastrade/reconciliations/payouts/d13b_match_spec.rb spec/services/pallastrade/reconciliations/payouts/d13b_sync_cases_spec.rb spec/requests/pallastrade/admin/d13b_payouts_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
+      },
+      // 退款审批（PRD-20260916-payments-d14-refund-approval 切片1）：策略阈值（≤ 自动 / > 需审批）
+      // + 双人复核（不能自批）+ 请求级幂等键 + 审批工作台/策略卡 + Admin API 策略门与契约字段
+      'd14-refund-approval-rspec': {
+        description: 'Refund approval specs (policy normalization matrix + auto/pending branches + request_key idempotency + two-person approve/reject with SoD + admin workbench/policy card/permissions + admin API gate & contract field)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d14_refund_approval_spec.rb spec/services/pallastrade/refunds/d14_policy_spec.rb spec/services/pallastrade/refunds/d14_submit_spec.rb spec/services/pallastrade/refunds/d14_approval_decision_spec.rb spec/requests/pallastrade/admin/d14_refund_approvals_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb spec/requests/api/v3/admin/orders/refunds_approval_spec.rb spec/requests/api/v3/admin/orders/refunds_controller_spec.rb'],
       },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {

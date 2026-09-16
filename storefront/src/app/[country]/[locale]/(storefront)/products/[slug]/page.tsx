@@ -9,6 +9,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { getCachedProduct, PRODUCT_PAGE_EXPAND } from "@/lib/data/cached";
 import { isAuthenticated } from "@/lib/data/cookies";
 import { getProductReviews } from "@/lib/data/reviews";
+import { getShippingEstimate } from "@/lib/data/shipping";
 import { generateProductMetadata } from "@/lib/metadata/product";
 import {
   buildBreadcrumbJsonLd,
@@ -78,9 +79,11 @@ export default async function ProductPage({
   );
 
   // P0-4 / F-1: approved reviews (first page + rating distribution) + auth state.
-  const [reviewList, authenticated] = await Promise.all([
+  // Catalog F-2: advisory shipping window for the visitor's country.
+  const [reviewList, authenticated, shippingEstimate] = await Promise.all([
     getProductReviews(product.id),
     isAuthenticated(),
+    getShippingEstimate(product.id, country?.toUpperCase()),
   ]);
 
   return (
@@ -115,6 +118,7 @@ export default async function ProductPage({
         averageRating={product.average_rating ?? null}
         reviewCount={product.review_count ?? 0}
         isAuthenticated={authenticated}
+        shippingEstimate={shippingEstimate}
       />
 
       {/* Discovery rails (PRD-20260915-catalog-batch-c1-discovery) */}
