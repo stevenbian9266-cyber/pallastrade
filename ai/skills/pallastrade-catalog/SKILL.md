@@ -255,6 +255,20 @@ product 层的桶取「最优变体」（in_stock > low_stock > preorder > backo
 F-2 只是把它经 `PallasTrade::Shipping::Estimate` 与 `delivery_method_serializer` 下发到前台，
 **不改结算定价**（权威运费仍在 `Carts::Submit` 时算）。
 
+**配送方式的适用性口径（收口批次，2026-09-16，PRD-20260916-shipping-catalog-observability-scope）**：
+`Estimate#scoped_methods` 只返回**该商品真能选**的前台方式 ——
+
+1. **排除数字商品专用方式**（`Calculator::Shipping::DigitalDelivery`）：它零价且 `display_on = 'both'`，
+   曾被 `zero_price_method?` 计为候选，让**实体商品**显示"免运费"、并把 PDP 方法数抬高。
+   `ShippingMethod#digital` 是它的**唯一权威 scope** —— 不要在读模型里重写计算器类型匹配。
+2. **按商品配送分类匹配**：关联了分类的方式必须服务该商品的 `shipping_category`，否则前台会展示
+   顾客在结算时选不了的服务。
+3. **未关联任何分类的历史方式保留**：模型有 `at_least_one_shipping_category` 校验，这一支只为历史行
+   兜底（测试用 `save(validate: false)` 构造）；直接删掉会让商品突然没有任何配送方式。
+
+> 口径修正属**框架内部读模型**改动（`pallastrade_gems` 是团队产品，AGENTS §1 允许直改），不是宿主定制 ——
+> 与 F-2 的测试隔离无关：F-2 当时只让 spec 不再受 seed 数据影响，生产口径直到本批才修。
+
 ## Back-in-stock subscriptions（SKU 级，2026-09-15 Batch C-2）
 
 `PallasTrade::BackInStockSubscription` 现在**两个粒度共存**（PRD-20260915-catalog-batch-c2-sku-back-in-stock）：

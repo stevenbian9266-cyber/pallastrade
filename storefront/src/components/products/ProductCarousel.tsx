@@ -17,7 +17,17 @@ interface ProductCarouselProps {
   basePath: string;
   /** Optional currency used for analytics in each ProductCard. */
   currency?: string;
+  /**
+   * Analytics list identity. Every rail other than Featured must pass its own
+   * id — this component used to hard-code `featured-products`, so Related and
+   * Recently Viewed clicks were attributed to Featured.
+   */
+  listId?: string;
+  listName?: string;
 }
+
+const DEFAULT_LIST_ID = "featured-products";
+const DEFAULT_LIST_NAME = "Featured Products";
 
 const NAV_BUTTON_BASE =
   "absolute top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center cursor-pointer rounded-lg bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors";
@@ -26,6 +36,8 @@ export function ProductCarousel({
   products,
   basePath,
   currency,
+  listId = DEFAULT_LIST_ID,
+  listName = DEFAULT_LIST_NAME,
 }: ProductCarouselProps): ReactElement {
   const t = useTranslations("products");
   const [isBeginning, setIsBeginning] = useState(true);
@@ -100,8 +112,8 @@ export function ProductCarousel({
               product={product}
               basePath={basePath}
               index={index}
-              listId="featured-products"
-              listName="Featured Products"
+              listId={listId}
+              listName={listName}
               currency={currency}
               fetchPriority={index === 0 ? "high" : undefined}
             />

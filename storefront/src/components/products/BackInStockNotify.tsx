@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { trackBackInStockSubscribe } from "@/lib/analytics/gtm";
 import { createBackInStockSubscription } from "@/lib/data/backInStock";
 
 interface BackInStockNotifyProps {
@@ -46,6 +47,10 @@ export function BackInStockNotify({
       value,
       variantId,
     );
+    // Catalog observability batch: report the outcome, never block on it —
+    // the helper swallows its own errors so a tracking failure cannot turn a
+    // successful subscription into a failed one.
+    trackBackInStockSubscribe(productId, variantId, result.success);
     if (result.success) {
       setState("done");
     } else {

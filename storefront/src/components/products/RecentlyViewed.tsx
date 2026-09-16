@@ -72,6 +72,8 @@ export function RecentlyViewed({
         products={products}
         basePath={basePath}
         currency={currency}
+        listId="recently-viewed"
+        listName="Recently Viewed"
       />
     </section>
   );

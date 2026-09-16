@@ -59,7 +59,7 @@ module PallasTrade
             )
           end
 
-          methods = scoped_methods(store, country)
+          methods = scoped_methods(store, country, product)
           mins = methods.filter_map(&:estimated_transit_business_days_min)
           maxes = methods.filter_map(&:estimated_transit_business_days_max)
 
@@ -75,16 +75,51 @@ module PallasTrade
           )
         end
 
-        # Front-end delivery methods, narrowed to the visitor's country when a
-        # zone matches. When nothing matches we fall back to the full set rather
-        # than claim "no delivery" for a country the zones simply don't model.
-        def scoped_methods(store, country)
-          scope = PallasTrade::ShippingMethod.where(display_on: %w[both front_end]).order(:name)
+        # Front-end delivery methods a shopper can actually pick for this
+        # product, narrowed to the visitor's country when a zone matches. When
+        # nothing matches we fall back to the full set rather than claim "no
+        # delivery" for a country the zones simply don't model.
+        #
+        # Catalog observability batch (PRD-20260916-shipping-商品域收口批次):
+        # two applicability filters used to be missing here —
+        #   1. the digital-only delivery method is zero-priced and
+        #      `display_on = 'both'`, so `zero_price_method?` counted it and made
+        #      *physical* products claim free shipping (and inflated the PDP
+        #      method count). `ShippingMethod.digital` already owns that
+        #      definition — reuse it instead of re-matching the calculator type.
+        #   2. a method restricted to shipping categories must serve the
+        #      product's own category, otherwise we advertise a service the
+        #      shopper cannot choose at checkout.
+        # A method with no category stays visible: the model validates at least
+        # one category, so this only guards historic rows, and dropping them
+        # could leave a product with no delivery options at all.
+        def scoped_methods(store, country, product = nil)
+          scope = applicable_methods(product).order(:name)
           return scope if country.blank?
 
           filtered = scope.joins(zones: :countries).
                      where(pallastrade_countries: { iso: country.to_s.upcase }).distinct
           filtered.exists? ? filtered : scope
+        end
+
+        # Methods that may serve the given product (see `scoped_methods`).
+        def applicable_methods(product)
+          scope = PallasTrade::ShippingMethod.
+                  where(display_on: %w[both front_end]).
+                  where.not(id: PallasTrade::ShippingMethod.digital.select(:id))
+
+          category_id = product&.shipping_category_id
+          return scope if category_id.blank?
+
+          categorized = PallasTrade::ShippingMethodCategory.select(:shipping_method_id)
+          matching = PallasTrade::ShippingMethodCategory.
+                     where(shipping_category_id: category_id).
+                     select(:shipping_method_id)
+          products_id = PallasTrade::ShippingMethod.arel_table[:id]
+
+          scope.where(
+            products_id.in(matching.arel).or(products_id.not_in(categorized.arel))
+          )
         end
 
         # A front-end method already priced at zero (plain flat rate 0) means

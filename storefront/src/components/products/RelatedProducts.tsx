@@ -58,6 +58,8 @@ export async function RelatedProducts({
         products={related}
         basePath={basePath}
         currency={currency}
+        listId="related-products"
+        listName="Related Products"
       />
     </section>
   );

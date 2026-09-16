@@ -445,6 +445,13 @@ PRD-20260915-catalog-batch-c1-discovery：PDP 从「交易终点」变成「发�
 3. **hydration 安全**：首帧不读 localStorage（组件返回 `null` / 徽章为 0），挂载后 effect 再同步；同页同步用自定义事件（`pt:recently-viewed` / `pt:wishlist`），跨标签用 `storage` 事件。
 4. **i18n 5 语言 + 守护**：新键必须进 `messages/{de,en,es,fr,pl}.json`，并在 `lib/__tests__/checkout-i18n-keys.test.ts` 的 `REQUIRED` 登记（缺键 = 用户可见缺陷）。
 5. **埋点复用**：新 rail 直接用 `ProductCard` 的 `select_item`（传 `listId` / `listName` 区分区块），不新增埋点代码。
+   ⚠️ **必须真的传**：`ProductCarousel` 曾把 `listId` **硬编码**成 `featured-products`，于是 Related /
+   Recently Viewed 的点击全被记到 Featured（比"没有归因"更糟）。现在它接受 `listId` / `listName`
+   （默认仍是 featured，首页 rail 行为不变），**每个 rail 必须显式传自己的标识**
+   （`related-products` / `recently-viewed`）；机制回归见 `__tests__/ProductCarousel.test.tsx`。
+   ⚠️ **转化类动作也要发事件**：缺货订阅成功后发 `back_in_stock_subscribe`
+   （`lib/analytics/gtm.ts#trackBackInStockSubscribe`，带 `product_id` / `variant_id` / `success`）；
+   该 helper **自己吞异常** —— 埋点失败绝不能让订阅显示为失败（AP-009b 精神，回归见 `BackInStockNotify.test.tsx`）。
 6. 服务端 rail 的 `locale` 用全局 `Locale` 类型（`src/types/next-intl.d.ts`），页面传参需要 `locale as Locale`；`currency` 这种可空字段要 `?? undefined`。
 7. **PDP 按钮层级**（2026-09-15 修复）：主 CTA 行只放 数量选择 + Add to Cart + Buy Now；收藏/分享这类弱动作一律 `outline` + `sm` 且贴到信息行（库存状态行），**禁用 `size="lg"` + `w-full`**：那是主 CTA 的形制，放进行级 flex 会直接挤压主按钮。
 

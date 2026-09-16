@@ -3,6 +3,7 @@
 require 'spec_helper'
 
 # PRD-20260916-catalog-batch-f2-stock-shipping AC-006
+# PRD-20260916-shipping-catalog-observability-scope AC-001 AC-003 AC-004 AC-005 AC-007
 RSpec.describe PallasTrade::Shipping::Estimate do
   let(:store) { PallasTrade::Store.default }
   let(:product) { create(:product, store: store, status: 'active') }
@@ -120,6 +121,99 @@ RSpec.describe PallasTrade::Shipping::Estimate do
 
       expect(result.available).to be true
       expect(result.to_h[:methods].size).to eq(1)
+    end
+  end
+
+  # Catalog observability batch: a shopper must only be shown delivery methods
+  # they can actually pick for the product in front of them. The digital-only
+  # method is zero-priced with `display_on = 'both'`, so it used to be counted as
+  # "free shipping" for physical goods, and a method restricted to another
+  # shipping category used to be advertised anyway.
+  describe 'method applicability (PRD-20260916-shipping-catalog-observability-scope)' do
+    # Explicit category so these examples never depend on which category the
+    # product factory happens to pick (`ShippingCategory.first` is whatever row
+    # exists first — in an unseeded test database that can be a category the
+    # example itself just created).
+    let(:scoped_product) do
+      create(:product, store: store, status: 'active', shipping_category: shipping_category)
+    end
+
+    def digital_delivery_method
+      PallasTrade::ShippingMethod.create!(
+        name: 'Digital delivery',
+        display_on: 'both',
+        shipping_categories: [shipping_category],
+        calculator: PallasTrade::Calculator::Shipping::DigitalDelivery.create!
+      )
+    end
+
+    it 'never offers the digital-only delivery to a physical product (AC-001/AC-005)' do
+      digital_delivery_method
+
+      result = described_class.call(store: store, product: scoped_product)
+
+      expect(result.methods).to be_empty
+      expect(result.available).to be false
+      expect(result.free_shipping).to be false
+    end
+
+    it 'skips a method that serves a different shipping category (AC-003)' do
+      other = PallasTrade::ShippingCategory.find_or_create_by!(name: 'ZZ Other category')
+      PallasTrade::ShippingMethod.create!(
+        name: 'Other-category service',
+        display_on: 'both',
+        shipping_categories: [other],
+        calculator: PallasTrade::Calculator::Shipping::FlatRate.new(preferred_amount: 5)
+      )
+
+      expect(other.id).not_to eq(shipping_category.id)
+
+      result = described_class.call(store: store, product: scoped_product)
+
+      expect(result.methods.map(&:name)).not_to include('Other-category service')
+    end
+
+    it 'keeps a method that serves the product category (AC-003)' do
+      PallasTrade::ShippingMethod.create!(
+        name: 'Matching service',
+        display_on: 'both',
+        shipping_categories: [shipping_category],
+        calculator: PallasTrade::Calculator::Shipping::FlatRate.new(preferred_amount: 5)
+      )
+
+      result = described_class.call(store: store, product: scoped_product)
+
+      expect(result.methods.map(&:name)).to include('Matching service')
+    end
+
+    it 'keeps a legacy method that carries no category at all (AC-004)' do
+      legacy = PallasTrade::ShippingMethod.new(
+        name: 'Legacy uncategorised',
+        display_on: 'both',
+        calculator: PallasTrade::Calculator::Shipping::FlatRate.new(preferred_amount: 7)
+      )
+      # Historic row: predates the `at_least_one_shipping_category` validation.
+      legacy.save(validate: false)
+
+      result = described_class.call(store: store, product: scoped_product)
+
+      expect(result.methods.map(&:name)).to include('Legacy uncategorised')
+    end
+
+    it 'keeps every response key (AC-007)' do
+      PallasTrade::ShippingMethod.create!(
+        name: 'Standard',
+        display_on: 'both',
+        shipping_categories: [shipping_category],
+        calculator: PallasTrade::Calculator::Shipping::FlatRate.new(preferred_amount: 5)
+      )
+
+      result = described_class.call(store: store, product: scoped_product).to_h
+
+      expect(result.keys).to include(
+        :available, :digital, :min_days, :max_days,
+        :free_shipping, :free_shipping_threshold, :business_day_source, :methods
+      )
     end
   end
 end

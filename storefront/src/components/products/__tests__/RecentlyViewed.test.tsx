@@ -13,14 +13,28 @@ vi.mock("next-intl", () => ({
 }));
 
 // The rail itself is a Swiper wrapper — irrelevant here and unfriendly to jsdom.
+// Its analytics identity is captured so attribution can be asserted (AC-009).
+const carouselProps: Array<Record<string, unknown>> = [];
+
 vi.mock("@/components/products/ProductCarousel", () => ({
-  ProductCarousel: ({ products }: { products: Product[] }) => (
-    <ul data-testid="rail">
-      {products.map((item) => (
-        <li key={item.id}>{item.name}</li>
-      ))}
-    </ul>
-  ),
+  ProductCarousel: ({
+    products,
+    listId,
+    listName,
+  }: {
+    products: Product[];
+    listId?: string;
+    listName?: string;
+  }) => {
+    carouselProps.push({ listId, listName });
+    return (
+      <ul data-testid="rail">
+        {products.map((item) => (
+          <li key={item.id}>{item.name}</li>
+        ))}
+      </ul>
+    );
+  },
 }));
 
 function product(id: string): Product {
@@ -76,5 +90,18 @@ describe("RecentlyViewed (AC-004/AC-011)", () => {
     const { container } = render(<RecentlyViewed basePath="/us/en" />);
 
     expect(container.firstChild).toBeNull();
+  });
+
+  it("attributes its clicks to recently-viewed, not to Featured (AC-009)", () => {
+    carouselProps.length = 0;
+    window.localStorage.setItem(
+      RECENTLY_VIEWED_KEY,
+      serializeRecentlyViewed([entry("1")]),
+    );
+
+    render(<RecentlyViewed basePath="/us/en" />);
+
+    expect(carouselProps[0]?.listId).toBe("recently-viewed");
+    expect(carouselProps[0]?.listName).toBe("Recently Viewed");
   });
 });

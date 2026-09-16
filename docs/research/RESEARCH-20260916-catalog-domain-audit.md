@@ -59,7 +59,9 @@
 - **位置**：`backend/pallastrade_gems/pallastrade_core/app/services/pallastrade/shipping/estimate.rb`（`scoped_methods`）
 - **现象**：该方法只按 `display_on IN ('both','front_end')` 过滤，**不按 store 过滤**，也**不排除数字商品用配送方式**；随后 `zero_price_method?` 把任何零价配送方式当作"免运费"，`free_shipping` 因此变 true。
 - **实证**：本批 F-2 修复中，CI（`bin/rails db:prepare` 会 seed）的 9 例失败里，3 例正是该口径造成 —— `Seeds::DigitalDelivery` 建的 `display_on='both'` 零价 `Digital delivery` 让**实体商品**的 `free_shipping` 变成 true，并抬高 PDP 的 `methods` 计数。修复只是让**测试**不再受它影响（spec 里先 `ShippingMethod.destroy_all`），**生产口径未变**。
-- **影响**：前台 PDP 可能向实体商品展示"免配送费"，以及一个并不适用的数字商品配送方式；多店部署下需复核是否还跨店展示。
+- **影响**：前台 PDP 可能向实体商品展示"免配送费"，以及一个并不适用的数字商品配送方式。
+  （**多店跨界不成立**：已核对 `backend/db/schema.rb`，`pallastrade_shipping_methods` **无 `store_id`**，配送方式是全局资源 —— 本项只涉及"数字商品方式污染实体商品"这一条，不涉及跨店。）
+- **状态**：2026-09-16 收口批次已修复（`PRD-20260916-shipping-catalog-observability-scope`），详见该 PRD 与 §7 G-1 行。
 - **建议**：`scoped_methods` 显式收敛作用域（店铺 + 排除 `Calculator::Shipping::DigitalDelivery`，或要求配送方式与商品配送分类匹配），再复核 `zero_price_method?` 的语义。
 - **验证方式**：新增或扩展 `f2-stock-shipping-rspec`，断言"仅返回本店/与本商品配送分类匹配的方式"，且 digital 方式不出现在实体商品结果里。
 

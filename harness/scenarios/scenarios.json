@@ -3972,6 +3972,31 @@
         "environmentParity": 15,
         "knowledgeCapture": 10
       }
+    },
+    {
+      "id": "GS-157",
+      "name": "A delivery promise only uses options the shopper can actually pick",
+      "description": "The PDP shipping block reads the store-wide shipping methods table. A digital-only delivery method (zero-priced, shown on both channels) used to count as a candidate for physical goods — so a physical product could advertise free shipping it never had, and the method count drifted. A method restricted to another shipping category was advertised too. Worse, this stayed invisible because the failing specs had been taught to ignore the seeded data instead of the read model being fixed.",
+      "mustDo": [
+        "Filter by applicability, not just by display channel: never offer digital-only delivery for a physical product, and only offer category-restricted methods that serve the product's own category",
+        "Reuse the model's existing definition of a digital method instead of re-deriving it from the calculator type in the read model",
+        "Keep a conservative fallback for rows that predate the category validation, so no product suddenly loses every delivery option",
+        "Keep the response contract intact — same keys, only more accurate contents",
+        "Prove the fix with a real end-to-end case (physical product plus a zero-priced digital method) rather than by hiding the seeded data in the test"
+      ],
+      "mustNotDo": [
+        "Let a zero-priced inapplicable method drive the free-shipping claim",
+        "Widen or narrow the response contract while fixing the filter",
+        "Change requirement-level validation just to make the test setup easier",
+        "Fix the symptom in the spec while leaving the read model wrong"
+      ],
+      "scoring": {
+        "applicabilityAccuracy": 30,
+        "singleSourceOfTruth": 20,
+        "contractStability": 20,
+        "conservativeFallback": 15,
+        "evidenceQuality": 15
+      }
     }
   ]
 }

@@ -288,6 +288,31 @@ export function trackPurchase(order: Cart | Order): void {
   }
 }
 
+/**
+ * Catalog observability batch (PRD-20260916-shipping-商品域收口批次): the
+ * conversion side of back-in-stock subscriptions. Until now subscribing was
+ * invisible to analytics, so "did 缺货订阅 bring any sales" had no answer.
+ *
+ * Deliberately never throws: analytics must not break the subscribe flow
+ * (the caller keeps its own state; AP-009b).
+ */
+export function trackBackInStockSubscribe(
+  productId: string,
+  variantId: string | null | undefined,
+  success: boolean,
+): void {
+  try {
+    sendGTMEvent({
+      event: "back_in_stock_subscribe",
+      product_id: productId,
+      variant_id: variantId ?? null,
+      success,
+    });
+  } catch {
+    // Analytics must never break the subscribe flow.
+  }
+}
+
 export function trackQuickSearch(
   products: Product[],
   searchTerm: string,
