@@ -1,0 +1,231 @@
+<%# PALLAS-CUSTOM: D13 切片3（PRD-20260916-payments-d13c-fee-cost-report；业务方案 §70.3 报表）——
+    支付成本报表：期间 + 维度筛选 → 汇总卡 + 按入口成本排名（可下钻到入口）+ 逐笔明细 + 未定价提示。
+    口径说明显式标注：已完成支付、期间左闭右开、入口 = 当前映射（逐笔支付未持久化所选 option）。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.payment_costs.title') %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= link_to PallasTrade.t('admin.payment_costs.fee_policies_action'),
+              PallasTrade.admin_payment_fee_policies_path,
+              class: 'btn btn-outline-secondary' %>
+  <%= link_to PallasTrade.t('admin.payment_costs.export_action'),
+              PallasTrade.export_admin_payment_costs_path(@filters.compact),
+              class: 'btn btn-outline-secondary' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <%= form_with url: PallasTrade.admin_payment_costs_path, method: :get, local: true do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <%= label_tag :from, PallasTrade.t('admin.payment_costs.from'), class: 'form-label' %>
+          <%= date_field_tag :from, @filters[:from]&.to_date, class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :to, PallasTrade.t('admin.payment_costs.to'), class: 'form-label' %>
+          <%= date_field_tag :to, @filters[:to]&.to_date, class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-6 col-md-3">
+          <%= label_tag :payment_method_id, PallasTrade.t('admin.payment_costs.provider'), class: 'form-label' %>
+          <%= select_tag :payment_method_id,
+                         options_for_select(@payment_methods, @filters[:payment_method_id]),
+                         include_blank: PallasTrade.t('admin.payment_costs.any'), class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :currency, PallasTrade.t('admin.payment_costs.currency'), class: 'form-label' %>
+          <%= select_tag :currency,
+                         options_for_select(@currencies, @filters[:currency]),
+                         include_blank: PallasTrade.t('admin.payment_costs.any'), class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :method_key, PallasTrade.t('admin.payment_costs.entry'), class: 'form-label' %>
+          <%= select_tag :method_key,
+                         options_for_select(@method_keys, @filters[:method_key]),
+                         include_blank: PallasTrade.t('admin.payment_costs.any'), class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-12 col-md-1 d-flex gap-2">
+          <%= submit_tag PallasTrade.t('admin.payment_costs.filter'), class: 'btn btn-sm btn-primary' %>
+        </div>
+      </div>
+    <% end %>
+    <p class="text-gray-600 mt-3 mb-0">
+      <small>
+        <%= PallasTrade.t('admin.payment_costs.disclaimer',
+                          from: @report[:period][:from].to_date,
+                          to: @report[:period][:to].to_date) %>
+        <% if @report[:period][:clamped] %>
+          <span class="text-warning"><%= PallasTrade.t('admin.payment_costs.range_clamped') %></span>
+        <% end %>
+      </small>
+    </p>
+  </div>
+</div>
+
+<div class="grid grid-cols-12 gap-6 mb-6">
+  <% [
+       ['gross', 'admin.payment_costs.cards.gross'],
+       ['fee', 'admin.payment_costs.cards.fee'],
+       ['rate', 'admin.payment_costs.cards.rate'],
+       ['average_order', 'admin.payment_costs.cards.average_order'],
+       ['orders', 'admin.payment_costs.cards.orders'],
+       ['unpriced', 'admin.payment_costs.cards.unpriced'],
+       ['actual', 'admin.payment_costs.cards.actual'],
+       ['variance', 'admin.payment_costs.cards.variance']
+     ].each do |key, label_key| %>
+    <div class="col-span-6 md:col-span-3">
+      <div class="card" data-cost-card="<%= key %>">
+        <div class="card-body">
+          <div class="text-gray-600"><%= PallasTrade.t(label_key) %></div>
+          <h3 class="mb-0" data-cost-metric="<%= key %>">
+            <% case key %>
+            <% when 'gross' %>
+              <%= cost_amount(@report[:totals][:gross_amount]) %>
+            <% when 'fee' %>
+              <%= cost_amount(@report[:totals][:fee_amount]) %>
+            <% when 'rate' %>
+              <%= cost_rate(@report[:totals][:fee_rate]) %>
+            <% when 'average_order' %>
+              <%= cost_amount(@report[:totals][:average_order_cost]) %>
+            <% when 'orders' %>
+              <%= @report[:totals][:order_count] %>
+            <% when 'unpriced' %>
+              <%= @report[:totals][:unpriced_count] %>
+            <% when 'actual' %>
+              <%= cost_amount(@report[:totals][:actual_fee_amount]) %>
+            <% when 'variance' %>
+              <%= cost_amount(@report[:totals][:variance_amount]) %>
+            <% end %>
+          </h3>
+          <% if key == 'orders' %>
+            <small class="text-gray-600"><%= PallasTrade.t('admin.payment_costs.cards.payments', count: @report[:totals][:payment_count]) %></small>
+          <% elsif key == 'variance' %>
+            <small class="text-gray-600"><%= PallasTrade.t('admin.payment_costs.cards.variance_coverage', count: @report[:totals][:variance_coverage]) %></small>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <strong><%= PallasTrade.t('admin.payment_costs.entry_ranking') %></strong>
+    <small class="text-gray-600"><%= PallasTrade.t('admin.payment_costs.entry_ranking_hint') %></small>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0" data-cost-table="by_entry">
+      <thead>
+        <tr>
+          <th><%= PallasTrade.t('admin.payment_costs.table.entry') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.payments') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.gross') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.fee') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.rate') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.average_order') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.policy') %></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @report[:by_entry].each do |entry| %>
+          <tr data-entry-key="<%= entry[:key] %>">
+            <td><%= entry[:label] %> <small class="text-gray-600"><%= entry[:method_key] %></small></td>
+            <td><%= entry[:payment_count] %></td>
+            <td><%= cost_amount(entry[:gross_amount]) %></td>
+            <td data-entry-fee="<%= entry[:key] %>"><%= cost_amount(entry[:fee_amount]) %></td>
+            <td><%= cost_rate(entry[:fee_rate]) %></td>
+            <td><%= cost_amount(entry[:average_order_cost]) %></td>
+            <td><small><%= entry[:unpriced_count].positive? ? PallasTrade.t('admin.payment_costs.table.unpriced', count: entry[:unpriced_count]) : PallasTrade.t('admin.payment_costs.table.priced') %></small></td>
+            <td>
+              <% if entry[:method_key].present? %>
+                <%= link_to PallasTrade.t('admin.payment_costs.drill_down'),
+                            PallasTrade.admin_payment_costs_path(@filters.compact.merge(method_key: entry[:method_key])),
+                            class: 'btn btn-sm btn-outline-primary',
+                            data: { drill_down: entry[:key] } %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @report[:by_entry].empty? %>
+          <tr><td colspan="8" class="text-center text-gray-600"><%= PallasTrade.t('admin.payment_costs.empty') %></td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <strong><%= PallasTrade.t('admin.payment_costs.detail_title') %></strong>
+    <small class="text-gray-600">
+      <%= PallasTrade.t('admin.payment_costs.detail_hint', count: @report[:detail].size) %>
+      <% if @report[:detail_truncated] %>
+        <span class="text-warning"><%= PallasTrade.t('admin.payment_costs.detail_truncated') %></span>
+      <% end %>
+    </small>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0" data-cost-table="detail">
+      <thead>
+        <tr>
+          <th><%= PallasTrade.t('admin.payment_costs.table.paid_at') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.order') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.provider') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.amount') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.percent') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.platform') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.cross_border') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.conversion') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.fixed') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.fee') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.net') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.actual') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.variance') %></th>
+          <th><%= PallasTrade.t('admin.payment_costs.table.policy') %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @report[:detail].each do |row| %>
+          <tr data-payment-id="<%= row[:payment_id] %>">
+            <td><small><%= row[:paid_at]&.strftime('%Y-%m-%d %H:%M') %></small></td>
+            <td><small><%= row[:order_number] %></small></td>
+            <td><small><%= row[:provider_label] %> / <%= row[:method_key] || '-' %></small></td>
+            <td><small><%= cost_amount(row[:amount], row[:order_currency]) %></small></td>
+            <td><small><%= cost_amount(row[:percent_fee]) %></small></td>
+            <td><small><%= cost_amount(row[:platform_fee]) %></small></td>
+            <td><small><%= cost_amount(row[:cross_border_fee]) %></small></td>
+            <td><small><%= cost_amount(row[:conversion_fee]) %></small></td>
+            <td><small><%= cost_amount(row[:fixed_fee]) %></small></td>
+            <td data-row-fee="<%= row[:payment_id] %>"><small><%= cost_amount(row[:fee_amount]) %></small></td>
+            <td><small><%= cost_amount(row[:net_amount]) %></small></td>
+            <td><small><%= cost_amount(row[:actual_fee_amount]) %></small></td>
+            <td><small><%= cost_amount(row[:variance_amount]) %></small></td>
+            <td><small><%= row[:policy_name] || PallasTrade.t('admin.payment_costs.unpriced') %></small></td>
+          </tr>
+        <% end %>
+        <% if @report[:detail].empty? %>
+          <tr><td colspan="14" class="text-center text-gray-600"><%= PallasTrade.t('admin.payment_costs.empty') %></td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><strong><%= PallasTrade.t('admin.payment_costs.unpriced_title') %></strong></div>
+  <div class="card-body">
+    <% if @report[:unpriced_reasons].empty? %>
+      <p class="mb-0 text-gray-600"><%= PallasTrade.t('admin.payment_costs.unpriced_none') %></p>
+    <% else %>
+      <ul class="mb-0">
+        <% @report[:unpriced_reasons].each do |reason, count| %>
+          <li><%= PallasTrade.t("admin.payment_costs.reason_#{reason}", default: reason) %> —— <strong><%= count %></strong></li>
+        <% end %>
+      </ul>
+    <% end %>
+    <p class="text-gray-600 mt-3 mb-0">
+      <small><%= PallasTrade.t('admin.payment_costs.policies_considered', count: @report[:policies_considered]) %></small>
+    </p>
+  </div>
+</div>

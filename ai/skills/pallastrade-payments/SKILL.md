@@ -1348,6 +1348,38 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   列表（provider/status/到账日筛选 + gross/fee/net 汇总卡 + 分页 + 差异行计数）；详情（批次事实 + 行表 + 匹配摘要 + 审计轨迹）；
   `GET /admin/payouts/new` + `POST /admin/payouts/import`（粘贴 CSV 或上传文件 → 导入后**自动** Match + SyncCases）；
   `POST /admin/payouts/:id/match`（重新匹配）。台账页用整数 id（页内使用，不进 API 契约）。
+
+## 费率模型与支付成本报表 — 「成本可下钻到入口」（D13 切片3, 2026-09-16；PRD-20260916-payments-d13c-fee-cost-report）
+
+业务方案 §70.3：平台此前只知道「收了多少」与「结算单实际扣了多少」，没有**事前费率模型** ⇒ 算不出某笔/某入口应花多少，也无法对比「约定费率 vs 实际扣费」，更没法支撑 §67.1 成本路由。
+本切片建费率（rate card）+ 只读成本报表：成本可**下钻到入口**，并并列结算实际扣费。
+铁律：**零资金副作用 + 零 provider I/O** —— 报表与计算不写 Payment/Refund/账本/库存，不调 provider；模型费用是**核算口径**，不是资金事实。
+
+- **模型**：`PallasTrade::PaymentFeePolicy`（`pallastrade_payment_fee_policies`）：
+  `store_id`（可空 = 全局）/ `name` / `scope_type`（`global`/`store`/`provider`/`method`）/ `scope_id`（provider = `payment_method_id`；method = **入口 method_key**）/
+  条件 `currency` / `card_type` / `region`（空 = 全部）；分量 `percent_fee` / `fixed_fee` / `platform_percent` / `cross_border_percent` /
+  `cross_border_fixed` / `currency_conversion_percent`；保底封顶 `min_fee` / `max_fee`；判定基准 `home_country` / `settlement_currency`；
+  窗口 `effective_from` / `effective_until`；`status`(active/revoked) / `revoked_at` / `metadata`；索引 `(scope_type, scope_id)`（§74.1）、`(store_id, status)`、`(status, effective_from)`。
+  - **归一化**：`global`/`store` 的 `scope_id` 归零；`currency`/`region`/`home_country`/`settlement_currency` 大写、`card_type` 小写；百分比 0..100、金额非负、`min ≤ max`。
+  - **生效口径**：`active` + `effective_at(at)`（未撤销 + 窗口内）；`for_store(store)` = 全局 + 本店（店铺隔离硬边界）。
+- **服务（全部只读）**：
+  - `Payments::Fees::Resolver`（+ `Resolver::Context.from_payment`）：按 `by_priority`（`method`4 > `provider`3 > `store`2 > `global`1，同优先级 `effective_from` 更晚者，再取 id 更大者）取**唯一命中**策略；
+    条件不匹配 → `skipped[{policy_id, reason}]` 留痕；**声明了条件但本地无法判定 → 不命中**（`card_type_undetermined` / `region_undetermined`），绝不臆造。
+    批量场景传 `candidates:`（预加载），避免 N+1。`Context` 只取本地可得事实（币种取 `order.currency`；卡类型取 `payment.source#cc_type`；地区取账单国 ISO），**不隐式访问 `order.store`**（调用方注入）。
+  - `Payments::Fees::Calculate`：`variable = 金额×(percent + platform)/100 + 跨境(条件成立时) + 转换(条件成立时)`；`variable` 受 `min_fee`/`max_fee` 约束（**固定费在封顶之后相加**）；
+    `total = clamped + fixed`、`net = amount − total`；无策略 → `priced=false` + `no_policy`；跨境/转换基准不可证明 → 不计费 + signal。
+  - `Payments::Costs::Report`：统计域 = 本店 + `Payment.completed` + `[from, to)`（左闭右开，最多 366 天，超限标记 `clamped`）；输出
+    `totals`（gross/fee/net/`fee_rate`/单均成本（**按订单去重**）/订单数/笔数/未定价笔数/实际扣费/偏差/`variance_coverage`）、
+    `by_entry`（入口 = `payment_method` × `method_key`，按 fee 降序 + key 升序 tie-break）、`by_provider`、`by_currency`、`detail`（有界 500，超出标记）、`unpriced_reasons`。
+  - **实际 vs 模型**：`actual_fee` 取 `payout_lines.fee_amount`（`refund_id IS NULL`，单次分组查询）；`variance = actual − modelled`。
+  - **入口身份** = `PaymentMethod#effective_payment_option['kind']`（与 API 序列化器同源）；**未选项化**的支付方式返回 default kind（如 `check`/`bogus`）→ 报表页显式标注「入口按**当前映射**归因」（逐笔支付未持久化所选 option，历史归因留后续切片）。
+- **后台**（权限 `can?(:manage, PallasTrade::PaymentFeePolicy)`）：
+  - `/admin/payment_costs`（Orders → 支付成本）：期间 + provider/币种/入口筛选 → 汇总卡（`data-cost-metric`）+ 入口排名（`data-cost-table="by_entry"`，行可**下钻**）+ 逐笔明细 + 未定价原因 + CSV 导出（含 `entry_key`，**无凭证/卡号**）+ 导出审计 `payment_cost_report_exported`。
+  - `/admin/payment_fee_policies`（Orders → 费率策略）：列表（适用范围/状态/币种筛选 + **同源计数** + 分页）+ 新增/编辑 + **软撤销**（保留历史行）；审计 `payment_fee_policy_changed` / `payment_fee_policy_revoked`（before/after 快照）。
+- ⚠️ **踩坑**：
+  - 命名空间 `PallasTrade::CSV` 会遮蔽 Ruby 标准库 → 控制器内必须写 `::CSV.generate`。
+  - `joins(:order)` 与 `includes(order:)` 同用会让预加载失效（每笔支付一次查询）→ 用 `where(order_id: 子查询)` + `includes`；报表批量解析时**显式注入 store 对象**。
+- **回归**：`harness verify d13c-cost-report-rspec`（162 例，含后台导航一致性）；下游 §67.1 成本路由复用 `Resolver` + `Report` 作为成本数据源。
 - **命名陷阱（实测踩坑）**：Rails 把 `CSV` 注册为 acronym ⇒ `import_csv.rb` 必须定义 **`ImportCSV`**（Zeitwerk 报
   `uninitialized constant …ImportCsv`）；`PallasTrade` 命名空间内引用 stdlib 一律写 `::CSV`（裸 `CSV::…` 会被解析成 `PallasTrade::CSV::…`）。
 - **回归**：`harness verify d13b-payouts-rspec`（52 examples）+ 切片1 `d13-reconciliation-cases-rspec` + P4 `finance-reconciliation-rspec`。

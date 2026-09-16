@@ -1,0 +1,14 @@
+<%# PALLAS-CUSTOM: D13 切片3（PRD-20260916-payments-d13c-fee-cost-report）——费率策略编辑 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.payment_fee_policies.edit_title', name: @policy.name) %>
+<% end %>
+
+<div class="card">
+  <div class="card-body">
+    <%= render 'form',
+               policy: @policy,
+               scope_types: @scope_types,
+               url: PallasTrade.admin_payment_fee_policy_path(@policy),
+               method: :patch %>
+  </div>
+</div>

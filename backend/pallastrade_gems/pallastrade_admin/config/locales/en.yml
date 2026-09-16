@@ -1370,6 +1370,7 @@ en:
           order_number: Order
           provider: Payment method
           entry: Entry
+          entry_key: Entry key
           currency: Currency
           amount: Amount
           percent_fee: Percent fee

@@ -138,6 +138,19 @@ reversals** (chargeback / inquiry / warning / representment) — deliberately **
   业务上的重复投递去重靠服务层「同决策 + 同命中集」复用窗口（5 分钟），不靠数据库兜底。
 - 两者均为**只新增表**（不回填）；无金额列，也不写 `funds_*` 时间戳（不触发资金入账事件）。
 
+## 支付费率策略（D13 切片3, 2026-09-16）
+
+- `pallastrade_payment_fee_policies`（§74.1 规划表名 `(scope_type, scope_id)` 索引要求）：
+  `store_id` **可空 = 全局策略**（非空 = 店铺策略）；`scope_type`（global/store/provider/method）+ `scope_id`
+  （provider → `payment_method_id` 字符串；method → **入口 method_key**；global/store **归一为 NULL**）；
+  条件 `currency` / `card_type` / `region`（空 = 全部）；分量 `percent_fee` / `fixed_fee` / `platform_percent` /
+  `cross_border_percent` / `cross_border_fixed` / `currency_conversion_percent`；保底封顶 `min_fee` / `max_fee`；
+  判定基准 `home_country` / `settlement_currency`；窗口 `effective_from` / `effective_until`；
+  `status`（active/revoked）+ `revoked_at`（**软撤销，历史行保留**）+ `created_by`(polymorphic) + `metadata`。
+- 索引：`(scope_type, scope_id)`（名称 `idx_fee_policies_scope`）、`(store_id, status)`、`(status, effective_from)`。
+- 金额精度 `decimal(12,2)`（与 `payout_lines` 同口径）、百分比 `decimal(6,4)`（0..100）。
+- **只新增表**（不回填，不动既有列）；无 `funds_*` 时间戳、不触发资金入账事件；报表只读该表 + `pallastrade_payments` + `pallastrade_payout_lines`。
+
 ## Order promotion snapshot (batch4a, 2026-09-10)
 
 `pallastrade_order_promotions` carries the **成交快照** written at money-confirmed time

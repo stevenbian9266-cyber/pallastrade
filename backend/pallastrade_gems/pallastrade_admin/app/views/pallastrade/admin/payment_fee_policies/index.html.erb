@@ -1,0 +1,146 @@
+<%# PALLAS-CUSTOM: D13 切片3（PRD-20260916-payments-d13c-fee-cost-report；业务方案 §70.3）——
+    费率策略列表：筛选（适用范围/状态/币种）+ 与筛选同源计数 + 分页 + 撤销（软撤销，保留历史）。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.payment_fee_policies.title') %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= link_to PallasTrade.t('admin.payment_costs.title'),
+              PallasTrade.admin_payment_costs_path,
+              class: 'btn btn-outline-secondary' %>
+  <%= link_to PallasTrade.t('admin.payment_fee_policies.new_action'),
+              PallasTrade.new_admin_payment_fee_policy_path,
+              class: 'btn btn-primary' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <%= form_with url: PallasTrade.admin_payment_fee_policies_path, method: :get, local: true do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-3">
+          <%= label_tag :scope_type, PallasTrade.t('admin.payment_fee_policies.scope_type'), class: 'form-label' %>
+          <%= select_tag :scope_type,
+                         options_for_select(@scope_types.map { |type| [PallasTrade.t("admin.payment_fee_policies.scope_#{type}"), type] }, @filters[:scope_type]),
+                         include_blank: PallasTrade.t('admin.payment_fee_policies.any'), class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-3">
+          <%= label_tag :status_filter, PallasTrade.t('admin.payment_fee_policies.status'), class: 'form-label' %>
+          <%= select_tag :status_filter,
+                         options_for_select(@status_filters.map { |s| [PallasTrade.t("admin.payment_fee_policies.status_filter_#{s}"), s] }, @filters[:status_filter]),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :currency, PallasTrade.t('admin.payment_fee_policies.currency'), class: 'form-label' %>
+          <%= text_field_tag :currency, @filters[:currency], class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-12 col-md-4 d-flex gap-2">
+          <%= submit_tag PallasTrade.t('admin.payment_fee_policies.filter'), class: 'btn btn-sm btn-primary' %>
+          <%= link_to PallasTrade.t('admin.payment_fee_policies.reset'),
+                      PallasTrade.admin_payment_fee_policies_path, class: 'btn btn-sm btn-outline-secondary' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="grid grid-cols-12 gap-6 mb-6">
+  <% @status_filters.each do |status_filter| %>
+    <div class="col-span-6 md:col-span-4">
+      <div class="card">
+        <div class="card-body">
+          <div class="text-gray-600"><%= PallasTrade.t("admin.payment_fee_policies.status_filter_#{status_filter}") %></div>
+          <h3 class="mb-0" data-count-scope="<%= status_filter %>"><%= @counts[status_filter] %></h3>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<div class="card mb-6">
+  <div class="table-responsive">
+    <table class="table mb-0" data-fee-policy-table>
+      <thead>
+        <tr>
+          <th><%= PallasTrade.t('admin.payment_fee_policies.name') %></th>
+          <th><%= PallasTrade.t('admin.payment_fee_policies.scope_type') %></th>
+          <th><%= PallasTrade.t('admin.payment_fee_policies.conditions') %></th>
+          <th><%= PallasTrade.t('admin.payment_fee_policies.components') %></th>
+          <th><%= PallasTrade.t('admin.payment_fee_policies.caps') %></th>
+          <th><%= PallasTrade.t('admin.payment_fee_policies.window') %></th>
+          <th><%= PallasTrade.t('admin.payment_fee_policies.status') %></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @policies.each do |policy| %>
+          <tr data-policy-id="<%= policy.id %>" data-policy-status="<%= policy.status %>">
+            <td><%= policy.name %></td>
+            <td>
+              <%= fee_policy_scope_label(policy) %>
+              <% if policy.scope_id.present? %><small class="text-gray-600"><%= policy.scope_id %></small><% end %>
+            </td>
+            <td>
+              <small>
+                <%= [policy.currency.presence || PallasTrade.t('admin.payment_fee_policies.any'),
+                     policy.card_type.presence,
+                     policy.region.presence].compact.join(' / ') %>
+              </small>
+            </td>
+            <td><small><%= policy.description %></small></td>
+            <td>
+              <small>
+                <%= [policy.min_fee.present? ? PallasTrade.t('admin.payment_fee_policies.min_short', value: policy.min_fee.to_f) : nil,
+                     policy.max_fee.present? ? PallasTrade.t('admin.payment_fee_policies.max_short', value: policy.max_fee.to_f) : nil].compact.join(' / ').presence || '-' %>
+              </small>
+            </td>
+            <td>
+              <small>
+                <%= policy.effective_from&.to_date || '-' %>
+                →
+                <%= policy.effective_until&.to_date || PallasTrade.t('admin.payment_fee_policies.open_ended') %>
+              </small>
+            </td>
+            <td>
+              <span class="badge <%= policy.revoked? ? 'bg-secondary' : 'bg-success' %>">
+                <%= PallasTrade.t("admin.payment_fee_policies.status_#{policy.status}") %>
+              </span>
+            </td>
+            <td class="text-end">
+              <%= link_to PallasTrade.t('admin.payment_fee_policies.edit_action'),
+                          PallasTrade.edit_admin_payment_fee_policy_path(policy),
+                          class: 'btn btn-sm btn-outline-secondary' %>
+              <% unless policy.revoked? %>
+                <%= button_to PallasTrade.t('admin.payment_fee_policies.revoke_action'),
+                              PallasTrade.revoke_admin_payment_fee_policy_path(policy),
+                              method: :post, class: 'btn btn-sm btn-outline-danger',
+                              form: { data: { turbo_confirm: PallasTrade.t('admin.payment_fee_policies.revoke_confirm') } } %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @policies.empty? %>
+          <tr><td colspan="8" class="text-center text-gray-600"><%= PallasTrade.t('admin.payment_fee_policies.empty') %></td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  <% if @pages > 1 %>
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-gray-600"><%= PallasTrade.t('admin.payment_fee_policies.pagination', total: @total, page: @page, pages: @pages) %></small>
+        <div class="d-flex gap-2">
+          <% if @page > 1 %>
+            <%= link_to PallasTrade.t('admin.payment_fee_policies.prev_page'),
+                        PallasTrade.admin_payment_fee_policies_path(@filters.compact.merge(page: @page - 1)),
+                        class: 'btn btn-sm btn-outline-secondary' %>
+          <% end %>
+          <% if @page < @pages %>
+            <%= link_to PallasTrade.t('admin.payment_fee_policies.next_page'),
+                        PallasTrade.admin_payment_fee_policies_path(@filters.compact.merge(page: @page + 1)),
+                        class: 'btn btn-sm btn-outline-secondary' %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

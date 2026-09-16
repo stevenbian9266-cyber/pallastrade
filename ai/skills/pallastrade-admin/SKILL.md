@@ -480,6 +480,23 @@ end
 - ⚠️ **导航一致性 spec 断言 Orders 子项完整列表**（本次新增 `:risk_lists` 已同步）。
 - **回归**：`harness verify d15-risk-lists-rspec`。
 
+## 支付成本域两页：成本报表 + 费率策略（D13 切片3, 2026-09-16；PRD-20260916-payments-d13c-fee-cost-report）
+
+Orders 下新增两个子项（position 60/61，`if: -> { can?(:manage, PallasTrade::PaymentFeePolicy) }`）——同一权限域：
+
+- **`/admin/payment_costs`（支付成本报表，只读）**：期间（默认近 30 天）+ provider／币种／入口筛选 → 汇总卡
+  （`<h3 data-cost-metric="gross|fee|rate|average_order|orders|unpriced|actual|variance">`）+ **入口排名表**
+  （`data-cost-table="by_entry"`，每行「下钻」链接带上 `method_key` 参数）+ 逐笔明细（`data-cost-table="detail"`，行带 `data-payment-id`）
+  + 未定价原因卡 + CSV 导出（`GET /admin/payment_costs/export`，含 `entry_key`，**不含任何凭证/卡号**）。
+  所有数字来自 `Payments::Costs::Report`（唯一口径），导出写审计 `payment_cost_report_exported`。
+- **`/admin/payment_fee_policies`（费率策略维护）**：列表（适用范围／状态／币种筛选 + **与筛选同源**计数 `data-count-scope`）+ 分页
+  + 新增／编辑（`_form` 局部，**只暴露 global／provider／method**，`store` 级留给平台侧）+ **软撤销**（`POST :revoke`，保留历史行）。
+  审计 `payment_fee_policy_changed`（含 before/after 快照）/ `payment_fee_policy_revoked`。
+- ⚠️ **`PallasTrade::CSV` 命名空间遮蔽标准库** → 导出必须写 `::CSV.generate`（否则 `NoMethodError: undefined method 'generate' for module PallasTrade::CSV`）。
+- ⚠️ **页面断言要容忍模板换行**：汇总卡值在 `<h3 …>` 下一行 → 用 `match(/data-cost-metric="fee">\s*4\.0/)` 而不是 `include('…">4.0')`。
+- ⚠️ **导航一致性 spec 断言 Orders 子项完整列表**（本次新增 `:payment_costs` / `:payment_fee_policies` 已同步）。
+- **回归**：`harness verify d13c-cost-report-rspec`。
+
 ## 支付适用范围编辑：Provider 详情「支付方式」页签（D8 切片2, 2026-09-15，PRD-20260915-payments-d8）
 
 同一页签每行新增「适用范围」编辑器 + 摘要列（改 `_options.html.erb`；**不新增页面**）：

@@ -1,0 +1,151 @@
+# PALLAS-CUSTOM: D13 切片3（PRD-20260916-payments-d13c-fee-cost-report）——支付成本报表 + 费率策略（宿主 zh-CN 覆盖）
+
+zh-CN:
+  pallastrade:
+    admin:
+      payment_costs:
+        title: 支付成本
+        fee_policies_action: 费率策略
+        export_action: 导出 CSV
+        from: 起始
+        to: 结束
+        provider: 支付方式
+        currency: 币种
+        entry: 入口
+        any: 全部
+        filter: 筛选
+        disclaimer: 口径：仅已完成支付；期间为 [%{from}, %{to})；入口按**当前映射**归因（逐笔支付未持久化所选 option）。
+        range_clamped: 区间已收敛至 366 天。
+        entry_ranking: 按入口成本排名
+        entry_ranking_hint: （成本高者在先，可下钻到入口）
+        drill_down: 下钻
+        detail_title: 逐笔明细
+        detail_hint: 共 %{count} 行
+        detail_truncated: 已按行数上限截断。
+        empty: 该期间内无数据。
+        unpriced: 未定价
+        unpriced_title: 未定价原因
+        unpriced_none: 该期间所有支付均命中费率策略。
+        policies_considered: 参与解析的费率策略：%{count} 条
+        unknown_provider: 未知支付方式
+        reason_no_policy: 无匹配的费率策略
+        reason_scope_mismatch: 适用范围不匹配
+        reason_currency_mismatch: 币种不匹配
+        reason_card_type_mismatch: 卡类型不匹配
+        reason_card_type_undetermined: 本地无法判定卡类型
+        reason_region_mismatch: 地区不匹配
+        reason_region_undetermined: 本地无法判定地区
+        reason_cross_border_undetermined: 本地无法判定跨境基准
+        reason_conversion_undetermined: 本地无法判定货币转换基准
+        reason_unknown: 未分类
+        cards:
+          gross: 收款总额
+          fee: 支付成本
+          rate: 成本率
+          average_order: 单均成本
+          orders: 订单数
+          payments: 共 %{count} 笔支付
+          unpriced: 未定价笔数
+          actual: 结算实际扣费
+          variance: 偏差（实际 − 模型）
+          variance_coverage: 已匹配结算单 %{count} 笔
+        table:
+          paid_at: 支付时间
+          order: 订单
+          provider: 支付方式
+          entry: 入口
+          payments: 笔数
+          gross: 收款总额
+          fee: 成本
+          rate: 成本率
+          average_order: 单均
+          amount: 金额
+          percent: 百分比费
+          platform: 平台费
+          cross_border: 跨境费
+          conversion: 转换费
+          fixed: 固定费
+          net: 净额
+          actual: 实际
+          variance: 偏差
+          policy: 费率策略
+          unpriced: "%{count} 笔未定价"
+          priced: 已定价
+        csv:
+          paid_at: 支付时间
+          order_number: 订单
+          provider: 支付方式
+          entry: 入口
+          entry_key: 入口键
+          currency: 币种
+          amount: 金额
+          percent_fee: 百分比费
+          platform_fee: 平台费
+          cross_border_fee: 跨境费
+          conversion_fee: 转换费
+          adjustment: 保底封顶调整
+          fixed_fee: 固定费
+          fee_amount: 合计成本
+          net_amount: 净额
+          actual_fee: 实际扣费
+          variance: 偏差
+          policy: 费率策略
+          signals: 信号
+      payment_fee_policies:
+        title: 费率策略
+        new_title: 新增费率策略
+        edit_title: 编辑费率策略：%{name}
+        new_action: 新增费率策略
+        edit_action: 编辑
+        revoke_action: 撤销
+        revoke_confirm: 确认撤销该费率策略？历史行保留。
+        create_success: 费率策略 %{name} 已创建
+        update_success: 费率策略 %{name} 已更新
+        revoke_success: 费率策略 %{name} 已撤销
+        save_failed: 请检查标红的字段
+        name: 名称
+        scope_type: 适用范围
+        scope_id: 目标
+        scope_id_hint: 支付方式 ID（provider）或 method_key（入口）
+        conditions: 条件
+        components: 分量
+        caps: 保底 / 封顶
+        window: 生效窗口
+        status: 状态
+        currency: 币种
+        card_type: 卡类型
+        region: 地区
+        home_country: 基准国
+        settlement_currency: 结算币种
+        percent_fee: 百分比费（%）
+        fixed_fee: 固定费
+        platform_percent: 平台费（%）
+        cross_border_percent: 跨境费（%）
+        cross_border_fixed: 跨境固定费
+        currency_conversion_percent: 货币转换费（%）
+        min_fee: 保底（费率类）
+        max_fee: 封顶（费率类）
+        effective_from: 生效起
+        effective_until: 生效止
+        rule_hint: 费率类分量（百分比 + 平台 + 跨境% + 转换%）受保底/封顶约束；固定费在封顶之后相加。跨境费与转换费仅在本地数据可证明时计收（无法判定则不计，并留痕）。
+        save: 保存
+        cancel: 取消
+        filter: 筛选
+        reset: 重置
+        any: 全部
+        open_ended: 长期
+        empty: 暂无费率策略。
+        pagination: 共 %{total} 条 · 第 %{page}/%{pages} 页
+        prev_page: 上一页
+        next_page: 下一页
+        min_short: 保底 %{value}
+        max_short: 封顶 %{value}
+        scope_global: 兜底（全部支付方式）
+        scope_store: 店铺级
+        scope_provider: 支付方式
+        scope_method: 入口（method_key）
+        status_active: 生效中
+        status_revoked: 已撤销
+        status_filter_all: 全部
+        status_filter_active: 生效中
+        status_filter_revoked: 已撤销

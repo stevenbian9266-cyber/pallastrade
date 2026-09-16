@@ -1,0 +1,112 @@
+<%# PALLAS-CUSTOM: D13 切片3（PRD-20260916-payments-d13c-fee-cost-report；业务方案 §70.3 费率模型）——
+    费率策略表单（新增 / 编辑共用）：百分比费 + 固定费 + 平台费 + 跨境费 + 货币转换费 + 保底封顶 + 条件 + 生效窗口。
+    适用范围只暴露 global / provider / method（store 级由平台侧维护）。 %>
+<%= form_with model: policy, url: url, method: method, local: true do |f| %>
+  <% if policy.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% policy.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="row g-3">
+    <div class="col-12 col-md-6">
+      <%= f.label :name, PallasTrade.t('admin.payment_fee_policies.name'), class: 'form-label' %>
+      <%= f.text_field :name, class: 'form-control form-control-sm', required: true %>
+    </div>
+    <div class="col-6 col-md-3">
+      <%= f.label :scope_type, PallasTrade.t('admin.payment_fee_policies.scope_type'), class: 'form-label' %>
+      <%= f.select :scope_type,
+                   scope_types.map { |type| [PallasTrade.t("admin.payment_fee_policies.scope_#{type}"), type] },
+                   {}, class: 'form-select form-select-sm' %>
+    </div>
+    <div class="col-6 col-md-3">
+      <%= f.label :scope_id, PallasTrade.t('admin.payment_fee_policies.scope_id'), class: 'form-label' %>
+      <%= f.text_field :scope_id, class: 'form-control form-control-sm',
+                       placeholder: PallasTrade.t('admin.payment_fee_policies.scope_id_hint') %>
+    </div>
+
+    <div class="col-6 col-md-2">
+      <%= f.label :currency, PallasTrade.t('admin.payment_fee_policies.currency'), class: 'form-label' %>
+      <%= f.text_field :currency, class: 'form-control form-control-sm', maxlength: 10,
+                       placeholder: PallasTrade.t('admin.payment_fee_policies.any') %>
+    </div>
+    <div class="col-6 col-md-2">
+      <%= f.label :card_type, PallasTrade.t('admin.payment_fee_policies.card_type'), class: 'form-label' %>
+      <%= f.select :card_type,
+                   PallasTrade::PaymentFeePolicy::CARD_TYPES.map { |type| [type, type] },
+                   { include_blank: PallasTrade.t('admin.payment_fee_policies.any') },
+                   class: 'form-select form-select-sm' %>
+    </div>
+    <div class="col-6 col-md-2">
+      <%= f.label :region, PallasTrade.t('admin.payment_fee_policies.region'), class: 'form-label' %>
+      <%= f.text_field :region, class: 'form-control form-control-sm', maxlength: 8,
+                       placeholder: PallasTrade.t('admin.payment_fee_policies.any') %>
+    </div>
+    <div class="col-6 col-md-2">
+      <%= f.label :home_country, PallasTrade.t('admin.payment_fee_policies.home_country'), class: 'form-label' %>
+      <%= f.text_field :home_country, class: 'form-control form-control-sm', maxlength: 8 %>
+    </div>
+    <div class="col-6 col-md-2">
+      <%= f.label :settlement_currency, PallasTrade.t('admin.payment_fee_policies.settlement_currency'), class: 'form-label' %>
+      <%= f.text_field :settlement_currency, class: 'form-control form-control-sm', maxlength: 10 %>
+    </div>
+
+    <div class="col-6 col-md-2">
+      <%= f.label :percent_fee, PallasTrade.t('admin.payment_fee_policies.percent_fee'), class: 'form-label' %>
+      <%= f.number_field :percent_fee, step: '0.0001', min: 0, max: 100, class: 'form-control form-control-sm' %>
+    </div>
+    <div class="col-6 col-md-2">
+      <%= f.label :fixed_fee, PallasTrade.t('admin.payment_fee_policies.fixed_fee'), class: 'form-label' %>
+      <%= f.number_field :fixed_fee, step: '0.01', min: 0, class: 'form-control form-control-sm' %>
+    </div>
+    <div class="col-6 col-md-2">
+      <%= f.label :platform_percent, PallasTrade.t('admin.payment_fee_policies.platform_percent'), class: 'form-label' %>
+      <%= f.number_field :platform_percent, step: '0.0001', min: 0, max: 100, class: 'form-control form-control-sm' %>
+    </div>
+    <div class="col-6 col-md-2">
+      <%= f.label :cross_border_percent, PallasTrade.t('admin.payment_fee_policies.cross_border_percent'), class: 'form-label' %>
+      <%= f.number_field :cross_border_percent, step: '0.0001', min: 0, max: 100, class: 'form-control form-control-sm' %>
+    </div>
+    <div class="col-6 col-md-2">
+      <%= f.label :cross_border_fixed, PallasTrade.t('admin.payment_fee_policies.cross_border_fixed'), class: 'form-label' %>
+      <%= f.number_field :cross_border_fixed, step: '0.01', min: 0, class: 'form-control form-control-sm' %>
+    </div>
+    <div class="col-6 col-md-2">
+      <%= f.label :currency_conversion_percent, PallasTrade.t('admin.payment_fee_policies.currency_conversion_percent'), class: 'form-label' %>
+      <%= f.number_field :currency_conversion_percent, step: '0.0001', min: 0, max: 100, class: 'form-control form-control-sm' %>
+    </div>
+
+    <div class="col-6 col-md-2">
+      <%= f.label :min_fee, PallasTrade.t('admin.payment_fee_policies.min_fee'), class: 'form-label' %>
+      <%= f.number_field :min_fee, step: '0.01', min: 0, class: 'form-control form-control-sm' %>
+    </div>
+    <div class="col-6 col-md-2">
+      <%= f.label :max_fee, PallasTrade.t('admin.payment_fee_policies.max_fee'), class: 'form-label' %>
+      <%= f.number_field :max_fee, step: '0.01', min: 0, class: 'form-control form-control-sm' %>
+    </div>
+    <div class="col-6 col-md-3">
+      <%= f.label :effective_from, PallasTrade.t('admin.payment_fee_policies.effective_from'), class: 'form-label' %>
+      <%= f.datetime_local_field :effective_from, class: 'form-control form-control-sm' %>
+    </div>
+    <div class="col-6 col-md-3">
+      <%= f.label :effective_until, PallasTrade.t('admin.payment_fee_policies.effective_until'), class: 'form-label' %>
+      <%= f.datetime_local_field :effective_until, class: 'form-control form-control-sm' %>
+    </div>
+
+    <div class="col-12">
+      <p class="text-gray-600 mb-0">
+        <small><%= PallasTrade.t('admin.payment_fee_policies.rule_hint') %></small>
+      </p>
+    </div>
+
+    <div class="col-12 d-flex gap-2">
+      <%= f.submit PallasTrade.t('admin.payment_fee_policies.save'), class: 'btn btn-primary' %>
+      <%= link_to PallasTrade.t('admin.payment_fee_policies.cancel'),
+                  PallasTrade.admin_payment_fee_policies_path, class: 'btn btn-outline-secondary' %>
+    </div>
+  </div>
+<% end %>

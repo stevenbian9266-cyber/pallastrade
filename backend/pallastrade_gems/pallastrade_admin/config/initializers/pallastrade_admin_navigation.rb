@@ -149,6 +149,22 @@ Rails.application.config.after_initialize do
               position: 59,
               active: -> { controller_name == 'risk_lists' },
               if: -> { can?(:manage, PallasTrade::PaymentRiskList) }
+
+    # PALLAS-CUSTOM: D13 切片3（PRD-20260916-payments-d13c-fee-cost-report；业务方案 §70.3）
+    # 支付成本报表 + 费率策略（同一权限域：费用策略）
+    orders.add :payment_costs,
+              label: 'admin.payment_costs.title',
+              url: :admin_payment_costs_path,
+              position: 60,
+              active: -> { controller_name == 'payment_costs' },
+              if: -> { can?(:manage, PallasTrade::PaymentFeePolicy) }
+
+    orders.add :payment_fee_policies,
+              label: 'admin.payment_fee_policies.title',
+              url: :admin_payment_fee_policies_path,
+              position: 61,
+              active: -> { controller_name == 'payment_fee_policies' },
+              if: -> { can?(:manage, PallasTrade::PaymentFeePolicy) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns
