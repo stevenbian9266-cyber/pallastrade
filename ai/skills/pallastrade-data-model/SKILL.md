@@ -430,3 +430,5 @@ Available in models, controllers, jobs, and services. Set automatically by contr
 
 - P0 (2026-09-03): 新表 pallastrade_payment_webhook_events（provider/provider_event_id UNIQUE/status/attempt_count/payload）、pallastrade_audit_logs（actor/resource/request_id/before/after）；pallastrade_payments.payment_session_id FK（P0-1）。
 - CHK-P1-2 (2026-09-03): pallastrade_orders 新增 checkout_version(integer default 0)/price_version(string)/checkout_expires_at(datetime)（lock_version 曾短暂加入后移除——AR locking_column 被 state_machines 占用）。
+
+- F-5 (2026-09-16, PRD-20260916-catalog-batch-f5-helpful-vote): 新表 **pallastrade_review_votes**（`review_id` / `user_id` / `store_id` + 时间戳；唯一索引 `(review_id, user_id)` = 一人一票的**数据层**保证，前缀 `rv`）+ `pallastrade_reviews.helpful_votes_count`（integer default 0 / NOT NULL，**counter cache**，使列表读票数不产生 N+1）。投票始终带身份（顾客 JWT），但对外只暴露聚合值与调用者自己的状态——**永不暴露投票者**；只有 `approved` 评论可被投票（与读者可见范围同源）。

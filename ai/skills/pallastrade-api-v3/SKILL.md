@@ -369,6 +369,31 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
   approved population, never just the returned page, so it must be byte-identical across all three
   orderings (spec-asserted).
 
+### Review helpful votes (Store API, F-5 2026-09-16)
+
+`POST` / `DELETE /api/v3/store/reviews/:review_id/helpful_vote` — **customer JWT required**;
+`:review_id` is the prefixed review id (`rev_…`). The path is top-level (not nested under
+`products`) because the vote is about the review, not about browsing a product.
+
+- **One vote per customer per review**, enforced by a unique index on
+  `pallastrade_review_votes (review_id, user_id)`: repeating `POST` is idempotent and never double
+  counts, and `DELETE` on a vote that was never cast is idempotent too.
+- **Both calls answer the authoritative state**, not the review:
+  `{ data: { id, type: "review_helpful_vote", attributes: { review_id, helpful_votes_count, helpful_voted } } }`.
+  A storefront therefore never has to guess whether the click landed.
+- **Guards**: your own review → 422 `own_review_vote_forbidden`; a review that is not `approved`
+  (or belongs to another store) → 404 — the same “invisible means absent” rule the read endpoints
+  follow; anonymous → 401.
+- **Read model** (additive on `ReviewSerializer`): `helpful_votes_count` is public; `helpful_voted`
+  is the caller's own state — `true`/`false` for a signed-in customer, `null` for anonymous callers
+  (never a `false` that answers a question nobody asked). **Voter identity is never exposed**
+  (no `user_id`, no voter list) — spec-asserted.
+- `?sort=most_helpful` extends F-4's whitelist: `helpful_votes_count DESC, id DESC`. The tie-break
+  matters here as much as it does for ratings — most reviews share a vote count (very often 0) —
+  and the fallback / `meta.sort` contract is unchanged.
+- The count is a **counter cache** on `pallastrade_reviews`, so a list page reads it per row without
+  a `COUNT(*)` per review.
+
 ### Stock buckets & shipping estimate (Store API, F-2 2026-09-16)
 
 - **`stock_status`** — added to `VariantSerializer` and `ProductSerializer` (additive; the 4.2
@@ -403,8 +428,9 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
   `created_at DESC, id DESC` so consecutive pages neither repeat nor skip). The v3 envelope carries
   `meta` = standard pagination keys **+ `rating_distribution`** (`{"5": n, …, "1": n}`) computed
   server-side from the same scope as the page — never from the returned slice.
-  Item: `{ id, product_id, user_name, rating, title, body, verified_purchase, created_at, image_urls }`;
-  `image_urls` are absolute CDN URLs and only ever present for approved reviews.
+  Item: `{ id, product_id, user_name, rating, title, body, verified_purchase, created_at, image_urls,
+  helpful_votes_count, helpful_voted }`; `image_urls` are absolute CDN URLs and only ever present
+  for approved reviews, while the two vote fields are F-5 (see the helpful-votes section above).
 - **Write (customer JWT required)**: `POST /api/v3/store/products/:product_id/reviews`
   with `{ rating (1–5, required), title?, body?, images? }`. Creates a `pending` review; one review
   per (product, user) — duplicates → 422. `verified_purchase` is computed from the customer's

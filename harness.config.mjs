@@ -268,6 +268,12 @@ export default {
         description: 'Store review sorting specs (whitelist + fallback, stable id tie-break across pages, meta.sort echo with F-1 keys kept, distribution independent of ordering)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/api/v3/store/reviews_sorting_spec.rb spec/requests/api/v3/store/reviews_pagination_spec.rb'],
       },
+      // 评论「有用」投票（PRD-20260916-catalog-batch-f5-helpful-vote）：一人一票（唯一索引）
+      // + 幂等投票/撤销 + 读模型（计数公开、本人状态仅登录）+ most_helpful 排序 + 后台列
+      'f5-helpful-vote-rspec': {
+        description: 'Review helpful vote specs (one vote per customer with a unique index, idempotent POST/DELETE, own-review 422, non-approved 404, guest 401, cross-store 404, count + helpful_voted read model without voter identity, most_helpful ordering with stable tie-break, admin column)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/review_vote_spec.rb spec/requests/api/v3/store/review_votes_spec.rb spec/requests/api/v3/store/reviews_helpful_sorting_spec.rb spec/requests/pallastrade/admin/reviews_spec.rb'],
+      },
       // 评论审核工作台批量通过/拒绝（PRD-20260916-catalog-batch-f3-review-bulk-moderation）：
       // 逐条鉴权 + 逐条走状态机（禁 update_all）+ 空选/超限守卫 + 四计数报告
       'f3-review-bulk-rspec': {
