@@ -1,0 +1,31 @@
+# PALLAS-CUSTOM: G-6 商品运营报表（PRD-20260916-catalog-operations-report）宿主 zh-CN 覆盖。
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.catalog_operations 一一对应。
+#
+# 与 catalog_health 同因：只加 en 时，中文门店后台整页 `Translation missing`
+# （UI 语言取自 current_store.preferred_admin_locale）。
+
+zh-CN:
+  pallastrade:
+    admin:
+      catalog_operations:
+        title: 商品运营报表
+        intro: 所选窗口内商品变动的规模与维护频次 —— 商品审计流水的只读汇总。
+        operations_heading: 批量 vs 单条操作
+        maintenance_heading: 维护频次
+        actors_heading: 操作者排行
+        kind: 类型
+        kinds:
+          bulk: 批量
+          single: 单条
+        entries: 条目数
+        products: 商品数
+        per_product: 单商品更新次数
+        actor: 操作者
+        empty: 该窗口内没有商品活动。
+        window_days:
+          # 中文无复数变化，one/other 同值；保留两个键是为了与 gem en.yml 键集完全一致
+          # （由 spec/i18n/admin_catalog_locale_coverage_spec.rb 双向断言守住）。
+          one: 最近 %{count} 天
+          other: 最近 %{count} 天
+        # 审计表没有店铺维度 —— 页面必须如实标注，不能让商家误以为是本店口径。
+        scope_note: 全库口径 —— 审计流水暂无店铺维度。

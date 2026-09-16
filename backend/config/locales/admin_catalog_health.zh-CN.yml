@@ -1,0 +1,66 @@
+# PALLAS-CUSTOM: 商品健康（Catalog Health V1 + G-7 趋势列）宿主 zh-CN 覆盖。
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.catalog_health 一一对应。
+#
+# 背景（2026-09-16）：此前该功能只有 en 文案，而 admin 的 UI 语言取自
+# `current_store.preferred_admin_locale`（pallastrade_admin base_controller L125-155）——
+# 中文门店的后台因此整页显示 `Translation missing`。补上并加断言防复发。
+
+zh-CN:
+  pallastrade:
+    admin:
+      catalog_health:
+        action: 操作
+        trend:
+          heading: 趋势
+          unknown: 暂无趋势
+          directions:
+            improving: 改善
+            worsening: 恶化
+            flat: 持平
+        ai:
+          button: AI 修复建议
+          dismiss: 忽略
+          entries:
+            product_edit_ai: 商品编辑页（AI 描述 / SEO）
+            product_media: 商品媒体
+            publishing: 发布状态
+            redirects: 跳转
+            translations_drawer: 商品翻译抽屉
+            variant_inventory: 变体库存
+          errors:
+            default: AI 请求未能完成，请检查「AI 工具」后重试。
+            nothing_to_fix: 当前没有需要修复的内容。
+            unknown_issue: 这不是我们跟踪的商品健康问题。
+          generating: 正在生成方案…
+          summary_heading: AI 修复建议（不会自动保存任何内容）
+        card:
+          ai_heading: 该商品的 AI 修复建议
+          empty: 未发现该商品的健康问题。
+          issues_heading: 该商品需要关注
+          nothing_to_fix: 该商品当前无需修复。
+          title: 商品健康
+        count: 数量
+        filter:
+          active: 已按商品健康问题筛选：
+          clear: 清除筛选
+        hints:
+          active_zero_stock: 已上架但无可售库存（无库存、不可缺货、不可预售）。
+          missing_description: 门店默认语言下没有描述。
+          missing_media: 商品与变体都没有图片。
+          missing_seo: 门店默认语言下缺少 SEO 标题或描述。
+          missing_translations: 在支持的其它语言下缺少翻译名称的商品。
+          old_drafts: 已 30 天及以上未被改动的草稿。
+          redirect_unresolved: 旧商品 URL 未建立 301 跳转。
+        intro: 所有需要处理的问题，并附上可修复它们的位置。
+        issue: 问题
+        issues:
+          active_zero_stock: 已上架 + 零库存
+          missing_description: 缺少描述
+          missing_media: 缺少图片
+          missing_seo: 缺少 SEO
+          missing_translations: 缺少翻译
+          old_drafts: 陈旧草稿
+          redirect_unresolved: 跳转未建立
+        issues_heading: 问题清单
+        title: 商品健康
+        view: 查看
