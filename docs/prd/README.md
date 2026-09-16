@@ -218,3 +218,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | approved | PRD-20260916-catalog-ai-acceptance-audit | catalog | 2026-09-16 | （实施时回填） |
 | draft | PRD-20260916-payments-d14c-dispute-rate-board | payments | 2026-09-16 | （实施时回填） |
 | done | PRD-20260916-catalog-operations-report | catalog | 2026-09-16 | （实施时回填） |
+| done | PRD-20260916-catalog-health-trend-snapshot | catalog | 2026-09-16 | （实施时回填） |

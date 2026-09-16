@@ -108,6 +108,12 @@
 - **位置**：`backend/pallastrade_gems/pallastrade_admin/app/controllers/pallastrade/admin/catalog_health_controller.rb`（只有**当前**计数，无 history/trend/snapshot）
 - **影响**：§十六 指标「Unresolved Catalog Health Issues」缺少时间维度 —— 无法回答"治理在变好还是变差"。
 - **建议**：增量快照表（store × issue × 日）+ 工作台迷你趋势；口径必须复用 `CatalogHealth` 的既有 scope（保持"计数==列表"这条不变量）。
+- **状态（2026-09-16 收口批次）**：**已实施**（`PRD-20260916-catalog-health-trend-snapshot`）——
+  新表 `pallastrade_catalog_health_snapshots`（唯一索引 `(store_id, issue_key, captured_on)`）+
+  `CatalogHealth::{Snapshot,Trend}` + `SnapshotSweeperJob`（每日 02:00）+ 工作台趋势列。
+  落地时**一处比建议更严**：快照计数**只能**来自 `Issues.count`（建议说"复用 scope"，实施写成铁律并把
+  "计数==列表"当成不变量逐项断言）；另补两条建议未提的口径 —— **低于两条快照必须显示 `unknown`**
+  （把它显示成"持平 0"是编造结论），以及**基准点取窗口内最早可用快照而非"昨天"**（避免日内噪音被放大成趋势）。
 
 ### G-8 多店作用域未系统化（P3 / 建议立专项）
 
@@ -124,7 +130,7 @@
 | **P1** | 前台埋点补齐：列表标识 + back-in-stock 事件 | G-2 G-3 G-4 | 小（3 个组件 + 事件契约） | 无 | 低 |
 | **P1** | AI 采纳审计（acceptance / 采纳前编辑摘要） | G-5 | 中 | AI Run 既有审计 | 低（只增审计，不碰安全边界） |
 | **P2** | 运营报表（批量操作与维护频次） | G-6 | 中（复用 product_history） | ✅ 已实施（`PRD-20260916-catalog-operations-report`） | 低 |
-| **P2** | Catalog Health 趋势快照 | G-7 | 中（1 表 + 1 图） | 无 | 低（须保"计数==列表"） |
+| **P2** | Catalog Health 趋势快照 | G-7 | 中（1 表 + 1 图） | ✅ 已实施（`PRD-20260916-catalog-health-trend-snapshot`） | 低（须保"计数==列表"） |
 | **P3** | 多店作用域专项扫描（机器化检查 + 回归清单） | G-8 | 大 | 需先定口径 | 中 |
 
 **建议的下一步**：P0（G-1）与 P1 的**埋点三项**打包成一个小批次（都属于"让已上线的能力变得可信任 / 可衡量"），再评估 P2。

@@ -334,6 +334,25 @@ F-2 只是把它经 `PallasTrade::Shipping::Estimate` 与 `delivery_method_seria
 后台入口：`/admin/catalog_operations`（Products 菜单 → Catalog Operations，位置在 Duplicate Products 之后）。
 回归验证：`harness verify catalog-operations-rspec`。
 
+## Catalog Health 趋势快照（Trend Snapshot，2026-09-16，PRD-20260916-catalog-health-trend-snapshot；审计 G-7）
+
+工作台的**计数是「现在」**，趋势是**「在变好还是变差」**—— 两者数据结构不同：
+
+- **采集**：`CatalogHealth::Snapshot.capture(store, on: Date.current)` —— 计数**只能**来自 `Issues.count`。
+  这是铁律：工作台的「计数 == 下钻列表条数」由 `Issues` 维持，快照另写一套判定 SQL 就会让它与工作台悄悄漂移，
+  而趋势恰恰是用来判断“治理有没有效果”的，漂移即失真。
+- **幂等**：唯一索引 `(store_id, issue_key, captured_on)` —— 同店同日同 issue 只有一行，
+  重跑覆盖当次值（可回填历史日 `on:`）。计 **0 也留行**：0 是事实，“没有行”是缺失。
+- **趋势**：`CatalogHealth::Trend.call(store, days: 30)` —— `baseline` = 窗口内**最早可用**快照，
+  `delta` = current − baseline（**负数 = 待办变少 = 治理有效**），方向 `improving` / `worsening` / `flat` / **`unknown`**。
+- **⚠️ `unknown` 不得被当成“持平”**：新店、启用首日、窗口内只有一条快照时，“变化”是**不存在的事实**。
+  显示“持平 0”是在编造结论——商家会据此以为“这轮治理没效果”。
+- **基准点为何取窗口起点而非“昨天”**：与前一日比会把日内噪音放大成趋势。
+- **调度**：`CatalogHealth::SnapshotSweeperJob`（每日 02:00，`sidekiq_schedule.rb` 的 `catalog_health_snapshot`）；
+  **单店失败不阻断**其余店（趋势断档比噪声更糟）、店铺数有界、只写快照表。
+
+回归验证：`harness verify catalog-health-trend-rspec`。
+
 ## AI 采纳审计（Acceptance Audit，2026-09-16，PRD-20260916-catalog-ai-acceptance-audit）
 
 生成侧一直有留痕（每次调用写 `PallasTrade::AI::Run` + `AI::Artifact`，三个 copilot 服务的 `Result`

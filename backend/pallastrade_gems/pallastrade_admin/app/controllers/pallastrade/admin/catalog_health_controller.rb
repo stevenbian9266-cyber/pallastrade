@@ -11,6 +11,9 @@ module PallasTrade
     class CatalogHealthController < BaseController
       def index
         @report = PallasTrade::CatalogHealth::Report.call(current_store)
+        # G-7（PRD-20260916-catalog-health-trend-snapshot）：计数是「现在」，趋势是「在变好还是变差」。
+        # 趋势只读快照表；没有两条可比快照时方向为 unknown（页面必须如实显示，不得当成持平）。
+        @trend = PallasTrade::CatalogHealth::Trend.call(current_store)
       end
 
       helper_method :catalog_health_target_path

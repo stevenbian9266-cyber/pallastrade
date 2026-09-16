@@ -15,6 +15,8 @@
           <tr>
             <th><%= PallasTrade.t('admin.catalog_health.issue') %></th>
             <th class="text-center"><%= PallasTrade.t('admin.catalog_health.count') %></th>
+            <%# G-7（PRD-20260916-catalog-health-trend-snapshot）：计数是「现在」，趋势是「在变好还是变差」 %>
+            <th class="text-center"><%= PallasTrade.t('admin.catalog_health.trend.heading') %></th>
             <th class="text-right"><%= PallasTrade.t('admin.catalog_health.action') %></th>
           </tr>
         </thead>
@@ -63,6 +65,20 @@
                   <%= link_to issue.count, catalog_health_target_path(issue), class: 'font-medium' %>
                 <% else %>
                   <span class="text-gray-400">0</span>
+                <% end %>
+              </td>
+              <%# 趋势：少于两条快照 → unknown（不编造成"持平"）。delta 负数 = 待办变少 = 治理有效。 %>
+              <% trend_row = @trend.row_for(issue.key) %>
+              <td class="text-center">
+                <% if trend_row.nil? || trend_row.unknown? %>
+                  <span class="text-gray-400"><%= PallasTrade.t('admin.catalog_health.trend.unknown') %></span>
+                <% else %>
+                  <span class="<%= trend_row.improving? ? 'text-green-600' : (trend_row.worsening? ? 'text-red-600' : 'text-gray-500') %>">
+                    <%= trend_row.delta.positive? ? "+#{trend_row.delta}" : trend_row.delta %>
+                  </span>
+                  <div class="text-gray-500 text-sm">
+                    <%= PallasTrade.t("admin.catalog_health.trend.directions.#{trend_row.direction}") %>
+                  </div>
                 <% end %>
               </td>
               <td class="text-right">

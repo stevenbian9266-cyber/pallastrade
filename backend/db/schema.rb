@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_16_250000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_16_270000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -502,6 +502,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_250000) do
     t.index ["user_id"], name: "index_pallastrade_carts_on_user_id"
   end
 
+  create_table "pallastrade_catalog_health_snapshots", force: :cascade do |t|
+    t.date "captured_on", null: false
+    t.integer "count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.string "issue_key", null: false
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "captured_on"], name: "idx_on_store_id_captured_on_b947d747bb"
+    t.index ["store_id", "issue_key", "captured_on"], name: "idx_catalog_health_snapshots_daily", unique: true
+  end
+
   create_table "pallastrade_channels", force: :cascade do |t|
     t.boolean "active", null: false
     t.string "code", null: false
@@ -791,6 +802,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_250000) do
     t.index ["dispute_id", "kind", "payload_digest"], name: "idx_dispute_ev_sub_idempotency", unique: true
     t.index ["dispute_id", "kind"], name: "idx_dispute_ev_sub_disp_kind"
     t.index ["provider_reference"], name: "idx_dispute_ev_sub_provider_ref"
+  end
+
+  create_table "pallastrade_dispute_rate_alerts", force: :cascade do |t|
+    t.integer "amount_ratio_bps"
+    t.integer "amount_threshold_bps"
+    t.integer "count_ratio_bps"
+    t.integer "count_threshold_bps"
+    t.datetime "created_at", null: false
+    t.string "currency"
+    t.string "dedupe_key", null: false
+    t.datetime "detected_at", null: false
+    t.decimal "disputes_amount", precision: 12, scale: 2
+    t.integer "disputes_count", default: 0, null: false
+    t.datetime "escalated_at"
+    t.date "evaluated_on", null: false
+    t.jsonb "metadata"
+    t.string "network", null: false
+    t.bigint "store_id", null: false
+    t.string "tier", null: false
+    t.decimal "transactions_amount", precision: 12, scale: 2
+    t.integer "transactions_count", default: 0, null: false
+    t.jsonb "triggered_metrics", default: [], null: false
+    t.datetime "updated_at", null: false
+    t.integer "window_days", default: 30, null: false
+    t.index ["dedupe_key"], name: "idx_dispute_rate_alerts_dedupe", unique: true
+    t.index ["network", "evaluated_on"], name: "idx_dispute_rate_alerts_network"
+    t.index ["store_id", "tier", "evaluated_on"], name: "idx_dispute_rate_alerts_store_tier"
   end
 
   create_table "pallastrade_disputes", force: :cascade do |t|

@@ -76,6 +76,17 @@ PALLAS_CART_SCHEDULE = [
     queue: 'default',
     args: [{ 'limit' => 50, 'verify_after_hours' => 24 }]
   },
+  # G-7 (2026-09-16, PRD-20260916-catalog-health-trend-snapshot): 注册 Catalog Health 每日快照 ——
+  # **只写快照表**（不碰商品/媒体/翻译/redirect，不发事件）：每店每日一行/issue，
+  # 供工作台读趋势（口径复用 `CatalogHealth::Issues.count`，保持"计数==列表"）。
+  # 每日 02:00（错开 01:00 期限扫描 / 01:30 收敛 sweeper）；store_limit 有界。
+  {
+    name: 'catalog_health_snapshot',
+    class: 'PallasTrade::CatalogHealth::SnapshotSweeperJob',
+    cron: '0 2 * * *',
+    queue: 'default',
+    args: [{ 'store_limit' => 500 }]
+  },
   # D13 切片4 (2026-09-16): 注册汇率对比巡检 —— **只做结算差核算**（不改订单/支付金额、不退款、不写账本、
   # 零 provider 外呼）：锁汇快照 × 结算台账 → 偏差 bips → 超容差进入对账队列（kind=fx），
   # 恢复一致自动销案。每 30 分钟；扫描期间 90 天（有界）。
@@ -93,6 +104,16 @@ PALLAS_CART_SCHEDULE = [
     name: 'payment_circuit_breaker_sweep',
     class: 'PallasTrade::Payments::CircuitBreaker::SweepJob',
     cron: '15 * * * *',
+    queue: 'default'
+  },
+  # D14 切片3 (2026-09-16): 拒付率阈值巡检 —— **只读统计 + 只写预警台账/审计，零资金副作用**
+  # （不改支付/订单/退款/账本/库存/争议状态，零 provider 调用）：逐店铺算「按卡组织的笔数比 + 金额比」
+  # → 达到阈值 80%（可配）落 approaching、达到阈值落 breached → 档位升级时发布 `dispute.rate_threshold`。
+  # 每小时一次（偏移 45 分），避免与既有巡检同点竞争。
+  {
+    name: 'dispute_rate_alert_sweep',
+    class: 'PallasTrade::Disputes::RateAlertSweeperJob',
+    cron: '45 * * * *',
     queue: 'default'
   }
 ].freeze

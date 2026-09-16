@@ -315,6 +315,13 @@ en:
         scope_note: All stores — the audit trail carries no store dimension yet.
       catalog_health:
         action: Action
+        trend:
+          heading: Trend
+          unknown: No trend yet
+          directions:
+            improving: Improving
+            worsening: Worsening
+            flat: Flat
         ai:
           button: AI Fix Suggestion
           dismiss: Dismiss

@@ -633,6 +633,16 @@ Products → **Catalog Health**（`/admin/catalog_health`）是商品运营的�
 
 回归验证：`harness verify admin-catalog-health-rspec`（含导航一致性回归）。
 
+### Catalog Health 趋势列（Trend，2026-09-16；PRD-20260916-catalog-health-trend-snapshot；审计 G-7）
+
+`/admin/catalog_health` 每行新增**趋势列**（计数与下钻链接原样保留）：
+
+- 控制器注入 `@trend = PallasTrade::CatalogHealth::Trend.call(current_store)`（只读快照表，不动导航）。
+- 视图：`@trend.row_for(issue.key)` → `improving` 绿 / `worsening` 红 / `flat` 灰，前缀显示 delta（负数 = 待办变少）。
+- **空态必须诚实**：`unknown`（无快照或只有一条）显示 “No trend yet”，**不得**渲染成“持平 0”——
+  那是在编造结论。文案键：`admin.catalog_health.trend.{heading,unknown,directions.*}`。
+- 采集由 `CatalogHealth::SnapshotSweeperJob` 每日 02:00 完成；工作台只读，**不触发采集**。
+
 ### Product History —— 商品级时间线（2026-09-15，PRD-20260915-catalog-batch-d1-product-history）
 
 商品编辑页右栏的「历史时间线」定式是 **审计表即时间线**（零迁移）：写侧统一走 `PallasTrade::ProductHistory::Recorder`，读侧 `PallasTrade::ProductHistory::Timeline` 把审计条目与改价历史合并倒序。
