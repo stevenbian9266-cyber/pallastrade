@@ -3840,7 +3840,8 @@
         "Restrict votes to what the reader can actually see (approved reviews in the caller's store) and refuse self-votes with a stable, documented error code",
         "Make the count a counter cache so a list page reads it per row instead of issuing a query per review",
         "Extend the existing ordering whitelist (stable tie-break included) rather than adding a second sorting mechanism, and keep the fallback and metadata contract unchanged",
-        "Ship the client side through the repo's own gates: a vote UI that fails the formatter/linter (`pnpm check`) or a storefront build blocks the release, and touching the SDK client means rebuilding and committing the published `dist` (hash-named type chunks included)"
+        "Ship the client side through the repo's own gates: a vote UI that fails the formatter/linter (`pnpm check`) or a storefront build blocks the release, and touching the SDK client means rebuilding and committing the published `dist` (hash-named type chunks included)",
+        "Keep the component independent of route context it does not own: prefer deriving the bits it needs from data it already reads (e.g. the pathname) over hooks that every caller — pages and their tests — would have to provide"
       ],
       "mustNotDo": [
         "Let the same customer vote twice, or let the UI show a vote the API did not confirm",

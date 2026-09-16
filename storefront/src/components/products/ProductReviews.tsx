@@ -126,9 +126,17 @@ export function ProductReviews({
   const t = useTranslations("reviews");
   const locale = useLocale();
   // Catalog F-5: guests get a sign-in link that brings them back to this PDP.
-  const params = useParams<{ country: string; locale: string }>();
+  // Derived from the pathname (the `/[country]/[locale]` prefix) rather than
+  // `useParams`, so any caller — including page tests with their own navigation
+  // mock — can render this component without providing route params.
   const pathname = usePathname();
-  const signInHref = `/${params.country}/${params.locale}/account?redirect=${encodeURIComponent(pathname)}`;
+  const [countrySegment, localeSegment] = (pathname ?? "")
+    .split("/")
+    .filter(Boolean);
+  const signInHref =
+    countrySegment && localeSegment
+      ? `/${countrySegment}/${localeSegment}/account?redirect=${encodeURIComponent(pathname ?? "")}`
+      : "/account";
 
   const [rating, setRating] = useState(0);
   const [title, setTitle] = useState("");
