@@ -4105,6 +4105,31 @@
       }
     },
     {
+      "id": "GS-163",
+      "name": "A missing translation that breaks the markup around it",
+      "description": "The admin UI language comes from the store's preferred locale, so a key present in English and absent in Chinese stays invisible in CI. Worse, one helper fed the translate helper's output into a button's title attribute — and with the key missing, that output is not text but a span carrying the missing-key marker. The attribute was torn open and the debris surfaced as visible button text. Every environment rendering in English was immune, which is why it survived.",
+      "mustDo": [
+        "Distinguish plain text from markup at the boundary: anything headed for an HTML attribute must be provably tag-free",
+        "Give attribute-bound strings a text fallback so the missing-key marker can never reach the attribute",
+        "Treat the absent translation as the root cause and add it, rather than only hardening the helper",
+        "Describe the defect in terms of what the user sees, so the before and after can be compared",
+        "Verify in a real browser, because a torn attribute is invisible to assertions that only compare strings"
+      ],
+      "mustNotDo": [
+        "Blame the view's tag structure before dumping the rendered HTML and looking at it",
+        "Silence the symptom by escaping the attribute while the locale stays incomplete",
+        "Conclude the fix from a green suite when the suite renders in a locale that never had the gap",
+        "Leave the temporary verification environment behind — restore the locale and remove scratch scripts"
+      ],
+      "scoring": {
+        "boundaryDiscipline": 30,
+        "rootCauseOverSymptom": 25,
+        "renderedEvidence": 20,
+        "localeCompleteness": 15,
+        "environmentHygiene": 10
+      }
+    },
+    {
       "id": "GS-158",
       "name": "A locked rate is a fact you can audit, not a number you recompute later",
       "description": "PRD-20260916-payments-d13d-fx-snapshot (slice 4 of the D13 reconciliation batch, business plan §70.4): the platform had no exchange-rate capability at all — when an order was priced in one currency and settled in another, the rate the buyer saw was nowhere recorded, and settlement-rate differences had no home in the reconciliation queue. This slice adds a multi-source rate registry (manual / provider / third-party with priority and an effective window), locks the display rate and the up-charged effective rate per order at submission, and compares that lock against the settlement rate (reported by the provider or derived from the settled amount) — queueing differences by basis point while leaving pricing and money movement alone.",
