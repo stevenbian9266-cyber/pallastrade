@@ -110,8 +110,10 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
       # D15 切片1: Orders 下新增风控名单（:risk_lists，批量导入/导出 + 到期 + 审计）
       # D13 切片3: Orders 下新增支付成本报表（:payment_costs）与费率策略（:payment_fee_policies）
       # D13 切片4: Orders 下新增汇率表（:currency_rates）与汇率快照（:fx_snapshots）
-      expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders transactions refunds payment_combinations payments_ops disputes_ops reconciliation_cases payouts refund_approvals risk_lists payment_costs payment_fee_policies currency_rates fx_snapshots])
-      expect(sidebar.find(:products).children.map(&:key)).to eq(%i[products_list catalog_health duplicate_products price_lists stock translations taxonomies options])
+      # DSP-P7-8: Orders 下新增争议费率预警（:dispute_rates，只读看板）
+      expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders transactions refunds payment_combinations payments_ops disputes_ops reconciliation_cases payouts refund_approvals risk_lists payment_costs payment_fee_policies currency_rates fx_snapshots dispute_rates])
+      # 审计 G-6: Products 下新增商品运营报表（:catalog_operations，只读聚合）
+      expect(sidebar.find(:products).children.map(&:key)).to eq(%i[products_list catalog_health duplicate_products catalog_operations price_lists stock translations taxonomies options])
       expect(sidebar.find(:customers).children.map(&:key)).to eq(%i[customers_list customer_groups newsletter_subscribers])
       # PRD-20260910-promo-batch3c AC-004: Promotions 组新增只读核销台账子项
       # PRD-20260911-promo-batch6 (PR-P9-2, D2=A): Promotions 组新增促销分类子项

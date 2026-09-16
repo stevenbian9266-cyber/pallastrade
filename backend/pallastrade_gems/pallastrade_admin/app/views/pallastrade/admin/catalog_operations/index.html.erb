@@ -1,0 +1,103 @@
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.catalog_operations.title') %>
+<% end %>
+
+<p class="text-gray-500 mb-6"><%= PallasTrade.t('admin.catalog_operations.intro') %></p>
+
+<%# PRD-20260916-catalog-operations-report：窗口切换（7/30，未知值由控制器回落到默认） %>
+<div class="flex flex-wrap items-center gap-2 mb-6">
+  <% PallasTrade::Catalog::Operations::Report::ALLOWED_WINDOW_DAYS.each do |days| %>
+    <% active = @window_days == days %>
+    <%= link_to PallasTrade.t('admin.catalog_operations.window_days', count: days),
+                admin_catalog_operations_path(window: days),
+                class: "btn #{active ? 'btn-primary' : 'btn-light'}" %>
+  <% end %>
+  <span class="text-gray-500 ml-2"><%= PallasTrade.t('admin.catalog_operations.scope_note') %></span>
+</div>
+
+<div class="card-lg mb-6">
+  <div class="card-header">
+    <h3 class="card-title"><%= PallasTrade.t('admin.catalog_operations.operations_heading') %></h3>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.catalog_operations.kind') %></th>
+            <th class="text-center"><%= PallasTrade.t('admin.catalog_operations.entries') %></th>
+            <th class="text-center"><%= PallasTrade.t('admin.catalog_operations.products') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% %i[bulk single].each do |kind| %>
+            <% row = @report[:operations][kind] %>
+            <tr>
+              <td><%= PallasTrade.t("admin.catalog_operations.kinds.#{kind}") %></td>
+              <td class="text-center"><%= row[:entries] %></td>
+              <td class="text-center"><%= row[:products] %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card-lg mb-6">
+  <div class="card-header">
+    <h3 class="card-title"><%= PallasTrade.t('admin.catalog_operations.maintenance_heading') %></h3>
+  </div>
+  <div class="card-body">
+    <% if @report[:maintenance][:products_touched].zero? %>
+      <p class="text-gray-500 mb-0"><%= PallasTrade.t('admin.catalog_operations.empty') %></p>
+    <% else %>
+      <dl class="flex flex-wrap gap-6 mb-0">
+        <div>
+          <dt class="text-gray-500"><%= PallasTrade.t('admin.catalog_operations.per_product') %></dt>
+          <dd class="text-2xl"><%= @report[:maintenance][:per_product] %></dd>
+        </div>
+        <div>
+          <dt class="text-gray-500"><%= PallasTrade.t('admin.catalog_operations.entries') %></dt>
+          <dd class="text-2xl"><%= @report[:maintenance][:update_entries] %></dd>
+        </div>
+        <div>
+          <dt class="text-gray-500"><%= PallasTrade.t('admin.catalog_operations.products') %></dt>
+          <dd class="text-2xl"><%= @report[:maintenance][:products_touched] %></dd>
+        </div>
+      </dl>
+    <% end %>
+  </div>
+</div>
+
+<div class="card-lg">
+  <div class="card-header">
+    <h3 class="card-title"><%= PallasTrade.t('admin.catalog_operations.actors_heading') %></h3>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.catalog_operations.actor') %></th>
+            <th class="text-center"><%= PallasTrade.t('admin.catalog_operations.entries') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @report[:actors].empty? %>
+            <tr>
+              <td colspan="2" class="text-gray-500"><%= PallasTrade.t('admin.catalog_operations.empty') %></td>
+            </tr>
+          <% else %>
+            <% @report[:actors].each do |row| %>
+              <tr>
+                <td><%= row[:actor] %></td>
+                <td class="text-center"><%= row[:entries] %></td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

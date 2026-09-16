@@ -4026,6 +4026,32 @@
       }
     },
     {
+      "id": "GS-160",
+      "name": "An operations report says what it counted, and what it could not",
+      "description": "PRD-20260916-catalog-operations-report (catalog audit gap G-6): the product audit trail already recorded every write — one row per product, carrying 'source: bulk' when the write came from a batch — but nobody could answer 'how much of the catalog moved in bulk' or 'how often is a product maintained'. The tempting shortcuts were to treat the action name as the batch marker and to present the page as if it were store-scoped. Neither survives contact with the data.",
+      "mustDo": [
+        "Decide bulk versus single per entry from the metadata the recorder actually writes, and expose both the entry count and the distinct product count so a batch's size is not confused with its row count",
+        "Return 0 rather than NaN or infinity for the average when no product moved in the window",
+        "Bucket writes with no actor under a system identity instead of letting them count as a person's work",
+        "Aggregate in the database so the query count stays flat as the window fills up",
+        "Restrict the window to the values the report actually supports and fall back to the default for anything else, without erroring and without guessing",
+        "State the report's real scope on the page when the underlying table cannot be filtered by store, instead of implying a per-store view"
+      ],
+      "mustNotDo": [
+        "Infer bulk from the action name — the same action can arrive from a single edit or from a batch",
+        "Present a store-scoped page on top of data that has no store dimension",
+        "Invent a number for an empty window instead of showing the empty state",
+        "Write anything while reporting, or load the window into Ruby to count it"
+      ],
+      "scoring": {
+        "countingHonesty": 30,
+        "scopeDeclaration": 20,
+        "readOnlyPurity": 20,
+        "aggregationDiscipline": 15,
+        "emptyStateIntegrity": 15
+      }
+    },
+    {
       "id": "GS-158",
       "name": "A locked rate is a fact you can audit, not a number you recompute later",
       "description": "PRD-20260916-payments-d13d-fx-snapshot (slice 4 of the D13 reconciliation batch, business plan §70.4): the platform had no exchange-rate capability at all — when an order was priced in one currency and settled in another, the rate the buyer saw was nowhere recorded, and settlement-rate differences had no home in the reconciliation queue. This slice adds a multi-source rate registry (manual / provider / third-party with priority and an effective window), locks the display rate and the up-charged effective rate per order at submission, and compares that lock against the settlement rate (reported by the provider or derived from the settled amount) — queueing differences by basis point while leaving pricing and money movement alone.",

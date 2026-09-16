@@ -181,6 +181,15 @@ Rails.application.config.after_initialize do
               position: 63,
               active: -> { controller_name == 'fx_snapshots' },
               if: -> { can?(:manage, PallasTrade::CurrencyRate) }
+
+    # PALLAS-CUSTOM: D14 切片3（PRD-20260916-payments-d14c-dispute-rate-board；业务方案 §71.3 + §72.5）
+    # 拒付率看板：按卡组织双阈值预警 + 下钻 + 名单联动（只读统计；写动作另需名单权限）
+    orders.add :dispute_rates,
+              label: 'admin.dispute_rates.title',
+              url: :admin_dispute_rates_path,
+              position: 64,
+              active: -> { controller_name == 'dispute_rates' },
+              if: -> { can?(:manage, PallasTrade::DisputeRateAlert) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns
@@ -235,6 +244,14 @@ Rails.application.config.after_initialize do
                 url: :admin_duplicate_products_path,
                 position: 9,
                 active: -> { controller_name == 'duplicate_products' },
+                if: -> { can?(:read, PallasTrade::Product) }
+
+    # Catalog Operations（PRD-20260916-catalog-operations-report；审计 G-6）：商品运营报表（只读，全库口径）
+    products.add :catalog_operations,
+                label: 'admin.catalog_operations.title',
+                url: :admin_catalog_operations_path,
+                position: 9.5,
+                active: -> { controller_name == 'catalog_operations' },
                 if: -> { can?(:read, PallasTrade::Product) }
 
     # Price Lists

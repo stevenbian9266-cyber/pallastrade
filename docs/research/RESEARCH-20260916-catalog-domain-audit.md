@@ -96,6 +96,12 @@
 - **位置**：admin 是 Rails 服务端渲染，**没有埋点层**；`Product#history` 已经记录了单条与批量操作（含批量每商品一条、变更字段），数据**存在**但**没有报表**。
 - **影响**：方案 §十六 的「Bulk operation products / operation」「Average product maintenance operations」无法计算。
 - **建议**：基于 `product_history` + `Audit` 出一张只读运营报表（按周期聚合：批量操作次数/覆盖商品数/人均维护动作），复用既有 `PallasTrade::Admin::ReportsController` 模式。
+- **状态（2026-09-16 收口批次）**：**已实施**（`PRD-20260916-catalog-operations-report`）——
+  `Catalog::Operations::Report`（只读聚合 `audit_logs`，零新表）+ `/admin/catalog_operations`
+  （Products 菜单子项）。落地时**两处对建议的修正**：(1) 批量/单条必须按**条目** `metadata['source']`
+  判定而非按 action 名（同一 action 两种来源都可能）；(2) `pallastrade_audit_logs` **没有 store 维度**
+  → 报表只能如实声明为**全库口径**（多店作用域归 G-8），不能假装按店过滤。
+  另：不复用 `PallasTrade::Report` STI（那是生成型报表），沿用 `CatalogHealth::Report` / `Payments::Costs::Report` 的只读聚合先例。
 
 ### G-7 Catalog Health 无趋势 / 无快照（P2）
 
@@ -117,7 +123,7 @@
 | **P0** | 配送方式作用域与数字商品排除口径修正 | G-1 | 小（1 个服务 + 1 组断言） | 无 | 低（改的是只读读模型） |
 | **P1** | 前台埋点补齐：列表标识 + back-in-stock 事件 | G-2 G-3 G-4 | 小（3 个组件 + 事件契约） | 无 | 低 |
 | **P1** | AI 采纳审计（acceptance / 采纳前编辑摘要） | G-5 | 中 | AI Run 既有审计 | 低（只增审计，不碰安全边界） |
-| **P2** | 运营报表（批量操作与维护频次） | G-6 | 中（复用 product_history） | 无 | 低 |
+| **P2** | 运营报表（批量操作与维护频次） | G-6 | 中（复用 product_history） | ✅ 已实施（`PRD-20260916-catalog-operations-report`） | 低 |
 | **P2** | Catalog Health 趋势快照 | G-7 | 中（1 表 + 1 图） | 无 | 低（须保"计数==列表"） |
 | **P3** | 多店作用域专项扫描（机器化检查 + 回归清单） | G-8 | 大 | 需先定口径 | 中 |
 

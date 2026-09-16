@@ -316,6 +316,24 @@ F-2 只是把它经 `PallasTrade::Shipping::Estimate` 与 `delivery_method_seria
 回归验证：`harness verify d3-product-merge-rspec`。
 口径：`LOWER(TRIM(...))` 分组 + `HAVING COUNT(DISTINCT products.id) > 1`，同店 + 未删除 + 非 archived。
 
+## 商品运营报表（Catalog Operations Report，2026-09-16，PRD-20260916-catalog-operations-report；审计 G-6）
+
+`PallasTrade::Catalog::Operations::Report.call(window_days: 7)` —— **只读**聚合 `pallastrade_audit_logs`
+（D-1 `ProductHistory::Recorder` 已经在写的同一份数据），把商品写入读成两个可决策的数字：
+
+- **批量 vs 单条**：判定看**条目**的 `metadata['source'] == 'bulk'`，**不是**看 action 名 —— 同一个
+  action（如 `product.updated`）既可能来自单条编辑也可能来自批量执行。批次本身没有 id，所以报表给
+  两个数字：`entries`（操作规模）与 `products`（去重后实际被动的商品数）。
+- **维护频次**：`product.updated` 条目数 ÷ 窗口内被动过的不同商品数；**分母为 0 时返回 `0.0`**（不是 NaN）。
+- **操作者榜**：`actor_label`，无 actor 的写入归入 `system` —— 不得把系统写入算成“人的动作”。
+- **窗口**：`window_days` 白名单 `[7, 30]`，其他值一律回落 7（不报错、不猜测）。
+- **⚠️ 口径是全库**：`pallastrade_audit_logs` **没有 store 维度** → 报表返回 `scope_note: 'all_stores'`，
+  页面必须如实标注。多店作用域是审计 G-8 的独立议题，**不要**在本报表里假装按店过滤。
+- **铁律**：零写库；三个聚合都在数据库完成（查询数与窗口内行数无关）。
+
+后台入口：`/admin/catalog_operations`（Products 菜单 → Catalog Operations，位置在 Duplicate Products 之后）。
+回归验证：`harness verify catalog-operations-rspec`。
+
 ## AI 采纳审计（Acceptance Audit，2026-09-16，PRD-20260916-catalog-ai-acceptance-audit）
 
 生成侧一直有留痕（每次调用写 `PallasTrade::AI::Run` + `AI::Artifact`，三个 copilot 服务的 `Result`

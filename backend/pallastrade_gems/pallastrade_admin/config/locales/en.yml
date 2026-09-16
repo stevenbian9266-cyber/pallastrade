@@ -294,6 +294,25 @@ en:
           title:
             add_tags: Add tags
             remove_tags: Remove tags
+      catalog_operations:
+        title: Catalog Operations
+        intro: How much of the catalog moved in the selected window, and how often products are maintained — a read-only roll-up of the product audit trail.
+        operations_heading: Bulk vs single-product operations
+        maintenance_heading: Maintenance frequency
+        actors_heading: Top actors
+        kind: Kind
+        kinds:
+          bulk: Bulk
+          single: Single-product
+        entries: Entries
+        products: Products
+        per_product: Updates per product
+        actor: Actor
+        empty: No product activity in this window.
+        window_days:
+          one: Last %{count} day
+          other: Last %{count} days
+        scope_note: All stores — the audit trail carries no store dimension yet.
       catalog_health:
         action: Action
         ai:
@@ -1396,6 +1415,105 @@ en:
           variance_bips: Variance (bips)
           status: Status
           signals: Signals
+      dispute_rates:
+        title: Dispute Rates
+        disputes_link: Disputes
+        export_action: Export CSV
+        reevaluate_action: Re-evaluate now
+        reevaluated: "Re-evaluated: %{recorded} alert(s) recorded, %{escalated} escalated."
+        reevaluate_failed: Re-evaluation failed.
+        filter: Filter
+        reset: Reset
+        any: Any
+        window: Window
+        window_days: "%{days} days"
+        network: Card network
+        dimension: Drill-down
+        tier_filter_all: All tiers
+        not_available: n/a
+        percent_unit: "%"
+        threshold_label: threshold
+        triggered: Triggered
+        alerts_total: Alerts total
+        caliber: "Caliber: disputes opened in the window (numerator) over completed card payments of the same network in the window (denominator); the amount ratio only counts the store default currency."
+        notes:
+          bin_unavailable: "BIN-level drill-down is unavailable locally (no BIN column) - the card fingerprint is used instead."
+          combination_payments_excluded: "Combination payments without an order cannot be attributed to a store and stay out of every denominator."
+          other_currency_excluded: "Payments/disputes in other currencies are excluded from the amount ratio and counted separately."
+          unconfigured_networks: "No threshold configured yet - ratios are shown but never judged or alerted (unconfigured)."
+        policy_title: Thresholds & window
+        policy_enabled: Enable alerting
+        policy_window_days: Window (days)
+        policy_warning_ratio: Warning ratio (0.5-1.0)
+        policy_network: Card network
+        policy_count_bps: Count threshold (bps)
+        policy_amount_bps: Amount threshold (bps)
+        policy_save: Save thresholds
+        policy_saved: Thresholds saved.
+        policy_apply_suggested: Apply suggested template
+        policy_suggested_badge: suggested
+        policy_suggested_note: "Suggested template note: %{note}"
+        totals_title: Window totals
+        totals_transactions: Card transactions
+        totals_disputes: Disputes
+        count_ratio: Count ratio
+        amount_ratio: Amount ratio
+        card_transactions: Card transactions
+        card_disputes: Disputes
+        amounts: "amounts %{currency} %{transactions} / disputes %{disputes}"
+        no_networks: No card transaction in this window yet.
+        metrics:
+          count: Count ratio
+          amount: Amount ratio
+        statuses:
+          ok: OK
+          approaching: Approaching
+          breached: Breached
+          unconfigured: Unconfigured
+        triggered_metrics:
+          count: count
+          amount: amount
+        dimensions:
+          card_fingerprint: Card fingerprint
+          country: Country
+          entry: Checkout entry
+          segment: Customer segment
+        breakdown_title: Drill-down
+        breakdown_empty: No dispute in this window.
+        breakdown_transactions: Transactions
+        breakdown_disputes: Disputes
+        breakdown_count_ratio: Dispute ratio
+        breakdown_dispute_share: Share of disputes
+        breakdown_truncated: "Showing top %{shown} of %{total} buckets."
+        unknown_bucket: Unknown
+        segments:
+          new: New customer
+          returning: Returning customer
+        entries:
+          card: Card
+          gateway: Gateway
+        add_to_denylist: Add to denylist
+        denylist_confirm: Add this card fingerprint to the risk denylist?
+        denylist_added: Card fingerprint added to the denylist.
+        denylist_failed: Could not add the card fingerprint.
+        denylist_invalid: "This bucket has no usable card fingerprint."
+        denylist_default_reason: High dispute rate on this card fingerprint
+        alerts_title: Alert ledger
+        alerts_empty: No alert recorded yet.
+        alert_evaluated_on: Evaluated on
+        alert_network: Card network
+        alert_tier: Tier
+        alert_triggered: Triggered
+        csv:
+          section: Section
+          network: Card network
+          key: Bucket
+          transactions_count: Transactions
+          disputes_count: Disputes
+          count_ratio: Count ratio
+          amount_ratio: Amount ratio
+          status: Status
+          evaluated_on: Evaluated on
       personal_details: Personal Details
       payment_costs:
         title: Payment Costs

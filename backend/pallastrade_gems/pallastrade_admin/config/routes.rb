@@ -38,6 +38,8 @@ PallasTrade::Core::Engine.add_routes do
     resources :product_translations, only: [:index]
     # catalog health（PRD-20260915-admin-catalog-health-v1）：商品健康待办中心（只读）
     get 'catalog_health', to: 'catalog_health#index', as: :catalog_health
+    # catalog operations（PRD-20260916-catalog-operations-report；审计 G-6）：商品运营报表（只读，全库口径）
+    get 'catalog_operations', to: 'catalog_operations#index', as: :catalog_operations
     # duplicate detection（PRD-20260915-catalog-batch-d2-duplicate-detection）：重复商品候选 + 对比（只读）
     get 'duplicate_products', to: 'duplicate_products#index', as: :duplicate_products
     get 'duplicate_products/compare', to: 'duplicate_products#compare', as: :compare_duplicate_products
@@ -470,6 +472,17 @@ PallasTrade::Core::Engine.add_routes do
       collection do
         post :recompare
         get :export
+      end
+    end
+
+    # PALLAS-CUSTOM: D14 切片3（PRD-20260916-payments-d14c-dispute-rate-board；业务方案 §71.3 + §72.5）——
+    # 拒付率看板：比率 + 卡组织双阈值预警 + 下钻 + 名单联动（只读统计 + 只写预警台账/审计）。
+    resources :dispute_rates, only: %i[index] do
+      collection do
+        get :export
+        post :reevaluate
+        post :add_to_denylist
+        patch :policy, action: :update_policy
       end
     end
     get '/emails', to: 'emails#show', as: :emails

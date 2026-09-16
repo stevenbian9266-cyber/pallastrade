@@ -693,6 +693,19 @@ Products → **Duplicate Products**（`/admin/duplicate_products`）是商品治
 
 回归验证：`harness verify d3-product-merge-rspec`。
 
+### Catalog Operations —— 商品运营报表（只读聚合，2026-09-16；PRD-20260916-catalog-operations-report；审计 G-6）
+
+Products → **Catalog Operations**（`/admin/catalog_operations`）把 D-1 已在写的商品审计流水读成两个可决策的数字：**批量 vs 单条操作规模**（条目数 + 去重商品数）与**商品维护频次**（`product.updated` 条目 ÷ 被动过的商品数），外加操作者榜。**只读** —— 没有 create/update/destroy，需要动手时把人送回商品列表。
+
+1. **服务**：`PallasTrade::Catalog::Operations::Report.call(window_days: 7)` —— 除铁律「零写库」外，两条容易踩的口径：
+   - 批量/单条看**条目**的 `metadata['source'] == 'bulk'`（`ProductHistory::Recorder.record_bulk` 写的），**不是**按 action 名分 —— 同一 action 两种来源都可能；批次本身没有 id，所以报表给「条目数」与「去重商品数」两个数字。
+   - **全库口径**：`pallastrade_audit_logs` 没有 store 维度 → 返回 `scope_note: 'all_stores'`，页面如实标注；**不要**假装按店过滤（多店作用域是审计 G-8）。
+   - 分母为 0 时比率为 `0.0`（不是 NaN）；三个聚合都在 DB 完成。
+2. **窗口**：`?window=7|30`，其他值回落默认（`Report::ALLOWED_WINDOW_DAYS`），不报错、不猜测。
+3. **视图**：`card-lg` + `table` 三段（批量 vs 单条 / 维护频次 / 操作者榜）+ 窗口切换 + 空态；文案走 `PallasTrade.t('admin.catalog_operations.*')`（含 `window_days` 复数键）。
+4. **导航与权限**：`products.add :catalog_operations`（`position: 9.5`，在 `duplicate_products` 之后；`if: -> { can?(:read, PallasTrade::Product) }`）+ `BaseController` + `model_class = PallasTrade::Product`；**必同步 `navigation_consistency_spec.rb` 子项数组**（现为 `products_list catalog_health duplicate_products catalog_operations price_lists …`）。
+5. **回归**：`harness verify catalog-operations-rspec`。
+
 ### AI Product Copilot —— 商品编辑页 AI 助手（2026-09-15，PRD-20260915-catalog-batch-e1-ai-copilot）
 
 商品编辑页的描述与 SEO 卡片接入 AI：`[Generate with AI]` / `[Rewrite]` / `[Generate SEO]`。**安全边界是硬要求**（方案 §7.2）：`Generate → Preview → Accept → Save` —— AI 只出草稿，Accept 才写入表单控件，保存仍由商家点 Save；AI 不得改价格/库存/渠道/上架。
