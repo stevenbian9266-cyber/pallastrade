@@ -1504,6 +1504,7 @@ en:
         denylist_added: Card fingerprint added to the denylist.
         denylist_failed: Could not add the card fingerprint.
         denylist_invalid: "This bucket has no usable card fingerprint."
+        denylist_ambiguous: "Could not resolve a single card fingerprint for that row - add it in the risk list page instead."
         denylist_default_reason: High dispute rate on this card fingerprint
         alerts_title: Alert ledger
         alerts_empty: No alert recorded yet.

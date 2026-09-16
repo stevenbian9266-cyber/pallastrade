@@ -509,6 +509,18 @@ Orders 下再新增两个子项（position 62/63，`if: -> { can?(:manage, Palla
 - ⚠️ **导航一致性 spec 断言 Orders 子项完整列表**（本次新增 `:currency_rates` / `:fx_snapshots` 已同步）。
 - **回归**：`harness verify d13d-fx-snapshot-rspec`。
 
+## 拒付率看板 `/admin/dispute_rates`（D14 切片3, 2026-09-16；PRD-20260916-payments-d14c-dispute-rate-board）
+
+Orders 子项 `dispute_rates`（position 64，`if: -> { can?(:manage, PallasTrade::DisputeRateAlert) }`）：
+
+- **页面**：口径说明（分子/分母/币种/unknown/BIN 不可得）+ 筛选（窗口 30/60/90、卡组织、维度、台账档位）+ 阈值设置表单 + 组织卡片（`data-rate-network` / `data-rate-status` / `data-rate-metric` / `data-rate-usage-value`）+ 下钻表（`data-bucket-masked`）+ 预警台账（`data-count-scope` 与 `data-alert-tier`）。
+- **权限**：读/写均 `can?(:manage, PallasTrade::DisputeRateAlert)`（新增到 `configuration_management`）；**一键加黑另需** `can?(:manage, PallasTrade::PaymentRiskList)`。
+- **一键加黑（掩码反解）**：页面**只提交脱敏值**（`masked_fingerprint`），服务端在**当前窗口下钻结果**里反解原始卡指纹，**必须唯一命中**才写 D15 名单（不唯一 → 友好报错）。这是「页面不出现原始卡指纹」与「能执行动作」的兼顾方案。
+- ⚠️ **脱敏只用一个口径**：调用 `PallasTrade::Admin::DisputeRatesHelper.masked`（内部复用 D15 `PaymentRiskList#masked_value`），视图用实例方法 `mask_fingerprint`。
+- ⚠️ **新增控制器必须自带 `audit_actor`**（`BaseController` 不提供；否则 `NameError`）。
+- ⚠️ 导航一致性 spec 的子项数组已含 `:dispute_rates`（并行会话已同步）。
+- **回归**：`harness verify d14c-dispute-rates-rspec`。
+
 ## 支付适用范围编辑：Provider 详情「支付方式」页签（D8 切片2, 2026-09-15，PRD-20260915-payments-d8）
 
 同一页签每行新增「适用范围」编辑器 + 摘要列（改 `_options.html.erb`；**不新增页面**）：

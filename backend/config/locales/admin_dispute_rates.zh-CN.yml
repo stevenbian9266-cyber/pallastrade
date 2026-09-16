@@ -1,0 +1,106 @@
+# PALLAS-CUSTOM: D14 切片3（PRD-20260916-payments-d14c-dispute-rate-board）——
+# 拒付率看板 + 卡组织阈值预警（宿主 zh-CN 覆盖；键集与 gem en.yml 的 admin.dispute_rates 一一对应）
+
+zh-CN:
+  pallastrade:
+    admin:
+      dispute_rates:
+        title: 拒付率看板
+        disputes_link: 争议运营
+        export_action: 导出 CSV
+        reevaluate_action: 立即评估
+        reevaluated: 评估完成：记录 %{recorded} 条预警，其中升级 %{escalated} 条。
+        reevaluate_failed: 评估失败
+        filter: 筛选
+        reset: 重置
+        any: 全部
+        window: 统计窗口
+        window_days: 近 %{days} 天
+        network: 卡组织
+        dimension: 下钻维度
+        tier_filter_all: 全部档位
+        not_available: 不可用
+        percent_unit: "%"
+        threshold_label: 阈值
+        triggered: 已触发
+        alerts_total: 预警合计
+        caliber: "口径：分子 = 窗口内开案的争议；分母 = 窗口内**同卡组织**已完成的卡支付；金额比只统计店铺默认币种。"
+        notes:
+          bin_unavailable: 本地无 BIN 列，BIN 级下钻不可得 —— 以「卡指纹」维度替代（脱敏展示）。
+          combination_payments_excluded: 组合支付（无订单）不归属任何店铺，不进入任何分母。
+          other_currency_excluded: 非默认币种的支付/争议不计入金额比，单独计数并在上方展示。
+          unconfigured_networks: 尚未配置任何阈值 —— 比率照常展示，但**不判定、不预警**（unconfigured）。
+        policy_title: 阈值与窗口
+        policy_enabled: 启用预警
+        policy_window_days: 窗口天数
+        policy_warning_ratio: 预警比例（0.5–1.0）
+        policy_network: 卡组织
+        policy_count_bps: 笔数阈值（bps）
+        policy_amount_bps: 金额阈值（bps）
+        policy_save: 保存阈值
+        policy_saved: 阈值已保存。
+        policy_apply_suggested: 应用建议值
+        policy_suggested_badge: 建议
+        policy_suggested_note: "建议模板说明：%{note}"
+        totals_title: 窗口汇总
+        totals_transactions: 卡交易数
+        totals_disputes: 争议数
+        count_ratio: 笔数比
+        amount_ratio: 金额比
+        card_transactions: 卡交易
+        card_disputes: 争议
+        amounts: "金额 %{currency} %{transactions} / 争议 %{disputes}"
+        no_networks: 窗口内还没有卡交易。
+        metrics:
+          count: 笔数比
+          amount: 金额比
+        statuses:
+          ok: 正常
+          approaching: 逼近阈值
+          breached: 超过阈值
+          unconfigured: 未配置阈值
+        triggered_metrics:
+          count: 笔数
+          amount: 金额
+        dimensions:
+          card_fingerprint: 卡指纹
+          country: 国家
+          entry: 支付入口
+          segment: 客群
+        breakdown_title: 下钻
+        breakdown_empty: 窗口内没有争议。
+        breakdown_transactions: 交易数
+        breakdown_disputes: 争议数
+        breakdown_count_ratio: 拒付率
+        breakdown_dispute_share: 争议占比
+        breakdown_truncated: 仅展示前 %{shown} 个桶（共 %{total} 个）。
+        unknown_bucket: 不可判定
+        segments:
+          new: 新客
+          returning: 回头客
+        entries:
+          card: 卡
+          gateway: 网关
+        add_to_denylist: 加入黑名单
+        denylist_confirm: 确认把该卡指纹加入风控黑名单？
+        denylist_added: 已把该卡指纹加入黑名单。
+        denylist_failed: 加入黑名单失败
+        denylist_invalid: 该桶没有可用的卡指纹。
+        denylist_ambiguous: 无法唯一定位该卡指纹（脱敏后可能对应多张卡），请到风控名单页手工新增。
+        denylist_default_reason: 该卡指纹拒付率偏高
+        alerts_title: 预警台账
+        alerts_empty: 暂无预警记录。
+        alert_evaluated_on: 评估日
+        alert_network: 卡组织
+        alert_tier: 档位
+        alert_triggered: 触发项
+        csv:
+          section: 区块
+          network: 卡组织
+          key: 桶
+          transactions_count: 交易数
+          disputes_count: 争议数
+          count_ratio: 笔数比
+          amount_ratio: 金额比
+          status: 状态
+          evaluated_on: 评估日

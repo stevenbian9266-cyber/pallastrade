@@ -74,6 +74,10 @@ module PallasTrade
         # PALLAS-CUSTOM: D13 切片4（PRD-20260916-payments-d13d-fx-snapshot；业务方案 §70.4）——
         # 汇率域：汇率表维护 + 汇率快照工作台（同一权限域）
         can :manage, PallasTrade::CurrencyRate
+        # PALLAS-CUSTOM: D14 切片3（PRD-20260916-payments-d14c-dispute-rate-board；业务方案 §71.3 + §72.5）——
+        # 拒付率看板：阈值策略维护 + 预警台账 + 下钻（只读统计）。
+        # ⚠️ 「一键加入黑名单」写的是名单表 → 另需 `can :manage, PallasTrade::PaymentRiskList`（上方已授予）。
+        can :manage, PallasTrade::DisputeRateAlert
 
         # General configuration
         can :manage, PallasTrade::RefundReason

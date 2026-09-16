@@ -164,6 +164,17 @@ reversals** (chargeback / inquiry / warning / representment) — deliberately **
   **唯一键 `(order_id, base_currency, quote_currency)`**（一单一种币对只锁一次）；索引 `(store_id, variance_status)`、`(variance_status, locked_at)`。
 - 两者均为**只新增表**（不回填）；无 `funds_*` 时间戳、不触发资金事件；汇率快照不参与定价与资金计算。
 
+## 拒付率预警台账（D14 切片3, 2026-09-16）
+
+- `pallastrade_dispute_rate_alerts`：一行 = 「店铺 × 卡组织 × 评估日」的预警观测。
+  `store_id`（必填）/ `network`（卡组织归一值）/ `tier`（`approaching` / `breached`）/ `evaluated_on`(date) / `window_days` /
+  `count_ratio_bps` + `amount_ratio_bps`（**基点的整数**，避免浮点漂移；nil = 不可判定）/ `count_threshold_bps` + `amount_threshold_bps`（**当时的阈值留档**）/
+  `transactions_count` + `disputes_count`（分母/分子笔数）/ `transactions_amount` + `disputes_amount` decimal(12,2) / `currency` /
+  `triggered_metrics`(jsonb → `['count']`/`['amount']`)/ `dedupe_key`（**唯一** = `rate:<store>:<network>:<date>`）/ `detected_at` / `escalated_at` / `metadata`。
+- 索引：`dedupe_key`(unique)、`(store_id, tier, evaluated_on)`、`(network, evaluated_on)`；**只新增表**，不回填。
+- ⚠️ **支付无 currency 列**：交易的币种口径来自订单（`orders.currency`）；`pallastrade_payments` 只有 `order_id`/`amount`/`state`/`source_type`/`source_id` 等。
+- ⚠️ `pallastrade_credit_cards` **无 BIN 列**（只有 `fingerprint`/`cc_type`/`last_digits`）→ BIN 级下钻不可得，业务侧以卡指纹替代。
+
 ## Order promotion snapshot (batch4a, 2026-09-10)
 
 `pallastrade_order_promotions` carries the **成交快照** written at money-confirmed time

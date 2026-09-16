@@ -15,6 +15,15 @@ description: Use when the user wants PallasTrade to react to something that happ
   仅在 `PallasTrade::Events.enabled?` 时发布，失败只记日志（不影响对账写入）。
 - **巡检**：`Currencies::Fx::CompareSweeperJob`（`config/sidekiq_schedule.rb` 名 `fx_rate_compare_sweep`，`*/30 * * * *`）—— 只做结算差核算，零外呼；结构化日志 `{"event":"fx.rate_compare_sweeper", ...}`。
 
+## 拒付率阈值事件与巡检（D14 切片3, 2026-09-16；业务方案 §71.3 + §72.5）
+
+- **发布**：`dispute.rate_threshold`（`Disputes::RateAlert`）—— **只在档位新出现或升级**（`approaching` → `breached`）时发布一次；
+  payload：`{ store_id, network, tier, count_ratio_bps, amount_ratio_bps, count_threshold_bps, amount_threshold_bps, triggered_metrics, evaluated_on, detected_at }`；
+  事件系统未启用或发布失败 → 只记日志（**台账照写**，不阻断）。
+- **巡检**：`Disputes::RateAlertSweeperJob`（`config/sidekiq_schedule.rb` 名 `dispute_rate_alert_sweep`，`45 * * * *`）—— 逐店铺评估 + 单店失败隔离；
+  结构化日志 `{"event":"dispute.rate_alert_sweeper", stores:, evaluated:, recorded:, escalated:, skipped:, failed:}`。
+- 与 D14b 的差异：期限提醒是「逐争议分档」，本事件是「**逐组织档位**」——同一个争议可能先触发档位提醒、后推高拒付率，两者**独立且不重复**。
+
 PallasTrade has **two layered systems** for reacting to lifecycle events. Both subscribe to the same events; what differs is the delivery target.
 
 | System | Lives | Use for |

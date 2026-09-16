@@ -1411,6 +1411,30 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
 - **后台**（权限 `can?(:manage, PallasTrade::CurrencyRate)`）：`/admin/currency_rates`（汇率表：筛选/计数同源/新增幂等/软撤销）与 `/admin/fx_snapshots`（快照工作台：汇总卡 + 状态与期间筛选 + 明细偏差 + **重新比对** + CSV）；差异跳转既有对账队列（`kind=fx`）。
 - **回归**：`harness verify d13d-fx-snapshot-rspec`（103 例）。
 - **与成本域边界**：切片3 的 `currency_conversion_percent` 是**费用**口径，本切片是**汇率**口径，互不替代。
+
+## 拒付率看板与卡组织阈值预警 — 「比率有分母才有意义」（D14 切片3, 2026-09-16；PRD-20260916-payments-d14c-dispute-rate-board）
+
+业务方案 §71.3/§72.5：既有的 `Disputes::OpsReport` 只回答「争议侧质量」（胜诉率/时限/时长），**无分母**也**无卡组织维度**，因此算不出拒付率，更无法预警。本切片补齐「比率 + 双阈值 + 台账 + 下钻」：
+铁律：**只读统计 + 零资金副作用 + 零 provider** —— 不改支付/订单/退款/账本/库存/争议状态，不调外部接口。
+
+- **口径（唯一权威，写死在 `Disputes::RateReport` 文档里）**：
+  - 窗口：默认 **30 天**（策略可配 1–365），`to = 评估时刻`，`from = to - window_days`；
+  - **分子**：`Dispute.for_store(store).where(created_at: 窗口)`（开案时间口径与 `OpsReport` 一致）；
+  - **分母**：`Payment.completed`、`order_id ∈ store.orders`、`payment.created_at ∈ 窗口`，按组织判定时**只计该组织品牌的卡支付**；
+  - **卡组织归因**：`dispute → payment → source`（`PallasTrade::CreditCard` 的 `cc_type`），归一 `mastercard|maestro → master`、`amex → american_express`；**不可判定 → `unknown` 且不参与任何阈值判定**；
+  - **金额比只算店铺默认币种**（跨币种不混算）；其他币种的支付/争议计入 `excluded_other_currency_*` 计数明示；
+  - 分母 0 → 比率 `nil`（**不用 0 伪装**）；组合支付（`order_id` 为空）不属任何店铺 → 不进分母。
+- **策略**（`Store#private_metadata['dispute_rate_policy']`，无新表）：`enabled`（默认 true）/ `window_days` / `warning_ratio`（**默认 0.8** = §72.5「接近阈值 80% 预警」）/ `networks['<卡组织>'] = {count_bps, amount_bps}`。
+  - **不硬编码卡组织公示数字**：默认无阈值；`RatePolicy.suggested_networks` 只是「建议模板」（带来源说明），必须运营**显式应用**才生效；
+  - 判定：`breached`（任一比率 ≥ 阈值）> `approaching`（≥ 阈值 × warning_ratio）> `ok`；**未配置 → `unconfigured`（不判定、不预警）**；
+  - 归一化保守：非法窗口/比例回默认，非法 bps 视为未配置（不猜）。
+- **服务**：`Disputes::RatePolicy`（值对象，`classify` 是**唯一判定口径**）、`Disputes::RateReport`（只读：汇总 + 四维度下钻 + 降级信封 + 查询数恒定）、`Disputes::RateAlert`（写台账 + 档位升级发事件 + 审计）。
+- **台账** `pallastrade_dispute_rate_alerts`：唯一键 `rate:<store>:<network>:<评估日>`；只落 approaching/breached；同日**不降档**（保留更高档 + 刷新观测值 + 记 `metadata['relaxed_at']`）；升级更新同一行 + `escalated_at`。
+- **事件** `dispute.rate_threshold`（**只在档位变化**时发布）+ 巡检 `Disputes::RateAlertSweeperJob`（`45 * * * *`，单店失败隔离 + JSON 指标）。
+- **后台** `/admin/dispute_rates`（Orders position 64）：组织卡片（两比率×两阈值×状态）+ 下钻（**卡指纹/国家/入口/客群**，入口复用 `PaymentMethod#effective_payment_option`）+ 阈值设置（含「应用建议值」）+ 立即评估 + CSV + **一键加黑**（复用 D15 `Risk::Lists::Upsert`）。
+- ⚠️ **卡指纹一律脱敏**（复用 D15 `PaymentRiskList#masked_value` 的 `abcd***3456` 口径）；页面**只提交掩码**，服务端在窗口下钻结果里**唯一反解**才写入，不唯一则拒绝（不猜）。
+- **与其他域边界**：D13c 的费率模型是「成本」口径，本切片是「风险比率」口径；D16「支付入口」只作为下钻维度复用，不另立口径。
+- **回归**：`harness verify d14c-dispute-rates-rspec`（79 例）。
 - **命名陷阱（实测踩坑）**：Rails 把 `CSV` 注册为 acronym ⇒ `import_csv.rb` 必须定义 **`ImportCSV`**（Zeitwerk 报
   `uninitialized constant …ImportCsv`）；`PallasTrade` 命名空间内引用 stdlib 一律写 `::CSV`（裸 `CSV::…` 会被解析成 `PallasTrade::CSV::…`）。
 - **回归**：`harness verify d13b-payouts-rspec`（52 examples）+ 切片1 `d13-reconciliation-cases-rspec` + P4 `finance-reconciliation-rspec`。

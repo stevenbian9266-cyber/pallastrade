@@ -1,0 +1,346 @@
+<%# PALLAS-CUSTOM: D14 切片3（PRD-20260916-payments-d14c-dispute-rate-board；业务方案 §71.3 + §72.5）——
+    拒付率看板：按卡组织的笔数比/金额比 × 双阈值 × 状态；下钻（卡指纹/国家/入口/客群）+ 预警台账；
+    阈值设置（默认不硬编码卡组织数字）+ 立即评估 + CSV 导出 + 卡指纹一键加黑。
+    只读统计：不改支付/订单/争议，不调 provider。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.dispute_rates.title') %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= link_to PallasTrade.t('admin.dispute_rates.disputes_link'),
+              PallasTrade.admin_disputes_path,
+              class: 'btn btn-outline-secondary' %>
+  <%= link_to PallasTrade.t('admin.dispute_rates.export_action'),
+              PallasTrade.export_admin_dispute_rates_path(@filters.compact),
+              class: 'btn btn-outline-secondary' %>
+  <%= button_to PallasTrade.t('admin.dispute_rates.reevaluate_action'),
+                PallasTrade.reevaluate_admin_dispute_rates_path(@filters.compact),
+                method: :post, class: 'btn btn-primary' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <%= form_with url: PallasTrade.admin_dispute_rates_path, method: :get, local: true do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <%= label_tag :window, PallasTrade.t('admin.dispute_rates.window'), class: 'form-label' %>
+          <%= select_tag :window,
+                         options_for_select(@window_options.map { |days| [PallasTrade.t('admin.dispute_rates.window_days', days: days), days] }, @window_days),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-3">
+          <%= label_tag :network, PallasTrade.t('admin.dispute_rates.network'), class: 'form-label' %>
+          <%= select_tag :network,
+                         options_for_select(@network_options, @network_filter),
+                         include_blank: PallasTrade.t('admin.dispute_rates.any'), class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-3">
+          <%= label_tag :dimension, PallasTrade.t('admin.dispute_rates.dimension'), class: 'form-label' %>
+          <%= select_tag :dimension,
+                         options_for_select(@dimensions.map { |d| [PallasTrade.t("admin.dispute_rates.dimensions.#{d}"), d] }, @dimension),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :tier, PallasTrade.t('admin.dispute_rates.alert_tier'), class: 'form-label' %>
+          <%= select_tag :tier,
+                         options_for_select(@tiers.map { |t| [PallasTrade.t("admin.dispute_rates.statuses.#{t}"), t] }, @tier_filter),
+                         include_blank: PallasTrade.t('admin.dispute_rates.tier_filter_all'), class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <%= submit_tag PallasTrade.t('admin.dispute_rates.filter'), class: 'btn btn-sm btn-primary' %>
+          <%= link_to PallasTrade.t('admin.dispute_rates.reset'), PallasTrade.admin_dispute_rates_path,
+                      class: 'btn btn-sm btn-outline-secondary' %>
+        </div>
+      </div>
+    <% end %>
+
+    <p class="text-gray-600 mt-3 mb-0">
+      <small data-rate-caliber="notes">
+        <%= PallasTrade.t('admin.dispute_rates.caliber') %>
+        <% Array(@report[:notes]).each do |note| %>
+          <br><%= PallasTrade.t("admin.dispute_rates.notes.#{note}") %>
+        <% end %>
+      </small>
+    </p>
+  </div>
+</div>
+
+<%# === 阈值设置（默认不硬编码卡组织数字；建议模板需显式应用）=== %>
+<div class="card mb-6">
+  <div class="card-body">
+    <h5 class="mb-3"><%= PallasTrade.t('admin.dispute_rates.policy_title') %></h5>
+    <%= form_with url: PallasTrade.policy_admin_dispute_rates_path, method: :patch, local: true do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-2">
+          <div class="form-check">
+            <%= check_box_tag 'dispute_rate_policy[enabled]', '1', @policy.enabled?, class: 'form-check-input', id: 'drp_enabled' %>
+            <%= label_tag 'drp_enabled', PallasTrade.t('admin.dispute_rates.policy_enabled'), class: 'form-check-label' %>
+          </div>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag 'drp_window', PallasTrade.t('admin.dispute_rates.policy_window_days'), class: 'form-label' %>
+          <%= number_field_tag 'dispute_rate_policy[window_days]', @policy.window_days, min: 1, max: 365,
+                               class: 'form-control form-control-sm', id: 'drp_window' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag 'drp_ratio', PallasTrade.t('admin.dispute_rates.policy_warning_ratio'), class: 'form-label' %>
+          <%= number_field_tag 'dispute_rate_policy[warning_ratio]', @policy.warning_ratio, step: 0.05, min: 0.5, max: 1.0,
+                               class: 'form-control form-control-sm', id: 'drp_ratio' %>
+        </div>
+        <div class="col-12 col-md-6 text-md-end">
+          <%= submit_tag PallasTrade.t('admin.dispute_rates.policy_apply_suggested'), name: 'apply_suggested',
+                         value: '1', class: 'btn btn-sm btn-outline-secondary' %>
+          <%= submit_tag PallasTrade.t('admin.dispute_rates.policy_save'), class: 'btn btn-sm btn-primary' %>
+        </div>
+      </div>
+
+      <table class="table table-sm mt-3 mb-0" data-rate-policy-table>
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.dispute_rates.policy_network') %></th>
+            <th><%= PallasTrade.t('admin.dispute_rates.policy_count_bps') %></th>
+            <th><%= PallasTrade.t('admin.dispute_rates.policy_amount_bps') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @policy_networks.each do |network| %>
+            <% thresholds = @policy.networks[network] || {} %>
+            <tr data-rate-policy-network="<%= network %>">
+              <td>
+                <%= network %>
+                <% if @suggested.key?(network) %>
+                  <small class="text-gray-600"><%= PallasTrade.t('admin.dispute_rates.policy_suggested_badge') %></small>
+                <% end %>
+              </td>
+              <td>
+                <%= number_field_tag "dispute_rate_policy[networks][#{network}][count_bps]", thresholds[:count_bps],
+                                     min: 0, max: 10000, class: 'form-control form-control-sm' %>
+              </td>
+              <td>
+                <%= number_field_tag "dispute_rate_policy[networks][#{network}][amount_bps]", thresholds[:amount_bps],
+                                     min: 0, max: 10000, class: 'form-control form-control-sm' %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      <p class="text-gray-600 mt-2 mb-0">
+        <small><%= PallasTrade.t('admin.dispute_rates.policy_suggested_note', note: @suggested_note) %></small>
+      </p>
+    <% end %>
+  </div>
+</div>
+
+<%# === 组织汇总（口径：分母 = 该组织已完成的卡支付；金额比仅店铺默认币种）=== %>
+<div class="mb-3">
+  <h5><%= PallasTrade.t('admin.dispute_rates.totals_title') %></h5>
+  <div class="card" data-rate-totals>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-6 col-md-3">
+          <div class="text-gray-600"><%= PallasTrade.t('admin.dispute_rates.totals_transactions') %></div>
+          <h4 class="mb-0" data-rate-total="transactions_count"><%= @report[:totals][:transactions_count] %></h4>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="text-gray-600"><%= PallasTrade.t('admin.dispute_rates.totals_disputes') %></div>
+          <h4 class="mb-0" data-rate-total="disputes_count"><%= @report[:totals][:disputes_count] %></h4>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="text-gray-600"><%= PallasTrade.t('admin.dispute_rates.count_ratio') %></div>
+          <h4 class="mb-0" data-rate-total="count_ratio">
+            <%= rate_percent(@report[:totals][:count_ratio]) || PallasTrade.t('admin.dispute_rates.not_available') %>%
+          </h4>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="text-gray-600"><%= PallasTrade.t('admin.dispute_rates.amount_ratio') %></div>
+          <h4 class="mb-0" data-rate-total="amount_ratio">
+            <%= rate_percent(@report[:totals][:amount_ratio]) || PallasTrade.t('admin.dispute_rates.not_available') %>%
+          </h4>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-12 gap-6 mb-6">
+  <% if @report[:networks].empty? %>
+    <div class="col-span-12">
+      <div class="card"><div class="card-body text-gray-600" data-rate-empty><%= PallasTrade.t('admin.dispute_rates.no_networks') %></div></div>
+    </div>
+  <% end %>
+  <% @report[:networks].each do |row| %>
+    <div class="col-span-12 md:col-span-6">
+      <div class="card" data-rate-network="<%= row[:network] %>" data-rate-status="<%= row[:status] %>">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0"><%= row[:network] %></h5>
+            <span class="badge" data-rate-status-badge="<%= row[:status] %>">
+              <%= PallasTrade.t("admin.dispute_rates.statuses.#{row[:status]}") %>
+            </span>
+          </div>
+
+          <% %i[count amount].each do |metric| %>
+            <% usage = metric == :count ? row[:count_usage_percent] : row[:amount_usage_percent] %>
+            <% observed = metric == :count ? row[:count_ratio] : row[:amount_ratio] %>
+            <% threshold = metric == :count ? row[:count_threshold_bps] : row[:amount_threshold_bps] %>
+            <div class="mb-3" data-rate-metric="<%= metric %>">
+              <div class="d-flex justify-content-between">
+                <span><%= PallasTrade.t("admin.dispute_rates.metrics.#{metric}") %></span>
+                <span data-rate-observed="<%= metric %>">
+                  <%= rate_percent(observed) %><%= PallasTrade.t('admin.dispute_rates.percent_unit') %>
+                  <% if threshold.present? %>
+                    / <%= PallasTrade.t('admin.dispute_rates.threshold_label') %> <%= bps_percent(threshold) %><%= PallasTrade.t('admin.dispute_rates.percent_unit') %>
+                  <% else %>
+                    / <%= PallasTrade.t('admin.dispute_rates.statuses.unconfigured') %>
+                  <% end %>
+                </span>
+              </div>
+              <div class="progress" data-rate-usage="<%= metric %>" data-rate-usage-value="<%= usage %>">
+                <div class="progress-bar" style="width: <%= [usage.to_f, 100].min %>%"></div>
+              </div>
+              <% if row[:triggered_metrics].include?(metric.to_s) %>
+                <small class="text-danger" data-rate-triggered="<%= metric %>">
+                  <%= PallasTrade.t('admin.dispute_rates.triggered') %>
+                </small>
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class="text-gray-600">
+            <small>
+              <%= PallasTrade.t('admin.dispute_rates.card_transactions') %>: <%= row[:transactions_count] %>
+              ·
+              <%= PallasTrade.t('admin.dispute_rates.card_disputes') %>: <%= row[:disputes_count] %>
+              <% if row[:transactions_amount].present? %>
+                · <%= PallasTrade.t('admin.dispute_rates.amounts', currency: @report[:scope][:currency],
+                                    transactions: row[:transactions_amount], disputes: row[:disputes_amount] || 0) %>
+              <% end %>
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<%# === 下钻 === %>
+<div class="card mb-6">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0"><%= PallasTrade.t('admin.dispute_rates.breakdown_title') %></h5>
+      <div class="btn-group btn-group-sm" data-rate-dimensions>
+        <% @dimensions.each do |dimension| %>
+          <%= link_to PallasTrade.t("admin.dispute_rates.dimensions.#{dimension}"),
+                      PallasTrade.admin_dispute_rates_path(@filters.merge(dimension: dimension).compact),
+                      class: "btn btn-outline-secondary #{'active' if dimension == @dimension}",
+                      data: { rate_dimension: dimension } %>
+        <% end %>
+      </div>
+    </div>
+
+    <% if @report[:breakdown][:rows].empty? %>
+      <p class="text-gray-600 mb-0" data-rate-breakdown-empty><%= PallasTrade.t('admin.dispute_rates.breakdown_empty') %></p>
+    <% else %>
+      <table class="table table-sm" data-rate-breakdown="<%= @dimension %>">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t("admin.dispute_rates.dimensions.#{@dimension}") %></th>
+            <th><%= PallasTrade.t('admin.dispute_rates.breakdown_transactions') %></th>
+            <th><%= PallasTrade.t('admin.dispute_rates.breakdown_disputes') %></th>
+            <th><%= PallasTrade.t('admin.dispute_rates.breakdown_count_ratio') %></th>
+            <th><%= PallasTrade.t('admin.dispute_rates.breakdown_dispute_share') %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @report[:breakdown][:rows].each do |row| %>
+            <tr data-bucket-masked="<%= bucket_label(row[:key]) %>">
+              <td><%= bucket_label(row[:key]) %></td>
+              <td data-bucket-transactions="<%= row[:transactions_count] %>"><%= row[:transactions_count] %></td>
+              <td data-bucket-disputes="<%= row[:disputes_count] %>"><%= row[:disputes_count] %></td>
+              <td><%= rate_percent(row[:count_ratio]) %><%= PallasTrade.t('admin.dispute_rates.percent_unit') %></td>
+              <td data-bucket-share="<%= row[:dispute_share] %>">
+                <%= rate_percent(row[:dispute_share]) %><%= PallasTrade.t('admin.dispute_rates.percent_unit') %>
+              </td>
+              <td class="text-end">
+                <% if @dimension == 'card_fingerprint' && row[:key].to_s != PallasTrade::Disputes::RateReport::UNKNOWN %>
+                  <%= form_with url: PallasTrade.add_to_denylist_admin_dispute_rates_path, method: :post, local: true do |f| %>
+                    <%# 只提交脱敏值：原始卡指纹不出现于 HTML，服务端唯一反解后才写入 %>
+                    <%= hidden_field_tag :masked_fingerprint, bucket_label(row[:key]) %>
+                    <%= hidden_field_tag :window, @window_days %>
+                    <%= hidden_field_tag :reason, PallasTrade.t('admin.dispute_rates.denylist_default_reason') %>
+                    <%= submit_tag PallasTrade.t('admin.dispute_rates.add_to_denylist'),
+                                   class: 'btn btn-sm btn-outline-danger',
+                                   data: { turbo_confirm: PallasTrade.t('admin.dispute_rates.denylist_confirm') } %>
+                  <% end %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      <% if @report[:breakdown][:truncated] %>
+        <p class="text-gray-600 mb-0">
+          <small><%= PallasTrade.t('admin.dispute_rates.breakdown_truncated', shown: @report[:breakdown][:rows].size,
+                                                                    total: @report[:breakdown][:total_rows]) %></small>
+        </p>
+      <% end %>
+    <% end %>
+  </div>
+</div>
+
+<%# === 预警台账（计数与列表同一 scope）=== %>
+<div class="card">
+  <div class="card-body">
+    <h5 class="mb-3"><%= PallasTrade.t('admin.dispute_rates.alerts_title') %></h5>
+    <div class="grid grid-cols-12 gap-4 mb-3">
+      <div class="col-span-4">
+        <div class="card"><div class="card-body">
+          <div class="text-gray-600"><%= PallasTrade.t('admin.dispute_rates.statuses.approaching') %></div>
+          <h4 class="mb-0" data-count-scope="approaching"><%= @alert_counts['approaching'] %></h4>
+        </div></div>
+      </div>
+      <div class="col-span-4">
+        <div class="card"><div class="card-body">
+          <div class="text-gray-600"><%= PallasTrade.t('admin.dispute_rates.statuses.breached') %></div>
+          <h4 class="mb-0" data-count-scope="breached"><%= @alert_counts['breached'] %></h4>
+        </div></div>
+      </div>
+      <div class="col-span-4">
+        <div class="card"><div class="card-body">
+          <div class="text-gray-600"><%= PallasTrade.t('admin.dispute_rates.alerts_total') %></div>
+          <h4 class="mb-0" data-count-scope="all"><%= @alert_counts['all'] %></h4>
+        </div></div>
+      </div>
+    </div>
+
+    <% if @alerts.empty? %>
+      <p class="text-gray-600 mb-0" data-rate-alerts-empty><%= PallasTrade.t('admin.dispute_rates.alerts_empty') %></p>
+    <% else %>
+      <table class="table table-sm" data-rate-alerts-table>
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.dispute_rates.alert_evaluated_on') %></th>
+            <th><%= PallasTrade.t('admin.dispute_rates.alert_network') %></th>
+            <th><%= PallasTrade.t('admin.dispute_rates.alert_tier') %></th>
+            <th><%= PallasTrade.t('admin.dispute_rates.count_ratio') %></th>
+            <th><%= PallasTrade.t('admin.dispute_rates.amount_ratio') %></th>
+            <th><%= PallasTrade.t('admin.dispute_rates.alert_triggered') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @alerts.each do |alert| %>
+            <tr data-alert-row="<%= alert.id %>" data-alert-network="<%= alert.network %>" data-alert-tier="<%= alert.tier %>">
+              <td><%= alert.evaluated_on.iso8601 %></td>
+              <td><%= alert.network %></td>
+              <td><span class="badge"><%= PallasTrade.t("admin.dispute_rates.statuses.#{alert.tier}") %></span></td>
+              <td><%= alert.count_ratio_percent %>%</td>
+              <td><%= alert.amount_ratio_percent %>%</td>
+              <td><%= alert.triggered.map { |metric| PallasTrade.t("admin.dispute_rates.metrics.#{metric}") }.join(' + ') %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </div>
+</div>

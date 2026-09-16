@@ -4134,6 +4134,38 @@
         "scopeAndIsolation": 10,
         "operationalSafety": 10
       }
+    },
+    {
+      "id": "GS-163",
+      "name": "A dispute rate is only a warning if you can say which threshold it is nearing",
+      "description": "PRD-20260916-payments-d14c-dispute-rate-board (slice 3 of the D14 refund/dispute batch, business plan 71.3 + 72.5): the platform could report how disputes ended (win rate, deadlines, handling time) but had no dispute RATE - no denominator, no card-network dimension, and no way to know that a ratio was drifting toward the threshold a card network penalises. This slice adds the rate itself (per card network, count ratio and amount ratio), a store-level dual-threshold policy, an alert ledger that records when the rate first neared or crossed a threshold, drill-down to the card fingerprint / country / checkout entry / customer segment, and a one-click route from a fingerprint into the risk denylist - without pricing, refunding, capturing or calling anyone.",
+      "mustDo": [
+        "Compute the numerator and denominator with one documented caliber: disputes opened inside the window over completed card payments of the same network inside the window, so the same number cannot be explained two ways",
+        "Attribute each dispute to the card network stored on its own payment (including payments that fall outside the window), normalising the legacy brand aliases, and park anything you cannot attribute in an explicit unknown bucket that is never judged",
+        "Keep the amount ratio inside a single currency and show the excluded rows as counts instead of silently dropping them; a zero denominator is nil, not zero percent",
+        "Judge only networks whose thresholds are actually configured, warn at the configured fraction of the threshold, and leave unconfigured networks unjudged rather than assuming a number",
+        "Make the alert row idempotent per store, network and evaluation day, escalate in place when the rate crosses the threshold later the same day, publish exactly one event per tier change, and never downgrade a tier already recorded for that day",
+        "Sweep every store without letting one failing store stop the others, and log the counts so the sweep can be audited",
+        "Drill down by dimension with bucket sums that provably equal the totals, keeping unknown buckets visible rather than hidden",
+        "Mask the card fingerprint everywhere it is rendered - including the HTML of the action that would denylist it - and resolve it back on the server only when the masked value matches exactly one fingerprint; refuse when it is ambiguous",
+        "Write the denylist entry through the existing risk-list service so the same audit and normalisation rules apply, and never touch payments, orders, refunds, ledger, inventory or dispute state"
+      ],
+      "mustNotDo": [
+        "Hardcode a network program number, or treat a missing threshold as a passing grade",
+        "Reprice anything, refund anything, capture anything, or let the rate become an input to a money decision",
+        "Invent the missing data: no fabricated network attribution, no hidden currency mixing, no zero disguised as a ratio",
+        "Emit an alert per sweep instead of per tier change, or reopen, duplicate or downgrade a decision already recorded",
+        "Expose the raw card fingerprint in the page or the export, or accept a masked value that resolves to more than one card",
+        "Let the read path degrade with volume - batch the loads and prove the read query count stays flat as rows grow"
+      ],
+      "scoring": {
+        "caliberHonesty": 25,
+        "thresholdDiscipline": 20,
+        "alertIdempotency": 20,
+        "readOnlyPurity": 15,
+        "privacyAndReuse": 10,
+        "operationalSafety": 10
+      }
     }
   ]
 }
