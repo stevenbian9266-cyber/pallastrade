@@ -38,6 +38,10 @@ PallasTrade::Core::Engine.add_routes do
         # 订单流程标准电商改造 P1（2026-08-30）：订单确认页可选配送方式
         resources :shipping_methods, only: [:index], controller: 'shipping_methods'
 
+        # Catalog F-2（2026-09-16）：PDP 配送区块读模型（时效/免运费），只读计算，
+        # 不参与结算定价（权威运费仍在提交订单时计算）。
+        get 'shipping_estimate', to: 'shipping_estimates#show'
+
         # Carts
         # 订单流程标准电商改造 P1（2026-08-30）：/carts 现为新 Cart 实体（pallastrade_carts）。
         # 提交订单 = POST /carts/:id/submit（→ Order）；legacy 的 /complete 由 submit 取代。

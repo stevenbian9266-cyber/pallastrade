@@ -14,6 +14,7 @@ module PallasTrade
                  preorder_ships_at: [:string, nullable: true],
                  purchasable: :boolean, in_stock: :boolean, backorderable: :boolean, available: :boolean,
                  preorder: :boolean,
+                 stock_status: [:string, enum: %w[in_stock low_stock preorder backorder out_of_stock]],
                  price: 'Price',
                  original_price: ['Price', nullable: true],
                  average_rating: [:number, nullable: true],
@@ -24,6 +25,14 @@ module PallasTrade
                    :meta_title, :meta_description, :meta_keywords,
                    :variant_count,
                    available_on: :iso8601, preorder_ships_at: :iso8601
+
+        # Catalog F-2: bucketed availability (best variant wins) 鈥?never a
+        # quantity (see `PallasTrade::Catalog::StockStatus`).
+        attribute :stock_status do |product|
+          PallasTrade::Catalog::StockStatus.for_product(
+            product, threshold: PallasTrade::Catalog::StockStatus.threshold_for(PallasTrade::Current.store)
+          )
+        end
 
         attribute :purchasable do |product|
           product.purchasable?

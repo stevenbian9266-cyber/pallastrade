@@ -77,6 +77,14 @@ module PallasTrade
     preference :storefront_url, :string
     preference :special_instructions_enabled, :boolean, default: false
     preference :stock_reservation_ttl_minutes, :integer, default: 10
+    # Catalog F-2 (2026-09-16, PRD-20260916-catalog-batch-f2-stock-shipping):
+    # threshold for the storefront's "Only a few left" bucket. Availability
+    # above it reads as plain in-stock; 1..threshold reads as low_stock. Invalid
+    # values (0/negative) fall back to `Catalog::StockStatus::DEFAULT_THRESHOLD`.
+    preference :low_stock_threshold, :integer, default: 5
+    # Catalog F-2: "Free shipping over …" hint on the PDP (nil/blank = hidden).
+    # A running free-shipping promotion overrides the amount entirely.
+    preference :free_shipping_threshold, :decimal, default: nil
     # Address preferences
     preference :company_field_enabled, :boolean, default: false
     # digital assets preferences

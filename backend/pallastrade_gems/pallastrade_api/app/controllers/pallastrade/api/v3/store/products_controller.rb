@@ -42,6 +42,15 @@ module PallasTrade
             ]
           end
 
+          # Catalog F-2: the list serializer derives `stock_status` from each
+          # product's variants (→ stock items → reservations). Preloading them
+          # here keeps that a constant number of queries for any page size.
+          def collection_includes
+            [
+              variants: [{ stock_items: [:active_stock_reservations] }]
+            ]
+          end
+
           # Override collection to use search provider.
           # The provider handles search, filtering, sorting, pagination, and returns a Pagy object.
           def collection

@@ -32,8 +32,7 @@ import type {
   DeliveryMethod,
   DirectUploadParams,
   DirectUploadResponse,
-  GiftCard,
-  Locale,
+  GiftCard,  Locale,
   LoginCredentials,
   Market,
   NewsletterSubscriber,
@@ -55,6 +54,7 @@ import type {
   ResetPasswordParams,
   Review,
   ReviewListResponse,
+  ShippingEstimate,
   StoreCredit,
   TransactionResume,
   UpdateCartParams,
@@ -720,6 +720,29 @@ export class StoreClient {
      */
     list: (options?: RequestOptions): Promise<DeliveryMethod[]> =>
       this.request<DeliveryMethod[]>('GET', '/shipping_methods', options),
+  }
+
+  // ============================================
+  // Shipping estimate (F-2, 2026-09-16) — PDP shipping block
+  // ============================================
+
+  readonly shippingEstimate = {
+    /**
+     * Advisory shipping window for a product (and optionally the visitor's
+     * country). Read-only: the authoritative cost is still computed when the
+     * order is submitted.
+     */
+    get: (
+      params?: { product_id?: string; country?: string },
+      options?: RequestOptions,
+    ): Promise<ShippingEstimate> => {
+      const query = new URLSearchParams()
+      if (params?.product_id) query.set('product_id', params.product_id)
+      if (params?.country) query.set('country', params.country)
+      const suffix = query.toString() ? `?${query.toString()}` : ''
+
+      return this.request<ShippingEstimate>('GET', `/shipping_estimate${suffix}`, options)
+    },
   }
 
   // ============================================

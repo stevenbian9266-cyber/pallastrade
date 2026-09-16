@@ -1887,6 +1887,12 @@ en:
     store_form:
       customer_support_email_help: This email is visible to your Store visitors in the Footer section
       new_order_notifications_email_help: If you want to receive an email notification every time someone places an Order please provide an email address for that notification to be sent to
+      low_stock_threshold:
+        label: Low stock threshold
+        description: Products with at most this many units left show "Only a few left" on the storefront. Exact quantities are never published.
+      free_shipping_threshold:
+        label: Free shipping threshold
+        description: Storefront hint such as "Free shipping over $50". Leave blank to hide it; a running free-shipping promotion overrides the amount.
     store_name_help: This is the name of your store. It will be displayed in the header and in the footer.
     successfully_created: "%{resource} has been successfully created!"
     successfully_removed: "%{resource} has been successfully removed!"

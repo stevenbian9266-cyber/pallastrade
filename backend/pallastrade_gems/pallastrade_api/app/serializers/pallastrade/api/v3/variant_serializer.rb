@@ -9,6 +9,7 @@ module PallasTrade
                  thumbnail_url: [:string, nullable: true],
                  purchasable: :boolean, in_stock: :boolean, backorderable: :boolean, preorder: :boolean,
                  preorder_ships_at: [:string, nullable: true],
+                 stock_status: [:string, enum: %w[in_stock low_stock preorder backorder out_of_stock]],
                  weight: [:number, nullable: true], height: [:number, nullable: true], width: [:number, nullable: true], depth: [:number, nullable: true],
                  price: 'Price',
                  original_price: ['Price', nullable: true]
@@ -24,7 +25,13 @@ module PallasTrade
         attribute :preorder_ships_at do |variant|
           variant.preorder_ships_at&.iso8601 if variant.preorder?
         end
-
+        # Catalog F-2: bucketed availability for shoppers — never a quantity
+        # (see `PallasTrade::Catalog::StockStatus`).
+        attribute :stock_status do |variant|
+          PallasTrade::Catalog::StockStatus.for_variant(
+            variant, threshold: PallasTrade::Catalog::StockStatus.threshold_for(PallasTrade::Current.store)
+          )
+        end
         # Main variant image URL for listings (cached primary_media)
         attribute :thumbnail_url do |variant|
           image_url_for(variant.primary_media)

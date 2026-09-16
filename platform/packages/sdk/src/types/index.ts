@@ -90,6 +90,27 @@ export interface DirectUploadResponse {
   direct_upload: { url: string; headers: Record<string, string> }
 }
 
+// F-2: PDP shipping block read model (`GET /shipping_estimate`).
+export interface ShippingEstimateMethod {
+  id: string
+  name: string
+  estimated_transit_business_days_min: number | null
+  estimated_transit_business_days_max: number | null
+  estimated_price: string | null
+}
+
+export interface ShippingEstimate {
+  available: boolean
+  digital: boolean
+  min_days: number | null
+  max_days: number | null
+  free_shipping: boolean
+  free_shipping_threshold: number | string | null
+  /** Transit days are counted in weekdays (no holiday calendar). */
+  business_day_source: 'weekdays' | string
+  methods: ShippingEstimateMethod[]
+}
+
 // Start result = transaction attributes + payment execution (ps_ session)
 export interface OrderTransactionStart {
   id: string

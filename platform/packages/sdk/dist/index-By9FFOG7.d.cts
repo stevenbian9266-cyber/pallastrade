@@ -335,6 +335,8 @@ type DeliveryMethod = {
     name: string;
     code: string | null;
     display_estimated_price: string | null;
+    estimated_transit_business_days_min: number | null;
+    estimated_transit_business_days_max: number | null;
 };
 
 type DeliveryRate = {
@@ -763,6 +765,7 @@ type Product = {
     variant_count: number;
     available_on: string | null;
     preorder_ships_at: string | null;
+    stock_status: 'in_stock' | 'low_stock' | 'preorder' | 'backorder' | 'out_of_stock';
     purchasable: boolean;
     preorder: boolean;
     in_stock: boolean;
@@ -900,6 +903,7 @@ type Variant = {
     track_inventory: boolean;
     media_count: number;
     preorder_ships_at: string | null;
+    stock_status: 'in_stock' | 'low_stock' | 'preorder' | 'backorder' | 'out_of_stock';
     thumbnail_url: string | null;
     purchasable: boolean;
     in_stock: boolean;
@@ -954,6 +958,24 @@ interface DirectUploadResponse {
         url: string;
         headers: Record<string, string>;
     };
+}
+interface ShippingEstimateMethod {
+    id: string;
+    name: string;
+    estimated_transit_business_days_min: number | null;
+    estimated_transit_business_days_max: number | null;
+    estimated_price: string | null;
+}
+interface ShippingEstimate {
+    available: boolean;
+    digital: boolean;
+    min_days: number | null;
+    max_days: number | null;
+    free_shipping: boolean;
+    free_shipping_threshold: number | string | null;
+    /** Transit days are counted in weekdays (no holiday calendar). */
+    business_day_source: 'weekdays' | string;
+    methods: ShippingEstimateMethod[];
 }
 interface OrderTransactionStart {
     id: string;
@@ -1424,4 +1446,4 @@ interface ProductFiltersParams {
     q?: Record<string, unknown>;
 }
 
-export { type OrderListParams as $, type AuthTokens as A, type CompletePaymentSessionParams as B, type CategoryListParams as C, type DirectUploadParams as D, type DeliveryMethod as E, type CreateOrderTransactionParams as F, type OrderTransactionStart as G, type CheckoutView as H, type CheckoutUpdateParams as I, type UpdateOrderShippingAddressParams as J, type RegisterParams as K, type LoginCredentials as L, type Market as M, type CreatePaymentCombinationParams as N, type Order as O, type ProductListParams as P, type PaymentCombination as Q, type RequestFn as R, type NewsletterSubscriber as S, type TransactionResume as T, type UpdateCartParams as U, type Customer as V, type Address as W, type AddressParams as X, type CreditCard as Y, type GiftCard as Z, type StoreCredit as _, type RequestOptions as a, type CreatePaymentSetupSessionParams as a0, type PaymentSetupSession as a1, type CompletePaymentSetupSessionParams as a2, type RequestPasswordResetParams as a3, type ResetPasswordParams as a4, type Wishlist as a5, type WishlistItem as a6, type RetryConfig as a7, type AvailabilityFilter as a8, type BackInStockSubscription as a9, type OptionType as aA, type OptionValue as aB, type PaginationMeta as aC, PallasTradeError as aD, type PaymentMethod as aE, type PaymentSource as aF, type Price as aG, type PriceRangeFilter as aH, type ProductFilter as aI, type Promotion as aJ, type ProviderLogin as aK, type Refund as aL, type ReturnAuthorization as aM, type ReturnItem as aN, type ReviewListMeta as aO, type ShoppingCart as aP, type ShoppingCartStatus as aQ, type SortOption as aR, type State as aS, type StockLocation as aT, type UpdateCartItemParams as aU, type Variant as aV, type Base as aa, type CartItem as ab, type CartWarning as ac, type CategoryFilter as ad, type CategoryFilterOption as ae, type CheckoutRequirement as af, type CheckoutViewLine as ag, type StoreCommerceTransaction as ah, type ContactMessage as ai, type CustomField as aj, type DeliveryRate as ak, type Digital as al, type DigitalLink as am, type Discount as an, type EmailPasswordLogin as ao, type ErrorResponse as ap, type FilterOption as aq, type Fulfillment as ar, type GiftCardBatch as as, type Invitation as at, type LineItem as au, type LineItemInput as av, type LocaleDefaults as aw, type Media as ax, type OptionFilter as ay, type OptionFilterOption as az, type PaginatedResponse as b, type Product as c, type ProductFiltersParams as d, type ProductFiltersResponse as e, type ReviewListResponse as f, type Review as g, type DirectUploadResponse as h, type Category as i, type ListResponse as j, type Country as k, type Currency as l, type Locale as m, type Policy as n, type ListParams as o, type Post as p, type Cart as q, type CreateCartParams as r, type CartSubmitResult as s, type AddLineItemParams as t, type UpdateLineItemParams as u, type CreatePaymentParams as v, type Payment as w, type CreatePaymentSessionParams as x, type PaymentSession as y, type UpdatePaymentSessionParams as z };
+export { type StoreCredit as $, type AuthTokens as A, type CompletePaymentSessionParams as B, type CategoryListParams as C, type DirectUploadParams as D, type DeliveryMethod as E, type CreateOrderTransactionParams as F, type OrderTransactionStart as G, type CheckoutView as H, type CheckoutUpdateParams as I, type UpdateOrderShippingAddressParams as J, type RegisterParams as K, type LoginCredentials as L, type Market as M, type CreatePaymentCombinationParams as N, type Order as O, type ProductListParams as P, type PaymentCombination as Q, type RequestFn as R, type ShippingEstimate as S, type TransactionResume as T, type UpdateCartParams as U, type NewsletterSubscriber as V, type Customer as W, type Address as X, type AddressParams as Y, type CreditCard as Z, type GiftCard as _, type RequestOptions as a, type OrderListParams as a0, type CreatePaymentSetupSessionParams as a1, type PaymentSetupSession as a2, type CompletePaymentSetupSessionParams as a3, type RequestPasswordResetParams as a4, type ResetPasswordParams as a5, type Wishlist as a6, type WishlistItem as a7, type RetryConfig as a8, type AvailabilityFilter as a9, type OptionFilterOption as aA, type OptionType as aB, type OptionValue as aC, type PaginationMeta as aD, PallasTradeError as aE, type PaymentMethod as aF, type PaymentSource as aG, type Price as aH, type PriceRangeFilter as aI, type ProductFilter as aJ, type Promotion as aK, type ProviderLogin as aL, type Refund as aM, type ReturnAuthorization as aN, type ReturnItem as aO, type ReviewListMeta as aP, type ShippingEstimateMethod as aQ, type ShoppingCart as aR, type ShoppingCartStatus as aS, type SortOption as aT, type State as aU, type StockLocation as aV, type UpdateCartItemParams as aW, type Variant as aX, type BackInStockSubscription as aa, type Base as ab, type CartItem as ac, type CartWarning as ad, type CategoryFilter as ae, type CategoryFilterOption as af, type CheckoutRequirement as ag, type CheckoutViewLine as ah, type StoreCommerceTransaction as ai, type ContactMessage as aj, type CustomField as ak, type DeliveryRate as al, type Digital as am, type DigitalLink as an, type Discount as ao, type EmailPasswordLogin as ap, type ErrorResponse as aq, type FilterOption as ar, type Fulfillment as as, type GiftCardBatch as at, type Invitation as au, type LineItem as av, type LineItemInput as aw, type LocaleDefaults as ax, type Media as ay, type OptionFilter as az, type PaginatedResponse as b, type Product as c, type ProductFiltersParams as d, type ProductFiltersResponse as e, type ReviewListResponse as f, type Review as g, type DirectUploadResponse as h, type Category as i, type ListResponse as j, type Country as k, type Currency as l, type Locale as m, type Policy as n, type ListParams as o, type Post as p, type Cart as q, type CreateCartParams as r, type CartSubmitResult as s, type AddLineItemParams as t, type UpdateLineItemParams as u, type CreatePaymentParams as v, type Payment as w, type CreatePaymentSessionParams as x, type PaymentSession as y, type UpdatePaymentSessionParams as z };

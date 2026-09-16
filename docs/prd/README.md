@@ -203,4 +203,5 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260916-payments-d11-circuit-breaker-health | payments | 2026-09-16 | 实施：熔断状态机 + 健康指标 + 判定/恢复 + 每小时巡检 + Resolver 同源门禁 + 后台「熔断与健康」卡（原因必填/粘性/审计）；`d11-circuit-breaker-rspec` |
 | done | PRD-20260916-catalog-batch-e3-ai-fix-suggestion | catalog | 2026-09-16 | （实施时回填） |
 | done | PRD-20260916-catalog-batch-f1-reviews | catalog | 2026-09-16 | 实施：评分分布 + 分页 Load more + 图片评论（≤3 张/直传/未审核不外泄）+ 后台图片列；`reviews-f1-rspec`（后端 31 例）+ `storefront-test`（14 例）绿 |
+| approved | PRD-20260916-catalog-batch-f2-stock-shipping | catalog | 2026-09-16 | 已确认：阈值 5 / 配送区块 PDP 价格下方 / 免运费=偏好+促销 / 到达日期双层表达 / **库存桶含列表与卡片** |
 | done | PRD-20260916-payments-d13b-payout-ledger | payments | 2026-09-16 | 实施：结算台账（2 表）+ CSV 导入（幂等/错误收集）+ 匹配锚点/容差 + 差异行进队列（自动销案）+ 后台台账页（筛选/汇总/详情/导入/重匹配）；`d13b-payouts-rspec`（52 例）绿 |

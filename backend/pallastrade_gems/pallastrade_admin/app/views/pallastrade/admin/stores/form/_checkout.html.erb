@@ -22,5 +22,17 @@
     <%= f.pallastrade_check_box :preferred_guest_checkout, label: PallasTrade.t('admin.checkout_settings.guest_checkout.label'), help: PallasTrade.t('admin.checkout_settings.guest_checkout.description') %>
     <%= f.pallastrade_check_box :preferred_company_field_enabled, label: PallasTrade.t('admin.store_form.company_field.label'), help: PallasTrade.t('admin.store_form.company_field.description') %>
     <%= f.pallastrade_check_box :preferred_special_instructions_enabled, label: PallasTrade.t('admin.checkout_settings.special_instructions.label'), help: PallasTrade.t('admin.checkout_settings.special_instructions.description') %>
+
+    <hr class="my-6">
+
+    <%# Catalog F-2: storefront scarcity + shipping hints (PDP / product cards) %>
+    <%= f.pallastrade_text_field :preferred_low_stock_threshold,
+        type: :number, min: 1,
+        label: PallasTrade.t('admin.store_form.low_stock_threshold.label'),
+        help: PallasTrade.t('admin.store_form.low_stock_threshold.description') %>
+    <%= f.pallastrade_text_field :preferred_free_shipping_threshold,
+        type: :number, step: '0.01', min: 0,
+        label: PallasTrade.t('admin.store_form.free_shipping_threshold.label'),
+        help: PallasTrade.t('admin.store_form.free_shipping_threshold.description') %>
   </div>
 </div>

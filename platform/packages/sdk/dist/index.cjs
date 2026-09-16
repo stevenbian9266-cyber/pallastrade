@@ -659,6 +659,23 @@ var StoreClient = class {
     list: (options) => this.request("GET", "/shipping_methods", options)
   };
   // ============================================
+  // Shipping estimate (F-2, 2026-09-16) — PDP shipping block
+  // ============================================
+  shippingEstimate = {
+    /**
+     * Advisory shipping window for a product (and optionally the visitor's
+     * country). Read-only: the authoritative cost is still computed when the
+     * order is submitted.
+     */
+    get: (params, options) => {
+      const query = new URLSearchParams();
+      if (params?.product_id) query.set("product_id", params.product_id);
+      if (params?.country) query.set("country", params.country);
+      const suffix = query.toString() ? `?${query.toString()}` : "";
+      return this.request("GET", `/shipping_estimate${suffix}`, options);
+    }
+  };
+  // ============================================
   // Orders (post-purchase, read-only)
   // ============================================
   orders = {
