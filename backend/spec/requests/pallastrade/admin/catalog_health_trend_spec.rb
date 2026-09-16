@@ -71,4 +71,47 @@ RSpec.describe 'Admin catalog health trend column', type: :request do
       expect(response).to have_http_status(:redirect)
     end
   end
+
+  # 中文门店后台回归（2026-09-16）：admin UI 语言取自 current_store.preferred_admin_locale，
+  # 而 gem 只提供 en —— 只加 en 不会让任何测试变红，页面只会静默地整页 Translation missing。
+  # 这里用**真实 locale** 走完整页面渲染（比人工截图更强的证据：每次 CI 都会重跑）。
+  describe 'Chinese admin locale (no silent translation missing)' do
+    before do
+      store.update!(preferred_admin_locale: 'zh-CN')
+      sign_in_as_admin
+    end
+
+    it 'renders the worklist in Chinese' do
+      get '/admin/catalog_health'
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('商品健康')
+      expect(response.body).to include('问题清单')
+    end
+
+    it 'never leaks a translation-missing string anywhere on the page' do
+      get '/admin/catalog_health'
+
+      # 整页扫描（含后台外壳：侧边栏/快速新建/确认框）—— 中文门店后台曾整页 missing，
+      # 只盯本域会漏掉外壳，而外壳的缺失同样让页面不可用。
+      expect(response.body.scan(/translation missing: [^<"&]+/i)).to be_empty
+    end
+
+    it 'renders the trend column labels in Chinese' do
+      snapshot(key: 'missing_description', count: 40, date: Date.current - 3)
+      snapshot(key: 'missing_description', count: 12, date: Date.current)
+
+      get '/admin/catalog_health'
+
+      expect(response.body).to include('趋势')
+      expect(response.body).to include('改善')
+      expect(response.body).to include('-28')
+    end
+
+    it 'shows the Chinese empty state when nothing is comparable' do
+      get '/admin/catalog_health'
+
+      expect(response.body).to include('暂无趋势')
+    end
+  end
 end

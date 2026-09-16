@@ -1,0 +1,29 @@
+# PALLAS-CUSTOM: 后台外壳（侧边栏 / 快速新建 / 通用确认动作）宿主 zh-CN 覆盖。
+#
+# 背景（2026-09-16）：在给 catalog_health / catalog_operations 补中文时，断言把整个页面
+# 扫了一遍，发现**后台外壳本身**一直缺中文 —— 中文门店的后台，侧边栏展开/收起、
+# 快速新建（订单/商品/客户/促销）、查看店铺、账号/支持/退出，以及 confirm/cancel/close
+# 这些通用动作全是 `Translation missing`。这不是 catalog 的问题，是**每个后台页面**的问题。
+#
+# 路径照 gem `pallastrade_admin/config/locales/en.yml` 的实际作用域：
+#   pallastrade.admin.*  → 后台域
+#   pallastrade.*        → 顶级（confirm/cancel/close/are_you_sure 等通用动作）
+
+zh-CN:
+  pallastrade:
+    are_you_sure: 确定吗？
+    cancel: 取消
+    close: 关闭
+    confirm: 确认
+    logout: 退出登录
+    account: 账号
+    support: 支持
+    view_store: 查看店铺
+    new_order: 新建订单
+    new_product: 新建商品
+    new_customer: 新建客户
+    new_promotion: 新建促销
+    admin:
+      expand_sidebar: 展开侧边栏
+      close_sidebar: 收起侧边栏
+      documentation: 文档

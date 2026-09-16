@@ -95,4 +95,37 @@ RSpec.describe 'Admin catalog operations report', type: :request do
       expect(response).to have_http_status(:ok)
     end
   end
+
+  # 中文门店后台回归（2026-09-16）：admin UI 语言取自 current_store.preferred_admin_locale，
+  # 而 gem 只提供 en —— 只加 en 不会让任何测试变红，页面只会静默地整页 Translation missing。
+  describe 'Chinese admin locale (no silent translation missing)' do
+    before do
+      store.update!(preferred_admin_locale: 'zh-CN')
+      sign_in_as_admin
+    end
+
+    it 'renders the report in Chinese' do
+      entry(action: 'product.updated', metadata: { 'changed' => ['name'] })
+
+      get '/admin/catalog_operations'
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('商品运营报表')
+      expect(response.body).to include('批量')
+      expect(response.body).to include('单条')
+    end
+
+    it 'never leaks a translation-missing string anywhere on the page' do
+      get '/admin/catalog_operations'
+
+      # 整页扫描（含后台外壳）—— 只盯本域会漏掉外壳的缺失。
+      expect(response.body.scan(/translation missing: [^<"&]+/i)).to be_empty
+    end
+
+    it 'states the all-stores scope in Chinese' do
+      get '/admin/catalog_operations'
+
+      expect(response.body).to include('全库口径')
+    end
+  end
 end
