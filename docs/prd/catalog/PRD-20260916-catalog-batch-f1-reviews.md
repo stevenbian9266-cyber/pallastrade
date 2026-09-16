@@ -97,12 +97,17 @@
 
 ## 9. 文档同步清单（知识同步门）
 
-- [ ] `ai/skills/pallastrade-storefront/SKILL.md`（评论区分页/分布/图片组件约定 + Load more 模式）
-- [ ] `ai/skills/pallastrade-api-v3/SKILL.md`（reviews 索引分页 + `meta.rating_distribution` + images 上传契约）
-- [ ] `harness/scenarios/scenarios.json`（新增 GS：评论图片只在审核通过后可见 + 分页稳定不重复）
-- [ ] `harness.config.mjs`（verifier `reviews-f1-rspec`）+ `AGENTS.md` §6 行
-- [ ] `docs/prd/README.md` 索引 + 本 PRD 状态
-- [ ] `pallastrade-catalog` / `pallastrade-i18n`（已评估：评论域不在 catalog 能力清单；i18n 为文案新增，按 §10 记录）
+- [x] `ai/skills/pallastrade-storefront/SKILL.md`（评论区分页/分布/图片组件约定 + Load more 模式 + `"use server"` 只能导出 async 函数）
+- [x] `ai/skills/pallastrade-api-v3/SKILL.md`（reviews 索引分页 + `meta.rating_distribution` + images 上传契约 + `direct_uploads`）
+- [x] `ai/skills/pallastrade-data-model/SKILL.md`（`has_many_attached :images` + `MAX_IMAGES`/`ALLOWED_IMAGE_TYPES`/`MAX_IMAGE_BYTES`）
+- [x] `ai/skills/pallastrade-typescript-sdk/SKILL.md`（`ReviewListResponse` 信封 + `directUploads` + 新导出类型）
+- [x] `harness/scenarios/scenarios.json`（GS-144：评论图片只在审核通过后可见 + 分页稳定不重复 + 分布同源）
+- [x] `harness.config.mjs`（verifier `reviews-f1-rspec`）+ `AGENTS.md` §6 行
+- [x] `docs/prd/README.md` 索引 + 本 PRD 状态（done）
+- [x] `backend/public/api-docs/store.yaml` + `platform/docs/api-reference/store.yaml` + `generated:check`（no drift）
+- [x] `pallastrade-catalog` / `pallastrade-i18n`（已评估，无需更新：评论域不在 catalog 能力清单；i18n 为文案新增，键齐备由 `checkout-i18n-keys.test.ts` 守护）
+- [x] `pallastrade-testing` / `pallastrade-security`（已评估，无需更新：沿用既有 rspec/vitest 约定；上传走既有 `direct_uploads` 授权模型，未引入新凭证面）
+- [x] 补充说明：`sync-check` 列出的 `backend/db/migrate/20260916180000_create_pallastrade_payouts.rb` 属并行批次（D13b payout）变更，与本 PRD 无关；本批**无迁移**（图片用 ActiveStorage 内置表）。
 
 ## 10. 变更记录
 
@@ -110,3 +115,5 @@
 |---|---|---|---|
 | 2026-09-16 | 0.1 | 初稿（Batch F-1：FR-001~010 / AC-001~010；范围=评分分布 + 分页 Load more + 图片评论 ≤3 张；用户已确认三项选择） | AI |
 | 2026-09-16 | 1.0 | 用户确认「确认实施」→ 状态 approved（范围：全量三项；分页交互 Load more；图片 ≤3 张） | AI |
+| 2026-09-16 | 1.1 | 实施完成 `354b302a`：后端 31 例 + 前台 14 例 + i18n 键 5 语言 + `generated:check` 无漂移；状态 → done | AI |
+| 2026-09-16 | 1.2 | CI 修复 `9904f5ad`/`e01d9114`/`fe217fe3`（`"use server"` 常量导出 → 构建失败、Biome 80 列、SDK `dist` 未提交导致镜像类型检查失败）；`d1820ba9` 治理收尾（AGENTS §6 + GS-144 + 4 份 Skill + PRD/README + AC 标记） | AI |
