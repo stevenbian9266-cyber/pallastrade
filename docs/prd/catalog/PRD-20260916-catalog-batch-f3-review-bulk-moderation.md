@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | reviewing |
+| 状态 | done |
 | 创建日期 | 2026-09-16 |
 | 来源 | 《商品升级方案 V1.0》§十「评论系统升级」剩余项之一 —— **Admin Bulk Approve / Reject**（用户授权原话「自主决定」，2026-09-16） |
 | 分类 | catalog（商品域 / 评论，沿用 Batch A~F 系列目录） |
@@ -102,15 +102,19 @@ harness.config.mjs / AGENTS.md / harness/scenarios/scenarios.json / docs/prd/REA
 
 ## 9. 文档同步清单（知识同步门）
 
-- [ ] `ai/skills/pallastrade-admin/SKILL.md`（评论批量动作 + 复用 BulkOperationsController 的约定 + 「批量必须逐条走状态机」铁律）
-- [ ] `ai/skills/pallastrade-catalog/SKILL.md`（评论审核工作台段补一句：批量入口与公开口径不变）
-- [ ] `ai/skills/pallastrade-api-v3/SKILL.md`（**已评估，无需更新**：零契约变更）
-- [ ] `harness/scenarios/scenarios.json`（新增 GS：批量审核逐条走状态机、部分失败可解释、公开口径不变；编号 GS-147）
-- [ ] `harness.config.mjs`（verifier `f3-review-bulk-rspec`）+ `AGENTS.md` §6 行
-- [ ] `docs/prd/README.md` 索引 + 本 PRD 状态
+- [x] `ai/skills/pallastrade-admin/SKILL.md`（新增「Bulk actions」段：注册写法 + 通用模态 + **三条铁律**（逐条状态机 / 逐条鉴权 / 可解释报告与上限）+ 「改 `pallastrade_admin_tables.rb` 后必须 `ruby -c`」的踩坑）
+- [x] `harness/scenarios/scenarios.json`（新增 **GS-148**：批量审核=单条动作执行 N 次、逐条鉴权、可解释报告、公开口径不变；GS-147 已被并行批次占用）
+- [x] `harness.config.mjs`（verifier `f3-review-bulk-rspec`）+ `AGENTS.md` §6 行
+- [x] `pallastrade-catalog`（**已评估，无需更新**：公开口径未变，F-1/F-2 段落已覆盖「approved 才公开」）
+- [x] `pallastrade-api-v3`（**已评估，无需更新**：零契约变更，`generated:check` 保持 no drift）
+- [x] `pallastrade-data-model`（**已评估，无需更新**：无新表/新列，状态机未动）
+- [x] `docs/prd/README.md` 索引 + 本 PRD 状态（done）
+- [x] 补充说明：评论状态机**不写 `AuditLog`**（实测「逐条写审计」这一表述不准确）→ 本批以「逐条走同一状态机 + 逐条可观测迁移」作为等价证据，已在规格中按可观测行为断言。
 
 ## 10. 变更记录
 
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-16 | 0.1 | 初稿（Batch F-3：FR-001~008 / AC-001~010；范围 = §十 剩余项「Admin Bulk Approve / Reject」；已复刻 B-1 机制与 F-1 审核口径） | AI |
+| 2026-09-16 | 1.0 | 用户确认「确认实施」→ 状态 approved；实施并推送 `3c060f84`：`POST /admin/reviews/bulk`（四计数报告 + 空选/未知动作/超 50 条守卫）、`admin_tables` 注册两个 bulk action、i18n；规格 10 例全绿（AC-001~010） |
+| 2026-09-16 | 1.1 | 收尾：`ruby -c` 修复 `pallastrade_admin_tables.rb` 块尾 `end` 被吞导致的启动 SyntaxError；规格断言改为可观测行为（状态机不写 `AuditLog`）；admin Skill + GS-148 补齐；状态 → done | AI |

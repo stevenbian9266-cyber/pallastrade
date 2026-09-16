@@ -204,7 +204,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260916-catalog-batch-e3-ai-fix-suggestion | catalog | 2026-09-16 | （实施时回填） |
 | done | PRD-20260916-catalog-batch-f1-reviews | catalog | 2026-09-16 | 实施：评分分布 + 分页 Load more + 图片评论（≤3 张/直传/未审核不外泄）+ 后台图片列；`reviews-f1-rspec`（后端 31 例）+ `storefront-test`（14 例）绿 |
 | done | PRD-20260916-catalog-batch-f2-stock-shipping | catalog | 2026-09-16 | 实施：库存分桶（与 in_stock? 同源、不下发数字）+ 配送估算读模型/端点 + PDP 徽章与配送区块 + 卡片徽章；`f2-stock-shipping-rspec` + 前台 30 例绿 |
-| reviewing | PRD-20260916-catalog-batch-f3-review-bulk-moderation | catalog | 2026-09-16 | 待用户确认：评论审核工作台批量通过/拒绝（复用 B-1 批量模态、逐条走状态机、零契约变更） |
+| done | PRD-20260916-catalog-batch-f3-review-bulk-moderation | catalog | 2026-09-16 | 实施：评论审核批量通过/拒绝（逐条状态机 + 逐条鉴权 + 四计数报告 + 50 条上限，复用 B-1 模态，零契约变更）；`f3-review-bulk-rspec` 10 例绿 |
 | done | PRD-20260916-payments-d13b-payout-ledger | payments | 2026-09-16 | 实施：结算台账（2 表）+ CSV 导入（幂等/错误收集）+ 匹配锚点/容差 + 差异行进队列（自动销案）+ 后台台账页（筛选/汇总/详情/导入/重匹配）；`d13b-payouts-rspec`（52 例）绿 |
 | done | PRD-20260916-payments-d14-refund-approval | payments | 2026-09-16 | 实施：退款策略阈值（≤ 自动 / > 需第二人批准）+ 幂等请求键 + 审批工作台（不能自批）+ Admin API 策略门与 `approval_status` 契约字段；`d14-refund-approval-rspec`（64 例）绿；期限提醒与拒付率看板留切片2/3 |
 | approved | PRD-20260916-payments-d14b-dispute-deadlines | payments | 2026-09-16 | 已确认（切片2）：T-3/T-1 分档幂等告警（台账唯一键 + 跳档补齐）+ 超期策略化自动 lost（默认关闭 + 单轮上限 + 审计）+ 后台分档看板/历史；拒付率看板留切片3 |

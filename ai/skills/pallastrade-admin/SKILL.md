@@ -809,6 +809,22 @@ For Turbo Streams (server-pushed UI updates), the same patterns apply as any Rai
 - ⚠️ i18n 命名：导航 `label:` 用**点号字符串**（`'admin.webhook_events.title'`），因为
   `admin.webhook_events` 本身是一个哈希（含 title/intro/…），不能当 label 用。
 
+## Bulk actions（B-1 框架 · F-3 评论审核，2026-09-16）
+
+后台列表的批量操作**走统一框架**，不要另写弹窗：
+
+1. 在 `pallastrade_admin/config/initializers/pallastrade_admin_tables.rb` 给表注册动作：
+   `PallasTrade.admin.tables.<key>.add_bulk_action :event, label: 'i18n.key', icon:, action_path: ->(vc) { vc.pallastrade.<path> }, body: 'i18n.key', position:, condition: -> { can?(:x, Model) }`
+2. 通用模态由 `Admin::BulkOperationsController#new`（`GET /admin/bulk_operations/new?kind=&table_key=`）按注册渲染 —— **无需新视图**；列表只需 `render_table @collection, :<key>`。
+3. 执行端点由各资源自己实现，但有三条铁律：
+   - **逐条走状态机/服务**（`Review#approve!` / `#reject!` 之类），**禁止** `update_all` 直改状态列 —— 否则审计与副作用全丢；
+   - **逐条鉴权**（`authorize! :action, record`，捕 `CanCan::AccessDenied` 计入「无权跳过」），批量不得放宽权限；
+   - 返回**可解释报告**（成功 / 无权 / 状态不允许 / 不存在四计数），部分失败**不回滚**已成功项；设**单次上限**（评论为 50）并拒绝越界请求。
+
+范例：`Admin::ReviewsController#bulk`（F-3，`POST /admin/reviews/bulk`，参数 `event` + `ids[]`，四计数写进 flash）。
+
+> ⚠️ 改 `pallastrade_admin_tables.rb` 后**必须** `ruby -c` 校验：整个文件包在一个 `do … end` 块里，插入位置不对会把块尾 `end` 吞掉，表现为应用启动 `SyntaxError`（F-3 实测踩过）。
+
 ## Where to read further
 
 - **Admin source:** `bundle show pallastrade_admin` to find the installed gem path. The README at the root of the gem covers the philosophy.

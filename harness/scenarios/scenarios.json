@@ -3719,6 +3719,33 @@
         "idempotency": 15,
         "adminIntegration": 10
       }
+    },
+    {
+      "id": "GS-148",
+      "name": "Bulk moderation is the single-row action applied N times",
+      "description": "PRD-20260916-catalog-batch-f3-review-bulk-moderation (§十 of the catalog upgrade plan, the leftover \"Admin Bulk Approve / Reject\"): moderating reviews was one click per row, so a post-promotion queue of eighty pending reviews meant eighty clicks. The generic B-1 bulk framework already existed (confirm modal + table registration) but the reviews worklist had never been wired to it. F-3 registers the two actions and executes them row by row — never as one status update.",
+      "mustDo": [
+        "Transition every selected review through the same state machine the single-row action uses, so side effects and the audit trail stay identical",
+        "Authorize each review individually and report the ones the operator may not touch instead of failing the whole batch",
+        "Report per-outcome counts (updated / unauthorized / state not allowed / not found) and never roll back rows that already moved",
+        "Refuse an empty selection, an unknown action, and anything above the documented per-request cap",
+        "Reuse the existing bulk-action registration and confirm modal instead of inventing a second interaction pattern",
+        "Keep the public contract untouched: only approved reviews are visible, the rating aggregate still counts approved rows only, and no Store API field changes"
+      ],
+      "mustNotDo": [
+        "Update the status column directly (update_all / update_columns) and thereby skip state-machine side effects",
+        "Widen authorization because the operation is bulk, or let an unauthorized operator change any row",
+        "Report success when nothing changed, or leave the operator unable to tell why a row was skipped",
+        "Delete reviews in bulk (deletion stays a deliberate single-row action)",
+        "Turn the batch into one long transaction that rolls back rows already moderated"
+      ],
+      "scoring": {
+        "stateMachineFidelity": 30,
+        "perRowAuthorization": 25,
+        "reportExplainability": 20,
+        "guardRails": 15,
+        "contractStability": 10
+      }
     }
   ]
 }
