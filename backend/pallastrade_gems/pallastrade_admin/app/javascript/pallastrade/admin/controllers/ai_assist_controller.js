@@ -15,7 +15,8 @@ export default class extends Controller {
     productId: String,
     kind: String,
     mode: { type: String, default: 'generate' },
-    locale: String
+    locale: String,
+    issueKey: String
   }
 
   connect() {
@@ -104,6 +105,9 @@ export default class extends Controller {
   }
 
   requestBody() {
+    // Catalog Health suggestions answer for one issue of the worklist.
+    if (this.hasIssueKeyValue) return { issue_key: this.issueKeyValue }
+
     const body = { product_id: this.productIdValue, mode: this.modeValue }
     // Only the translation assistant targets a locale.
     if (this.hasLocaleValue) body.target_locale = this.localeValue
@@ -127,6 +131,8 @@ export default class extends Controller {
         const name = this.label(this.camelize(field)) || field
         return `${name}: ${value}`
       })
+    } else if (this.kindValue === 'suggestion') {
+      lines = this.suggestionLines(data)
     } else {
       lines = [data.text || '']
     }
@@ -138,6 +144,23 @@ export default class extends Controller {
 
   camelize(field) {
     return String(field).replace(/(^|_)([a-z])/g, (_match, _prefix, char) => char.toUpperCase())
+  }
+
+  /**
+   * Catalog Health advice: the summary first, then the ordered steps. A step
+   * whose entry is unknown to the server arrives without one — it still shows,
+   * just without the surface name.
+   */
+  suggestionLines(data) {
+    const lines = []
+    if (data.summary) lines.push(data.summary)
+
+    ;(data.steps || []).forEach((step, index) => {
+      const entry = step.entry ? this.label(`Entry:${step.entry}`) : ''
+      lines.push(`${index + 1}. ${step.title}${entry ? ` → ${entry}` : ''}`)
+    })
+
+    return lines
   }
 
   renderError(code) {

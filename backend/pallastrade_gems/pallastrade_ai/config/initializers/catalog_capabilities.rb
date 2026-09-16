@@ -57,4 +57,23 @@ Rails.application.reloader.to_prepare do
     data_classification: 'internal',
     version: '1.0.0'
   )
+
+  # Batch E-3 — Catalog Health fix suggestions（PRD-20260916-catalog-batch-e3-ai-fix-suggestion FR-001）。
+  # 只读建议：capability 授权面是 `read`（E-1/E-2 的生成类能力是 `update`）。
+  next if PallasTrade::AI.capabilities.registered?('catalog.health_fix_suggestion')
+
+  PallasTrade::AI.capabilities.register(
+    'catalog.health_fix_suggestion',
+    handler: 'PallasTrade::AI::Schemas::Catalog::HealthFixSuggestion::Handler',
+    input_schema: 'PallasTrade::AI::Schemas::Catalog::HealthFixSuggestion::Input',
+    output_schema: 'PallasTrade::AI::Schemas::Catalog::HealthFixSuggestion::Output',
+    authorization: { action: :read, subject: 'PallasTrade::Product' },
+    execution: :sync,
+    allowed_parameters: %i[temperature max_output_tokens],
+    required_model_capabilities: %i[text],
+    display_name: 'Catalog health fix suggestion',
+    description: 'Suggests an ordered plan for fixing a catalog health issue (or one product\'s issues). Advice only — it never writes.',
+    data_classification: 'internal',
+    version: '1.0.0'
+  )
 end

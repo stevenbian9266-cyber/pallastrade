@@ -232,6 +232,44 @@ module PallasTrade
         )
       end
 
+      # POST /admin/ai/catalog_health_suggestion
+      # AI Fix Suggestion（PRD-20260916-catalog-batch-e3-ai-fix-suggestion FR-003）：
+      # 只读建议 —— `issue_key`（工作台级）或 `product_id`（商品级）二选一；永不写库。
+      def catalog_health_suggestion
+        authorize! :read, PallasTrade::Product
+
+        if params[:product_id].present?
+          product = find_copilot_product
+          return if product.nil?
+
+          result = PallasTrade::AI::Catalog::HealthFixSuggestion.generate_for_product(
+            product: product,
+            actor: try_pallastrade_current_user
+          )
+
+          render_copilot_result(
+            result,
+            payload: { summary: result.summary, steps: result.steps, issue_keys: result.issue_keys }
+          )
+        else
+          result = PallasTrade::AI::Catalog::HealthFixSuggestion.generate(
+            store: current_store,
+            actor: try_pallastrade_current_user,
+            issue_key: params[:issue_key]
+          )
+
+          render_copilot_result(
+            result,
+            payload: {
+              summary: result.summary,
+              steps: result.steps,
+              issue_key: result.issue_key,
+              count: result.count
+            }
+          )
+        end
+      end
+
       # GET /admin/ai/runs
       def runs
         @runs = PallasTrade::AI::Run.where(store: current_store).recent

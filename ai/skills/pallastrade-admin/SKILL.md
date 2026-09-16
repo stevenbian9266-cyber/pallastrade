@@ -598,6 +598,21 @@ Products → **Duplicate Products**（`/admin/duplicate_products`）是商品治
 
 回归验证：`harness verify ai-translate-rspec`。
 
+### Catalog Health → AI Fix Suggestion —— 只读修复建议（2026-09-16，PRD-20260916-catalog-batch-e3-ai-fix-suggestion）
+
+两处入口、同一能力 `catalog.health_fix_suggestion`：**工作台**（`/admin/catalog_health` 每行 `[AI Fix Suggestion]` → 行内折叠面板）与**商品编辑页侧栏卡片**（`product_form_sidebar` 注入点，列出该商品命中的健康问题 + 建议）。
+
+| 关注点 | 做法 |
+|---|---|
+| 只读语义 | 能力授权面是 `{ action: :read, subject: 'PallasTrade::Product' }`（生成类能力才是 `update`）；端点/服务**无写路径**，UI 也**没有 Accept 按钮**（没有可写入目标） |
+| 计数同源 | 建议里的 `count` 必须来自 `CatalogHealth::Report#count_for`（与工作台同一口径）；商品级命中判定复用 `CatalogHealth::Issues.product_relation(Product.where(id:), key, store:).exists?` |
+| 采样最小化 | 工作台级只取该 issue 作用域前 5 个商品，事实字段仅 `name/status/price/stock_on_hand`（不含客户/订单/成本/供应商） |
+| 入口白名单 | 步骤里的 `entry` 只能是 `product_edit_ai` / `translations_drawer` / `product_media` / `variant_inventory` / `redirects` / `publishing`；模型给了别的值 → **只丢 entry，保留步骤**（不让建议指向不存在的入口） |
+| 两种粒度 | 同一端点 `POST /admin/ai/catalog_health_suggestion`：`issue_key`（工作台）或 `product_id`（商品级，前缀 id → 跨店 404）；无命中/计数 0 → `422 nothing_to_fix` 且**不建 Run** |
+| 注入点坑 | 侧栏 partial 必须声明 `<%# locals: (product:, f: nil) %>`——`render_admin_partials` 会同时传 `f:`，strict locals 下多传一个就 `ArgumentError` |
+
+回归验证：`harness verify ai-health-suggestion-rspec`。
+
 ## Overriding views
 
 Drop the same-pathed file in the host app and Rails uses it. The gem ships `pallastrade/admin/app/views/pallastrade/admin/products/index.html.erb`; you override it at `backend/app/views/pallastrade/admin/products/index.html.erb`.

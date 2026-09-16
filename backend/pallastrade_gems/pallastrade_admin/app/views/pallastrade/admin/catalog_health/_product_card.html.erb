@@ -1,0 +1,75 @@
+<%# locals: (product:, f: nil) %>
+<%# PALLAS-CUSTOM: Catalog Health 卡片（PRD-20260916-catalog-batch-e3-ai-fix-suggestion FR-004b）
+    经 `product_form_sidebar_partials` 注入点渲染：列出该商品当前命中的健康问题 + [AI Fix Suggestion]。
+    只读建议（AI 不落库、不自动修复）；未装 AI 引擎时整卡片不渲染，页面与今天一致。 %>
+<% if defined?(PallasTrade::AI::Catalog::HealthFixSuggestion) && product&.persisted? %>
+  <% issue_keys = PallasTrade::AI::Catalog::HealthFixSuggestion.product_issue_keys(product, store: product.store) %>
+  <% ai_state = issue_keys.any? ? ai_assist_state(PallasTrade::AI::Catalog::HealthFixSuggestion::CAPABILITY) : nil %>
+  <% ai_data = if ai_state
+                 {
+                   controller: 'ai-assist',
+                   ai_assist_endpoint_value: PallasTrade.admin_ai_catalog_health_suggestion_path,
+                   ai_assist_kind_value: 'suggestion',
+                   ai_assist_product_id_value: product.prefixed_id,
+                   ai_assist_idle_label: '',
+                   ai_assist_generating_label: PallasTrade.t('admin.catalog_health.ai.generating'),
+                   ai_assist_review_label: PallasTrade.t('admin.catalog_health.card.ai_heading'),
+                   ai_assist_accepted_label: '',
+                   'ai_assist_error:nothing_to_fix_label': PallasTrade.t('admin.catalog_health.card.nothing_to_fix'),
+                   'ai_assist_error:unknown_issue_label': PallasTrade.t('admin.catalog_health.ai.errors.unknown_issue'),
+                   'ai_assist_error:ai_capability_disabled_label': PallasTrade.t('admin.catalog_health.ai.errors.default'),
+                   'ai_assist_error:ai_disabled_label': PallasTrade.t('admin.catalog_health.ai.errors.default'),
+                   'ai_assist_error:ai_model_disabled_label': PallasTrade.t('admin.catalog_health.ai.errors.default'),
+                   'ai_assist_error:ai_provider_disabled_label': PallasTrade.t('admin.catalog_health.ai.errors.default'),
+                   'ai_assist_error:ai_budget_exceeded_label': PallasTrade.t('admin.catalog_health.ai.errors.default'),
+                   'ai_assist_error:ai_unavailable_label': PallasTrade.t('admin.catalog_health.ai.errors.default'),
+                   'ai_assist_entry:product_edit_ai_label': PallasTrade.t('admin.catalog_health.ai.entries.product_edit_ai'),
+                   'ai_assist_entry:translations_drawer_label': PallasTrade.t('admin.catalog_health.ai.entries.translations_drawer'),
+                   'ai_assist_entry:product_media_label': PallasTrade.t('admin.catalog_health.ai.entries.product_media'),
+                   'ai_assist_entry:variant_inventory_label': PallasTrade.t('admin.catalog_health.ai.entries.variant_inventory'),
+                   'ai_assist_entry:redirects_label': PallasTrade.t('admin.catalog_health.ai.entries.redirects'),
+                   'ai_assist_entry:publishing_label': PallasTrade.t('admin.catalog_health.ai.entries.publishing')
+                 }
+               else
+                 {}
+               end %>
+  <div class="card mb-6" data-testid="product-catalog-health-card" <%= tag.attributes(ai_data) %>>
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.catalog_health.card.title') %></h5>
+    </div>
+    <div class="card-body">
+      <% if issue_keys.any? %>
+        <p class="text-sm text-gray-500 mb-2"><%= PallasTrade.t('admin.catalog_health.card.issues_heading') %></p>
+        <ul class="text-sm mb-3" data-testid="product-catalog-health-issues">
+          <% issue_keys.each do |key| %>
+            <li><%= PallasTrade.t("admin.catalog_health.issues.#{key}") %></li>
+          <% end %>
+        </ul>
+
+        <% if ai_state %>
+          <div class="flex items-center gap-2">
+            <button type="button" class="btn btn-sm btn-light" data-ai-assist-role="generate"
+                    data-action="click->ai-assist#generate"
+                    <% unless ai_state[:available] %>disabled title="<%= ai_assist_reason_label(ai_state) %>"<% end %>>
+              <%= PallasTrade.t('admin.catalog_health.ai.button') %>
+            </button>
+            <span class="text-xs text-muted" data-ai-assist-target="status"></span>
+          </div>
+
+          <div class="hidden mt-3 border rounded p-3 bg-gray-25" data-ai-assist-target="preview"
+               data-testid="ai-product-health-suggestion">
+            <div class="font-medium text-sm mb-1"><%= PallasTrade.t('admin.catalog_health.card.ai_heading') %></div>
+            <div class="text-sm whitespace-pre-wrap mb-3" data-ai-assist-target="previewBody"></div>
+            <button type="button" class="btn btn-sm btn-light" data-action="click->ai-assist#discard">
+              <%= PallasTrade.t('admin.catalog_health.ai.dismiss') %>
+            </button>
+          </div>
+        <% end %>
+      <% else %>
+        <p class="text-sm text-gray-500" data-testid="product-catalog-health-empty">
+          <%= PallasTrade.t('admin.catalog_health.card.empty') %>
+        </p>
+      <% end %>
+    </div>
+  </div>
+<% end %>

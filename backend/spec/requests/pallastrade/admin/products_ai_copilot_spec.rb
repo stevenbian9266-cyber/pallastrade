@@ -136,7 +136,10 @@ RSpec.describe 'Admin product AI copilot', type: :request do
       expect(response.body).to include('data-ai-assist-target="preview"')
 
       doc = Nokogiri::HTML(response.body)
-      buttons = doc.css('[data-ai-assist-role="generate"]')
+      # E-3 的 Catalog Health 侧栏卡片会额外渲染一个建议按钮；这里只看描述区与 SEO 卡片三个
+      buttons = doc.css('[data-ai-assist-role="generate"]').reject do |button|
+        button.ancestors.any? { |node| node['data-testid'] == 'product-catalog-health-card' }
+      end
       # 描述区两个（Generate / Rewrite）+ SEO 卡片一个（Generate SEO）
       expect(buttons.size).to eq(3)
       expect(buttons.map { |button| button['disabled'] }).to all(be_truthy)

@@ -197,6 +197,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260915-payments-d10-client-config | payments | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-catalog-batch-e1-ai-copilot | catalog | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-payments-d12-webhook-governance | payments | 2026-09-15 | （实施时回填） |
-| approved | PRD-20260915-catalog-batch-e2-ai-translate-missing | catalog | 2026-09-15 | （实施时回填） |
+| done | PRD-20260915-catalog-batch-e2-ai-translate-missing | catalog | 2026-09-15 | （实施时回填） |
 | done | PRD-20260916-payments-d16-payment-method-presentation | payments | 2026-09-16 | 后端读模型 + 契约三字段 + 前台方法行渲染；`d16-payment-presentation-rspec` + `storefront-test` 绿 |
 | done | PRD-20260916-payments-d11-circuit-breaker-health | payments | 2026-09-16 | 实施：熔断状态机 + 健康指标 + 判定/恢复 + 每小时巡检 + Resolver 同源门禁 + 后台「熔断与健康」卡（原因必填/粘性/审计）；`d11-circuit-breaker-rspec` |
+| approved | PRD-20260916-catalog-batch-e3-ai-fix-suggestion | catalog | 2026-09-16 | （实施时回填） |

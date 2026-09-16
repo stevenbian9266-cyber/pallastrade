@@ -3552,6 +3552,33 @@
         "metricsSingleSource": 15,
         "auditAndOps": 10
       }
+    },
+    {
+      "id": "GS-142",
+      "name": "Catalog health advice never repairs anything by itself",
+      "description": "PRD-20260916-catalog-batch-e3-ai-fix-suggestion (§3.3 of the catalog upgrade plan): the Catalog Health worklist already reports seven issues and the AI copilot already drafts content, but nothing told the merchant what to do first. E-3 adds an AI fix suggestion on the worklist rows and on a product sidebar card — an ordered plan whose steps point only at admin surfaces that exist, with no write path at all.",
+      "mustDo": [
+        "Keep the suggestion read-only: the capability authorizes on read, the endpoint and service have no write path, and the UI deliberately has no Accept step because there is nothing to write into",
+        "Reuse the worklist's own numbers (CatalogHealth::Report#count_for) so the advice and the page can never disagree, and decide product-level issues with the very same scopes the worklist counts",
+        "Cap and minimise sampling: at most five products of that issue with catalog facts only (name, status, price presence, stock) — never customer, order, cost or supplier data",
+        "Whitelist the surfaces a step may send the merchant to, and drop an unknown entry while keeping the step, so a suggestion can never advertise an action the admin does not have",
+        "Answer nothing_to_fix (no provider call, no run) when the issue count is zero or the product is healthy, and unknown_issue for a key outside the worklist",
+        "Render the advice next to the worklist row and on the product sidebar through the existing partial injection point, leaving the existing drill-down links untouched"
+      ],
+      "mustNotDo": [
+        "Auto-repair anything, batch-apply changes, or write product, translation, price, stock, channel or publish state",
+        "Present the output as a done action (no Accept button, no silent save) or invent surfaces, capabilities or numbers the admin does not have",
+        "Sample outside the issue scope or pull sensitive fields (customers, orders, costs, suppliers) into the prompt",
+        "Break the worklist for stores without the AI engine, or change the Catalog Health issue definitions and counts",
+        "Call the provider when there is nothing to fix, or leave a run behind for a rejected suggestion"
+      ],
+      "scoring": {
+        "readOnlySafety": 30,
+        "countConsistency": 25,
+        "samplingMinimalism": 20,
+        "entryWhitelist": 15,
+        "adminIntegration": 10
+      }
     }
   ]
 }

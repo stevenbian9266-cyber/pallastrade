@@ -266,6 +266,18 @@ product.get_metafield('catalog.season')&.value   # => "fall-2026" (get_metafield
 后台 `Products → Duplicate Products`（`PallasTrade::Products::DuplicateCandidates`）按 `duplicate_barcode` / `duplicate_sku` / `duplicate_name` 三类信号给候选分组（只读，合并仍属 D-3）。
 口径：`LOWER(TRIM(...))` 分组 + `HAVING COUNT(DISTINCT products.id) > 1`，同店 + 未删除 + 非 archived。
 
+## Catalog Health 的 AI 修复建议（AI Fix Suggestion，2026-09-16 Batch E-3）
+
+Catalog Health 工作台（7 类 issue）与商品编辑页侧栏卡片都能生成「怎么修」的建议：`PallasTrade::AI::Catalog::HealthFixSuggestion`（能力 `catalog.health_fix_suggestion`，**只读**——不自动修复、不写库）。
+
+口径铁律（沿用 B-2）：**建议里的计数与工作台的计数必须同源**（`Report#count_for`），不得另算；商品级命中判定复用 `Issues.product_relation(Product.where(id:), key, store:)`，而 `missing_translations` 按「该商品在店铺其它支持语言下 `name` 缺失的语言数」单独判定（与覆盖率页同规则）。
+
+采样只取该 issue 作用域前 5 个商品的**最小事实**（名称/状态/价格有无/库存），不拿客户、订单、成本、供应商数据；无商品关系可过滤的两类 issue（`missing_translations` / `redirect_unresolved`）采样为空并只给工具性步骤。
+
+`redirect_unresolved` **不属商品级**（URL 变更不是商品行事实）——商品卡片不列它，工作台仍有。
+
+回归验证：`harness verify ai-health-suggestion-rspec`。
+
 ## Where to read further
 
 - **Core concepts:** `node_modules/@pallastrade/docs/dist/developer/core-concepts/products.md`

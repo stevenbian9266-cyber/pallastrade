@@ -16,4 +16,10 @@ Rails.application.config.after_initialize do
   sidebar_partials = PallasTrade.admin.partials.product_form_sidebar
 
   sidebar_partials << history_partial unless sidebar_partials.include?(history_partial)
+
+  # Catalog Health card (PRD-20260916-catalog-batch-e3-ai-fix-suggestion FR-004b):
+  # the product's own health issues plus the AI fix suggestion entry, rendered in
+  # the same sidebar injection point.
+  health_partial = 'pallastrade/admin/catalog_health/product_card'
+  sidebar_partials << health_partial unless sidebar_partials.include?(health_partial)
 end
