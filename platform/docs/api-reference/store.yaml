@@ -10722,6 +10722,20 @@ paths:
       - name: x-pallastrade-api-key
         in: header
         required: true
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - newest
+          - highest_rating
+          - lowest_rating
+        description: |-
+          Ordering of the returned page (Catalog F-4). `newest` (default) keeps
+          the pre-F-4 order. Every ordering ends with a stable `id` tie-break so
+          paging never repeats or skips a review. Unknown or blank values fall
+          back to `newest`; the applied value is echoed in `meta.sort`.
         schema:
           type: string
       - name: product_id
@@ -13951,17 +13965,6 @@ components:
           type: string
         slug:
           type: string
-        stock_status:
-          type: string
-          enum:
-          - in_stock
-          - low_stock
-          - preorder
-          - backorder
-          - out_of_stock
-          description: |-
-            Bucketed availability for shoppers (Catalog F-2). Never a quantity:
-            the exact on-hand count is deliberately not published.
         meta_title:
           type: string
           nullable: true
@@ -13979,6 +13982,14 @@ components:
         preorder_ships_at:
           type: string
           nullable: true
+        stock_status:
+          type: string
+          enum:
+          - in_stock
+          - low_stock
+          - preorder
+          - backorder
+          - out_of_stock
         purchasable:
           type: boolean
         preorder:
@@ -14057,6 +14068,7 @@ components:
       - variant_count
       - available_on
       - preorder_ships_at
+      - stock_status
       - purchasable
       - preorder
       - in_stock
@@ -14308,6 +14320,14 @@ components:
         preorder_ships_at:
           type: string
           nullable: true
+        stock_status:
+          type: string
+          enum:
+          - in_stock
+          - low_stock
+          - preorder
+          - backorder
+          - out_of_stock
         thumbnail_url:
           type: string
           nullable: true
@@ -14319,16 +14339,6 @@ components:
           type: boolean
         preorder:
           type: boolean
-        stock_status:
-          type: string
-          enum:
-          - in_stock
-          - low_stock
-          - preorder
-          - backorder
-          - out_of_stock
-          description: |-
-            Bucketed availability for shoppers (Catalog F-2). Never a quantity.
         weight:
           type: number
           nullable: true
@@ -14373,6 +14383,7 @@ components:
       - track_inventory
       - media_count
       - preorder_ships_at
+      - stock_status
       - thumbnail_url
       - purchasable
       - in_stock
