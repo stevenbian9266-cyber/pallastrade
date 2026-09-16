@@ -681,7 +681,10 @@ export function OrderPaymentContent({
                   onChange={() => setSelectedMethodId(method.id ?? "")}
                   className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
                 />
-                <span className="font-medium text-gray-900">{method.name}</span>
+                {/* PALLAS-CUSTOM: D16 切片1 —— 入口级展示名（运营在后台配置，回落 provider 名） */}
+                <span className="font-medium text-gray-900">
+                  {method.display_name ?? method.name}
+                </span>
               </label>
             ))}
           </div>

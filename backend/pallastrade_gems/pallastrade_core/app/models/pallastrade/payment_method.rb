@@ -422,6 +422,30 @@ module PallasTrade
       }
     end
 
+    # PALLAS-CUSTOM: D16 切片1（PRD-20260916-payments-d16-payment-method-presentation）--
+    # 前台展示用的「生效入口」读模型（单一入口：契约投影只调它，禁止在 serializer 各写回落）。
+    # 已选项化 → 生效入口的首个（按 position）；未选项化 → 隐式默认入口。
+    # @return [Hash]
+    def effective_payment_option
+      return default_payment_option unless optionized?
+
+      effective_payment_options.first || default_payment_option
+    end
+
+    # 入口显示名（前台支付方式行；运营在后台配置的「门店显示名」优先，回落 provider 名）。
+    # @return [String]
+    def option_display_name
+      effective_payment_option['display_name'].presence || name
+    end
+
+    # 入口稳定标识（前台行键 `option_id`）：`"<prefixed_id>:<kind>"`（确定性、可读、与既有 id 同源）。
+    # @param kind [String, nil] 指定入口；缺省用生效入口
+    # @return [String]
+    def option_identifier(kind = nil)
+      resolved_kind = kind.presence || effective_payment_option['kind'] || default_option_kind
+      "#{prefixed_id}:#{resolved_kind}"
+    end
+
     # 默认 kind：优先用网关的 `api_type`（stripe / adyen / paypal…），否则从类名推导。
     def default_option_kind
       return api_type.to_s if respond_to?(:api_type) && api_type.present?

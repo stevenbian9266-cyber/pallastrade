@@ -10,6 +10,10 @@ require 'rails_helper'
 #   AC-004 ← FR-002：用商品事实构造 messages，并传 resource
 #   AC-007 ← FR-002：无缺失字段时不调用 provider、不建 Run
 RSpec.describe PallasTrade::AI::Catalog::ProductTranslation do
+  # CI 不注入 PALLASTRADE_AI_ENABLED（系统总开关默认 false）→ 可用性 Gate 1 会先于店铺/能力
+  # 配置拦下请求。这里显式打开系统开关，让用例在本地与 CI 行为一致。
+  before { allow(PallasTradeAI::Config).to receive(:system_enabled?).and_return(true) }
+
   let!(:store) do
     create(:store, code: "ai_trans_#{SecureRandom.hex(4)}", default: true, default_currency: 'USD',
                    default_locale: 'en', supported_locales: 'de,fr', name: 'AI Translation Store')

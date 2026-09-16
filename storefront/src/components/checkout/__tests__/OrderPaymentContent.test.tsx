@@ -348,6 +348,25 @@ describe("OrderPaymentContent", () => {
     expect(screen.getByText("Check")).toBeTruthy();
   });
 
+  // PRD-20260916-payments-d16-payment-method-presentation AC-005：
+  // 支付方法行优先渲染服务端下发的入口级展示名（display_name），缺失时回落 provider 名。
+  it("renders the entry-level display name when the API provides one (D16 AC-005)", () => {
+    const brandedMethod = {
+      ...checkMethod,
+      display_name: "信用卡",
+      method_key: "card",
+    };
+    const brandedOrder = {
+      ...order,
+      payment_methods: [brandedMethod],
+    } as unknown as Order;
+
+    renderOrderPayment(brandedOrder);
+
+    expect(screen.getByText("信用卡")).toBeTruthy();
+    expect(screen.queryByText("Check")).not.toBeInTheDocument();
+  });
+
   // CHK-P1-4 (AC-403): 金额/商品以服务端 CheckoutView 投影为准。
   it("renders summary money from the CheckoutView projection when provided", () => {
     const differentView = {

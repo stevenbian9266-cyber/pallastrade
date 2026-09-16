@@ -197,4 +197,5 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260915-payments-d10-client-config | payments | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-catalog-batch-e1-ai-copilot | catalog | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-payments-d12-webhook-governance | payments | 2026-09-15 | （实施时回填） |
-| done | PRD-20260915-catalog-batch-e2-ai-translate-missing | catalog | 2026-09-15 | （实施时回填） |
+| approved | PRD-20260915-catalog-batch-e2-ai-translate-missing | catalog | 2026-09-15 | （实施时回填） |
+| done | PRD-20260916-payments-d16-payment-method-presentation | payments | 2026-09-16 | 后端读模型 + 契约三字段 + 前台方法行渲染；`d16-payment-presentation-rspec` + `storefront-test` 绿 |

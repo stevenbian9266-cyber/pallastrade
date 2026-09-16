@@ -1268,6 +1268,26 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   （重放/隔离/人工标记），健康与清单卡逐个降级（异常 → 区块不渲染，页面恒 200）。
 - 回归：`harness verify d12-webhook-governance-rspec`。
 
+## 入口展示元数据 — 前台支付方法行（D16 切片1, 2026-09-16；PRD-20260916-payments-d16-payment-method-presentation）
+
+业务方案 §73/§76.1：把「入口（PaymentOption）级展示名」下发到前台，取代「方法行只能显示 provider 名」。
+**只做展示读模型，不改行基数**（每 provider 仍一行）。
+
+- **读模型**（`PallasTrade::PaymentMethod`）：
+  - `effective_payment_option` —— 选项化 provider 取 `effective_payment_options.first`（受 D8 范围求值后的可见入口），
+    否则回落 `default_payment_option`；`option_display_name` = 该入口 `display_name`，空则回 `name`。
+  - `option_identifier(kind = nil)` —— `"#{prefixed_id}:#{kind}"`（如 `pm_xxx:card`），kind 取入口 `kind` → `default_option_kind`。
+    与后台 line item 的 `prefixed_id:kind` 口径**同源**，便于前后台对齐同一条入口。
+  - ⚠️ 入口 metadata **当前没有** `icon` / `description` 键（只有 `active` / `display_name` / `position` / `kind` / `rule_set` 等）；
+    `description` 仍归 provider 语义。要加图标/副标题先扩 metadata 契约，不得在序列化器里臆造字段。
+- **下发契约**（additive）：
+  - store `CheckoutSerializer`（`payment.available_payment_methods[]`）：`option_id` / `method_key` / `display_name`；
+  - store `PaymentMethodSerializer`（cart / order / shopping_cart 同族）：同三字段；
+  - `method_key` = 入口 `kind` || `default_option_kind`；`option_id` = `option_identifier`。
+- **前台渲染**：方法行 `display_name ?? name`（`OrderPaymentContent` / `PaymentCheckoutModal` / `UnifiedCheckout` 三处），
+  缺失 `display_name` 的行**必须**回落 provider 名（老数据零回归）。
+- **回归**：`harness verify d16-payment-presentation-rspec` + 前端 `storefront-test`。
+
 ## Payment availability scope —— 适用范围引擎（D8 首版, 2026-09-15；PRD-20260915-payments-d8）
 
 入口（PaymentOption）级可用范围，栖于入口层 `metadata['options'][i]['rule_set']`（业务方案 §66）：

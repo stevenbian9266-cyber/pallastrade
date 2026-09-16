@@ -587,6 +587,21 @@ Admin API **只读**端点（scope `read_orders`/ability read；**扁平 seriali
 
 **零新增调用**：`cart_` canonical 流程是唯一允许的前端路径（B4 已清掉最后一个 `carts.paymentSessions` 消费者）；`storefront` 的守护测试 `src/lib/data/__tests__/legacy-payment-sessions-guard.test.ts` 机器化该约束（零 `carts.{paymentSessions,payments,complete}`；其余四行只允许出现在白名单文件）。
 
+## 支付入口展示元数据（D16 切片1, 2026-09-16；PRD-20260916-payments-d16-payment-method-presentation）
+
+store 侧支付方式 payload 的 **additive** 字段（不新增端点、不改行基数）：
+
+| 字段 | 来源 | 语义 |
+|---|---|---|
+| `option_id` | `PaymentMethod#option_identifier` | `"<prefixed_id>:<kind>"`，与后台 line item 的 `prefixed_id:kind` 同源 |
+| `method_key` | 入口 `metadata['options'][i]['kind']` → `default_option_kind` | 前台按入口分流的键（不解析 `option_id` 字符串） |
+| `display_name` | 入口 `display_name` → 回落 `name` | 入口级展示名（前台方法行优先渲染它） |
+
+落地位置：`PallasTrade::Api::V3::Store::Checkout::CheckoutSerializer`（`payment.available_payment_methods[]`）
+与 `PallasTrade::Api::V3::PaymentMethodSerializer`（cart / order / shopping_cart 同族）。
+三字段都已进 typelize（`backend/app/javascript/types/serializers/*` + SDK generated types + `{store,admin}.yaml`），
+契约漂移由 `harness generated:check` 守（漂移即失败）。**新增支付方式字段一律走这条链**，不要在控制器里手工拼 hash。
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - D8 适用范围 (2026-09-15, PRD-20260915-payments-d8): admin `options[]` 增 `rule_set`/`scope_summary`（typelizer → SDK 生成类型）；store 侧新增失败码 `payment_option_not_available`（两个 payment_sessions 创建端点 422 示例）；无端点增删。

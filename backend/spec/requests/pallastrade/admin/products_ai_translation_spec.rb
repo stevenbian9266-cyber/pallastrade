@@ -11,6 +11,10 @@ require 'rails_helper'
 #   AC-009 ← FR-003：无商品 update 权限 → 拒绝且不产生 Run；跨店商品 → 404
 #   AC-010 ← FR-008：i18n 键齐备
 RSpec.describe 'Admin product AI translation', type: :request do
+  # CI 不注入 PALLASTRADE_AI_ENABLED（系统总开关默认 false）→ 可用性 Gate 1 会先于店铺/能力
+  # 配置拦下请求。这里显式打开系统开关，让用例在本地与 CI 行为一致。
+  before { allow(PallasTradeAI::Config).to receive(:system_enabled?).and_return(true) }
+
   let!(:store) do
     create(:store, code: "ai_trans_#{SecureRandom.hex(4)}", default: true, default_currency: 'USD',
                    default_locale: 'en', supported_locales: 'de,fr', name: 'AI Translation Store')

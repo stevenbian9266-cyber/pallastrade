@@ -651,6 +651,9 @@ type PaymentMethod = {
     kind: string;
     frontend_kind: string;
     session_required: boolean;
+    option_id: string;
+    method_key: string;
+    display_name: string;
     source_required: boolean;
     client_config: {
         provider: string;

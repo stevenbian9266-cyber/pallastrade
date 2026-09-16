@@ -9,6 +9,10 @@ require 'rails_helper'
 #   AC-003 ← FR-002：用商品事实构造 messages / system instructions，并传 resource
 #   AC-009 ← FR-007：每次执行产生 Run（capability_key / actor / 状态）
 RSpec.describe PallasTrade::AI::Catalog::ProductCopy do
+  # CI 不注入 PALLASTRADE_AI_ENABLED（系统总开关默认 false）→ 可用性 Gate 1 会先于店铺/能力
+  # 配置拦下请求。这里显式打开系统开关，让用例在本地与 CI 行为一致。
+  before { allow(PallasTradeAI::Config).to receive(:system_enabled?).and_return(true) }
+
   let!(:store) do
     create(:store, code: "ai_copy_#{SecureRandom.hex(4)}", default: true,
                    default_currency: 'USD', default_locale: 'en', name: 'AI Copy Store')

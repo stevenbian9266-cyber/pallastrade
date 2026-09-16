@@ -3498,6 +3498,33 @@
         "costAndDegradation": 15,
         "adminIntegration": 10
       }
+    },
+    {
+      "id": "GS-140",
+      "name": "The payment row shows the entry-level name without splitting option ids",
+      "description": "PRD-20260916-payments-d16-payment-method-presentation (slice 1 of 搂78-D16 / 搂76.1 of the payment plan): a provider can expose several payment entries (PaymentOption inside metadata['options']), each with its own display_name, but the storefront payment row could only render the provider name. D16 slice 1 adds an entry-level read model (effective_payment_option / option_display_name / option_identifier) and ships option_id, method_key and display_name through the store payment-method contract, so the checkout payment rows render the entry label while keeping one row per provider.",
+      "mustDo": [
+        "Read the entry that the availability resolver already exposed (effective_payment_options.first) and fall back to the default entry, so the label matches what the shopper can actually pay with",
+        "Fall back to the provider name when the entry carries no display_name, and to default_option_kind when it carries no kind, so unoptionized payment methods render exactly as before",
+        "Expose method_key as its own field so the frontend branches on the entry kind instead of parsing the option_id string",
+        "Keep option_id in the same prefixed_id:kind shape the admin line items use, so front and back office talk about the same entry",
+        "Ship the three fields through the serializers and regenerate the contract (typelize types, SDK generated types, store/admin yaml) so drift fails the pipeline",
+        "Cover both the backend read model and the storefront row: a method with display_name renders it, a method without it renders the provider name"
+      ],
+      "mustNotDo": [
+        "Invent presentation fields the option metadata does not hold (no icon, no subtitle, no badge), or repurpose the provider-level description",
+        "Change the row cardinality, add per-entry rows, or split express wallets in this slice",
+        "Render a raw option_id, concatenate kind and provider name in the frontend, or branch on provider type for the label",
+        "Break the optionized availability scope or the credential / client_config projections while touching the serializer",
+        "Let the contract drift: editing serializers without regenerating types and yaml"
+      ],
+      "scoring": {
+        "readModelCorrectness": 30,
+        "contractConsumerParity": 25,
+        "fallbackSafety": 20,
+        "scopeDiscipline": 15,
+        "testCoverage": 10
+      }
     }
   ]
 }

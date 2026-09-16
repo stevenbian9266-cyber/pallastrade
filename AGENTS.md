@@ -278,8 +278,9 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | 支付凭据与环境（`payment_methods.environment`、`Payments::Availability::Resolver` 前台过滤、`PaymentMethods::{Credentials,CredentialExpiryCheckJob}`、admin reveal/凭据卡/Webhook 卡） | + `harness verify d9-credentials-rspec`（环境隔离 + 凭据分级/env 引用 + 到期告警幂等 + reveal 权限与审计 + 后台卡片 + D1/D8 回归） | ≤4 min |
 | 前台密钥下发（`PaymentMethods::ClientConfig`、`public_preference_keys`、`client_config` 下发面） | + `harness verify d10-client-config-rspec`（envelope + 仅 publishable 投影 + `env:` 解析 + Checkout payload + Stripe 声明） | ≤3 min |
 | Webhook 治理（`PaymentWebhookEvent` quarantine、`Payments::{QuarantineWebhookEvent,MarkWebhookEventProcessed,WebhookHealth,WebhookSubscriptionChecklist}`、`/admin/webhook_events`） | + `harness verify d12-webhook-governance-rspec`（隔离状态机 + 筛选 + 处置审计 + 健康聚合 + 订阅清单 + 导航一致性） | ≤3 min |
-| Admin 商品批量运营（批量价格/库存/渠道 + 预览确认） | + `harness verify admin-products-bulk-rspec`（预览零写入 + 预览/执行计数一致 + 逐条权限跳过 + 模态接线） | ≤2 min |
+| 支付入口展示元数据（`PaymentMethod#effective_payment_option/option_display_name/option_identifier` + checkout/支付方式序列化三字段 + 前台方法行 `display_name ?? name`） | + `harness verify d16-payment-presentation-rspec`（读模型口径 + option_id/method_key/display_name 契约 + 选项化回归）+ 前端 `storefront-test` | ≤3 min |
 | Admin Catalog Health（7 类商品健康 issue + 一键过滤列表） | + `harness verify admin-catalog-health-rspec`（口径逐项 + 计数==列表条数 + 筛选横幅 + 导航子项一致性） | ≤2 min |
+| Admin 商品批量运营（批量价格/库存/渠道 + 预览确认） | + `harness verify admin-products-bulk-rspec`（预览零写入 + 预览/执行计数一致 + 逐条权限跳过 + 模态接线） | ≤2 min |
 | 到货订阅（SKU 级，`back_in_stock_subscriptions` / 事件层 / store API / 后台 SKU 列） | + `harness verify back-in-stock-rspec`（SKU 唯一约束 + 双通道分流不重复 + API variant_id + 后台 SKU 列） | ≤2 min |
 | 商品级 Product History 时间线（`product_history/**` + 后台 `_history` 侧栏注入） | + `harness verify product-history-rspec`（只记变化字段/无变化跳过 + 批量每商品一条含计数 + 审计与改价合并倒序 + 编辑页渲染与空态） | ≤2 min |
 | 重复商品检测（`products/duplicate_candidates.rb` + 后台 Duplicate Products 工作台/对比视图） | + `harness verify duplicate-products-rspec`（三类信号口径 + 计数==组数 + 店铺/软删除作用域 + 对比渲染 + 导航子项） | ≤2 min |

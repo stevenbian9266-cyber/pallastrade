@@ -149,7 +149,37 @@ RSpec.describe PallasTrade::Api::V3::Store::Checkout::CheckoutSerializer, type: 
         expect(entry[:kind]).to eq('check')
         expect(entry[:frontend_kind]).to eq('manual')
         expect(entry.keys).to contain_exactly(:id, :name, :description, :type, :session_required, :source_required,
-                                              :kind, :frontend_kind, :client_config)
+                                              :kind, :frontend_kind, :client_config,
+                                              :option_id, :method_key, :display_name)
+        # PRD-20260916-payments-d16-payment-method-presentation AC-003：D16 为 additive 变更 ——
+        # 既有键集合只增不减（含 D10 的 client_config），且仍保持「每个 payment method 一行」的行基数
+        # （视图口径 = order.payment_methods，不按入口 options 展开）。
+        expect(serialized['payment'][:available_payment_methods].size).to eq(order.payment_methods.size)
+      end
+
+      # PALLAS-CUSTOM: D16 切片1（PRD-20260916-payments-d16-payment-method-presentation AC-001/002）——
+      # 入口级展示元数据：运营在后台配置的「门店显示名」到得了前台；未配置回落 provider 名。
+      it 'exposes entry-level presentation metadata with provider-name fallback (AC-001/AC-002)' do
+        provider = create(:check_payment_method, store: store, active: true, display_on: 'front_end',
+                                                 name: 'Check provider',
+                                                 metadata: { 'optionized' => true,
+                                                             'options' => [{ 'kind' => 'card', 'active' => true,
+                                                                             'position' => 1,
+                                                                             'display_name' => '信用卡' }] })
+        plain = create(:check_payment_method, store: store, active: true, display_on: 'front_end',
+                                              name: 'Plain provider')
+
+        serialized = serialize(PallasTrade::OrderCheckout::View.call(order: order))
+        entries = serialized['payment'][:available_payment_methods]
+
+        branded = entries.find { |m| m[:id] == provider.prefixed_id }
+        expect(branded[:display_name]).to eq('信用卡')
+        expect(branded[:method_key]).to eq('card')
+        expect(branded[:option_id]).to eq("#{provider.prefixed_id}:card")
+
+        fallback = entries.find { |m| m[:id] == plain.prefixed_id }
+        expect(fallback[:display_name]).to eq('Plain provider')
+        expect(fallback[:option_id]).to eq("#{plain.prefixed_id}:#{plain.default_option_kind}")
       end
 
       # PALLAS-CUSTOM: D10（PRD-20260915-payments-d10-client-config AC-005 / FR-003）——

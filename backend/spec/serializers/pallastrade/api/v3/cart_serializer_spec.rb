@@ -55,4 +55,30 @@ RSpec.describe PallasTrade::Api::V3::CartSerializer, type: :serializer do
 
     expect(serialize(order, hide_prices: true)['express_payment']).to be_nil
   end
+
+  # PRD-20260916-payments-d16-payment-method-presentation AC-004：cart 通道（`payment_methods` 走 store
+  # `PallasTrade::Api::V3::PaymentMethodSerializer`）与 checkout 通道同源下发入口级展示元数据。
+  it 'exposes entry-level presentation metadata on the cart payment_methods payload (D16 AC-004)' do
+    # 先建支付方式再建订单：Order#payment_methods 有 @payment_methods 缓存，订单先建会缓存空列表。
+    provider = create(:check_payment_method, store: store, active: true, display_on: 'front_end',
+                                             name: 'Check provider',
+                                             metadata: { 'optionized' => true,
+                                                         'options' => [{ 'kind' => 'card', 'active' => true,
+                                                                         'position' => 1,
+                                                                         'display_name' => '信用卡' }] })
+    order = legacy_cart_order
+
+    # 注意：cart 通道经 store `PaymentMethodSerializer`（AMS）序列化 → 键为**字符串**
+    # （checkout 通道是手写 hash → 符号键，两处口径不同）。
+    entry = serialize(order)['payment_methods'].find { |m| m['id'] == provider.prefixed_id }
+
+    expect(entry).to be_present
+    expect(entry['option_id']).to eq("#{provider.prefixed_id}:card")
+    expect(entry['method_key']).to eq('card')
+    expect(entry['display_name']).to eq('信用卡')
+    # 既有字段语义不变（additive）；行基数 = payment method 数（不按入口展开）
+    expect(entry['name']).to eq('Check provider')
+    expect(entry['type']).to eq('check')
+    expect(serialize(order)['payment_methods'].size).to eq(order.payment_methods.size)
+  end
 end

@@ -5,6 +5,7 @@ module PallasTrade
         typelize name: :string, description: [:string, nullable: true], type: :string,
                  session_required: :boolean, source_required: :boolean,
                  kind: :string, frontend_kind: :string,
+                 option_id: :string, method_key: :string, display_name: :string,
                  client_config: '{ provider: string, environment: string | null, ' \
                                  'publishable: Record<string, string>, session_token: string | null }'
 
@@ -27,6 +28,21 @@ module PallasTrade
 
         attribute :session_required do |payment_method|
           payment_method.session_required?
+        end
+
+        # PALLAS-CUSTOM: D16 切片1（PRD-20260916-payments-d16-payment-method-presentation）--
+        # 入口级展示元数据（业务方案 §76.1）：前台支付方法行用 `display_name` 渲染，
+        # `option_id` 作行键、`method_key` 作入口维度。additive（既有字段语义不变）。
+        attribute :option_id do |payment_method|
+          payment_method.option_identifier
+        end
+
+        attribute :method_key do |payment_method|
+          payment_method.effective_payment_option['kind'] || payment_method.default_option_kind
+        end
+
+        attribute :display_name do |payment_method|
+          payment_method.option_display_name
         end
 
         attribute :source_required do |payment_method|

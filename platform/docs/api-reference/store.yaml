@@ -13212,6 +13212,12 @@ components:
           type: string
         session_required:
           type: boolean
+        option_id:
+          type: string
+        method_key:
+          type: string
+        display_name:
+          type: string
         source_required:
           type: boolean
         client_config:
@@ -13224,6 +13230,9 @@ components:
       - kind
       - frontend_kind
       - session_required
+      - option_id
+      - method_key
+      - display_name
       - source_required
       - client_config
       x-typelizer: true

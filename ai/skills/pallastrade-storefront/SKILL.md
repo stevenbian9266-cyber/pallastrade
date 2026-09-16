@@ -474,6 +474,21 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 - **Storefront tutorial:** `node_modules/@pallastrade/docs/dist/developer/tutorial/api.md`, `sdk.md`
 - **Storefront source:** https://github.com/stevenbian9266-cyber/pallastrade — reference implementations for product listing, cart, checkout, account pages
 
+## 支付方法行展示（D16 切片1, 2026-09-16；PRD-20260916-payments-d16-payment-method-presentation）
+
+支付方法列表（结账页方法行 / 统一结账、支付弹窗）**必须**渲染服务端下发的入口级展示名：
+
+```tsx
+{method.display_name ?? method.name}   // display_name 缺失 → 回落 provider 名（老数据零回归）
+```
+
+- `display_name` / `method_key` / `option_id` 由 store API 下发（见 `pallastrade-api-v3` Skill 的 D16 小节）；前台**不要**自己
+  从 `option_id` 拆字符串拼展示名，也不要按 provider 名做分支——入口语义一律以 `method_key` 为准。
+- 三处渲染点：`components/checkout/OrderPaymentContent.tsx`、`components/checkout/PaymentCheckoutModal.tsx`、
+  `components/checkout/UnifiedCheckout.tsx`（注意同文件里还有运输方式行，改动要落在 `name="payment-method"` 块）。
+- 覆盖测试：`components/checkout/__tests__/OrderPaymentContent.test.tsx`（有 `display_name` 渲染展示名 + 无 `display_name` 回落
+  provider 名）；改动后跑 `storefront-test`。
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - P0 (2026-09-03): Express(Apple/Google Pay) 金额/行项目改由服务端 Cart#express_payment 权威提供（expressAmount/expressLineItems；legacy buildLineItems 仅 fallback）；Legacy cart 支付=Compatibility Only。

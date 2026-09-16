@@ -41,6 +41,7 @@ module PallasTrade
                      payment: '{ available_payment_methods: Array<{ id: string, name: string, ' \
                               'description: string | null, type: string, session_required: boolean, ' \
                               'source_required: boolean, kind: string, frontend_kind: string, ' \
+                              'option_id: string, method_key: string, display_name: string, ' \
                               'client_config: { provider: string, environment: string | null, ' \
                               'publishable: Record<string, string>, session_token: string | null } }> }',
                      shipping_address: { nullable: true }, billing_address: { nullable: true }
@@ -143,6 +144,13 @@ module PallasTrade
                 # PALLAS-CUSTOM: PAY-OPT-1（切片2）—— 与 store PaymentMethodSerializer 契约一致。
                 kind: payment_method.default_option_kind,
                 frontend_kind: payment_method.default_option_frontend_kind,
+                # PALLAS-CUSTOM: D16 切片1（PRD-20260916-payments-d16-payment-method-presentation）——
+                # 入口级展示元数据（§76.1）：运营配置的「门店显示名」到得了前台；
+                # `option_id` 作行键、`method_key` 作入口维度。单一读模型：
+                # PallasTrade::PaymentMethod#effective_payment_option（禁止在 serializer 里回落）。
+                option_id: payment_method.option_identifier,
+                method_key: payment_method.effective_payment_option['kind'] || payment_method.default_option_kind,
+                display_name: payment_method.option_display_name,
                 # PALLAS-CUSTOM: D10（PRD-20260915-payments-d10-client-config 切片1）——
                 # 前台密钥下发（业务方案 §68.4/§76.1）：服务端下发 **publishable 级**凭据，
                 # 前端「先读 API、回落 NEXT_PUBLIC_*」，摆脱构建期内联依赖。

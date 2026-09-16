@@ -262,6 +262,12 @@ export default {
         description: 'Webhook governance specs (quarantine state machine + filters, event ops services with audits, health aggregation, subscription checklist, admin console + navigation)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d12_webhook_event_quarantine_spec.rb spec/services/pallastrade/payments/d12_webhook_event_ops_spec.rb spec/services/pallastrade/payments/d12_webhook_health_spec.rb spec/services/pallastrade/payments/d12_webhook_subscription_checklist_spec.rb spec/requests/pallastrade/admin/d12_webhook_events_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
       },
+      // 支付入口展示元数据（PRD-20260916-payments-d16-payment-method-presentation D16 切片1）：
+      // option_id/method_key/display_name 读模型 + Checkout/支付方式序列化契约 + 选项化回归
+      'd16-payment-presentation-rspec': {
+        description: 'Payment entry presentation specs (effective option read model, option_id/method_key/display_name serialization, optionized regression)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d16_payment_option_presentation_spec.rb spec/models/pallastrade/payment_method_options_spec.rb spec/serializers/pallastrade/api/v3/store/checkout/checkout_serializer_spec.rb spec/serializers/pallastrade/api/v3/cart_serializer_spec.rb'],
+      },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {
         description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',

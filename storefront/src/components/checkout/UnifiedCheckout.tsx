@@ -1231,7 +1231,10 @@ export function UnifiedCheckout({
                     className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
                   />
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">{method.name}</p>
+                    {/* PALLAS-CUSTOM: D16 切片1 —— 入口级展示名（回落 provider 名） */}
+                    <p className="font-medium text-gray-900">
+                      {method.display_name ?? method.name}
+                    </p>
                   </div>
                 </label>
               ))}
