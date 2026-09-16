@@ -317,6 +317,12 @@ export default {
         description: 'Refund approval specs (policy normalization matrix + auto/pending branches + request_key idempotency + two-person approve/reject with SoD + admin workbench/policy card/permissions + admin API gate & contract field)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d14_refund_approval_spec.rb spec/services/pallastrade/refunds/d14_policy_spec.rb spec/services/pallastrade/refunds/d14_submit_spec.rb spec/services/pallastrade/refunds/d14_approval_decision_spec.rb spec/requests/pallastrade/admin/d14_refund_approvals_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb spec/requests/api/v3/admin/orders/refunds_approval_spec.rb spec/requests/api/v3/admin/orders/refunds_controller_spec.rb'],
       },
+      // 争议期限分档（PRD-20260916-payments-d14b-dispute-deadlines 切片2）：T-3/T-1 分档幂等告警
+      // + 跳档补齐 + 超期策略化自动 lost（默认关闭/单轮上限）+ sweeper/订阅者 + 后台看板（含 DSP-P7-5 回归）
+      'd14b-dispute-deadlines-rspec': {
+        description: 'Dispute deadline tier specs (policy normalization + tier ledger idempotency/backfill + tier events + policy-gated auto-lose + sweeper metrics + subscriber tiers + admin board/filter/history + DSP-P7-5 regression)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/disputes/d14b_deadline_policy_spec.rb spec/services/pallastrade/disputes/d14b_alert_deadlines_spec.rb spec/jobs/pallastrade/disputes/d14b_deadline_sweeper_spec.rb spec/subscribers/pallastrade/disputes/d14b_deadline_subscriber_spec.rb spec/requests/pallastrade/admin/d14b_disputes_ops_deadline_spec.rb spec/services/pallastrade/disputes/scan_deadlines_spec.rb spec/jobs/pallastrade/disputes/deadline_sweeper_job_spec.rb spec/subscribers/pallastrade/disputes/deadline_alert_subscriber_spec.rb'],
+      },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {
         description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',

@@ -208,4 +208,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | reviewing | PRD-20260916-catalog-batch-f4-review-sorting | catalog | 2026-09-16 | 待确认：评论列表排序（最新/评分高→低/低→高；`?sort=` 白名单、tie-break 收尾、`meta.sort` 回显、前台下拉切换重置分页） |
 | done | PRD-20260916-payments-d13b-payout-ledger | payments | 2026-09-16 | 实施：结算台账（2 表）+ CSV 导入（幂等/错误收集）+ 匹配锚点/容差 + 差异行进队列（自动销案）+ 后台台账页（筛选/汇总/详情/导入/重匹配）；`d13b-payouts-rspec`（52 例）绿 |
 | done | PRD-20260916-payments-d14-refund-approval | payments | 2026-09-16 | 实施：退款策略阈值（≤ 自动 / > 需第二人批准）+ 幂等请求键 + 审批工作台（不能自批）+ Admin API 策略门与 `approval_status` 契约字段；`d14-refund-approval-rspec`（64 例）绿；期限提醒与拒付率看板留切片2/3 |
-| approved | PRD-20260916-payments-d14b-dispute-deadlines | payments | 2026-09-16 | 已确认（切片2）：T-3/T-1 分档幂等告警（台账唯一键 + 跳档补齐）+ 超期策略化自动 lost（默认关闭 + 单轮上限 + 审计）+ 后台分档看板/历史；拒付率看板留切片3 |
+| done | PRD-20260916-payments-d14b-dispute-deadlines | payments | 2026-09-16 | 实施（切片2）：T-3/T-1 分档幂等告警（台账唯一键 + 跳档补齐）+ 超期策略化自动 lost（默认关闭 + 单轮上限 + 审计）+ 后台分档看板/列/提醒历史；`d14b-dispute-deadlines-rspec`（41 例，含 DSP-P7-5 回归）绿；零资金副作用；拒付率看板留切片3 |

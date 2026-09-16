@@ -22,7 +22,8 @@ module PallasTrade
       }.freeze
 
       # @param window_hours [Integer] 临近窗口（小时）；默认 72
-      # @return [Hash] 运行摘要 { published:, failed:, overdue:, due_soon:, window_hours:, scanned_at: }
+      # @return [Hash] 运行摘要 { published:, failed:, overdue:, due_soon:, window_hours:, scanned_at:,
+      #                tiers_recorded:, auto_lost:, skipped_submitted: }
       def perform(window_hours: PallasTrade::Disputes::ScanDeadlines::DEFAULT_WINDOW_HOURS)
         result = PallasTrade::Disputes::ScanDeadlines.call(window_hours: window_hours)
         raise "dispute deadline scan failed: #{result.error}" unless result.success?
@@ -44,14 +45,25 @@ module PallasTrade
           end
         end
 
+        # D14 切片2：分档台账 + 分档事件 + 策略化超期置 lost（唯一写入口；默认策略 = 只落台账/只提醒）
+        tiers = PallasTrade::Disputes::AlertDeadlines.call(now: value[:scanned_at] || Time.current)
+
         summary = { published: published, failed: failed, overdue: value[:overdue].size,
                     due_soon: value[:due_soon].size, window_hours: value[:window_hours],
                     scanned_at: value[:scanned_at]&.iso8601 }
+        summary.merge!(tier_summary(tiers))
         Rails.logger.info(JSON.generate({ event: 'disputes.deadline_sweeper' }.merge(summary)))
         summary
       end
 
       private
+
+      # 分档摘要（服务失败 → 如实降级为 nil，不假装 0）
+      def tier_summary(tiers)
+        return { tiers_recorded: nil, auto_lost: nil, skipped_submitted: nil } unless tiers.success?
+
+        tiers.value.slice(:tiers_recorded, :backfilled, :alerted, :auto_lost, :skipped_submitted)
+      end
 
       # 只发布事件 + 记账日志：不触碰任何业务状态
       def alert(bucket, item)

@@ -2785,6 +2785,17 @@ Rails.application.config.after_initialize do
                                         default: true,
                                         position: 35
 
+  # D14 切片2（PRD-20260916-payments-d14b-dispute-deadlines）：期限**分档徽章**列
+  # （T-3 / T-1 / 已超期 + 剩余小时；只读展示，分档口径由店铺策略决定）
+  PallasTrade.admin.tables.disputes.add :deadline_tier,
+                                        label: 'admin.orders.disputes_deadline_tier',
+                                        type: :custom,
+                                        partial: 'pallastrade/admin/tables/columns/dispute_deadline',
+                                        sortable: false,
+                                        filterable: false,
+                                        default: true,
+                                        position: 27
+
   PallasTrade.admin.tables.register(:payments,
     model_class: PallasTrade::Payment,
     link_to_action: :show,

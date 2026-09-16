@@ -3746,6 +3746,34 @@
         "guardRails": 15,
         "contractStability": 10
       }
+    },
+    {
+      "id": "GS-149",
+      "name": "Deadline tiers: warn before the window closes, then let policy decide",
+      "description": "PRD-20260916-payments-d14b-dispute-deadlines (slice 2 of the D14 payments batch): the dispute deadline sweep warned once inside a 72h window and then went quiet, so an operator who ignored that one alert silently lost the dispute. This slice turns the warning into a per-tier, idempotent ledger (T-3 / T-1 / overdue), publishes a tier event only when a new tier is first recorded, and adds a policy-gated overdue action that can mark the dispute lost when no evidence was submitted. Default policy is off, so behaviour stays identical until a store opts in.",
+      "mustDo": [
+        "Compute tiers from one policy value object (default T-3 / T-1) and expose that same calculation to the service, the admin board counts, the list column and the row badge",
+        "Record each reached tier exactly once in an append-only ledger keyed by (dispute, tier); when the first scan already skipped past several tiers, backfill the ledger rows but only alert on the newest tier",
+        "Publish the tier event only for newly recorded tiers, and keep the legacy due-soon / overdue event names and payloads working",
+        "Gate the overdue auto-lose behind an explicit store policy that is off by default, cap the number of rows it can touch per run, and skip disputes that already submitted evidence, are in a provider-decided state, or are terminal",
+        "Reuse the existing state machine and audit trail when auto-losing, and keep the operator-visible reason from being overwritten",
+        "Surface counts, a filter and the reminder history in the admin console so the numbers on the board and the filtered list cannot disagree",
+        "Keep the sweep idempotent: running it twice records no duplicate ledger rows, publishes no duplicate tier event and loses no additional dispute"
+      ],
+      "mustNotDo": [
+        "Touch money, funds timestamps, payments, refunds, the ledger or orders, or call the provider, from the deadline path",
+        "Auto-lose a dispute that already submitted evidence, is terminal, or whose store policy is off, or exceed the per-run cap",
+        "Write a second ledger row for a tier already recorded, or re-alert for a backfilled tier",
+        "Change the existing due-soon / overdue event names or payloads, or break the existing scan semantics",
+        "Mix in the provider-side deadline verification, external reminder channels or the chargeback-rate board reserved for the next slice"
+      ],
+      "scoring": {
+        "tierIdempotency": 30,
+        "zeroMoneySideEffects": 25,
+        "policyGating": 20,
+        "adminConsistency": 15,
+        "backwardCompatibility": 10
+      }
     }
   ]
 }

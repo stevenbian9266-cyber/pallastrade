@@ -659,6 +659,29 @@ en:
         disputes_mark_review_failed: Unable to mark this dispute for manual review.
         disputes_deadline: Deadline
         disputes_flags: Flags
+        # D14 切片2（PRD-20260916-payments-d14b-dispute-deadlines）：期限分档（T-3 / T-1 / 超期）
+        disputes_deadline_tier: Deadline tier
+        disputes_deadline_board_title: Evidence deadline board
+        disputes_deadline_board_help: 'Tiered reminders before the evidence deadline (currently %{tiers} days). Each tier is recorded once per dispute, so the same reminder is never repeated; the history below the list shows what was already sent.'
+        disputes_deadline_tier_t3: 'T-3'
+        disputes_deadline_tier_t1: 'T-1'
+        disputes_deadline_tier_overdue: Overdue
+        disputes_deadline_hours: '%{hours} h left'
+        disputes_deadline_view: View
+        disputes_deadline_clear: Clear filter
+        disputes_deadline_alerts: Reminders recorded
+        disputes_deadline_policy: 'Overdue handling: automatically lost = %{auto_lose}, per-run limit %{limit}'
+        disputes_deadline_policy_on: 'on'
+        disputes_deadline_policy_off: 'off'
+        disputes_deadline_history_title: Deadline reminders
+        disputes_deadline_history_help: 'Evidence due %{due} — current tier: %{tier}. Each tier is recorded once; backfilled rows are tiers already passed when the dispute was first scanned.'
+        disputes_deadline_history_tier: Tier
+        disputes_deadline_history_at: Sent at
+        disputes_deadline_history_hours: Hours left
+        disputes_deadline_history_kind: Kind
+        disputes_deadline_history_backfilled: Backfilled
+        disputes_deadline_history_live: Sent
+        disputes_deadline_history_empty: No reminder recorded yet for this dispute.
         # DSP-P7-8（危险操作：提交证据 / 接受争议）
         disputes_danger_zone: Dangerous actions
         disputes_danger_zone_help: These actions talk to the payment provider and cannot be undone from this console. Every action is permission-checked, confirmed and audited; fund movements still come from the provider webhook.

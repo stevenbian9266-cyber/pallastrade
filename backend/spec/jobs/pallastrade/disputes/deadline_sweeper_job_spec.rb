@@ -49,6 +49,11 @@ RSpec.describe PallasTrade::Disputes::DeadlineSweeperJob, type: :job do
     soon = make_dispute(due_at: Time.current + 30.hours)
     late = make_dispute(due_at: Time.current - 2.hours)
 
+    # D14 切片2（PRD-20260916-payments-d14b-dispute-deadlines）：作业现在还会发布
+    # 分档事件 `dispute.evidence_deadline_tier`（逐条）→ 对**其它**事件名放行，
+    # 既有桶事件的契约断言保持不变（本条只校验 due_soon / overdue 两个桶）。
+    allow(PallasTrade::Events).to receive(:publish).and_call_original
+
     expect(PallasTrade::Events).to receive(:publish).with(
       'dispute.evidence_due_soon', hash_including('id' => soon.prefixed_id)
     ).and_call_original

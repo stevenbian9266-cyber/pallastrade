@@ -32,14 +32,35 @@ module PallasTrade
       # 「最近 provider 事件」候选窗口（有界扫描，零 provider I/O；命中失败显示 —）
       PROVIDER_EVENT_WINDOW = 20
 
+      # D14 切片2：期限分档键（与策略 `tiers_days` 默认 [3, 1] 对齐）+ 看板筛选合法值
+      DEADLINE_TIER_KEYS = %w[t3 t1 overdue].freeze
+
+      helper_method :dispute_deadline_badge, :dispute_deadline_class
+
       skip_before_action :load_resource, only: CUSTOM_ACTIONS
       before_action :load_dispute, only: CUSTOM_ACTIONS
 
       # GET /admin/disputes
       # DSP-P7-10 B2：列表页附**只读运营报表**（默认 90 天窗口；失败降级 nil，列表页恒 200）
+      # D14 切片2：附**期限分档看板**（T-3 / T-1 / 已超期计数 + 一键筛选；零写）
       def index
+        @deadline_board = deadline_board_for
         super
         @ops_report = ops_report_for
+      end
+
+      # D14 切片2：期限筛选并入集合查询（`load_resource` 会先取 `collection`，故必须在此层生效）
+      # 与看板计数共用 `deadline_scope_for`（唯一口径，杜绝计数/列表不一致）
+      def search_collection
+        @search ||= begin
+          process_table_query_state if table_registered?
+
+          base = scope
+          tier = params[:deadline].to_s
+          base = base.where(id: deadline_scope_for(tier).select(:id)) if DEADLINE_TIER_KEYS.include?(tier)
+
+          base.ransack(search_params)
+        end
       end
 
       # GET /admin/disputes/:id —— §66 全字段下钻（在线只读调用逐个降级，页面恒 200）
@@ -72,6 +93,10 @@ module PallasTrade
         # DSP-P7-9：只读能力矩阵 + 支付级多争议聚合（逐项 rescue 降级，页面绑不 500）
         @provider_capabilities = provider_capabilities_for(dispute)
         @payment_summary = payment_summary_for(dispute)
+
+        # D14 切片2：期限分档提醒历史（台账，只读；失败降级空数组）
+        @deadline_alerts = deadline_alerts_for(dispute)
+        @deadline_badge = dispute_deadline_badge(dispute)
       end
 
       # POST /admin/disputes/:id/refresh —— 刷新 provider 状态（只读契约，零写）
@@ -317,6 +342,72 @@ module PallasTrade
       # DSP-P7-10 B2：本店运营报表（只读、零写；异常降级 nil）
       def ops_report_for
         safe_value { PallasTrade::Disputes::OpsReport.call(store: current_store) }
+      end
+
+      # -- D14 切片2：期限分档看板 / 筛选 / 徽章（全部只读，零写） --
+
+      # 看板数据：T-3 / T-1 / 已超期计数（同一 scope 口径）+ 台账提醒数 + 当前策略
+      # 计数与筛选共用 `deadline_scope_for`（唯一口径）
+      def deadline_board_for
+        counts = DEADLINE_TIER_KEYS.index_with { |tier| deadline_scope_for(tier).count }
+        alerts = PallasTrade::DisputeDeadlineAlert.filter_by(store_id: current_store&.id).count
+
+        {
+          counts: counts, total: counts.values.sum, alerts: alerts,
+          selected: params[:deadline].presence,
+          policy: PallasTrade::Disputes::DeadlinePolicy.for(current_store).snapshot
+        }
+      rescue StandardError => e
+        Rails.logger.warn(message: 'admin.disputes_ops.deadline_board_failed', error: e.class.name,
+                          detail: e.message.to_s.truncate(200))
+        { counts: DEADLINE_TIER_KEYS.index_with { 0 }, total: 0, alerts: 0, selected: nil,
+          policy: PallasTrade::Disputes::DeadlinePolicy.new.snapshot }
+      end
+
+      # D14 切片2：期限提醒台账（最近的在前；只读；异常降级空数组）
+      def deadline_alerts_for(dispute)
+        dispute.deadline_alerts.recent_first.limit(20).to_a
+      rescue StandardError
+        []
+      end
+
+      # @param tier [String] 't3' | 't1' | 'overdue'
+      # @return [ActiveRecord::Relation] 本店 + 未终态 + 有截止日
+      def deadline_scope_for(tier)
+        now = Time.current
+        scope = deadline_scope_base
+
+        case tier.to_s
+        when 't3' then scope.where(evidence_due_at: (now + 24.hours)..(now + 72.hours))
+        when 't1' then scope.where(evidence_due_at: now..(now + 24.hours))
+        when 'overdue' then scope.where(evidence_due_at: ..now)
+        else scope
+        end
+      end
+
+      def deadline_scope_base
+        PallasTrade::Dispute.for_store(current_store).active.where.not(evidence_due_at: nil)
+      end
+
+      # 列表「期限」列 + 详情徽章输入（策略分档，唯一口径）
+      # @return [Hash] { tier:, hours:, due_at: }
+      def dispute_deadline_badge(dispute)
+        due = dispute.respond_to?(:evidence_due_at) ? dispute.evidence_due_at : nil
+        return { tier: nil, hours: nil, due_at: nil } if due.nil?
+
+        hours = ((due - Time.current) / 3600.0).round(1)
+        policy = PallasTrade::Disputes::DeadlinePolicy.for(dispute.respond_to?(:store) ? dispute.store : nil)
+        { tier: policy.latest_tier(hours_remaining: hours), hours: hours, due_at: due }
+      end
+
+      # 分档徽章配色（模板只用类名，不写内联样式）
+      def dispute_deadline_class(tier)
+        case tier.to_s
+        when 'overdue' then 'badge-danger'
+        when 't1' then 'badge-warning'
+        when 't3' then 'badge-info'
+        else 'badge-secondary'
+        end
       end
 
       # DSP-P7-10 B2 / FR-005：是否要求第二人签核（默认关闭 → 既有提交路径行为不变）

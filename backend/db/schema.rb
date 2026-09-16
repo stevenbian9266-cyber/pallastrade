@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_16_190000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_16_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -699,6 +699,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_190000) do
     t.datetime "updated_at", precision: nil, null: false
     t.bigint "variant_id"
     t.index ["variant_id"], name: "index_pt_digitals_on_variant_id"
+  end
+
+  create_table "pallastrade_dispute_deadline_alerts", force: :cascade do |t|
+    t.datetime "alerted_at", null: false
+    t.datetime "created_at", null: false
+    t.bigint "dispute_id", null: false
+    t.datetime "evidence_due_at"
+    t.decimal "hours_remaining", precision: 10, scale: 2
+    t.jsonb "metadata"
+    t.bigint "store_id"
+    t.string "tier", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dispute_id", "tier"], name: "idx_dispute_deadline_alerts_identity", unique: true
+    t.index ["store_id", "alerted_at"], name: "idx_on_store_id_alerted_at_4a9e656d36"
   end
 
   create_table "pallastrade_dispute_evidence_approvals", force: :cascade do |t|

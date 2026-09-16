@@ -1384,6 +1384,37 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   `refund_policy_updated`。
 - **回归**：`harness verify d14-refund-approval-rspec`（64 examples）+ `Orders::Cancel` 与 refunds 既有 spec + `harness generated:check`。
 
+## 争议期限分档提醒与超期处置（D14 切片2, 2026-09-16；PRD-20260916-payments-d14b-dispute-deadlines）
+
+业务方案 §71.2：DSP-P7-5 只在「72h 窗口」发一次提醒、超期后**无人收口**（证据没交 → 争议自动流失 = 直接亏钱）。
+本切片把「快到期」变成**分档 / 幂等 / 可运营**的提醒台账，并给出**策略门控**的超期处置（默认关闭）。
+铁律：**零资金副作用** —— 不写 funds 时间戳（因此不触发资金入账事件）、不改 Payment / Refund / Journal / Order / 库存、零 provider 调用。
+
+- **策略值对象** `Disputes::DeadlinePolicy.for(store)`（只读；存 `Store#private_metadata['dispute_deadline_policy']`）：
+  `tiers_days`（默认 `[3, 1]` → 档位键 `t3` / `t1`）、`auto_lose_on_overdue`（默认 **false** = 行为与今天一致）、`auto_lose_limit`（默认 100）。
+  归一化**保守**：非法/空 `tiers_days` → 回默认（绝不因配置错误变成「无档位 = 不提醒」）；档位去重 + 只留正整数 + 降序（最宽松在前）。
+  `latest_tier` / `reached_tiers` / `max_window_hours` 是**唯一口径**（服务、看板、列表列共用）。
+  实测语义：`50h → t3`；`10h → t3 + t1`；`-3h → t3 + t1 + overdue`（`overdue` = 已过期）。`tier_hours('t3') = 72`。
+- **台账模型** `PallasTrade::DisputeDeadlineAlert`（`pallastrade_dispute_deadline_alerts`，append-only）：
+  `tier`（`t{n}` / `overdue`，格式校验）、`alerted_at`、`evidence_due_at`、`hours_remaining`、`metadata`；
+  **唯一键 `(dispute_id, tier)`** —— 「不遗漏」靠达到即写、「不重复」靠唯一键；`metadata['backfilled']` 标记**跳档补齐**。
+  `Dispute#deadline_alerts`（has_many，`dependent: :delete_all`）；scope `recent_first` / `for_tier` / `filter_by(store_id:, tier:, from:, to:)`。
+  实例方法 `overdue?` / `backfilled?` / `days_before_due` / `human_tier`（**不是** scope —— 写成 `relation.overdue?` 会 NoMethodError）。
+- **唯一写入口** `Disputes::AlertDeadlines.call(store: nil, now:, limit: nil)`：
+  扫描**复用** `Disputes::ScanDeadlines`（只读、唯一筛选口径）；全局 sweeper 时**逐店策略**生效
+  （`scan_window_hours`：显式店铺 → 该店最宽档；全局 → 至少 `GLOBAL_WINDOW_HOURS = 7*24`，覆盖 `t7` 之类更宽档位）。
+  每档 `create_alert`（`RecordNotUnique` / `RecordInvalid` → nil，幂等）；**只有本轮新记录的最新档**才发事件，历史档只落台账 + `backfilled` 标记（不补发过期提醒）。
+  返回 `{ scanned:, window_hours:, tiers_recorded:, alerted:, backfilled:, auto_lost:, skipped_submitted:, failed:, policy:, scanned_at: }`；单条异常隔离（`failed` 计数 + 日志，不断其余）。
+- **超期处置（策略门控）**：`auto_lose_on_overdue` 开启 **且** 已超期 **且** 状态 ∈ `AUTO_LOSE_STATES`（`opened` / `needs_response` / `under_review`）
+  **且** 未提交证据（`evidence_submitted_at` 空 + 无 `evidence_submissions`）→ `transition_to!('lost')`（**复用**状态机阶段序保护，不新增状态机）
+  + `attention_reason = 'evidence_overdue'`（**不覆盖**非空）+ 审计 `dispute_auto_lost_overdue`；单轮 `auto_lose_limit` 上限；
+  非候选（已提交证据 / `submitted` / 终态）→ 只计 `skipped_submitted`，**不动**；重复跑幂等（终态不再处理）。
+- **事件** `dispute.evidence_deadline_tier`（payload `id` / `tier` / `state` / `due_at` / `hours_remaining` / `missing_evidence`）：
+  **只在有新档位时**发布；既有 `dispute.evidence_due_soon` / `dispute.evidence_overdue` **名称与 payload 不变**，但发布时机收窄为「有新档位时」。
+- **审计**：`dispute_deadline_tier_recorded`（落台账，含 `backfilled` / `policy` 快照；payload 记在 `AuditLog#after`）、
+  `dispute_deadline_tier_alerted`（订阅者：`t3`/`t1` 只留痕）、`dispute_auto_lost_overdue`（`actor: 'system'` 字符串 actor → `actor_type` / `actor_id` 为 nil，断言查 `after`）。
+- **回归**：`harness verify d14b-dispute-deadlines-rspec`（41 examples，含 DSP-P7-5 `scan_deadlines` / `deadline_sweeper_job` / `deadline_alert_subscriber` 回归）。
+
 ## 熔断与健康 — 入口级软置灰（D11 切片1, 2026-09-16；PRD-20260916-payments-d11-circuit-breaker-health）
 
 业务方案 §67.3：provider 抖动时**先把入口从前台摘掉**（软置灰），而不是让用户一路踩到支付失败。

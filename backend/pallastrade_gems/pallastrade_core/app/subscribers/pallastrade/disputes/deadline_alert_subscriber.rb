@@ -17,12 +17,15 @@
 module PallasTrade
   module Disputes
     class DeadlineAlertSubscriber < PallasTrade::Subscriber
-      subscribes_to 'dispute.evidence_due_soon', 'dispute.evidence_overdue'
+      subscribes_to 'dispute.evidence_due_soon', 'dispute.evidence_overdue', 'dispute.evidence_deadline_tier'
 
       OVERDUE_REASON = 'evidence_overdue'
+      # D14 切片2：`dispute.evidence_deadline_tier` 携带 `tier` 字段（t3 / t1 / overdue），
+      # 映射为 `tier_*` kind 以便与既有两类事件的留痕区分。
       KIND_BY_EVENT = {
         'dispute.evidence_due_soon' => 'due_soon',
-        'dispute.evidence_overdue' => 'overdue'
+        'dispute.evidence_overdue' => 'overdue',
+        'dispute.evidence_deadline_tier' => 'tier'
       }.freeze
 
       def handle(event)
@@ -31,7 +34,7 @@ module PallasTrade
         return if PallasTrade::Dispute::TERMINAL_STATES.include?(dispute.state.to_s)
 
         kind = KIND_BY_EVENT[event.name] || 'unknown'
-        escalate(dispute) if kind == 'overdue'
+        escalate(dispute) if overdue_alert?(kind, event.payload)
         record_alert(dispute, kind, event.payload)
       rescue StandardError => e
         Rails.logger.error(
@@ -41,6 +44,17 @@ module PallasTrade
 
       private
 
+      # 超期告警（既有 `dispute.evidence_overdue` 或分档事件里的 `overdue` 档）
+      def overdue_alert?(kind, payload)
+        return true if kind == 'overdue'
+
+        kind == 'tier' && tier_of(payload) == PallasTrade::DisputeDeadlineAlert::OVERDUE_TIER
+      end
+
+      def tier_of(payload)
+        payload.try(:[], 'tier') || payload.try(:[], :tier)
+      end
+
       # 升级＝打人工关注标记（不覆盖更具体的原因，如 provider_conflict / journal_gap）
       def escalate(dispute)
         return if dispute.attention_reason.present?
@@ -49,16 +63,19 @@ module PallasTrade
       end
 
       def record_alert(dispute, kind, payload)
+        tier = payload.try(:[], 'tier') || payload.try(:[], :tier)
+
         PallasTrade::Audit.record(
-          action: 'dispute_deadline_alerted',
+          action: tier.present? ? 'dispute_deadline_tier_alerted' : 'dispute_deadline_alerted',
           actor: 'system',
           resource: dispute,
           after: {
             kind: kind,
+            tier: tier,
             evidence_due_at: dispute.evidence_due_at&.iso8601,
             hours_remaining: hours_remaining(payload),
             attention_reason: dispute.attention_reason
-          }
+          }.compact
         )
         PallasTrade::OperationalMetrics.count('dispute.deadline_alert', kind: kind, dispute_id: dispute.prefixed_id)
       rescue StandardError

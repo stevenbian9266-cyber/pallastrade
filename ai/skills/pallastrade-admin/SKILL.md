@@ -445,6 +445,21 @@ end
 - ⚠️ 导航一致性 spec 断言 Orders 子项**完整列表**（新增项必须同步 `spec/requests/pallastrade/admin/navigation_consistency_spec.rb`）。
 - **回归**：`harness verify d14-refund-approval-rspec`（+ `node scripts/nav-validate-static.mjs`）。
 
+## 争议期限看板与提醒历史（D14 切片2, 2026-09-16，PRD-20260916-payments-d14b-dispute-deadlines）
+
+- **看板**（`disputes_ops#index` 顶部卡片）：T-3 / T-1 / 已超期**计数** + 台账提醒总数 + 当前策略摘要（`tiers_days` / auto-lose 开关）；
+  计数与筛选**共用** `deadline_scope_for(tier)`（唯一口径，杜绝「计数与列表不一致」）；策略读取失败 → 整卡降级为 0 值（页面恒 200）。
+- **筛选**：`?deadline=t3|t1|overdue`。⚠️ 必须**覆盖 `search_collection`**，而**不是**在 `index` 里改 `params[:q]` ——
+  基类 `before_action :load_resource` **先**调用 `collection`（内部 memo `@collection` / `@search`），
+  action 内再改 params 已经太晚（实测现象：筛选「看着生效」、实际返回全量 → 断言 `not_to include` 失败）。
+- **列表列**：表格注册 `:deadline_tier`（position 27）；自定义列 partial 首行必须
+  `<%# locals: (record:, column:, value:) %>` 且用 `record`（**不是** `dispute` —— 用错会在渲染时 `undefined local variable`）。
+- **详情历史**：`/admin/disputes/:id` 的「提醒历史」卡片（`recent_first.limit(20)`，空态文案 `disputes_deadline_history_empty`）。
+  ⚠️ `safe_value` 只适用于 **outcome**（内部调 `outcome.success?`）—— 传数组会被 `NoMethodError` 吞掉 → **静默降级为空列表**；
+  取数组请用独立的 `rescue StandardError → []` 私有方法（或 `evidence_submissions_for` 那种既有写法）。
+- **徽章**：`dispute_deadline_badge(dispute)` + `dispute_deadline_class(tier)`（`badge-danger` / `badge-warning` / `badge-info`）经 `helper_method` 暴露视图；颜色只用类名，**不写内联样式**（AP-001/AP-006）。
+- **回归**：`harness verify d14b-dispute-deadlines-rspec`。
+
 ## 支付适用范围编辑：Provider 详情「支付方式」页签（D8 切片2, 2026-09-15，PRD-20260915-payments-d8）
 
 同一页签每行新增「适用范围」编辑器 + 摘要列（改 `_options.html.erb`；**不新增页面**）：

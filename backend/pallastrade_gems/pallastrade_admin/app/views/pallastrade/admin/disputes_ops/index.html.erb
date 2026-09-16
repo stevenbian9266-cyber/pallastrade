@@ -91,4 +91,52 @@
   </div>
 <% end %>
 
+<%# ── 期限分档看板（D14 切片2 / §71.2，只读；计数与筛选同源） ── %>
+<% board = @deadline_board %>
+<% if board %>
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title"><%= PallasTrade.t('admin.orders.disputes_deadline_board_title') %></h5>
+    </div>
+    <div class="card-body">
+      <p class="text-sm text-gray-500 mb-4">
+        <%= PallasTrade.t('admin.orders.disputes_deadline_board_help',
+                          tiers: Array(board[:policy]['tiers_days']).join(' / ')) %>
+      </p>
+
+      <div class="grid grid-cols-4 gap-3 mb-4">
+        <% %w[t3 t1 overdue].each do |tier| %>
+          <div>
+            <div class="text-sm text-gray-500">
+              <%= PallasTrade.t("admin.orders.disputes_deadline_tier_#{tier}") %>
+            </div>
+            <div>
+              <strong><%= board[:counts][tier] %></strong>
+              <%= link_to PallasTrade.t('admin.orders.disputes_deadline_view'),
+                          PallasTrade.admin_disputes_path(deadline: tier),
+                          class: 'text-sm' %>
+            </div>
+          </div>
+        <% end %>
+        <div>
+          <div class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.disputes_deadline_alerts') %></div>
+          <div><strong><%= board[:alerts] %></strong></div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-500">
+          <%= PallasTrade.t('admin.orders.disputes_deadline_policy',
+                            auto_lose: board[:policy]['auto_lose_on_overdue'] ? PallasTrade.t('admin.orders.disputes_deadline_policy_on') : PallasTrade.t('admin.orders.disputes_deadline_policy_off'),
+                            limit: board[:policy]['auto_lose_limit']) %>
+        </span>
+        <% if board[:selected].present? %>
+          <%= link_to PallasTrade.t('admin.orders.disputes_deadline_clear'),
+                      PallasTrade.admin_disputes_path, class: 'btn btn-sm btn-outline-secondary' %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
 <%= render_table @collection, :disputes %>

@@ -119,6 +119,12 @@ reversals** (chargeback / inquiry / warning / representment) — deliberately **
   provider snapshot + idempotent journal repair + manual review — never re-charges, never auto-refunds, never rewrites
   ledger entries). **No** order/inventory/payment/journal writes beyond the ledger repair above.
 - `CommerceTransaction` stays `completed`: disputes never mutate the original transaction state.
+- `pallastrade_dispute_deadline_alerts` (**D14 切片2**, 迁移 `20260916200000`) —— 证据期限**分档提醒台账**：
+  `tier`（`t{n}` / `overdue`）、`alerted_at`、`evidence_due_at`、`hours_remaining`、`store_id`、`metadata`（`backfilled` /
+  `missing_evidence` / `policy` 快照）。**append-only**：唯一键 `(dispute_id, tier)` = 幂等键（同一争议同一档位只落一行），
+  索引 `(store_id, alerted_at)` 支撑后台看板计数。策略存在 `Store#private_metadata['dispute_deadline_policy']`
+  （**无新列、无新表**：`tiers_days` / `auto_lose_on_overdue` / `auto_lose_limit`）——沿用「过渡期 metadata」形态。
+  零资金列：该表**没有**任何金额字段，也不写 `funds_*` 时间戳（不触发资金入账事件）。
 
 ## Order promotion snapshot (batch4a, 2026-09-10)
 

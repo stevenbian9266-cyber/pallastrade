@@ -80,6 +80,11 @@ module PallasTrade
     has_many :evidence_approvals, class_name: 'PallasTrade::DisputeEvidenceApproval',
                                   inverse_of: :dispute
 
+    # D14 切片2（PRD-20260916-payments-d14b-dispute-deadlines）：期限分档提醒台账（append-only）。
+    # 每档一行（唯一键 `(dispute_id, tier)`）——「不遗漏」靠达到即写，「不重复」靠唯一键。
+    has_many :deadline_alerts, class_name: 'PallasTrade::DisputeDeadlineAlert',
+                               inverse_of: :dispute, dependent: :delete_all
+
     validates :provider, :provider_dispute_reference, :state, presence: true
     validates :provider_dispute_reference, uniqueness: { scope: :provider }
     validates :state, inclusion: { in: STATES }

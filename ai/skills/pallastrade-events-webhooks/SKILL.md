@@ -327,6 +327,18 @@ Provider 发起的资金逆转（Stripe `charge.dispute.*`）走**入站** webho
 | `dispute.evidence_submitted` | 运营向 provider **提交证据成功**（DSP-P7-8；payload `submission_id` / `provider_status` / `late` / `evidence_keys`） | 审计、SLA 指标 |
 | `dispute.accepted` | 运营**接受争议**成功（DSP-P7-8；不可逆；payload 含 `reason`） | 审计、损失统计 |
 
+### Dispute 期限分档提醒事件（outbound, D14 切片2, 2026-09-16）
+
+| Event | When | 消费方 |
+|---|---|---|
+| `dispute.evidence_deadline_tier` | 期限**分档首次**落台账（`t{n}` / `overdue`；D14 切片2） | `PallasTrade::Disputes::DeadlineAlertSubscriber`（`t3`/`t1` 只审计；`overdue` 升级 `attention_reason`） |
+
+要点：①payload `{ 'id' => dsp_…, 'tier' => 't3'|'t1'|'overdue', 'state' => …, 'due_at' => iso8601, 'hours_remaining' => Numeric,
+'missing_evidence' => [...] }`；②**只在有新档位**时发布（台账唯一键 `(dispute_id, tier)` 负责幂等；跳档补齐的历史档**不补发**）；
+③既有 `dispute.evidence_due_soon` / `dispute.evidence_overdue` **名称与 payload 不变**，但发布时机收窄为「有新档位时」
+（既有 job spec 若用严格 `expect(...).to receive(:publish).with(...)`，需要先放行其它事件名）；
+④订阅者是**纯本地**消费（审计 / attention），零资金侧效应。
+
 要点：①payload `{ 'id' => dsp_…, 'decision' => …, 'state' => …, 'actions' => [类型列表] }`（无 PII）；
 ②仅**非 noop 且非降级**的决策发布（不造噪音）；③发布失败**不影响已完成的收敛**——job 摘要里同一条可能
 既计入 `recovered` 又计入 `failed`（事实已修、通知未发出）；④调度 `dispute_recovery_sweep`（每日 01:30，`limit: 50`），

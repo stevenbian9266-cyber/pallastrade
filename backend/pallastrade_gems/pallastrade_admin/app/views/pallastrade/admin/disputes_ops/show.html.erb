@@ -333,6 +333,52 @@
   </div>
 </div>
 
+<%# ── 期限分档提醒历史（D14 切片2 / §71.2，台账只读） ── %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.orders.disputes_deadline_history_title') %></h5>
+  </div>
+  <div class="card-body">
+    <% badge = @deadline_badge %>
+    <p class="text-sm text-gray-500 mb-4">
+      <%= PallasTrade.t('admin.orders.disputes_deadline_history_help',
+                        due: badge[:due_at] ? l(badge[:due_at], format: :long) : '—',
+                        tier: badge[:tier] ? PallasTrade.t("admin.orders.disputes_deadline_tier_#{badge[:tier]}") : '—') %>
+    </p>
+
+    <% if @deadline_alerts.present? %>
+      <table class="table">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.orders.disputes_deadline_history_tier') %></th>
+            <th><%= PallasTrade.t('admin.orders.disputes_deadline_history_at') %></th>
+            <th><%= PallasTrade.t('admin.orders.disputes_deadline_history_hours') %></th>
+            <th><%= PallasTrade.t('admin.orders.disputes_deadline_history_kind') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @deadline_alerts.each do |alert| %>
+            <tr>
+              <td>
+                <span class="badge <%= dispute_deadline_class(alert.tier) %>">
+                  <%= PallasTrade.t("admin.orders.disputes_deadline_tier_#{alert.tier}") %>
+                </span>
+              </td>
+              <td><%= l(alert.alerted_at, format: :short) %></td>
+              <td><%= alert.hours_remaining %></td>
+              <td>
+                <%= alert.backfilled? ? PallasTrade.t('admin.orders.disputes_deadline_history_backfilled') : PallasTrade.t('admin.orders.disputes_deadline_history_live') %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-gray-500 mb-0"><%= PallasTrade.t('admin.orders.disputes_deadline_history_empty') %></p>
+    <% end %>
+  </div>
+</div>
+
 <%# ── 7.5 提交历史 / 版本 / 回执（DSP-P7-10 B1，只读） ── %>
 <div class="card mb-6">
   <div class="card-header">

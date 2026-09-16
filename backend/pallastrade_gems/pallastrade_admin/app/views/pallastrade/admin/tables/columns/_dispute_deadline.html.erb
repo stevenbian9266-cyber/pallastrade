@@ -1,0 +1,14 @@
+<%# locals: (record:, column:, value:) %>
+<%# PALLAS-CUSTOM: D14 切片2（PRD-20260916-payments-d14b-dispute-deadlines）—— %>
+<%#   争议列表「期限」列：分档徽章（T-3 / T-1 / 已超期）+ 剩余小时；只读。 %>
+<% badge = dispute_deadline_badge(record) %>
+<% if badge[:tier].nil? %>
+  <span class="text-gray-500">—</span>
+<% else %>
+  <span class="badge <%= dispute_deadline_class(badge[:tier]) %>">
+    <%= PallasTrade.t("admin.orders.disputes_deadline_tier_#{badge[:tier]}") %>
+  </span>
+  <span class="text-gray-500 text-sm">
+    <%= PallasTrade.t('admin.orders.disputes_deadline_hours', hours: badge[:hours]) %>
+  </span>
+<% end %>

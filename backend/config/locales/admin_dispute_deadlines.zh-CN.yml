@@ -1,0 +1,27 @@
+zh-CN:
+  pallastrade:
+    admin:
+      orders:
+        # D14 切片2（PRD-20260916-payments-d14b-dispute-deadlines）：争议期限分档（T-3 / T-1 / 超期）
+        disputes_deadline_tier: 期限档位
+        disputes_deadline_board_title: 证据期限看板
+        disputes_deadline_board_help: '证据截止前的分档提醒（当前档位：截止前 %{tiers} 天）。每个争议每档只记录一次，不会重复提醒；列表下方可见已提醒历史。'
+        disputes_deadline_tier_t3: T-3
+        disputes_deadline_tier_t1: T-1
+        disputes_deadline_tier_overdue: 已超期
+        disputes_deadline_hours: 剩余 %{hours} 小时
+        disputes_deadline_view: 查看
+        disputes_deadline_clear: 清除筛选
+        disputes_deadline_alerts: 已提醒记录
+        disputes_deadline_policy: '超期处理：自动置为 lost = %{auto_lose}，单轮上限 %{limit}'
+        disputes_deadline_policy_on: 已开启
+        disputes_deadline_policy_off: 未开启（默认）
+        disputes_deadline_history_title: 期限提醒记录
+        disputes_deadline_history_help: '证据截止 %{due} —— 当前档位：%{tier}。每档只记录一次；补记（backfilled）行表示首次扫描时该档位已经过了。'
+        disputes_deadline_history_tier: 档位
+        disputes_deadline_history_at: 提醒时间
+        disputes_deadline_history_hours: 当时剩余小时
+        disputes_deadline_history_kind: 类型
+        disputes_deadline_history_backfilled: 补记
+        disputes_deadline_history_live: 正常提醒
+        disputes_deadline_history_empty: 该争议暂无提醒记录。
