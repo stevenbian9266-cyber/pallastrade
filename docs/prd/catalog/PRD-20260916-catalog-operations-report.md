@@ -102,11 +102,18 @@
 
 ## 9. 文档同步清单（知识同步门）
 
-- [ ] `ai/skills/pallastrade-catalog/SKILL.md`（运营报表口径：数据源、bulk/single 判定、平均维护数定义、**全局口径声明**）
-- [ ] `ai/skills/pallastrade-admin/SKILL.md`（新导航子项 + 只读页约定）
-- [ ] `harness/scenarios/scenarios.json`（新场景：运营报表只读且口径诚实）
-- [ ] `docs/research/RESEARCH-20260916-catalog-domain-audit.md`（G-6 状态更新）
-- [ ] 本 PRD 状态 + `docs/prd/README.md` 索引
+- [x] `ai/skills/pallastrade-catalog/SKILL.md`（运营报表口径：数据源、bulk/single 判定、平均维护数定义、**全局口径声明**）— 已新增「商品运营报表」章节
+- [x] `ai/skills/pallastrade-admin/SKILL.md`（新导航子项 + 只读页约定）— 已新增「Catalog Operations」小节（含 5 条约定 + 回归命令）
+- [x] `harness/scenarios/scenarios.json`（新场景：运营报表只读且口径诚实）— 已新增 **GS-160**（`eval-ai --scenarios` 161/161 通过）
+- [x] `docs/research/RESEARCH-20260916-catalog-domain-audit.md`（G-6 状态更新）— G-6 段补「已实施 + 两处对建议的修正」，优先级表状态改 ✅
+- [x] 本 PRD 状态 + `docs/prd/README.md` 索引 — 状态改 `done`，`prd-status-sync --fix` 复检通过
+
+**未改动（已评估，无需更新）**：
+
+- `pallastrade-data-model` Skill：零新表、零新列（报表只读 `pallastrade_audit_logs`）
+- `pallastrade-api-v3` Skill + `backend/public/api-docs/{store,admin}.yaml` + SDK 类型：纯后台 HTML 页面，无 v3 契约变更（`generated:check` 不适用）
+- `AGENTS.md` / `.github/copilot-instructions.md`：无新的流程/反模式规则
+- `pallastrade-prd` Skill：PRD 流程未变
 
 ## 10. 关键决策
 
@@ -116,6 +123,8 @@
 | D2 | 批量"次数"的口径 | **审计条目数**（每个被操作商品一条），并单列**覆盖商品数**（去重） | `record_bulk` 按商品各写一条，批次本身没有 id；不引入"批次表"就能给出两个诚实的数字 |
 | D3 | 多店口径 | 若 `audit_logs` 无 store 维度则**明确标注"全局"** | 宁可写清口径，也不要假装按店隔离（审计 G-8 同源问题，但本批不扩范围） |
 | D4 | 窗口切换 | `?window=7|30`，未知值回落 7 | 最小可用；不做自定义区间（避免引入日期选择器与额外校验） |
+| D5（实施期新增） | 批量/单条如何判定 | 按**条目**的 `metadata['source'] == 'bulk'`，**不按 action 名** | 同一个 action 既可能来自单条编辑也可能来自批量执行（`split_by_source` 用 `IS DISTINCT FROM 'bulk'` 取单条侧，NULL 也算单条） |
+| D6（实施期新增） | zh-CN 文案 | **本批不加** | `backend/config/locales/*.zh-CN.yml` 不在本任务授权 glob 内；英文键已齐备（`admin.catalog_operations.*`），中文文案另行补 |
 
 ## 11. 变更记录
 
@@ -123,3 +132,4 @@
 |---|---|---|---|
 | 2026-09-16 | 0.1 | 初稿：由审计 G-6 提炼（读 D-1 已写的审计流水，零新表） | AI |
 | 2026-09-16 | 1.0 | 用户「你定」授权推进；补 D1~D4、AC 表、测试与同步清单 → 状态 approved | AI |
+| 2026-09-16 | 1.1 | 实施完成（commit `bfb67a8a`）：服务/页面/导航/路由/locale + 47 examples 全绿；知识同步全部落地；补 D5/D6；状态 → done | AI |
