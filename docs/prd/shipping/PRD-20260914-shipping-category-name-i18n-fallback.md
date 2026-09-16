@@ -11,7 +11,7 @@
 | 关联 PRD | N/A（查重未命中） |
 | 需求类型 | Bug 修复（数据修复 + 源头防复发） |
 
-> 用户原文：`bug：shipping categories 翻译异常：[Translation missing: en.PallasTrade.seed.shipping.categories.default](…/shipping_categories/scat_UkLWZg9DAJ/edit)[…digital](…/scat_gbHJdmfrXB/edit)`
+> 用户原文：`bug：shipping categories 翻译异常：[Translation missing: en.PallasTrade.seed.shipping.categories.default] → …/shipping_categories/scat_UkLWZg9DAJ/edit ；[…digital] → …/scat_gbHJdmfrXB/edit`
 
 > 🔁 **查重回写**：`harness prd new` 自动查重（相似度 > 0.3 阻止新建）。
 > 若本需求命中相似 PRD，用 `harness prd update --path <原PRD> --title "<需求>"` 回写原 PRD，
