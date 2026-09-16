@@ -67,7 +67,12 @@ RSpec.describe PallasTrade::Payments::WebhookSubscriptionChecklist, type: :servi
 
     rows = described_class.call(window: 30.days)
 
-    expect(rows.map { |row| row[:provider] }).to eq(['stripe'])
-    expect(rows.first[:observed]).to eq([])
+    # 服务按**全量 provider** 出行（全局 store 上可能有其他用例/种子留下的 provider），
+    # 因此断言只作用于本用例创建的 stripe，并校验「每 provider 恰好一行」这一不变量。
+    providers = rows.map { |row| row[:provider] }
+    expect(providers).to include('stripe')
+    expect(providers.uniq).to eq(providers)
+    expect(providers.count('stripe')).to eq(1)
+    expect(rows.find { |row| row[:provider] == 'stripe' }[:observed]).to eq([])
   end
 end

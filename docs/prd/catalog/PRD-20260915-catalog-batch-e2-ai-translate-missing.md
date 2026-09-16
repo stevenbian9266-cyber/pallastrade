@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | done |
+| 状态 | approved |
 | 创建日期 | 2026-09-15 |
 | 来源 | 《商品升级方案 V1.0》§七.1「Translation → Translate missing fields」+ §七.2「Generate → Diff / Preview → Accept → Save」安全边界（用户授权原话：「开下一批」，2026-09-15） |
 | 分类 | catalog（商品域 / AI 辅助 / 翻译） |
@@ -114,4 +114,3 @@
 |---|---|---|---|
 | 2026-09-15 | 0.1 | 初稿（Batch E-2：FR-001~009 / AC-001~010；范围=Translation，排除 slug；入口=翻译抽屉；源=店铺默认语言；用户已确认三项范围） | AI |
 | 2026-09-15 | 1.0 | 用户确认「确认实施」→ 状态 approved；实施：能力 `catalog.product_translation` + schema/服务（缺失口径 `fallback:false`、`resolve_locale` 后缀→代码映射、无缺失零 Run）+ `POST /admin/ai/product_translation` + 抽屉 `[AI Translate Missing]`（`data-ai-translation-row` 标记、`ai-assist` 加 `translation` 分支）+ en 文案；规格 17 例绿（含 CI 无加密密钥场景） | AI |
-| 2026-09-15 | 1.1 | 收尾：verifier `ai-translate-rspec`（含 CI 无密钥环境回归 17 例绿）、`prd verify` 全部 AC 覆盖、`sync-check --ack`、supervise 本批 0 发现、（standard 风险集 test/review/knowledge 证据齐全）→ 状态 **done**，提交 `6d99acf6` 推送 dev | AI |
