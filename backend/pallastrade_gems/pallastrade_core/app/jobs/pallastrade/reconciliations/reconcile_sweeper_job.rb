@@ -39,6 +39,8 @@ module PallasTrade
         counts = Hash.new(0)
         repair_enqueued = 0
         needs_human = []
+        cases_opened = 0
+        cases_auto_closed = 0
 
         base.find_each do |tx|
           result = PallasTrade::Reconciliations::ReconcileTransaction.call(transaction: tx)
@@ -51,6 +53,10 @@ module PallasTrade
             repair_enqueued += 1
           end
           needs_human << tx.prefixed_id if value.needs_attention? || value.mismatch? || value.pending?
+
+          # D13 切片1（PRD-20260916-payments-d13）：把只读结论落成**差异案例队列**（唯一写入口）。
+          # 仅写案例表 + 审计；失败（含异常）不阻断巡检（下一轮重试）。
+          cases_opened, cases_auto_closed = sync_cases(tx, cases_opened, cases_auto_closed)
         end
 
         log_payload = {
@@ -58,6 +64,8 @@ module PallasTrade
           store_id: store.id,
           status_counts: counts,
           repair_enqueued: repair_enqueued,
+          cases_opened: cases_opened,
+          cases_auto_closed: cases_auto_closed,
           needs_human: needs_human
         }
         Rails.logger.info(log_payload.to_json)
@@ -69,6 +77,23 @@ module PallasTrade
             'or docs/operations/financial-reconciliation-runbook.md'
           )
         end
+      end
+
+      # D13：案例同步（失败降级为 warn，不中断巡检）。
+      # @return [Array(Integer, Integer)] [opened_count, auto_closed_count]
+      def sync_cases(tx, opened_count, closed_count)
+        cases = PallasTrade::Reconciliations::SyncCases.call(transaction: tx)
+        return [opened_count, closed_count] unless cases.success?
+
+        [opened_count + cases.value[:opened].size, closed_count + cases.value[:closed].size]
+      rescue StandardError => e
+        Rails.logger.warn(
+          message: 'reconciliations.sweeper_case_sync_failed',
+          transaction: tx.prefixed_id,
+          error: e.class.name,
+          detail: e.message.to_s.truncate(200)
+        )
+        [opened_count, closed_count]
       end
     end
   end

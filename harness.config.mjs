@@ -280,6 +280,12 @@ export default {
         description: 'Payment circuit breaker specs (soft-disable state machine + health metrics + evaluate/auto-recover + sweep job + resolver gating + admin actions/card)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d11_soft_disable_spec.rb spec/services/pallastrade/payments/d11_health_metrics_spec.rb spec/services/pallastrade/payments/d11_circuit_breaker_spec.rb spec/jobs/pallastrade/payments/d11_circuit_breaker_sweep_job_spec.rb spec/services/pallastrade/payments/availability/d11_breaker_gating_spec.rb spec/services/pallastrade/payments/availability/resolver_spec.rb spec/requests/pallastrade/admin/d11_payment_method_soft_disable_spec.rb'],
       },
+      // 对账差异队列（PRD-20260916-payments-d13-reconciliation-cases 切片1）：案例模型口径
+      // + SyncCases 幂等/自动销案/签名取代/零资金副作用 + sweeper 接入 + 后台工作台（筛选/动作/CSV/权限）
+      'd13-reconciliation-cases-rspec': {
+        description: 'Reconciliation case queue specs (model mapping/state machine + sync idempotency/auto-close/supersede + sweeper integration + admin workbench filters/actions/CSV/permissions)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d13_reconciliation_case_spec.rb spec/services/pallastrade/reconciliations/d13_sync_cases_spec.rb spec/jobs/pallastrade/reconciliations/reconcile_sweeper_job_spec.rb spec/requests/pallastrade/admin/d13_reconciliation_cases_spec.rb'],
+      },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {
         description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',

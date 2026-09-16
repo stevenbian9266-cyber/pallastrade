@@ -391,6 +391,23 @@ PallasTrade::Core::Engine.add_routes do
         post :accept_dispute
       end
     end
+    # PALLAS-CUSTOM: D13 切片1（PRD-20260916-payments-d13-reconciliation-cases）——
+    # 对账差异队列工作台（Orders → 对账队列）：reads + 运营动作（指派/备注/关单/重开）
+    # + 按当前筛选导出 CSV。**零资金副作用**（只写案例表 + 审计）。
+    resources :reconciliation_cases, only: [:index, :show] do
+      collection do
+        get :export
+      end
+      member do
+        post :assign
+        post :note
+        post :mark_investigating
+        post :mark_explained
+        post :mark_fixed
+        post :dismiss
+        post :reopen
+      end
+    end
     get '/emails', to: 'emails#show', as: :emails
     patch '/emails', to: 'emails#update'
     post '/emails/test_send', to: 'emails#test_send', as: :emails_test_send

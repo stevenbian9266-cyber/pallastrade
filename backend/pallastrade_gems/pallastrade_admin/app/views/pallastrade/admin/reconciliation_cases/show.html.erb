@@ -1,0 +1,244 @@
+<%# PALLAS-CUSTOM: D13 切片1（PRD-20260916-payments-d13-reconciliation-cases）—— 案例详情（业务方案 §70.1）： %>
+<%#   事实 + 金额对照 + 原因码 + 关联交易/订单 + 备注时间线 + 审计轨迹 + 运营动作（全部写审计）。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.reconciliation_cases.case_title', id: @case.id) %>
+<% end %>
+
+<div class="grid grid-cols-12 gap-6">
+  <div class="col-span-12 lg:col-span-8">
+    <div class="card mb-6">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0"><%= @case.dedupe_key %></h5>
+        <div class="d-flex gap-2">
+          <span class="badge <%= reconciliation_status_class(@case.status) %>">
+            <%= PallasTrade.t("admin.reconciliation_cases.status_#{@case.status}", default: @case.status) %>
+          </span>
+          <span class="badge <%= reconciliation_severity_class(@case.severity) %>">
+            <%= PallasTrade.t("admin.reconciliation_cases.severity_#{@case.severity}", default: @case.severity) %>
+          </span>
+        </div>
+      </div>
+      <div class="card-body">
+        <table class="table">
+          <tbody>
+            <tr>
+              <th><%= PallasTrade.t('admin.reconciliation_cases.difference_type') %></th>
+              <td>
+                <%= PallasTrade.t("admin.reconciliation_cases.difference_#{@case.difference_type}",
+                                  default: @case.difference_type) %>
+                <span class="text-gray-600">(<%= @case.difference_type %>)</span>
+              </td>
+            </tr>
+            <tr>
+              <th><%= PallasTrade.t('admin.reconciliation_cases.kind') %></th>
+              <td><%= @case.kind %></td>
+            </tr>
+            <tr>
+              <th><%= PallasTrade.t('admin.reconciliation_cases.provider') %></th>
+              <td><%= @case.provider.presence || '—' %></td>
+            </tr>
+            <tr>
+              <th><%= PallasTrade.t('admin.reconciliation_cases.amounts') %></th>
+              <td>
+                <%= PallasTrade.t('admin.reconciliation_cases.expected') %> <%= case_amount_label(@case.expected_amount) %>
+                /
+                <%= PallasTrade.t('admin.reconciliation_cases.observed') %> <%= case_amount_label(@case.observed_amount) %>
+                <span class="text-gray-600"><%= @case.currency %></span>
+              </td>
+            </tr>
+            <tr>
+              <th><%= PallasTrade.t('admin.reconciliation_cases.reasons') %></th>
+              <td><%= Array(@case.reason_codes).join(', ').presence || '—' %></td>
+            </tr>
+            <tr>
+              <th><%= PallasTrade.t('admin.reconciliation_cases.detected_at') %></th>
+              <td>
+                <%= @case.detected_at&.strftime('%Y-%m-%d %H:%M') %>
+                <span class="text-gray-600">
+                  (<%= PallasTrade.t('admin.reconciliation_cases.occurrences', count: @case.occurrences) %>,
+                  <%= PallasTrade.t('admin.reconciliation_cases.last_seen',
+                                    at: @case.last_seen_at&.strftime('%Y-%m-%d %H:%M')) %>)
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <th><%= PallasTrade.t('admin.reconciliation_cases.assignee') %></th>
+              <td>
+                <% if @case.assignee.present? %>
+                  <%= @case.assignee.respond_to?(:email) ? @case.assignee.email : @case.assignee %>
+                <% else %>
+                  <%= PallasTrade.t('admin.reconciliation_cases.unassigned_label') %>
+                <% end %>
+              </td>
+            </tr>
+            <% if @case.resolved_at.present? %>
+              <tr>
+                <th><%= PallasTrade.t('admin.reconciliation_cases.resolved') %></th>
+                <td>
+                  <%= @case.resolved_at.strftime('%Y-%m-%d %H:%M') %>
+                  <span class="text-gray-600">
+                    (<%= PallasTrade.t("admin.reconciliation_cases.source_#{@case.resolution_source}",
+                                       default: @case.resolution_source) %>)
+                  </span>
+                  <% if @case.resolution_note.present? %>
+                    <div class="text-gray-600"><%= @case.resolution_note %></div>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+            <tr>
+              <th><%= PallasTrade.t('admin.reconciliation_cases.transaction') %></th>
+              <td><%= @case.commerce_transaction&.prefixed_id || '—' %></td>
+            </tr>
+            <tr>
+              <th><%= PallasTrade.t('admin.reconciliation_cases.orders') %></th>
+              <td>
+                <% if @orders.any? %>
+                  <%= @orders.map(&:number).join(', ') %>
+                <% else %>
+                  —
+                <% end %>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card mb-6">
+      <div class="card-header">
+        <h5 class="card-title mb-0"><%= PallasTrade.t('admin.reconciliation_cases.notes') %></h5>
+      </div>
+      <div class="card-body">
+        <% if @notes.any? %>
+          <ul class="list-unstyled mb-4">
+            <% @notes.each do |note| %>
+              <li class="mb-3">
+                <div class="text-gray-600">
+                  <%= note.created_at.strftime('%Y-%m-%d %H:%M') %>
+                  <% if note.author.present? %>
+                    · <%= note.author.respond_to?(:email) ? note.author.email : note.author %>
+                  <% end %>
+                </div>
+                <div><%= simple_format(note.body) %></div>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <p class="form-text"><%= PallasTrade.t('admin.reconciliation_cases.no_notes') %></p>
+        <% end %>
+
+        <%= form_with url: PallasTrade.note_admin_reconciliation_case_path(@case), method: :post, local: true do |f| %>
+          <div class="mb-2">
+            <%= text_area_tag :body, nil, rows: 3, class: 'form-control',
+                                          placeholder: PallasTrade.t('admin.reconciliation_cases.note_placeholder'),
+                                          'aria-label' => PallasTrade.t('admin.reconciliation_cases.notes') %>
+          </div>
+          <%= submit_tag PallasTrade.t('admin.reconciliation_cases.add_note'), class: 'btn btn-sm btn-primary' %>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="card mb-6">
+      <div class="card-header">
+        <h5 class="card-title mb-0"><%= PallasTrade.t('admin.reconciliation_cases.audit_trail') %></h5>
+      </div>
+      <div class="card-body">
+        <% if @audits.any? %>
+          <table class="table">
+            <thead>
+              <tr>
+                <th><%= PallasTrade.t('admin.reconciliation_cases.audit_at') %></th>
+                <th><%= PallasTrade.t('admin.reconciliation_cases.audit_action') %></th>
+                <th><%= PallasTrade.t('admin.reconciliation_cases.audit_actor') %></th>
+                <th><%= PallasTrade.t('admin.reconciliation_cases.audit_metadata') %></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @audits.each do |log| %>
+                <tr>
+                  <td><%= log.occurred_at&.strftime('%Y-%m-%d %H:%M') %></td>
+                  <td><%= log.action %></td>
+                  <td><%= log.actor_label.presence || log.actor_type || '—' %></td>
+                  <td class="text-gray-600"><%= log.metadata.presence&.to_json %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <p class="form-text mb-0"><%= PallasTrade.t('admin.reconciliation_cases.no_audits') %></p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-span-12 lg:col-span-4">
+    <div class="card mb-6">
+      <div class="card-header">
+        <h5 class="card-title mb-0"><%= PallasTrade.t('admin.reconciliation_cases.actions') %></h5>
+      </div>
+      <div class="card-body">
+        <p class="form-text"><%= PallasTrade.t('admin.reconciliation_cases.action_hint') %></p>
+
+        <%= form_with url: PallasTrade.assign_admin_reconciliation_case_path(@case), method: :post, local: true,
+                      class: 'mb-3' do |f| %>
+          <div class="mb-2">
+            <%= select_tag :assignee_id,
+                           options_for_select(@assignee_options_for_form || [], @case.assignee_id),
+                           include_blank: PallasTrade.t('admin.reconciliation_cases.assignee_placeholder'),
+                           class: 'form-select form-select-sm' %>
+          </div>
+          <div class="d-flex gap-2">
+            <%= submit_tag PallasTrade.t('admin.reconciliation_cases.assign_action'),
+                           class: 'btn btn-sm btn-outline-secondary' %>
+            <%= submit_tag PallasTrade.t('admin.reconciliation_cases.assign_to_me'),
+                           class: 'btn btn-sm btn-outline-secondary',
+                           name: 'assignee_id', value: 'self' %>
+          </div>
+        <% end %>
+
+        <div class="d-flex flex-wrap gap-2">
+          <% if @case.in_queue? %>
+            <% unless @case.investigating? %>
+              <%= link_to PallasTrade.t('admin.reconciliation_cases.mark_investigating'),
+                          PallasTrade.mark_investigating_admin_reconciliation_case_path(@case),
+                          class: 'btn btn-sm btn-outline-secondary',
+                          data: { turbo_method: :post,
+                                  turbo_confirm: PallasTrade.t('admin.reconciliation_cases.confirm_investigating') } %>
+            <% end %>
+            <%= link_to PallasTrade.t('admin.reconciliation_cases.mark_explained_action'),
+                        PallasTrade.mark_explained_admin_reconciliation_case_path(@case),
+                        class: 'btn btn-sm btn-outline-primary',
+                        data: { turbo_method: :post,
+                                turbo_confirm: PallasTrade.t('admin.reconciliation_cases.confirm_explained') } %>
+            <%= link_to PallasTrade.t('admin.reconciliation_cases.mark_fixed_action'),
+                        PallasTrade.mark_fixed_admin_reconciliation_case_path(@case),
+                        class: 'btn btn-sm btn-outline-success',
+                        data: { turbo_method: :post,
+                                turbo_confirm: PallasTrade.t('admin.reconciliation_cases.confirm_fixed') } %>
+          <% else %>
+            <%= link_to PallasTrade.t('admin.reconciliation_cases.reopen_action'),
+                        PallasTrade.reopen_admin_reconciliation_case_path(@case),
+                        class: 'btn btn-sm btn-outline-secondary',
+                        data: { turbo_method: :post,
+                                turbo_confirm: PallasTrade.t('admin.reconciliation_cases.confirm_reopen') } %>
+          <% end %>
+        </div>
+
+        <% if @case.in_queue? %>
+          <hr />
+          <%= form_with url: PallasTrade.dismiss_admin_reconciliation_case_path(@case), method: :post, local: true do |f| %>
+            <div class="mb-2">
+              <%= text_field_tag :reason, nil, class: 'form-control form-control-sm',
+                                              placeholder: PallasTrade.t('admin.reconciliation_cases.dismiss_placeholder'),
+                                              'aria-label' => PallasTrade.t('admin.reconciliation_cases.dismiss_action') %>
+            </div>
+            <%= submit_tag PallasTrade.t('admin.reconciliation_cases.dismiss_action'),
+                           class: 'btn btn-sm btn-outline-danger',
+                           data: { turbo_confirm: PallasTrade.t('admin.reconciliation_cases.confirm_dismiss') } %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

@@ -919,6 +919,97 @@ en:
         breaker_soft_disabled: "%{name} is now soft-disabled at checkout."
         breaker_soft_enabled: "%{name} is available at checkout again."
         breaker_none: This provider declares no storefront entry.
+      reconciliation_cases:
+        title: Reconciliation queue
+        case_title: "Reconciliation case #%{id}"
+        export_csv: Export CSV
+        queue_heading: Difference cases
+        open_count: "%{count} unresolved"
+        status: Status
+        difference_type: Difference
+        severity: Severity
+        provider: Provider
+        assignee: Assignee
+        search: Search
+        search_placeholder: Transaction id, order number or reason code
+        any: Any
+        filter: Filter
+        reset: Reset
+        matched: "%{count} case(s) match"
+        detected_at: Detected
+        amounts: "Expected → provider"
+        reasons: Reason codes
+        transaction: Transaction
+        orders: Orders
+        view: View
+        previous_page: Previous page
+        next_page: Next page
+        page_of: "Page %{page} of %{total}"
+        empty: No reconciliation case matches these filters.
+        kind: Kind
+        expected: Expected
+        observed: Provider
+        occurrences: "seen %{count}×"
+        last_seen: "last seen %{at}"
+        resolved: Resolved
+        unassigned_label: Unassigned
+        source_human: by a person
+        source_auto: automatically
+        notes: Notes
+        no_notes: No note yet.
+        note_placeholder: What was found / agreed with the provider?
+        add_note: Add note
+        audit_trail: Audit trail
+        audit_at: When
+        audit_action: Action
+        audit_actor: Actor
+        audit_metadata: Details
+        no_audits: No audit entry yet.
+        actions: Actions
+        action_hint: Cases are a work queue — these actions never move money (payments, refunds and the ledger stay untouched).
+        assignee_placeholder: Pick a teammate
+        assign_action: Assign
+        assign_to_me: Assign to me
+        assigned: "Assigned to %{name}."
+        unassigned: Case unassigned.
+        assignee_not_found: That teammate could not be found.
+        note_required: A note body is required.
+        note_added: Note added.
+        dismiss_reason_required: A reason is required to dismiss a case.
+        reopened: Case reopened.
+        explained: Case marked as explained.
+        fixed: Case marked as resolved.
+        dismissed: Case dismissed.
+        investigating: Case marked as under investigation.
+        mark_investigating: Start investigating
+        confirm_investigating: Move this case to "under investigation"?
+        mark_explained_action: Mark explained
+        confirm_explained: Mark this difference as explained (no money is moved)?
+        mark_fixed_action: Mark resolved
+        confirm_fixed: Mark this difference as resolved (no money is moved)?
+        dismiss_action: Dismiss
+        dismiss_placeholder: Why can this difference be ignored?
+        confirm_dismiss: Dismiss this case? The reason is recorded in the audit log.
+        reopen_action: Reopen
+        confirm_reopen: Reopen this case and put it back in the queue?
+        status_open: Open
+        status_investigating: Investigating
+        status_explained: Explained
+        status_fixed: Resolved
+        status_dismissed: Dismissed
+        severity_critical: Amount mismatch
+        severity_attention: Needs attention
+        severity_info: Informational
+        difference_amount_mismatch: Amount mismatch
+        difference_allocation_mismatch: Allocation mismatch
+        difference_refund_mismatch: Refund mismatch
+        difference_one_sided: One-sided record
+        difference_duplicate: Possible duplicate
+        difference_settlement_pending: Settlement pending
+        difference_journal_missing: Missing ledger entry
+        difference_provider_issue: Provider issue
+        difference_needs_attention: Needs attention
+        difference_unsupported: Provider not reconcilable
       personal_details: Personal Details
       previous_page: Previous page
       price_lists:

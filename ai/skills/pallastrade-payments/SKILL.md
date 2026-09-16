@@ -1288,6 +1288,32 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   缺失 `display_name` 的行**必须**回落 provider 名（老数据零回归）。
 - **回归**：`harness verify d16-payment-presentation-rspec` + 前端 `storefront-test`。
 
+## 对账差异队列 — 只读结论 → 可运营案例（D13 切片1, 2026-09-16；PRD-20260916-payments-d13-reconciliation-cases）
+
+业务方案 §70.1：P4-6/7 的对账结论此前**不落表**（只 warn + rake），差异没有队列/指派/备注/关单/导出。
+本切片把它变成可运营工作队列，**零资金副作用**（只写案例表 + 审计，绝不动 Payment/Refund/Journal/订单/库存，零 provider 调用）。
+
+- **模型**：`PallasTrade::ReconciliationCase`（表 `pallastrade_reconciliation_cases`）+ `ReconciliationCaseNote`（备注留痕）。
+  - 唯一键 `dedupe_key = "txn:<transaction_id>:<signature>"`；`signature` = 排序去重后的原因码（空 → 状态名）。
+  - 字段：`kind`（transaction/payment/refund）、`status`（open/investigating/explained/fixed/dismissed）、
+    `difference_type`、`severity`、`reason_codes`、`summary`（P4 金额摘要快照）、`expected_amount` / `observed_amount`、
+    `provider`、`currency`、`detected_at` / `last_seen_at` / `occurrences`、`resolved_at` / `resolution_source`（human/auto）、`assignee_id`。
+  - ⚠️ 关联名是 **`commerce_transaction`**（`belongs_to :transaction` 与 ActiveRecord 内建 `transaction` 方法冲突）。
+  - 映射（确定性，唯一权威）：`AMOUNT_MISMATCH|CURRENCY_MISMATCH|COMMERCIAL_AMOUNT_MISMATCH → amount_mismatch`、
+    `ALLOCATION_MISMATCH → allocation_mismatch`、`REFUND_MISMATCH → refund_mismatch`、
+    `LOCAL_*_MISSING|PROVIDER_*_MISSING → one_sided`、`SETTLEMENT_PENDING → settlement_pending`、
+    `JOURNAL_POSTING_MISSING → journal_missing`、`PROVIDER_* → provider_issue`、`UNLINKED_LEGACY_PAYMENT|AMBIGUOUS_CAPTURE → duplicate`、
+    其余 → `needs_attention`；status `UNSUPPORTED → unsupported`。严重级：MISMATCH→critical、NEEDS_ATTENTION→attention、其余→info。
+- **唯一写入口**：`Reconciliations::SyncCases.call(transaction:)` —— 读 `ReconcileTransaction`（只读）→ upsert/触碰/自动销案。
+  自动 vs 人工边界：自动只处理**开放态**（open/investigating）；人工判定（explained/fixed/dismissed）**永不被覆盖**；
+  签名被取代 → 旧案 `fixed`+auto（队列不残留陈旧项）。
+- **巡检接入**：`Reconciliations::ReconcileSweeperJob` 每轮调 `SyncCases`（异常降级 warn 不中断）；metrics 增补
+  `cases_opened` / `cases_auto_closed`；既有 journal-missing 自动 repair 行为**不变**。
+- **后台**：`/admin/reconciliation_cases`（Orders → 对账队列；权限 `can?(:manage, PallasTrade::ReconciliationCase)`）：
+  筛选（status/类型/严重级/provider/责任人/搜索）+ 计数 + 分页 + 详情（事实/备注时间线/审计）+ 动作
+  （assign / note / mark_investigating / mark_explained / mark_fixed / dismiss（原因必填）/ reopen）+ **CSV 导出**（与筛选同口径，上限 10k）。
+- **回归**：`harness verify d13-reconciliation-cases-rspec` + P4 全套 `harness verify finance-reconciliation-rspec`。
+
 ## 熔断与健康 — 入口级软置灰（D11 切片1, 2026-09-16；PRD-20260916-payments-d11-circuit-breaker-health）
 
 业务方案 §67.3：provider 抖动时**先把入口从前台摘掉**（软置灰），而不是让用户一路踩到支付失败。

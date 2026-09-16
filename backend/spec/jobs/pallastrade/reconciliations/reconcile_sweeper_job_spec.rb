@@ -105,4 +105,46 @@ RSpec.describe PallasTrade::Reconciliations::ReconcileSweeperJob, type: :job do
     expect { described_class.perform_now }.not_to raise_error
     expect { described_class.perform_now }.not_to raise_error
   end
+
+  # PRD-20260916-payments-d13-reconciliation-cases AC-005
+  # D13 切片1：巡检把只读对账结论落成**差异案例队列**（metrics 增补 cases_opened / cases_auto_closed），
+  # 且不改变既有 journal-missing 自动 repair 行为。
+  it 'D13 enqueues a reconciliation case for a degraded transaction and reports counters' do
+    txn = make_transaction(state: 'completed')
+    captured_payment(txn: txn)
+
+    infos = []
+    allow(Rails.logger).to receive(:info) { |message| infos << message.to_s; true }
+
+    expect { described_class.perform_now(store_id: store.id) }.
+      to have_enqueued_job(PallasTrade::FinancialLedger::RepairTransactionJob).with(txn.prefixed_id)
+
+    payload = infos.map { |m| JSON.parse(m) rescue nil }.compact.find { |p| p['event'] == 'reconciliations.sweeper' }
+    expect(payload['cases_opened']).to eq(1)
+    expect(payload['cases_auto_closed']).to eq(0)
+
+    case_record = PallasTrade::ReconciliationCase.where(transaction_id: txn.id).sole
+    expect(case_record.status).to eq('open')
+    expect(case_record.difference_type).to eq('journal_missing')
+  end
+
+  # PRD-20260916-payments-d13-reconciliation-cases AC-005
+  it 'D13 auto-closes the case once the ledger entry is posted' do
+    txn = make_transaction(state: 'completed')
+    payment = captured_payment(txn: txn)
+    described_class.perform_now(store_id: store.id)
+
+    PallasTrade::FinancialLedgerEntry.create!(
+      commerce_transaction: txn, entry_type: 'CASH_CAPTURED', amount: 100.0, currency: 'USD',
+      idempotency_key: "spec-d13-sweep-#{txn.id}", effective_at: Time.current, payment: payment
+    )
+
+    infos = []
+    allow(Rails.logger).to receive(:info) { |message| infos << message.to_s; true }
+    described_class.perform_now(store_id: store.id)
+
+    payload = infos.map { |m| JSON.parse(m) rescue nil }.compact.find { |p| p['event'] == 'reconciliations.sweeper' }
+    expect(payload['cases_auto_closed']).to eq(1)
+    expect(PallasTrade::ReconciliationCase.where(transaction_id: txn.id).sole.status).to eq('fixed')
+  end
 end

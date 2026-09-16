@@ -80,11 +80,29 @@ result.value.reasons         # 原因码（ALLOCATION_MISMATCH / JOURNAL_POSTING
 result.value.summary.to_h    # §25 金额摘要（commercial/cash/refund/allocation/provider fee/net…）
 ```
 
-## 8. 边界提醒
+## 8. 对账差异队列（D13 切片1，2026-09-16）
+
+> PRD-20260916-payments-d13-reconciliation-cases（业务方案 §70.1）：只读对账结论 → **持久化案例队列**。
+> 后台工作台：**Orders → 对账队列**（`/admin/reconciliation_cases`，需 `can?(:manage, PallasTrade::ReconciliationCase)`）。
+
+- **自动**（`Reconciliations::SyncCases`，sweeper 每轮调用）：差异态 → upsert 案例（`dedupe_key = txn:<id>:<signature>`）；
+  差异消失 → 自动销案（`fixed` + `resolution_source: auto`）；签名被取代 → 旧案自动销案。
+- **人工**（页面动作，全部写 `AuditLog`）：指派 / 备注（留痕） / 标记已解释 / 标记已修正 / 忽略（必填原因） / 重开。
+- **铁律**：案例只是工作队列 —— 页面动作与自动同步都**不动钱**（不改 Payment/Refund/Transaction/Journal/订单/库存，
+  不调 provider）。队列不替代 runbook 命令：repair/backfill 仍只能走 §4/§6 的 rake。
+- 命令行查看队列（容器内）：
+
+```ruby
+scope = PallasTrade::ReconciliationCase.open_queue.recent_first
+scope.count                                            # 队列长度
+scope.limit(20).map { |c| [c.dedupe_key, c.difference_type, c.severity] }
+```
+
+## 9. 边界提醒
 
 - Repair/Backfill 唯一写 = Journal；绝不新 Payment/Refund、绝不倒退 transaction state。
 - UNPROVABLE 历史数据不猜测、不强制 backfill（§50/AC-4025）。
 - mismatch / needs_attention 属人工裁决域（§46 严重冲突可能需 manual_review，绝不自动倒退到
   payment_pending）。
 - 相关 skill：`ai/skills/pallastrade-payments/SKILL.md`（P4 各包语义）／`pallastrade-deployment`
-  （sidekiq-cron 调度）。
+  （sidekiq-cron 调度）／`pallastrade-admin`（对账队列工作台）。

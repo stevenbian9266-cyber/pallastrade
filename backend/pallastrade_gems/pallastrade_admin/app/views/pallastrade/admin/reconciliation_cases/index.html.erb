@@ -1,0 +1,163 @@
+<%# PALLAS-CUSTOM: D13 切片1（PRD-20260916-payments-d13-reconciliation-cases）—— 对账差异队列（业务方案 §70.1）： %>
+<%#   筛选（状态/类型/严重级/provider/责任人/搜索）+ 未解决计数 + 分页 + CSV 导出（与筛选同口径）。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.reconciliation_cases.title') %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= link_to PallasTrade.t('admin.reconciliation_cases.export_csv'),
+              PallasTrade.export_admin_reconciliation_cases_path(request.query_parameters),
+              class: 'btn btn-outline-secondary' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0"><%= PallasTrade.t('admin.reconciliation_cases.queue_heading') %></h5>
+    <span class="text-gray-600">
+      <%= PallasTrade.t('admin.reconciliation_cases.open_count',
+                        count: @status_counts.fetch('open', 0) + @status_counts.fetch('investigating', 0)) %>
+    </span>
+  </div>
+  <div class="card-body">
+    <%= form_with url: PallasTrade.admin_reconciliation_cases_path, method: :get, local: true do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <%= label_tag :status, PallasTrade.t('admin.reconciliation_cases.status'), class: 'form-label' %>
+          <%= select_tag :status,
+                         options_for_select(PallasTrade::ReconciliationCase::STATUSES, @filters[:scope_filter]),
+                         include_blank: PallasTrade.t('admin.reconciliation_cases.any'),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :difference_type, PallasTrade.t('admin.reconciliation_cases.difference_type'),
+                        class: 'form-label' %>
+          <%= select_tag :difference_type,
+                         options_for_select(PallasTrade::ReconciliationCase::DIFFERENCE_TYPES, @filters[:difference_type]),
+                         include_blank: PallasTrade.t('admin.reconciliation_cases.any'),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :severity, PallasTrade.t('admin.reconciliation_cases.severity'), class: 'form-label' %>
+          <%= select_tag :severity,
+                         options_for_select(PallasTrade::ReconciliationCase::SEVERITIES, @filters[:severity]),
+                         include_blank: PallasTrade.t('admin.reconciliation_cases.any'),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :provider, PallasTrade.t('admin.reconciliation_cases.provider'), class: 'form-label' %>
+          <%= select_tag :provider, options_for_select(@providers, @filters[:provider]),
+                         include_blank: PallasTrade.t('admin.reconciliation_cases.any'),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :assignee_id, PallasTrade.t('admin.reconciliation_cases.assignee'), class: 'form-label' %>
+          <%= select_tag :assignee_id, options_for_select(@assignees, @filters[:assignee_id]),
+                         include_blank: PallasTrade.t('admin.reconciliation_cases.any'),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :search, PallasTrade.t('admin.reconciliation_cases.search'), class: 'form-label' %>
+          <%= text_field_tag :search, @filters[:search], class: 'form-control form-control-sm',
+                                                    placeholder: PallasTrade.t('admin.reconciliation_cases.search_placeholder') %>
+        </div>
+        <div class="col-12 d-flex gap-2 align-items-center">
+          <%= submit_tag PallasTrade.t('admin.reconciliation_cases.filter'), class: 'btn btn-sm btn-primary' %>
+          <%= link_to PallasTrade.t('admin.reconciliation_cases.reset'),
+                      PallasTrade.admin_reconciliation_cases_path, class: 'btn btn-sm btn-outline-secondary' %>
+          <span class="ms-auto text-gray-600">
+            <%= PallasTrade.t('admin.reconciliation_cases.matched', count: @total) %>
+          </span>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <% if @cases.any? %>
+      <table class="table">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.reconciliation_cases.detected_at') %></th>
+            <th><%= PallasTrade.t('admin.reconciliation_cases.status') %></th>
+            <th><%= PallasTrade.t('admin.reconciliation_cases.severity') %></th>
+            <th><%= PallasTrade.t('admin.reconciliation_cases.difference_type') %></th>
+            <th><%= PallasTrade.t('admin.reconciliation_cases.provider') %></th>
+            <th><%= PallasTrade.t('admin.reconciliation_cases.amounts') %></th>
+            <th><%= PallasTrade.t('admin.reconciliation_cases.reasons') %></th>
+            <th><%= PallasTrade.t('admin.reconciliation_cases.assignee') %></th>
+            <th><%= PallasTrade.t('admin.reconciliation_cases.transaction') %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @cases.each do |kase| %>
+            <tr>
+              <td><%= kase.detected_at&.strftime('%Y-%m-%d %H:%M') %></td>
+              <td>
+                <span class="badge <%= reconciliation_status_class(kase.status) %>">
+                  <%= PallasTrade.t("admin.reconciliation_cases.status_#{kase.status}", default: kase.status) %>
+                </span>
+                <% if kase.occurrences.to_i > 1 %>
+                  <span class="text-gray-600">×<%= kase.occurrences %></span>
+                <% end %>
+              </td>
+              <td>
+                <span class="badge <%= reconciliation_severity_class(kase.severity) %>">
+                  <%= PallasTrade.t("admin.reconciliation_cases.severity_#{kase.severity}", default: kase.severity) %>
+                </span>
+              </td>
+              <td>
+                <%= PallasTrade.t("admin.reconciliation_cases.difference_#{kase.difference_type}",
+                                  default: kase.difference_type) %>
+              </td>
+              <td><%= kase.provider.presence || '—' %></td>
+              <td>
+                <%= case_amount_label(kase.expected_amount) %> →
+                <%= case_amount_label(kase.observed_amount) %>
+                <span class="text-gray-600"><%= kase.currency %></span>
+              </td>
+              <td class="text-gray-600"><%= Array(kase.reason_codes).join(', ') %></td>
+              <td>
+                <% if kase.assignee.present? %>
+                  <%= kase.assignee.respond_to?(:email) ? kase.assignee.email : kase.assignee %>
+                <% else %>
+                  —
+                <% end %>
+              </td>
+              <td><%= kase.commerce_transaction&.prefixed_id || '—' %></td>
+              <td class="text-end">
+                <%= link_to PallasTrade.t('admin.reconciliation_cases.view'),
+                            PallasTrade.admin_reconciliation_case_path(kase),
+                            class: 'btn btn-sm btn-outline-secondary' %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+
+      <% per_page = PallasTrade::Admin::ReconciliationCasesController::PER_PAGE %>
+      <% if @total > @cases.size %>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <% if @page > 1 %>
+            <%= link_to PallasTrade.t('admin.reconciliation_cases.previous_page'),
+                        PallasTrade.admin_reconciliation_cases_path(request.query_parameters.merge(page: @page - 1)),
+                        class: 'btn btn-sm btn-outline-secondary' %>
+          <% else %><span></span><% end %>
+          <span class="text-gray-600">
+            <%= PallasTrade.t('admin.reconciliation_cases.page_of', page: @page,
+                                                                    total: (@total.to_f / per_page).ceil) %>
+          </span>
+          <% if @page * per_page < @total %>
+            <%= link_to PallasTrade.t('admin.reconciliation_cases.next_page'),
+                        PallasTrade.admin_reconciliation_cases_path(request.query_parameters.merge(page: @page + 1)),
+                        class: 'btn btn-sm btn-outline-secondary' %>
+          <% else %><span></span><% end %>
+        </div>
+      <% end %>
+    <% else %>
+      <p class="form-text mb-0"><%= PallasTrade.t('admin.reconciliation_cases.empty') %></p>
+    <% end %>
+  </div>
+</div>

@@ -117,6 +117,14 @@ Rails.application.config.after_initialize do
               position: 50,
               active: -> { controller_name == 'disputes_ops' },
               if: -> { can?(:read, PallasTrade::Dispute) || can?(:manage, PallasTrade::Order) }
+
+    # D13 切片1: 对账差异队列（Orders → 对账队列；可指派/备注/关单 + CSV 导出；零资金副作用）
+    orders.add :reconciliation_cases,
+              label: 'admin.reconciliation_cases.title',
+              url: :admin_reconciliation_cases_path,
+              position: 55,
+              active: -> { controller_name == 'reconciliation_cases' },
+              if: -> { can?(:manage, PallasTrade::ReconciliationCase) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns

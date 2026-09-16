@@ -3579,6 +3579,34 @@
         "entryWhitelist": 15,
         "adminIntegration": 10
       }
+    },
+    {
+      "id": "GS-143",
+      "name": "Reconciliation differences become a queue a person can work",
+      "description": "PRD-20260916-payments-d13-reconciliation-cases (slice 1 of 搂78-D13 / 搂70.1 of the payment plan): the P4 reconcilers are read-only and deliberately do not persist anything, so mismatches only reached a log line and a rake command. D13 slice 1 persists them as reconciliation cases with an assignee, notes and a close/reopen lifecycle, syncs them from the hourly sweeper, and exposes a back-office workbench with CSV export.",
+      "mustDo": [
+        "Keep the queue a work queue: syncing and every case action write only case rows and audit entries, never payments, refunds, transactions, the ledger, orders or stock",
+        "Feed the queue from the existing read-only reconcilers instead of writing a second reconciliation implementation, and keep the journal-repair branch of the sweeper untouched",
+        "Key every case on a deterministic signature of the reason codes so repeated sweeps touch the same case (occurrences/last_seen_at) instead of piling up duplicates",
+        "Close cases automatically when the difference disappears or is superseded, but never overwrite a decision a person already made (explained, resolved, dismissed)",
+        "Expose difference type and severity from one deterministic mapping shared by the model, the page and the CSV",
+        "Require a reason to dismiss, require a body for a note, keep the notes append-only, and write an audit entry for every action",
+        "Export exactly what the current filters show, with a row cap and a warning when the cap truncates the file"
+      ],
+      "mustNotDo": [
+        "Move money or change payment/refund/order state from the queue, or call the provider from a case action",
+        "Auto-reopen a case a human dismissed, or auto-close one that a human is still investigating without recording why",
+        "Let the CSV and the page disagree about filters, or export unbounded result sets",
+        "Rename the transaction association to something that clashes with ActiveRecord, or expose raw integer ids in the UI",
+        "Forget the navigation registration/consistency test or the permission check for the new page"
+      ],
+      "scoring": {
+        "sideEffectSafety": 30,
+        "syncIdempotency": 25,
+        "humanDecisionRespect": 20,
+        "workbenchUsability": 15,
+        "auditAndExport": 10
+      }
     }
   ]
 }

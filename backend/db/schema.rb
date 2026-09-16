@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_15_160000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_16_170000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1979,6 +1979,52 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_15_160000) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "pallastrade_reconciliation_case_notes", force: :cascade do |t|
+    t.bigint "author_id"
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.bigint "reconciliation_case_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["author_id"], name: "index_pallastrade_reconciliation_case_notes_on_author_id"
+    t.index ["reconciliation_case_id"], name: "idx_on_reconciliation_case_id_4d6799c881"
+  end
+
+  create_table "pallastrade_reconciliation_cases", force: :cascade do |t|
+    t.bigint "assignee_id"
+    t.datetime "created_at", null: false
+    t.string "currency", limit: 10
+    t.string "dedupe_key", null: false
+    t.datetime "detected_at", null: false
+    t.string "difference_type", null: false
+    t.decimal "expected_amount", precision: 12, scale: 2
+    t.string "kind", null: false
+    t.datetime "last_seen_at", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.decimal "observed_amount", precision: 12, scale: 2
+    t.integer "occurrences", default: 1, null: false
+    t.bigint "payment_id"
+    t.string "provider"
+    t.jsonb "reason_codes", default: [], null: false
+    t.bigint "refund_id"
+    t.string "resolution_note", limit: 500
+    t.string "resolution_source"
+    t.datetime "resolved_at"
+    t.string "severity", null: false
+    t.string "status", default: "open", null: false
+    t.bigint "store_id", null: false
+    t.jsonb "summary", default: {}, null: false
+    t.bigint "transaction_id"
+    t.datetime "updated_at", null: false
+    t.index ["assignee_id"], name: "index_pallastrade_reconciliation_cases_on_assignee_id"
+    t.index ["dedupe_key"], name: "index_pallastrade_reconciliation_cases_on_dedupe_key", unique: true
+    t.index ["payment_id"], name: "index_pallastrade_reconciliation_cases_on_payment_id"
+    t.index ["provider", "last_seen_at"], name: "idx_on_provider_last_seen_at_c65e2a703a"
+    t.index ["refund_id"], name: "index_pallastrade_reconciliation_cases_on_refund_id"
+    t.index ["status", "severity"], name: "index_pallastrade_reconciliation_cases_on_status_and_severity"
+    t.index ["store_id"], name: "index_pallastrade_reconciliation_cases_on_store_id"
+    t.index ["transaction_id"], name: "index_pallastrade_reconciliation_cases_on_transaction_id"
+  end
+
   create_table "pallastrade_redirects", force: :cascade do |t|
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
@@ -3001,6 +3047,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_15_160000) do
   add_foreign_key "pallastrade_promotion_redemptions", "pallastrade_promotions", column: "promotion_id"
   add_foreign_key "pallastrade_promotion_redemptions", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_promotion_redemptions", "pallastrade_users", column: "user_id"
+  add_foreign_key "pallastrade_reconciliation_case_notes", "pallastrade_admin_users", column: "author_id"
+  add_foreign_key "pallastrade_reconciliation_case_notes", "pallastrade_reconciliation_cases", column: "reconciliation_case_id"
+  add_foreign_key "pallastrade_reconciliation_cases", "pallastrade_admin_users", column: "assignee_id"
+  add_foreign_key "pallastrade_reconciliation_cases", "pallastrade_commerce_transactions", column: "transaction_id"
+  add_foreign_key "pallastrade_reconciliation_cases", "pallastrade_payments", column: "payment_id"
+  add_foreign_key "pallastrade_reconciliation_cases", "pallastrade_refunds", column: "refund_id"
+  add_foreign_key "pallastrade_reconciliation_cases", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_redirects", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_refunds", "pallastrade_commerce_transactions", column: "commerce_transaction_id"
   add_foreign_key "pallastrade_refunds", "pallastrade_orders", column: "target_order_id"

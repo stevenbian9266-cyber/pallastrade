@@ -399,6 +399,20 @@ end
 - ⚠️ 历史坑：admin 编辑页路径参数是 **`prefixed_id`**（`pm_xxx`），spec 里写 `payment_method.id` 会 404。
 - **回归**：`harness verify d11-circuit-breaker-rspec`。
 
+## 对账队列工作台（D13 切片1, 2026-09-16，PRD-20260916-payments-d13-reconciliation-cases）
+
+- **新页面** `/admin/reconciliation_cases`（Orders → 对账队列，position **55**；导航项 `orders.add :reconciliation_cases`，
+  `if: can?(:manage, PallasTrade::ReconciliationCase)`）；控制器 `ReconciliationCasesController < BaseController`（**不是** ResourceController——
+  案例没有 CRUD 语义，只有队列筛选 + 运营动作）。
+- **筛选口径唯一**：`ReconciliationCase.filter_by(store_id:, scope_filter:, kind:, difference_type:, severity:, provider:, assignee_id:, search:)`
+  —— page / counts / CSV 导出三处共用；`@filters` 用 `filters` 备忘（index 与 export 都取同一份，**export 不设 @filters 会静默不过滤**）。
+- **动作**（member route，全部 `authorize! :update` + `AuditLog`）：`assign`（`assignee_id=self` = 指派给自己）/ `note`（正文必填，
+  写 `ReconciliationCaseNote` 留痕）/ `mark_investigating` / `mark_explained` / `mark_fixed` / `dismiss`（**原因必填**）/ `reopen`。
+- **CSV**：`export` action → `send_data ::CSV.generate(...)`（控制器顶部 `require 'csv'`；上限 10k + 截断 warn）；口径 = 当前筛选。
+- **降级**：`show` 的关联（交易/订单/审计）逐一 `safe_value` 降级 → 页面恒 200（对齐 disputes_ops / webhook_events 口径）。
+- ⚠️ 导航一致性 spec 断言 Orders 子项**完整列表**（新增项必须同步 `spec/requests/pallastrade/admin/navigation_consistency_spec.rb`）。
+- **回归**：`harness verify d13-reconciliation-cases-rspec`（+ `node scripts/nav-validate-static.mjs`）。
+
 ## 支付适用范围编辑：Provider 详情「支付方式」页签（D8 切片2, 2026-09-15，PRD-20260915-payments-d8）
 
 同一页签每行新增「适用范围」编辑器 + 摘要列（改 `_options.html.erb`；**不新增页面**）：
