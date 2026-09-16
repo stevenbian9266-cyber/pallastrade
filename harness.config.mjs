@@ -262,6 +262,12 @@ export default {
         description: 'Review upgrade specs (paginated list with rating_distribution, load-more pages, image ownership/limit/signed-id errors, model photo limits, admin photo column)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/api/v3/store/reviews_spec.rb spec/requests/api/v3/store/reviews_pagination_spec.rb spec/requests/api/v3/store/reviews_images_spec.rb spec/models/pallastrade/review_spec.rb spec/requests/pallastrade/admin/reviews_spec.rb'],
       },
+      // 评论列表排序（PRD-20260916-catalog-batch-f4-review-sorting）：白名单 sort + 稳定 tie-break
+      // + meta.sort 回显 + 非法值回退（分布与排序正交）
+      'f4-review-sorting-rspec': {
+        description: 'Store review sorting specs (whitelist + fallback, stable id tie-break across pages, meta.sort echo with F-1 keys kept, distribution independent of ordering)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/api/v3/store/reviews_sorting_spec.rb spec/requests/api/v3/store/reviews_pagination_spec.rb'],
+      },
       // 评论审核工作台批量通过/拒绝（PRD-20260916-catalog-batch-f3-review-bulk-moderation）：
       // 逐条鉴权 + 逐条走状态机（禁 update_all）+ 空选/超限守卫 + 四计数报告
       'f3-review-bulk-rspec': {

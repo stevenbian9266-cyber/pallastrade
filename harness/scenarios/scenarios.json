@@ -3774,6 +3774,33 @@
         "adminConsistency": 15,
         "backwardCompatibility": 10
       }
+    },
+    {
+      "id": "GS-150",
+      "name": "Ordering a paged list never repeats or skips a row",
+      "description": "PRD-20260916-catalog-batch-f4-review-sorting (§十 of the catalog upgrade plan): the store review list was locked to newest-first, so on a product with hundreds of reviews the lowest ratings — the ones a shopper actually wants before buying — could only be reached by paging through everything. F-4 turns the hardcoded order into a whitelisted parameter and gives the PDP a sorting control, without touching the pagination envelope, the rating distribution or the approved-only rule.",
+      "mustDo": [
+        "Whitelist the orderings and fall back to the default for unknown or blank values rather than surfacing internal values through error codes",
+        "End every ordering with a unique tie-break so a paged walk over rows that share a rating and a timestamp neither repeats nor skips them",
+        "Echo the ordering that was actually applied in the response metadata, keeping every pre-existing metadata key intact",
+        "Keep the aggregate (distribution, average, count) computed over the whole approved population so it is identical under every ordering and on every page",
+        "Refetch the first page when the shopper changes the ordering instead of merging a new order into already-appended pages, and keep the visible list when that refetch fails",
+        "Leave the default path behaviourally identical to the pre-change release"
+      ],
+      "mustNotDo": [
+        "Accept an arbitrary order string (SQL-level ordering from user input) or return a 4xx that reveals the allowed values",
+        "Sort by a column that is not unique without a tie-break, or recompute the aggregate from the current page",
+        "Let a new ordering mix with pages fetched under the old one, or collapse the list when a refetch fails",
+        "Change which records are public (only approved) or alter the pagination contract's existing keys",
+        "Ship the control without localized labels for every supported locale"
+      ],
+      "scoring": {
+        "pagingStability": 30,
+        "aggregateIntegrity": 25,
+        "compatibility": 20,
+        "frontendBehaviour": 15,
+        "inputWhitelisting": 10
+      }
     }
   ]
 }

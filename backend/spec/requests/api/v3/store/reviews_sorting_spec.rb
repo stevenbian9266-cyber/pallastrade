@@ -2,7 +2,9 @@
 
 require 'spec_helper'
 
-# PRD-20260916-catalog-batch-f4-review-sorting AC-001 AC-002 AC-003 AC-004 AC-005 AC-009 AC-010
+# PRD-20260916-catalog-batch-f4-review-sorting AC-001 AC-002 AC-003 AC-004 AC-005 AC-008 AC-009 AC-010
+#   AC-008: the response stays an additive superset (F-1 meta keys + sort), which is what the
+#           contract-drift gate (`harness generated:check`) protects in CI.
 RSpec.describe 'Store review sorting', type: :request do
   include_context 'API v3 Store authenticated'
 

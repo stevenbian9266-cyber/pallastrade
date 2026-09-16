@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | reviewing |
+| 状态 | done |
 | 创建日期 | 2026-09-16 |
 | 来源 | 《商品升级方案 V1.0》§十「评论系统升级」剩余项 **Sorting**（用户授权原话「继续」，2026-09-16） |
 | 分类 | catalog（商品域 / 评论，沿用 Batch A~F 系列目录） |
@@ -106,15 +106,18 @@ harness.config.mjs / AGENTS.md / harness/scenarios/scenarios.json / docs/prd/REA
 
 ## 9. 文档同步清单（知识同步门）
 
-- [ ] `ai/skills/pallastrade-api-v3/SKILL.md`（评论排序白名单 + `meta.sort` + 「tie-break 必须收尾」铁律）
-- [ ] `ai/skills/pallastrade-storefront/SKILL.md`（PDP 排序下拉 + 切换重置分页的约定）
-- [ ] `harness/scenarios/scenarios.json`（新增 GS：排序与分页组合稳定、口径与排序正交）
-- [ ] `harness.config.mjs`（verifier）+ `AGENTS.md` §6 行
-- [ ] `pallastrade-catalog`（已评估：审核口径未变）/ `pallastrade-data-model`（已评估：零迁移）
-- [ ] `docs/prd/README.md` 索引 + 本 PRD 状态
+- [x] `ai/skills/pallastrade-api-v3/SKILL.md`（新增「Review list ordering」段：白名单与回退、**每种排序末位都必须有唯一 tie-break**、`meta.sort` 回显、分布与排序正交）
+- [x] `ai/skills/pallastrade-storefront/SKILL.md`（新增 ProductReviews 排序条：label 关联、默认取 `meta.sort`、**切换重拉第 1 页且不混排**、失败保留列表）
+- [x] `harness/scenarios/scenarios.json`（新增 **GS-150**：分页排序不重不漏、聚合不随排序变化；GS-148/149 已被本会话与并行批次占用）
+- [x] `harness.config.mjs`（verifier `f4-review-sorting-rspec`）+ `AGENTS.md` §6 行
+- [x] `pallastrade-catalog`（**已评估，无需更新**：approved-only 与聚合口径未变）/ `pallastrade-data-model`（**已评估，无需更新**：零迁移）
+- [x] `backend/public/api-docs/store.yaml` + `platform/docs/api-reference/store.yaml`（`sort` enum 参数与说明）+ `harness generated:check`（no drift）
+- [x] `docs/prd/README.md` 索引 + 本 PRD 状态（done）
 
 ## 10. 变更记录
 
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-16 | 0.1 | 初稿（Batch F-4：FR-001~008 / AC-001~010；范围 = §十 剩余项「Sorting」，三选项；`most_helpful` 随 Helpful Vote 后置） | AI |
+| 2026-09-16 | 1.0 | 用户确认「确认实施」→ 实施并推送 `bf1c4e74`（后端白名单 + 稳定 tie-break + `meta.sort` + 契约）与 `3e9b9e3a`（前台下拉 + 5 语言 + SDK 透传）；后端 10 例 / 前台 30 例绿，`typecheck`/`pnpm build`/biome 均通 | AI |
+| 2026-09-16 | 1.1 | 收尾：GS-150、api-v3/storefront Skill、AGENTS §6、verifier 注册、§9 勾选、状态 → done | AI |

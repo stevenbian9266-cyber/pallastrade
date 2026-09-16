@@ -354,6 +354,21 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
 - Notifications are sent by `PallasTrade::BackInStockSubscriber` on the `product.back_in_stock`
   event; see the events skill.
 
+### Review list ordering (Store API, F-4 2026-09-16)
+
+`GET /api/v3/store/products/:product_id/reviews` takes an optional `?sort=`:
+`newest` (default — the pre-F-4 order) / `highest_rating` / `lowest_rating`.
+
+- **Unknown or blank values fall back to `newest`** instead of returning 4xx: the whitelist is an
+  internal detail, not something a caller should be able to probe through error codes.
+- **Every ordering ends with `id DESC`.** Rating (and `created_at`) repeat constantly, so without a
+  final unique tie-break a paged walk would repeat or skip reviews.
+- `meta.sort` echoes the value that was **actually applied** (including the fallback); every other
+  `meta` key — the pagination set and F-1's `rating_distribution` — is unchanged.
+- **Distribution is orthogonal to ordering**: `rating_distribution` always describes the whole
+  approved population, never just the returned page, so it must be byte-identical across all three
+  orderings (spec-asserted).
+
 ### Stock buckets & shipping estimate (Store API, F-2 2026-09-16)
 
 - **`stock_status`** — added to `VariantSerializer` and `ProductSerializer` (additive; the 4.2
