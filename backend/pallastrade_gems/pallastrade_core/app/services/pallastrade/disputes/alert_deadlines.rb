@@ -15,6 +15,11 @@
 #   * **超期处置**：`auto_lose_on_overdue` 开启时，对「超期 + 未提交证据 + 非终态 + 可行动状态」的
 #     争议 `transition_to!('lost')` + `attention_reason = 'evidence_overdue'` + 审计；默认**关闭**。
 #
+# 店铺隔离（硬边界）：`store:` 显式传入时**只处理该店争议**（`skipped_other_store` 计数留痕）。
+#   扫描底座 `ScanDeadlines` 是**全局只读**（DSP-P7-5 契约，不改）；但**写侧**（台账 / 事件 / 置 lost）
+#   绝不越店 —— 否则会把 A 店策略套到 B 店争议上（极端情况：替 B 店自动置 lost）。
+#   全局 sweeper 仍走 `store: nil`，此时**逐店取策略**处理各自争议。
+#
 # 铁律：**零资金副作用** —— 不写 funds 时间戳（因此不触发资金入账事件）、不改 Payment/Refund/
 # Journal/Order/库存、零 provider 调用。
 module PallasTrade
@@ -47,12 +52,18 @@ module PallasTrade
         summary = {
           scanned: value[:scanned_count], window_hours: value[:window_hours],
           tiers_recorded: 0, alerted: 0, backfilled: 0, auto_lost: 0,
-          skipped_submitted: 0, failed: 0, policy: policy.snapshot, scanned_at: now
+          skipped_submitted: 0, skipped_other_store: 0, failed: 0, policy: policy.snapshot, scanned_at: now
         }
 
         candidates.each do |item|
           dispute = find_dispute(item)
           next if dispute.nil? || dispute.terminal?
+
+          # 店铺隔离：显式店铺 → 只处理本店争议（扫描是全局只读，写侧绝不越店）
+          if store.present? && dispute.store_id != store.id
+            summary[:skipped_other_store] += 1
+            next
+          end
 
           # 全局运行时**按各店策略**生效（店铺显式传入时才统一用该店策略）
           dispute_policy = store.present? ? policy : PallasTrade::Disputes::DeadlinePolicy.for(dispute.store)

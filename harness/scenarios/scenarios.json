@@ -3764,6 +3764,7 @@
         "Touch money, funds timestamps, payments, refunds, the ledger or orders, or call the provider, from the deadline path",
         "Auto-lose a dispute that already submitted evidence, is terminal, or whose store policy is off, or exceed the per-run cap",
         "Write a second ledger row for a tier already recorded, or re-alert for a backfilled tier",
+        "Apply one store's deadline policy, ledger rows or auto-lose action to another store's disputes when the sweep is scoped to a single store",
         "Change the existing due-soon / overdue event names or payloads, or break the existing scan semantics",
         "Mix in the provider-side deadline verification, external reminder channels or the chargeback-rate board reserved for the next slice"
       ],

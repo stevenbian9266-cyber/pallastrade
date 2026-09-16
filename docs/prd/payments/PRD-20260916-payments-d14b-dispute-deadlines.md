@@ -131,6 +131,7 @@
 | 实测语义 | `50h → [t3]`；`10h → [t3, t1]`；`-3h → [t3, t1, overdue]`；重复运行不重复落行 / 不重复发事件 |
 | 兼容 | 既有 `dispute.evidence_due_soon` / `dispute.evidence_overdue` 名称与 payload 不变；发布时机收窄为「有新档位时」→ 既有 job spec 改为「放行其它事件名 + 保留原断言」 |
 | 修过的坑 | ①`safe_value` 只适用于 outcome（传数组 → `NoMethodError` 被吞 → 静默空列表）；②在 action 内改 `params[:q]` 对筛选**无效**（`load_resource` 已先取 `collection`）→ 改为覆盖 `search_collection`；③台账的 `overdue?` 是实例方法（不是 scope）；④`Audit.record` 的 payload 在 `after`（`actor: 'system'` 时 `actor_type` 为 nil） |
+| 上线前修复 | ⑤ `AlertDeadlines.call(store:)` **跨店写风险**：`ScanDeadlines` 是全局只读，但写侧（台账/事件/置 lost）未过店铺 → 显式店铺时会拿本店策略处理**别店**争议，极端情况替别店自动置 lost。已加店铺过滤 + `skipped_other_store` 计数 + 跨店隔离用例（2 店各自超期，仅本店动） |
 
 ## 10. 变更记录
 
@@ -138,3 +139,4 @@
 |---|---|---|
 | 0.1 | 2026-09-16 | 初版（切片2：T-3/T-1 分档幂等提醒 + 超期策略化自动 lost + 后台分档看板/历史） |
 | 0.2 | 2026-09-16 | 实施完成（41 examples 全绿）+ 知识同步 + §9.1 实施记录；状态 → done |
+| 0.3 | 2026-09-16 | 修复：`AlertDeadlines.call(store:)` 缺**店铺隔离**（扫描全局 + 写侧未过店）——显式店铺只处理本店争议（`skipped_other_store` 留痕）+ 新增跨店隔离用例（42 examples 全绿） |

@@ -1403,6 +1403,9 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
 - **唯一写入口** `Disputes::AlertDeadlines.call(store: nil, now:, limit: nil)`：
   扫描**复用** `Disputes::ScanDeadlines`（只读、唯一筛选口径）；全局 sweeper 时**逐店策略**生效
   （`scan_window_hours`：显式店铺 → 该店最宽档；全局 → 至少 `GLOBAL_WINDOW_HOURS = 7*24`，覆盖 `t7` 之类更宽档位）。
+  ⚠️ **店铺隔离硬边界**：`store:` 显式传入 → **只处理本店争议**（`skipped_other_store` 留痕）。
+  扫描底座是**全局只读**（DSP-P7-5 契约不改），但**写侧**（台账 / 事件 / 置 lost）绝不越店 ——
+  否则会把 A 店策略套到 B 店争议上，极端情况**替 B 店自动置 lost**（2026-09-16 修复；踩坑背景：只在单店测试时看不见）。
   每档 `create_alert`（`RecordNotUnique` / `RecordInvalid` → nil，幂等）；**只有本轮新记录的最新档**才发事件，历史档只落台账 + `backfilled` 标记（不补发过期提醒）。
   返回 `{ scanned:, window_hours:, tiers_recorded:, alerted:, backfilled:, auto_lost:, skipped_submitted:, failed:, policy:, scanned_at: }`；单条异常隔离（`failed` 计数 + 日志，不断其余）。
 - **超期处置（策略门控）**：`auto_lose_on_overdue` 开启 **且** 已超期 **且** 状态 ∈ `AUTO_LOSE_STATES`（`opened` / `needs_response` / `under_review`）

@@ -86,6 +86,34 @@ RSpec.describe PallasTrade::Disputes::AlertDeadlines, type: :service do
     expect(alerts['t1'].backfilled?).to be(false)
   end
 
+  # AC-002（店铺隔离：显式 store 只处理本店争议 —— 写侧绝不越店）
+  it 'never touches another store when called for a single store' do
+    set_policy(auto_lose: true)
+    other_store = create(:store, code: "d14b_other_#{SecureRandom.hex(4)}", default: false,
+                                 default_currency: 'USD', name: 'D14b Other Store',
+                                 url: 'https://d14b-other.example.com')
+    now = Time.current.change(usec: 0)
+    mine = make_dispute(due_at: now - 2.hours, reference: 'dp_d14b_isolation_mine')
+    theirs = PallasTrade::Dispute.create!(
+      provider: 'stripe', provider_dispute_reference: 'dp_d14b_isolation_theirs',
+      state: 'needs_response', amount: 9.99, currency: 'usd', store: other_store,
+      private_metadata: { 'provider_status' => 'needs_response' }, evidence_due_at: now - 2.hours
+    )
+
+    result = described_class.call(store: store, now: now)
+
+    expect(result.value[:skipped_other_store]).to eq(1)
+    # 本店：台账 + 自动置 lost
+    expect(alerts_for(mine)).to include('overdue')
+    expect(mine.reload.state).to eq('lost')
+    # 别店：零台账、零状态改动、零审计（即使其争议同样超期）
+    expect(other_store.reload.private_metadata[PallasTrade::Disputes::DeadlinePolicy::KEY]).to be_nil
+    expect(PallasTrade::DisputeDeadlineAlert.where(dispute_id: theirs.id).count).to eq(0)
+    expect(theirs.reload.state).to eq('needs_response')
+    expect(theirs.attention_reason).to be_nil
+    expect(result.value[:auto_lost]).to eq(1)
+  end
+
   # AC-003
   it 'publishes the tier event only for the newest tier recorded in that run' do
     set_policy
