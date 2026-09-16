@@ -7,7 +7,13 @@ require 'rails_helper'
 #            —— t3/t1 仅审计（零状态改动）；overdue 升级 `attention_reason`（不覆盖非空）
 #            —— 既有 `dispute.evidence_due_soon` / `dispute.evidence_overdue` 语义回归
 RSpec.describe PallasTrade::Disputes::DeadlineAlertSubscriber, type: :subscriber do
-  EventStub = Struct.new(:name, :payload)
+  # 事件桩：**匿名 Struct**（不定义顶层常量）——
+  # 既有 legacy spec（deadline_alert_subscriber_spec.rb）已定义同形 `EventStub`；
+  # RSpec example group 是块，块内常量落在顶层 → 重定义会打印
+  # "previous definition of EventStub" 告警，且顶层常量会跨 spec 文件泄漏/覆盖。
+  def event(name, payload)
+    Struct.new(:name, :payload).new(name, payload)
+  end
 
   let(:store) { @default_store }
   let(:dispute) do
@@ -19,10 +25,6 @@ RSpec.describe PallasTrade::Disputes::DeadlineAlertSubscriber, type: :subscriber
     )
   end
   let(:subscriber) { described_class.new }
-
-  def event(name, payload)
-    EventStub.new(name, payload)
-  end
 
   # AC-003（t3/t1：只留痕）
   it 'audits a tier reminder without changing the dispute state' do
