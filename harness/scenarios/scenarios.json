@@ -4105,7 +4105,7 @@
       }
     },
     {
-      "id": "GS-163",
+      "id": "GS-164",
       "name": "A missing translation that breaks the markup around it",
       "description": "The admin UI language comes from the store's preferred locale, so a key present in English and absent in Chinese stays invisible in CI. Worse, one helper fed the translate helper's output into a button's title attribute — and with the key missing, that output is not text but a span carrying the missing-key marker. The attribute was torn open and the debris surfaced as visible button text. Every environment rendering in English was immune, which is why it survived.",
       "mustDo": [
