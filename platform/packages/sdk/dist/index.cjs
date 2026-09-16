@@ -244,9 +244,12 @@ var StoreClient = class {
       params
     }),
     /**
-     * Product reviews (P0-4).
-     * `list` returns approved reviews (guest-accessible); `create` submits a
-     * review as the signed-in customer (pass a JWT via `options.token`).
+     * Product reviews (P0-4 / F-1).
+     * `list` returns approved reviews (guest-accessible) in the v3 envelope —
+     * `meta.rating_distribution` powers the rating bars — and accepts
+     * `page`/`limit` for "load more". `create` submits a review as the
+     * signed-in customer (pass a JWT via `options.token`); `images` are signed
+     * ids minted by `directUploads.create`.
      */
     reviews: {
       list: (productId, params, options) => this.request("GET", `/products/${productId}/reviews`, {
@@ -258,6 +261,17 @@ var StoreClient = class {
         body: params
       })
     }
+  };
+  /**
+   * Signed direct uploads (F-1): mint a presigned URL, PUT the bytes to it,
+   * then hand the returned `signed_id` to `products.reviews.create`. A blob is
+   * only attachable by the customer who uploaded it.
+   */
+  directUploads = {
+    create: (params, options) => this.request("POST", "/direct_uploads", {
+      ...options,
+      body: params
+    })
   };
   // ============================================
   // Categories

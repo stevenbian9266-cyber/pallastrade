@@ -1,5 +1,5 @@
-import { R as RequestFn, L as LoginCredentials, A as AuthTokens, a as RequestOptions, P as ProductListParams, b as PaginatedResponse, c as Product, d as ProductFiltersParams, e as ProductFiltersResponse, C as CategoryListParams, f as Category, g as ListResponse, h as Country, i as Currency, j as Locale, k as Policy, l as ListParams, m as Post, M as Market, T as TransactionResume, n as Cart, o as CreateCartParams, U as UpdateCartParams, O as Order, p as CartSubmitResult, q as AddLineItemParams, r as UpdateLineItemParams, s as CreatePaymentParams, t as Payment, u as CreatePaymentSessionParams, v as PaymentSession, w as UpdatePaymentSessionParams, x as CompletePaymentSessionParams, D as DeliveryMethod, y as CreateOrderTransactionParams, z as OrderTransactionStart, B as CheckoutView, E as CheckoutUpdateParams, F as UpdateOrderShippingAddressParams, G as RegisterParams, H as CreatePaymentCombinationParams, I as PaymentCombination, N as NewsletterSubscriber, J as Customer, K as Address, Q as AddressParams, S as CreditCard, V as GiftCard, W as StoreCredit, X as OrderListParams, Y as CreatePaymentSetupSessionParams, Z as PaymentSetupSession, _ as CompletePaymentSetupSessionParams, $ as RequestPasswordResetParams, a0 as ResetPasswordParams, a1 as Wishlist, a2 as WishlistItem, a3 as RetryConfig } from './index-BSWHxq4G.js';
-export { a4 as AvailabilityFilter, a5 as BackInStockSubscription, a6 as Base, a7 as CartItem, a8 as CartWarning, a9 as CategoryFilter, aa as CategoryFilterOption, ab as CheckoutRequirement, ac as CheckoutViewLine, ad as CommerceTransaction, ae as ContactMessage, af as CustomField, ag as DeliveryRate, ah as Digital, ai as DigitalLink, aj as Discount, ak as EmailPasswordLogin, al as ErrorResponse, am as FilterOption, an as Fulfillment, ao as GiftCardBatch, ap as Invitation, aq as LineItem, ar as LineItemInput, as as LocaleDefaults, at as Media, au as OptionFilter, av as OptionFilterOption, aw as OptionType, ax as OptionValue, ay as PaginationMeta, az as PallasTradeError, aA as PaymentMethod, aB as PaymentSource, aC as Price, aD as PriceRangeFilter, aE as ProductFilter, aF as Promotion, aG as ProviderLogin, aH as Refund, aI as ReturnAuthorization, aJ as ReturnItem, aK as ShoppingCart, aL as ShoppingCartStatus, aM as SortOption, aN as State, aO as StockLocation, aP as UpdateCartItemParams, aQ as Variant } from './index-BSWHxq4G.js';
+import { R as RequestFn, L as LoginCredentials, A as AuthTokens, a as RequestOptions, P as ProductListParams, b as PaginatedResponse, c as Product, d as ProductFiltersParams, e as ProductFiltersResponse, f as ReviewListResponse, g as Review, D as DirectUploadParams, h as DirectUploadResponse, C as CategoryListParams, i as Category, j as ListResponse, k as Country, l as Currency, m as Locale, n as Policy, o as ListParams, p as Post, M as Market, T as TransactionResume, q as Cart, r as CreateCartParams, U as UpdateCartParams, O as Order, s as CartSubmitResult, t as AddLineItemParams, u as UpdateLineItemParams, v as CreatePaymentParams, w as Payment, x as CreatePaymentSessionParams, y as PaymentSession, z as UpdatePaymentSessionParams, B as CompletePaymentSessionParams, E as DeliveryMethod, F as CreateOrderTransactionParams, G as OrderTransactionStart, H as CheckoutView, I as CheckoutUpdateParams, J as UpdateOrderShippingAddressParams, K as RegisterParams, N as CreatePaymentCombinationParams, Q as PaymentCombination, S as NewsletterSubscriber, V as Customer, W as Address, X as AddressParams, Y as CreditCard, Z as GiftCard, _ as StoreCredit, $ as OrderListParams, a0 as CreatePaymentSetupSessionParams, a1 as PaymentSetupSession, a2 as CompletePaymentSetupSessionParams, a3 as RequestPasswordResetParams, a4 as ResetPasswordParams, a5 as Wishlist, a6 as WishlistItem, a7 as RetryConfig } from './index-BGwejqJ3.js';
+export { a8 as AvailabilityFilter, a9 as BackInStockSubscription, aa as Base, ab as CartItem, ac as CartWarning, ad as CategoryFilter, ae as CategoryFilterOption, af as CheckoutRequirement, ag as CheckoutViewLine, ah as CommerceTransaction, ai as ContactMessage, aj as CustomField, ak as DeliveryRate, al as Digital, am as DigitalLink, an as Discount, ao as EmailPasswordLogin, ap as ErrorResponse, aq as FilterOption, ar as Fulfillment, as as GiftCardBatch, at as Invitation, au as LineItem, av as LineItemInput, aw as LocaleDefaults, ax as Media, ay as OptionFilter, az as OptionFilterOption, aA as OptionType, aB as OptionValue, aC as PaginationMeta, aD as PallasTradeError, aE as PaymentMethod, aF as PaymentSource, aG as Price, aH as PriceRangeFilter, aI as ProductFilter, aJ as Promotion, aK as ProviderLogin, aL as Refund, aM as ReturnAuthorization, aN as ReturnItem, aO as ReviewListMeta, aP as ShoppingCart, aQ as ShoppingCartStatus, aR as SortOption, aS as State, aT as StockLocation, aU as UpdateCartItemParams, aV as Variant } from './index-BGwejqJ3.js';
 
 declare class StoreClient {
     /**
@@ -53,38 +53,34 @@ declare class StoreClient {
          */
         filters: (params?: ProductFiltersParams, options?: RequestOptions) => Promise<ProductFiltersResponse>;
         /**
-         * Product reviews (P0-4).
-         * `list` returns approved reviews (guest-accessible); `create` submits a
-         * review as the signed-in customer (pass a JWT via `options.token`).
+         * Product reviews (P0-4 / F-1).
+         * `list` returns approved reviews (guest-accessible) in the v3 envelope —
+         * `meta.rating_distribution` powers the rating bars — and accepts
+         * `page`/`limit` for "load more". `create` submits a review as the
+         * signed-in customer (pass a JWT via `options.token`); `images` are signed
+         * ids minted by `directUploads.create`.
          */
         reviews: {
             list: (productId: string, params?: {
+                page?: number;
+                limit?: number;
                 fields?: string[];
-            }, options?: RequestOptions) => Promise<Array<{
-                id: string;
-                product_id: string | null;
-                user_name: string | null;
-                rating: number;
-                title: string | null;
-                body: string | null;
-                verified_purchase: boolean;
-                created_at: string | null;
-            }>>;
+            }, options?: RequestOptions) => Promise<ReviewListResponse>;
             create: (productId: string, params: {
                 rating: number;
                 title?: string;
                 body?: string;
-            }, options?: RequestOptions) => Promise<{
-                id: string;
-                product_id: string | null;
-                user_name: string | null;
-                rating: number;
-                title: string | null;
-                body: string | null;
-                verified_purchase: boolean;
-                created_at: string | null;
-            }>;
+                images?: string[];
+            }, options?: RequestOptions) => Promise<Review>;
         };
+    };
+    /**
+     * Signed direct uploads (F-1): mint a presigned URL, PUT the bytes to it,
+     * then hand the returned `signed_id` to `products.reviews.create`. A blob is
+     * only attachable by the customer who uploaded it.
+     */
+    readonly directUploads: {
+        create: (params: DirectUploadParams, options?: RequestOptions) => Promise<DirectUploadResponse>;
     };
     readonly categories: {
         /**
@@ -786,4 +782,4 @@ interface Client extends StoreClient {
  */
 declare function createClient(config: ClientConfig): Client;
 
-export { AddLineItemParams, Address, AddressParams, AuthTokens, Cart, CartSubmitResult, Category, CategoryListParams, CheckoutUpdateParams, CheckoutView, type Client, type ClientConfig, CompletePaymentSessionParams, CompletePaymentSetupSessionParams, Country, CreateCartParams, CreateOrderTransactionParams, CreatePaymentCombinationParams, CreatePaymentParams, CreatePaymentSessionParams, CreatePaymentSetupSessionParams, CreditCard, Currency, Customer, DeliveryMethod, GiftCard, ListParams, ListResponse, Locale, LoginCredentials, Market, NewsletterSubscriber, Order, OrderListParams, OrderTransactionStart, PaginatedResponse, Payment, PaymentCombination, PaymentSession, PaymentSetupSession, Policy, Post, Product, ProductFiltersParams, ProductFiltersResponse, ProductListParams, RegisterParams, RequestFn, RequestOptions, RequestPasswordResetParams, ResetPasswordParams, RetryConfig, StoreClient, StoreCredit, TransactionResume, UpdateCartParams, UpdateLineItemParams, UpdateOrderShippingAddressParams, UpdatePaymentSessionParams, Wishlist, WishlistItem, createClient };
+export { AddLineItemParams, Address, AddressParams, AuthTokens, Cart, CartSubmitResult, Category, CategoryListParams, CheckoutUpdateParams, CheckoutView, type Client, type ClientConfig, CompletePaymentSessionParams, CompletePaymentSetupSessionParams, Country, CreateCartParams, CreateOrderTransactionParams, CreatePaymentCombinationParams, CreatePaymentParams, CreatePaymentSessionParams, CreatePaymentSetupSessionParams, CreditCard, Currency, Customer, DeliveryMethod, DirectUploadParams, DirectUploadResponse, GiftCard, ListParams, ListResponse, Locale, LoginCredentials, Market, NewsletterSubscriber, Order, OrderListParams, OrderTransactionStart, PaginatedResponse, Payment, PaymentCombination, PaymentSession, PaymentSetupSession, Policy, Post, Product, ProductFiltersParams, ProductFiltersResponse, ProductListParams, RegisterParams, RequestFn, RequestOptions, RequestPasswordResetParams, ResetPasswordParams, RetryConfig, Review, ReviewListResponse, StoreClient, StoreCredit, TransactionResume, UpdateCartParams, UpdateLineItemParams, UpdateOrderShippingAddressParams, UpdatePaymentSessionParams, Wishlist, WishlistItem, createClient };
