@@ -256,6 +256,12 @@ export default {
         description: 'Catalog health AI suggestion specs (read authorization, schemas, scoped and minimal sampling, nothing-to-fix guard, entry whitelist, worklist and product endpoints, no-write guarantee, worklist and product-card rendering)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/ai/catalog/health_fix_suggestion_spec.rb spec/requests/pallastrade/admin/catalog_health_ai_suggestion_spec.rb'],
       },
+      // 评论系统升级一期（PRD-20260916-catalog-batch-f1-reviews）：评分分布与分页同源
+      // + 图片直传（presign/归属/上限/类型）+ 审核页图片列
+      'reviews-f1-rspec': {
+        description: 'Review upgrade specs (paginated list with rating_distribution, load-more pages, image ownership/limit/signed-id errors, model photo limits, admin photo column)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/api/v3/store/reviews_spec.rb spec/requests/api/v3/store/reviews_pagination_spec.rb spec/requests/api/v3/store/reviews_images_spec.rb spec/models/pallastrade/review_spec.rb spec/requests/pallastrade/admin/reviews_spec.rb'],
+      },
       // 前台密钥下发（PRD-20260915-payments-d10-client-config）：client_config 组装（仅 publishable）
       // + env: 引用解析 + Checkout 契约下发 + Stripe publishable 声明（secret 不泄漏）
       'd10-client-config-rspec': {

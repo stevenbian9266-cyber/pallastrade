@@ -29,6 +29,29 @@ class PallasTrade::Review < PallasTrade.base_class
   validates :status, inclusion: { in: STATUSES }
   validates :product_id, uniqueness: { scope: [:user_id, *pallastrade_base_uniqueness_scope] }
 
+  # Review photos (PRD-20260916-catalog-batch-f1-reviews FR-001).
+  #
+  # Deliberately ActiveStorage-only: a dedicated table would duplicate what the
+  # storage tables already do, and the product asset pipeline
+  # (`PallasTrade::Asset` -> `increment_viewable_media_count`) assumes a
+  # Product/Variant viewable. Photos are exposed only for approved reviews.
+  MAX_IMAGES = 3
+  ALLOWED_IMAGE_TYPES = %w[image/jpeg image/png image/webp].freeze
+  MAX_IMAGE_BYTES = 5.megabytes
+
+  # Blob metadata key written by the store direct-upload presign endpoint. The
+  # review API rejects attaching a blob that belongs to somebody else.
+  IMAGE_UPLOADER_METADATA_KEY = 'review_uploader_id'
+
+  has_many_attached :images
+
+  validate :images_are_acceptable
+
+  # Photos in upload order (ActiveStorage has no position column).
+  def ordered_images
+    images.includes(:blob).order(:id)
+  end
+
   # Approve a review (admin moderation). Returns true when the transition happened.
   def approve!
     update!(status: 'approved')
@@ -45,5 +68,23 @@ class PallasTrade::Review < PallasTrade.base_class
 
   def pending?
     status == 'pending'
+  end
+
+  private
+
+  def images_are_acceptable
+    return if images.blank?
+
+    if images.size > MAX_IMAGES
+      errors.add(:images, "can attach at most #{MAX_IMAGES} photos")
+    end
+
+    images.each do |image|
+      unless ALLOWED_IMAGE_TYPES.include?(image.blob.content_type)
+        errors.add(:images, 'must be a JPEG, PNG or WebP image')
+      end
+
+      errors.add(:images, 'must be 5MB or smaller') if image.blob.byte_size > MAX_IMAGE_BYTES
+    end
   end
 end

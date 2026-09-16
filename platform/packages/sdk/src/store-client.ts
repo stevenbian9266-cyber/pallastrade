@@ -30,6 +30,8 @@ import type {
   Currency,
   Customer,
   DeliveryMethod,
+  DirectUploadParams,
+  DirectUploadResponse,
   GiftCard,
   Locale,
   LoginCredentials,
@@ -51,6 +53,8 @@ import type {
   RegisterParams,
   RequestPasswordResetParams,
   ResetPasswordParams,
+  Review,
+  ReviewListResponse,
   StoreCredit,
   TransactionResume,
   UpdateCartParams,
@@ -149,27 +153,19 @@ export class StoreClient {
       }),
 
     /**
-     * Product reviews (P0-4).
-     * `list` returns approved reviews (guest-accessible); `create` submits a
-     * review as the signed-in customer (pass a JWT via `options.token`).
+     * Product reviews (P0-4 / F-1).
+     * `list` returns approved reviews (guest-accessible) in the v3 envelope —
+     * `meta.rating_distribution` powers the rating bars — and accepts
+     * `page`/`limit` for "load more". `create` submits a review as the
+     * signed-in customer (pass a JWT via `options.token`); `images` are signed
+     * ids minted by `directUploads.create`.
      */
     reviews: {
       list: (
         productId: string,
-        params?: { fields?: string[] },
+        params?: { page?: number; limit?: number; fields?: string[] },
         options?: RequestOptions,
-      ): Promise<
-        Array<{
-          id: string
-          product_id: string | null
-          user_name: string | null
-          rating: number
-          title: string | null
-          body: string | null
-          verified_purchase: boolean
-          created_at: string | null
-        }>
-      > =>
+      ): Promise<ReviewListResponse> =>
         this.request('GET', `/products/${productId}/reviews`, {
           ...options,
           params: getParams(params),
@@ -177,23 +173,36 @@ export class StoreClient {
 
       create: (
         productId: string,
-        params: { rating: number; title?: string; body?: string },
+        params: {
+          rating: number
+          title?: string
+          body?: string
+          images?: string[]
+        },
         options?: RequestOptions,
-      ): Promise<{
-        id: string
-        product_id: string | null
-        user_name: string | null
-        rating: number
-        title: string | null
-        body: string | null
-        verified_purchase: boolean
-        created_at: string | null
-      }> =>
+      ): Promise<Review> =>
         this.request('POST', `/products/${productId}/reviews`, {
           ...options,
           body: params,
         }),
     },
+
+  }
+
+  /**
+   * Signed direct uploads (F-1): mint a presigned URL, PUT the bytes to it,
+   * then hand the returned `signed_id` to `products.reviews.create`. A blob is
+   * only attachable by the customer who uploaded it.
+   */
+  readonly directUploads = {
+    create: (
+      params: DirectUploadParams,
+      options?: RequestOptions,
+    ): Promise<DirectUploadResponse> =>
+      this.request('POST', '/direct_uploads', {
+        ...options,
+        body: params,
+      }),
   }
 
   // ============================================

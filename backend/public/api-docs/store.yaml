@@ -10617,6 +10617,11 @@ paths:
         rejected reviews are never exposed. Review authors are identified by
         their public display name; `verified_purchase` is true when the author
         completed an order containing this product.
+
+        Paginated with `page`/`limit` (default 10, max 100). `meta` carries the
+        usual v3 pagination keys plus `rating_distribution`, an object keyed by
+        star value (`"1"`..`"5"`) counting the same approved population the
+        product's `average_rating` / `review_count` are computed from.
       x-codeSamples:
       - lang: javascript
         label: PallasTrade SDK
@@ -10628,7 +10633,11 @@ paths:
             publishableKey: '<api-key>',
           })
 
-          const reviews = await client.products.reviews.list('prod_abc123')
+          const { data: reviews, meta } = await client.products.reviews.list(
+            'prod_abc123',
+            { page: 1, limit: 10 },
+          )
+          // meta.rating_distribution => { "1": 0, ..., "5": 3 }
       parameters:
       - name: x-pallastrade-api-key
         in: header
@@ -10640,15 +10649,79 @@ paths:
         required: true
         schema:
           type: string
+      - name: page
+        in: query
+        required: false
+        description: 1-based page number (default 1)
+        schema:
+          type: integer
+          minimum: 1
+      - name: limit
+        in: query
+        required: false
+        description: Reviews per page (default 10, max 100)
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
       responses:
         '200':
-          description: approved reviews
+          description: approved reviews (paginated)
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  "$ref": "#/components/schemas/Review"
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/Review"
+                  meta:
+                    type: object
+                    required:
+                    - page
+                    - limit
+                    - count
+                    - pages
+                    - rating_distribution
+                    properties:
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      count:
+                        type: integer
+                        description: Total approved reviews for the product
+                      pages:
+                        type: integer
+                      from:
+                        type: integer
+                        nullable: true
+                      to:
+                        type: integer
+                        nullable: true
+                      in:
+                        type: integer
+                      previous:
+                        type: integer
+                        nullable: true
+                      next:
+                        type: integer
+                        nullable: true
+                      rating_distribution:
+                        type: object
+                        description: Counts of approved reviews per star value
+                        additionalProperties:
+                          type: integer
+                        example:
+                          "1": 0
+                          "2": 1
+                          "3": 2
+                          "4": 3
+                          "5": 8
         '404':
           description: product not found
           content:
@@ -10666,6 +10739,10 @@ paths:
         authenticate with a JWT (Authorization: Bearer). A customer may review
         a product once (unique per product + customer). `verified_purchase` is
         computed automatically from the customer's completed orders.
+
+        Photos: mint a signed id with `POST /api/v3/store/direct_uploads`, PUT
+        the bytes to the returned URL, then send up to 3 signed ids in
+        `images`. A blob is attachable only by the customer who uploaded it.
       x-codeSamples:
       - lang: javascript
         label: PallasTrade SDK
@@ -10681,6 +10758,7 @@ paths:
             rating: 5,
             title: 'Love it',
             body: 'Works great',
+            images: ['<signed-id-from-direct-uploads>'],
           }, { token: '<customer-jwt>' })
       parameters:
       - name: x-pallastrade-api-key
@@ -10710,6 +10788,12 @@ paths:
                   type: string
                 body:
                   type: string
+                images:
+                  type: array
+                  maxItems: 3
+                  description: Signed ids from /direct_uploads (max 3)
+                  items:
+                    type: string
       responses:
         '201':
           description: review created (pending moderation)
@@ -10730,23 +10814,14 @@ paths:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
         '422':
-          description: invalid rating or duplicate review
+          description: |
+            invalid rating, duplicate review, or rejected photos
+            (`review_image_limit_exceeded` / `review_image_not_owned` /
+            `review_image_invalid`)
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-              - email
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: customer@example.com
   "/api/v3/store/redirects/resolve":
     get:
       summary: Resolve a path against SEO 301 redirects
@@ -13729,6 +13804,10 @@ components:
         user_name:
           type: string
           nullable: true
+        image_urls:
+          type: array
+          items:
+            type: string
         rating:
           type: number
         title:
@@ -13746,6 +13825,7 @@ components:
       - id
       - product_id
       - user_name
+      - image_urls
       - rating
       - title
       - body

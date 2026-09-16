@@ -276,6 +276,18 @@
     "buyNow": "Buy Now"
   },
   "reviews": {
+    "ratingBreakdown": "Bewertungsverteilung",
+    "loadMore": "Weitere Bewertungen laden",
+    "loadingMore": "Wird geladen...",
+    "loadMoreError": "Weitere Bewertungen konnten nicht geladen werden. Bitte erneut versuchen.",
+    "addPhotos": "Fotos hinzufügen",
+    "photoLimit": "Bis zu {count} Fotos",
+    "photoLimitReached": "Du kannst bis zu {count} Fotos hinzufügen",
+    "photoTooLarge": "Jedes Foto darf höchstens 5 MB groß sein.",
+    "photoTypeInvalid": "Fotos müssen JPG, PNG oder WebP sein.",
+    "photoUploadFailed": "Foto-Upload fehlgeschlagen. Bitte erneut versuchen.",
+    "removePhoto": "Foto entfernen",
+    "reviewPhoto": "Bewertungsfoto",
     "title": "Bewertungen",
     "count": "Bewertungen",
     "empty": "Noch keine Bewertungen.",

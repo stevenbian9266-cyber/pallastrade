@@ -1,4 +1,9 @@
-import type { AddressParams, ListParams } from '@pallastrade/sdk-core'
+import type {
+  AddressParams,
+  ListParams,
+  ListResponse,
+  PaginationMeta,
+} from '@pallastrade/sdk-core'
 import type {
   Address as AddressType,
   Cart as CartType,
@@ -6,6 +11,7 @@ import type {
   LineItem as LineItemType,
   Order as OrderType,
   PaymentMethod,
+  Review as ReviewType,
 } from './generated'
 
 // Re-export all generated types (unprefixed: Product, Order, etc.)
@@ -50,6 +56,7 @@ export type {
   Product,
   Promotion,
   Refund,
+  Review,
   ReturnAuthorization,
   ReturnItem,
   State,
@@ -63,6 +70,30 @@ export type {
 // TXN-P2-6 (2026-09-05): durable CommerceTransaction store type (generated from
 // CommerceTransactionSerializer via typelizer; alias keeps SDK naming unprefixed).
 export type { default as CommerceTransaction } from './generated/StoreCommerceTransaction'
+
+// F-1 (PRD-20260916-catalog-batch-f1-reviews): rating distribution rides on the
+// standard v3 pagination meta, so `list` returns the envelope (not a bare array).
+export interface ReviewListMeta extends PaginationMeta {
+  /** Keyed by star value as a string: `{ "1": 0, ..., "5": 3 }`. */
+  rating_distribution: Record<string, number>
+}
+
+export interface ReviewListResponse extends ListResponse<ReviewType> {
+  meta: ReviewListMeta
+}
+
+// F-1: presign handshake used before attaching photos to a review.
+export interface DirectUploadParams {
+  filename: string
+  byte_size: number
+  checksum: string
+  content_type?: string
+}
+
+export interface DirectUploadResponse {
+  signed_id: string
+  direct_upload: { url: string; headers: Record<string, string> }
+}
 
 // Start result = transaction attributes + payment execution (ps_ session)
 export interface OrderTransactionStart {

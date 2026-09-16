@@ -1,19 +1,39 @@
 "use client";
 
-import { BadgeCheck, Loader2, Star } from "lucide-react";
+import { BadgeCheck, ImagePlus, Loader2, Star, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { createProductReview } from "@/lib/data/reviews";
+import {
+  createProductReview,
+  getMoreProductReviews,
+  REVIEW_IMAGE_LIMIT,
+  REVIEW_IMAGE_MAX_BYTES,
+  uploadReviewImage,
+} from "@/lib/data/reviews";
+
+/** Photo types the API accepts (`PallasTrade::Review::ALLOWED_IMAGE_TYPES`). */
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export interface ReviewView {
   id: string;
+  product_id?: string | null;
   user_name: string | null;
   rating: number;
   title: string | null;
   body: string | null;
   verified_purchase: boolean;
   created_at: string | null;
+  /** F-1: photos of approved reviews only (absolute URLs). */
+  image_urls?: string[];
+}
+
+export interface ReviewMeta {
+  count: number;
+  page: number;
+  pages: number;
+  next: number | null;
+  rating_distribution: Record<string, number>;
 }
 
 interface ProductReviewsProps {
@@ -22,6 +42,8 @@ interface ProductReviewsProps {
   averageRating: number | null;
   reviewCount: number;
   isAuthenticated: boolean;
+  /** F-1: pagination + rating distribution from the Store API envelope. */
+  meta?: ReviewMeta | null;
 }
 
 function Stars({
@@ -76,6 +98,7 @@ export function ProductReviews({
   averageRating,
   reviewCount,
   isAuthenticated,
+  meta = null,
 }: ProductReviewsProps) {
   const t = useTranslations("reviews");
   const locale = useLocale();
@@ -85,6 +108,85 @@ export function ProductReviews({
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "done">("idle");
+
+  // F-1: photos upload before the review is submitted, so what the customer
+  // sees is exactly what the API attaches (up to REVIEW_IMAGE_LIMIT).
+  const [photos, setPhotos] = useState<{ signedId: string; name: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  // F-1: "load more" appends pages; the API drives the next page number.
+  const [appended, setAppended] = useState<ReviewView[] | null>(null);
+  const [nextPage, setNextPage] = useState<number | null>(meta?.next ?? null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState(false);
+
+  const visibleReviews = appended ?? reviews;
+  const distribution = meta?.rating_distribution ?? null;
+  const totalCount = meta?.count ?? reviewCount;
+  const maxBucket = distribution
+    ? Math.max(1, ...Object.values(distribution))
+    : 1;
+
+  const mapSubmitError = (code: string | undefined) =>
+    code === "review_image_limit_exceeded"
+      ? t("photoLimitReached", { count: REVIEW_IMAGE_LIMIT })
+      : code === "review_image_not_owned" || code === "review_image_invalid"
+        ? t("photoUploadFailed")
+        : t("submitError");
+
+  const handlePhotoPick = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const remaining = REVIEW_IMAGE_LIMIT - photos.length;
+    if (remaining <= 0) {
+      setError(t("photoLimitReached", { count: REVIEW_IMAGE_LIMIT }));
+      return;
+    }
+
+    const chosen = Array.from(files).slice(0, remaining);
+    setError(
+      files.length > remaining
+        ? t("photoLimitReached", { count: REVIEW_IMAGE_LIMIT })
+        : null,
+    );
+
+    setUploading(true);
+    for (const file of chosen) {
+      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+        setError(t("photoTypeInvalid"));
+        continue;
+      }
+      if (file.size > REVIEW_IMAGE_MAX_BYTES) {
+        setError(t("photoTooLarge"));
+        continue;
+      }
+      const result = await uploadReviewImage(file);
+      if (result.success) {
+        setPhotos((current) => [
+          ...current,
+          { signedId: result.signedId, name: file.name },
+        ]);
+      } else {
+        setError(mapSubmitError(result.code ?? result.error));
+      }
+    }
+    setUploading(false);
+  };
+
+  const handleLoadMore = async () => {
+    if (nextPage == null || loadingMore) return;
+    setLoadingMore(true);
+    setMoreError(false);
+    const page = await getMoreProductReviews(productId, nextPage);
+    if (page) {
+      setAppended((current) => [...(current ?? reviews), ...page.reviews]);
+      setNextPage(page.next);
+    } else {
+      // Keep what we already show; the button stays for a retry (AP-009b).
+      setMoreError(true);
+    }
+    setLoadingMore(false);
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -98,17 +200,20 @@ export function ProductReviews({
       rating,
       title: title.trim() || undefined,
       body: body.trim() || undefined,
+      images:
+        photos.length > 0 ? photos.map((photo) => photo.signedId) : undefined,
     });
     if (result.success) {
       setState("done");
       setRating(0);
       setTitle("");
       setBody("");
+      setPhotos([]);
     } else {
       setError(
         result.error === "authentication_required"
           ? t("signInRequired")
-          : t("submitError"),
+          : mapSubmitError(result.code),
       );
       setState("idle");
     }
@@ -127,15 +232,51 @@ export function ProductReviews({
             </span>
             <Stars rating={averageRating ?? 0} />
             <span className="text-sm text-gray-500">
-              ({reviewCount} {t("count")})
+              ({totalCount} {t("count")})
             </span>
           </div>
         )}
       </div>
 
-      {reviews.length > 0 ? (
+      {/* F-1: rating distribution — same population as the average above */}
+      {showSummary && distribution && (
+        <div
+          className="mt-4 max-w-sm space-y-1"
+          data-testid="rating-distribution"
+          role="group"
+          aria-label={t("ratingBreakdown")}
+        >
+          {[5, 4, 3, 2, 1].map((star) => {
+            const count = distribution[String(star)] ?? 0;
+            return (
+              <div
+                key={star}
+                className="flex items-center gap-3 text-xs text-gray-600"
+              >
+                <span className="w-8 shrink-0 tabular-nums">{`${star} ★`}</span>
+                <span
+                  className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100"
+                  aria-hidden="true"
+                >
+                  <span
+                    className="block h-full rounded-full bg-amber-400"
+                    style={{
+                      width: `${Math.round((count / maxBucket) * 100)}%`,
+                    }}
+                  />
+                </span>
+                <span className="w-6 shrink-0 text-right tabular-nums">
+                  {count}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {visibleReviews.length > 0 ? (
         <ul className="mt-6 space-y-6">
-          {reviews.map((review) => (
+          {visibleReviews.map((review) => (
             <li key={review.id} className="border-b pb-6 last:border-b-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -164,11 +305,53 @@ export function ProductReviews({
               {review.body && (
                 <p className="mt-1 text-sm text-gray-600">{review.body}</p>
               )}
+              {review.image_urls && review.image_urls.length > 0 && (
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {review.image_urls.map((url, index) => (
+                    <li key={url}>
+                      {/* biome-ignore lint/performance/noImgElement: remote storage URLs (same dynamic host as product media) */}
+                      <img
+                        src={url}
+                        alt={`${t("reviewPhoto")} ${index + 1}`}
+                        className="size-20 rounded-md border object-cover"
+                        loading="lazy"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))}
         </ul>
       ) : (
         <p className="mt-4 text-sm text-gray-500">{t("empty")}</p>
+      )}
+
+      {/* F-1: "load more" appends the next page of approved reviews */}
+      {nextPage != null && (
+        <div className="mt-6">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+          >
+            {loadingMore ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                {t("loadingMore")}
+              </>
+            ) : (
+              t("loadMore")
+            )}
+          </Button>
+          {moreError && (
+            <p role="alert" className="mt-2 text-sm text-red-600">
+              {t("loadMoreError")}
+            </p>
+          )}
+        </div>
       )}
 
       {/* Review form — signed-in customers only */}
@@ -219,6 +402,67 @@ export function ProductReviews({
             rows={4}
             className="mt-3 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-500"
           />
+
+          {/* F-1: up to REVIEW_IMAGE_LIMIT photos, uploaded before submit */}
+          <div className="mt-3">
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="review-photos"
+                className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
+              >
+                <ImagePlus className="size-3.5" aria-hidden="true" />
+                {t("addPhotos")}
+              </label>
+              <input
+                id="review-photos"
+                type="file"
+                accept={ACCEPTED_IMAGE_TYPES.join(",")}
+                multiple
+                className="sr-only"
+                disabled={uploading || photos.length >= REVIEW_IMAGE_LIMIT}
+                onChange={(event) => {
+                  void handlePhotoPick(event.target.files);
+                  event.target.value = "";
+                }}
+              />
+              <span className="text-xs text-gray-500">
+                {t("photoLimit", { count: REVIEW_IMAGE_LIMIT })}
+              </span>
+              {uploading && (
+                <Loader2
+                  className="size-4 animate-spin text-gray-400"
+                  aria-hidden="true"
+                />
+              )}
+            </div>
+
+            {photos.length > 0 && (
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {photos.map((photo) => (
+                  <li
+                    key={photo.signedId}
+                    className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-700"
+                  >
+                    <span className="max-w-40 truncate">{photo.name}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPhotos((current) =>
+                          current.filter(
+                            (item) => item.signedId !== photo.signedId,
+                          ),
+                        )
+                      }
+                      aria-label={t("removePhoto")}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <X className="size-3.5" aria-hidden="true" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 

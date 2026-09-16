@@ -276,6 +276,18 @@
     "optionFilterChip": "{filter}: {value}"
   },
   "reviews": {
+    "ratingBreakdown": "Rating breakdown",
+    "loadMore": "Load more reviews",
+    "loadingMore": "Loading...",
+    "loadMoreError": "Couldn't load more reviews. Please try again.",
+    "addPhotos": "Add photos",
+    "photoLimit": "Up to {count} photos",
+    "photoLimitReached": "You can add up to {count} photos",
+    "photoTooLarge": "Each photo must be 5 MB or smaller.",
+    "photoTypeInvalid": "Photos must be JPG, PNG, or WebP.",
+    "photoUploadFailed": "Photo upload failed. Please try again.",
+    "removePhoto": "Remove photo",
+    "reviewPhoto": "Review photo",
     "title": "Reviews",
     "count": "reviews",
     "empty": "No reviews yet.",

@@ -77,8 +77,8 @@ export default async function ProductPage({
     category_id,
   );
 
-  // P0-4: approved reviews (public) + auth state for the review form.
-  const [reviews, authenticated] = await Promise.all([
+  // P0-4 / F-1: approved reviews (first page + rating distribution) + auth state.
+  const [reviewList, authenticated] = await Promise.all([
     getProductReviews(product.id),
     isAuthenticated(),
   ]);
@@ -110,7 +110,8 @@ export default async function ProductPage({
         product={product}
         basePath={basePath}
         initialVariantId={variant ?? null}
-        reviews={reviews}
+        reviews={reviewList.reviews}
+        reviewMeta={reviewList.meta}
         averageRating={product.average_rating ?? null}
         reviewCount={product.review_count ?? 0}
         isAuthenticated={authenticated}

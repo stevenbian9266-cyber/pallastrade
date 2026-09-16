@@ -52,4 +52,38 @@ RSpec.describe 'Admin reviews', type: :request do
     expect(response).to have_http_status(:redirect)
     expect(PallasTrade::Review.exists?(review.id)).to be(false)
   end
+
+  # F-1 (PRD-20260916-catalog-batch-f1-reviews AC-007)：审核页内联展示评论图片
+  context 'with reviewer photos' do
+    let!(:photo) do
+      blob = ActiveStorage::Blob.create_and_upload!(
+        io: StringIO.new('review-photo-bytes'),
+        filename: 'photo.jpg',
+        content_type: 'image/jpeg'
+      )
+      review.images.attach(blob)
+      review.images.attachments.last
+    end
+
+    it 'renders the thumbnail and links to the full-size image' do
+      sign_in_as_superuser
+      url = Rails.application.routes.url_helpers.cdn_image_url(photo)
+      get '/admin/reviews'
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(PallasTrade.t('admin.reviews.photos'))
+      expect(response.body).to include(url)
+      expect(response.body).to include('object-cover')
+    end
+
+    it 'renders the empty placeholder for reviews without photos' do
+      sign_in_as_superuser
+      photo
+      review.images.attachments.each { |attachment| attachment.purge }
+      get '/admin/reviews'
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include('object-cover')
+    end
+  end
 end

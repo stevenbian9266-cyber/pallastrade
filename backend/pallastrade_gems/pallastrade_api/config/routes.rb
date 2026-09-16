@@ -30,6 +30,9 @@ PallasTrade::Core::Engine.add_routes do
           # Product reviews (P0-4) — read approved, create as signed-in customer
           resources :reviews, only: [:index, :create]
         end
+        # Review photo presign (F-1) — customer JWT required; tags the blob with
+        # the uploader so the review API rejects foreign uploads.
+        resources :direct_uploads, only: [:create]
         resources :categories, only: [:index, :show], id: /.+/
 
         # 订单流程标准电商改造 P1（2026-08-30）：订单确认页可选配送方式

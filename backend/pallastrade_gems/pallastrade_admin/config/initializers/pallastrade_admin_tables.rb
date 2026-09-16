@@ -2420,6 +2420,17 @@ Rails.application.config.after_initialize do
                                          default: true,
                                          position: 60
 
+  # F-1 (PRD-20260916-catalog-batch-f1-reviews AC-007): photos are part of the
+  # moderation decision, so the list shows them inline (thumbnail → full size).
+  PallasTrade.admin.tables.reviews.add :photos,
+                                         label: :photos,
+                                         type: :custom,
+                                         partial: 'pallastrade/admin/tables/columns/review_photos',
+                                         sortable: false,
+                                         filterable: false,
+                                         default: true,
+                                         position: 55
+
   # ==========================================
   # (Config Items table removed — Config Center module was retired 2026-08-14)
 

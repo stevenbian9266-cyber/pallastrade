@@ -1,0 +1,18 @@
+<%# locals: (record:, column:, value:) %>
+<%# F-1 (PRD-20260916-catalog-batch-f1-reviews AC-007): reviewer photos are the
+    moderation signal — show thumbnails when present, an em dash otherwise. %>
+<% photos = record.ordered_images %>
+<% if photos.any? %>
+  <span class="inline-flex items-center gap-1">
+    <% photos.each do |attachment| %>
+      <% url = Rails.application.routes.url_helpers.cdn_image_url(attachment) %>
+      <%= link_to url, target: '_blank', rel: 'noopener', class: 'inline-block' do %>
+        <%= image_tag url,
+                      class: 'h-8 w-8 rounded object-cover',
+                      alt: PallasTrade.t('admin.reviews.photo') %>
+      <% end %>
+    <% end %>
+  </span>
+<% else %>
+  <span class="text-gray-400">—</span>
+<% end %>

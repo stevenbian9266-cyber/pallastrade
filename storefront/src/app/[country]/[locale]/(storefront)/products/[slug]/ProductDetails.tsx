@@ -12,6 +12,7 @@ import { MediaGallery } from "@/components/products/MediaGallery";
 import { ProductCustomFields } from "@/components/products/ProductCustomFields";
 import {
   ProductReviews,
+  type ReviewMeta,
   type ReviewView,
 } from "@/components/products/ProductReviews";
 import { VariantPicker } from "@/components/products/VariantPicker";
@@ -35,6 +36,8 @@ interface ProductDetailsProps {
   /** Deep-link variant from the server (`?variant=`), if any. */
   initialVariantId?: string | null;
   reviews?: ReviewView[];
+  /** F-1: first-page pagination + rating distribution from the API envelope. */
+  reviewMeta?: ReviewMeta | null;
   averageRating?: number | null;
   reviewCount?: number;
   isAuthenticated?: boolean;
@@ -45,6 +48,7 @@ export function ProductDetails({
   basePath,
   initialVariantId = null,
   reviews = [],
+  reviewMeta = null,
   averageRating = null,
   reviewCount = 0,
   isAuthenticated = false,
@@ -328,10 +332,11 @@ export function ProductDetails({
         </div>
       </div>
 
-      {/* Product reviews (P0-4) */}
+      {/* Product reviews (P0-4 / F-1) */}
       <ProductReviews
         productId={product.id}
         reviews={reviews}
+        meta={reviewMeta}
         averageRating={averageRating}
         reviewCount={reviewCount}
         isAuthenticated={isAuthenticated}

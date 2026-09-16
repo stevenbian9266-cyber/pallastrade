@@ -20,9 +20,9 @@ RSpec.describe 'Product reviews API', type: :request do
       get path, headers: headers
 
       expect(response).to have_http_status(:ok)
-      ids = json_response.map { |r| r['id'] }
+      ids = json_response['data'].map { |r| r['id'] }
       expect(ids).to eq([approved.prefixed_id])
-      expect(json_response.first['rating']).to eq(4)
+      expect(json_response['data'].first['rating']).to eq(4)
     end
 
     it 'returns 404 for an unknown product' do

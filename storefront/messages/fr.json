@@ -276,6 +276,18 @@
     "buyNow": "Buy Now"
   },
   "reviews": {
+    "ratingBreakdown": "Répartition des notes",
+    "loadMore": "Afficher plus d'avis",
+    "loadingMore": "Chargement...",
+    "loadMoreError": "Impossible de charger plus d'avis. Veuillez réessayer.",
+    "addPhotos": "Ajouter des photos",
+    "photoLimit": "Jusqu'à {count} photos",
+    "photoLimitReached": "Vous pouvez ajouter jusqu'à {count} photos",
+    "photoTooLarge": "Chaque photo doit faire 5 Mo maximum.",
+    "photoTypeInvalid": "Les photos doivent être au format JPG, PNG ou WebP.",
+    "photoUploadFailed": "Échec de l'envoi de la photo. Veuillez réessayer.",
+    "removePhoto": "Supprimer la photo",
+    "reviewPhoto": "Photo de l'avis",
     "title": "Avis",
     "count": "avis",
     "empty": "Aucun avis pour le moment.",
