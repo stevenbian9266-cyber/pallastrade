@@ -3839,14 +3839,16 @@
         "Answer `null` (not `false`) when the caller's own state is unknown (anonymous reads), so 'not asked' is not reported as 'decided against'",
         "Restrict votes to what the reader can actually see (approved reviews in the caller's store) and refuse self-votes with a stable, documented error code",
         "Make the count a counter cache so a list page reads it per row instead of issuing a query per review",
-        "Extend the existing ordering whitelist (stable tie-break included) rather than adding a second sorting mechanism, and keep the fallback and metadata contract unchanged"
+        "Extend the existing ordering whitelist (stable tie-break included) rather than adding a second sorting mechanism, and keep the fallback and metadata contract unchanged",
+        "Ship the client side through the repo's own gates: a vote UI that fails the formatter/linter (`pnpm check`) or a storefront build blocks the release, and touching the SDK client means rebuilding and committing the published `dist` (hash-named type chunks included)"
       ],
       "mustNotDo": [
         "Let the same customer vote twice, or let the UI show a vote the API did not confirm",
         "Expose who voted, or turn the vote into an unattributable counter that cannot support abuse review",
         "Allow voting on your own review, on a pending/rejected review, or across stores",
         "Ship the ordering without a unique tie-break, or compute the aggregate from the current page",
-        "Move money, stock or moderation state from a vote, or promise ranking guarantees the data cannot support"
+        "Move money, stock or moderation state from a vote, or promise ranking guarantees the data cannot support",
+        "Hand-edit generated artifacts (or leave the SDK `dist` referencing a type chunk that was never committed) to get a check to pass"
       ],
       "scoring": {
         "voteIntegrity": 30,

@@ -1,8 +1,15 @@
 "use client";
 
-import { BadgeCheck, ImagePlus, Loader2, Star, ThumbsUp, X } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import {
+  BadgeCheck,
+  ImagePlus,
+  Loader2,
+  Star,
+  ThumbsUp,
+  X,
+} from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -210,7 +217,8 @@ export function ProductReviews({
   };
 
   const visibleReviews = appended ?? reviews;
-  const distribution = meta?.rating_distribution ?? null;  const totalCount = meta?.count ?? reviewCount;
+  const distribution = meta?.rating_distribution ?? null;
+  const totalCount = meta?.count ?? reviewCount;
   const maxBucket = distribution
     ? Math.max(1, ...Object.values(distribution))
     : 1;

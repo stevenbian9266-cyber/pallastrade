@@ -56,7 +56,10 @@ const meta = {
 function renderReviews({
   item = review(),
   isAuthenticated = true,
-}: { item?: ReviewView; isAuthenticated?: boolean } = {}) {
+}: {
+  item?: ReviewView;
+  isAuthenticated?: boolean;
+} = {}) {
   return render(
     <ProductReviews
       productId="prod_1"
@@ -78,7 +81,9 @@ describe("ProductReviews helpful vote (F-5)", () => {
     renderReviews({ item: review({ helpful_votes_count: 4 }) });
 
     expect(
-      screen.getByTestId("review-helpful-count-rev_1").getAttribute("data-count"),
+      screen
+        .getByTestId("review-helpful-count-rev_1")
+        .getAttribute("data-count"),
     ).toBe("4");
   });
 
@@ -93,14 +98,18 @@ describe("ProductReviews helpful vote (F-5)", () => {
     fireEvent.click(screen.getByTestId("review-helpful-rev_1"));
 
     // `voted: false` leaving the button means "cast a vote".
-    await waitFor(() => expect(mockedVote).toHaveBeenCalledWith("rev_1", false));
     await waitFor(() =>
-      expect(
-        screen.getByTestId("review-helpful-rev_1").textContent,
-      ).toContain("helpfulVoted"),
+      expect(mockedVote).toHaveBeenCalledWith("rev_1", false),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("review-helpful-rev_1").textContent).toContain(
+        "helpfulVoted",
+      ),
     );
     expect(
-      screen.getByTestId("review-helpful-count-rev_1").getAttribute("data-count"),
+      screen
+        .getByTestId("review-helpful-count-rev_1")
+        .getAttribute("data-count"),
     ).toBe("5");
   });
 
@@ -118,9 +127,9 @@ describe("ProductReviews helpful vote (F-5)", () => {
 
     await waitFor(() => expect(mockedVote).toHaveBeenCalledWith("rev_1", true));
     await waitFor(() =>
-      expect(
-        screen.getByTestId("review-helpful-rev_1").textContent,
-      ).toContain("helpful"),
+      expect(screen.getByTestId("review-helpful-rev_1").textContent).toContain(
+        "helpful",
+      ),
     );
   });
 
@@ -132,7 +141,9 @@ describe("ProductReviews helpful vote (F-5)", () => {
 
     await waitFor(() => expect(screen.getByText("helpfulFailed")).toBeTruthy());
     expect(
-      screen.getByTestId("review-helpful-count-rev_1").getAttribute("data-count"),
+      screen
+        .getByTestId("review-helpful-count-rev_1")
+        .getAttribute("data-count"),
     ).toBe("3");
     expect(
       screen.getByTestId("review-helpful-rev_1").textContent,
@@ -149,7 +160,9 @@ describe("ProductReviews helpful vote (F-5)", () => {
 
     fireEvent.click(screen.getByTestId("review-helpful-rev_1"));
 
-    await waitFor(() => expect(screen.getByText("helpfulOwnReview")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByText("helpfulOwnReview")).toBeTruthy(),
+    );
   });
 
   it("sends guests to sign-in instead of offering a vote button", () => {

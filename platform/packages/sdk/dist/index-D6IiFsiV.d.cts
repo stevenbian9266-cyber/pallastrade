@@ -838,6 +838,8 @@ type Review = {
     product_id: string | null;
     user_name: string | null;
     image_urls: Array<string>;
+    helpful_votes_count: number;
+    helpful_voted: boolean | null;
     rating: number;
     title: string | null;
     body: string | null;

@@ -117,7 +117,9 @@ i.e. the **authoritative state** rather than the review, so a UI never has to gu
 landed. The hand-written methods live in `sdk/src/store-client.ts` / `sdk/src/types/index.ts`; the
 `Review` type additionally gains `helpful_votes_count` / `helpful_voted` (regenerate with
 `scripts/ci/contracts.sh` when the serializer changes — note `helpful_voted` is `null` for anonymous
-callers). Review lists now accept `sort=most_helpful` on top of the F-4 orderings.
+callers). Review lists now accept `sort=most_helpful` on top of the F-4 orderings. Touching `store-client.ts` (as this change did) renames the
+content-hashed type chunk (`index-<hash>.d.ts`/`.d.cts`), so rebuild and commit the whole `dist/` with `git add -A -f` — otherwise
+`index.d.ts` ends up referencing a sibling that was never committed.
 
 ### `@pallastrade/sdk-core` — Shared internals
 
