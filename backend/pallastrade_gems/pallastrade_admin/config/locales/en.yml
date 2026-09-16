@@ -60,6 +60,11 @@ en:
         photo: Review photo
         approved: Review approved
         rejected: Review rejected
+        bulk:
+          result: "Bulk moderation finished — updated: %{updated}, skipped (no permission): %{skipped_unauthorized}, skipped (state not allowed): %{skipped_invalid_state}, not found: %{not_found}."
+          empty: Select at least one review.
+          too_many: You can moderate at most %{count} reviews at a time.
+          unknown_event: Unknown bulk action.
         statuses:
           pending: Pending
           approved: Approved
@@ -203,6 +208,13 @@ en:
       avg_order_value: Avg. Order Value
       back_to_dashboard: Back to dashboard
       bulk_ops:
+        reviews:
+          title:
+            approve: Approve selected reviews
+            reject: Reject selected reviews
+          body:
+            approve: The selected reviews become public and start counting towards the product rating.
+            reject: The selected reviews stay hidden and stop counting towards the product rating.
         customer_group_users:
           body:
             remove: Are you sure you want to remove the selected customers from this group?

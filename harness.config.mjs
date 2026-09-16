@@ -262,6 +262,12 @@ export default {
         description: 'Review upgrade specs (paginated list with rating_distribution, load-more pages, image ownership/limit/signed-id errors, model photo limits, admin photo column)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/api/v3/store/reviews_spec.rb spec/requests/api/v3/store/reviews_pagination_spec.rb spec/requests/api/v3/store/reviews_images_spec.rb spec/models/pallastrade/review_spec.rb spec/requests/pallastrade/admin/reviews_spec.rb'],
       },
+      // 评论审核工作台批量通过/拒绝（PRD-20260916-catalog-batch-f3-review-bulk-moderation）：
+      // 逐条鉴权 + 逐条走状态机（禁 update_all）+ 空选/超限守卫 + 四计数报告
+      'f3-review-bulk-rspec': {
+        description: 'Admin review bulk moderation specs (per-row state machine, empty/oversized guards, explainable report, bulk actions registered, approved-only contract kept)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/reviews_bulk_spec.rb'],
+      },
       // 库存阈值化与配送信息（PRD-20260916-catalog-batch-f2-stock-shipping）：
       // 分桶口径（与 Variant#in_stock? 同源、tracking off 不制造稀缺）+ 阈值归一 +
       // 配送时效/免运费读模型 + 只增字段的序列化契约 + 列表不随条数放大查询

@@ -292,6 +292,7 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | AI Translate Missing（`ai/catalog/product_translation.rb` + 翻译抽屉 `[AI Translate Missing]` + `POST /admin/ai/product_translation`） | + `harness verify ai-translate-rspec`（能力注册/schema + 缺失口径 `fallback:false` 排除 slug + 无缺失零 Run + 接受前不落库 + 降级/权限/抽屉渲染） | ≤2 min |
 | Catalog Health AI 修复建议（`ai/catalog/health_fix_suggestion.rb` + 工作台行内面板 + 商品侧栏卡片 + `POST /admin/ai/catalog_health_suggestion`） | + `harness verify ai-health-suggestion-rspec`（能力注册 read 授权/schema + 采样范围与字段最小化 + 计数 0/未知 issue 零 Run + 入口白名单 + 零写库 + 两种粒度渲染） | ≤2 min |
 | 评论系统升级一期（`review.rb` images + store reviews 分页/评分分布 + store `direct_uploads` + 后台图片列） | + `harness verify reviews-f1-rspec`（图片归属/上限/类型错误码 + 分页不重复 + rating_distribution 与列表同源 + 未审核图片不外泄 + 后台图片列） | ≤2 min |
+| 评论审核工作台批量通过/拒绝（`admin/reviews#bulk` + `admin_tables` 注册两个 bulk action） | + `harness verify f3-review-bulk-rspec`（逐条状态机与审计口径 + 逐条鉴权跳过 + 空选/超 50 条守卫 + 四计数报告 + 只增不改的公开口径） | ≤1 min |
 | 库存阈值化与配送信息（`catalog/stock_status.rb` + `shipping/estimate.rb` + Store 两个偏好 + PDP/卡片徽章 + `/shipping_estimate`） | + `harness verify f2-stock-shipping-rspec`（分桶口径与 `Variant#in_stock?` 同源 + 任何响应不含精确库存 + 阈值归一 + 时效/免运费矩阵 + 列表查询数不随条数增长） | ≤2 min |
 | Financial ledger / reconciliation (`reconciliations/`, `financial_ledger/`) | + `harness verify finance-reconciliation-rspec` (source/transaction/payment/refund/dispute 对账 + sweeper) | ≤2 min |
 | Any change | `harness doc-impact --base origin/dev` — checks knowledge docs are synced | ≤1 min |

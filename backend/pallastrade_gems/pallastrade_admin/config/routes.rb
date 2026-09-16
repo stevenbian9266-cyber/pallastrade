@@ -332,6 +332,10 @@ PallasTrade::Core::Engine.add_routes do
             patch :approve
             patch :reject
           end
+          collection do
+            # Catalog F-3: bulk moderation (approve/reject up to 50 at a time).
+            post :bulk
+          end
         end
 
     # CMS blog posts

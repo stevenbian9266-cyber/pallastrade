@@ -3035,4 +3035,25 @@ Rails.application.config.after_initialize do
                                            filterable: true,
                                            default: true,
                                            position: 70
+
+  # Catalog F-3 (PRD-20260916-catalog-batch-f3-review-bulk-moderation): bulk
+  # moderation on the reviews worklist. The generic BulkOperationsController
+  # renders the confirm modal from these registrations; execution happens in
+  # `Admin::ReviewsController#bulk`, which transitions each review through the
+  # same state machine as the single-row actions.
+  PallasTrade.admin.tables.reviews.add_bulk_action :approve,
+                                         label: 'admin.bulk_ops.reviews.title.approve',
+                                         icon: 'circle-check',
+                                         action_path: ->(view_context) { view_context.pallastrade.bulk_admin_reviews_path(event: 'approve') },
+                                         body: 'admin.bulk_ops.reviews.body.approve',
+                                         position: 10,
+                                         condition: -> { can?(:update, PallasTrade::Review) }
+
+  PallasTrade.admin.tables.reviews.add_bulk_action :reject,
+                                         label: 'admin.bulk_ops.reviews.title.reject',
+                                         icon: 'circle-x',
+                                         action_path: ->(view_context) { view_context.pallastrade.bulk_admin_reviews_path(event: 'reject') },
+                                         body: 'admin.bulk_ops.reviews.body.reject',
+                                         position: 20,
+                                         condition: -> { can?(:update, PallasTrade::Review) }
 end
