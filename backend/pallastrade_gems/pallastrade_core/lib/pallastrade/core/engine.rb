@@ -399,7 +399,10 @@ module PallasTrade
           PallasTrade::Disputes::DeadlineAlertSubscriber,
           # PRD-20260910-promo-batch3b: commerce_transaction.payment_confirmed → 核销兜底；
           # refund.succeeded（全额）→ 释放核销名额
-          PallasTrade::Promotions::RedemptionSubscriber
+          PallasTrade::Promotions::RedemptionSubscriber,
+          # D15 切片1（PRD-20260916-payments-d15-risk-lists）：order.submitted → 名单驱动的风控评估
+          # （命中则复用既有 `considered_risky` 标记送人工复核；不阻断下单）
+          PallasTrade::Risk::OrderSubmittedSubscriber
         ]
 
         # Pre-load authentication strategy classes to avoid reflection at request time

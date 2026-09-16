@@ -126,6 +126,18 @@ reversals** (chargeback / inquiry / warning / representment) — deliberately **
   （**无新列、无新表**：`tiers_days` / `auto_lose_on_overdue` / `auto_lose_limit`）——沿用「过渡期 metadata」形态。
   零资金列：该表**没有**任何金额字段，也不写 `funds_*` 时间戳（不触发资金入账事件）。
 
+## 风控名单与评估留痕（D15 切片1, 2026-09-16）
+
+- `pallastrade_payment_risk_lists`（§74.1 规划表名）：`list_type`（denylist/allowlist）× `subject_type`
+  （card_fingerprint/bin/email/ip/device/customer/address/country）× `value`（归一化后）+ `value_hash`（SHA256）。
+  **唯一键 `(list_type, subject_type, value_hash)`** = 幂等键；`store_id` **可空 = 全局**（非空 = 店铺）；
+  `status`（active/revoked）+ `expires_at`（**生效率 = active 且未到期**，不是删除）；`added_by`（polymorphic）+ `reason` + `metadata`。
+  索引：`(store_id, subject_type, status)`、`(status, expires_at)`。
+- `pallastrade_payment_risk_assessments`：决策留痕（`order_id` / `store_id` / `decision` / `matched_entry_ids`(jsonb) /
+  `signals`(jsonb) / `evaluated_at`）。**唯一键 `(order_id, evaluated_at)`**（同一秒并发只落一行）——
+  业务上的重复投递去重靠服务层「同决策 + 同命中集」复用窗口（5 分钟），不靠数据库兜底。
+- 两者均为**只新增表**（不回填）；无金额列，也不写 `funds_*` 时间戳（不触发资金入账事件）。
+
 ## Order promotion snapshot (batch4a, 2026-09-10)
 
 `pallastrade_order_promotions` carries the **成交快照** written at money-confirmed time

@@ -335,6 +335,12 @@ export default {
         description: 'Dispute deadline tier specs (policy normalization + tier ledger idempotency/backfill + tier events + policy-gated auto-lose + sweeper metrics + subscriber tiers + admin board/filter/history + DSP-P7-5 regression)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/disputes/d14b_deadline_policy_spec.rb spec/services/pallastrade/disputes/d14b_alert_deadlines_spec.rb spec/jobs/pallastrade/disputes/d14b_deadline_sweeper_spec.rb spec/subscribers/pallastrade/disputes/d14b_deadline_subscriber_spec.rb spec/requests/pallastrade/admin/d14b_disputes_ops_deadline_spec.rb spec/services/pallastrade/disputes/scan_deadlines_spec.rb spec/jobs/pallastrade/disputes/deadline_sweeper_job_spec.rb spec/subscribers/pallastrade/disputes/deadline_alert_subscriber_spec.rb'],
       },
+      // 风控名单（PRD-20260916-payments-d15-risk-lists 切片1）：名单台账/归一化 + 批量导入导出 + 维护审计
+      // + 名单驱动评估留痕（白名单短路/黑名单默认 review）+ 订阅者接线 + 后台工作台/订单页决策卡（含导航一致性回归）
+      'd15-risk-lists-rspec': {
+        description: 'Risk list specs (normalization/uniqueness/active scope + CSV import/export round-trip + upsert/revoke audit + assessment decision matrix & idempotency & store isolation & zero money side effects + order.submitted wiring + admin workbench/order card + navigation regression)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d15_payment_risk_list_spec.rb spec/services/pallastrade/risk/d15_upsert_import_export_spec.rb spec/services/pallastrade/risk/d15_assess_spec.rb spec/subscribers/pallastrade/risk/d15_order_submitted_spec.rb spec/requests/pallastrade/admin/d15_risk_lists_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
+      },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {
         description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',

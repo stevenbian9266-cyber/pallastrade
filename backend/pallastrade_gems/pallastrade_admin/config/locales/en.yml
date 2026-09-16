@@ -1178,6 +1178,76 @@ en:
           approval_already_rejected: This refund was already rejected.
           approval_already_approved: This refund was already approved.
           note_required: A reason is required when rejecting.
+      # PALLAS-CUSTOM: D15 切片1（PRD-20260916-payments-d15-risk-lists）—— 风控名单工作台与订单页决策卡
+      risk_lists:
+        title: Risk lists
+        export_action: Export CSV
+        filter: Filter
+        reset: Reset
+        any: Any
+        list_type: List
+        list_type_denylist: Denylist
+        list_type_allowlist: Allowlist
+        subject_type: Subject
+        subject_email: Email
+        subject_ip: IP address
+        subject_customer: Customer
+        subject_country: Country
+        subject_bin: Card BIN
+        subject_card_fingerprint: Card fingerprint
+        subject_device: Device
+        subject_address: Address
+        status: Status
+        status_active: Active
+        status_expired: Expired
+        status_revoked: Revoked
+        status_filter_all: All entries
+        status_filter_active: In force
+        status_filter_expired: Expired
+        status_filter_revoked: Revoked
+        scope: Applies to
+        scope_all: This store + global
+        scope_global: Global
+        scope_store: This store
+        scope_store_short: This store
+        add_title: Add or renew an entry
+        value: Value
+        value_placeholder: someone@example.com / 203.0.113.9 / 424242
+        value_hint: The value is normalised before storage, so the same subject never creates a second row.
+        expires_at: Expires at
+        no_expiry: Never
+        reason: Reason
+        add_action: Save entry
+        upsert_hint: Saving the same value again renews the existing entry.
+        create_success: "Entry saved for %{value}."
+        create_failed: Could not save this entry
+        revoke_action: Revoke
+        revoke_confirm: Revoke this entry? The history is kept for auditing.
+        revoke_success: "Entry revoked for %{value}."
+        revoke_failed: Could not revoke this entry
+        import_title: Import CSV
+        import_paste: Paste CSV
+        import_placeholder: "list_type,subject_type,value,expires_at,reason"
+        import_file: Or upload a CSV file
+        import_action: Import
+        import_hint: Rows that fail validation are reported and skipped; the rest are still imported.
+        import_success: "Imported: %{created} new, %{updated} updated, %{errors} skipped."
+        import_errors: "Skipped rows - %{rows}"
+        import_failed: Could not import this file
+        import_empty: Nothing to import
+        empty: No entries match these filters.
+        pagination: "Page %{page} of %{pages} (%{total} entries)"
+        previous: Previous page
+        next: Next page
+        assessment_title: Risk assessment
+        assessment_time: Evaluated at
+        assessment_matched: Matched entries
+        assessment_no_match: No list entry matched.
+        assessment_subject: Subject data
+        assessment_insufficient_subject: Not enough order data was available to compare against the lists.
+        decision_allow: Allow
+        decision_review: Needs review
+        decision_block: Block
       personal_details: Personal Details
       previous_page: Previous page
       price_lists:

@@ -65,6 +65,10 @@ module PallasTrade
         # 「不能自批」由服务层强制（职责分离）。
         can :manage, PallasTrade::RefundApproval
 
+        # PALLAS-CUSTOM: D15 切片1（PRD-20260916-payments-d15-risk-lists）——
+        # 风控名单（名单维护 / 批量导入导出 / 撤销）。`:manage` 覆盖全部动作。
+        can :manage, PallasTrade::PaymentRiskList
+
         # General configuration
         can :manage, PallasTrade::RefundReason
         can :manage, PallasTrade::ReimbursementType

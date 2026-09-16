@@ -141,6 +141,14 @@ Rails.application.config.after_initialize do
               position: 58,
               active: -> { controller_name == 'refund_approvals' },
               if: -> { can?(:manage, PallasTrade::RefundApproval) }
+
+    # D15 切片1: 风控名单（Orders → 风控名单；批量导入/导出 + 到期 + 审计；评估留痕驱动人工复核）
+    orders.add :risk_lists,
+              label: 'admin.risk_lists.title',
+              url: :admin_risk_lists_path,
+              position: 59,
+              active: -> { controller_name == 'risk_lists' },
+              if: -> { can?(:manage, PallasTrade::PaymentRiskList) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns

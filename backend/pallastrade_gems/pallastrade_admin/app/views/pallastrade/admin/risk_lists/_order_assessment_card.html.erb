@@ -1,0 +1,45 @@
+<%# locals: (order:) %>
+<%# PALLAS-CUSTOM: D15 切片1（PRD-20260916-payments-d15-risk-lists；业务方案 §72.2）——
+    订单页「风控」卡：最近一次名单评估的决策留痕（决策 + 脱敏命中项 + 时间）。
+    无评估 → 不渲染（避免噪音）；**绝不回显明文名单值**（脱敏唯一口径 = PaymentRiskList#masked_value）。 %>
+<% assessment = order.risk_assessments.first %>
+<% if assessment %>
+  <div class="card mb-6">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong><%= PallasTrade.t('admin.risk_lists.assessment_title') %></strong>
+      <span class="badge <%= assessment.block? ? 'badge-danger' : (assessment.review? ? 'badge-warning' : 'badge-complete') %>">
+        <%= PallasTrade.t("admin.risk_lists.decision_#{assessment.decision}") %>
+      </span>
+    </div>
+    <div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-5"><%= PallasTrade.t('admin.risk_lists.assessment_time') %></dt>
+        <dd class="col-7"><%= l(assessment.evaluated_at, format: :short) %></dd>
+
+        <dt class="col-5"><%= PallasTrade.t('admin.risk_lists.assessment_matched') %></dt>
+        <dd class="col-7">
+          <% if assessment.matched_entry_ids.any? %>
+            <ul class="list-unstyled mb-0">
+              <% Array(assessment.metadata.to_h['matched']).each do |match| %>
+                <li>
+                  <span class="badge <%= match['list_type'] == 'denylist' ? 'badge-danger' : 'badge-info' %>">
+                    <%= PallasTrade.t("admin.risk_lists.list_type_#{match['list_type']}", default: match['list_type']) %>
+                  </span>
+                  <%= PallasTrade.t("admin.risk_lists.subject_#{match['subject_type']}", default: match['subject_type']) %>
+                  <code><%= match['masked'] %></code>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <span class="text-gray-600"><%= PallasTrade.t('admin.risk_lists.assessment_no_match') %></span>
+          <% end %>
+        </dd>
+
+        <% if assessment.insufficient_subject? %>
+          <dt class="col-5"><%= PallasTrade.t('admin.risk_lists.assessment_subject') %></dt>
+          <dd class="col-7 text-gray-600"><%= PallasTrade.t('admin.risk_lists.assessment_insufficient_subject') %></dd>
+        <% end %>
+      </dl>
+    </div>
+  </div>
+<% end %>

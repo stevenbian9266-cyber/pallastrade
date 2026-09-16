@@ -56,6 +56,9 @@ module PallasTrade
       preference :order_frequency_window_minutes, :integer, default: 10
       # Order lifecycle P8 (2026-08-28): 锁库存时机——:order（下单/cart 操作时锁，默认）| :payment（支付确认后锁，cart 操作只校验）
       preference :stock_reservation_strategy, :string, default: 'order'
+      # D15 切片1 (2026-09-16, PRD-20260916-payments-d15-risk-lists): 名单命中（denylist）后的决策
+      # —— 'review'（**默认**：只标记待人工复核，不误伤真实订单）| 'block'（仅显式配置时使用）
+      preference :risk_denylist_action, :string, default: 'review'
       preference :binary_inventory_cache, :boolean, default: false, deprecated: true # only invalidate product cache when a stock item changes whether it is in_stock
       preference :checkout_zone, :string, default: nil, deprecated: true # replace with the name of a zone if you would like to limit the countries
       preference :company, :boolean, default: false, deprecated: 'Use the company_field_enabled preference in the PallasTrade::Store model' # Request company field for billing and shipping addr

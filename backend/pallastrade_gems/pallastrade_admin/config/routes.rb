@@ -434,6 +434,18 @@ PallasTrade::Core::Engine.add_routes do
         post :match
       end
     end
+    # PALLAS-CUSTOM: D15 切片1（PRD-20260916-payments-d15-risk-lists）——
+    # 风控名单（Orders → 风控名单）：筛选/计数 + 新增/续期/撤销 + CSV 批量导入/导出。
+    # 只写名单表 + 审计（零资金副作用，不调 provider）。
+    resources :risk_lists, only: %i[index create] do
+      collection do
+        post :import
+        get :export
+      end
+      member do
+        post :revoke
+      end
+    end
     get '/emails', to: 'emails#show', as: :emails
     patch '/emails', to: 'emails#update'
     post '/emails/test_send', to: 'emails#test_send', as: :emails_test_send

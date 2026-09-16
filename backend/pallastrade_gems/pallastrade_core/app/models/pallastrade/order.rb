@@ -196,6 +196,9 @@ module PallasTrade
       has_many :adjustments, -> { order(:created_at) }, as: :adjustable, class_name: 'PallasTrade::Adjustment'
       has_many :cancellations, -> { order(:created_at) }, inverse_of: :order, class_name: 'PallasTrade::OrderCancellation'
       has_many :approvals, -> { order(:created_at) }, inverse_of: :order, class_name: 'PallasTrade::OrderApproval'
+      # PALLAS-CUSTOM: D15 切片1（PRD-20260916-payments-d15-risk-lists）——风控决策留痕（订单页展示最近一次）
+      has_many :risk_assessments, -> { order(evaluated_at: :desc) }, inverse_of: :order,
+                                  class_name: 'PallasTrade::PaymentRiskAssessment', dependent: :destroy
     end
     has_many :reimbursements, inverse_of: :order, class_name: 'PallasTrade::Reimbursement'
     has_many :customer_returns, class_name: 'PallasTrade::CustomerReturn', through: :return_authorizations

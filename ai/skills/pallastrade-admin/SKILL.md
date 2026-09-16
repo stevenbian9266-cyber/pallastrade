@@ -460,6 +460,26 @@ end
 - **徽章**：`dispute_deadline_badge(dispute)` + `dispute_deadline_class(tier)`（`badge-danger` / `badge-warning` / `badge-info`）经 `helper_method` 暴露视图；颜色只用类名，**不写内联样式**（AP-001/AP-006）。
 - **回归**：`harness verify d14b-dispute-deadlines-rspec`。
 
+## 风控名单工作台（D15 切片1, 2026-09-16，PRD-20260916-payments-d15-risk-lists）
+
+- **新页面** `/admin/risk_lists`（Orders → 风控名单，position **59**；导航项 `orders.add :risk_lists`，
+  `if: can?(:manage, PallasTrade::PaymentRiskList)`）；控制器 `RiskListsController < BaseController`
+  （index / create / revoke / import / export —— **无 edit**：续期 = 用同值再提交，upsert 就更新原行）。
+- **筛选与计数同源**：`PaymentRiskList.filter_by(store:, list_type:, subject_type:, scope_filter:)`（`all/active/expired/revoked`）
+  同时服务列表与四张状态卡（视图给 `<h3 data-count-scope="…">` 便于 spec 断言计数与筛选一致）。
+- **写路径全部走服务**：`Risk::Lists::Upsert`（新增/续期/撤销，写审计 `risk_list_entry_changed`）与
+  `Risk::Lists::ImportCSV`（逐行幂等 + 错误收集，审计 `risk_list_imported`）——控制器**不直接写模型**，避免口径分叉。
+- **导入/导出**：`POST /admin/risk_lists/import`（粘贴 `csv` 或上传 `csv_file`，两者共用同一服务）
+  与 `GET /admin/risk_lists/export`（`send_data`，列与导入同构，可再导入）。
+- ⚠️ **审计 actor 要自己定义**：`audit_actor` **不在** BaseController 里（payouts / refunds_ops / disputes_ops 各自定义）→ 新控制器若不写就报 `NameError`。
+- ⚠️ **订单页注入的 partial 必须以 `_` 开头**：`PallasTrade.admin.partials.order_page_body << 'pallastrade/admin/risk_lists/order_assessment_card'`
+  而文件必须叫 `_order_assessment_card.html.erb`（否则 `ActionView::MissingTemplate`）。
+- ⚠️ **订单页 request spec**：`OrdersController#scope` 用 `current_store.orders.accessible_by(...)` → 后台 spec 里需按既有范式固定店铺
+  （`allow_any_instance_of(PallasTrade::Admin::OrdersController).to receive(:current_store).and_return(store)`），且用 `order.prefixed_id` 访问。
+- **脱敏**：列表/卡片/审计一律 `PaymentRiskList#masked_value`；导出保留原值（权限 + 审计）。
+- ⚠️ **导航一致性 spec 断言 Orders 子项完整列表**（本次新增 `:risk_lists` 已同步）。
+- **回归**：`harness verify d15-risk-lists-rspec`。
+
 ## 支付适用范围编辑：Provider 详情「支付方式」页签（D8 切片2, 2026-09-15，PRD-20260915-payments-d8）
 
 同一页签每行新增「适用范围」编辑器 + 摘要列（改 `_options.html.erb`；**不新增页面**）：

@@ -3858,6 +3858,34 @@
         "visibilityRules": 15,
         "listPerformance": 10
       }
+    },
+    {
+      "id": "GS-153",
+      "name": "A risk list is a registry until a person says otherwise",
+      "description": "PRD-20260916-payments-d15-risk-lists (slice 1 of the D15 risk batch, business plan 搂72.3): fraud operations had no way to record the emails, IPs, BINs or card fingerprints behind a run of bad orders, and no audit of what they knew and when. This slice adds the list registry (denylist / allowlist, per store or global, with expiry and revocation), bulk CSV import/export, and an assessment ledger that turns a list hit into a recorded decision 鈥?feeding the approval loop the platform already had, without blocking, refunding or capturing anything.",
+      "mustDo": [
+        "Normalise the subject value before storing it and key the row on that normalised identity, so the same subject never becomes two rows and the same CSV can be imported twice",
+        "Keep expired and revoked entries visible for auditing while making them stop matching, and never physically delete a list row",
+        "Let an allowlist entry short-circuit a denylist hit, and default a denylist hit to needs-review instead of blocking",
+        "Record one assessment per decision with the matched entries, the subject data used and the evaluated time, so an operator can explain why an order was flagged",
+        "Reuse the existing considered-risky flag and approval path when a decision is not allow, and never re-flag an order that was already approved",
+        "Scope matching to the order's own store plus global entries, and keep CSV export and the workbench reading the same filtered scope",
+        "Mask every subject value in the UI and in audit payloads, and keep the raw value only in the permission-gated CSV export"
+      ],
+      "mustNotDo": [
+        "Block, cancel or refund an order, change payment or order state, move money or call the provider from the list or assessment path",
+        "Apply one store's list to another store's orders, or let a store edit a global row by accident",
+        "Store the same subject twice because it was typed with different casing, spacing or separators, or fail the whole import because one row is invalid",
+        "Leak raw emails, IPs, BINs or fingerprints into the workbench, the order page, the audit trail or the logs",
+        "Turn a list hit straight into an irreversible action 鈥?the 3DS policy, rule engine versions and review queue are later slices"
+      ],
+      "scoring": {
+        "normalisedIdentity": 30,
+        "decisionAudit": 25,
+        "storeIsolation": 20,
+        "dataMinimisation": 15,
+        "importResilience": 10
+      }
     }
   ]
 }

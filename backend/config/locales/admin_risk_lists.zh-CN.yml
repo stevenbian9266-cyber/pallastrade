@@ -1,0 +1,73 @@
+# PALLAS-CUSTOM: D15 切片1（PRD-20260916-payments-d15-risk-lists）—— 风控名单工作台（宿主机 zh-CN 覆盖）
+zh-CN:
+  pallastrade:
+    admin:
+      risk_lists:
+        title: 风控名单
+        export_action: 导出 CSV
+        filter: 筛选
+        reset: 重置
+        any: 全部
+        list_type: 名单类型
+        list_type_denylist: 黑名单
+        list_type_allowlist: 白名单
+        subject_type: 主体类型
+        subject_email: 邮箱
+        subject_ip: IP 地址
+        subject_customer: 客户
+        subject_country: 国家
+        subject_bin: 卡 BIN
+        subject_card_fingerprint: 卡指纹
+        subject_device: 设备
+        subject_address: 地址
+        status: 状态
+        status_active: 生效中
+        status_expired: 已过期
+        status_revoked: 已撤销
+        status_filter_all: 全部条目
+        status_filter_active: 生效中
+        status_filter_expired: 已过期
+        status_filter_revoked: 已撤销
+        scope: 适用范围
+        scope_all: 本店 + 全局
+        scope_global: 全局
+        scope_store: 本店
+        scope_store_short: 本店
+        add_title: 新增 / 续期条目
+        value: 主体值
+        value_placeholder: someone@example.com / 203.0.113.9 / 424242
+        value_hint: 入库前会做归一化，同一主体重复提交只会更新原条目（不会产生第二行）。
+        expires_at: 到期时间
+        no_expiry: 永不过期
+        reason: 原因
+        add_action: 保存条目
+        upsert_hint: 对同一主体值再次保存 = 续期（更新到期时间与原因）。
+        create_success: "已保存条目：%{value}"
+        create_failed: 保存条目失败
+        revoke_action: 撤销
+        revoke_confirm: 撤销该条目？历史记录会保留以便审计。
+        revoke_success: "已撤销条目：%{value}"
+        revoke_failed: 撤销条目失败
+        import_title: 批量导入 CSV
+        import_paste: 粘贴 CSV
+        import_placeholder: "list_type,subject_type,value,expires_at,reason"
+        import_file: 或上传 CSV 文件
+        import_action: 导入
+        import_hint: 校验失败的行会被跳过并报告，其余行照常导入。
+        import_success: "导入完成：新增 %{created} 条，更新 %{updated} 条，跳过 %{errors} 条。"
+        import_errors: "跳过行：%{rows}"
+        import_failed: 导入失败
+        import_empty: 没有可导入的内容
+        empty: 当前筛选条件下没有条目。
+        pagination: "第 %{page} / %{pages} 页（共 %{total} 条）"
+        previous: 上一页
+        next: 下一页
+        assessment_title: 风控评估
+        assessment_time: 评估时间
+        assessment_matched: 命中条目
+        assessment_no_match: 未命中任何名单条目。
+        assessment_subject: 比对主体
+        assessment_insufficient_subject: 该订单缺少可比对的主体信息（邮箱 / IP / 客户 / 国家）。
+        decision_allow: 放行
+        decision_review: 待人工复核
+        decision_block: 阻断

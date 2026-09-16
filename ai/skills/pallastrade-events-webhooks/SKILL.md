@@ -344,6 +344,18 @@ Provider 发起的资金逆转（Stripe `charge.dispute.*`）走**入站** webho
 既计入 `recovered` 又计入 `failed`（事实已修、通知未发出）；④调度 `dispute_recovery_sweep`（每日 01:30，`limit: 50`），
 `journal_gap` 候选走纯本地路径（零 provider I/O）。
 
+### 风控评估订阅者（in-process, D15 切片1, 2026-09-16）
+
+| Event | Subscriber | 语义 |
+|---|---|---|
+| `order.submitted` | `PallasTrade::Risk::OrderSubmittedSubscriber` | 名单评估 → 非 `allow` 且订单未审批时 `considered_risky!`（**只标记**，不阻断） |
+
+要点：①既有发布点（`Carts::Submit#publish_submitted_event`）把 payload 写成 `publish_event('order.submitted', payload: {…})`
+→ 实际事件 payload 是 **`{ 'payload' => { 'order_id' => or_… } }`**（嵌套）；订阅者必须兼容
+`payload['id']` / `payload['order_id']` / `payload.dig('payload', 'order_id')` 三种形态（写用例两种都要盖）；
+②订阅者异常一律 rescue + 日志（**风控绝不能阻断下单**）；③评估留痕自带幂等（同决策复用窗口 + 唯一键），
+重复投递不会重复落行。
+
 ### Payment session lifecycle
 
 | Event | When |

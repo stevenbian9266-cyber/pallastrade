@@ -1,0 +1,201 @@
+<%# PALLAS-CUSTOM: D15 切片1（PRD-20260916-payments-d15-risk-lists；业务方案 §72.3）——
+    风控名单工作台：筛选（类型/主体/生效状态/作用域）+ 与筛选同源计数 + 新增/续期 + CSV 导入导出 + 撤销。
+    展示一律**脱敏**（CSV 导出保留原值，受权限与审计保护）。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.risk_lists.title') %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= link_to PallasTrade.t('admin.risk_lists.export_action'),
+              PallasTrade.export_admin_risk_lists_path(@filters.compact),
+              class: 'btn btn-outline-secondary' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <%= form_with url: PallasTrade.admin_risk_lists_path, method: :get, local: true do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <%= label_tag :list_type, PallasTrade.t('admin.risk_lists.list_type'), class: 'form-label' %>
+          <%= select_tag :list_type,
+                         options_for_select(@list_types.map { |type| [PallasTrade.t("admin.risk_lists.list_type_#{type}"), type] }, @filters[:list_type]),
+                         include_blank: PallasTrade.t('admin.risk_lists.any'), class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-3">
+          <%= label_tag :subject_type, PallasTrade.t('admin.risk_lists.subject_type'), class: 'form-label' %>
+          <%= select_tag :subject_type,
+                         options_for_select(@subject_types.map { |type| [PallasTrade.t("admin.risk_lists.subject_#{type}"), type] }, @filters[:subject_type]),
+                         include_blank: PallasTrade.t('admin.risk_lists.any'), class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :scope_filter, PallasTrade.t('admin.risk_lists.status'), class: 'form-label' %>
+          <%= select_tag :scope_filter,
+                         options_for_select(@scope_filters.map { |s| [PallasTrade.t("admin.risk_lists.status_filter_#{s}"), s] }, @filters[:scope_filter]),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :store_scope, PallasTrade.t('admin.risk_lists.scope'), class: 'form-label' %>
+          <%= select_tag :store_scope,
+                         options_for_select([[PallasTrade.t('admin.risk_lists.scope_all'), 'all'],
+                                             [PallasTrade.t('admin.risk_lists.scope_global'), 'global']], @filters[:store_scope]),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-12 col-md-3 d-flex gap-2">
+          <%= submit_tag PallasTrade.t('admin.risk_lists.filter'), class: 'btn btn-sm btn-primary' %>
+          <%= link_to PallasTrade.t('admin.risk_lists.reset'), PallasTrade.admin_risk_lists_path,
+                      class: 'btn btn-sm btn-outline-secondary' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="grid grid-cols-12 gap-6 mb-6">
+  <% @scope_filters.each do |scope_filter| %>
+    <div class="col-span-6 md:col-span-3">
+      <div class="card"><div class="card-body">
+        <div class="text-gray-600"><%= PallasTrade.t("admin.risk_lists.status_filter_#{scope_filter}") %></div>
+        <h3 class="mb-0" data-count-scope="<%= scope_filter %>"><%= @counts[scope_filter] %></h3>
+      </div></div>
+    </div>
+  <% end %>
+</div>
+
+<div class="grid grid-cols-12 gap-6 mb-6">
+  <div class="col-span-12 lg:col-span-6">
+    <div class="card h-full">
+      <div class="card-header"><strong><%= PallasTrade.t('admin.risk_lists.add_title') %></strong></div>
+      <div class="card-body">
+        <%= form_with url: PallasTrade.admin_risk_lists_path, scope: :payment_risk_list, method: :post, local: true do |f| %>
+          <div class="row g-2 align-items-end">
+            <div class="col-6">
+              <%= f.label :list_type, PallasTrade.t('admin.risk_lists.list_type'), class: 'form-label' %>
+              <%= f.select :list_type,
+                           @list_types.map { |type| [PallasTrade.t("admin.risk_lists.list_type_#{type}"), type] },
+                           { selected: @entry.list_type }, class: 'form-select form-select-sm' %>
+            </div>
+            <div class="col-6">
+              <%= f.label :subject_type, PallasTrade.t('admin.risk_lists.subject_type'), class: 'form-label' %>
+              <%= f.select :subject_type,
+                           @subject_types.map { |type| [PallasTrade.t("admin.risk_lists.subject_#{type}"), type] },
+                           { selected: @entry.subject_type }, class: 'form-select form-select-sm' %>
+            </div>
+            <div class="col-12">
+              <%= f.label :value, PallasTrade.t('admin.risk_lists.value'), class: 'form-label' %>
+              <%= f.text_field :value, class: 'form-control form-control-sm', required: true,
+                                       placeholder: PallasTrade.t('admin.risk_lists.value_placeholder') %>
+              <small class="text-gray-600"><%= PallasTrade.t('admin.risk_lists.value_hint') %></small>
+            </div>
+            <div class="col-6">
+              <%= f.label :expires_at, PallasTrade.t('admin.risk_lists.expires_at'), class: 'form-label' %>
+              <%= f.date_field :expires_at, class: 'form-control form-control-sm' %>
+            </div>
+            <div class="col-6">
+              <%= f.label :store_scope, PallasTrade.t('admin.risk_lists.scope'), class: 'form-label' %>
+              <%= f.select :store_scope,
+                           [[PallasTrade.t('admin.risk_lists.scope_store'), current_store&.name || PallasTrade.t('admin.risk_lists.scope_store_short')],
+                            [PallasTrade.t('admin.risk_lists.scope_global'), 'global']],
+                           { selected: 'all' }, class: 'form-select form-select-sm' %>
+            </div>
+            <div class="col-12">
+              <%= f.label :reason, PallasTrade.t('admin.risk_lists.reason'), class: 'form-label' %>
+              <%= f.text_field :reason, class: 'form-control form-control-sm' %>
+            </div>
+            <div class="col-12 d-flex gap-2">
+              <%= f.submit PallasTrade.t('admin.risk_lists.add_action'), class: 'btn btn-sm btn-primary' %>
+              <span class="text-gray-600 align-self-center"><%= PallasTrade.t('admin.risk_lists.upsert_hint') %></span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-span-12 lg:col-span-6">
+    <div class="card h-full">
+      <div class="card-header"><strong><%= PallasTrade.t('admin.risk_lists.import_title') %></strong></div>
+      <div class="card-body">
+        <%= form_with url: PallasTrade.import_admin_risk_lists_path, method: :post, local: true, multipart: true do |f| %>
+          <div class="mb-3">
+            <%= label_tag :csv, PallasTrade.t('admin.risk_lists.import_paste'), class: 'form-label' %>
+            <%= text_area_tag :csv, nil, rows: 6, class: 'form-control form-control-sm',
+                                       placeholder: PallasTrade.t('admin.risk_lists.import_placeholder') %>
+          </div>
+          <div class="mb-3">
+            <%= label_tag :csv_file, PallasTrade.t('admin.risk_lists.import_file'), class: 'form-label' %>
+            <%= file_field_tag :csv_file, accept: '.csv,text/csv', class: 'form-control form-control-sm' %>
+          </div>
+          <%= submit_tag PallasTrade.t('admin.risk_lists.import_action'), class: 'btn btn-sm btn-primary' %>
+          <small class="text-gray-600 d-block mt-2"><%= PallasTrade.t('admin.risk_lists.import_hint') %></small>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <% if @entries.any? %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th><%= PallasTrade.t('admin.risk_lists.list_type') %></th>
+              <th><%= PallasTrade.t('admin.risk_lists.subject_type') %></th>
+              <th><%= PallasTrade.t('admin.risk_lists.value') %></th>
+              <th><%= PallasTrade.t('admin.risk_lists.status') %></th>
+              <th><%= PallasTrade.t('admin.risk_lists.expires_at') %></th>
+              <th><%= PallasTrade.t('admin.risk_lists.scope') %></th>
+              <th><%= PallasTrade.t('admin.risk_lists.reason') %></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @entries.each do |entry| %>
+              <tr>
+                <td><span class="badge <%= entry.denylist? ? 'badge-danger' : 'badge-info' %>">
+                  <%= PallasTrade.t("admin.risk_lists.list_type_#{entry.list_type}") %></span></td>
+                <td><%= PallasTrade.t("admin.risk_lists.subject_#{entry.subject_type}") %></td>
+                <td><code><%= entry.masked_value %></code></td>
+                <td><span class="badge <%= risk_list_status_class(entry) %>"><%= risk_list_status_label(entry) %></span></td>
+                <td><%= entry.expires_at ? l(entry.expires_at, format: :short) : PallasTrade.t('admin.risk_lists.no_expiry') %></td>
+                <td><%= risk_list_scope_label(entry) %></td>
+                <td class="text-gray-600"><%= entry.reason %></td>
+                <td class="text-right">
+                  <% if entry.status == 'active' %>
+                    <%= link_to PallasTrade.t('admin.risk_lists.revoke_action'),
+                                PallasTrade.revoke_admin_risk_list_path(entry, @filters.compact),
+                                data: { turbo_method: :post, turbo_confirm: PallasTrade.t('admin.risk_lists.revoke_confirm') },
+                                class: 'btn btn-sm btn-outline-danger' %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if @pages > 1 %>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="text-gray-600">
+            <%= PallasTrade.t('admin.risk_lists.pagination', page: @page, pages: @pages, total: @total) %>
+          </div>
+          <div class="d-flex gap-2">
+            <% if @page > 1 %>
+              <%= link_to PallasTrade.t('admin.risk_lists.previous'),
+                          PallasTrade.admin_risk_lists_path(@filters.compact.merge(page: @page - 1)),
+                          class: 'btn btn-sm btn-outline-secondary' %>
+            <% end %>
+            <% if @page < @pages %>
+              <%= link_to PallasTrade.t('admin.risk_lists.next'),
+                          PallasTrade.admin_risk_lists_path(@filters.compact.merge(page: @page + 1)),
+                          class: 'btn btn-sm btn-outline-secondary' %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    <% else %>
+      <p class="text-gray-600 mb-0"><%= PallasTrade.t('admin.risk_lists.empty') %></p>
+    <% end %>
+  </div>
+</div>

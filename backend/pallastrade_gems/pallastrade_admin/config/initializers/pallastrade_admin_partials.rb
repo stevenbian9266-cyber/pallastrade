@@ -22,4 +22,12 @@ Rails.application.config.after_initialize do
   # the same sidebar injection point.
   health_partial = 'pallastrade/admin/catalog_health/product_card'
   sidebar_partials << health_partial unless sidebar_partials.include?(health_partial)
+
+  # D15 切片1 (PRD-20260916-payments-d15-risk-lists FR-008): the order page shows the latest
+  # risk assessment (decision + masked matches) through the documented body injection point
+  # instead of overriding the gem view (decision tree: admin extensions before view copies).
+  risk_partial = 'pallastrade/admin/risk_lists/order_assessment_card'
+  order_body_partials = PallasTrade.admin.partials.order_page_body
+
+  order_body_partials << risk_partial unless order_body_partials.include?(risk_partial)
 end

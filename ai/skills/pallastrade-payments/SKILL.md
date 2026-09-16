@@ -1418,6 +1418,33 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   `dispute_deadline_tier_alerted`（订阅者：`t3`/`t1` 只留痕）、`dispute_auto_lost_overdue`（`actor: 'system'` 字符串 actor → `actor_type` / `actor_id` 为 nil，断言查 `after`）。
 - **回归**：`harness verify d14b-dispute-deadlines-rspec`（41 examples，含 DSP-P7-5 `scan_deadlines` / `deadline_sweeper_job` / `deadline_alert_subscriber` 回归）。
 
+## 风控名单与订单风险评估（D15 切片1, 2026-09-16；PRD-20260916-payments-d15-risk-lists）
+
+业务方案 §72.3/§72.2：风控此前只有**支付响应驱动**的启发式（`Order#is_risky?` = `payments.risky`）与只读 AVS/CVV 面板 —— 名单不可维护、决策无留痕。
+本切片给风控打地基：**名单台账 + 评估留痕**，并把结果接回**既有复核闭环**。
+铁律：**本切片零资金副作用、零 provider** —— 不阻断下单、不改支付/订单金额与状态、不做 3DS 下发（切片3）。
+
+- **名单表** `pallastrade_payment_risk_lists`（§74.1 规划表名）：`list_type`（`denylist`/`allowlist`）× `subject_type`
+  （`card_fingerprint`/`bin`/`email`/`ip`/`device`/`customer`/`address`/`country`）× **归一化值**；
+  **唯一键 `(list_type, subject_type, value_hash)`**（`value_hash = SHA256("type:subject:归一化值")`）→ 幂等的唯一依据。
+  `store_id` **可空 = 全局名单**；生效率 = `status='active'` 且（`expires_at` 空或未来）→ `active` scope 是唯一口径；撤销用 `status='revoked'`（**保留历史**）。
+- **归一化**（`PaymentRiskList.normalize_value`，维护/导入/评估共用）：邮箱与设备小写、国家大写、BIN 只留数字、
+  卡指纹去空白 + 小写、IP 去空白 + 小写、地址小写 + 折叠空白。
+- **留痕表** `pallastrade_payment_risk_assessments`：`order_id` / `store_id` / `decision`（`allow`/`review`/`block`）/ `matched_entry_ids` / `signals` / `evaluated_at`。
+- **唯一写入口** `Risk::Assess.call(order:, now:)`：先算 **allowlist**（命中 → `allow` **短路**，白名单优先于黑名单），
+  再算 **denylist**（命中 → 决策取 `PallasTrade::Config[:risk_denylist_action]`，**默认 `review`**：只标记待复核；
+  仅显式配 `block` 才是 `block`；非法值回落 `review`）；无命中 / 主体不足 → `allow` + `signals['insufficient_subject']`（**不猜**）。
+  可解析主体 = 订单本地字段（`email` / `last_ip_address` / `user_id` / 账单地址国家）——**零 provider I/O**。
+- **留痕幂等**：重复投递（5 分钟窗口内**同决策 + 同命中集**）→ **复用已有行**；命中集/决策变化或窗口之外 → 新增一行（审计不丢）；
+  兼底唯一键 `(order_id, evaluated_at)`（同一秒并发只落一行）。
+- **接线**（FR-006）：订阅 `order.submitted`（`Carts::Submit`）→ `Assess` → 非 `allow` 且订单**未审批**时 `order.considered_risky!`
+  （**复用**既有字段 + `Orders::Approve` 人工复核闭环）；异常 rescue + 日志，**绝不阻断下单**。
+  ⚠️ 既有发布点把 payload 嵌在 `payload` 键下（`{ 'payload' => { 'order_id' => or_… } }`）→ 订阅者兼容 `id` / `order_id` / 嵌套 `payload.order_id` 三种形态。
+- **店铺隔离**：评估只取「全局 + 本订单店铺」；A 店名单绝不命中 B 店订单（与 D14b 同纪律）。
+- **脱敏**（页面 / 审计唯一口径）：邮箱 `d***@example.com`、IP `203.0.*.*`、BIN `4242***`、卡指纹 `abcd***3456`；
+  CSV 导出保留原值（权限 + 审计保护），审计 payload **不落明文**。
+- **回归**：`harness verify d15-risk-lists-rspec`（43 例，含后台导航一致性）。
+
 ## 熔断与健康 — 入口级软置灰（D11 切片1, 2026-09-16；PRD-20260916-payments-d11-circuit-breaker-health）
 
 业务方案 §67.3：provider 抖动时**先把入口从前台摘掉**（软置灰），而不是让用户一路踩到支付失败。
