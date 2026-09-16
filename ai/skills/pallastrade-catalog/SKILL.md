@@ -282,7 +282,24 @@ F-2 只是把它经 `PallasTrade::Shipping::Estimate` 与 `delivery_method_seria
 商品层**没有任何防重约束**，所以重复商品会真实存在：`variant.sku` 的唯一性校验可被 `disable_sku_validation` 关闭、允许为空且仅限未删除行；
 `pallastrade_variants.barcode` **有列有索引，但完全无校验**；`product.name` 无约束。唯一“自动去重”的是 slug（`Product::Slugs#ensure_slug_is_unique` 冲突时补 uuid）——因此 **slug 不能当重复信号**。
 
-后台 `Products → Duplicate Products`（`PallasTrade::Products::DuplicateCandidates`）按 `duplicate_barcode` / `duplicate_sku` / `duplicate_name` 三类信号给候选分组（只读，合并仍属 D-3）。
+后台 `Products → Duplicate Products`（`PallasTrade::Products::DuplicateCandidates`）按 `duplicate_barcode` / `duplicate_sku` / `duplicate_name` 三类信号给候选分组（只读）；**合并**已由 D-3 提供，见下节。
+
+## 商品合并（Merge Product，2026-09-16 D-3）
+
+`Products::MergePreview` / `Products::Merge` / `Products::UndoMerge` 三件套 + `pallastrade_product_merges` 台账；
+入口在 `Products → Duplicate Products`（比较页选「保留哪个 / 合并哪个」→ 预检页 → 确认执行，工作台可撤销）。
+
+- **预检只读**：`MergePreview` 回答「会发生什么」（每段 move/skip 计数 + 跳过原因 + 旧 URL 301 计划 + 历史引用计数），
+  执行复用同一份结果 —— 两者口径构造上不可能不一致（历史引用**只统计**）。
+- **迁移守恒**：能搬的搬（variants / 主变体库存行 / reviews / media / classifications / promotions），
+  冲突的**跳过并留在原处**：`sku_conflict` / `review_conflict` / `stock_location_conflict` / `taxon_duplicate` / `promotion_duplicate`。
+- **历史交易永不改写**：`line_items` / `orders` / `payments` / `commerce_transactions` 在合并与撤销前后**逐字节不变**（spec 用快照断言）。
+- **被合并商品**：`archived` + **纯软删**（`update_columns(deleted_at:)`，**不得**走 `destroy` —— `reviews/media/variants` 是 `dependent: :destroy`，会把被跳过的评论真删）+ `private_metadata['merged_into']` 标记。
+- **旧 URL**：按店铺默认国家 × 支持语言建 `Redirect`；storefront middleware 拿的是**完整 pathname**，所以 from_path 必须带 `/{country}/{locale}` 前缀。
+- **撤销**：台账记逐条 id；撤销逐项搬回 + 恢复原状态（`absorbed_status_before`）+ 停用 redirect；任一清单项缺失/易主 → `Blocked` **整体拒绝**（不做部分撤销）；重复撤销幂等。
+- **服务不得依赖调用方的关联缓存**：一律显式 `where(product_id: …)` 查询（工厂/调用方刚插入的行可能还没进 `product.variants` 缓存）。
+
+回归验证：`harness verify d3-product-merge-rspec`。
 口径：`LOWER(TRIM(...))` 分组 + `HAVING COUNT(DISTINCT products.id) > 1`，同店 + 未删除 + 非 archived。
 
 ## Catalog Health 的 AI 修复建议（AI Fix Suggestion，2026-09-16 Batch E-3）

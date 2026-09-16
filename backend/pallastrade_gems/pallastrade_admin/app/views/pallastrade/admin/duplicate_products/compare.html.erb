@@ -37,3 +37,38 @@
     </div>
   </div>
 <% end %>
+
+<%# D-3 切片1（PRD-20260916-catalog-d3-product-merge FR-007）：合并入口。
+    先选「保留哪个 / 合并哪个」，再进预检页看清影响面 —— 这里不写任何数据。 %>
+<% if @products.size >= 2 %>
+  <div class="card-lg mt-6" data-testid="merge-entry">
+    <div class="card-header">
+      <h3 class="card-title"><%= PallasTrade.t('admin.duplicate_products.merge.entry_heading') %></h3>
+    </div>
+    <div class="card-body">
+      <p class="text-gray-500 mb-4"><%= PallasTrade.t('admin.duplicate_products.merge.entry_help') %></p>
+      <%= form_with url: PallasTrade.admin_merge_duplicate_products_path, method: :get, data: { testid: 'merge-entry-form' } do %>
+        <div class="mb-3">
+          <div class="font-medium"><%= PallasTrade.t('admin.duplicate_products.merge.keep_label') %></div>
+          <% @products.each_with_index do |product, index| %>
+            <label class="flex items-center gap-2 mt-1">
+              <%= radio_button_tag :survivor_id, product.prefixed_id, index.zero?, data: { testid: 'merge-survivor-option' } %>
+              <span><%= product.name %> <span class="text-gray-500 text-sm"><%= product.slug %></span></span>
+            </label>
+          <% end %>
+        </div>
+        <div class="mb-3">
+          <div class="font-medium"><%= PallasTrade.t('admin.duplicate_products.merge.absorb_label') %></div>
+          <% @products.each_with_index do |product, index| %>
+            <label class="flex items-center gap-2 mt-1">
+              <%= radio_button_tag :absorbed_id, product.prefixed_id, index == 1, data: { testid: 'merge-absorbed-option' } %>
+              <span><%= product.name %> <span class="text-gray-500 text-sm"><%= product.slug %></span></span>
+            </label>
+          <% end %>
+        </div>
+        <%= submit_tag PallasTrade.t('admin.duplicate_products.merge.preview_button'),
+                       class: 'btn btn-primary', data: { testid: 'merge-preview-submit' } %>
+      <% end %>
+    </div>
+  </div>
+<% end %>

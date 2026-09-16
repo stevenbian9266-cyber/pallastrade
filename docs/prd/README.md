@@ -211,3 +211,5 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260916-payments-d14b-dispute-deadlines | payments | 2026-09-16 | 实施（切片2）：T-3/T-1 分档幂等告警（台账唯一键 + 跳档补齐）+ 超期策略化自动 lost（默认关闭 + 单轮上限 + 审计）+ 后台分档看板/列/提醒历史；`d14b-dispute-deadlines-rspec`（41 例，含 DSP-P7-5 回归）绿；零资金副作用；拒付率看板留切片3 |
 | done | PRD-20260916-catalog-batch-f5-helpful-vote | catalog | 2026-09-16 | 实施：评论 Helpful Vote（§十 **最后一项**）——新表 `pallastrade_review_votes`（一人一票唯一索引）+ `helpful_votes_count` 计数器 + 2 个投票端点 + 读模型（计数公开 / 本人状态仅登录）+ `most_helpful` 排序 + 前台按钮与登录引导 + 后台 Helpful 列；后端 29 例 + 前台 6 例绿，`f5-helpful-vote-rspec` |
 | done | PRD-20260916-payments-d15-risk-lists | payments | 2026-09-16 | （实施时回填） |
+| done | PRD-20260916-catalog-d3-product-merge | catalog | 2026-09-16 | （实施时回填） |
+| approved | PRD-20260916-payments-d13c-fee-cost-report | payments | 2026-09-16 | （实施时回填） |

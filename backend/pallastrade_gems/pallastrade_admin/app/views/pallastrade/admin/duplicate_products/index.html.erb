@@ -108,3 +108,54 @@
     <% end %>
   </div>
 </div>
+
+<%# D-3 切片1（PRD-20260916-catalog-d3-product-merge FR-007/FR-010）：合并台账 ——
+    商家能看到「合并过什么」，并在需要时一键撤销。 %>
+<div class="card-lg mt-6" data-testid="recent-merges">
+  <div class="card-header">
+    <h3 class="card-title"><%= PallasTrade.t('admin.duplicate_products.merge.recent_heading') %></h3>
+  </div>
+  <div class="card-body p-0">
+    <% if @recent_merges.empty? %>
+      <p class="text-gray-500 p-4" data-testid="recent-merges-empty">
+        <%= PallasTrade.t('admin.duplicate_products.merge.recent_empty') %>
+      </p>
+    <% else %>
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th><%= PallasTrade.t('admin.duplicate_products.merge.kept') %></th>
+              <th><%= PallasTrade.t('admin.duplicate_products.merge.merged') %></th>
+              <th class="text-center"><%= PallasTrade.t('admin.duplicate_products.merge.moves') %></th>
+              <th class="text-right"><%= PallasTrade.t('admin.duplicate_products.action') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @recent_merges.each do |merge| %>
+              <tr data-testid="recent-merge-row" data-undone="<%= merge.undone? %>">
+                <td><%= merge.survivor&.name %></td>
+                <td><%= merge.absorbed&.name %></td>
+                <td class="text-center"><%= merge.counts.values.sum { |counts| counts['move'].to_i } %></td>
+                <td class="text-right">
+                  <% if merge.undone? %>
+                    <span class="text-gray-400" data-testid="merge-undone-label">
+                      <%= PallasTrade.t('admin.duplicate_products.merge.undone_at', at: l(merge.undone_at, format: :short)) %>
+                    </span>
+                  <% else %>
+                    <%= button_to PallasTrade.t('admin.duplicate_products.merge.undo'),
+                                  PallasTrade.admin_undo_merge_duplicate_products_path(merge_id: merge.prefixed_id),
+                                  method: :post,
+                                  class: 'btn btn-sm btn-light',
+                                  form: { data: { testid: 'merge-undo-form' } },
+                                  data: { turbo_confirm: PallasTrade.t('admin.duplicate_products.merge.undo_confirm') } %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  </div>
+</div>

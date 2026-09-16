@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_16_220000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_16_240000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1423,6 +1423,38 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_220000) do
     t.index ["store_id"], name: "index_pallastrade_payment_combinations_on_store_id"
   end
 
+  create_table "pallastrade_payment_fee_policies", force: :cascade do |t|
+    t.string "card_type", limit: 32
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id"
+    t.decimal "cross_border_fixed", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "cross_border_percent", precision: 6, scale: 4, default: "0.0", null: false
+    t.string "currency", limit: 10
+    t.decimal "currency_conversion_percent", precision: 6, scale: 4, default: "0.0", null: false
+    t.datetime "effective_from"
+    t.datetime "effective_until"
+    t.decimal "fixed_fee", precision: 12, scale: 2, default: "0.0", null: false
+    t.string "home_country", limit: 8
+    t.decimal "max_fee", precision: 12, scale: 2
+    t.jsonb "metadata", default: {}, null: false
+    t.decimal "min_fee", precision: 12, scale: 2
+    t.string "name", null: false
+    t.decimal "percent_fee", precision: 6, scale: 4, default: "0.0", null: false
+    t.decimal "platform_percent", precision: 6, scale: 4, default: "0.0", null: false
+    t.string "region", limit: 8
+    t.datetime "revoked_at"
+    t.string "scope_id"
+    t.string "scope_type", default: "global", null: false
+    t.string "settlement_currency", limit: 10
+    t.string "status", default: "active", null: false
+    t.bigint "store_id"
+    t.datetime "updated_at", null: false
+    t.index ["scope_type", "scope_id"], name: "idx_fee_policies_scope"
+    t.index ["status", "effective_from"], name: "idx_fee_policies_status_effective"
+    t.index ["store_id", "status"], name: "idx_fee_policies_store_status"
+    t.index ["store_id"], name: "index_pallastrade_payment_fee_policies_on_store_id"
+  end
+
   create_table "pallastrade_payment_methods", force: :cascade do |t|
     t.boolean "active", default: true
     t.boolean "auto_capture"
@@ -1802,6 +1834,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_220000) do
     t.index ["variant_id", "currency", "price_list_id"], name: "index_pt_prices_on_variant_currency_price_list", unique: true, where: "((price_list_id IS NOT NULL) AND (deleted_at IS NULL) AND (amount IS NOT NULL))"
     t.index ["variant_id", "currency"], name: "index_pt_prices_on_variant_id_and_currency", unique: true, where: "((price_list_id IS NULL) AND (deleted_at IS NULL) AND (amount IS NOT NULL))"
     t.index ["variant_id"], name: "index_pt_prices_on_variant_id"
+  end
+
+  create_table "pallastrade_product_merges", force: :cascade do |t|
+    t.bigint "absorbed_id", null: false
+    t.string "absorbed_status_before"
+    t.bigint "actor_id"
+    t.string "actor_label"
+    t.string "actor_type"
+    t.jsonb "counts", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.jsonb "moved", default: {}, null: false
+    t.jsonb "redirect_ids", default: [], null: false
+    t.jsonb "skips", default: [], null: false
+    t.bigint "store_id", null: false
+    t.bigint "survivor_id", null: false
+    t.datetime "undone_at"
+    t.string "undone_by_label"
+    t.datetime "updated_at", null: false
+    t.index ["absorbed_id"], name: "index_pallastrade_product_merges_on_absorbed_id"
+    t.index ["store_id", "absorbed_id"], name: "idx_product_merges_active_absorbed", unique: true, where: "(undone_at IS NULL)"
+    t.index ["store_id", "survivor_id"], name: "index_pallastrade_product_merges_on_store_id_and_survivor_id"
   end
 
   create_table "pallastrade_product_option_types", force: :cascade do |t|
@@ -3162,6 +3215,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_220000) do
   add_foreign_key "pallastrade_orders", "pallastrade_orders", column: "split_from_id"
   add_foreign_key "pallastrade_payment_combinations", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_payment_combinations", "pallastrade_users", column: "customer_id"
+  add_foreign_key "pallastrade_payment_fee_policies", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_payment_risk_assessments", "pallastrade_orders", column: "order_id"
   add_foreign_key "pallastrade_payment_risk_assessments", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_payment_risk_lists", "pallastrade_stores", column: "store_id"

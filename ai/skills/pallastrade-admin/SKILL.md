@@ -625,7 +625,7 @@ Products → **Catalog Health**（`/admin/catalog_health`）是商品运营的�
 
 ### Duplicate Detection —— 重复商品候选（2026-09-15，PRD-20260915-catalog-batch-d2-duplicate-detection）
 
-Products → **Duplicate Products**（`/admin/duplicate_products`）是商品治理第三步：列出**看起来重复**的商品候选，并给你并排对比。只读——**合并商品（Merge）是独立专项 D-3**（要收拾 Variant / Reviews / Redirects / 历史交易关系）。
+Products → **Duplicate Products**（`/admin/duplicate_products`）是商品治理第三步：列出**看起来重复**的商品候选，并给你并排对比。候选发现是只读的；**合并商品（Merge）已由 D-3 提供**（变体 / 评论 / 媒体 / 分类 / 促销迁移 + Redirect + 台账 + 撤销），入口就在同一页，见下节。
 
 | 信号 | 口径（一律：同店 + 商品未删除 + 非 archived + 变体未删除） |
 |---|---|
@@ -647,6 +647,22 @@ Products → **Duplicate Products**（`/admin/duplicate_products`）是商品治
 页面：概览（三信号计数 → 带 `?signal=` 链接）+ 候选表（组键 / 商品链接 / `+N more`）+ 对比页 `compare?product_ids[]=…`（名称/slug/状态/变体·SKU/条码/基础价/库存/渠道/分类/时间，缺失值占位）。
 
 回归验证：`harness verify duplicate-products-rspec`。
+
+### Merge Product —— 重复商品合并与撤销（2026-09-16，PRD-20260916-catalog-d3-product-merge）
+
+同一工作台的第四步（也是方案 §十二 的收官项）：候选与对比页现在能直接**合并**——对比页底部“合并入口”卡片把 `product_ids[]` 带进预检页；预检页把“会发生什么”摊开（每段迁移/跳过计数、跳过原因、旧 URL 301 计划、历史引用计数），确认后 POST 执行；工作台顶部“最近合并”卡片可**撤销**。
+
+| 关注点 | 做法 |
+|---|---|
+| 预检与执行同源 | 都调 `Products::MergePreview`：预检零写入，执行复用同一份结果，**口径不可能不一致** |
+| 冲突不覆盖 | SKU / 评论 / 库存位置 / 分类 / 促销 冲突 → 跳过 + 在预检页列出原因，原记录**留在原处** |
+| 历史不可改写 | 预检页显式声明历史订单/支付/流水**零改写**（只统计引用数） |
+| 撤销 | “最近合并”行内 `button_to` + `data: { turbo_confirm: }`；被占用（清单项缺失/易主）则**整体拒绝**并提示原因 |
+| 权限 | 与工作台一致：`can?(:read, PallasTrade::Product)` 读预检；执行/撤销需 `can?(:update, …)` / `can?(:destroy, …)`，控制器逐项检查 |
+| 路由 helper | `PallasTrade.admin_merge_duplicate_products_path` / `PallasTrade.admin_undo_merge_duplicate_products_path`（gem 内路由必须带 `admin_` 前缀） |
+| 硬约束 | 弃用商品用 `update_columns(deleted_at:)` **纯软删**；`destroy` 会触发 `dependent: :destroy` 把被跳过的评论真删（spec 已钉死） |
+
+回归验证：`harness verify d3-product-merge-rspec`。
 
 ### AI Product Copilot —— 商品编辑页 AI 助手（2026-09-15，PRD-20260915-catalog-batch-e1-ai-copilot）
 

@@ -274,6 +274,12 @@ export default {
         description: 'Review helpful vote specs (one vote per customer with a unique index, idempotent POST/DELETE, own-review 422, non-approved 404, guest 401, cross-store 404, count + helpful_voted read model without voter identity, most_helpful ordering with stable tie-break, admin column)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/review_vote_spec.rb spec/requests/api/v3/store/review_votes_spec.rb spec/requests/api/v3/store/reviews_helpful_sorting_spec.rb spec/requests/pallastrade/admin/reviews_spec.rb'],
       },
+      // 商品合并（PRD-20260916-catalog-d3-product-merge）：预检零写入 + 迁移守恒 + 冲突跳过 + 历史
+      // 交易零改写 + 归档软删留痕 + 台账/审计 + 撤销逐项还原与阻塞拒绝 + 后台预览/执行/撤销
+      'd3-product-merge-rspec': {
+        description: 'Product merge specs (read-only preview with move/skip accounting, SKU & review conflicts kept where they were, archived + soft-deleted with merged_into, historical line items/orders untouched, idempotent merge, ledger + audit rows, undo restores every recorded item and refuses on blockers, admin preview / merge / undo)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/products/merge_preview_spec.rb spec/services/pallastrade/products/merge_spec.rb spec/services/pallastrade/products/undo_merge_spec.rb spec/requests/pallastrade/admin/product_merges_spec.rb'],
+      },
       // 评论审核工作台批量通过/拒绝（PRD-20260916-catalog-batch-f3-review-bulk-moderation）：
       // 逐条鉴权 + 逐条走状态机（禁 update_all）+ 空选/超限守卫 + 四计数报告
       'f3-review-bulk-rspec': {
@@ -341,9 +347,15 @@ export default {
         description: 'Risk list specs (normalization/uniqueness/active scope + CSV import/export round-trip + upsert/revoke audit + assessment decision matrix & idempotency & store isolation & zero money side effects + order.submitted wiring + admin workbench/order card + navigation regression)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d15_payment_risk_list_spec.rb spec/services/pallastrade/risk/d15_upsert_import_export_spec.rb spec/services/pallastrade/risk/d15_assess_spec.rb spec/subscribers/pallastrade/risk/d15_order_submitted_spec.rb spec/requests/pallastrade/admin/d15_risk_lists_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
       },
+      // 费率模型与支付成本报表（PRD-20260916-payments-d13c-fee-cost-report 切片3）：费率策略归一化/优先级/条件
+      // + 单笔计算（分量/保底封顶/跨境与转换的不猜口径）+ 只读成本报表（自洽/按入口排名/可下钻/实际 vs 模型/
+      // 跨店隔离/零资金副作用/查询数不随行数增长）+ 后台费率维护与报表页（计数同源/审计/权限/CSV 无卡号）
+      'd13c-cost-report-rspec': {
+        description: 'Fee policy & payment cost report specs (normalization/priority/conditions + per-payment calculation with min/max clamp and never-guess cross-border/conversion + read-only report self-consistency/entry ranking & drill-down/actual vs modelled variance/store isolation/zero money side effects/flat query count + admin fee policy maintenance & cost report pages with audit/permissions/CSV without card data)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d13c_payment_fee_policy_spec.rb spec/services/pallastrade/payments/fees/d13c_resolver_spec.rb spec/services/pallastrade/payments/fees/d13c_calculate_spec.rb spec/services/pallastrade/payments/costs/d13c_report_spec.rb spec/requests/pallastrade/admin/d13c_payment_fee_policies_spec.rb spec/requests/pallastrade/admin/d13c_payment_costs_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
+      },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
-      'finance-reconciliation-rspec': {
-        description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',
+      'finance-reconciliation-rspec': {        description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/reconciliations spec/jobs/pallastrade/reconciliations/reconcile_sweeper_job_spec.rb'],
       },
       // P1 订单流程改造：本次变更相关 spec（新购物车/提交订单/回归）

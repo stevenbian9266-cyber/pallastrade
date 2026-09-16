@@ -41,6 +41,10 @@ PallasTrade::Core::Engine.add_routes do
     # duplicate detection（PRD-20260915-catalog-batch-d2-duplicate-detection）：重复商品候选 + 对比（只读）
     get 'duplicate_products', to: 'duplicate_products#index', as: :duplicate_products
     get 'duplicate_products/compare', to: 'duplicate_products#compare', as: :compare_duplicate_products
+    # D-3 商品合并（切片1）：预检 → 执行 → 撤销
+    get 'duplicate_products/merge', to: 'duplicate_products#merge_preview', as: :merge_duplicate_products
+    post 'duplicate_products/merge', to: 'duplicate_products#merge'
+    post 'duplicate_products/undo_merge', to: 'duplicate_products#undo_merge', as: :undo_merge_duplicate_products
     # stock
     resources :stock_items, only: [:index, :update, :destroy]
     resources :stock_movements, only: [:index]
@@ -445,6 +449,15 @@ PallasTrade::Core::Engine.add_routes do
       member do
         post :revoke
       end
+    end
+    # PALLAS-CUSTOM: D13 切片3（PRD-20260916-payments-d13c-fee-cost-report；业务方案 §70.3）——
+    # 支付成本报表 + 费率策略维护（Orders → 支付成本 / 费率策略）：只读核算，零资金副作用。
+    resources :payment_costs, only: %i[index] do
+      collection { get :export }
+    end
+
+    resources :payment_fee_policies, only: %i[index new create edit update] do
+      member { post :revoke }
     end
     get '/emails', to: 'emails#show', as: :emails
     patch '/emails', to: 'emails#update'

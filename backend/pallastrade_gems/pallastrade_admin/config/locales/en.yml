@@ -362,10 +362,58 @@ en:
         candidates_heading: Duplicate candidates
         compare: Compare
         compare_empty: Pick at least two products to compare.
-        compare_intro: Compare the candidates side by side, then fix the data on one of them. Merging products is not available yet.
+        compare_intro: Compare the candidates side by side, then fix the data on one of them — or merge one into the other (the preview shows exactly what would move, and a merge can be undone).
         compare_title: Compare duplicates
         count: Groups
         empty: No duplicate products found for this signal.
+        merge:
+          absorb_label: Merge this product away
+          already_active: This product is already merged and the merge has not been undone yet.
+          already_merged: This merge was already applied — nothing changed.
+          cancel: Cancel
+          confirm: Merge products
+          detail: Detail
+          disclaimer: Nothing has been changed yet — this preview is read-only.
+          done: 'Merged %{count} record(s) into the kept product.'
+          entry_heading: Merge duplicates
+          entry_help: Keep one product and merge the other into it — variants, reviews, photos, categories and promotions move over, the old URL gets a 301, and historical orders are never rewritten.
+          heading: 'Merge "%{absorbed}" into "%{survivor}"'
+          history_note: '%{count} historical line item(s) reference the merged product — they will not be rewritten.'
+          impact_heading: What will move
+          invalid: 'Merge refused: %{reason}'
+          invalid_selection: Pick two different products to merge.
+          keep_label: Keep this product
+          kept: Kept
+          merged: Merged away
+          moves: Moves
+          not_found: Merge record not found.
+          preview_button: Preview merge
+          reason: Reason
+          reasons:
+            promotion_duplicate: Promotion already on the kept product
+            review_conflict: Customer already reviewed the kept product
+            sku_conflict: SKU already used by the kept product
+            stock_location_conflict: Stock location already present on the kept product
+            taxon_duplicate: Category already on the kept product
+          recent_empty: No merges yet.
+          recent_heading: Recent merges
+          redirects_heading: Old URLs (301)
+          section: Section
+          sections:
+            classifications: Categories
+            master_stock: Stock (master variant)
+            media: Photos
+            promotions: Promotions
+            reviews: Reviews
+            variants: Variants
+          skipped_heading: Kept where they are
+          skips: Skipped
+          title: Merge products
+          undo: Undo merge
+          undo_blocked: 'Cannot undo: %{count} record(s) are missing or already moved elsewhere.'
+          undo_confirm: Undo this merge and put everything back?
+          undone: The merge was undone.
+          undone_at: 'Undone %{at}'
         filter:
           active: 'Filtered by duplicate signal:'
           clear: Clear filter
@@ -1249,6 +1297,151 @@ en:
         decision_review: Needs review
         decision_block: Block
       personal_details: Personal Details
+      payment_costs:
+        title: Payment Costs
+        fee_policies_action: Fee policies
+        export_action: Export CSV
+        from: From
+        to: To
+        provider: Payment method
+        currency: Currency
+        entry: Entry
+        any: Any
+        filter: Filter
+        disclaimer: "Completed payments only; period is [%{from}, %{to}); entry = current option mapping (the chosen option is not persisted per payment)."
+        range_clamped: Range clamped to 366 days.
+        entry_ranking: Cost by entry
+        entry_ranking_hint: (highest cost first; drill down to the entry)
+        drill_down: Drill down
+        detail_title: Payment detail
+        detail_hint: "%{count} row(s)"
+        detail_truncated: Truncated to the row limit.
+        empty: No data in this period.
+        unpriced: Not priced
+        unpriced_title: Why some payments are not priced
+        unpriced_none: Every payment in this period matched a fee policy.
+        policies_considered: "%{count} fee policy/policies considered"
+        unknown_provider: Unknown payment method
+        reason_no_policy: No fee policy matched
+        reason_scope_mismatch: Scope mismatch
+        reason_currency_mismatch: Currency mismatch
+        reason_card_type_mismatch: Card type mismatch
+        reason_card_type_undetermined: Card type unknown locally
+        reason_region_mismatch: Region mismatch
+        reason_region_undetermined: Region unknown locally
+        reason_cross_border_undetermined: Cross-border basis unknown
+        reason_conversion_undetermined: Conversion basis unknown
+        reason_unknown: Unclassified
+        cards:
+          gross: Gross charged
+          fee: Payment cost
+          rate: Cost rate
+          average_order: Cost per order
+          orders: Orders
+          payments: "%{count} payment(s)"
+          unpriced: Unpriced payments
+          actual: Provider-reported cost
+          variance: Variance (actual - modelled)
+          variance_coverage: "%{count} payment(s) matched to a payout line"
+        table:
+          paid_at: Paid at
+          order: Order
+          provider: Payment method
+          entry: Entry
+          payments: Payments
+          gross: Gross
+          fee: Cost
+          rate: Rate
+          average_order: Per order
+          amount: Amount
+          percent: Percent
+          platform: Platform
+          cross_border: Cross-border
+          conversion: Conversion
+          fixed: Fixed
+          net: Net
+          actual: Actual
+          variance: Variance
+          policy: Fee policy
+          unpriced: "%{count} unpriced"
+          priced: Priced
+        csv:
+          paid_at: Paid at
+          order_number: Order
+          provider: Payment method
+          entry: Entry
+          currency: Currency
+          amount: Amount
+          percent_fee: Percent fee
+          platform_fee: Platform fee
+          cross_border_fee: Cross-border fee
+          conversion_fee: Conversion fee
+          adjustment: Min/max adjustment
+          fixed_fee: Fixed fee
+          fee_amount: Total cost
+          net_amount: Net
+          actual_fee: Provider-reported cost
+          variance: Variance
+          policy: Fee policy
+          signals: Signals
+      payment_fee_policies:
+        title: Fee Policies
+        new_title: New fee policy
+        edit_title: "Edit fee policy: %{name}"
+        new_action: New fee policy
+        edit_action: Edit
+        revoke_action: Revoke
+        revoke_confirm: Revoke this fee policy? Historical rows are kept.
+        create_success: "Fee policy %{name} created"
+        update_success: "Fee policy %{name} updated"
+        revoke_success: "Fee policy %{name} revoked"
+        save_failed: Please review the highlighted fields
+        name: Name
+        scope_type: Applies to
+        scope_id: Target
+        scope_id_hint: Payment method ID (provider) or method key (entry)
+        conditions: Conditions
+        components: Components
+        caps: Min / max
+        window: Effective window
+        status: Status
+        currency: Currency
+        card_type: Card type
+        region: Region
+        home_country: Home country
+        settlement_currency: Settlement currency
+        percent_fee: Percent fee (%)
+        fixed_fee: Fixed fee
+        platform_percent: Platform fee (%)
+        cross_border_percent: Cross-border fee (%)
+        cross_border_fixed: Cross-border fixed fee
+        currency_conversion_percent: Currency conversion fee (%)
+        min_fee: Min fee (percent part)
+        max_fee: Max fee (percent part)
+        effective_from: Effective from
+        effective_until: Effective until
+        rule_hint: "Percent components (percent + platform + cross-border + conversion) are clamped by min/max; fixed fees are added afterwards. Cross-border and conversion are only charged when the local data can prove it."
+        save: Save
+        cancel: Cancel
+        filter: Filter
+        reset: Reset
+        any: Any
+        open_ended: open
+        empty: No fee policy yet.
+        pagination: "%{total} policy/policies - page %{page}/%{pages}"
+        prev_page: Previous
+        next_page: Next
+        min_short: "min %{value}"
+        max_short: "max %{value}"
+        scope_global: Fallback (all methods)
+        scope_store: Store level
+        scope_provider: Payment method
+        scope_method: Entry (method key)
+        status_active: Active
+        status_revoked: Revoked
+        status_filter_all: All
+        status_filter_active: Active
+        status_filter_revoked: Revoked
       previous_page: Previous page
       price_lists:
         activate: Activate
