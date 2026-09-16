@@ -108,6 +108,17 @@ legacy product-level subscription). The generated `BackInStockSubscription` type
 regenerate it with `scripts/ci/contracts.sh` when the serializer's `typelize` changes (the SDK method
 itself is hand-written in `sdk/src/store-client.ts`).
 
+Review helpful votes (PRD-20260916-catalog-batch-f5-helpful-vote, 2026-09-16): a new top-level
+resource — `reviewHelpfulVotes.create(reviewId, { token })` /
+`reviewHelpfulVotes.destroy(reviewId, { token })` — records and withdraws a customer's "helpful" vote
+on an approved review (one per customer per review; the API is idempotent). Both calls return
+`ReviewHelpfulVoteResponse` (`{ data: { attributes: { review_id, helpful_votes_count, helpful_voted } } }`),
+i.e. the **authoritative state** rather than the review, so a UI never has to guess whether the click
+landed. The hand-written methods live in `sdk/src/store-client.ts` / `sdk/src/types/index.ts`; the
+`Review` type additionally gains `helpful_votes_count` / `helpful_voted` (regenerate with
+`scripts/ci/contracts.sh` when the serializer changes — note `helpful_voted` is `null` for anonymous
+callers). Review lists now accept `sort=most_helpful` on top of the F-4 orderings.
+
 ### `@pallastrade/sdk-core` — Shared internals
 
 Private package. Provides `createRequestFn()`, `PallasTradeError`, retry logic, and Ransack query-param transformation (`transformListParams()`). Consumed by the SDK; not intended for direct use.
