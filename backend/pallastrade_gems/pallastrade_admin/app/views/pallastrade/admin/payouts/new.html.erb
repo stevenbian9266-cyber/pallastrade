@@ -1,0 +1,55 @@
+<%# PALLAS-CUSTOM: D13 切片2（PRD-20260916-payments-d13b-payout-ledger）—— 结算报表导入（业务方案 §70.2）： %>
+<%#   粘贴 CSV 或上传文件；列说明内联；提交后自动匹配 + 差异进对账队列。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.payouts.import_title') %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <p class="form-text">
+      <%= PallasTrade.t('admin.payouts.import_help') %>
+    </p>
+    <p class="form-text">
+      <code>payout_reference,kind,provider_reference,gross,fee,net,currency,arrived_on,period_start,period_end</code>
+    </p>
+
+    <%= form_with url: PallasTrade.import_admin_payouts_path, method: :post, local: true,
+                  html: { multipart: true } do |f| %>
+      <div class="mb-3">
+        <%= label_tag :provider, PallasTrade.t('admin.payouts.provider'), class: 'form-label' %>
+        <%= text_field_tag :provider, params[:provider], class: 'form-control',
+                                                         placeholder: PallasTrade.t('admin.payouts.provider_placeholder') %>
+      </div>
+
+      <div class="mb-3">
+        <%= label_tag :file, PallasTrade.t('admin.payouts.file'), class: 'form-label' %>
+        <%= file_field_tag :file, accept: '.csv,text/csv', class: 'form-control' %>
+      </div>
+
+      <div class="mb-3">
+        <%= label_tag :csv, PallasTrade.t('admin.payouts.paste'), class: 'form-label' %>
+        <%= text_area_tag :csv, params[:csv], rows: 10, class: 'form-control',
+                                             placeholder: PallasTrade.t('admin.payouts.paste_placeholder') %>
+      </div>
+
+      <div class="d-flex gap-2">
+        <%= submit_tag PallasTrade.t('admin.payouts.import_action'), class: 'btn btn-primary' %>
+        <%= link_to PallasTrade.t('admin.payouts.cancel'), PallasTrade.admin_payouts_path,
+                    class: 'btn btn-outline-secondary' %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title mb-0"><%= PallasTrade.t('admin.payouts.import_rules') %></h5>
+  </div>
+  <div class="card-body">
+    <ul class="mb-0">
+      <li><%= PallasTrade.t('admin.payouts.import_rule_kinds') %></li>
+      <li><%= PallasTrade.t('admin.payouts.import_rule_idempotent') %></li>
+      <li><%= PallasTrade.t('admin.payouts.import_rule_no_money') %></li>
+    </ul>
+  </div>
+</div>

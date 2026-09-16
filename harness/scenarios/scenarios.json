@@ -3634,6 +3634,34 @@
         "uploadSafety": 20,
         "adminIntegration": 10
       }
+    },
+    {
+      "id": "GS-145",
+      "name": "A provider settlement report becomes a ledger a person can reconcile",
+      "description": "PRD-20260916-payments-d13b-payout-ledger (slice 2 of §78-D13 / §70.2 of the payment plan): the payment stack could already reconcile local money against the provider, but the provider's own settlement batches — reference, fees, net, arrival date — had nowhere to land, so 'reconcile at end of day' only had one side. This slice imports the settlement CSV into a payout ledger, matches every line against local payments and refunds, and pushes the lines that do not line up into the difference queue from slice 1.",
+      "mustDo": [
+        "Keep the ledger a record, not a money path: importing, matching and queueing write only payout rows, case rows and audit entries — never payments, refunds, transactions, the ledger, orders or stock, and never call the provider",
+        "Make importing idempotent on both levels — one payout per (store, provider, reference) and one line per (payout, provider_reference, kind) — so re-importing the same report skips instead of duplicating",
+        "Collect row-level rejections and keep going, but refuse a missing column, an empty report or an oversized upload without writing anything",
+        "Derive the payout status from its lines in one place: difference when any line is unmatched or mismatched, settled when clean and an arrival date exists, otherwise in transit",
+        "Match with one documented anchor order (charge by payment response code then session external id, refund by refund transaction id, provider-side fees and adjustments accepted as-is) and compare amounts within a one-cent tolerance, recording the delta when it is wider",
+        "Route every difference line into the reconciliation queue with a deterministic key, auto-close it when the line matches again, and never overwrite a verdict a person already gave",
+        "Show the ledger with the same filters the totals use, and provide a reason-required, audited rematch action plus import feedback that reports payouts, new lines, skipped lines and rejected rows"
+      ],
+      "mustNotDo": [
+        "Move money, change payment or refund state, or repair a transaction from the import or the match action",
+        "Let an amount mismatch pass silently, or treat an unknown provider reference as matched",
+        "Duplicate a payout or a line when the same report arrives twice, or keep stale difference cases after a line recovers",
+        "Reuse the generic import framework where its column-mapping staging would add a second idempotency layer on top of the ledger keys",
+        "Forget the permission check, the navigation registration/consistency test, or the balance between what the page shows and what the totals add up"
+      ],
+      "scoring": {
+        "sideEffectSafety": 30,
+        "importIdempotency": 25,
+        "matchExplainability": 20,
+        "queueIntegration": 15,
+        "adminUsability": 10
+      }
     }
   ]
 }

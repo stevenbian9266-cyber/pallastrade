@@ -1,0 +1,79 @@
+zh-CN:
+  pallastrade:
+    admin:
+      payouts:
+        title: 结算台账
+        detail_title: "结算批次 %{reference}"
+        import_title: 导入结算报表
+        import_help: 粘贴 provider 结算报表明细（CSV）或上传文件；导入后会立即与本地支付/退款做匹配。
+        import_action: 导入报表
+        import_rules: 导入规则
+        import_rule_kinds: "kind 取值：charge / refund / fee / adjustment。"
+        import_rule_idempotent: 同一文件重复导入只跳过已存在的行（不会产生重复明细）。
+        import_rule_no_money: 导入与匹配都不会动钱 —— 只写本台账 + 审计。
+        provider: 支付商
+        provider_placeholder: 例如 stripe
+        file: 报表文件
+        paste: 或粘贴 CSV
+        paste_placeholder: payout_reference,kind,provider_reference,gross,fee,net
+        cancel: 取消
+        import_success: "已导入 %{payouts} 个结算批次：新增 %{created} 行、已存在 %{skipped} 行、拒绝 %{errors} 行。"
+        import_errors: "被拒绝的行：%{rows}"
+        import_failed: 导入失败
+        match_success: "匹配结果：一致 %{matched}、无本地记录 %{unmatched}、金额不一致 %{mismatch} —— 台账状态：%{status}。"
+        match_failed: 匹配失败
+        rematch: 重新匹配
+        confirm_rematch: 重新与本地支付/退款匹配该批次？不会发生资金动作。
+        provider_reference: provider 单号
+        reference: 批次号
+        status: 状态
+        status_in_transit: 在途
+        status_settled: 已结算
+        status_difference: 差异
+        currency: 币种
+        gross_total: 总额
+        fee_total: 手续费
+        net_total: 净额
+        settled_at: 到账日
+        settled_from: 到账日（起）
+        settled_to: 到账日（止）
+        not_settled: 未到账
+        period: 结日区间
+        imported_at: 导入时间
+        totals: 汇总
+        match_summary: 匹配情况
+        matched_count: "一致 %{count}"
+        unmatched_count: "无本地记录 %{count}"
+        mismatch_count: "金额不一致 %{count}"
+        differences: 差异行数
+        lines: 明细行
+        kind: 类型
+        kind_charge: 收款
+        kind_refund: 退款
+        kind_fee: 手续费
+        kind_adjustment: 调整
+        gross_amount: 金额
+        fee_amount: 手续费
+        net_amount: 净额
+        match_status: 匹配
+        match_pending: 尚未匹配
+        match_matched: 一致
+        match_unmatched: 无本地记录
+        match_amount_mismatch: 金额不一致
+        local_reference: 本地记录
+        refund_reference: "退款 #%{id}"
+        difference_amount: 差值
+        filter: 筛选
+        reset: 重置
+        any: 全部
+        view: 查看
+        previous_page: 上一页
+        next_page: 下一页
+        page_of: "第 %{page} / %{total} 页"
+        empty: 尚未导入任何结算报表。
+        audit_trail: 审计轨迹
+        audit_at: 时间
+        audit_action: 动作
+        audit_actor: 操作者
+        audit_metadata: 明细
+        no_audits: 暂无审计记录。

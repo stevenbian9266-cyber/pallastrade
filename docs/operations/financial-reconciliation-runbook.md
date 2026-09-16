@@ -98,11 +98,35 @@ scope.count                                            # 队列长度
 scope.limit(20).map { |c| [c.dedupe_key, c.difference_type, c.severity] }
 ```
 
-## 9. 边界提醒
+## 9. 结算台账（D13 切片2，2026-09-16）
+
+> PRD-20260916-payments-d13b-payout-ledger（业务方案 §70.2）：provider 结算报表 → **可核对台账** + 逐行匹配。
+> 后台：**Orders → 结算台账**（`/admin/payouts`，需 `can?(:manage, PallasTrade::Payout)`）。
+
+- **导入**（`POST /admin/payouts/import`，页面可粘贴或上传 CSV）：必需列 `payout_reference, kind, provider_reference, gross`；
+  可选 `fee`（默认 0）/`net`（默认 gross − fee）/`currency`/`arrived_on`（到账日）/`period_start`/`period_end`；
+  导入后**自动**匹配（`Match`）并把差异行送入 §8 队列（`SyncCases`）。
+- **幂等**：批次键 `(store, provider, reference)`、行键 `(payout, provider_reference, kind)` —— 同一文件重复导入只计入
+  `lines_skipped`；行级错误在页面回显（最多 10 条），缺列/空文件/超 5 MB → 拒绝且不落库。
+- **状态**：`difference`（任一行 unmatched/amount_mismatch）→ `settled`（无差异且有到账日）→ `in_transit`；金额容差 1 分。
+- **匹配锚点**：`charge` → `Payment#response_code` → `PaymentSession#external_id`；`refund` → `Refund#transaction_id`；
+  `fee`/`adjustment` = provider 侧项目直接 matched。
+- **重新匹配**（`POST /admin/payouts/:id/match`）：补正本地数据后重跑；行恢复 matched → 对应开放案例**自动销案**。
+- **铁律**：导入/匹配/入队**不动钱**（不改 Payment/Refund/Journal/订单/库存，不调 provider）；台账是事实记录，
+  修数据仍只能走 §4/§6。
+- 命令行查看台账（容器内）：
+
+```ruby
+PallasTrade::Payout.with_differences.order(settled_at: :desc).limit(10)
+  .map { |p| [p.reference, p.provider, p.gross_total, p.difference_lines.count] }
+PallasTrade::Reconciliations::Payouts::Match.call(payout: PallasTrade::Payout.last)
+```
+
+## 10. 边界提醒
 
 - Repair/Backfill 唯一写 = Journal；绝不新 Payment/Refund、绝不倒退 transaction state。
 - UNPROVABLE 历史数据不猜测、不强制 backfill（§50/AC-4025）。
 - mismatch / needs_attention 属人工裁决域（§46 严重冲突可能需 manual_review，绝不自动倒退到
   payment_pending）。
-- 相关 skill：`ai/skills/pallastrade-payments/SKILL.md`（P4 各包语义）／`pallastrade-deployment`
-  （sidekiq-cron 调度）／`pallastrade-admin`（对账队列工作台）。
+- 相关 skill：`ai/skills/pallastrade-payments/SKILL.md`（P4 各包语义 + 结算台账）／`pallastrade-deployment`
+  （sidekiq-cron 调度）／`pallastrade-admin`（对账队列 + 结算台账工作台）。

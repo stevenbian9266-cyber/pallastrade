@@ -1,0 +1,132 @@
+<%# PALLAS-CUSTOM: D13 切片2（PRD-20260916-payments-d13b-payout-ledger）—— 结算台账列表（业务方案 §70.2）： %>
+<%#   筛选（provider / 状态 / 到账日）+ 汇总（gross/fee/net）+ 分页 + 导入入口。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.payouts.title') %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= link_to PallasTrade.t('admin.payouts.import_action'), PallasTrade.new_admin_payout_path,
+              class: 'btn btn-primary' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <%= form_with url: PallasTrade.admin_payouts_path, method: :get, local: true do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-3">
+          <%= label_tag :provider, PallasTrade.t('admin.payouts.provider'), class: 'form-label' %>
+          <%= select_tag :provider, options_for_select(@providers, @filters[:provider]),
+                         include_blank: PallasTrade.t('admin.payouts.any'), class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-3">
+          <%= label_tag :status, PallasTrade.t('admin.payouts.status'), class: 'form-label' %>
+          <%= select_tag :status,
+                         options_for_select(PallasTrade::Payout::STATUSES.map { |s|
+                           [PallasTrade.t("admin.payouts.status_#{s}", default: s), s]
+                         }, @filters[:status]),
+                         include_blank: PallasTrade.t('admin.payouts.any'), class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :from, PallasTrade.t('admin.payouts.settled_from'), class: 'form-label' %>
+          <%= date_field_tag :from, params[:from], class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :to, PallasTrade.t('admin.payouts.settled_to'), class: 'form-label' %>
+          <%= date_field_tag :to, params[:to], class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <%= submit_tag PallasTrade.t('admin.payouts.filter'), class: 'btn btn-sm btn-primary' %>
+          <%= link_to PallasTrade.t('admin.payouts.reset'), PallasTrade.admin_payouts_path,
+                      class: 'btn btn-sm btn-outline-secondary' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="grid grid-cols-12 gap-6 mb-6">
+  <div class="col-span-12 md:col-span-4">
+    <div class="card"><div class="card-body">
+      <div class="text-gray-600"><%= PallasTrade.t('admin.payouts.gross_total') %></div>
+      <h3 class="mb-0"><%= payout_amount(@totals[:gross]) %></h3>
+    </div></div>
+  </div>
+  <div class="col-span-12 md:col-span-4">
+    <div class="card"><div class="card-body">
+      <div class="text-gray-600"><%= PallasTrade.t('admin.payouts.fee_total') %></div>
+      <h3 class="mb-0"><%= payout_amount(@totals[:fee]) %></h3>
+    </div></div>
+  </div>
+  <div class="col-span-12 md:col-span-4">
+    <div class="card"><div class="card-body">
+      <div class="text-gray-600"><%= PallasTrade.t('admin.payouts.net_total') %></div>
+      <h3 class="mb-0"><%= payout_amount(@totals[:net]) %></h3>
+    </div></div>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <% if @payouts.any? %>
+      <table class="table">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.payouts.reference') %></th>
+            <th><%= PallasTrade.t('admin.payouts.provider') %></th>
+            <th><%= PallasTrade.t('admin.payouts.status') %></th>
+            <th><%= PallasTrade.t('admin.payouts.currency') %></th>
+            <th><%= PallasTrade.t('admin.payouts.gross_total') %></th>
+            <th><%= PallasTrade.t('admin.payouts.fee_total') %></th>
+            <th><%= PallasTrade.t('admin.payouts.net_total') %></th>
+            <th><%= PallasTrade.t('admin.payouts.settled_at') %></th>
+            <th><%= PallasTrade.t('admin.payouts.differences') %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @payouts.each do |payout| %>
+            <tr>
+              <td><%= payout.reference %></td>
+              <td><%= payout.provider %></td>
+              <td>
+                <span class="badge <%= payout_status_class(payout.status) %>">
+                  <%= PallasTrade.t("admin.payouts.status_#{payout.status}", default: payout.status) %>
+                </span>
+              </td>
+              <td><%= payout.currency %></td>
+              <td><%= payout_amount(payout.gross_total) %></td>
+              <td><%= payout_amount(payout.fee_total) %></td>
+              <td><%= payout_amount(payout.net_total) %></td>
+              <td><%= payout.settled_at&.strftime('%Y-%m-%d') || '—' %></td>
+              <td><%= @difference_counts.fetch(payout.id, 0) %></td>
+              <td class="text-end">
+                <%= link_to PallasTrade.t('admin.payouts.view'), PallasTrade.admin_payout_path(payout),
+                            class: 'btn btn-sm btn-outline-secondary' %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+
+      <% if @pages > 1 %>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <% if @page > 1 %>
+            <%= link_to PallasTrade.t('admin.payouts.previous_page'),
+                        PallasTrade.admin_payouts_path(request.query_parameters.merge(page: @page - 1)),
+                        class: 'btn btn-sm btn-outline-secondary' %>
+          <% else %><span></span><% end %>
+          <span class="text-gray-600">
+            <%= PallasTrade.t('admin.payouts.page_of', page: @page, total: @pages) %>
+          </span>
+          <% if @page < @pages %>
+            <%= link_to PallasTrade.t('admin.payouts.next_page'),
+                        PallasTrade.admin_payouts_path(request.query_parameters.merge(page: @page + 1)),
+                        class: 'btn btn-sm btn-outline-secondary' %>
+          <% else %><span></span><% end %>
+        </div>
+      <% end %>
+    <% else %>
+      <p class="form-text mb-0"><%= PallasTrade.t('admin.payouts.empty') %></p>
+    <% end %>
+  </div>
+</div>

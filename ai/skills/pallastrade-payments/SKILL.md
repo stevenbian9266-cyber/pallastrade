@@ -1314,6 +1314,44 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   （assign / note / mark_investigating / mark_explained / mark_fixed / dismiss（原因必填）/ reopen）+ **CSV 导出**（与筛选同口径，上限 10k）。
 - **回归**：`harness verify d13-reconciliation-cases-rspec` + P4 全套 `harness verify finance-reconciliation-rspec`。
 
+## 结算台账 — provider 结算报表 → 可核对明细（D13 切片2, 2026-09-16；PRD-20260916-payments-d13b-payout-ledger）
+
+业务方案 §70.2：切片1 让差异**有队列**，但 provider 侧**结算批次**（批次号/手续费/净额/到账日）此前无处落地 ⇒ 「日终可对平」缺一半。
+本切片把结算 CSV 变成可核对台账：导入 → 逐行匹配本地支付/退款 → 差异自动进切片1 队列。
+铁律：**零资金副作用** —— 只写 2 张台账表 + 案例表 + `AuditLog`；绝不改 Payment/Refund/Journal/订单/库存，零 provider 调用。
+
+- **模型**：
+  - `PallasTrade::Payout`（`pallastrade_payouts`）：`store_id` / `provider` / `reference`（provider 批次号）/ `status` /
+    `currency` / `gross_total` / `fee_total` / `net_total` / `period_start` / `period_end` / `settled_at` / `imported_at` /
+    `import_source` / `metadata`；唯一键 `(store_id, provider, reference)`；索引 `(store_id, status)`。
+  - `PallasTrade::PayoutLine`（`pallastrade_payout_lines`）：`kind`（charge/refund/fee/adjustment）/ `provider_reference` /
+    `gross_amount` / `fee_amount` / `net_amount` / `match_status`（pending/matched/unmatched/amount_mismatch）/
+    `match_details` / `matched_at` / `payment_id` / `refund_id` / `raw`（导入行快照）；唯一键 `(payout_id, provider_reference, kind)`。
+  - **状态合成**（唯一权威，`refresh_status!`）：`difference`（任一行 unmatched/amount_mismatch，差异优先）→
+    `settled`（无差异且 `settled_at` 存在）→ `in_transit`；`recalculate_totals!` 由行汇总（provider 报表值原样求和）。
+  - 金额容差：`PayoutLine::AMOUNT_TOLERANCE = 0.01`。
+- **服务（唯一写入口）**：
+  - `Reconciliations::Payouts::ImportCSV.call(store:, provider:, csv:, source: nil, actor: nil)` —— 必需列
+    `payout_reference, kind, provider_reference, gross`；可选 `fee`（默认 0）/ `net`（默认 gross − fee）/ `currency` /
+    `arrived_on`（→ `settled_at` 当日零点）/ `period_start` / `period_end`；按 `payout_reference` 分组 →
+    upsert payout + 逐行 upsert line（幂等：重复行计入 `lines_skipped`）→ 汇总 + 状态合成 + 审计 `payouts_imported`；
+    行级错误收集不中断（`errors: [{row:, message:}]`）；缺列 / 空 CSV / 超 5 MB → 失败且**不落库**。
+  - `…::Match.call(payout:, actor: nil)` —— 锚点（唯一口径）：`charge` → `Payment#response_code` →
+    `PaymentSession#external_id` → 该会话首笔 payment；`refund` → `Refund#transaction_id`；`fee` / `adjustment` =
+    provider 侧项目 → 直接 `matched`。金额一致（±0.01）→ `matched`；不一致 → `amount_mismatch`（写 `difference`）；
+    无本地记录 → `unmatched`；命中的行写回 `payment_id` / `refund_id`；结束后汇总 + 状态合成 + 审计 `payout_matched`。
+  - `…::SyncCases.call(payout:)` —— 差异行 → `ReconciliationCase`（`kind: 'payout'`、`difference_type`
+    `payout_unmatched` / `payout_amount_mismatch`、原因码 `PAYOUT_LINE_UNMATCHED` / `PAYOUT_AMOUNT_MISMATCH`、
+    `severity: attention`、`dedupe_key = "payout:<payout_id>:<provider_reference>:<签名>"`）；行恢复 `matched` → 开放案例**自动销案**；
+    签名变化 → 旧案取代；**人工判定（explained/dismissed）永不被覆盖**；审计 `payout_cases_synced`。
+- **后台**：`/admin/payouts`（Orders → 结算台账；权限 `can?(:manage, PallasTrade::Payout)`）：
+  列表（provider/status/到账日筛选 + gross/fee/net 汇总卡 + 分页 + 差异行计数）；详情（批次事实 + 行表 + 匹配摘要 + 审计轨迹）；
+  `GET /admin/payouts/new` + `POST /admin/payouts/import`（粘贴 CSV 或上传文件 → 导入后**自动** Match + SyncCases）；
+  `POST /admin/payouts/:id/match`（重新匹配）。台账页用整数 id（页内使用，不进 API 契约）。
+- **命名陷阱（实测踩坑）**：Rails 把 `CSV` 注册为 acronym ⇒ `import_csv.rb` 必须定义 **`ImportCSV`**（Zeitwerk 报
+  `uninitialized constant …ImportCsv`）；`PallasTrade` 命名空间内引用 stdlib 一律写 `::CSV`（裸 `CSV::…` 会被解析成 `PallasTrade::CSV::…`）。
+- **回归**：`harness verify d13b-payouts-rspec`（52 examples）+ 切片1 `d13-reconciliation-cases-rspec` + P4 `finance-reconciliation-rspec`。
+
 ## 熔断与健康 — 入口级软置灰（D11 切片1, 2026-09-16；PRD-20260916-payments-d11-circuit-breaker-health）
 
 业务方案 §67.3：provider 抖动时**先把入口从前台摘掉**（软置灰），而不是让用户一路踩到支付失败。

@@ -9,13 +9,14 @@
 #   * 唯一写入口 = `Reconciliations::SyncCases`（自动）+ 后台控制器动作（人工）。
 module PallasTrade
   class ReconciliationCase < PallasTrade.base_class
-    KINDS = %w[transaction payment refund].freeze
+    KINDS = %w[transaction payment refund payout].freeze
     # 人工可置的终态（自动逻辑永不覆盖）
     HUMAN_RESOLVED_STATUSES = %w[explained fixed dismissed].freeze
     STATUSES = %w[open investigating explained fixed dismissed].freeze
     DIFFERENCE_TYPES = %w[
       amount_mismatch allocation_mismatch refund_mismatch one_sided duplicate
       settlement_pending journal_missing provider_issue needs_attention unsupported
+      payout_unmatched payout_amount_mismatch
     ].freeze
     SEVERITIES = %w[critical attention info].freeze
     RESOLUTION_SOURCES = %w[human auto].freeze
@@ -36,10 +37,14 @@ module PallasTrade
       'PROVIDER_UNAVAILABLE' => 'provider_issue',
       'PROVIDER_CONTRACT_UNSUPPORTED' => 'provider_issue',
       'UNLINKED_LEGACY_PAYMENT' => 'duplicate',
-      'AMBIGUOUS_CAPTURE' => 'duplicate'
+      'AMBIGUOUS_CAPTURE' => 'duplicate',
+      'PAYOUT_LINE_UNMATCHED' => 'payout_unmatched',
+      'PAYOUT_AMOUNT_MISMATCH' => 'payout_amount_mismatch'
     }.freeze
     # 对账状态 → 严重级
     STATUS_SEVERITIES = { 'MISMATCH' => 'critical', 'NEEDS_ATTENTION' => 'attention' }.freeze
+    # 案例类型前缀（dedupe_key 首段）：交易级对账 / 结算台账
+    KEY_PREFIXES = { transaction: 'txn', payout: 'payout' }.freeze
 
     belongs_to :store, class_name: 'PallasTrade::Store'
     # ⚠️ 不能命名为 `transaction`：与 ActiveRecord 内建 `transaction` 方法冲突，
@@ -134,6 +139,12 @@ module PallasTrade
     # @return [String] `txn:<transaction_id>:<signature>`
     def self.dedupe_key_for(transaction_id:, signature:)
       "txn:#{transaction_id}:#{signature}"
+    end
+
+    # 通用去重键（D13 切片2 引入）：`<prefix>:<subject_id>:<signature>`。
+    # @param prefix [String, Symbol] `txn` / `payout` …
+    def self.key_for(prefix:, subject_id:, signature:)
+      "#{prefix}:#{subject_id}:#{signature}"
     end
 
     # 人工是否已判定（自动逻辑不得覆盖）

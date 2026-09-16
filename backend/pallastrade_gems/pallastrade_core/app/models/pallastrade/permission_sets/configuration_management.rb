@@ -57,6 +57,9 @@ module PallasTrade
         # PALLAS-CUSTOM: D13 切片1（PRD-20260916-payments-d13-reconciliation-cases）——
         # 对账差异队列工作台（指派/备注/关单 + CSV 导出）。`:manage` 覆盖全部案例动作。
         can :manage, PallasTrade::ReconciliationCase
+        # PALLAS-CUSTOM: D13 切片2（PRD-20260916-payments-d13b-payout-ledger）——
+        # 结算（Payout）台账（导入/匹配/查看）。`:manage` 覆盖全部台账动作。
+        can :manage, PallasTrade::Payout
 
         # General configuration
         can :manage, PallasTrade::RefundReason

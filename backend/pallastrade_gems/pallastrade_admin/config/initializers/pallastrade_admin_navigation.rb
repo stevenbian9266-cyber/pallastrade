@@ -125,6 +125,14 @@ Rails.application.config.after_initialize do
               position: 55,
               active: -> { controller_name == 'reconciliation_cases' },
               if: -> { can?(:manage, PallasTrade::ReconciliationCase) }
+
+    # D13 切片2: 结算（Payout）台账（Orders → 结算台账；CSV 导入 + 匹配 + 差异进队列）
+    orders.add :payouts,
+              label: 'admin.payouts.title',
+              url: :admin_payouts_path,
+              position: 57,
+              active: -> { controller_name == 'payouts' },
+              if: -> { can?(:manage, PallasTrade::Payout) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns

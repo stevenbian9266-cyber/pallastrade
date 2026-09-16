@@ -408,6 +408,17 @@ PallasTrade::Core::Engine.add_routes do
         post :reopen
       end
     end
+    # PALLAS-CUSTOM: D13 切片2（PRD-20260916-payments-d13b-payout-ledger）——
+    # 结算（Payout）台账（Orders → 结算台账）：列表/详情 + CSV 导入 + 重新匹配。
+    # 导入/匹配只写台账表 + 案例表 + 审计（零资金副作用，不调 provider）。
+    resources :payouts, only: %i[index show new] do
+      collection do
+        post :import
+      end
+      member do
+        post :match
+      end
+    end
     get '/emails', to: 'emails#show', as: :emails
     patch '/emails', to: 'emails#update'
     post '/emails/test_send', to: 'emails#test_send', as: :emails_test_send

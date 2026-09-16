@@ -413,6 +413,22 @@ end
 - ⚠️ 导航一致性 spec 断言 Orders 子项**完整列表**（新增项必须同步 `spec/requests/pallastrade/admin/navigation_consistency_spec.rb`）。
 - **回归**：`harness verify d13-reconciliation-cases-rspec`（+ `node scripts/nav-validate-static.mjs`）。
 
+## 结算台账工作台（D13 切片2, 2026-09-16，PRD-20260916-payments-d13b-payout-ledger）
+
+- **新页面** `/admin/payouts`（Orders → 结算台账，position **57**；导航项 `orders.add :payouts`，
+  `if: can?(:manage, PallasTrade::Payout)`）；控制器 `PayoutsController < BaseController`（index / show / new / import / match）。
+- **筛选口径唯一**：`Payout.filter_by(store_id:, provider:, status:, from:, to:)` —— 页面与汇总共用同一 scope；
+  `@filters` 备忘 `filters`（避免 index 与其它 action 取到不同口径）；日期用 `parse_boundary`（纯日期 → `beginning_of_day` / `end_of_day`）。
+- **汇总与计数**：`totals_for(scope)`（`SUM(gross_total/fee_total/net_total)` 一次 pick，nil → 0）；列表差异行计数用
+  `PayoutLine.differences.where(payout_id: ids).group(:payout_id).count` **一次聚合**（避免逐行 `count` 的 N+1）。
+- **动作**：`POST /admin/payouts/import`（粘贴 CSV 或上传文件；成功 → **自动** `Match` + `SyncCases` → flash 汇总
+  `payouts/lines_created/lines_skipped/errors`）；`POST /admin/payouts/:id/match`（`authorize! :update` + 重匹配 + 差异重新入队）；
+  两者都写 `AuditLog`（actor = `audit_actor`）。
+- **金额展示**：helper `payout_amount` 用 `format('%.2f', …)`（确定性两位小数；不要依赖 `BigDecimal#to_s` 的格式差异）。
+- **视图**：`payouts/{index,show,new}.html.erb`；「重新匹配」用 `data: { turbo_method: :post, turbo_confirm: … }`（**不是** `method: :post`）。
+- ⚠️ 导航一致性 spec 断言 Orders 子项**完整列表**（新增项必须同步 `spec/requests/pallastrade/admin/navigation_consistency_spec.rb`）。
+- **回归**：`harness verify d13b-payouts-rspec`。
+
 ## 支付适用范围编辑：Provider 详情「支付方式」页签（D8 切片2, 2026-09-15，PRD-20260915-payments-d8）
 
 同一页签每行新增「适用范围」编辑器 + 摘要列（改 `_options.html.erb`；**不新增页面**）：

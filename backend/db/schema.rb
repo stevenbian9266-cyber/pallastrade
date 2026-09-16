@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_16_170000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_16_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1577,6 +1577,52 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_170000) do
     t.index ["source_id", "source_type"], name: "index_pt_payments_on_source_id_and_source_type"
   end
 
+  create_table "pallastrade_payout_lines", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "currency", limit: 10
+    t.decimal "fee_amount", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "gross_amount", precision: 12, scale: 2, default: "0.0", null: false
+    t.string "kind", null: false
+    t.jsonb "match_details", default: {}, null: false
+    t.string "match_status", default: "pending", null: false
+    t.datetime "matched_at"
+    t.decimal "net_amount", precision: 12, scale: 2, default: "0.0", null: false
+    t.bigint "payment_id"
+    t.bigint "payout_id", null: false
+    t.string "provider_reference", null: false
+    t.jsonb "raw", default: {}, null: false
+    t.bigint "refund_id"
+    t.datetime "updated_at", null: false
+    t.index ["match_status"], name: "index_pallastrade_payout_lines_on_match_status"
+    t.index ["payment_id"], name: "index_pallastrade_payout_lines_on_payment_id"
+    t.index ["payout_id", "provider_reference", "kind"], name: "idx_pt_payout_lines_identity", unique: true
+    t.index ["payout_id"], name: "index_pallastrade_payout_lines_on_payout_id"
+    t.index ["refund_id"], name: "index_pallastrade_payout_lines_on_refund_id"
+  end
+
+  create_table "pallastrade_payouts", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "currency", limit: 10
+    t.decimal "fee_total", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "gross_total", precision: 12, scale: 2, default: "0.0", null: false
+    t.string "import_source"
+    t.datetime "imported_at", null: false
+    t.string "last_error", limit: 500
+    t.jsonb "metadata", default: {}, null: false
+    t.decimal "net_total", precision: 12, scale: 2, default: "0.0", null: false
+    t.date "period_end"
+    t.date "period_start"
+    t.string "provider", null: false
+    t.string "reference", null: false
+    t.datetime "settled_at"
+    t.string "status", default: "in_transit", null: false
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["store_id", "provider", "reference"], name: "idx_on_store_id_provider_reference_0dbbedbfcf", unique: true
+    t.index ["store_id", "status"], name: "index_pallastrade_payouts_on_store_id_and_status"
+    t.index ["store_id"], name: "index_pallastrade_payouts_on_store_id"
+  end
+
   create_table "pallastrade_paypal_checkout_orders", force: :cascade do |t|
     t.decimal "amount", precision: 10, scale: 2, null: false
     t.datetime "created_at", null: false
@@ -3041,6 +3087,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_170000) do
   add_foreign_key "pallastrade_payment_splits", "pallastrade_payments", column: "payment_id"
   add_foreign_key "pallastrade_payments", "pallastrade_payment_combinations", column: "payment_combination_id"
   add_foreign_key "pallastrade_payments", "pallastrade_payment_sessions", column: "payment_session_id"
+  add_foreign_key "pallastrade_payout_lines", "pallastrade_payments", column: "payment_id"
+  add_foreign_key "pallastrade_payout_lines", "pallastrade_payouts", column: "payout_id"
+  add_foreign_key "pallastrade_payout_lines", "pallastrade_refunds", column: "refund_id"
+  add_foreign_key "pallastrade_payouts", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_product_translations", "pallastrade_products"
   add_foreign_key "pallastrade_promotion_redemptions", "pallastrade_coupon_codes", column: "coupon_code_id"
   add_foreign_key "pallastrade_promotion_redemptions", "pallastrade_orders", column: "order_id"

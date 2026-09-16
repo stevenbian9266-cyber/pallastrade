@@ -292,6 +292,12 @@ export default {
         description: 'Reconciliation case queue specs (model mapping/state machine + sync idempotency/auto-close/supersede + sweeper integration + admin workbench filters/actions/CSV/permissions)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d13_reconciliation_case_spec.rb spec/services/pallastrade/reconciliations/d13_sync_cases_spec.rb spec/jobs/pallastrade/reconciliations/reconcile_sweeper_job_spec.rb spec/requests/pallastrade/admin/d13_reconciliation_cases_spec.rb'],
       },
+      // 结算台账（PRD-20260916-payments-d13b-payout-ledger 切片2）：payout/payout_line 口径
+      // + CSV 导入幂等与拒绝 + 匹配锚点/容差 + 差异行入队/销案 + 后台台账（筛选/汇总/详情/导入/重匹配/权限）
+      'd13b-payouts-rspec': {
+        description: 'Payout settlement ledger specs (status synthesis/totals/uniqueness + CSV import idempotency/errors + match anchors/tolerance + case sync/auto-close/supersede + admin ledger filters/detail/import/match/permissions)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d13b_payout_spec.rb spec/services/pallastrade/reconciliations/payouts/d13b_import_csv_spec.rb spec/services/pallastrade/reconciliations/payouts/d13b_match_spec.rb spec/services/pallastrade/reconciliations/payouts/d13b_sync_cases_spec.rb spec/requests/pallastrade/admin/d13b_payouts_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
+      },
       // 财务对账线（FIN-P4-6/7 + DSP-P7-3 + REV-P6-7）：只读对账（source/transaction/dispute）+ 扫措作业
       'finance-reconciliation-rspec': {
         description: 'Finance reconciliation specs (source/transaction/payment/refund/dispute reconcilers + sweeper job)',

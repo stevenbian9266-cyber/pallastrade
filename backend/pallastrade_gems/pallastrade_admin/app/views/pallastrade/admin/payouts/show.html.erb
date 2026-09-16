@@ -1,0 +1,144 @@
+<%# PALLAS-CUSTOM: D13 切片2（PRD-20260916-payments-d13b-payout-ledger）—— 结算批次详情（业务方案 §70.2）： %>
+<%#   批次汇总 + 明细行（kind/引用/金额/匹配状态/本地引用/差值）+ 「重新匹配」+ 审计轨迹。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.payouts.detail_title', reference: @payout.reference) %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0"><%= @payout.reference %></h5>
+    <div class="d-flex gap-2 align-items-center">
+      <span class="badge <%= payout_status_class(@payout.status) %>">
+        <%= PallasTrade.t("admin.payouts.status_#{@payout.status}", default: @payout.status) %>
+      </span>
+      <%= link_to PallasTrade.t('admin.payouts.rematch'),
+                  PallasTrade.match_admin_payout_path(@payout),
+                  class: 'btn btn-sm btn-outline-primary',
+                  data: { turbo_method: :post,
+                          turbo_confirm: PallasTrade.t('admin.payouts.confirm_rematch') } %>
+    </div>
+  </div>
+  <div class="card-body">
+    <table class="table">
+      <tbody>
+        <tr><th><%= PallasTrade.t('admin.payouts.provider') %></th><td><%= @payout.provider %></td></tr>
+        <tr><th><%= PallasTrade.t('admin.payouts.currency') %></th><td><%= @payout.currency %></td></tr>
+        <tr>
+          <th><%= PallasTrade.t('admin.payouts.period') %></th>
+          <td>
+            <%= @payout.period_start&.strftime('%Y-%m-%d') || '—' %>
+            →
+            <%= @payout.period_end&.strftime('%Y-%m-%d') || '—' %>
+          </td>
+        </tr>
+        <tr>
+          <th><%= PallasTrade.t('admin.payouts.settled_at') %></th>
+          <td><%= @payout.settled_at&.strftime('%Y-%m-%d') || PallasTrade.t('admin.payouts.not_settled') %></td>
+        </tr>
+        <tr>
+          <th><%= PallasTrade.t('admin.payouts.totals') %></th>
+          <td>
+            <%= PallasTrade.t('admin.payouts.gross_total') %> <%= payout_amount(@payout.gross_total) %>
+            / <%= PallasTrade.t('admin.payouts.fee_total') %> <%= payout_amount(@payout.fee_total) %>
+            / <%= PallasTrade.t('admin.payouts.net_total') %> <%= payout_amount(@payout.net_total) %>
+          </td>
+        </tr>
+        <tr>
+          <th><%= PallasTrade.t('admin.payouts.imported_at') %></th>
+          <td>
+            <%= @payout.imported_at&.strftime('%Y-%m-%d %H:%M') %>
+            <span class="text-gray-600"><%= @payout.import_source %></span>
+          </td>
+        </tr>
+        <tr>
+          <th><%= PallasTrade.t('admin.payouts.match_summary') %></th>
+          <td>
+            <%= PallasTrade.t('admin.payouts.matched_count', count: @line_counts.fetch('matched', 0)) %> ·
+            <%= PallasTrade.t('admin.payouts.unmatched_count', count: @line_counts.fetch('unmatched', 0)) %> ·
+            <%= PallasTrade.t('admin.payouts.mismatch_count', count: @line_counts.fetch('amount_mismatch', 0)) %>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title mb-0"><%= PallasTrade.t('admin.payouts.lines') %></h5>
+  </div>
+  <div class="card-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th><%= PallasTrade.t('admin.payouts.kind') %></th>
+          <th><%= PallasTrade.t('admin.payouts.provider_reference') %></th>
+          <th><%= PallasTrade.t('admin.payouts.gross_amount') %></th>
+          <th><%= PallasTrade.t('admin.payouts.fee_amount') %></th>
+          <th><%= PallasTrade.t('admin.payouts.net_amount') %></th>
+          <th><%= PallasTrade.t('admin.payouts.match_status') %></th>
+          <th><%= PallasTrade.t('admin.payouts.local_reference') %></th>
+          <th><%= PallasTrade.t('admin.payouts.difference_amount') %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @lines.each do |line| %>
+          <tr>
+            <td><%= PallasTrade.t("admin.payouts.kind_#{line.kind}", default: line.kind) %></td>
+            <td><%= line.provider_reference %></td>
+            <td><%= payout_amount(line.gross_amount) %></td>
+            <td><%= payout_amount(line.fee_amount) %></td>
+            <td><%= payout_amount(line.net_amount) %></td>
+            <td>
+              <span class="badge <%= payout_line_status_class(line.match_status) %>">
+                <%= PallasTrade.t("admin.payouts.match_#{line.match_status}", default: line.match_status) %>
+              </span>
+            </td>
+            <td>
+              <% if line.payment.present? %>
+                <%= line.payment.order&.number || line.payment.number %>
+              <% elsif line.refund.present? %>
+                <%= PallasTrade.t('admin.payouts.refund_reference', id: line.refund.id) %>
+              <% else %>
+                —
+              <% end %>
+            </td>
+            <td><%= line.difference_amount.presence || '—' %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title mb-0"><%= PallasTrade.t('admin.payouts.audit_trail') %></h5>
+  </div>
+  <div class="card-body">
+    <% if @audits.any? %>
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.payouts.audit_at') %></th>
+            <th><%= PallasTrade.t('admin.payouts.audit_action') %></th>
+            <th><%= PallasTrade.t('admin.payouts.audit_actor') %></th>
+            <th><%= PallasTrade.t('admin.payouts.audit_metadata') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @audits.each do |log| %>
+            <tr>
+              <td><%= log.occurred_at&.strftime('%Y-%m-%d %H:%M') %></td>
+              <td><%= log.action %></td>
+              <td><%= log.actor_label.presence || log.actor_type || '—' %></td>
+              <td class="text-gray-600"><%= log.metadata.presence&.to_json %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="form-text mb-0"><%= PallasTrade.t('admin.payouts.no_audits') %></p>
+    <% end %>
+  </div>
+</div>

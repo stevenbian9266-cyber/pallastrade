@@ -1012,6 +1012,84 @@ en:
         difference_provider_issue: Provider issue
         difference_needs_attention: Needs attention
         difference_unsupported: Provider not reconcilable
+        difference_payout_unmatched: Payout line without a local record
+        difference_payout_amount_mismatch: Payout line amount differs
+      payouts:
+        title: Settlement ledger
+        detail_title: "Settlement %{reference}"
+        import_title: Import a settlement report
+        import_help: Paste the provider settlement report (CSV) or upload the file. Rows are matched against local payments and refunds right after the import.
+        import_action: Import report
+        import_rules: Import rules
+        import_rule_kinds: "kind accepts charge / refund / fee / adjustment."
+        import_rule_idempotent: Re-importing the same file only skips rows that already exist (no duplicates).
+        import_rule_no_money: Importing and matching never move money — they only write this ledger plus audit entries.
+        provider: Provider
+        provider_placeholder: "e.g. stripe"
+        file: Report file
+        paste: Or paste the CSV
+        paste_placeholder: payout_reference,kind,provider_reference,gross,fee,net
+        cancel: Cancel
+        import_success: "Imported %{payouts} settlement(s): %{created} new line(s), %{skipped} already present, %{errors} rejected row(s)."
+        import_errors: "Rejected rows: %{rows}"
+        import_failed: Import failed
+        match_success: "Matched %{matched}, unmatched %{unmatched}, amount differences %{mismatch} — ledger status: %{status}."
+        match_failed: Matching failed
+        rematch: Match again
+        confirm_rematch: Match this settlement against local payments and refunds again? No money is moved.
+        provider_reference: Provider reference
+        reference: Payout
+        status: Status
+        status_in_transit: In transit
+        status_settled: Settled
+        status_difference: Difference
+        currency: Currency
+        gross_total: Gross
+        fee_total: Fees
+        net_total: Net
+        settled_at: Settled on
+        settled_from: Settled from
+        settled_to: Settled to
+        not_settled: Not settled yet
+        period: Period
+        imported_at: Imported
+        totals: Totals
+        match_summary: Matching
+        matched_count: "%{count} matched"
+        unmatched_count: "%{count} unmatched"
+        mismatch_count: "%{count} amount mismatch"
+        differences: Differences
+        lines: Lines
+        kind: Kind
+        kind_charge: Charge
+        kind_refund: Refund
+        kind_fee: Fee
+        kind_adjustment: Adjustment
+        gross_amount: Gross
+        fee_amount: Fee
+        net_amount: Net
+        match_status: Match
+        match_pending: Not matched yet
+        match_matched: Matched
+        match_unmatched: No local record
+        match_amount_mismatch: Amount differs
+        local_reference: Local record
+        refund_reference: "Refund #%{id}"
+        difference_amount: Difference
+        filter: Filter
+        reset: Reset
+        any: Any
+        view: View
+        previous_page: Previous page
+        next_page: Next page
+        page_of: "Page %{page} of %{total}"
+        empty: No settlement report imported yet.
+        audit_trail: Audit trail
+        audit_at: When
+        audit_action: Action
+        audit_actor: Actor
+        audit_metadata: Details
+        no_audits: No audit entry yet.
       personal_details: Personal Details
       previous_page: Previous page
       price_lists:
