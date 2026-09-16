@@ -3662,6 +3662,35 @@
         "queueIntegration": 15,
         "adminUsability": 10
       }
+    },
+    {
+      "id": "GS-146",
+      "name": "Scarcity is expressed as a bucket, never as a stock count",
+      "description": "PRD-20260916-catalog-batch-f2-stock-shipping (§十一 of the catalog upgrade plan): the PDP only knew in_stock / out_of_stock, so a merchant could either say nothing about urgency or expose the exact on-hand count to shoppers and scrapers — and the storefront had no shipping window or free-shipping hint at all, even though ShippingMethod already carried transit days. F-2 buckets availability for shoppers, publishes a shipping estimate read model for the PDP, and shows a scarcity badge on product cards.",
+      "mustDo": [
+        "Derive the bucket from the very same availability object the existing booleans use (Stock::Quantifier), so stock_status can never contradict in_stock/purchasable",
+        "Treat untracked inventory as unlimited (in_stock) — never invent scarcity, and never claim a sale is impossible when the store does not track stock",
+        "Normalize an invalid low-stock threshold back to the documented default instead of silently bucketing everything as scarce or everything as plenty",
+        "Keep the contract additive: existing keys stay in the response and the shipping fields are optional additions old callers can ignore",
+        "Answer the shipping estimate as advice only — no rate, shipment, order or checkout state is written, and the authoritative cost is still computed at submit",
+        "Publish the transit-day assumption (weekdays, no holiday calendar) next to the numbers so the storefront cannot promise more than the merchant configured",
+        "Preload what the bucket needs so a product list costs a constant number of queries regardless of page size"
+      ],
+      "mustNotDo": [
+        "Publish an exact quantity (count_on_hand / total_on_hand) in any shopper-facing response, in the UI, or in structured data",
+        "Break the 4.2 availability contract or let the badge disagree with the buy button",
+        "Show a delivery window for a digital good, or claim 'no delivery' when the answer is merely unknown",
+        "Charge, reserve, move stock or write money from the estimate endpoint",
+        "Add a query per product when serializing a list because each product's bucket was computed on its own"
+      ],
+      "scoring": {
+        "bucketingFidelity": 30,
+        "quantityPrivacy": 25,
+        "contractAdditivity": 15,
+        "adviceOnlySafety": 15,
+        "listPerformance": 10,
+        "frontendHonesty": 5
+      }
     }
   ]
 }

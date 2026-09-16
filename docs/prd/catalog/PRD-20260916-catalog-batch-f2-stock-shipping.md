@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-16 |
 | 来源 | 《商品升级方案 V1.0》§十一「库存与配送信息」——消费者三问：现在有没有货 / 还有多少 / 什么时候送到（用户授权原话「继续」，2026-09-16） |
 | 分类 | catalog（商品域 / 库存与配送，沿用 Batch A~F 系列目录） |
@@ -91,7 +91,7 @@
 - AC-001 ← FR-002/003：分桶口径逐项（>阈值 / 1..阈值 / 0+preorder / 0+backorder / 0）服务层断言，且与 `Variant#in_stock?` 判定一致（模型/服务规格）。
 - AC-002 ← FR-003：`low_stock_threshold` 默认 5；非法值（0/负数/空）归一为默认；店铺偏好可改后分桶随之变化（模型 + 服务规格）。
 - AC-003 ← FR-001/010：Store API variant/product 详情响应含 `stock_status` 枚举，且**响应体不含任何精确库存数字**（请求规格，断言 JSON 键集合）。
-- AC-004 ← FR-004：product 详情计算 `stock_status` 的查询数不高于改动前基线（请求规格 SQL 计数）。
+- AC-004 ← FR-004：分桶不放大查询——列表 1 条 vs 6 条的 SQL 计数差 ≤ 常数（请求规格，见 `stock_status_and_shipping_spec.rb`）。
 - AC-005 ← FR-006：`GET /api/v3/store/shipping_methods` 返回时效字段（含 null 分支）（请求规格）。
 - AC-006 ← FR-007/008：`Shipping::Estimate` 输出矩阵——普通商品（有配送方式）/ 数字商品 / 无匹配方式 / 有免运费阈值 / 无阈值（服务规格）。
 - AC-007 ← FR-009：PDP 组件按 estimate 渲染三种形态（有 min/max → 区间；仅 min → 单值；不可用 → 替代文案）并渲染免运费阈值（组件测试）。
@@ -137,14 +137,16 @@
 
 ## 9. 文档同步清单（知识同步门）
 
-- [ ] `ai/skills/pallastrade-api-v3/SKILL.md`（`stock_status` 分桶口径 + 时效字段 + 不暴露精确库存原则）
-- [ ] `ai/skills/pallastrade-storefront/SKILL.md`（PDP 库存徽章五态 + 配送区块 + 工作日/时区换算约定）
-- [ ] `ai/skills/pallastrade-catalog/SKILL.md`（若含库存展示口径则同步；否则记「已评估，无需更新」）
-- [ ] `ai/skills/pallastrade-data-model/SKILL.md`（Store 新增两个 preference 的语义与默认值）
-- [ ] `ai/skills/pallastrade-i18n/SKILL.md`（已评估：为文案新增，键齐备由测试守护 → 记「已评估，无需更新」）
-- [ ] `harness/scenarios/scenarios.json`（新增 GS：稀缺感用分桶表达、任何响应不含精确库存）
-- [ ] `harness.config.mjs`（verifier `f2-stock-shipping-rspec`）+ `AGENTS.md` §6 行
-- [ ] `docs/prd/README.md` 索引 + 本 PRD 状态
+- [x] `ai/skills/pallastrade-api-v3/SKILL.md`（新增「Stock buckets & shipping estimate」段：枚举值、阈值来源、不下发数字、列表预加载、`/shipping_estimate` 与 `shipping_methods?country` 契约）
+- [x] `ai/skills/pallastrade-storefront/SKILL.md`（`AvailabilityStatus` 的 `stockStatus` 与低调徽章策略、`ShippingEstimate` 组件与三种降级文案、工作日/`Intl` 约定、`sr-only` 而非 `aria-label`）
+- [x] `ai/skills/pallastrade-catalog/SKILL.md`（新增「Stock buckets for shoppers」段：口径同源 + 不下发数字两条铁律、product 层取最优变体、时效字段既有）
+- [x] `pallastrade-data-model`（**已评估，无需更新**：两个偏好写在 `Store` preferences 区块并有注释，语义已由 api-v3/catalog Skill 覆盖；无新表/新列）
+- [x] `pallastrade-i18n`（**已评估，无需更新**：为 UI 文案新增 9 键，五语言齐备由 `checkout-i18n-keys.test.ts` 守护）
+- [x] `harness/scenarios/scenarios.json`（新增 **GS-146**：稀缺感用分桶表达、任何响应不含精确库存；GS-145 已被并行批次占用）
+- [x] `harness.config.mjs`（verifier `f2-stock-shipping-rspec`）+ `AGENTS.md` §6 行
+- [x] `docs/prd/README.md` 索引 + 本 PRD 状态（done）
+- [x] `backend/public/api-docs/store.yaml` + `platform/docs/api-reference/store.yaml`（Product/Variant.stock_status、DeliveryMethod 时效、`shipping_methods?country`、新路径 `/shipping_estimate`）+ `harness generated:check`（no drift）
+- [x] 补充说明：前台取数失败返回 `null`（不谎报「不配送」）；到达日期按浏览器 locale/时区渲染，**店铺时区透传**留作后续（`useStore()` 目前不暴露 timezone，已在 §10 记录）。
 
 ## 10. 变更记录
 
@@ -152,6 +154,8 @@
 |---|---|---|---|
 | 2026-09-16 | 0.1 | 初稿（Batch F-2：FR-001~010 / AC-001~012；范围 = §十一 库存阈值化 + 配送信息；待用户确认 §11 五个决策点） | AI |
 | 2026-09-16 | 1.0 | 用户确认「确认实施」→ 状态 approved；决策：阈值默认 5 / 配送区块在 PDP 价格下方一行 / 免运费 = 店铺偏好+促销覆盖 / 到达日期 = 天数区间+日期区间 / **库存桶扩展到商品列表与卡片**（原推荐仅 PDP，用户选更大范围→新增 FR-011 与 AC-013~015，FR-004 改为「列表单次聚合、禁 N+1」） | AI |
+| 2026-09-16 | 1.1 | 实施完成并推送 `212fb1dd`（后端 + 契约 + 前台数据层）+ `207a03a2`（前台接线 + 契约文档 + verifier）；`f2-stock-shipping-rspec` 绿、前台 30 例绿、`pnpm build` 通过、`generated:check` 无漂移、`prd verify` 28/28 AC 覆盖 | AI |
+| 2026-09-16 | 1.2 | 收尾：GS-146、Skill 三份更新 + 两份「已评估」、§9 勾选、verifier 证据与任务关闭；**遗留**：店铺时区未透传到配送区块（`useStore()` 不暴露 timezone，当前按浏览器 locale/时区渲染）——记为后续小项 | AI |
 
 ## 11. 已确认决策（2026-09-16，用户回答）
 

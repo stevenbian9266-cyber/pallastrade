@@ -236,6 +236,25 @@ product.get_metafield('catalog.season')&.value   # => "fall-2026" (get_metafield
 
 `display_on: front_end` (or `both`) surfaces the metafield on the Store API; `back_end` is admin-only. See `PallasTrade::Metafields` concern and the `pallastrade-resource` skill (`--metafields` flag) for built-in support.
 
+## Stock buckets for shoppers（Catalog F-2，2026-09-16）
+
+`PallasTrade::Catalog::StockStatus` 把精确库存折叠成**枚举桶**给前台用：
+`in_stock | low_stock | preorder | backorder | out_of_stock`（`> 阈值` / `1..阈值` / `0+preorderable` /
+`0+backorderable` / 其余）。两条铁律：
+
+1. **口径同源**：可用量一律经 `PallasTrade::Stock::Quantifier`（`total_on_hand`）读取 —— 与
+   `Variant#in_stock?` / `#purchasable?` 同一个对象，因此桶与布尔字段不可能互相矛盾；
+   `should_track_inventory?` 为 false 时供给无限 → 恒 `in_stock`（**不制造稀缺**）。
+2. **不下发数字**：精确 `count_on_hand` / `total_on_hand` 不得出现在任何 Store API 响应里（规格断言）。
+   阈值来自 `Store#preferred_low_stock_threshold`（默认 5，非法值归一到默认）。
+
+product 层的桶取「最优变体」（in_stock > low_stock > preorder > backorder > out_of_stock）；列表侧
+必须预加载 `variants → stock_items → active_stock_reservations`，否则会退化成 N+1。
+
+配送时效（`estimated_transit_business_days_min/max`）是 `ShippingMethod` 上的**既有字段**，
+F-2 只是把它经 `PallasTrade::Shipping::Estimate` 与 `delivery_method_serializer` 下发到前台，
+**不改结算定价**（权威运费仍在 `Carts::Submit` 时算）。
+
 ## Back-in-stock subscriptions（SKU 级，2026-09-15 Batch C-2）
 
 `PallasTrade::BackInStockSubscription` 现在**两个粒度共存**（PRD-20260915-catalog-batch-c2-sku-back-in-stock）：

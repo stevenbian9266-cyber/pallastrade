@@ -354,6 +354,33 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
 - Notifications are sent by `PallasTrade::BackInStockSubscriber` on the `product.back_in_stock`
   event; see the events skill.
 
+### Stock buckets & shipping estimate (Store API, F-2 2026-09-16)
+
+- **`stock_status`** — added to `VariantSerializer` and `ProductSerializer` (additive; the 4.2
+  booleans `purchasable/in_stock/backorderable/preorder` are untouched). Values:
+  `in_stock | low_stock | preorder | backorder | out_of_stock`.
+  - Single source of truth: `PallasTrade::Catalog::StockStatus` reads availability through
+    `PallasTrade::Stock::Quantifier` — the same object `Variant#in_stock?` uses — so the bucket can
+    never disagree with the booleans. `> threshold` → `in_stock`, `1..threshold` → `low_stock`,
+    `0 + preorderable` → `preorder`, `0 + backorderable` → `backorder`, else `out_of_stock`.
+  - Threshold: `Store#preferred_low_stock_threshold` (default 5); invalid (0/negative/blank)
+    normalizes back to the default in `StockStatus.threshold_for`.
+  - **Never publish a quantity**: exact `count_on_hand` / `total_on_hand` must not appear in any
+    Store API response (spec-asserted). Variants that do not track inventory are always `in_stock` —
+    never invent scarcity.
+  - Product-level bucket = the best variant's bucket (in_stock > low_stock > preorder > backorder >
+    out_of_stock). Lists preload `variants → stock_items → active_stock_reservations`
+    (`collection_includes`), so serializing a page adds **no** per-product query.
+- **`GET /api/v3/store/shipping_estimate`** (F-2) — the PDP shipping block's read model:
+  `{ data: { available, digital, min_days, max_days, free_shipping, free_shipping_threshold,
+  business_day_source: "weekdays", methods: [...] } }`. Optional `product_id` (prefixed) and
+  `country`. Advice only — the authoritative cost is still computed at submit (`Carts::Submit`).
+  Public, publishable key.
+- **`GET /api/v3/store/shipping_methods`** (F-2) — now also returns
+  `estimated_transit_business_days_min/max` and accepts an optional `country` that narrows the list
+  by zone; when no zone matches it falls back to the full set rather than claiming there is no
+  delivery.
+
 ### Product reviews (Store API, P0-4 / F-1)
 
 - **Read (public, api_key)**: `GET /api/v3/store/products/:product_id/reviews` — approved reviews

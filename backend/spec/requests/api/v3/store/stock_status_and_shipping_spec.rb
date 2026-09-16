@@ -2,7 +2,11 @@
 
 require 'spec_helper'
 
-# PRD-20260916-catalog-batch-f2-stock-shipping AC-003 / AC-005 / AC-013 / AC-014
+# PRD-20260916-catalog-batch-f2-stock-shipping AC-003 / AC-004 / AC-005 / AC-011 / AC-013 / AC-014
+#   AC-004：分桶不得放大查询（以列表为断言载体：1 条 vs 6 条差值 ≤ 2）
+#   AC-011：只增字段（响应是既有键的超集）+ generated:check 无漂移（CI 门禁，见 PRD §9）
+# 另：AC-004（列表查询数不随条数增长，见 product list 第二例）
+#     AC-011（只增不改：既有布尔字段仍是超集的一部分）
 RSpec.describe 'Store API stock status & shipping', type: :request do
   include_context 'API v3 Store authenticated'
 
@@ -61,6 +65,21 @@ RSpec.describe 'Store API stock status & shipping', type: :request do
 
       # Serializing the bucket must not add a query per product.
       expect(many - single).to be <= 2
+    end
+
+    it 'adds the bucket without dropping the booleans 4.2 shipped (AC-011)' do
+      # The list must actually carry a product, otherwise the assertion would
+      # pass vacuously against an empty envelope.
+      product.master.stock_items.update_all(count_on_hand: 1, backorderable: false)
+      create_list(:product, 2, store: store, status: 'active')
+
+      get '/api/v3/store/products', headers: headers
+
+      body = response.body
+      expect(body).to include('low_stock')
+      %w[purchasable in_stock backorderable stock_status].each do |key|
+        expect(body).to include(key)
+      end
     end
   end
 
