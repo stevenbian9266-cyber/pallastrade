@@ -1,0 +1,55 @@
+zh-CN:
+  pallastrade:
+    admin:
+      refund_approvals:
+        title: 退款审批
+        policy_title: 退款策略
+        policy_on: 需审批
+        policy_off: 自动执行
+        policy_help: 不超过阈值的退款直接执行；超过阈值的退款挂起，等待第二人批准。阈值留空 = 全部退款都需审批；策略未开启 = 保持原有行为。
+        policy_enabled: 超过阈值需审批
+        policy_limit: 自动通过额度
+        policy_currency: 币种（留空 = 全部币种）
+        policy_currency_placeholder: 例如 USD
+        policy_save: 保存策略
+        policy_saved: 退款策略已保存。
+        policy_denied: 你没有修改退款策略的权限。
+        policy_failed: 退款策略保存失败。
+        policy_reason_disabled: 审批门未开启 —— 退款与之前行为一致。
+        policy_reason_limit_missing_conservative: 阈值缺失，在设置阈值前所有退款都需审批。
+        policy_reason_invalid_limit: 阈值不是有效金额，在修正前所有退款都需审批。
+        counts: "待批 %{pending} · 已批准 %{approved} · 已拒绝 %{rejected}"
+        status_pending: 待批准
+        status_decided: 已决策
+        status_approved: 已批准
+        status_rejected: 已拒绝
+        refund: 退款
+        amount: 金额
+        currency: 币种
+        requester: 发起人
+        reason: 原因
+        policy_snapshot: 挂起时策略
+        snapshot_value: "自动通过 ≤ %{limit}（%{currency}）"
+        all_currencies: 全部币种
+        status: 状态
+        requested_at: 发起时间
+        approve: 批准
+        reject: 拒绝
+        approve_failed: 退款批准失败
+        reject_failed: 退款拒绝失败
+        approved_flash: 退款已批准 —— 已入队执行。
+        rejected_flash: 退款已拒绝 —— 请求已撤销，可退额度已释放。
+        confirm_approve: 批准该退款？将由支付商执行出款。
+        confirm_reject: 拒绝该退款？请求会被撤销，额度重新可退。
+        own_request_hint: 等待第二人处理
+        filter: 筛选
+        empty: 当前没有待批退款。
+        previous_page: 上一页
+        next_page: 下一页
+        page_of: "第 %{page} / %{total} 页"
+        errors:
+          approver_required: 必须指定批准人。
+          approver_must_differ: 批准人必须与发起人不同（不能自批）。
+          approval_already_rejected: 该退款已被拒绝。
+          approval_already_approved: 该退款已被批准。
+          note_required: 拒绝时必须填写原因。

@@ -1090,6 +1090,58 @@ en:
         audit_actor: Actor
         audit_metadata: Details
         no_audits: No audit entry yet.
+      refund_approvals:
+        title: Refund approvals
+        policy_title: Refund policy
+        policy_on: Approval required
+        policy_off: Auto-execute
+        policy_help: Refunds at or below the limit execute immediately; anything above waits for a second person. Leaving the limit empty means every refund needs approval, and leaving the policy off keeps the previous behaviour.
+        policy_enabled: Require approval above the limit
+        policy_limit: Auto-approve up to
+        policy_currency: Currency (blank = all)
+        policy_currency_placeholder: e.g. USD
+        policy_save: Save policy
+        policy_saved: Refund policy saved.
+        policy_denied: You are not allowed to change the refund policy.
+        policy_failed: Could not save the refund policy.
+        policy_reason_disabled: The approval gate is off — refunds execute as before.
+        policy_reason_limit_missing_conservative: The limit is missing, so every refund needs approval until you set one.
+        policy_reason_invalid_limit: The limit is not a valid amount, so every refund needs approval until it is fixed.
+        counts: "Pending %{pending} · approved %{approved} · rejected %{rejected}"
+        status_pending: Pending approval
+        status_decided: Decided
+        status_approved: Approved
+        status_rejected: Rejected
+        refund: Refund
+        amount: Amount
+        currency: Currency
+        requester: Requested by
+        reason: Reason
+        policy_snapshot: Policy at request time
+        snapshot_value: "Auto-approve up to %{limit} (%{currency})"
+        all_currencies: all currencies
+        status: Status
+        requested_at: Requested at
+        approve: Approve
+        reject: Reject
+        approve_failed: Could not approve this refund
+        reject_failed: Could not reject this refund
+        approved_flash: Refund approved — execution queued.
+        rejected_flash: Refund rejected — the request was cancelled and the refundable amount released.
+        confirm_approve: Approve this refund? It will be executed by the payment provider.
+        confirm_reject: Reject this refund? The request is cancelled and the amount becomes refundable again.
+        own_request_hint: Waiting for a second person
+        filter: Filter
+        empty: Nothing waiting for approval.
+        previous_page: Previous page
+        next_page: Next page
+        page_of: "Page %{page} of %{total}"
+        errors:
+          approver_required: An approver is required.
+          approver_must_differ: The approver must be a different person than the requester.
+          approval_already_rejected: This refund was already rejected.
+          approval_already_approved: This refund was already approved.
+          note_required: A reason is required when rejecting.
       personal_details: Personal Details
       previous_page: Previous page
       price_lists:

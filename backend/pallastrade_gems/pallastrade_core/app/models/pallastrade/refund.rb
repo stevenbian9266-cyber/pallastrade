@@ -39,6 +39,10 @@ module PallasTrade
 
     has_many :log_entries, as: :source
 
+    # D14 切片1（PRD-20260916-payments-d14-refund-approval）：超阈值退款的第二人审批（0/1）。
+    # 审批记录只决定「是否入队执行」；资金执行仍只由 Refunds::ExecuteJob 承担。
+    has_one :approval, class_name: 'PallasTrade::RefundApproval', dependent: :destroy, inverse_of: :refund
+
     # REV-P6-8a (PRD-REV-P6-8a)：退款的事实 journal 行（immutable financial ledger，Ops 展示只读）
     has_many :journal_entries, class_name: 'PallasTrade::FinancialLedgerEntry', foreign_key: :refund_id
 

@@ -54,34 +54,55 @@ module PallasTrade
                   end
                 end
 
-                unless refund.save
+                unless refund.errors.empty?
                   error_rendered = true
                   render_validation_error(refund.errors)
                   next
                 end
 
-                @resource = refund
+                # D14 切片1（PRD-20260916-payments-d14-refund-approval）：人工退款走策略门
+                # （Refunds::Submit）——超阈值的退款只落 durable(requested) + 待批记录，
+                # **不入队执行**；批准后由 Refunds::Approvals::Approve 入队（零资金副作用）。
+                # request_key 为可选请求级幂等键（重复提交 → 返回既有退款，不建第二笔）。
+                outcome = PallasTrade::Refunds::Submit.call(
+                  payment: payment,
+                  amount: params[:amount],
+                  reason: reason,
+                  refunder_id: refund_actor_id,
+                  request_key: params[:request_key],
+                  reimbursement: refund.reimbursement,
+                  payment_split: refund.payment_split,
+                  target_order: refund.target_order,
+                  actor: audit_actor
+                )
+
+                unless outcome.success?
+                  error_rendered = true
+                  render_validation_error(outcome.value.respond_to?(:errors) ? outcome.value.errors : refund.errors)
+                  next
+                end
+
+                @resource = outcome.value
                 # P0-6 (PRD FR-064): Refund 敏感操作审计。
                 PallasTrade::Audit.record(
                   actor: (respond_to?(:current_admin_user) ? current_admin_user : 'admin'),
                   action: 'refund',
-                  resource: refund,
+                  resource: @resource,
                   after: {
                     payment_id: payment.prefixed_id,
-                    amount: refund.amount.to_s,
+                    amount: @resource.amount.to_s,
                     reason_id: reason&.prefixed_id,
-                    currency: refund.currency,
-                    payment_split_id: refund.payment_split&.prefixed_id,
-                    target_order_id: refund.target_order&.prefixed_id
+                    currency: @resource.currency,
+                    payment_split_id: @resource.payment_split&.prefixed_id,
+                    target_order_id: @resource.target_order&.prefixed_id,
+                    approval_status: @resource.approval&.status
                   }
                 )
               end
               return if error_rendered
 
-              # REV-P6-2：durable Refund(requested) 已提交 → enqueue ExecuteJob（异步执行；
-              # provider I/O 只发生在后台 Job，REV-INV-03）。响应 201 + state=requested；
-              # 终态/失败经 GET /orders/:id/refunds 观测（FR-R62-301 / AC-R62-07）。
-              PallasTrade::Refunds::ExecuteJob.perform_later(@resource.id)
+              # REV-P6-2 / D14：durable Refund(requested) 已提交 —— 执行入队由 Refunds::Submit
+              # 在事务提交后完成（策略未要求审批时）；待批退款保持 submitted，等待第二人。
               render json: serialize_resource(@resource.reload), status: :created
             end
 
@@ -89,6 +110,22 @@ module PallasTrade
 
             def model_class
               PallasTrade::Refund
+            end
+
+            # D14 切片1：发起人（admin 用户 id）—— 审批「不能自批」的 SoD 基准。
+            def refund_actor_id
+              user = respond_to?(:current_admin_user) ? current_admin_user : nil
+              user.respond_to?(:id) ? user.id : nil
+            end
+
+            # D14 切片1：审计 actor（策略门审计沿用后台统一形态）。
+            def audit_actor
+              user = respond_to?(:current_admin_user) ? current_admin_user : nil
+              if user.respond_to?(:id)
+                { type: user.class.name, id: user.id, label: user.respond_to?(:email) ? user.email : nil }
+              else
+                'admin'
+              end
             end
 
             def serializer_class

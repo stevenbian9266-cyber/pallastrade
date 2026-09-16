@@ -133,6 +133,14 @@ Rails.application.config.after_initialize do
               position: 57,
               active: -> { controller_name == 'payouts' },
               if: -> { can?(:manage, PallasTrade::Payout) }
+
+    # D14 切片1: 退款审批（Orders → 退款审批；超阈值退款需第二人批准，不能自批）
+    orders.add :refund_approvals,
+              label: 'admin.refund_approvals.title',
+              url: :admin_refund_approvals_path,
+              position: 58,
+              active: -> { controller_name == 'refund_approvals' },
+              if: -> { can?(:manage, PallasTrade::RefundApproval) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns

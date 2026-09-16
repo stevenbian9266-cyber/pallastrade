@@ -408,6 +408,17 @@ PallasTrade::Core::Engine.add_routes do
         post :reopen
       end
     end
+    # PALLAS-CUSTOM: D14 切片1（PRD-20260916-payments-d14-refund-approval）——
+    # 退款审批（Orders → 退款审批）：待批队列 + 策略卡 + 第二人批准/拒绝（不能自批）。
+    resources :refund_approvals, only: [:index] do
+      collection do
+        patch :policy
+      end
+      member do
+        post :approve
+        post :reject
+      end
+    end
     # PALLAS-CUSTOM: D13 切片2（PRD-20260916-payments-d13b-payout-ledger）——
     # 结算（Payout）台账（Orders → 结算台账）：列表/详情 + CSV 导入 + 重新匹配。
     # 导入/匹配只写台账表 + 案例表 + 审计（零资金副作用，不调 provider）。

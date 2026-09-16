@@ -60,6 +60,10 @@ module PallasTrade
         # PALLAS-CUSTOM: D13 切片2（PRD-20260916-payments-d13b-payout-ledger）——
         # 结算（Payout）台账（导入/匹配/查看）。`:manage` 覆盖全部台账动作。
         can :manage, PallasTrade::Payout
+        # PALLAS-CUSTOM: D14 切片1（PRD-20260916-payments-d14-refund-approval）——
+        # 退款审批工作台（待批队列/策略卡/批准/拒绝）。`:manage` 覆盖全部审批动作；
+        # 「不能自批」由服务层强制（职责分离）。
+        can :manage, PallasTrade::RefundApproval
 
         # General configuration
         can :manage, PallasTrade::RefundReason

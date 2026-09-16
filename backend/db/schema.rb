@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_16_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_16_190000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2100,6 +2100,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_180000) do
     t.index ["user_type", "user_id"], name: "index_pt_refresh_tokens_on_user"
   end
 
+  create_table "pallastrade_refund_approvals", force: :cascade do |t|
+    t.decimal "amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.bigint "approver_id"
+    t.datetime "created_at", null: false
+    t.string "currency"
+    t.datetime "decided_at"
+    t.jsonb "metadata"
+    t.text "note"
+    t.jsonb "policy_snapshot"
+    t.bigint "refund_id", null: false
+    t.bigint "requester_id"
+    t.string "status", default: "pending", null: false
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["refund_id"], name: "index_pallastrade_refund_approvals_on_refund_id", unique: true
+    t.index ["store_id", "created_at"], name: "index_pallastrade_refund_approvals_on_store_id_and_created_at"
+    t.index ["store_id", "status"], name: "index_pallastrade_refund_approvals_on_store_id_and_status"
+  end
+
   create_table "pallastrade_refund_reasons", force: :cascade do |t|
     t.boolean "active", default: true
     t.datetime "created_at", null: false
@@ -2128,6 +2147,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_180000) do
     t.bigint "refund_reason_id"
     t.bigint "refunder_id"
     t.bigint "reimbursement_id"
+    t.string "request_key"
     t.datetime "requested_at"
     t.string "state", default: "requested", null: false
     t.datetime "succeeded_at"
@@ -2142,6 +2162,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_180000) do
     t.index ["refund_reason_id"], name: "index_refunds_on_refund_reason_id"
     t.index ["refunder_id"], name: "index_pt_refunds_on_refunder_id"
     t.index ["reimbursement_id"], name: "index_pt_refunds_on_reimbursement_id"
+    t.index ["request_key"], name: "idx_refunds_request_key_unique", unique: true, where: "(request_key IS NOT NULL)"
     t.index ["state"], name: "idx_refunds_state"
     t.index ["target_order_id"], name: "index_pallastrade_refunds_on_target_order_id"
   end

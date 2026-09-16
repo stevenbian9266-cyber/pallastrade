@@ -1,0 +1,156 @@
+<%# PALLAS-CUSTOM: D14 切片1（PRD-20260916-payments-d14-refund-approval；业务方案 §71.1）—— %>
+<%#   退款审批工作台：策略卡（阈值）+ 待批队列（第二人批准/拒绝，不能自批）。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.refund_approvals.title') %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0"><%= PallasTrade.t('admin.refund_approvals.policy_title') %></h5>
+    <span class="badge <%= @policy.enabled? ? 'badge-success' : 'badge-secondary' %>">
+      <%= @policy.enabled? ? PallasTrade.t('admin.refund_approvals.policy_on') : PallasTrade.t('admin.refund_approvals.policy_off') %>
+    </span>
+  </div>
+  <div class="card-body">
+    <p class="form-text"><%= PallasTrade.t('admin.refund_approvals.policy_help') %></p>
+
+    <%= form_with url: PallasTrade.policy_admin_refund_approvals_path, method: :patch, local: true do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-2">
+          <div class="form-check">
+            <%= check_box_tag :enabled, '1', @policy.enabled?, class: 'form-check-input' %>
+            <%= label_tag :enabled, PallasTrade.t('admin.refund_approvals.policy_enabled'), class: 'form-check-label' %>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <%= label_tag :auto_approve_limit, PallasTrade.t('admin.refund_approvals.policy_limit'), class: 'form-label' %>
+          <%= text_field_tag :auto_approve_limit, @policy.auto_approve_limit.to_s('F'), class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :currency, PallasTrade.t('admin.refund_approvals.policy_currency'), class: 'form-label' %>
+          <%= text_field_tag :currency, @policy.currency, class: 'form-control form-control-sm',
+                                                     placeholder: PallasTrade.t('admin.refund_approvals.policy_currency_placeholder') %>
+        </div>
+        <div class="col-12 col-md-3">
+          <%= submit_tag PallasTrade.t('admin.refund_approvals.policy_save'), class: 'btn btn-sm btn-primary' %>
+        </div>
+      </div>
+    <% end %>
+
+    <% unless @policy.reason == 'ok' %>
+      <p class="form-text mt-2 mb-0">
+        <%= PallasTrade.t("admin.refund_approvals.policy_reason_#{@policy.reason}", default: @policy.reason) %>
+      </p>
+    <% end %>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <span class="text-gray-600">
+        <%= PallasTrade.t('admin.refund_approvals.counts',
+                          pending: @counts.fetch('pending', 0),
+                          approved: @counts.fetch('approved', 0),
+                          rejected: @counts.fetch('rejected', 0)) %>
+      </span>
+      <%= form_with url: PallasTrade.admin_refund_approvals_path, method: :get, local: true, class: 'd-flex gap-2' do |f| %>
+        <%= select_tag :status,
+                       options_for_select(
+                         [['pending', PallasTrade.t('admin.refund_approvals.status_pending')],
+                          ['terminal', PallasTrade.t('admin.refund_approvals.status_decided')],
+                          ['approved', PallasTrade.t('admin.refund_approvals.status_approved')],
+                          ['rejected', PallasTrade.t('admin.refund_approvals.status_rejected')]],
+                         @filters[:scope_filter]
+                       ), class: 'form-select form-select-sm' %>
+        <%= date_field_tag :from, params[:from], class: 'form-control form-control-sm' %>
+        <%= date_field_tag :to, params[:to], class: 'form-control form-control-sm' %>
+        <%= submit_tag PallasTrade.t('admin.refund_approvals.filter'), class: 'btn btn-sm btn-outline-secondary' %>
+      <% end %>
+    </div>
+
+    <% if @approvals.any? %>
+      <table class="table">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.refund_approvals.refund') %></th>
+            <th><%= PallasTrade.t('admin.refund_approvals.amount') %></th>
+            <th><%= PallasTrade.t('admin.refund_approvals.currency') %></th>
+            <th><%= PallasTrade.t('admin.refund_approvals.requester') %></th>
+            <th><%= PallasTrade.t('admin.refund_approvals.reason') %></th>
+            <th><%= PallasTrade.t('admin.refund_approvals.policy_snapshot') %></th>
+            <th><%= PallasTrade.t('admin.refund_approvals.status') %></th>
+            <th><%= PallasTrade.t('admin.refund_approvals.requested_at') %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @approvals.each do |approval| %>
+            <tr>
+              <td>
+                <% if approval.refund.present? && can?(:read, PallasTrade::Refund) %>
+                  <%= link_to approval.refund.prefixed_id, PallasTrade.admin_refund_path(approval.refund) %>
+                <% else %>
+                  <%= approval.refund_id %>
+                <% end %>
+              </td>
+              <td><%= format('%.2f', approval.amount.to_d) %></td>
+              <td><%= approval.currency %></td>
+              <td><%= approval.requester&.email || approval.requester_id || '—' %></td>
+              <td class="text-gray-600"><%= approval.refund&.reason&.name || '—' %></td>
+              <td class="text-gray-600">
+                <%= PallasTrade.t('admin.refund_approvals.snapshot_value',
+                                  limit: approval.policy_limit || '—',
+                                  currency: approval.policy_currency || PallasTrade.t('admin.refund_approvals.all_currencies')) %>
+              </td>
+              <td>
+                <span class="badge <%= refund_approval_status_class(approval.status) %>">
+                  <%= PallasTrade.t("admin.refund_approvals.status_#{approval.status}", default: approval.status) %>
+                </span>
+              </td>
+              <td><%= approval.created_at.strftime('%Y-%m-%d %H:%M') %></td>
+              <td class="text-end">
+                <% if approval.pending? && !same_actor?(approval) %>
+                  <%= link_to PallasTrade.t('admin.refund_approvals.approve'),
+                              PallasTrade.approve_admin_refund_approval_path(approval),
+                              class: 'btn btn-sm btn-success',
+                              data: { turbo_method: :post,
+                                      turbo_confirm: PallasTrade.t('admin.refund_approvals.confirm_approve') } %>
+                  <%= link_to PallasTrade.t('admin.refund_approvals.reject'),
+                              PallasTrade.reject_admin_refund_approval_path(approval),
+                              class: 'btn btn-sm btn-outline-danger',
+                              data: { turbo_method: :post,
+                                      turbo_confirm: PallasTrade.t('admin.refund_approvals.confirm_reject') } %>
+                <% elsif approval.pending? %>
+                  <span class="text-gray-600"><%= PallasTrade.t('admin.refund_approvals.own_request_hint') %></span>
+                <% else %>
+                  <span class="text-gray-600">
+                    <%= approval.approver&.email || approval.approver_id || '—' %>
+                  </span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+
+      <% if @pages > 1 %>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <% if @page > 1 %>
+            <%= link_to PallasTrade.t('admin.refund_approvals.previous_page'),
+                        PallasTrade.admin_refund_approvals_path(request.query_parameters.merge(page: @page - 1)),
+                        class: 'btn btn-sm btn-outline-secondary' %>
+          <% else %><span></span><% end %>
+          <span class="text-gray-600"><%= PallasTrade.t('admin.refund_approvals.page_of', page: @page, total: @pages) %></span>
+          <% if @page < @pages %>
+            <%= link_to PallasTrade.t('admin.refund_approvals.next_page'),
+                        PallasTrade.admin_refund_approvals_path(request.query_parameters.merge(page: @page + 1)),
+                        class: 'btn btn-sm btn-outline-secondary' %>
+          <% else %><span></span><% end %>
+        </div>
+      <% end %>
+    <% else %>
+      <p class="form-text mb-0"><%= PallasTrade.t('admin.refund_approvals.empty') %></p>
+    <% end %>
+  </div>
+</div>

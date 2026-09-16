@@ -429,6 +429,22 @@ end
 - ⚠️ 导航一致性 spec 断言 Orders 子项**完整列表**（新增项必须同步 `spec/requests/pallastrade/admin/navigation_consistency_spec.rb`）。
 - **回归**：`harness verify d13b-payouts-rspec`。
 
+## 退款审批工作台（D14 切片1, 2026-09-16，PRD-20260916-payments-d14-refund-approval）
+
+- **新页面** `/admin/refund_approvals`（Orders → 退款审批，position **58**；导航项 `orders.add :refund_approvals`，
+  `if: can?(:manage, PallasTrade::RefundApproval)`）；控制器 `RefundApprovalsController < BaseController`
+  （index / policy / approve / reject —— 无 show：列表即工作台）。
+- **筛选口径唯一**：`RefundApproval.filter_by(store_id:, scope_filter:, from:, to:)`（默认 `scope_filter: 'pending'`）；
+  计数 `base_scope.group(:status).count`；列表 `recent_first` + 分页（`PER_PAGE = 50`）。
+- **策略卡**（页内表单 `PATCH /admin/refund_approvals/policy`）：`enabled` / `auto_approve_limit` / `currency`；
+  写 `Store#private_metadata['refund_policy']`（`update_columns`，不触发回调）+ 审计 `refund_policy_updated` + before/after 快照；
+  归一化在控制器 `normalized_policy`（丢弃未知键；阈值空串 = 「全部需审批」）；权限 `can?(:update, PallasTrade::Store)`，拒绝时 flash 提示不炸页。
+- **动作**：`POST :id/approve` / `POST :id/reject`（`authorize! :update, PallasTrade::Refund`）；
+  **发起人本人行不渲染动作**（helper `same_actor?(approval)`）+ 服务层强制「不能自批」；拒绝原因 `required` + 服务层 `note_required`。
+- **错误提示**：`decision_error_message` 把服务错误码映射到 `admin.refund_approvals.errors.<code>`（i18n 缺失 → 通用文案 + code，不泄露内部细节）。
+- ⚠️ 导航一致性 spec 断言 Orders 子项**完整列表**（新增项必须同步 `spec/requests/pallastrade/admin/navigation_consistency_spec.rb`）。
+- **回归**：`harness verify d14-refund-approval-rspec`（+ `node scripts/nav-validate-static.mjs`）。
+
 ## 支付适用范围编辑：Provider 详情「支付方式」页签（D8 切片2, 2026-09-15，PRD-20260915-payments-d8）
 
 同一页签每行新增「适用范围」编辑器 + 摘要列（改 `_options.html.erb`；**不新增页面**）：

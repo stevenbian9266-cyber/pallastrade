@@ -30,16 +30,22 @@ module PallasTrade
       # @param payment_split [PallasTrade::PaymentSplit, nil] ownership：组合退款目标 split（可证明才传）
       # @param enqueue [Boolean] 默认 true 入队 ExecuteJob；false 仅落库 durable requested
       #   （供编排器在自身事务内建行、事务提交后再统一入队——避免事务回滚导致孤儿入队，
-      #   见 REV-P6-4 Orders::Cancel Cancellation Orchestrator）
+      #   见 REV-P6-4 Orders::Cancel Cancellation Orchestrator；D14 超阈值待批退款亦走 false）
+      # @param request_key [String, nil] D14：请求级幂等键（防重复退款）；同 key → 复用既有行
       # @return [PallasTrade::ServiceModule::Result] success(value=refund, requested)
       def call(payment:, amount:, reason: nil, refunder_id: nil, reimbursement: nil,
                commerce_transaction: nil, target_order: nil, payment_split: nil,
-               enqueue: true)
+               enqueue: true, request_key: nil)
+        key = request_key.to_s.strip.presence
+        existing = key ? PallasTrade::Refund.find_by(request_key: key) : nil
+        return success(existing) if existing
+
         refund = payment.refunds.build(amount: amount, reason: reason, reimbursement: reimbursement)
         refund.refunder_id = refunder_id if refunder_id
         refund.commerce_transaction = commerce_transaction if commerce_transaction
         refund.target_order = target_order if target_order
         refund.payment_split = payment_split if payment_split
+        refund.request_key = key if key
 
         unless refund.save
           return failure(refund)
@@ -47,6 +53,12 @@ module PallasTrade
 
         enqueue_execution(refund) if enqueue
         success(refund)
+      rescue ActiveRecord::RecordNotUnique
+        # 并发同一 request_key：唯一索引兜底 → 复用既有行（绝不产生第二笔）
+        existing = key ? PallasTrade::Refund.find_by(request_key: key) : nil
+        return success(existing) if existing
+
+        raise
       end
 
       private

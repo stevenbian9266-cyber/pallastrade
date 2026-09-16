@@ -3691,6 +3691,34 @@
         "listPerformance": 10,
         "frontendHonesty": 5
       }
+    },
+    {
+      "id": "GS-147",
+      "name": "A large refund waits for a second person, and a repeated request never pays twice",
+      "description": "PRD-20260916-payments-d14-refund-approval (slice 1 of §78-D14 / §71.1 of the payment plan): a staff refund had no amount ceiling and no second pair of eyes — one mistaken click moved money. This slice puts a policy gate in front of the human entry point: at or below the store limit the refund executes as before, above it the refund is stored durably but held until a different person approves it; a rejected hold cancels the request and releases the refundable amount, and a repeated submission with the same request key reuses the first refund instead of paying twice.",
+      "mustDo": [
+        "Keep the gate at the human entry point only: the orchestrator and provider gateway paths inside Refunds::Request must stay unattended, so cancelling an order never hangs on an approval",
+        "Store the policy on the store, normalise it conservatively, and never read it with side effects: an unusable limit means everything needs approval rather than nothing does, and a switched-off policy reproduces exactly today's behaviour",
+        "Hold above the limit as a durable requested refund that is not enqueued, plus one pending approval row carrying a snapshot of the rule it was held under",
+        "Enforce separation of duties in the service, not only in the view: the approver must exist and must differ from the requester, so nobody approves or rejects their own request",
+        "Make approval the only moment execution is enqueued, and keep repeated approvals idempotent so a double click cannot queue two executions",
+        "Require a reason to reject, cancel only a request that has not yet reached the provider, and release the refundable amount by moving it to canceled",
+        "Make a repeated submission with the same request key return the first refund, with a unique index as the concurrency backstop, and audit every path (auto, requested, approved, rejected, policy updated)"
+      ],
+      "mustNotDo": [
+        "Call the provider, write money logs, or change payment or order amounts from the gate, the approval or the rejection — execution stays with the existing job",
+        "Let a policy that cannot be parsed silently auto-approve, or let an unknown currency scope disable a limit that should apply",
+        "Allow the requester to approve their own refund through the API, the back office, or a direct service call",
+        "Queue a second execution for an already-approved approval, or reject an approval that was already approved",
+        "Create a second refund for the same request key, or expose raw integer ids in the new admin API contract field"
+      ],
+      "scoring": {
+        "sideEffectSafety": 30,
+        "separationOfDuties": 25,
+        "policyNormalization": 20,
+        "idempotency": 15,
+        "adminIntegration": 10
+      }
     }
   ]
 }

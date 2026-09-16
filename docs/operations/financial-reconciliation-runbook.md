@@ -122,11 +122,35 @@ PallasTrade::Payout.with_differences.order(settled_at: :desc).limit(10)
 PallasTrade::Reconciliations::Payouts::Match.call(payout: PallasTrade::Payout.last)
 ```
 
-## 10. 边界提醒
+## 10. 退款审批（阈值 + 双人复核，D14 切片1，2026-09-16）
+
+> PRD-20260916-payments-d14-refund-approval（业务方案 §71.1）：人工退款加**策略门** ——
+> `≤` 阈值自动执行；`>` 阈值**落库待批**，必须**第二人**批准才入队执行。
+> 后台：**Orders → 退款审批**（`/admin/refund_approvals`，需 `can?(:manage, PallasTrade::RefundApproval)`）。
+
+- **策略**（店铺级，页内策略卡保存；`PATCH /admin/refund_approvals/policy`）：`enabled` / `auto_approve_limit` / `currency`；
+  归一化保守 —— `enabled` 但阈值缺失/非法 → **全部需审批**（宁可多审，绝不静默放行）；策略未启用 → 行为与历史一致。
+- **待批语义**：退款已 durable 落库为 `requested` 但**不入队**（provider 尚未被调用）；
+  拒绝 → `cancel_request!`（`requested → canceled`）**释放可退额度**，可重新提交。
+- **双人复核（SoD）**：批准/拒绝人必须 ≠ 发起人；发起人本人行在页面不渲染动作，服务层同时强制（API/脚本同样被拦）。
+  批准 = 唯一入队时机（`Refunds::ExecuteJob`），重复批准**不重复入队**。
+- **幂等**：提交可带 `request_key`（Admin API 亦支持）；同键重复提交返回**同一笔**退款，不会出第二笔。
+- **铁律**：策略门/批准/拒绝**不动钱** —— 不调 provider、不写资金日志、不改 Payment/订单金额；资金执行仍只由 `ExecuteJob` 承担。
+- 命令行复核（容器内）：
+
+```ruby
+PallasTrade::RefundApproval.pending.order(created_at: :desc).limit(10)
+  .map { |a| [a.id, a.refund_id, a.amount, a.currency, a.requester_id, a.policy_limit] }
+PallasTrade::Refunds::Policy.for(PallasTrade::Store.default).snapshot   # 当前生效策略（只读）
+```
+
+## 11. 边界提醒
 
 - Repair/Backfill 唯一写 = Journal；绝不新 Payment/Refund、绝不倒退 transaction state。
 - UNPROVABLE 历史数据不猜测、不强制 backfill（§50/AC-4025）。
 - mismatch / needs_attention 属人工裁决域（§46 严重冲突可能需 manual_review，绝不自动倒退到
   payment_pending）。
-- 相关 skill：`ai/skills/pallastrade-payments/SKILL.md`（P4 各包语义 + 结算台账）／`pallastrade-deployment`
-  （sidekiq-cron 调度）／`pallastrade-admin`（对账队列 + 结算台账工作台）。
+- 超阈值退款**不得**用「直接调用 `Refunds::Request` / 手工入队」绕开审批（绕过 §10 的策略门 = 违规）；
+  紧急出款一律走「提交 → 第二人批准」。
+- 相关 skill：`ai/skills/pallastrade-payments/SKILL.md`（P4 各包语义 + 结算台账 + 退款审批）／`pallastrade-deployment`
+  （sidekiq-cron 调度）／`pallastrade-admin`（对账队列 + 结算台账 + 退款审批工作台）。

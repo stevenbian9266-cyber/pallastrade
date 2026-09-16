@@ -23863,6 +23863,12 @@ components:
         display_estimated_price:
           type: string
           nullable: true
+        estimated_transit_business_days_min:
+          type: number
+          nullable: true
+        estimated_transit_business_days_max:
+          type: number
+          nullable: true
         created_at:
           type: string
         updated_at:
@@ -23872,6 +23878,8 @@ components:
       - name
       - code
       - display_estimated_price
+      - estimated_transit_business_days_min
+      - estimated_transit_business_days_max
       - created_at
       - updated_at
       x-typelizer: true
@@ -25497,6 +25505,14 @@ components:
         preorder_ships_at:
           type: string
           nullable: true
+        stock_status:
+          type: string
+          enum:
+          - in_stock
+          - low_stock
+          - preorder
+          - backorder
+          - out_of_stock
         purchasable:
           type: boolean
         preorder:
@@ -25601,6 +25617,7 @@ components:
       - variant_count
       - available_on
       - preorder_ships_at
+      - stock_status
       - purchasable
       - preorder
       - in_stock
@@ -25863,6 +25880,9 @@ components:
           type: object
         target_order_id:
           type: object
+        approval_status:
+          type: string
+          nullable: true
         payment:
           "$ref": "#/components/schemas/Payment"
         reimbursement:
@@ -25886,6 +25906,7 @@ components:
       - updated_at
       - payment_split_id
       - target_order_id
+      - approval_status
       x-typelizer: true
     Reimbursement:
       type: object
@@ -26440,6 +26461,14 @@ components:
         preorder_ships_at:
           type: string
           nullable: true
+        stock_status:
+          type: string
+          enum:
+          - in_stock
+          - low_stock
+          - preorder
+          - backorder
+          - out_of_stock
         thumbnail_url:
           type: string
           nullable: true
@@ -26547,6 +26576,7 @@ components:
       - track_inventory
       - media_count
       - preorder_ships_at
+      - stock_status
       - thumbnail_url
       - purchasable
       - in_stock

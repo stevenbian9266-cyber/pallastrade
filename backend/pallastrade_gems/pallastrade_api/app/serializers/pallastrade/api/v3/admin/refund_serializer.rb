@@ -8,9 +8,11 @@ module PallasTrade
                    reimbursement_id: [:string, nullable: true],
                    state: :string,
                    last_error_message: [:string, nullable: true],
+                   approval_status: [:string, nullable: true],
                    metadata: 'Record<string, unknown>'
 
           # REV-P6-1：admin 展示退款生命周期与失败信息（FR-R61-701/REV-P6-8 底座）
+          # D14 切片1：approval_status 暴露第二人审批状态（无审批 → null）
           attributes :metadata,
                      :state,
                      :last_error_message,
@@ -44,6 +46,12 @@ module PallasTrade
 
           attribute :ambiguous_at do |refund|
             refund.ambiguous_at&.iso8601
+          end
+
+          # D14 切片1（PRD-20260916-payments-d14-refund-approval）：超阈值退款的第二人审批状态
+          # （pending / approved / rejected）；无需审批 → null（既有行为不变）。
+          attribute :approval_status do |refund|
+            refund.approval&.status
           end
 
           one :payment,

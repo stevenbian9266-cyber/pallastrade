@@ -106,7 +106,8 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
       # DSP-P7-7: Orders 下新增 Dispute Ops 项（:disputes_ops，只读展现 + 安全动作）
       # D13 切片1: Orders 下新增对账队列（:reconciliation_cases，案例工作台 + CSV 导出）
       # D13 切片2: Orders 下新增结算台账（:payouts，结算导入 + 匹配）
-      expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders transactions refunds payment_combinations payments_ops disputes_ops reconciliation_cases payouts])
+      # D14 切片1: Orders 下新增退款审批（:refund_approvals，超阈值退款需第二人批准）
+      expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders transactions refunds payment_combinations payments_ops disputes_ops reconciliation_cases payouts refund_approvals])
       expect(sidebar.find(:products).children.map(&:key)).to eq(%i[products_list catalog_health duplicate_products price_lists stock translations taxonomies options])
       expect(sidebar.find(:customers).children.map(&:key)).to eq(%i[customers_list customer_groups newsletter_subscribers])
       # PRD-20260910-promo-batch3c AC-004: Promotions 组新增只读核销台账子项

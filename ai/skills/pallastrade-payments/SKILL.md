@@ -1352,6 +1352,38 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   `uninitialized constant …ImportCsv`）；`PallasTrade` 命名空间内引用 stdlib 一律写 `::CSV`（裸 `CSV::…` 会被解析成 `PallasTrade::CSV::…`）。
 - **回归**：`harness verify d13b-payouts-rspec`（52 examples）+ 切片1 `d13-reconciliation-cases-rspec` + P4 `finance-reconciliation-rspec`。
 
+## 退款审批 — 阈值 + 双人复核（D14 切片1, 2026-09-16；PRD-20260916-payments-d14-refund-approval）
+
+业务方案 §71.1：人工退款此前**无额度约束、无第二人**，一次误操作即出款。本切片给「人工退款」加**策略门**：
+`≤` 阈值自动执行；`>` 阈值**落库待批**，必须**第二人**批准才入队执行。
+铁律：**零资金副作用** —— 审批只决定「是否入队」；provider I/O 与资金日志仍只发生在 `Refunds::ExecuteJob`（REV-INV-03）。
+
+- **策略**（`Refunds::Policy`，只读值对象；存 `Store#private_metadata['refund_policy']`）：
+  `enabled`（默认 **false** = 行为与今天完全一致）/ `auto_approve_limit`（`≤` 自动；严格 `>` 才需审批）/ `currency`（空 = 全部币种）。
+  归一化**保守**：非法值（负数/非数值）→ 不启用 + `reason`；`enabled: true` 但阈值缺失 → 阈值按 **0**（全部需审批）。
+  **读策略零写库**、零 provider I/O。
+- **策略门的位置**：只在 `Refunds::Submit`（人工入口），**不放进** `Refunds::Request` —— 编排与网关退款必须无人值守
+  （`Orders::Cancel`、stripe/adyen/paypal 回调行为零变化；把门放进内核会让「取消订单退款」因超阈值挂起）。
+- **`Refunds::Submit.call(payment:, amount:, reason:, refunder_id:, request_key: nil, ...)`**：
+  `request_key` 命中既有退款 → 直接返回（`pallastrade_refunds.request_key` partial unique index 兜底并发）；
+  `≤` 阈值 → `Request(enqueue: true)` + 审计 `refund_auto_approved`；`>` 阈值 → `Request(enqueue: false)`（durable `requested`、
+  **不入队**）+ `RefundApproval(pending)` + 审计 `refund_approval_requested`；策略未启用 → 等价今天（不建审批行、无额外审计）。
+- **`Refunds::Approvals::Approve.call(approval:, approver_id:, note: nil, actor: nil)`** —— 第二人批准：
+  `approver_id` 必填且 **≠ `requester_id`**（`approver_must_differ`）；仅 `pending` 可批（已批 → 幂等返回现状，**绝不重复入队**；
+  已拒 → `approval_already_rejected`）；批准 → `approved` + `decided_at` → `Refunds::ExecuteJob.perform_later(refund_id)`
+  + 审计 `refund_approval_approved`（metadata `approver_id` / `enqueued`）。
+- **`Refunds::Approvals::Reject.call(approval:, approver_id:, note:, actor: nil)`** —— 第二人拒绝：
+  同样不允许自拒；`note` 必填（`note_required`）；拒绝 → `rejected` + `refund.cancel_request!`（`requested → canceled`，
+  **释放可退额度**）+ 审计 `refund_approval_rejected`（metadata `refund_canceled`）；重复拒绝幂等返回现状。
+- **模型** `PallasTrade::RefundApproval`（`pallastrade_refund_approvals`）：`status`（pending/approved/rejected）、`amount` / `currency`、
+  `requester_id` / `approver_id` / `decided_at` / `note`、`policy_snapshot`（「当时按什么规则挂起」）、`metadata`；
+  `refund_id` **唯一**（一笔退款最多一条审批）；`Refund#approval`（has_one，dependent: :destroy）；SoD 判定 `requester?(actor_id)`。
+- **Admin API**：`POST /api/v3/admin/orders/:id/refunds` 改走 `Refunds::Submit`（策略门生效，支持可选 `request_key`）；
+  `Admin::RefundSerializer` 增 `approval_status`（pending/approved/rejected；无审批 → null）。契约产物需重生成（见 `generated:check`）。
+- **审计五连**：`refund_auto_approved` / `refund_approval_requested` / `refund_approval_approved` / `refund_approval_rejected` /
+  `refund_policy_updated`。
+- **回归**：`harness verify d14-refund-approval-rspec`（64 examples）+ `Orders::Cancel` 与 refunds 既有 spec + `harness generated:check`。
+
 ## 熔断与健康 — 入口级软置灰（D11 切片1, 2026-09-16；PRD-20260916-payments-d11-circuit-breaker-health）
 
 业务方案 §67.3：provider 抖动时**先把入口从前台摘掉**（软置灰），而不是让用户一路踩到支付失败。
