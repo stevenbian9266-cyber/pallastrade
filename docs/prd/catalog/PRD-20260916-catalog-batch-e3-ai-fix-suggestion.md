@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-16 |
 | 来源 | 《商品升级方案 V1.0》§3.3「商品智能辅助」第四项 `Catalog Health → AI Fix Suggestion`；§六「Catalog Health：待办中心」+ §六.1 V2（本批不做评分） |
 | 分类 | catalog（商品域 / AI 辅助 / 健康治理） |
