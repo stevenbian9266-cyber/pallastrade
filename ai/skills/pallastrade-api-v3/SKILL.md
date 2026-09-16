@@ -354,19 +354,33 @@ slash stripped, leading origin stripped from `from_path`; `to_path` must stay in
 - Notifications are sent by `PallasTrade::BackInStockSubscriber` on the `product.back_in_stock`
   event; see the events skill.
 
-### Product reviews (Store API, P0-4)
+### Product reviews (Store API, P0-4 / F-1)
 
 - **Read (public, api_key)**: `GET /api/v3/store/products/:product_id/reviews` — approved reviews
-  only, newest first. `{ id, product_id, user_name, rating, title, body, verified_purchase, created_at }`.
+  only, newest first, **paginated** (`?page&limit`, default 10 / max 100; deterministic
+  `created_at DESC, id DESC` so consecutive pages neither repeat nor skip). The v3 envelope carries
+  `meta` = standard pagination keys **+ `rating_distribution`** (`{"5": n, …, "1": n}`) computed
+  server-side from the same scope as the page — never from the returned slice.
+  Item: `{ id, product_id, user_name, rating, title, body, verified_purchase, created_at, image_urls }`;
+  `image_urls` are absolute CDN URLs and only ever present for approved reviews.
 - **Write (customer JWT required)**: `POST /api/v3/store/products/:product_id/reviews`
-  with `{ rating (1–5, required), title?, body? }`. Creates a `pending` review; one review per
-  (product, user) — duplicates → 422. `verified_purchase` is computed from the customer's completed
-  orders. Unauthenticated → 401.
+  with `{ rating (1–5, required), title?, body?, images? }`. Creates a `pending` review; one review
+  per (product, user) — duplicates → 422. `verified_purchase` is computed from the customer's
+  completed orders. Unauthenticated → 401.
+  - `images` = up to 3 signed ids from `POST /api/v3/store/direct_uploads` (jpeg/png/webp, ≤ 5 MB).
+    Failures are explicit 422s: `review_image_limit_exceeded`, `review_image_not_owned`,
+    `review_image_invalid`. A rejected upload never mutates an existing review.
+- **Direct uploads (customer JWT required)**: `POST /api/v3/store/direct_uploads` with
+  `{ filename, content_type, byte_size, checksum }` → signed id + upload URL (same ActiveStorage
+  shape as the admin side). The blob records the uploading user in its metadata, and review
+  creation only accepts ids that user uploaded and has not attached already.
 - Moderation: admin `PallasTrade::Admin::ReviewsController` approves/rejects/deletes; only
   `approved` reviews are public and counted in `Product#average_rating` / `#review_count`
-  (exposed on `ProductSerializer`). Product serializer also adds `average_rating`/`review_count`.
+  (exposed on `ProductSerializer`). The admin reviews table shows a **photos** column
+  (`pallastrade/admin/tables/columns/_review_photos.html.erb`).
 - Model: `PallasTrade::Review` (`SingleStoreResource`, `has_prefix_id :rev`, unique
-  `[product_id, user_id]`).
+  `[product_id, user_id]`, `has_many_attached :images` with `MAX_IMAGES = 3`,
+  `ALLOWED_IMAGE_TYPES`, `MAX_IMAGE_BYTES = 5.megabytes`).
 
 ### Blog posts — CMS (Store + Admin API)
 

@@ -100,6 +100,21 @@ const REQUIRED: Record<string, string[]> = {
   ],
   // PRD-20260915-catalog-batch-c1-discovery AC-010：Wishlist V1 全量文案。
   wishlist: ["title", "empty", "browse", "add", "remove", "removeAria"],
+  // PRD-20260916-catalog-batch-f1-reviews AC-009：
+  // 评论分页 Load more 与图片评论（选择/上限/类型/大小/移除）文案，五语言齐备。
+  reviews: [
+    "ratingBreakdown",
+    "loadMore",
+    "loadingMore",
+    "loadMoreError",
+    "addPhotos",
+    "photoLimit",
+    "photoLimitReached",
+    "photoTooLarge",
+    "photoTypeInvalid",
+    "photoUploadFailed",
+    "removePhoto",
+  ],
 };
 
 describe("Checkout error i18n keys (PRD-20260913-checkout-txn-error-routing AC-010)", () => {

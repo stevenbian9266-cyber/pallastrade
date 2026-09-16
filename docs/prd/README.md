@@ -197,8 +197,9 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260915-payments-d10-client-config | payments | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-catalog-batch-e1-ai-copilot | catalog | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-payments-d12-webhook-governance | payments | 2026-09-15 | （实施时回填） |
-| approved | PRD-20260915-catalog-batch-e2-ai-translate-missing | catalog | 2026-09-15 | （实施时回填） |
+| done | PRD-20260915-catalog-batch-e2-ai-translate-missing | catalog | 2026-09-15 | （实施时回填） |
 | done | PRD-20260916-payments-d16-payment-method-presentation | payments | 2026-09-16 | 后端读模型 + 契约三字段 + 前台方法行渲染；`d16-payment-presentation-rspec` + `storefront-test` 绿 |
 | done | PRD-20260916-payments-d13-reconciliation-cases | payments | 2026-09-16 | 实施：案例队列（2 表）+ SyncCases（幂等/自动销案/签名取代）+ sweeper 接入 + 后台工作台（指派/备注/关单/CSV）；`d13-reconciliation-cases-rspec` |
 | done | PRD-20260916-payments-d11-circuit-breaker-health | payments | 2026-09-16 | 实施：熔断状态机 + 健康指标 + 判定/恢复 + 每小时巡检 + Resolver 同源门禁 + 后台「熔断与健康」卡（原因必填/粘性/审计）；`d11-circuit-breaker-rspec` |
 | done | PRD-20260916-catalog-batch-e3-ai-fix-suggestion | catalog | 2026-09-16 | （实施时回填） |
+| done | PRD-20260916-catalog-batch-f1-reviews | catalog | 2026-09-16 | 实施：评分分布 + 分页 Load more + 图片评论（≤3 张/直传/未审核不外泄）+ 后台图片列；`reviews-f1-rspec`（后端 31 例）+ `storefront-test`（14 例）绿 |

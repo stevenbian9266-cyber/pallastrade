@@ -2,6 +2,8 @@
 
 require 'spec_helper'
 
+# PRD-20260916-catalog-batch-f1-reviews AC-010: envelope + serializer contract
+
 # PRD-20260818-catalog-p0-4-产品评论
 # AC-002 / AC-003：approved 只读列表 + 登录客户提交 + 未登录 401 + 重复提交拒绝
 RSpec.describe 'Product reviews API', type: :request do

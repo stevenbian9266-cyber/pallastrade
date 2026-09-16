@@ -3607,6 +3607,33 @@
         "workbenchUsability": 15,
         "auditAndExport": 10
       }
+    },
+    {
+      "id": "GS-144",
+      "name": "Review photos and the rating breakdown stay honest and in order",
+      "description": "PRD-20260916-catalog-batch-f1-reviews (评论系统升级一期, §十一 of the catalog upgrade plan): the store review list answered with a bare array and no paging, so a long list could only show one slice, and the storefront computed the star breakdown from that same slice — a breakdown that disagreed with the average right above it. F-1 serves the list through the standard v3 envelope with server-side paging and a server-computed distribution, and lets a signed-in customer attach up to three photos that stay private until the review itself is approved.",
+      "mustDo": [
+        "Answer the list with the standard v3 envelope and a deterministic order (created_at desc, id desc) so consecutive pages neither repeat nor skip a review",
+        "Compute rating_distribution server-side, in the same meta payload and from the same scope as the returned page, so breakdown and average can never disagree",
+        "Keep pending reviews and their photos invisible: only approved reviews are listed, and their image_urls are absolute public URLs — never raw storage paths",
+        "Enforce the photo rules on the server (at most 3, jpeg/png/webp, 5 MB) and reject foreign or cancelled signed ids with the documented error codes (422 review_image_limit_exceeded / review_image_not_owned / review_image_invalid)",
+        "Tie a direct-upload blob to the customer who created it, and accept only ids that customer uploaded and has not already attached",
+        "Keep the storefront a thin client: it renders the server numbers and only uses the image limits for a fast pre-flight, and the back office shows the same photos"
+      ],
+      "mustNotDo": [
+        "Change the moderation lifecycle (approved stays the gate) or auto-approve a review because it carries photos",
+        "Expose raw storage paths, pending photos, or another customer's uploads, or return a bare array where the envelope belongs",
+        "Break the existing create contract (rating/title/body) or allow an unbounded number of images",
+        "Mutate or delete an existing review when a photo upload fails, or let a photo be attached by an unauthenticated request",
+        "Recompute the rating distribution in the browser from only the page currently loaded"
+      ],
+      "scoring": {
+        "paginationCorrectness": 25,
+        "distributionConsistency": 25,
+        "moderationPrivacy": 20,
+        "uploadSafety": 20,
+        "adminIntegration": 10
+      }
     }
   ]
 }

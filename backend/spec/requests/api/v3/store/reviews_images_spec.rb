@@ -2,6 +2,8 @@
 
 require 'spec_helper'
 
+# PRD-20260916-catalog-batch-f1-reviews AC-004: signed-id ownership / limit / 401
+
 # PRD-20260916-catalog-batch-f1-reviews —— 评论图片（预签上传 + 归属校验 + 上限）
 #
 #   AC-001 ← FR-001：≤3 张、jpg/png/webp、≤5MB（模型校验）

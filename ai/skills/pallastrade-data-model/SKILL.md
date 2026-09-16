@@ -33,7 +33,7 @@ captures a guest email for one product: `store_id`, `product_id`, `email`, `stat
 re-activates a notified row. `PallasTrade::BackInStockSubscriber` emails active rows on
 `product.back_in_stock` and marks them `notified`. A `Store has_many back_in_stock_subscriptions`.
 
-## Product reviews (P0-4)
+## Product reviews (P0-4 / F-1)
 
 `PallasTrade::Review` (table `pallastrade_reviews`) captures a customer review for one product:
 `store_id`, `product_id`, `user_id`, `rating` (1–5), `title`, `body`, `status`
@@ -42,11 +42,20 @@ from the customer's completed orders). Unique per `[product_id, user_id]` (a cus
 product once). `has_prefix_id :rev` (URL-safe `rev_…` ids). `SingleStoreResource` (store-scoped).
 A `Store has_many :reviews`; a `Product has_many :reviews` + `has_many :approved_reviews`.
 
+Photos (F-1, 2026-09-16): `has_many_attached :images` (ActiveStorage) with model constants
+`MAX_IMAGES = 3`, `ALLOWED_IMAGE_TYPES = %w[image/jpeg image/png image/webp]`,
+`MAX_IMAGE_BYTES = 5.megabytes` and a `images_are_acceptable` validation (count / type / size).
+`#ordered_images` returns attachments in primary-key order. Blobs are created through
+`POST /api/v3/store/direct_uploads` (customer JWT) which stamps `review_uploader_id` into the blob
+metadata; review creation accepts only signed ids uploaded by that same customer.
+
 Aggregation: `Product#average_rating` (average over approved, nil when none) and
 `Product#review_count` (approved count) are exposed on `ProductSerializer` and feed the
 storefront JSON-LD `AggregateRating`. Only `approved` reviews are public via the Store API
-`GET /api/v3/store/products/:id/reviews`; moderation happens in the admin
-`PallasTrade::Admin::ReviewsController` (approve / reject / delete).
+`GET /api/v3/store/products/:id/reviews` (paginated, `meta.rating_distribution` in the same
+payload, computed from the same scope); moderation happens in the admin
+`PallasTrade::Admin::ReviewsController` (approve / reject / delete) and the admin reviews table
+carries a **photos** column. Pending reviews (and therefore their photos) are never public.
 
 ## Promotion redemptions (ledger)
 

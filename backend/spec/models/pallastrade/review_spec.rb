@@ -2,6 +2,8 @@
 
 require 'rails_helper'
 
+# PRD-20260916-catalog-batch-f1-reviews AC-001: photos (<=3, jpeg/png/webp, <=5MB)
+
 # PRD-20260818-catalog-p0-4-产品评论
 # AC-001：Review 模型、唯一约束、默认 pending
 RSpec.describe PallasTrade::Review, type: :model do

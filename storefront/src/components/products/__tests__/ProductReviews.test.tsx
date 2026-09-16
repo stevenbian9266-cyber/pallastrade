@@ -1,6 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+/**
+ * PRD-20260916-catalog-batch-f1-reviews AC-005 / AC-006: rating distribution,
+ * Load-more paging and the photo picker (limit, removal, error mapping).
+ */
 import {
   ProductReviews,
   type ReviewView,
