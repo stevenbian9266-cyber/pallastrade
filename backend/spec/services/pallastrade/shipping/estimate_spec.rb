@@ -6,7 +6,17 @@ require 'spec_helper'
 RSpec.describe PallasTrade::Shipping::Estimate do
   let(:store) { PallasTrade::Store.default }
   let(:product) { create(:product, store: store, status: 'active') }
-  let(:shipping_category) { PallasTrade::ShippingCategory.create!(name: 'Default') }
+  # CI 用 `bin/rails db:prepare` 建库，它会跑 `Seeds::All` —— 其中
+  # `Seeds::ShippingCategories` 已经建好 Default 分类，所以这里必须复用而不是
+  # `create!`（否则全量套件下必然 "Name has already been taken"）。
+  let(:shipping_category) { PallasTrade::ShippingCategory.find_or_create_by!(name: 'Default') }
+
+  # `Seeds::All` 还会留下一个 `display_on = 'both'` 的「Digital delivery」配送方式，
+  # 而 `Estimate` 的 methods 是全局查询（不过滤店铺/数字商品）—— 它会被算进
+  # `zero_price_method?`，把 `free_shipping` 变成 true 并抬高 methods 计数。
+  # 每个 example 都从事先清空的集合开始，断言才只反映用例自己造的数据
+  # （`.rspec` 引入 rails_helper，事务会回滚，不影响其他 spec）。
+  before { PallasTrade::ShippingMethod.destroy_all }
 
   def delivery_method(**attrs)
     PallasTrade::ShippingMethod.create!(

@@ -84,9 +84,13 @@ RSpec.describe 'Store API stock status & shipping', type: :request do
   end
 
   describe 'delivery methods (AC-005)' do
-    let(:shipping_category) { PallasTrade::ShippingCategory.create!(name: 'Default') }
+    # 同 estimate_spec：默认分类由 `Seeds::All` 建好（CI 的 `db:prepare` 会执行），
+    # 必须复用；同时清掉 seed 留下的零价 Digital delivery，否则 methods 计数与
+    # free_shipping 会被它污染。
+    let(:shipping_category) { PallasTrade::ShippingCategory.find_or_create_by!(name: 'Default') }
 
     before do
+      PallasTrade::ShippingMethod.destroy_all
       PallasTrade::ShippingMethod.create!(
         name: 'Standard',
         display_on: 'both',

@@ -3914,6 +3914,64 @@
         "conflictHonesty": 20,
         "scopeSafety": 10
       }
+    },
+    {
+      "id": "GS-155",
+      "name": "Payment cost is a model you can drill into, not a number you hope for",
+      "description": "PRD-20260916-payments-d13c-fee-cost-report (slice 3 of the D13 reconciliation batch, business plan §70.3): the platform knew what it charged and, after importing a settlement file, what the provider had actually deducted — but it had no rate-card model, so nobody could answer what a payment should cost, which checkout entry was the expensive one, or whether the contracted rate still held. This slice adds the fee policy registry (percent + fixed + platform + cross-border + currency-conversion components, scoped by provider / entry / card type / region with an effective window and min/max clamping) and a strictly read-only cost report that prices completed payments, ranks cost by entry, drills from any entry down to its individual payments and puts the modelled fee next to the provider-reported one.",
+      "mustDo": [
+        "Resolve exactly one applicable policy per payment with a documented, deterministic priority (entry > provider > store > fallback, then later effective_from, then higher id) and reuse that same ordering in the UI and the resolver",
+        "Scope the variable part (percent + platform + cross-border + conversion) with min/max and add fixed fees afterwards, so a small payment cannot be charged a negative or unbounded rate",
+        "Never invent a cost: when no policy matches, or a declared card-type / region / cross-border / conversion condition cannot be proven from local data, leave the payment unpriced and record why",
+        "Keep the whole feature read-only over local facts — the report and the calculator must not create payments, refunds, ledger rows or inventory movements, and must not call the provider",
+        "Make every report total reproducible from the drilled-down rows, and let an entry's ranking row drill into exactly the payments that produced it",
+        "Keep the reported figures scoped to the store and to completed payments over a half-open period, and keep query count flat as the period grows",
+        "Compare modelled cost with the settlement-ledger fee when it exists, and show the variance instead of silently trusting either side",
+        "Ship the fee policy registry as a soft-revoke audited admin page with the same filtered scope and counts, and export a CSV that carries order and amount facts but no credentials or card data"
+      ],
+      "mustNotDo": [
+        "Write a fee into the payment, refund, ledger or order path, or make the report a source of truth for money movement — the modelled fee is an estimate for analysis only",
+        "Report a cost for a payment whose rate cannot be established, or present a guessed card type / region / currency basis as if it were known",
+        "Show a total that cannot be reproduced from the drill-down rows, or rank entries in a non-deterministic order when costs tie",
+        "Leak another store's payments, include non-completed payments, or treat a half-open period boundary as inclusive",
+        "Put credentials, card numbers or provider secrets into the report page, the CSV export or the audit payload, and do not let the pages bypass the payment-cost permission",
+        "Claim per-payment historical entry attribution that the schema does not store — the entry dimension is a current-mapping reading and must be labelled as such"
+      ],
+      "scoring": {
+        "neverGuessCost": 25,
+        "readOnlyPurity": 20,
+        "explainableTotals": 20,
+        "scopeAndIsolation": 15,
+        "policyResolution": 10,
+        "operatorUsability": 10
+      }
+    },
+    {
+      "id": "GS-156",
+      "name": "A spec that only fails in CI gets fixed at the cause",
+      "description": "The backend CI job prepares a fresh database with `bin/rails db:prepare`, which seeds canonical shipping categories and a zero-priced digital delivery method — so a spec that assumes an empty database passes locally and fails in CI. The temptation is to retry, skip or loosen the assertion; the right move is to reproduce the CI data shape, find which assumption broke, and make the spec hold in both environments without weakening what it proves.",
+      "mustDo": [
+        "Reproduce the CI condition locally instead of guessing: seed the test database the same way the pipeline does, then run the same spec file",
+        "Separate the two failure modes before fixing: run the single example alone (environment data) versus the whole suite (cross-file ordering), and treat them differently",
+        "Adapt the spec to existing canonical rows with an idempotent lookup (find_or_create_by!) rather than creating a duplicate of seed data",
+        "Give single-object reads a clean global scope in the example (clear the collection, then build only what the example needs) so counts and totals reflect the example alone",
+        "Keep the fix in the test layer and leave production behaviour untouched when the production code was never wrong",
+        "Prove the fix under the CI data shape, not just on the developer's long-lived local database"
+      ],
+      "mustNotDo": [
+        "Silence the failure with skip, pending, retries or a looser expectation",
+        "Change the pipeline (different database, disabled seeding) so the environment bends to the test",
+        "Delete or weaken the assertion so it no longer checks the behaviour it was written for",
+        "Ship a fix verified only on a locally seed-free database",
+        "Leave the root cause unrecorded, so the next batch repeats the same failure"
+      ],
+      "scoring": {
+        "rootCauseAccuracy": 30,
+        "reproductionFidelity": 25,
+        "assertionIntegrity": 20,
+        "environmentParity": 15,
+        "knowledgeCapture": 10
+      }
     }
   ]
 }

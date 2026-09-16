@@ -362,6 +362,32 @@ Don't write `Time.now` and hope.
 
 Tests should clean up between runs (DatabaseCleaner). If you're seeing stock_items from other tests, check `spec/support/database_cleaner.rb` (loaded via the support-file glob in `rails_helper.rb`) — `rails g pallastrade_dev_tools:install` generates it, but custom config can break it.
 
+### "Spec passes locally but fails only in CI (seeded test database)"（2026-09-16，F-2 修复）
+
+CI 的 backend job 用 `bin/rails db:prepare` 建库 —— **新建库时会执行 `PallasTrade::Seeds::All`**，
+所以 CI 的测试库**不是空的**：已经有 `Default` / `Digital` 配送分类、一个 `display_on = 'both'`
+的**零价 digital 配送方式**、默认店铺、角色与 API key。本地测试库通常早就存在（`db:prepare`
+此时只跑 migrate，不 seed），于是同一份 spec 本地绿、CI 红。
+
+| 症状 | 原因 | 正确写法 |
+|---|---|---|
+| `Name has already been taken`（`ShippingCategory` / `TaxCategory` / `StoreCreditCategory` 等 `UniqueName` 模型） | `create!(name: 'Default')` 与 seed 撞名 | `find_or_create_by!(name: 'Default')` 复用 seed 行 |
+| 数量/总额被抬高，或 `free_shipping` 意外为 true | 单例口径查了**全局**表（如 `Shipping::Estimate#scoped_methods` 取全部 front-end 配送方式），把 seed 的零价 digital 配送方式也算进来 | 在 example 的 `before` 里先 `Model.destroy_all` 清空全局集合，再建自己的数据（`.rspec` 已 `--require rails_helper`，事务会回滚，不污染其他 spec） |
+
+**先做两个判定，不要靠猜**：
+
+1. 单例跑 `rspec <file>:<line>` —— **仍然失败 = 环境数据问题**（按上表改）；只有全量跑才失败 = 跨文件顺序依赖。
+2. 按 CI 等价条件复现（两条命令）：
+
+   ```bash
+   docker exec pallastrade-web-1 bash -lc 'cd /rails && RAILS_ENV=test bin/rails runner "PallasTrade::Seeds::All.call"'
+   docker exec -e DISABLE_SIMPLECOV_MINIMUM=1 pallastrade-web-1 bash -lc "cd /rails && bundle exec rspec <失败的 spec>"
+   ```
+
+**不准**用 `skip` / `pending` / 加重试 / 在 CI 里换测试库来掩盖 —— 失败是真实前提假设错误，要在 spec 层修。
+
+同类历史修复：D12 webhook 订阅清单（其他 provider 污染）、E-1/E-2 AI 规格（缺 `PALLAS-TRADE_AI_ENABLED`）、F-2 库存/配送（seed 数据）。
+
 ### "TestApp regeneration is slow"
 
 The PallasTrade test app boots the full stack. Once generated, don't regenerate unless schema changed. Use `RAILS_ENV=test bin/rails db:rollback` for migration tweaks.
