@@ -163,7 +163,7 @@ export class StoreClient {
     reviews: {
       list: (
         productId: string,
-        params?: { page?: number; limit?: number; fields?: string[] },
+        params?: { page?: number; limit?: number; fields?: string[]; sort?: string },
         options?: RequestOptions,
       ): Promise<ReviewListResponse> =>
         this.request('GET', `/products/${productId}/reviews`, {

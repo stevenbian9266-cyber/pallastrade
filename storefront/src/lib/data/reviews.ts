@@ -29,6 +29,8 @@ export interface ProductReviewList {
     pages: number;
     next: number | null;
     rating_distribution: Record<string, number>;
+    /** Catalog F-4: the ordering the API actually applied. */
+    sort: string;
   } | null;
 }
 
@@ -45,7 +47,7 @@ const REVIEW_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
  */
 export async function getProductReviews(
   productId: string,
-  params: { page?: number; limit?: number } = {},
+  params: { page?: number; limit?: number; sort?: string } = {},
 ): Promise<ProductReviewList> {
   return withFallback(async () => {
     const response = await getClient().products.reviews.list(productId, params);
@@ -62,11 +64,13 @@ export async function getMoreProductReviews(
   productId: string,
   page: number,
   limit?: number,
+  sort?: string,
 ): Promise<{ reviews: ProductReview[]; next: number | null } | null> {
   try {
     const response = await getClient().products.reviews.list(productId, {
       page,
       limit,
+      sort,
     });
     return { reviews: response.data, next: response.meta.next };
   } catch (error) {

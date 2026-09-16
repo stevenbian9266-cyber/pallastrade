@@ -125,6 +125,12 @@ const REQUIRED: Record<string, string[]> = {
     "photoTypeInvalid",
     "photoUploadFailed",
     "removePhoto",
+    // PRD-20260916-catalog-batch-f4-review-sorting AC-006：
+    // 评论排序下拉标签与三个选项，五语言齐备。
+    "sortLabel",
+    "sortNewest",
+    "sortHighest",
+    "sortLowest",
   ],
 };
 

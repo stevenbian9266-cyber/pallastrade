@@ -40,6 +40,10 @@ export interface ReviewMeta {
   pages: number;
   next: number | null;
   rating_distribution: Record<string, number>;
+  /** Catalog F-4: ordering the API applied to this page (optional so older
+   *  payloads / fixtures without it still typecheck; the component then shows
+   *  the default `newest`). */
+  sort?: string;
 }
 
 interface ProductReviewsProps {
@@ -127,6 +131,26 @@ export function ProductReviews({
   const [nextPage, setNextPage] = useState<number | null>(meta?.next ?? null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [moreError, setMoreError] = useState(false);
+  // Catalog F-4: ordering of the list. Switching it refetches the first page
+  // so the new order is never merged with the pages already appended; a failed
+  // refetch keeps what the customer is looking at (FR-006).
+  const [sort, setSort] = useState<string>(meta?.sort ?? "newest");
+
+  const changeSort = async (next: string) => {
+    if (next === sort) return;
+
+    setSort(next);
+    setMoreError(false);
+
+    const first = await getMoreProductReviews(productId, 1, undefined, next);
+    if (!first) {
+      setMoreError(true);
+      return;
+    }
+
+    setAppended(first.reviews);
+    setNextPage(first.next);
+  };
 
   const visibleReviews = appended ?? reviews;
   const distribution = meta?.rating_distribution ?? null;
@@ -185,7 +209,12 @@ export function ProductReviews({
     if (nextPage == null || loadingMore) return;
     setLoadingMore(true);
     setMoreError(false);
-    const page = await getMoreProductReviews(productId, nextPage);
+    const page = await getMoreProductReviews(
+      productId,
+      nextPage,
+      undefined,
+      sort,
+    );
     if (page) {
       setAppended((current) => [...(current ?? reviews), ...page.reviews]);
       setNextPage(page.next);
@@ -244,6 +273,24 @@ export function ProductReviews({
             </span>
           </div>
         )}
+      </div>
+
+      {/* Catalog F-4: ordering control — switching it refetches page 1. */}
+      <div className="mt-4 flex items-center gap-2">
+        <label htmlFor="review-sort" className="text-sm text-gray-600">
+          {t("sortLabel")}
+        </label>
+        <select
+          id="review-sort"
+          value={sort}
+          onChange={(event) => void changeSort(event.target.value)}
+          className="rounded-md border border-gray-300 px-2 py-1 text-sm outline-none focus:border-gray-500"
+          data-testid="review-sort"
+        >
+          <option value="newest">{t("sortNewest")}</option>
+          <option value="highest_rating">{t("sortHighest")}</option>
+          <option value="lowest_rating">{t("sortLowest")}</option>
+        </select>
       </div>
 
       {/* F-1: rating distribution — same population as the average above */}

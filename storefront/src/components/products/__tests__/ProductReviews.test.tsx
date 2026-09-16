@@ -215,7 +215,12 @@ describe("ProductReviews — F-1", () => {
     render(<ProductReviews {...baseProps} reviews={reviews} meta={meta} />);
     await user.click(screen.getByRole("button", { name: "loadMore" }));
 
-    expect(mockedLoadMore).toHaveBeenCalledWith("prod_1", 2);
+    expect(mockedLoadMore).toHaveBeenCalledWith(
+      "prod_1",
+      2,
+      undefined,
+      "newest",
+    );
     expect(await screen.findByText("Bob")).toBeTruthy();
     // Existing reviews stay, and the last page no longer offers "load more".
     expect(screen.getByText("Alice")).toBeTruthy();

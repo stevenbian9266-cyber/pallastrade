@@ -71,6 +71,8 @@ export type { default as CommerceTransaction } from './generated/StoreCommerceTr
 export interface ReviewListMeta extends PaginationMeta {
   /** Keyed by star value as a string: `{ "1": 0, ..., "5": 3 }`. */
   rating_distribution: Record<string, number>
+  /** Catalog F-4: ordering applied to this page (`newest` by default). */
+  sort: string
 }
 
 export interface ReviewListResponse extends ListResponse<ReviewType> {
