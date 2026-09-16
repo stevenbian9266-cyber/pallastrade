@@ -30,6 +30,28 @@ RSpec.describe 'Admin promotion definition pickers', type: :request do
     PallasTrade::Promotion::Rules::Currency.create!(promotion: promotion, preferred_currency: 'USD')
   end
 
+  # Picker entry labels, scoped to the rule/action dialog body.
+  #
+  # The response is a full admin page (layout + navigation included), so asserting on
+  # `response.body` as a whole conflates the picker with page chrome: any navigation or
+  # layout label that happens to contain the same word (e.g. "Currency Rates") would fail
+  # the assertion even though the picker itself is correct. Anchor on what the picker
+  # renders instead.
+  def picker_entry_labels
+    Nokogiri::HTML(response.body).css('.dialog-body a h6').map { |node| node.text.strip }
+  end
+
+  def currency_rule_label
+    PallasTrade::Promotions::DefinitionRegistry.rule_entries
+                                              .find { |entry| entry.type == 'PallasTrade::Promotion::Rules::Currency' }
+                                              .label
+  end
+
+  # Picker entry targets, scoped the same way (hrefs are URL-escaped in the markup).
+  def picker_entry_hrefs
+    Nokogiri::HTML(response.body).css('.dialog-body a').map { |node| CGI.unescape(node['href'].to_s) }
+  end
+
   describe 'rule picker' do
     it 'labels every registered rule type from the registry' do
       sign_in_as_superuser
@@ -58,10 +80,19 @@ RSpec.describe 'Admin promotion definition pickers', type: :request do
 
       get PallasTrade.new_admin_promotion_rule_path(promotion)
 
-      expect(response.body).not_to include(
-        PallasTrade.new_admin_promotion_rule_path(promotion, promotion_rule: { type: 'PallasTrade::Promotion::Rules::Currency' })
-      )
-      expect(response.body).not_to include('Currency')
+      expect(picker_entry_labels).to be_present
+      expect(picker_entry_labels).not_to include(currency_rule_label)
+      expect(picker_entry_hrefs).not_to include(a_string_including('Promotion::Rules::Currency'))
+    end
+
+    # Companion to the example above: proves the scoped selector can actually see the
+    # label (so its absence there is a real absence, not an empty list).
+    it 'offers the currency rule type while the promotion does not have one' do
+      sign_in_as_superuser
+
+      get PallasTrade.new_admin_promotion_rule_path(promotion)
+
+      expect(picker_entry_labels).to include(currency_rule_label)
     end
   end
 
