@@ -32,6 +32,8 @@ Rails.application.routes.draw do
       post 'ai/product_seo', to: 'ai#product_seo', as: :admin_ai_product_seo
       post 'ai/product_translation', to: 'ai#product_translation', as: :admin_ai_product_translation
       post 'ai/catalog_health_suggestion', to: 'ai#catalog_health_suggestion', as: :admin_ai_catalog_health_suggestion
+      # AI 采纳审计（PRD-20260916-catalog-ai-acceptance-audit）：Accept / Discard 留痕
+      post 'ai/acceptances', to: 'ai#acceptances', as: :admin_ai_acceptances
       patch 'ai/settings', to: 'ai#update_settings', as: :admin_ai_update_settings
     end
   end

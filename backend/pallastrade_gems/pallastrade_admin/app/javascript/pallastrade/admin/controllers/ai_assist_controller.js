@@ -1,6 +1,13 @@
 import { Controller } from '@hotwired/stimulus'
 
 /**
+ * Acceptance audit endpoint (PRD-20260916-catalog-ai-acceptance-audit).
+ * Fixed rather than a Stimulus value: the admin mount point is fixed, and this
+ * keeps the five assistant panels from each carrying another data attribute.
+ */
+const ACCEPTANCE_ENDPOINT = '/admin/ai/acceptances'
+
+/**
  * AI Product Copilot (PRD-20260915-catalog-batch-e1-ai-copilot).
  *
  * Enforces the Generate → Preview → Accept → Save flow from the plan's §7.2
@@ -54,6 +61,8 @@ export default class extends Controller {
     event.preventDefault()
     if (!this.pending) return
 
+    const runId = this.pending.run_id
+
     if (this.kindValue === 'seo') {
       this.writeValue(this.titleFieldTarget, this.pending.meta_title)
       this.writeValue(this.metaDescriptionFieldTarget, this.pending.meta_description)
@@ -66,13 +75,44 @@ export default class extends Controller {
     this.pending = null
     this.hidePreview()
     this.renderStatus(this.label('Accepted'))
+    this.reportAcceptance(runId, 'accepted')
   }
 
   discard(event) {
     event.preventDefault()
+    const runId = this.pending?.run_id
+
     this.pending = null
     this.hidePreview()
     this.renderIdle()
+    this.reportAcceptance(runId, 'discarded')
+  }
+
+  /**
+   * Acceptance audit (PRD-20260916-catalog-ai-acceptance-audit): tell the server
+   * what the merchant did with the draft — without this, "is the AI draft
+   * actually used?" has no answer.
+   *
+   * Fire-and-forget on purpose: a failed report must never change what the
+   * merchant sees (the form write and the status label already happened).
+   */
+  async reportAcceptance(runId, state) {
+    if (!runId) return
+
+    try {
+      await fetch(ACCEPTANCE_ENDPOINT, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-Token': this.csrfToken()
+        },
+        body: JSON.stringify({ run_id: runId, state })
+      })
+    } catch (_error) {
+      // Observability data must never break the merchant's flow.
+    }
   }
 
   /**

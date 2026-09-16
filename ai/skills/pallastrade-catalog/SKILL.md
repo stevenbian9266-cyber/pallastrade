@@ -316,6 +316,34 @@ F-2 只是把它经 `PallasTrade::Shipping::Estimate` 与 `delivery_method_seria
 回归验证：`harness verify d3-product-merge-rspec`。
 口径：`LOWER(TRIM(...))` 分组 + `HAVING COUNT(DISTINCT products.id) > 1`，同店 + 未删除 + 非 archived。
 
+## AI 采纳审计（Acceptance Audit，2026-09-16，PRD-20260916-catalog-ai-acceptance-audit）
+
+生成侧一直有留痕（每次调用写 `PallasTrade::AI::Run` + `AI::Artifact`，三个 copilot 服务的 `Result`
+**已带 `run_id`**、端点也已下发），但**采纳侧此前是空白** —— 商家点 Accept / Discard 只改表单与 UI、
+**不发任何请求**，于是「AI 接受率」无从计算（商品域审计 G-5）。
+
+- **字段**：`pallastrade_ai_runs.acceptance_state`（`accepted` / `discarded` / NULL）+ `accepted_at`
+  （记的是**决定时刻**，改判会刷新）。`nil` = "还没决定" —— 刻意**没有** `pending` / `rejected`：
+  "没人点过"与"没看过"无法区分，编一个状态只会制造假数据。
+- **端点**：`POST /admin/ai/acceptances`（`run_id` + `state`）。run 经 `for_store(current_store)` 查找 →
+  **跨店 404 且零写入**；非法 state → 422 零写入；重复同状态**幂等**（不移动时间戳），改判则覆盖并刷新。
+- **前端**：`ai_assist_controller.js` 的 `accept()` / `discard()` 上报（fire-and-forget + try/catch）——
+  **观测数据不得反过来影响商家操作**（AP-009b 精神）。端点常量放在 JS 顶部（admin 挂载点固定，
+  不必让 5 个助手面板各加一个 data 属性）。
+- **后台可见**：`/admin/ai/runs` 新增「Acceptance」列（未处理显示 "Not decided"）。
+- **本切片不做 `edited`**（Accept 之后、Save 之前又被改动）：需要 3 个入口表单携带 `ai_run_id` 并在
+  保存时对比草稿（含 Trix/TinyMCE 取值），留下一片；字段与链路已就位。
+
+回归验证：`harness verify ai-acceptance-rspec`（生成侧另跑 `ai-copilot-rspec` / `ai-translate-rspec` / `ai-health-suggestion-rspec`）。
+
+> ⚠️ **服务类不要 `prepend PallasTrade::ServiceModule::Base`**（当你要返回自定义结果形态时）：
+> 它的 `call` 会**把返回值换成它自己的** `Result`（`success/value/error`），自定义的 `status` /
+> `error_code` 会被丢掉 —— 端点因此把"非法输入"当成成功（200 而非 422）。需要自有返回形态时，
+> 用普通类 + `def self.call(...) = new.call(...)`。本批的 `AI::Catalog::RecordAcceptance` 即如此。
+>
+> 另一处顺手修的既有缺陷：`/admin/ai/runs` 视图调用了 Kaminari 的 `paginate`，而本项目分页用
+> **pagy**（`ResourceController` 里 `pagy(:countish, ...)`）→ 页面一渲染就 `NoMethodError`。
+
 ## Catalog Health 的 AI 修复建议（AI Fix Suggestion，2026-09-16 Batch E-3）
 
 Catalog Health 工作台（7 类 issue）与商品编辑页侧栏卡片都能生成「怎么修」的建议：`PallasTrade::AI::Catalog::HealthFixSuggestion`（能力 `catalog.health_fix_suggestion`，**只读**——不自动修复、不写库）。

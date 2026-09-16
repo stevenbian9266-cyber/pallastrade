@@ -272,7 +272,36 @@ module PallasTrade
 
       # GET /admin/ai/runs
       def runs
-        @runs = PallasTrade::AI::Run.where(store: current_store).recent
+        # The project paginates with pagy (see ResourceController) — the view's
+        # `paginate` helper never existed, so the page raised as soon as it
+        # rendered.
+        @pagy, @runs = pagy(:countish, PallasTrade::AI::Run.for_store(current_store).recent, limit: 50)
+      end
+
+      # POST /admin/ai/acceptances
+      #
+      # AI 采纳审计（PRD-20260916-catalog-ai-acceptance-audit FR-002）：
+      # 商家点 Accept / Discard 时记一笔 —— 生成侧早已留痕（Run + Artifact +
+      # run_id 下发），采纳侧此前是空白，导致"AI 接受率"无法统计。
+      # 只写状态与时间，不落草稿内容；跨店 run 一律 404 且零写入。
+      def acceptances
+        run = PallasTrade::AI::Run.for_store(current_store).find(params[:run_id])
+        result = PallasTrade::AI::Catalog::RecordAcceptance.call(run: run, state: params[:state])
+
+        # Branch on the service's explicit status rather than `success?` — the
+        # service module wraps call results, so the status is the unambiguous
+        # contract here.
+        if result.status == :invalid_state
+          render json: { error: { code: result.error_code } }, status: :unprocessable_entity
+        else
+          render json: {
+            id: run.id,
+            acceptance_state: run.reload.acceptance_state,
+            accepted_at: run.accepted_at
+          }
+        end
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: { code: 'run_not_found' } }, status: :not_found
       end
 
       # PATCH /admin/ai/settings

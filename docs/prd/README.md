@@ -215,3 +215,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260916-payments-d13c-fee-cost-report | payments | 2026-09-16 | （实施时回填） |
 | done | PRD-20260916-payments-d13d-fx-snapshot | payments | 2026-09-16 | （实施时回填） |
 | approved | PRD-20260916-shipping-catalog-observability-scope | shipping | 2026-09-16 | （实施时回填） |
+| approved | PRD-20260916-catalog-ai-acceptance-audit | catalog | 2026-09-16 | （实施时回填） |

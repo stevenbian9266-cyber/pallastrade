@@ -16,6 +16,7 @@
           <th class="p-3"><%= PallasTrade.t('ai.run.capability') %></th>
           <th class="p-3"><%= PallasTrade.t('ai.run.model') %></th>
           <th class="p-3"><%= PallasTrade.t('ai.run.status') %></th>
+          <th class="p-3"><%= PallasTrade.t('ai.run.acceptance', default: 'Acceptance') %></th>
           <th class="p-3"><%= PallasTrade.t('ai.run.tokens') %></th>
           <th class="p-3"><%= PallasTrade.t('ai.run.latency') %></th>
           <th class="p-3"><%= PallasTrade.t('ai.run.cost') %></th>
@@ -38,6 +39,15 @@
                 else 'bg-yellow-100 text-yellow-700'
                 end %>"><%= run.status %></span>
             </td>
+            <td class="p-3">
+              <% if run.acceptance_state.present? %>
+                <span class="px-2 py-0.5 rounded text-xs <%= run.accepted? ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' %>">
+                  <%= PallasTrade.t("ai.run.acceptance_state.#{run.acceptance_state}", default: run.acceptance_state) %>
+                </span>
+              <% else %>
+                <span class="text-xs text-gray-400"><%= PallasTrade.t('ai.run.acceptance_pending', default: 'Not decided') %></span>
+              <% end %>
+            </td>
             <td class="p-3 font-mono text-xs"><%= (run.input_tokens || 0) + (run.output_tokens || 0) %></td>
             <td class="p-3 font-mono text-xs"><%= run.latency_ms ? "#{run.latency_ms}ms" : '-' %></td>
             <td class="p-3 font-mono text-xs"><%= run.estimated_cost ? "$#{sprintf('%.4f', run.estimated_cost)}" : '-' %></td>
@@ -46,6 +56,8 @@
         <% end %>
       </tbody>
     </table>
-    <%= paginate @runs %>
+    <% if @pagy.pages > 1 %>
+      <div class="flex justify-center"><%== @pagy.info_tag %></div>
+    <% end %>
   <% end %>
 </div>

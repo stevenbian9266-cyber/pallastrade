@@ -3999,6 +3999,32 @@
       }
     },
     {
+      "id": "GS-159",
+      "name": "An AI draft's fate is recorded, not guessed",
+      "description": "Every AI invocation was already audited — a run row, an artifact, and a run id handed to the browser — but nothing recorded whether the merchant kept the draft: Accept and Discard only changed the form. So the acceptance rate could not be computed, and any number quoted for it would have been invented.",
+      "mustDo": [
+        "Record the merchant's decision where the generation record already lives, so acceptance rate is a query rather than a guess",
+        "Keep 'not decided' as an honest empty state instead of inventing a pending/rejected value that conflates never-seen with dismissed",
+        "Make the report idempotent for a repeated state while letting a genuine change of mind overwrite it, with the decision timestamp following the decision",
+        "Scope the write to the caller's store and answer 404 for someone else's record, without touching it",
+        "Reject an unknown state instead of storing it",
+        "Never let the audit write break the merchant's flow: the form write and the panel's own state come first, and a failed report is swallowed"
+      ],
+      "mustNotDo": [
+        "Leave acceptance unrecorded and quietly estimate it from run counts",
+        "Store an unknown state, or overwrite a decision with a retry of the same state",
+        "Let a cross-store identifier touch another tenant's row",
+        "Make the merchant's action fail because observability failed"
+      ],
+      "scoring": {
+        "recordHonesty": 30,
+        "idempotency": 20,
+        "storeIsolation": 20,
+        "failureIsolation": 20,
+        "stateClarity": 10
+      }
+    },
+    {
       "id": "GS-158",
       "name": "A locked rate is a fact you can audit, not a number you recompute later",
       "description": "PRD-20260916-payments-d13d-fx-snapshot (slice 4 of the D13 reconciliation batch, business plan §70.4): the platform had no exchange-rate capability at all — when an order was priced in one currency and settled in another, the rate the buyer saw was nowhere recorded, and settlement-rate differences had no home in the reconciliation queue. This slice adds a multi-source rate registry (manual / provider / third-party with priority and an effective window), locks the display rate and the up-charged effective rate per order at submission, and compares that lock against the settlement rate (reported by the provider or derived from the settled amount) — queueing differences by basis point while leaving pricing and money movement alone.",

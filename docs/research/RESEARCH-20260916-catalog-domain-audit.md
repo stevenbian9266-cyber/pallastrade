@@ -88,6 +88,7 @@
 - **位置**：`backend/pallastrade_gems/pallastrade_ai/`（`grep accept|accepted|adopted` 仅命中注释里的 `Generate → Preview → Accept → Save` 流程描述，**没有一条记录**）
 - **现象**：Accept 只是客户端交互步骤，后端不落库；因此既算不出「AI Generation acceptance rate」，也看不出「AI 生成内容在保存前被改了多少」。
 - **建议**：在 admin 的 Accept/Save 路径记录一次轻量审计（capability、run id、accepted?、最终文本与草稿的差异摘要），语义与既有 `Audit` 一致。
+- **状态（2026-09-16 收口批次）**：已实施「记录 Accept / Discard」切片（`PRD-20260916-catalog-ai-acceptance-audit`）——`pallastrade_ai_runs.acceptance_state` + `accepted_at`、`POST /admin/ai/acceptances`、AI Runs 列表列；**`edited`（Accept 之后、Save 之前又被改动）留下一片**（需 3 个入口表单携带 `ai_run_id` 并在保存时对比草稿）。
 - **注意**：本节与 §7.2「AI 安全边界」一致 —— 记录**不等于**让 AI 直接落库。
 
 ### G-6 后台运营指标无数据源（P2）

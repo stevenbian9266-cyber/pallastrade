@@ -29,7 +29,14 @@ module PallasTrade
       # Statuses that are terminal (no further transitions).
       TERMINAL_STATUSES = %w[succeeded failed cancelled skipped].freeze
 
+      # Catalog AI acceptance audit (PRD-20260916-catalog-ai-acceptance-audit):
+      # what the merchant did with the draft. `nil` means "not decided yet" —
+      # a draft nobody clicked is indistinguishable from one they never saw, so
+      # there is deliberately no `pending`/`rejected` state.
+      ACCEPTANCE_STATES = %w[accepted discarded].freeze
+
       validates :status, inclusion: { in: STATUSES }
+      validates :acceptance_state, inclusion: { in: ACCEPTANCE_STATES }, allow_nil: true
 
       scope :for_store, ->(store) { where(store: store) }
       scope :recent, -> { order(created_at: :desc) }
@@ -84,6 +91,32 @@ module PallasTrade
       # Check if this run can be retried.
       def retryable?
         failed? && attempts < 3 && !%w[ai_credentials_invalid ai_configuration_invalid].include?(error_code)
+      end
+
+      # @return [Boolean] did the merchant keep the draft?
+      def accepted?
+        acceptance_state == 'accepted'
+      end
+
+      # @return [Boolean] did the merchant throw the draft away?
+      def discarded?
+        acceptance_state == 'discarded'
+      end
+
+      # Records what the merchant did with the draft.
+      #
+      # Repeating the same state is a no-op — a retried report must not move the
+      # clock. Switching states is a genuine change of mind, and updates
+      # `accepted_at` (the moment the decision was recorded, whichever it is).
+      #
+      # @param state [String, Symbol] one of ACCEPTANCE_STATES
+      # @return [Boolean] whether the record changed
+      def record_acceptance!(state)
+        state = state.to_s
+        return false if acceptance_state == state
+
+        update!(acceptance_state: state, accepted_at: Time.current)
+        true
       end
     end
   end

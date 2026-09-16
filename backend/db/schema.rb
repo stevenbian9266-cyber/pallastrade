@@ -285,6 +285,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_250000) do
   end
 
   create_table "pallastrade_ai_runs", force: :cascade do |t|
+    t.string "acceptance_state"
+    t.datetime "accepted_at"
     t.integer "attempts", default: 0, null: false
     t.bigint "cached_input_tokens", default: 0
     t.string "capability_key"
@@ -327,6 +329,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_250000) do
     t.index ["model_id"], name: "index_pallastrade_ai_runs_on_model_id"
     t.index ["provider_id"], name: "index_pallastrade_ai_runs_on_provider_id"
     t.index ["status"], name: "index_pallastrade_ai_runs_on_status"
+    t.index ["store_id", "acceptance_state"], name: "idx_ai_runs_on_store_and_acceptance"
     t.index ["store_id", "created_at"], name: "idx_ai_runs_on_store_and_created_at"
     t.index ["store_id", "idempotency_key"], name: "idx_ai_runs_on_store_and_idempotency", unique: true, where: "(idempotency_key IS NOT NULL)"
     t.index ["store_id"], name: "index_pallastrade_ai_runs_on_store_id"
