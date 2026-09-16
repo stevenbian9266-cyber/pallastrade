@@ -109,7 +109,8 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
       # D14 切片1: Orders 下新增退款审批（:refund_approvals，超阈值退款需第二人批准）
       # D15 切片1: Orders 下新增风控名单（:risk_lists，批量导入/导出 + 到期 + 审计）
       # D13 切片3: Orders 下新增支付成本报表（:payment_costs）与费率策略（:payment_fee_policies）
-      expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders transactions refunds payment_combinations payments_ops disputes_ops reconciliation_cases payouts refund_approvals risk_lists payment_costs payment_fee_policies])
+      # D13 切片4: Orders 下新增汇率表（:currency_rates）与汇率快照（:fx_snapshots）
+      expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders transactions refunds payment_combinations payments_ops disputes_ops reconciliation_cases payouts refund_approvals risk_lists payment_costs payment_fee_policies currency_rates fx_snapshots])
       expect(sidebar.find(:products).children.map(&:key)).to eq(%i[products_list catalog_health duplicate_products price_lists stock translations taxonomies options])
       expect(sidebar.find(:customers).children.map(&:key)).to eq(%i[customers_list customer_groups newsletter_subscribers])
       # PRD-20260910-promo-batch3c AC-004: Promotions 组新增只读核销台账子项
@@ -312,6 +313,8 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
         admin.ai.overview
         admin.payment_costs.title
         admin.payment_fee_policies.title
+        admin.currency_rates.title
+        admin.fx_snapshots.title
       ]
     end
 

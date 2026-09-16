@@ -5,6 +5,16 @@ description: Use when the user wants PallasTrade to react to something that happ
 
 # PallasTrade Events + Webhooks
 
+## 汇率锁汇与结算差事件（D13 切片4, 2026-09-16；业务方案 §70.4）
+
+- **订阅**：`order.submitted` → `Currencies::Fx::OrderSubmittedSubscriber`（**下单锁汇**）——
+  payload 兼容 `{ 'id' => or_… }` / `{ 'order_id' => or_… }` / `{ 'payload' => { 'order_id' => … } }` 三种形态；
+  只写 `pallastrade_fx_snapshots`（同币种/无汇率/策略关闭 → **不写行**）；异常只记日志，**绝不阻断下单**；
+  注册于 `engine.rb` 订阅者列表（⚠️ 列表用逗号分隔，新增项漏写逗号 = 启动即语法错误）。
+- **发布**：`fx.settlement.mismatch`（`Currencies::Fx::SyncCases` 新开案例时；payload：`case_id` / `dedupe_key` / `store_id` / `currency` / `variance_bips` / `detected_at`）——
+  仅在 `PallasTrade::Events.enabled?` 时发布，失败只记日志（不影响对账写入）。
+- **巡检**：`Currencies::Fx::CompareSweeperJob`（`config/sidekiq_schedule.rb` 名 `fx_rate_compare_sweep`，`*/30 * * * *`）—— 只做结算差核算，零外呼；结构化日志 `{"event":"fx.rate_compare_sweeper", ...}`。
+
 PallasTrade has **two layered systems** for reacting to lifecycle events. Both subscribe to the same events; what differs is the delivery target.
 
 | System | Lives | Use for |

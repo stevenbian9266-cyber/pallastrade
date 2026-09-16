@@ -1380,6 +1380,37 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   - 命名空间 `PallasTrade::CSV` 会遮蔽 Ruby 标准库 → 控制器内必须写 `::CSV.generate`。
   - `joins(:order)` 与 `includes(order:)` 同用会让预加载失效（每笔支付一次查询）→ 用 `where(order_id: 子查询)` + `includes`；报表批量解析时**显式注入 store 对象**。
 - **回归**：`harness verify d13c-cost-report-rspec`（162 例，含后台导航一致性）；下游 §67.1 成本路由复用 `Resolver` + `Report` 作为成本数据源。
+
+## 汇率快照与结算汇率对比 — 「只做结算差核算」（D13 切片4, 2026-09-16；PRD-20260916-payments-d13d-fx-snapshot）
+
+业务方案 §70.4：跨币种订单「展示汇率」此前无处记录，结算汇率差异也无处归属。本切片建汇率域：多源汇率表 → 下单锁汇快照 → 结算汇率逐笔对比 → 差异进对账队列。
+铁律：**零资金副作用 + 零外呼** —— 不改订单/支付金额与状态、不换汇、不写账本/库存、不调任何外部汇率 API；市场定价与多币种标价属多市场方案。
+
+- **模型**：
+  - `PallasTrade::CurrencyRate`（`pallastrade_currency_rates`）：`store_id`（可空 = 全局；**本店优先于全局**）/ `base_currency`（结算侧）/ `quote_currency`（展示侧）/ `rate` decimal(20,10) /
+    `source`（manual/provider/third_party）/ `priority`（默认 provider 30 > third_party 20 > manual 10，可显式覆写）/ `effective_from` / `effective_until` / `status`+`revoked_at` /
+    `identity_key`（SHA256(scope:base:quote:source:effective_from)，**唯一**）/ `note` / `metadata`。
+  - `PallasTrade::FxSnapshot`（`pallastrade_fx_snapshots`）：`order_id` / `payment_id` / `currency_rate_id` / `base_currency` / `quote_currency` /
+    `display_rate` + `up_charge_percent` + `effective_rate`（加点后）/ `rate_source` / `locked_at` / `locked_on`；
+    结算侧 `settlement_rate` / `settlement_source`（provider_reported/implied）/ `settlement_currency` / `settled_gross_amount` /
+    `variance_bips` / `variance_status`（pending/matched/mismatch/undetermined）/ `compared_at` / `reconciliation_case_id` / `occurrences` / `signals`。
+    唯一键 `(order_id, base_currency, quote_currency)` = **一单一种币对只锁一次**。
+- **汇率语义**：`rate` = 1 个 quote（展示币种）对应的 base（结算币种）数量；快照 `base = store.default_currency`、`quote = order.currency`。
+- **服务（全部只读事实 + 只写快照/案例/审计）**：
+  - `Currencies::Rates::Resolver` —— `priority DESC` → 本店 > 全局 → `effective_from DESC` → `id DESC`；无候选 → `no_rate`（不猜）。
+  - `Currencies::Rates::Upsert` —— 汇率唯一写入口（身份键幂等 / 软撤销保留历史 / 审计 `currency_rate_changed`・`currency_rate_revoked`）。
+  - `Currencies::Fx::Policy` —— 店铺 `private_metadata['fx_policy']`：`enabled`(true) / `up_charge_percent`(0) / `variance_tolerance_bips`(**50**) / `auto_reconcile`(true) / `default_source`。
+  - `Currencies::Fx::Lock` —— 锁汇：加点后 `effective_rate`；**同币种 / 无汇率 / 策略关闭 → 不写行**（不猜）；幂等（`occurrences` 递增）。
+  - `Currencies::Fx::Compare` —— 结算汇率来源优先：结算行 `raw['fx_rate']`（报文） → `line.gross_amount / payment.amount`（推导，要求结算币种 == base） → `undetermined`；
+    `variance_bips = (settlement_rate − effective_rate)/effective_rate × 10000`；`|bips| <= tolerance` → matched，否则 mismatch；无结算 → 保持 pending。
+    扫描集合：`pending`/`undetermined` + 结算行在上次比对后**被改动**的 `mismatch`（修正后翻回 matched 并自动销案）。
+  - `Currencies::Fx::SyncCases` —— 差异 → `ReconciliationCase`（`kind: 'fx'`、`difference_type: 'fx_rate_mismatch'`、`dedupe_key = "fx:<snapshot_id>:<status>"`）；
+    恢复一致 → 自动销案（`fixed` + auto）；人工判定不被覆盖；新开案例发布 `fx.settlement.mismatch`。
+- **接线**：订阅者 `Currencies::Fx::OrderSubmittedSubscriber`（`order.submitted` → 锁汇；异常只日志，**绝不阻断下单**）；巡检 `Currencies::Fx::CompareSweeperJob`（`*/30 * * * *`）；
+  结算导入（§70.2）新增**可选**列 `fx_rate` → `line.raw['fx_rate']`（非法值行级报错但不阻断；缺列行为不变）。
+- **后台**（权限 `can?(:manage, PallasTrade::CurrencyRate)`）：`/admin/currency_rates`（汇率表：筛选/计数同源/新增幂等/软撤销）与 `/admin/fx_snapshots`（快照工作台：汇总卡 + 状态与期间筛选 + 明细偏差 + **重新比对** + CSV）；差异跳转既有对账队列（`kind=fx`）。
+- **回归**：`harness verify d13d-fx-snapshot-rspec`（103 例）。
+- **与成本域边界**：切片3 的 `currency_conversion_percent` 是**费用**口径，本切片是**汇率**口径，互不替代。
 - **命名陷阱（实测踩坑）**：Rails 把 `CSV` 注册为 acronym ⇒ `import_csv.rb` 必须定义 **`ImportCSV`**（Zeitwerk 报
   `uninitialized constant …ImportCsv`）；`PallasTrade` 命名空间内引用 stdlib 一律写 `::CSV`（裸 `CSV::…` 会被解析成 `PallasTrade::CSV::…`）。
 - **回归**：`harness verify d13b-payouts-rspec`（52 examples）+ 切片1 `d13-reconciliation-cases-rspec` + P4 `finance-reconciliation-rspec`。

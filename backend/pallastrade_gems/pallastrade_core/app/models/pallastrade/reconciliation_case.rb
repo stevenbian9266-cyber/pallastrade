@@ -9,14 +9,14 @@
 #   * 唯一写入口 = `Reconciliations::SyncCases`（自动）+ 后台控制器动作（人工）。
 module PallasTrade
   class ReconciliationCase < PallasTrade.base_class
-    KINDS = %w[transaction payment refund payout].freeze
+    KINDS = %w[transaction payment refund payout fx].freeze
     # 人工可置的终态（自动逻辑永不覆盖）
     HUMAN_RESOLVED_STATUSES = %w[explained fixed dismissed].freeze
     STATUSES = %w[open investigating explained fixed dismissed].freeze
     DIFFERENCE_TYPES = %w[
       amount_mismatch allocation_mismatch refund_mismatch one_sided duplicate
       settlement_pending journal_missing provider_issue needs_attention unsupported
-      payout_unmatched payout_amount_mismatch
+      payout_unmatched payout_amount_mismatch fx_rate_mismatch
     ].freeze
     SEVERITIES = %w[critical attention info].freeze
     RESOLUTION_SOURCES = %w[human auto].freeze
@@ -39,7 +39,9 @@ module PallasTrade
       'UNLINKED_LEGACY_PAYMENT' => 'duplicate',
       'AMBIGUOUS_CAPTURE' => 'duplicate',
       'PAYOUT_LINE_UNMATCHED' => 'payout_unmatched',
-      'PAYOUT_AMOUNT_MISMATCH' => 'payout_amount_mismatch'
+      'PAYOUT_AMOUNT_MISMATCH' => 'payout_amount_mismatch',
+      # D13 切片4：结算汇率超出容差（fx_rate_mismatch）
+      'FX_RATE_MISMATCH' => 'fx_rate_mismatch'
     }.freeze
     # 对账状态 → 严重级
     STATUS_SEVERITIES = { 'MISMATCH' => 'critical', 'NEEDS_ATTENTION' => 'attention' }.freeze

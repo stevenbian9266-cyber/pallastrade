@@ -459,6 +459,19 @@ PallasTrade::Core::Engine.add_routes do
     resources :payment_fee_policies, only: %i[index new create edit update] do
       member { post :revoke }
     end
+
+    # PALLAS-CUSTOM: D13 切片4（PRD-20260916-payments-d13d-fx-snapshot；业务方案 §70.4）——
+    # 汇率表（多源 + 优先级）与汇率快照（锁汇 + 结算汇率对比）：只做结算差核算，零资金副作用。
+    resources :currency_rates, only: %i[index create] do
+      member { post :revoke }
+    end
+
+    resources :fx_snapshots, only: %i[index] do
+      collection do
+        post :recompare
+        get :export
+      end
+    end
     get '/emails', to: 'emails#show', as: :emails
     patch '/emails', to: 'emails#update'
     post '/emails/test_send', to: 'emails#test_send', as: :emails_test_send

@@ -76,6 +76,16 @@ PALLAS_CART_SCHEDULE = [
     queue: 'default',
     args: [{ 'limit' => 50, 'verify_after_hours' => 24 }]
   },
+  # D13 切片4 (2026-09-16): 注册汇率对比巡检 —— **只做结算差核算**（不改订单/支付金额、不退款、不写账本、
+  # 零 provider 外呼）：锁汇快照 × 结算台账 → 偏差 bips → 超容差进入对账队列（kind=fx），
+  # 恢复一致自动销案。每 30 分钟；扫描期间 90 天（有界）。
+  {
+    name: 'fx_rate_compare_sweep',
+    class: 'PallasTrade::Currencies::Fx::CompareSweeperJob',
+    cron: '*/30 * * * *',
+    queue: 'default',
+    args: [{ 'lookback_days' => 90 }]
+  },
   # PAY-D11-1 (2026-09-16): 注册支付熔断巡检 —— **只读聚合 + metadata 写，零资金副作用**
   # （不取消会话/不改支付/订单/库存，零 provider 调用）：小时级判定失败率阈值 → 入口级软置灰；
   # 同时执行自动置灰的到期恢复（手动置灰 `manual: true` 不自动恢复，必须人工解除）。

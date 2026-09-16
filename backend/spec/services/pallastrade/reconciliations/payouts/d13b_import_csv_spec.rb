@@ -18,8 +18,7 @@ RSpec.describe PallasTrade::Reconciliations::Payouts::ImportCSV, type: :service 
   end
 
   # PRD-20260916-payments-d13b-payout-ledger AC-002
-  it 'imports a settlement report grouped by payout reference and sums its lines' do
-    result = described_class.call(
+  it 'imports a settlement report grouped by payout reference and sums its lines' do    result = described_class.call(
       store: store, provider: 'stripe', source: 'stripe_2026_09.csv',
       csv: csv(
         'po_100,charge,ch_1,100.00,3.20,96.80,USD,2026-09-10',
@@ -49,6 +48,36 @@ RSpec.describe PallasTrade::Reconciliations::Payouts::ImportCSV, type: :service 
     pending_payout = PallasTrade::Payout.find_by(reference: 'po_101')
     expect(pending_payout.net_total.to_d).to eq(48.25.to_d)
     expect(pending_payout.status).to eq('in_transit')
+  end
+
+  # PRD-20260916-payments-d13d-fx-snapshot AC-13（D13 切片4）：
+  # 结算报文可携带**结算汇率**（可选列 `fx_rate`）→ 写入 `line.raw['fx_rate']`（十进制字符串）；
+  # 非法值 → 行级错误但**不阻断**导入；缺列行为与既有导入完全一致。
+  it 'keeps an optional settlement fx_rate in the raw snapshot without breaking the import' do
+    with_rate = <<~CSV
+      payout_reference,kind,provider_reference,gross,fee,net,currency,arrived_on,fx_rate
+      po_210,charge,ch_19,7100.00,0,7100.00,USD,2026-09-10,7.42
+      po_210,charge,ch_20,100.00,0,100.00,USD,2026-09-10,not-a-number
+    CSV
+
+    result = described_class.call(store: store, provider: 'stripe', csv: with_rate)
+
+    expect(result.success?).to be(true)
+    expect(result.value[:lines_created]).to eq(2)
+    expect(result.value[:errors].map { |error| error[:message] }).to include(
+      a_string_matching(/fx_rate must be a number/)
+    )
+
+    payout = PallasTrade::Payout.find_by(reference: 'po_210')
+    expect(payout.lines.find_by(provider_reference: 'ch_19').raw['fx_rate']).to eq('7.42')
+    expect(payout.lines.find_by(provider_reference: 'ch_20').raw['fx_rate']).to eq('not-a-number')
+
+    without_rate = described_class.call(
+      store: store, provider: 'stripe', csv: csv('po_211,charge,ch_21,10.00,0,10.00,USD,2026-09-10')
+    )
+
+    expect(without_rate.success?).to be(true)
+    expect(PallasTrade::Payout.find_by(reference: 'po_211').lines.first.raw.key?('fx_rate')).to be(false)
   end
 
   # PRD-20260916-payments-d13b-payout-ledger AC-002

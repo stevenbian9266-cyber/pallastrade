@@ -497,6 +497,18 @@ Orders 下新增两个子项（position 60/61，`if: -> { can?(:manage, PallasTr
 - ⚠️ **导航一致性 spec 断言 Orders 子项完整列表**（本次新增 `:payment_costs` / `:payment_fee_policies` 已同步）。
 - **回归**：`harness verify d13c-cost-report-rspec`。
 
+## 汇率域两页：汇率表 + 汇率快照（D13 切片4, 2026-09-16；PRD-20260916-payments-d13d-fx-snapshot）
+
+Orders 下再新增两个子项（position 62/63，`if: -> { can?(:manage, PallasTrade::CurrencyRate) }`）：
+
+- **`/admin/currency_rates`（汇率表）**：筛选（币种对/来源/状态/作用域）+ **与筛选同源**计数（`data-count-scope`）+ 分页 + 内联新增（**同一身份键 = 更新原行**，幂等）+ 软撤销（`POST :revoke`）；
+  审计 `currency_rate_changed` / `currency_rate_revoked`。`priority` 留空 = 按来源默认。
+- **`/admin/fx_snapshots`（汇率快照工作台）**：状态（pending/matched/mismatch/undetermined）+ 币种对 + 期间筛选 → 汇总卡（`data-fx-summary="average_bips"` + 开放案例数）+ 明细（`data-variance-bips` 行数据）；
+  `POST :recompare`（对当前筛选集合**重新比对**，结算单修正后可把差异翻回一致并自动销案；审计 `fx_snapshots_recompared`）；`GET :export`（CSV，含结算汇率来源与 bips，**不含凭证/卡号**，审计 `fx_snapshots_exported`）；差异行可跳转对账队列（`kind=fx`）。
+- ⚠️ **订单币种必须在店铺 `supported_currencies` 内**（否则 `Currency is not supported by this store`）→ 后台与 spec 的 fixture 要显式声明支持币种。
+- ⚠️ **导航一致性 spec 断言 Orders 子项完整列表**（本次新增 `:currency_rates` / `:fx_snapshots` 已同步）。
+- **回归**：`harness verify d13d-fx-snapshot-rspec`。
+
 ## 支付适用范围编辑：Provider 详情「支付方式」页签（D8 切片2, 2026-09-15，PRD-20260915-payments-d8）
 
 同一页签每行新增「适用范围」编辑器 + 摘要列（改 `_options.html.erb`；**不新增页面**）：

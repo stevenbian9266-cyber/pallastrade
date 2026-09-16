@@ -151,6 +151,19 @@ reversals** (chargeback / inquiry / warning / representment) — deliberately **
 - 金额精度 `decimal(12,2)`（与 `payout_lines` 同口径）、百分比 `decimal(6,4)`（0..100）。
 - **只新增表**（不回填，不动既有列）；无 `funds_*` 时间戳、不触发资金入账事件；报表只读该表 + `pallastrade_payments` + `pallastrade_payout_lines`。
 
+## 汇率域两表（D13 切片4, 2026-09-16）
+
+- `pallastrade_currency_rates`：多源汇率。`store_id` **可空 = 全局**（本店优先于全局）/ `base_currency`（结算侧）/ `quote_currency`（展示侧）/
+  `rate` **decimal(20,10)** / `source`（manual/provider/third_party）/ `priority`（**无列默认**，由模型按来源归一化：provider 30 / third_party 20 / manual 10）/
+  `effective_from` / `effective_until` / `status`(active/revoked) + `revoked_at`（**软撤销，历史行保留**）/ `note` / `metadata`；
+  **`identity_key` 唯一**（SHA256("rate:<store|global>:<base>:<quote>:<source>:<effective_from_iso>")）= 幂等键。
+  索引：`identity_key`(unique)、`(base_currency, quote_currency, status)`、`(store_id, status)`、`(status, effective_from)`。
+- `pallastrade_fx_snapshots`：逐单锁汇凭证 + 结算对比结果。`order_id` / `payment_id` / `currency_rate_id` / `base_currency` / `quote_currency` /
+  `display_rate` + `up_charge_percent` + `effective_rate` / `rate_source` / `locked_at` / `locked_on`；
+  结算侧 `settlement_rate` / `settlement_source` / `settlement_currency` / `settled_gross_amount` / `variance_bips`(int) / `variance_status` / `compared_at` / `reconciliation_case_id` / `occurrences` / `signals`。
+  **唯一键 `(order_id, base_currency, quote_currency)`**（一单一种币对只锁一次）；索引 `(store_id, variance_status)`、`(variance_status, locked_at)`。
+- 两者均为**只新增表**（不回填）；无 `funds_*` 时间戳、不触发资金事件；汇率快照不参与定价与资金计算。
+
 ## Order promotion snapshot (batch4a, 2026-09-10)
 
 `pallastrade_order_promotions` carries the **成交快照** written at money-confirmed time

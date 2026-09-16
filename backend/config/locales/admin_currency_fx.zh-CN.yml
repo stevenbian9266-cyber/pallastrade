@@ -1,0 +1,105 @@
+# PALLAS-CUSTOM: D13 切片4（PRD-20260916-payments-d13d-fx-snapshot）——汇率表 + 汇率快照（宿主 zh-CN 覆盖）
+
+zh-CN:
+  pallastrade:
+    admin:
+      currency_rates:
+        title: 汇率表
+        filter: 筛选
+        reset: 重置
+        any: 全部
+        base_currency: 结算币种
+        quote_currency: 展示币种
+        rate: 汇率
+        source: 来源
+        source_manual: 手工录入
+        source_provider: Provider 报文
+        source_third_party: 第三方
+        priority: 优先级
+        priority_hint: 留空按来源默认（provider 30 / 第三方 20 / 手工 10）
+        scope: 作用域
+        scope_all: 全部
+        scope_global: 全局
+        scope_store: 本店
+        window: 生效窗口
+        open_ended: 长期
+        status: 状态
+        status_active: 生效中
+        status_revoked: 已撤销
+        status_filter_all: 全部
+        status_filter_active: 生效中
+        status_filter_revoked: 已撤销
+        effective_from: 生效起
+        effective_until: 生效止
+        note: 备注
+        add_title: 新增 / 更新汇率
+        save: 保存
+        create_success: 汇率 %{base}/%{quote} 已保存
+        create_failed: 保存汇率失败
+        revoke_action: 撤销
+        revoke_confirm: 确认撤销该汇率？历史行保留。
+        revoke_success: 汇率 %{base}/%{quote} 已撤销
+        revoke_failed: 撤销汇率失败
+        empty: 暂无汇率记录。
+        pagination: 共 %{total} 条 · 第 %{page}/%{pages} 页
+        prev_page: 上一页
+        next_page: 下一页
+      fx_snapshots:
+        title: 汇率快照
+        export_action: 导出 CSV
+        recompare_action: 重新比对
+        recompare_empty: 当前筛选下没有可重新比对的快照。
+        recompare_success: 重新比对完成：扫描 %{scanned} · 匹配 %{matched} · 差异 %{mismatched} · 待结算 %{pending} · 不可判定 %{undetermined}
+        recompare_failed: 重新比对失败
+        filter: 筛选
+        reset: 重置
+        any: 全部
+        variance_status: 状态
+        base_currency: 结算币种
+        quote_currency: 展示币种
+        from: 起始
+        to: 结束
+        average_bips: 平均偏差(bips)
+        open_cases: 开放差异案例 %{count}
+        disclaimer: 口径：快照锁定于下单时；结算汇率为 provider 报文显式值或由结算金额推导；偏差按基点（1 bips = 0.01%）。
+        queue_link: 前往对账队列（kind=fx）
+        open_case: 查看案例
+        settlement_source_provider_reported: 报文
+        settlement_source_implied: 推导
+        status_pending: 待结算
+        status_matched: 匹配
+        status_mismatch: 差异
+        status_undetermined: 不可判定
+        status_filter_all: 全部
+        status_filter_pending: 待结算
+        status_filter_matched: 匹配
+        status_filter_mismatch: 差异
+        status_filter_undetermined: 不可判定
+        empty: 暂无汇率快照。
+        pagination: 共 %{total} 条 · 第 %{page}/%{pages} 页
+        prev_page: 上一页
+        next_page: 下一页
+        table:
+          locked_at: 锁定时间
+          order: 订单
+          pair: 币种对
+          display_rate: 展示汇率
+          up_charge: 加点
+          effective_rate: 实际汇率
+          settlement_rate: 结算汇率
+          settled_amount: 结算金额
+          variance: 偏差
+          status: 状态
+        csv:
+          locked_at: 锁定时间
+          order: 订单
+          pair: 币种对
+          display_rate: 展示汇率
+          up_charge: 加点%
+          effective_rate: 实际汇率
+          settlement_rate: 结算汇率
+          settlement_source: 结算汇率来源
+          settled_amount: 结算金额
+          variance_bips: 偏差(bips)
+          status: 状态
+          signals: 信号

@@ -25,7 +25,9 @@ module PallasTrade
         prepend PallasTrade::ServiceModule::Base
 
         REQUIRED_COLUMNS = %w[payout_reference kind provider_reference gross].freeze
-        OPTIONAL_COLUMNS = %w[fee net currency arrived_on period_start period_end].freeze
+        # `fx_rate`（可选，D13 切片4）：provider 报文里的**结算汇率**（结算币种/支付币种），
+        # 落进 `line.raw['fx_rate']` 供 `Currencies::Fx::Compare` 优先采用；缺列不影响导入。
+        OPTIONAL_COLUMNS = %w[fee net currency arrived_on period_start period_end fx_rate].freeze
         DATE_COLUMNS = %w[arrived_on period_start period_end].freeze
         # 上传大小上界（字符）；超出直接拒绝（防御性，解析前判断）
         MAX_BYTES = 5.megabytes
@@ -120,7 +122,7 @@ module PallasTrade
               provider_reference: provider_reference,
               currency: row['currency'].to_s.strip.presence,
               **amounts,
-              raw: row.to_h.stringify_keys
+              raw: raw_snapshot(row, line_number, errors)
             }
           end
 
@@ -138,6 +140,24 @@ module PallasTrade
           net = parse_decimal(row['net']) || (gross - fee)
 
           { gross_amount: gross, fee_amount: fee, net_amount: net }
+        end
+
+        # 导入行快照；`fx_rate`（可选）归一为十进制字符串（非法值 → 行级错误但**不阻断**导入）。
+        def raw_snapshot(row, line_number, errors)
+          raw = row.to_h.stringify_keys
+          return raw unless raw.key?('fx_rate')
+
+          text = raw['fx_rate'].to_s.strip
+          return raw if text.blank?
+
+          decimal = parse_decimal(text)
+          if decimal.nil?
+            errors << { row: line_number, message: "fx_rate must be a number: #{text}" }
+          elsif decimal.positive?
+            raw['fx_rate'] = decimal.to_s('F')
+          end
+
+          raw
         end
 
         def parse_decimal(value)

@@ -1296,6 +1296,106 @@ en:
         decision_allow: Allow
         decision_review: Needs review
         decision_block: Block
+      currency_rates:
+        title: Currency Rates
+        filter: Filter
+        reset: Reset
+        any: Any
+        base_currency: Base
+        quote_currency: Quote
+        rate: Rate
+        source: Source
+        source_manual: Manual
+        source_provider: Provider report
+        source_third_party: Third party
+        priority: Priority
+        priority_hint: Blank = source default (provider 30 / third party 20 / manual 10)
+        scope: Scope
+        scope_all: All
+        scope_global: Global
+        scope_store: This store
+        window: Effective window
+        open_ended: open
+        status: Status
+        status_active: Active
+        status_revoked: Revoked
+        status_filter_all: All
+        status_filter_active: Active
+        status_filter_revoked: Revoked
+        effective_from: Effective from
+        effective_until: Effective until
+        note: Note
+        add_title: Add / update a rate
+        save: Save
+        create_success: "Rate %{base}/%{quote} saved"
+        create_failed: Could not save the rate
+        revoke_action: Revoke
+        revoke_confirm: Revoke this rate? Historical rows are kept.
+        revoke_success: "Rate %{base}/%{quote} revoked"
+        revoke_failed: Could not revoke the rate
+        empty: No currency rate yet.
+        pagination: "%{total} rate(s) - page %{page}/%{pages}"
+        prev_page: Previous
+        next_page: Next
+      fx_snapshots:
+        title: FX Snapshots
+        export_action: Export CSV
+        recompare_action: Recompare
+        recompare_empty: Nothing to recompare with the current filters.
+        recompare_success: "Recompare done: scanned %{scanned} - matched %{matched} - mismatched %{mismatched} - pending %{pending} - undetermined %{undetermined}"
+        recompare_failed: Recompare failed
+        filter: Filter
+        reset: Reset
+        any: Any
+        variance_status: Status
+        base_currency: Base
+        quote_currency: Quote
+        from: From
+        to: To
+        average_bips: Average bips
+        open_cases: "%{count} open FX case(s)"
+        disclaimer: "Scope: the rate is locked when the order is submitted; the settlement rate is either reported by the provider or derived from the settled amount; variance is in basis points (1 bips = 0.01%)."
+        queue_link: Open the reconciliation queue (kind=fx)
+        open_case: Open case
+        settlement_source_provider_reported: reported
+        settlement_source_implied: derived
+        status_pending: Awaiting settlement
+        status_matched: Matched
+        status_mismatch: Mismatch
+        status_undetermined: Undetermined
+        status_filter_all: All
+        status_filter_pending: Awaiting settlement
+        status_filter_matched: Matched
+        status_filter_mismatch: Mismatch
+        status_filter_undetermined: Undetermined
+        empty: No FX snapshot yet.
+        pagination: "%{total} snapshot(s) - page %{page}/%{pages}"
+        prev_page: Previous
+        next_page: Next
+        table:
+          locked_at: Locked at
+          order: Order
+          pair: Pair
+          display_rate: Display rate
+          up_charge: Up-charge
+          effective_rate: Effective rate
+          settlement_rate: Settlement rate
+          settled_amount: Settled amount
+          variance: Variance
+          status: Status
+        csv:
+          locked_at: Locked at
+          order: Order
+          pair: Pair
+          display_rate: Display rate
+          up_charge: Up-charge %
+          effective_rate: Effective rate
+          settlement_rate: Settlement rate
+          settlement_source: Settlement source
+          settled_amount: Settled amount
+          variance_bips: Variance (bips)
+          status: Status
+          signals: Signals
       personal_details: Personal Details
       payment_costs:
         title: Payment Costs

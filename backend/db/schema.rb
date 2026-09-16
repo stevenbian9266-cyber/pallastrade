@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_16_240000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_16_250000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -621,6 +621,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_240000) do
     t.index ["user_id"], name: "index_pt_credit_cards_on_user_id"
   end
 
+  create_table "pallastrade_currency_rates", force: :cascade do |t|
+    t.string "base_currency", limit: 10, null: false
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id"
+    t.datetime "effective_from"
+    t.datetime "effective_until"
+    t.string "identity_key", limit: 64, null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.string "note"
+    t.integer "priority", null: false
+    t.string "quote_currency", limit: 10, null: false
+    t.decimal "rate", precision: 20, scale: 10, null: false
+    t.datetime "revoked_at"
+    t.string "source", default: "manual", null: false
+    t.string "status", default: "active", null: false
+    t.bigint "store_id"
+    t.datetime "updated_at", null: false
+    t.index ["base_currency", "quote_currency", "status"], name: "idx_currency_rates_pair_status"
+    t.index ["identity_key"], name: "idx_currency_rates_identity", unique: true
+    t.index ["status", "effective_from"], name: "idx_currency_rates_status_effective"
+    t.index ["store_id", "status"], name: "idx_currency_rates_store_status"
+    t.index ["store_id"], name: "index_pallastrade_currency_rates_on_store_id"
+  end
+
   create_table "pallastrade_custom_domains", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.boolean "default", default: false, null: false
@@ -884,6 +908,39 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_240000) do
     t.index ["reversal_of_id"], name: "idx_pallastrade_fin_ledger_active_reversal", unique: true, where: "((state)::text = 'posted'::text)"
     t.index ["reversal_of_id"], name: "index_pallastrade_financial_ledger_entries_on_reversal_of_id"
     t.index ["state"], name: "index_pallastrade_financial_ledger_entries_on_state"
+  end
+
+  create_table "pallastrade_fx_snapshots", force: :cascade do |t|
+    t.string "base_currency", limit: 10, null: false
+    t.datetime "compared_at"
+    t.datetime "created_at", null: false
+    t.bigint "currency_rate_id"
+    t.decimal "display_rate", precision: 20, scale: 10, null: false
+    t.decimal "effective_rate", precision: 20, scale: 10, null: false
+    t.datetime "locked_at", null: false
+    t.string "locked_on", default: "order.submitted", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.integer "occurrences", default: 0, null: false
+    t.bigint "order_id", null: false
+    t.bigint "payment_id"
+    t.string "quote_currency", limit: 10, null: false
+    t.string "rate_source", default: "manual", null: false
+    t.bigint "reconciliation_case_id"
+    t.decimal "settled_gross_amount", precision: 12, scale: 2
+    t.string "settlement_currency", limit: 10
+    t.decimal "settlement_rate", precision: 20, scale: 10
+    t.string "settlement_source"
+    t.jsonb "signals", default: {}, null: false
+    t.bigint "store_id"
+    t.decimal "up_charge_percent", precision: 6, scale: 4, default: "0.0", null: false
+    t.datetime "updated_at", null: false
+    t.integer "variance_bips"
+    t.string "variance_status", default: "pending", null: false
+    t.index ["order_id", "base_currency", "quote_currency"], name: "idx_fx_snapshots_order_pair", unique: true
+    t.index ["order_id"], name: "index_pallastrade_fx_snapshots_on_order_id"
+    t.index ["store_id", "variance_status"], name: "idx_fx_snapshots_store_variance"
+    t.index ["store_id"], name: "index_pallastrade_fx_snapshots_on_store_id"
+    t.index ["variance_status", "locked_at"], name: "idx_fx_snapshots_variance_locked"
   end
 
   create_table "pallastrade_gateway_customers", force: :cascade do |t|
@@ -3195,6 +3252,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_240000) do
   add_foreign_key "pallastrade_commerce_transactions", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_commerce_transactions", "pallastrade_users", column: "customer_id"
   add_foreign_key "pallastrade_contact_messages", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_currency_rates", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_dispute_evidence_approvals", "pallastrade_disputes", column: "dispute_id"
   add_foreign_key "pallastrade_dispute_evidence_assets", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_dispute_evidence_submissions", "pallastrade_disputes", column: "dispute_id"
@@ -3207,6 +3265,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_240000) do
   add_foreign_key "pallastrade_financial_ledger_entries", "pallastrade_payment_splits", column: "payment_split_id"
   add_foreign_key "pallastrade_financial_ledger_entries", "pallastrade_payments", column: "payment_id"
   add_foreign_key "pallastrade_financial_ledger_entries", "pallastrade_refunds", column: "refund_id"
+  add_foreign_key "pallastrade_fx_snapshots", "pallastrade_orders", column: "order_id"
+  add_foreign_key "pallastrade_fx_snapshots", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_menu_configs", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_option_type_translations", "pallastrade_option_types"
   add_foreign_key "pallastrade_option_value_translations", "pallastrade_option_values"

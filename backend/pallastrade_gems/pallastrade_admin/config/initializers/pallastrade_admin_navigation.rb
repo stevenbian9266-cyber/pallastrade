@@ -165,6 +165,22 @@ Rails.application.config.after_initialize do
               position: 61,
               active: -> { controller_name == 'payment_fee_policies' },
               if: -> { can?(:manage, PallasTrade::PaymentFeePolicy) }
+
+    # PALLAS-CUSTOM: D13 切片4（PRD-20260916-payments-d13d-fx-snapshot；业务方案 §70.4）
+    # 汇率域：汇率表 + 汇率快照（同一权限域：结算差核算）
+    orders.add :currency_rates,
+              label: 'admin.currency_rates.title',
+              url: :admin_currency_rates_path,
+              position: 62,
+              active: -> { controller_name == 'currency_rates' },
+              if: -> { can?(:manage, PallasTrade::CurrencyRate) }
+
+    orders.add :fx_snapshots,
+              label: 'admin.fx_snapshots.title',
+              url: :admin_fx_snapshots_path,
+              position: 63,
+              active: -> { controller_name == 'fx_snapshots' },
+              if: -> { can?(:manage, PallasTrade::CurrencyRate) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns

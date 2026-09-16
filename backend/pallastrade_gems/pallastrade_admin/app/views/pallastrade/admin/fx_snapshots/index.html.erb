@@ -1,0 +1,168 @@
+<%# PALLAS-CUSTOM: D13 切片4（PRD-20260916-payments-d13d-fx-snapshot；业务方案 §70.4）——
+    汇率快照工作台：锁定/已比对/匹配/差异汇总 + 状态与期间筛选 + 明细（结算汇率来源与偏差）+ 重新比对 + CSV 导出。
+    差异归属：超容差的快照在 D13 切片1 对账队列（kind=fx），此处给出跳转。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.fx_snapshots.title') %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= link_to PallasTrade.t('admin.currency_rates.title'),
+              PallasTrade.admin_currency_rates_path,
+              class: 'btn btn-outline-secondary' %>
+  <%= link_to PallasTrade.t('admin.fx_snapshots.export_action'),
+              PallasTrade.export_admin_fx_snapshots_path(@filters.compact),
+              class: 'btn btn-outline-secondary' %>
+  <%= button_to PallasTrade.t('admin.fx_snapshots.recompare_action'),
+                PallasTrade.recompare_admin_fx_snapshots_path(@filters.compact),
+                method: :post, class: 'btn btn-primary' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <%= form_with url: PallasTrade.admin_fx_snapshots_path, method: :get, local: true do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <%= label_tag :variance_status, PallasTrade.t('admin.fx_snapshots.variance_status'), class: 'form-label' %>
+          <%= select_tag :variance_status,
+                         options_for_select(@status_filters.map { |s| [PallasTrade.t("admin.fx_snapshots.status_filter_#{s}"), s] }, @filters[:variance_status] || 'all'),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :base_currency, PallasTrade.t('admin.fx_snapshots.base_currency'), class: 'form-label' %>
+          <%= select_tag :base_currency,
+                         options_for_select(@currency_pairs.map(&:first).uniq, @filters[:base_currency]),
+                         include_blank: PallasTrade.t('admin.fx_snapshots.any'), class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :quote_currency, PallasTrade.t('admin.fx_snapshots.quote_currency'), class: 'form-label' %>
+          <%= select_tag :quote_currency,
+                         options_for_select(@currency_pairs.map(&:last).uniq, @filters[:quote_currency]),
+                         include_blank: PallasTrade.t('admin.fx_snapshots.any'), class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :from, PallasTrade.t('admin.fx_snapshots.from'), class: 'form-label' %>
+          <%= date_field_tag :from, @filters[:from]&.to_date, class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :to, PallasTrade.t('admin.fx_snapshots.to'), class: 'form-label' %>
+          <%= date_field_tag :to, @filters[:to]&.to_date, class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <%= submit_tag PallasTrade.t('admin.fx_snapshots.filter'), class: 'btn btn-sm btn-primary' %>
+          <%= link_to PallasTrade.t('admin.fx_snapshots.reset'), PallasTrade.admin_fx_snapshots_path,
+                      class: 'btn btn-sm btn-outline-secondary' %>
+        </div>
+      </div>
+    <% end %>
+    <p class="text-gray-600 mt-3 mb-0">
+      <small>
+        <%= PallasTrade.t('admin.fx_snapshots.disclaimer') %>
+        <%= link_to PallasTrade.t('admin.fx_snapshots.queue_link'),
+                    PallasTrade.admin_reconciliation_cases_path(kind: 'fx') %>
+      </small>
+    </p>
+  </div>
+</div>
+
+<div class="grid grid-cols-12 gap-6 mb-6">
+  <% @status_filters.each do |status_filter| %>
+    <div class="col-span-6 md:col-span-2">
+      <div class="card" data-fx-count-card="<%= status_filter %>">
+        <div class="card-body">
+          <div class="text-gray-600"><%= PallasTrade.t("admin.fx_snapshots.status_filter_#{status_filter}") %></div>
+          <h3 class="mb-0" data-count-scope="<%= status_filter %>"><%= @counts[status_filter] %></h3>
+        </div>
+      </div>
+    </div>
+  <% end %>
+  <div class="col-span-6 md:col-span-2">
+    <div class="card" data-fx-summary="average_bips">
+      <div class="card-body">
+        <div class="text-gray-600"><%= PallasTrade.t('admin.fx_snapshots.average_bips') %></div>
+        <h3 class="mb-0"><%= @summary[:average_bips] || '-' %></h3>
+        <small class="text-gray-600"><%= PallasTrade.t('admin.fx_snapshots.open_cases', count: @summary[:open_cases]) %></small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0" data-fx-snapshot-table>
+      <thead>
+        <tr>
+          <th><%= PallasTrade.t('admin.fx_snapshots.table.locked_at') %></th>
+          <th><%= PallasTrade.t('admin.fx_snapshots.table.order') %></th>
+          <th><%= PallasTrade.t('admin.fx_snapshots.table.pair') %></th>
+          <th><%= PallasTrade.t('admin.fx_snapshots.table.display_rate') %></th>
+          <th><%= PallasTrade.t('admin.fx_snapshots.table.up_charge') %></th>
+          <th><%= PallasTrade.t('admin.fx_snapshots.table.effective_rate') %></th>
+          <th><%= PallasTrade.t('admin.fx_snapshots.table.settlement_rate') %></th>
+          <th><%= PallasTrade.t('admin.fx_snapshots.table.settled_amount') %></th>
+          <th><%= PallasTrade.t('admin.fx_snapshots.table.variance') %></th>
+          <th><%= PallasTrade.t('admin.fx_snapshots.table.status') %></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @snapshots.each do |snapshot| %>
+          <tr data-fx-snapshot-id="<%= snapshot.id %>" data-variance-status="<%= snapshot.variance_status %>">
+            <td><small><%= snapshot.locked_at&.strftime('%Y-%m-%d %H:%M') %></small></td>
+            <td><small><%= snapshot.metadata['order_number'] || snapshot.order_id %></small></td>
+            <td><small><%= snapshot.base_currency %>/<%= snapshot.quote_currency %></small></td>
+            <td><small><%= fx_rate_value(snapshot.display_rate) %></small></td>
+            <td><small><%= snapshot.up_charge_percent.to_f %>%</small></td>
+            <td data-effective-rate="<%= snapshot.id %>"><small><%= fx_rate_value(snapshot.effective_rate) %></small></td>
+            <td>
+              <small>
+                <%= fx_rate_value(snapshot.settlement_rate) %>
+                <% if snapshot.settlement_source.present? %>
+                  (<%= PallasTrade.t("admin.fx_snapshots.settlement_source_#{snapshot.settlement_source}") %>)
+                <% end %>
+              </small>
+            </td>
+            <td><small><%= fx_amount(snapshot.settled_gross_amount, snapshot.settlement_currency) %></small></td>
+            <td data-variance-bips="<%= snapshot.id %>"><small><%= fx_bips(snapshot.variance_bips) %></small></td>
+            <td>
+              <span class="badge <%= snapshot.mismatched? ? 'bg-danger' : 'bg-secondary' %>">
+                <%= PallasTrade.t("admin.fx_snapshots.status_#{snapshot.variance_status}") %>
+              </span>
+              <% if snapshot.signal_list.any? %>
+                <br><small class="text-gray-600"><%= snapshot.signal_list.join(', ') %></small>
+              <% end %>
+            </td>
+            <td class="text-end">
+              <% if snapshot.reconciliation_case_id.present? %>
+                <%= link_to PallasTrade.t('admin.fx_snapshots.open_case'),
+                            PallasTrade.admin_reconciliation_case_path(snapshot.reconciliation_case_id),
+                            class: 'btn btn-sm btn-outline-danger' %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @snapshots.empty? %>
+          <tr><td colspan="11" class="text-center text-gray-600"><%= PallasTrade.t('admin.fx_snapshots.empty') %></td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  <% if @pages > 1 %>
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-gray-600"><%= PallasTrade.t('admin.fx_snapshots.pagination', total: @total, page: @page, pages: @pages) %></small>
+        <div class="d-flex gap-2">
+          <% if @page > 1 %>
+            <%= link_to PallasTrade.t('admin.fx_snapshots.prev_page'),
+                        PallasTrade.admin_fx_snapshots_path(@filters.compact.merge(page: @page - 1)),
+                        class: 'btn btn-sm btn-outline-secondary' %>
+          <% end %>
+          <% if @page < @pages %>
+            <%= link_to PallasTrade.t('admin.fx_snapshots.next_page'),
+                        PallasTrade.admin_fx_snapshots_path(@filters.compact.merge(page: @page + 1)),
+                        class: 'btn btn-sm btn-outline-secondary' %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

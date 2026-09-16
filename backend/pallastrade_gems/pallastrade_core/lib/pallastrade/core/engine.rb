@@ -402,7 +402,10 @@ module PallasTrade
           PallasTrade::Promotions::RedemptionSubscriber,
           # D15 切片1（PRD-20260916-payments-d15-risk-lists）：order.submitted → 名单驱动的风控评估
           # （命中则复用既有 `considered_risky` 标记送人工复核；不阻断下单）
-          PallasTrade::Risk::OrderSubmittedSubscriber
+          PallasTrade::Risk::OrderSubmittedSubscriber,
+          # D13 切片4（PRD-20260916-payments-d13d-fx-snapshot）：order.submitted → 下单锁汇（§70.4）
+          # （只记录展示汇率 + 加点后实际汇率；不阻断下单）
+          PallasTrade::Currencies::Fx::OrderSubmittedSubscriber
         ]
 
         # Pre-load authentication strategy classes to avoid reflection at request time

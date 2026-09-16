@@ -1,0 +1,191 @@
+<%# PALLAS-CUSTOM: D13 切片4（PRD-20260916-payments-d13d-fx-snapshot；业务方案 §70.4）——
+    汇率表：筛选（币种对/来源/状态/作用域）+ 与筛选同源计数 + 新增（同身份键即更新）+ 软撤销。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.currency_rates.title') %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= link_to PallasTrade.t('admin.fx_snapshots.title'),
+              PallasTrade.admin_fx_snapshots_path,
+              class: 'btn btn-outline-secondary' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <%= form_with url: PallasTrade.admin_currency_rates_path, method: :get, local: true do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <%= label_tag :base_currency, PallasTrade.t('admin.currency_rates.base_currency'), class: 'form-label' %>
+          <%= text_field_tag :base_currency, @filters[:base_currency], class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :quote_currency, PallasTrade.t('admin.currency_rates.quote_currency'), class: 'form-label' %>
+          <%= text_field_tag :quote_currency, @filters[:quote_currency], class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :source, PallasTrade.t('admin.currency_rates.source'), class: 'form-label' %>
+          <%= select_tag :source,
+                         options_for_select(@sources.map { |s| [currency_rate_source_label(s), s] }, @filters[:source]),
+                         include_blank: PallasTrade.t('admin.currency_rates.any'), class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :status_filter, PallasTrade.t('admin.currency_rates.status'), class: 'form-label' %>
+          <%= select_tag :status_filter,
+                         options_for_select(@status_filters.map { |s| [PallasTrade.t("admin.currency_rates.status_filter_#{s}"), s] }, @filters[:status_filter]),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :store_scope, PallasTrade.t('admin.currency_rates.scope'), class: 'form-label' %>
+          <%= select_tag :store_scope,
+                         options_for_select([[PallasTrade.t('admin.currency_rates.scope_all'), 'all'],
+                                             [PallasTrade.t('admin.currency_rates.scope_global'), 'global']], @filters[:store_scope]),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <%= submit_tag PallasTrade.t('admin.currency_rates.filter'), class: 'btn btn-sm btn-primary' %>
+          <%= link_to PallasTrade.t('admin.currency_rates.reset'), PallasTrade.admin_currency_rates_path,
+                      class: 'btn btn-sm btn-outline-secondary' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="grid grid-cols-12 gap-6 mb-6">
+  <% @status_filters.each do |status_filter| %>
+    <div class="col-span-6 md:col-span-4">
+      <div class="card">
+        <div class="card-body">
+          <div class="text-gray-600"><%= PallasTrade.t("admin.currency_rates.status_filter_#{status_filter}") %></div>
+          <h3 class="mb-0" data-count-scope="<%= status_filter %>"><%= @counts[status_filter] %></h3>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header"><strong><%= PallasTrade.t('admin.currency_rates.add_title') %></strong></div>
+  <div class="card-body">
+    <%= form_with url: PallasTrade.admin_currency_rates_path, scope: :currency_rate, method: :post, local: true do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <%= f.label :base_currency, PallasTrade.t('admin.currency_rates.base_currency'), class: 'form-label' %>
+          <%= f.text_field :base_currency, value: @rate.base_currency, class: 'form-control form-control-sm', required: true %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= f.label :quote_currency, PallasTrade.t('admin.currency_rates.quote_currency'), class: 'form-label' %>
+          <%= f.text_field :quote_currency, value: @rate.quote_currency, class: 'form-control form-control-sm', required: true %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= f.label :rate, PallasTrade.t('admin.currency_rates.rate'), class: 'form-label' %>
+          <%= f.number_field :rate, step: '0.0000000001', min: 0, class: 'form-control form-control-sm', required: true %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= f.label :source, PallasTrade.t('admin.currency_rates.source'), class: 'form-label' %>
+          <%= f.select :source, @sources.map { |s| [currency_rate_source_label(s), s] },
+                       { selected: @rate.source }, class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= f.label :priority, PallasTrade.t('admin.currency_rates.priority'), class: 'form-label' %>
+          <%= f.number_field :priority, min: 0, class: 'form-control form-control-sm',
+                             placeholder: PallasTrade.t('admin.currency_rates.priority_hint') %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= f.label :effective_from, PallasTrade.t('admin.currency_rates.effective_from'), class: 'form-label' %>
+          <%= f.datetime_local_field :effective_from, class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= f.label :effective_until, PallasTrade.t('admin.currency_rates.effective_until'), class: 'form-label' %>
+          <%= f.datetime_local_field :effective_until, class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-6 col-md-3">
+          <%= f.label :note, PallasTrade.t('admin.currency_rates.note'), class: 'form-label' %>
+          <%= f.text_field :note, class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :store_scope, PallasTrade.t('admin.currency_rates.scope'), class: 'form-label' %>
+          <%= select_tag :store_scope,
+                         options_for_select([[PallasTrade.t('admin.currency_rates.scope_store'), 'store'],
+                                             [PallasTrade.t('admin.currency_rates.scope_global'), 'global']], 'store'),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-12 col-md-3">
+          <%= f.submit PallasTrade.t('admin.currency_rates.save'), class: 'btn btn-primary btn-sm' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0" data-currency-rate-table>
+      <thead>
+        <tr>
+          <th><%= PallasTrade.t('admin.currency_rates.base_currency') %> / <%= PallasTrade.t('admin.currency_rates.quote_currency') %></th>
+          <th><%= PallasTrade.t('admin.currency_rates.rate') %></th>
+          <th><%= PallasTrade.t('admin.currency_rates.source') %></th>
+          <th><%= PallasTrade.t('admin.currency_rates.priority') %></th>
+          <th><%= PallasTrade.t('admin.currency_rates.scope') %></th>
+          <th><%= PallasTrade.t('admin.currency_rates.window') %></th>
+          <th><%= PallasTrade.t('admin.currency_rates.status') %></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @policies.each do |row| %>
+          <tr data-rate-id="<%= row.id %>" data-rate-status="<%= row.status %>">
+            <td><%= row.base_currency %> / <%= row.quote_currency %></td>
+            <td><%= rate_value(row.rate) %></td>
+            <td><%= currency_rate_source_label(row.source) %></td>
+            <td><%= row.priority %></td>
+            <td><%= row.store_id.nil? ? PallasTrade.t('admin.currency_rates.scope_global') : PallasTrade.t('admin.currency_rates.scope_store') %></td>
+            <td>
+              <small>
+                <%= row.effective_from&.to_date || '-' %>
+                →
+                <%= row.effective_until&.to_date || PallasTrade.t('admin.currency_rates.open_ended') %>
+              </small>
+            </td>
+            <td>
+              <span class="badge <%= row.revoked? ? 'bg-secondary' : 'bg-success' %>">
+                <%= PallasTrade.t("admin.currency_rates.status_#{row.status}") %>
+              </span>
+            </td>
+            <td class="text-end">
+              <% unless row.revoked? %>
+                <%= button_to PallasTrade.t('admin.currency_rates.revoke_action'),
+                              PallasTrade.revoke_admin_currency_rate_path(row),
+                              method: :post, class: 'btn btn-sm btn-outline-danger',
+                              form: { data: { turbo_confirm: PallasTrade.t('admin.currency_rates.revoke_confirm') } } %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @policies.empty? %>
+          <tr><td colspan="8" class="text-center text-gray-600"><%= PallasTrade.t('admin.currency_rates.empty') %></td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  <% if @pages > 1 %>
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-gray-600"><%= PallasTrade.t('admin.currency_rates.pagination', total: @total, page: @page, pages: @pages) %></small>
+        <div class="d-flex gap-2">
+          <% if @page > 1 %>
+            <%= link_to PallasTrade.t('admin.currency_rates.prev_page'),
+                        PallasTrade.admin_currency_rates_path(@filters.compact.merge(page: @page - 1)),
+                        class: 'btn btn-sm btn-outline-secondary' %>
+          <% end %>
+          <% if @page < @pages %>
+            <%= link_to PallasTrade.t('admin.currency_rates.next_page'),
+                        PallasTrade.admin_currency_rates_path(@filters.compact.merge(page: @page + 1)),
+                        class: 'btn btn-sm btn-outline-secondary' %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

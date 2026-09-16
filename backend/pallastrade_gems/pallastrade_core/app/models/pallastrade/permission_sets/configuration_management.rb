@@ -71,6 +71,9 @@ module PallasTrade
         # PALLAS-CUSTOM: D13 切片3（PRD-20260916-payments-d13c-fee-cost-report；业务方案 §70.3）——
         # 支付成本域：费率策略维护 + 成本报表（同一权限域）
         can :manage, PallasTrade::PaymentFeePolicy
+        # PALLAS-CUSTOM: D13 切片4（PRD-20260916-payments-d13d-fx-snapshot；业务方案 §70.4）——
+        # 汇率域：汇率表维护 + 汇率快照工作台（同一权限域）
+        can :manage, PallasTrade::CurrencyRate
 
         # General configuration
         can :manage, PallasTrade::RefundReason
