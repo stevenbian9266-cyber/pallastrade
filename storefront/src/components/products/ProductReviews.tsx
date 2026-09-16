@@ -1,13 +1,15 @@
 "use client";
 
-import { BadgeCheck, ImagePlus, Loader2, Star, X } from "lucide-react";
+import { BadgeCheck, ImagePlus, Loader2, Star, ThumbsUp, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useParams, usePathname } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   createProductReview,
   getMoreProductReviews,
   uploadReviewImage,
+  voteReviewHelpful,
 } from "@/lib/data/reviews";
 
 /** Photo types the API accepts (`PallasTrade::Review::ALLOWED_IMAGE_TYPES`). */
@@ -32,6 +34,10 @@ export interface ReviewView {
   created_at: string | null;
   /** F-1: photos of approved reviews only (absolute URLs). */
   image_urls?: string[];
+  /** F-5: public vote count (absent on payloads predating the field). */
+  helpful_votes_count?: number;
+  /** F-5: the caller's own vote — `null`/absent for guests. */
+  helpful_voted?: boolean | null;
 }
 
 export interface ReviewMeta {
@@ -112,6 +118,10 @@ export function ProductReviews({
 }: ProductReviewsProps) {
   const t = useTranslations("reviews");
   const locale = useLocale();
+  // Catalog F-5: guests get a sign-in link that brings them back to this PDP.
+  const params = useParams<{ country: string; locale: string }>();
+  const pathname = usePathname();
+  const signInHref = `/${params.country}/${params.locale}/account?redirect=${encodeURIComponent(pathname)}`;
 
   const [rating, setRating] = useState(0);
   const [title, setTitle] = useState("");
@@ -152,9 +162,55 @@ export function ProductReviews({
     setNextPage(first.next);
   };
 
+  // Catalog F-5: "helpful" votes. State is keyed by review id so one row never
+  // blocks another, and the API's answer is the only thing we ever store.
+  const [voteState, setVoteState] = useState<
+    Record<string, { count: number; voted: boolean }>
+  >({});
+  const [votingId, setVotingId] = useState<string | null>(null);
+  const [voteError, setVoteError] = useState<Record<string, string | null>>({});
+
+  const votedFor = (review: ReviewView) =>
+    voteState[review.id] ?? {
+      count: review.helpful_votes_count ?? 0,
+      voted: review.helpful_voted === true,
+    };
+
+  const voteHelpful = async (review: ReviewView) => {
+    if (votingId) return;
+
+    const current = votedFor(review);
+    setVotingId(review.id);
+    setVoteError((prev) => ({ ...prev, [review.id]: null }));
+
+    // `voted` is the state we are leaving: true → take the vote back.
+    const result = await voteReviewHelpful(review.id, current.voted);
+    setVotingId(null);
+
+    if (!result.success) {
+      // Keep what the row already showed — a failed vote must never look like
+      // a state change (AP-009b).
+      setVoteError((prev) => ({
+        ...prev,
+        [review.id]:
+          result.code === "own_review_vote_forbidden"
+            ? t("helpfulOwnReview")
+            : t("helpfulFailed"),
+      }));
+      return;
+    }
+
+    setVoteState((prev) => ({
+      ...prev,
+      [review.id]: {
+        count: result.helpfulVotesCount,
+        voted: result.helpfulVoted,
+      },
+    }));
+  };
+
   const visibleReviews = appended ?? reviews;
-  const distribution = meta?.rating_distribution ?? null;
-  const totalCount = meta?.count ?? reviewCount;
+  const distribution = meta?.rating_distribution ?? null;  const totalCount = meta?.count ?? reviewCount;
   const maxBucket = distribution
     ? Math.max(1, ...Object.values(distribution))
     : 1;
@@ -290,6 +346,7 @@ export function ProductReviews({
           <option value="newest">{t("sortNewest")}</option>
           <option value="highest_rating">{t("sortHighest")}</option>
           <option value="lowest_rating">{t("sortLowest")}</option>
+          <option value="most_helpful">{t("sortMostHelpful")}</option>
         </select>
       </div>
 
@@ -374,6 +431,48 @@ export function ProductReviews({
                   ))}
                 </ul>
               )}
+
+              {/* Catalog F-5: "helpful" vote — one per customer, revocable.
+                  Guests get a sign-in link instead of a button that would
+                  always answer 401. */}
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                {isAuthenticated ? (
+                  <Button
+                    type="button"
+                    variant={votedFor(review).voted ? "default" : "outline"}
+                    size="sm"
+                    aria-pressed={votedFor(review).voted}
+                    disabled={votingId === review.id}
+                    onClick={() => void voteHelpful(review)}
+                    data-testid={`review-helpful-${review.id}`}
+                  >
+                    <ThumbsUp className="size-3.5" aria-hidden="true" />
+                    {votedFor(review).voted ? t("helpfulVoted") : t("helpful")}
+                  </Button>
+                ) : (
+                  <a
+                    href={signInHref}
+                    className="text-xs text-gray-500 underline underline-offset-2 hover:text-gray-900"
+                    data-testid={`review-helpful-signin-${review.id}`}
+                  >
+                    {t("helpfulSignIn")}
+                  </a>
+                )}
+                {votedFor(review).count > 0 && (
+                  <span
+                    className="text-xs text-gray-500"
+                    data-testid={`review-helpful-count-${review.id}`}
+                    data-count={votedFor(review).count}
+                  >
+                    {t("helpfulCount", { count: votedFor(review).count })}
+                  </span>
+                )}
+                {voteError[review.id] && (
+                  <span className="text-xs text-red-600" role="alert">
+                    {voteError[review.id]}
+                  </span>
+                )}
+              </div>
             </li>
           ))}
         </ul>

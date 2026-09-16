@@ -18,6 +18,13 @@ export interface ProductReview {
   verified_purchase: boolean;
   created_at: string | null;
   image_urls: string[];
+  /** F-5: public vote count (counter cache on the API side). */
+  helpful_votes_count?: number;
+  /**
+   * F-5: the caller's own vote. `true`/`false` for a signed-in customer,
+   * `null` for guests (the API answers "not asked" instead of guessing).
+   */
+  helpful_voted?: boolean | null;
 }
 
 export interface ProductReviewList {
@@ -49,7 +56,10 @@ export async function getProductReviews(
   productId: string,
   params: { page?: number; limit?: number; sort?: string } = {},
 ): Promise<ProductReviewList> {
-  return withFallback(async () => {
+  // Explicit type argument: the SDK types `meta` as always-present, while this
+  // module models a failed call as `meta: null` (the UI then renders the empty
+  // state) — without it the fallback would not typecheck against the value.
+  return withFallback<ProductReviewList>(async () => {
     const response = await getClient().products.reviews.list(productId, params);
     return { reviews: response.data, meta: response.meta };
   }, EMPTY_REVIEW_LIST);
@@ -77,6 +87,38 @@ export async function getMoreProductReviews(
     console.error(error);
     return null;
   }
+}
+
+/**
+ * Vote (or take the vote back) on an approved review as the signed-in customer
+ * (F-5). Requires a live JWT; the API answers with the **authoritative state**
+ * (count + this caller's own vote), so the button never has to guess whether
+ * the click landed. Voting is refused on your own review (`own_review_vote_
+ * forbidden`) and reviews the caller cannot see answer 404.
+ */
+export async function voteReviewHelpful(
+  reviewId: string,
+  voted: boolean,
+): Promise<
+  | { success: true; helpfulVotesCount: number; helpfulVoted: boolean }
+  | { success: false; error: string; code?: string }
+> {
+  return actionResult(async () => {
+    const token = await getAccessToken();
+    if (!token || isJwtExpired(token, 30)) {
+      throw new Error("authentication_required");
+    }
+
+    const client = getClient();
+    const response = voted
+      ? await client.reviewHelpfulVotes.destroy(reviewId, { token })
+      : await client.reviewHelpfulVotes.create(reviewId, { token });
+
+    return {
+      helpfulVotesCount: response.data.attributes.helpful_votes_count,
+      helpfulVoted: response.data.attributes.helpful_voted,
+    };
+  }, "Failed to record your vote. Please try again.");
 }
 
 /**

@@ -15,10 +15,17 @@ vi.mock("next-intl", () => ({
   useLocale: () => "en",
 }));
 
+// F-5: the component reads the route to build its guest sign-in link.
+vi.mock("next/navigation", () => ({
+  useParams: () => ({ country: "us", locale: "en" }),
+  usePathname: () => "/us/en/products/classic-t-shirt",
+}));
+
 vi.mock("@/lib/data/reviews", () => ({
   getMoreProductReviews: (...args: unknown[]) => mockedLoadMore(...args),
   createProductReview: vi.fn(),
   uploadReviewImage: vi.fn(),
+  voteReviewHelpful: vi.fn(),
 }));
 
 function review(id: string): ReviewView {
