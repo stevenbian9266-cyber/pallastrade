@@ -2431,6 +2431,17 @@ Rails.application.config.after_initialize do
                                          default: true,
                                          position: 55
 
+  # F-5 (PRD-20260916-catalog-batch-f5-helpful-vote FR-007): the vote count is the
+  # merchant-facing quality signal — sortable so the worklist can surface what
+  # shoppers actually found useful. Read-only: a merchant never votes on a review.
+  PallasTrade.admin.tables.reviews.add :helpful_votes_count,
+                                         label: 'admin.reviews.helpful_votes',
+                                         type: :number,
+                                         sortable: true,
+                                         filterable: false,
+                                         default: true,
+                                         position: 56
+
   # ==========================================
   # (Config Items table removed — Config Center module was retired 2026-08-14)
 

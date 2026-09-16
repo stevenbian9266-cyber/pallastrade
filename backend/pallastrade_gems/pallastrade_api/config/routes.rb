@@ -30,6 +30,13 @@ PallasTrade::Core::Engine.add_routes do
           # Product reviews (P0-4) — read approved, create as signed-in customer
           resources :reviews, only: [:index, :create]
         end
+        # Review helpful votes (F-5) — customer JWT required; one vote per customer
+        # per review, revocable through DELETE on the same path. Top-level (not
+        # nested under products): a review id is already globally unique, and the
+        # vote is about the review, not about browsing a product.
+        resources :reviews, only: [] do
+          resource :helpful_vote, only: %i[create destroy], controller: 'review_helpful_votes'
+        end
         # Review photo presign (F-1) — customer JWT required; tags the blob with
         # the uploader so the review API rejects foreign uploads.
         resources :direct_uploads, only: [:create]

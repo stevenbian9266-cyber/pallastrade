@@ -58,6 +58,7 @@ en:
         title: Reviews
         photos: Photos
         photo: Review photo
+        helpful_votes: Helpful votes
         approved: Review approved
         rejected: Review rejected
         bulk:

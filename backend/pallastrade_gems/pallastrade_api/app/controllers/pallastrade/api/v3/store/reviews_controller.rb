@@ -28,11 +28,16 @@ module PallasTrade
           # whitelisted orderings. Every one of them ends with `id DESC` so two
           # reviews sharing a rating *and* a timestamp still have a deterministic
           # order — without that, paging could repeat or skip rows.
+          #
+          # F-5 adds `most_helpful` on top of F-4's list (same whitelist, same
+          # fallback, same tie-break): the vote count is a counter-cache column, so
+          # ordering by it stays a single indexed sort.
           DEFAULT_SORT = 'newest'
           SORT_ORDERS = {
             'newest' => { created_at: :desc, id: :desc },
             'highest_rating' => { rating: :desc, created_at: :desc, id: :desc },
-            'lowest_rating' => { rating: :asc, created_at: :desc, id: :desc }
+            'lowest_rating' => { rating: :asc, created_at: :desc, id: :desc },
+            'most_helpful' => { helpful_votes_count: :desc, id: :desc }
           }.freeze
 
           # GET /api/v3/store/products/:product_id/reviews
@@ -47,6 +52,9 @@ module PallasTrade
           def index
             product = current_store.products.find_by_param!(params[:product_id])
             @pagy, reviews = pagy(approved_reviews(product), limit: limit_param, page: page_param)
+            # F-5: one query for the whole page tells the serializer which of these
+            # reviews the signed-in caller already voted helpful.
+            @voted_review_ids = voted_review_ids_for(reviews)
 
             render json: {
               data: serialize_collection(reviews),
@@ -86,6 +94,12 @@ module PallasTrade
 
           def review_params
             params.permit(:rating, :title, :body)
+          end
+
+          # F-5: the vote set is only known on `index`; every other response keeps
+          # `helpful_voted` as nil ("not asked") instead of inventing a `false`.
+          def serializer_params
+            super.merge(voted_review_ids: @voted_review_ids)
           end
 
           # A customer is a verified purchaser when they have a completed order
@@ -138,6 +152,16 @@ module PallasTrade
           def sort_param
             requested = params[:sort].to_s
             SORT_ORDERS.key?(requested) ? requested : DEFAULT_SORT
+          end
+
+          # F-5: which of *this page's* reviews the caller already voted helpful.
+          # Scoped by store so a vote cast in another store can never show up here.
+          def voted_review_ids_for(reviews)
+            return [] if current_user.blank? || reviews.empty?
+
+            PallasTrade::ReviewVote
+              .where(store_id: current_store.id, user_id: current_user.id, review_id: reviews.map(&:id))
+              .pluck(:review_id)
           end
 
           def limit_param

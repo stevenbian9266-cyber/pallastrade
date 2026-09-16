@@ -45,6 +45,10 @@ class PallasTrade::Review < PallasTrade.base_class
 
   has_many_attached :images
 
+  # 「有用」投票（F-5）。评论被删除时投票一并删除；计数列 `helpful_votes_count`
+  # 由 counter_cache 维护（见 20260916210000 迁移）。
+  has_many :helpful_votes, class_name: 'PallasTrade::ReviewVote', dependent: :destroy, inverse_of: :review
+
   validate :images_are_acceptable
 
   # Photos in upload order (ActiveStorage has no position column).

@@ -10731,13 +10731,14 @@ paths:
           - newest
           - highest_rating
           - lowest_rating
+          - most_helpful
         description: |-
-          Ordering of the returned page (Catalog F-4). `newest` (default) keeps
-          the pre-F-4 order. Every ordering ends with a stable `id` tie-break so
-          paging never repeats or skips a review. Unknown or blank values fall
-          back to `newest`; the applied value is echoed in `meta.sort`.
-        schema:
-          type: string
+          Ordering of the returned page (Catalog F-4, extended by F-5). `newest`
+          (default) keeps the pre-F-4 order. Every ordering ends with a stable
+          `id` tie-break so paging never repeats or skips a review, and
+          `most_helpful` orders by the number of "helpful" votes. Unknown or
+          blank values fall back to `newest`; the applied value is echoed in
+          `meta.sort`.
       - name: product_id
         in: path
         required: true
@@ -10912,6 +10913,106 @@ paths:
             invalid rating, duplicate review, or rejected photos
             (`review_image_limit_exceeded` / `review_image_not_owned` /
             `review_image_invalid`)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/reviews/{review_id}/helpful_vote":
+    post:
+      summary: Mark a review as helpful
+      tags:
+      - Reviews
+      security:
+      - api_key: []
+      description: |-
+        Records the signed-in customer's "helpful" vote (Catalog F-5). One vote
+        per customer per review: repeating the call is idempotent and never
+        double counts. The response carries the authoritative state — the new
+        count plus whether this caller's vote is recorded — so a storefront
+        never has to guess whether the click landed. You cannot vote on your
+        own review (`own_review_vote_forbidden`), and reviews the caller cannot
+        see answer 404.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({ ... })
+
+          await client.reviewHelpfulVotes.create('rev_abc123', { token: '<customer-jwt>' })
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: review_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: vote recorded (idempotent)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ReviewHelpfulVote"
+        '401':
+          description: authentication required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '404':
+          description: review not found (or not approved)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '422':
+          description: cannot vote for your own review (`own_review_vote_forbidden`)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+    delete:
+      summary: Take back a "helpful" vote
+      tags:
+      - Reviews
+      security:
+      - api_key: []
+      description: |-
+        Withdraws the caller's vote (Catalog F-5). Idempotent — withdrawing a
+        vote that was never cast answers the same authoritative state instead
+        of erroring.
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: review_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: current state after the withdrawal
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ReviewHelpfulVote"
+        '401':
+          description: authentication required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '404':
+          description: review not found (or not approved)
           content:
             application/json:
               schema:
@@ -13910,6 +14011,11 @@ components:
           type: array
           items:
             type: string
+        helpful_votes_count:
+          type: number
+        helpful_voted:
+          type: boolean
+          nullable: true
         rating:
           type: number
         title:
@@ -13928,12 +14034,50 @@ components:
       - product_id
       - user_name
       - image_urls
+      - helpful_votes_count
+      - helpful_voted
       - rating
       - title
       - body
       - verified_purchase
       - created_at
       x-typelizer: true
+    ReviewHelpfulVote:
+      type: object
+      description: |-
+        Authoritative state of the caller's "helpful" vote (Catalog F-5): the
+        public count plus whether this caller's vote is recorded. Hand-written
+        (the vote endpoints answer a purpose-built payload, not a serializer).
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              description: The review id (`rev_...`)
+            type:
+              type: string
+              example: review_helpful_vote
+            attributes:
+              type: object
+              properties:
+                review_id:
+                  type: string
+                helpful_votes_count:
+                  type: integer
+                  minimum: 0
+                helpful_voted:
+                  type: boolean
+              required:
+              - review_id
+              - helpful_votes_count
+              - helpful_voted
+          required:
+          - id
+          - type
+          - attributes
+      required:
+      - data
     ProductPublication:
       type: object
       properties:

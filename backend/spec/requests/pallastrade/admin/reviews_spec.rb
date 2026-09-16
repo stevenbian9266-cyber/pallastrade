@@ -86,4 +86,20 @@ RSpec.describe 'Admin reviews', type: :request do
       expect(response.body).not_to include('object-cover')
     end
   end
+
+  # F-5 (PRD-20260916-catalog-batch-f5-helpful-vote AC-012)：票数对商家是内容质量
+  # 信号，列表可见（且列本身 sortable）——商家只读，投票始终由顾客发起。
+  context 'with helpful votes' do
+    it 'renders the vote count column' do
+      review.approve! # votes only exist on approved reviews
+      create(:review_vote, review: review, user: create(:user, email: 'voter@example.com'), store: store)
+
+      sign_in_as_superuser
+      get '/admin/reviews'
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(PallasTrade.t('admin.reviews.helpful_votes'))
+      expect(review.reload.helpful_votes_count).to eq(1)
+    end
+  end
 end

@@ -54,6 +54,7 @@ import type {
   ResetPasswordParams,
   Review,
   ReviewListResponse,
+  ReviewHelpfulVoteResponse,
   ShippingEstimate,
   StoreCredit,
   TransactionResume,
@@ -186,6 +187,23 @@ export class StoreClient {
           body: params,
         }),
     },
+  }
+
+  /**
+   * Review helpful votes (F-5, PRD-20260916-catalog-batch-f5-helpful-vote).
+   *
+   * A customer can mark an approved review as helpful once, and take it back —
+   * both calls need a JWT (`options.token`) and answer with the authoritative
+   * state, so the UI never has to guess whether the click landed. The API
+   * refuses votes on your own review (422) and hides reviews you cannot see
+   * (404).
+   */
+  readonly reviewHelpfulVotes = {
+    create: (reviewId: string, options?: RequestOptions): Promise<ReviewHelpfulVoteResponse> =>
+      this.request('POST', `/reviews/${reviewId}/helpful_vote`, { ...options }),
+
+    destroy: (reviewId: string, options?: RequestOptions): Promise<ReviewHelpfulVoteResponse> =>
+      this.request('DELETE', `/reviews/${reviewId}/helpful_vote`, { ...options }),
   }
 
   /**

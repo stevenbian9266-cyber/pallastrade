@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_16_200000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_16_220000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1452,6 +1452,42 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_200000) do
     t.index ["store_id"], name: "index_pt_payment_methods_stores_on_store_id"
   end
 
+  create_table "pallastrade_payment_risk_assessments", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "decision", null: false
+    t.datetime "evaluated_at", null: false
+    t.jsonb "matched_entry_ids", default: [], null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.bigint "order_id"
+    t.jsonb "signals", default: {}, null: false
+    t.bigint "store_id"
+    t.datetime "updated_at", null: false
+    t.index ["order_id", "evaluated_at"], name: "idx_risk_assessments_order_time", unique: true
+    t.index ["order_id"], name: "index_pallastrade_payment_risk_assessments_on_order_id"
+    t.index ["store_id", "decision"], name: "idx_risk_assessments_store_decision"
+    t.index ["store_id"], name: "index_pallastrade_payment_risk_assessments_on_store_id"
+  end
+
+  create_table "pallastrade_payment_risk_lists", force: :cascade do |t|
+    t.bigint "added_by_id"
+    t.string "added_by_type"
+    t.datetime "created_at", null: false
+    t.datetime "expires_at"
+    t.string "list_type", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.text "reason"
+    t.string "status", default: "active", null: false
+    t.bigint "store_id"
+    t.string "subject_type", null: false
+    t.datetime "updated_at", null: false
+    t.string "value", limit: 500, null: false
+    t.string "value_hash", limit: 64, null: false
+    t.index ["list_type", "subject_type", "value_hash"], name: "idx_risk_lists_identity", unique: true
+    t.index ["status", "expires_at"], name: "index_pallastrade_payment_risk_lists_on_status_and_expires_at"
+    t.index ["store_id", "subject_type", "status"], name: "idx_risk_lists_store_subject"
+    t.index ["store_id"], name: "index_pallastrade_payment_risk_lists_on_store_id"
+  end
+
   create_table "pallastrade_payment_sessions", force: :cascade do |t|
     t.decimal "amount", precision: 10, scale: 2, null: false
     t.datetime "created_at", null: false
@@ -2281,9 +2317,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_200000) do
     t.index ["return_authorization_id"], name: "index_pt_return_items_on_return_authorization_id"
   end
 
+  create_table "pallastrade_review_votes", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "review_id", null: false
+    t.bigint "store_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["review_id", "user_id"], name: "idx_review_votes_identity", unique: true
+    t.index ["review_id"], name: "index_pallastrade_review_votes_on_review_id"
+    t.index ["store_id", "review_id"], name: "index_pallastrade_review_votes_on_store_id_and_review_id"
+    t.index ["user_id"], name: "index_pallastrade_review_votes_on_user_id"
+  end
+
   create_table "pallastrade_reviews", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
+    t.integer "helpful_votes_count", default: 0, null: false
     t.bigint "product_id", null: false
     t.integer "rating", default: 0, null: false
     t.string "status", default: "pending", null: false
@@ -3113,6 +3162,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_200000) do
   add_foreign_key "pallastrade_orders", "pallastrade_orders", column: "split_from_id"
   add_foreign_key "pallastrade_payment_combinations", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_payment_combinations", "pallastrade_users", column: "customer_id"
+  add_foreign_key "pallastrade_payment_risk_assessments", "pallastrade_orders", column: "order_id"
+  add_foreign_key "pallastrade_payment_risk_assessments", "pallastrade_stores", column: "store_id"
+  add_foreign_key "pallastrade_payment_risk_lists", "pallastrade_stores", column: "store_id"
   add_foreign_key "pallastrade_payment_sessions", "pallastrade_commerce_transactions", column: "transaction_id"
   add_foreign_key "pallastrade_payment_sessions", "pallastrade_payment_combinations", column: "payment_combination_id"
   add_foreign_key "pallastrade_payment_sources", "pallastrade_payment_methods", column: "payment_method_id"

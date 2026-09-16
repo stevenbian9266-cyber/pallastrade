@@ -79,6 +79,24 @@ export interface ReviewListResponse extends ListResponse<ReviewType> {
   meta: ReviewListMeta
 }
 
+// F-5 (PRD-20260916-catalog-batch-f5-helpful-vote): voting answers with the
+// authoritative state rather than with the review, so one response tells the
+// caller both the new count and whether their own vote is recorded.
+export interface ReviewHelpfulVoteAttributes {
+  review_id: string
+  helpful_votes_count: number
+  /** Always `true`/`false` here — the vote endpoints require a customer JWT. */
+  helpful_voted: boolean
+}
+
+export interface ReviewHelpfulVoteResponse {
+  data: {
+    id: string
+    type: string
+    attributes: ReviewHelpfulVoteAttributes
+  }
+}
+
 // F-1: presign handshake used before attaching photos to a review.
 export interface DirectUploadParams {
   filename: string
