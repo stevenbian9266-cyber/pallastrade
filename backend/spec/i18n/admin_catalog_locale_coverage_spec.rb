@@ -96,7 +96,33 @@ RSpec.describe 'Admin zh-CN locale coverage' do
     alt_text assigned_variants assigned_variants_help
     are_you_sure_delete authorization_failure automatic_promotion breadcrumbs
     cancel_order cannot_perform_operation
+    in_stock variants
   ].freeze
+
+  # 回归：商品列表库存列曾长期渲染 `translation missing:
+  # zh-cn.pallastrade.in_stock`。
+  # 服务端 I18n.locale 一直是 `:"zh-CN"`（大写，正确），小写的 `zh-cn`
+  # 是 i18n 在 fallback 解析时另一次查表的结果 —— 即这两个键在 zh-CN
+  # 下确实缺失，不是 locale 被写坏了。此处把结论钉死：
+  # 1) 两个键必须在 zh-CN 下可解析（否则回退链会再次报 missing）；
+  # 2) 键名必须是小写无前缀的顶级键（helper 里就是这么调的）。
+  describe '商品列表库存列（已修缺陷回归）' do
+    %w[in_stock variants].each do |key|
+      it "resolves pallastrade.#{key} in zh-CN" do
+        expect(I18n.exists?("pallastrade.#{key}", :'zh-CN')).to be(true)
+      end
+    end
+
+    it 'renders the inventory cell without a missing-translation marker' do
+      # `display_inventory` 拼的是 "<qty> <in_stock> - <n> <variants>"，
+      # 且对两个标签调用过 `.downcase`；中文不受 downcase 影响。
+      cell = "15000 #{I18n.t('pallastrade.in_stock', locale: :'zh-CN')} - 3 " \
+             "#{I18n.t('pallastrade.variants', locale: :'zh-CN')}"
+      expect(cell).not_to include('translation missing')
+      expect(cell).not_to include('zh-cn.')
+      expect(cell).to eq('15000 有货 - 3 变体')
+    end
+  end
 
   describe 'top-level pallastrade keys' do
     TOP_LEVEL_BATCH.each do |key|

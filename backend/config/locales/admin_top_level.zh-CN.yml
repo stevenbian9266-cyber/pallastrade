@@ -14,6 +14,12 @@
 
 zh-CN:
   pallastrade:
+    # —— 商品列表库存列（`ProductsHelper#display_inventory`）——
+    # 这两个是本批**实际定位到**的缺失：商品列表页的库存列一直显示
+    # "15000 in stock - 3 variants"（表格单元格，服务端渲染）。
+    # 注：视图对它们调了 `.downcase`，中文不受影响。
+    in_stock: 有货
+    variants: 变体
     # —— 列表页 / 模块标题 ——
     redirects: 跳转
     emails: 邮件

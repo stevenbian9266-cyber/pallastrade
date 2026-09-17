@@ -4274,6 +4274,33 @@
         "decisionMerge": 10,
         "readOnlyPurity": 5
       }
+    },
+    {
+      "id": "GS-168",
+      "name": "A missing translation that looks like a broken locale",
+      "description": "A Chinese admin page rendered 'translation missing: zh-cn.pallastrade.in_stock' on every row of the product list. The lowercase locale looks like something downcased the locale and silently killed a whole slice of already-added Chinese strings, which would be far more serious than a few absent keys. It is not: the locale was 'zh-CN' at every call site, and the lowercase is just the fallback chain reporting back. The trap is spending the investigation on the locale variable instead of checking whether the key exists.",
+      "mustDo": [
+        "Check whether the key actually exists in that locale first (I18n.exists?(key, :'zh-CN')) before suspecting the locale variable",
+        "Read the fallback chain (I18n.fallbacks[:'zh-CN'] => [:'zh-CN', :zh]) to explain where the lowercase rendering comes from",
+        "Probe the three call sites that can set or receive the locale (the admin base controller, the view helper, and PallasTrade.translate) and record the real value at the call that emits the message",
+        "Prove the locale is correct at the emitting call site, then treat the absent keys as the defect",
+        "Cover the top-level keys separately, since a prefix-scoped check over admin.* never sees them",
+        "Pin the fix with a value assertion on the assembled cell text, not just I18n.exists?"
+      ],
+      "mustNotDo": [
+        "Assume the locale was downcased and start hunting the assignment when the keys are simply missing",
+        "Leave temporary logging in the tree after the investigation concludes",
+        "Conclude from the rendered HTML alone that the server-side locale is wrong when the server logs say otherwise",
+        "Fix only the two keys named in the screenshot without asking why a prefix-scoped audit missed them",
+        "Report the lowercase as a bug that was fixed when it was only ever the fallback chain's rendering"
+      ],
+      "scoring": {
+        "rootCauseCorrectness": 30,
+        "empiricalLocalization": 25,
+        "topLevelBlindSpot": 20,
+        "regressionPin": 15,
+        "cleanup": 10
+      }
     }
   ]
 }

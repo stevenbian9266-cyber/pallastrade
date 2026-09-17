@@ -352,6 +352,40 @@ YAML.load_file('config/locales/admin_ai.zh-CN.yml')['zh-CN']['pallastrade']['ai'
 照抄层级而不是凭直觉归类；写完立刻跑键集断言 —— 它会把"缺失 + 孤儿"一起报出来，
 这正是发现这类错误最快的途径。
 
+#### 第五个坑：missing 文本里的 locale **大小写**会误导你（2026-09-17 实测）
+
+中文后台看到 `translation missing: zh-cn.pallastrade.in_stock` —— 注意是**小写 `zh-cn`**。
+这看起来像"某处把 locale 写成了小写、导致整片中文失效"，属于**最高优先级**的怀疑方向。
+**实测结论：不是。locale 一直是对的，是这两个键真的缺。**
+
+排查过程（三个插桩点，一次请求即出结论，成本很低）：
+
+| 插桩位置 | 输出 |
+|---|---|
+| `Admin::BaseController#set_locale`（`super` 之后） | `I18n.locale=:"zh-CN"` |
+| 渲染该单元格的 helper 内 | `I18n.locale=:"zh-CN"`，`caller` 直指 `.erb:3` |
+| `PallasTrade.translate`（查表前） | `I18n.locale=:"zh-CN" opts_locale=nil` |
+
+即：**发出 missing 的那一次调用，locale 就是 `:"zh-CN"`（大写）**。
+小写来自 i18n 在 **fallback 链**（`I18n.fallbacks[:"zh-CN"] == [:"zh-CN", :zh]`）
+上逐层尝试时的另一轮查表 —— 是表象，不是病因。
+
+**规则**：看到 `translation missing: <locale>.…` 时的**首要动作**是
+**确认该 locale 下这个 key 是否真的存在**：
+
+```ruby
+I18n.exists?('pallastrade.in_stock', :'zh-CN')   # false ⇒ 补键，收工
+```
+
+**只有**在 key 确实存在、却仍报 missing 时，才去查 locale 变量本身
+（那时再插桩 `I18n.locale`，上表三个点照抄）。
+
+**顺带记住的量化盲区**：只按 `admin.*` 前缀统计会漏掉**顶级键**
+（`pallastrade.in_stock` 这种没有子层的叶子键，全仓 271 个）。
+顶级键要**单独断言**——本次缺陷就是"顶级键不在任何检查视野里"，
+却出现在**商家每天都会看的**商品列表库存列上（每行一个 missing）。
+另外注意视图里对这些标签调了 `.downcase`，**中文不受影响**，可以放心补中文。
+
 ### "Product name shows English even after I set Spanish"
 
 Walk this list:

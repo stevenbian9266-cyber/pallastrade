@@ -153,16 +153,67 @@ Rails 的 locale 区分大小写，因此**同一条键可能大小写不同而�
 第三批已补顶级叶子键里的 38 个高频项（通用动作 / 列表页标题 / 调整项说明），
 并给顶级键加了**单独断言**（原有的 `admin.<domain>` 结构检查覆盖不到它们）。
 
-### B 已排查但**未定位**（如实记录）
+### B ✅ 已定位并修复 —— **不是 locale 被写坏，是键真的缺**
 
-| 排查项 | 结果 |
+**先给结论：`I18n.locale` 自始至终是 `:"zh-CN"`（大写，正确）。
+`translation missing: zh-cn.…` 里的**小写是 i18n 在 fallback 解析时另一次查表的产物**，
+不是我们的 bug。**真正的问题是 `in_stock` / `variants` 这两个键在 zh-CN 下确实缺失。
+
+**定位过程（临时日志，定位后已全部删除）**
+
+在三个可疑位置插桩，记录**实际生效**的 locale：
+
+| 插桩点 | 输出 |
 |---|---|
-| 全仓 `-CaseSensitive` 搜 `zh-cn` 字面量 | **0 命中** |
-| `PallasTrade.available_locales` | `[:"zh-CN", :"zh-TW", :"zh-HK"]`（大写） |
-| `locale_concern.rb#supported_admin_locale?` | **大小写敏感**（`include?(locale.to_s)`）→ `?locale=zh-cn` **不会**被接受 |
-| 各 `I18n.locale =` 赋值点（4 处）+ `pin_content_locale!` + `Mobility.locale` | **都没有** downcase |
+| `Admin::BaseController#set_locale`（`super` 之后） | `I18n.locale=:"zh-CN" current_locale="zh-CN" default_locale="zh-CN" selected=nil cookie=nil store_pref="zh-CN"` |
+| `ProductsHelper#display_inventory`（渲染库存列的 helper 内） | `I18n.locale=:"zh-CN" caller=…/tables/columns/_product_inventory.html.erb:3` |
+| `PallasTrade.translate`（进入查表前） | `key=:in_stock I18n.locale=:"zh-CN" opts_locale=nil`（`:variants` 同） |
 
-**结论**：来源未定位。**建议下一步优先查这个，而不是继续补键** ——
-若真有一处把 locale 设成 `zh-cn`，意味着**已补的中文可能有整片取不到**，
-那比再补 100 个键重要得多。
-定位手段：在请求中记录实际生效的 `I18n.locale`（临时日志/断点）。
+→ **发出 missing 的那次调用，locale 就是大写。** 结合浏览器侧：
+
+| 事实 | 值 |
+|---|---|
+| `<html lang>` | `zh-CN` |
+| `window.PallasTrade.locale` | `"zh-CN"` |
+| `body` 上 `zh-cn.pallastrade.*` 出现次数 | **25**（全在服务端渲染的 `TD#inventory_product_N` 内） |
+| `I18n.fallbacks[:"zh-CN"]` | `[:"zh-CN", :zh]` |
+| `I18n.default_locale` / `enforce_available_locales` | `:en` / `true` |
+
+#### 根因（两层，都要理解）
+
+1. **表层**：这两个键在 zh-CN 下不存在 → 查表落空 → i18n 沿 fallback 链
+   （`zh-CN` → `zh` → 默认 `en`）逐个尝试，最终在**某个层级**给出 missing 文本，
+   该文本里的 locale 片段被渲染成 `zh-cn`。**小写只是表象**，
+   把它当 bug 去"修 locale"会白费力气 —— 这一点是本次排查最重要的收获。
+2. **深层**：这两个键是**顶级叶子键**（`pallastrade.in_stock`），
+   而当时手上的量化脚本与断言都只看 `admin.<domain>` 结构，
+   **覆盖不到顶级键**。所以它们不在 898 也不在后续几批的视野里，
+   却出现在**每个商家每天都会看的**商品列表库存列上。
+
+#### 为什么值得单独记一笔
+
+- 该缺陷**不是**"少翻几个词"，而是**主列表页每行都报错**（用户看到的是
+  英文夹 `translation missing`），属于**用户可见的破窗**。
+- 它同时暴露了一个**量化盲区**：只按 `admin.*` 前缀统计会漏掉顶级键。
+  顶级叶子键共 **271** 个，第三批已补 38 个高频项，其余仍需分批。
+- **教训（已写入 skill）**：看到 `xxx.locale…` 形式的 missing，
+  **先确认该 locale 下的键是否真的存在**，再怀疑 locale 变量本身。
+  确认手段就是在上表那三处插桩（成本很低，一次请求即可返回结论）。
+
+#### 修复
+
+| 改动 | 内容 |
+|---|---|
+| `backend/config/locales/admin_top_level.zh-CN.yml` | 新增 `in_stock: 有货`、`variants: 变体`（带注释说明缺陷背景） |
+| `backend/spec/i18n/admin_catalog_locale_coverage_spec.rb` | 两键加入 `TOP_LEVEL_BATCH`；新增回归块断言库存列拼接结果**恰为** `15000 有货 - 3 变体`，且不含 `translation missing` / `zh-cn.` |
+
+#### 修复后实测
+
+| 指标 | 修复前 | 修复后 |
+|---|---|---|
+| `body` 内 `zh-cn.pallastrade` 出现次数 | 25 | **0** |
+| 库存单元格文本 | `translation missing: zh-cn.pallastrade.in_stock` | **`15000 有货 - 3 变体`** |
+| 断言 | 58 examples | **63 examples, 0 failures** |
+
+> 注：视图对两个标签调用了 `.downcase`（`PallasTrade.t(:in_stock).downcase` 之类），
+> 中文不受 `downcase` 影响 —— 这是能安全补中文而非必须用英文的原因。
