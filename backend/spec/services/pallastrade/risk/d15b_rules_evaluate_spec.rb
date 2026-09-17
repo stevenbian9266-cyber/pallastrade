@@ -162,5 +162,19 @@ RSpec.describe PallasTrade::Risk::Rules::Evaluate, type: :service do
       expect(first[:bucket]).to eq(second[:bucket])
       expect(first[:bucket]).to eq(bucket_for(rule_set))
     end
+
+    # AC-006（修复后：只认已发布的金丝雀版本，否则回落稳定版）
+    it 'falls back to the stable version when the canary version is not published' do
+      rule_set = build_rule_set(code: "canary_archived_#{suffix}", store: store, rules: [rule(code: 'stable')])
+      canary = create(:risk_rule_version, rule_set: rule_set, version: 2, state: 'archived',
+                                          rules: [rule(code: 'canary', action: 'block')], published_at: Time.current)
+      rule_set.update!(canary_version_id: canary.id, canary_percent: 100)
+
+      result = evaluate
+
+      expect(result[:canary]).to be(false)
+      expect(result[:version]).to eq(1)
+      expect(result[:rule_code]).to eq('stable')
+    end
   end
 end

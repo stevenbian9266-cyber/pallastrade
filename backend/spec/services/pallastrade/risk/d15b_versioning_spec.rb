@@ -132,33 +132,94 @@ RSpec.describe PallasTrade::Risk::Rules::Versioning, type: :service do
   end
 
   describe '#set_canary' do
-    # AC-009
-    it 'requires a published version and validates the percent range' do
-      draft = described_class.create_draft(rule_set: rule_set, rules: valid_rules).value
+    # AC-009（修复后语义：金丝雀与稳定版**并存**）
+    it 'publishes a draft as the canary without touching the active version' do
+      stable = described_class.create_draft(rule_set: rule_set, rules: valid_rules).value
+      described_class.publish(rule_set: rule_set, version: stable.version)
+      canary_candidate = described_class.create_draft(
+        rule_set: rule_set,
+        rules: [{ 'code' => 'block_kp', 'action' => 'block', 'conditions' => { 'country_in' => %w[KP] } }]
+      ).value
 
-      expect(described_class.set_canary(rule_set: rule_set, version: draft.version, percent: 10)).not_to be_success
-      expect(described_class.set_canary(rule_set: rule_set, version: draft.version, percent: 101)).not_to be_success
-      expect(described_class.set_canary(rule_set: rule_set, version: draft.version, percent: 'abc')).not_to be_success
-
-      described_class.publish(rule_set: rule_set, version: draft.version)
-      outcome = described_class.set_canary(rule_set: rule_set, version: draft.version, percent: 25)
+      outcome = described_class.set_canary(rule_set: rule_set, version: canary_candidate.version, percent: 25,
+                                           actor: 'admin')
 
       expect(outcome).to be_success
-      expect(rule_set.reload.canary_version_id).to eq(draft.id)
+      rule_set.reload
+      expect(rule_set.canary_version_id).to eq(canary_candidate.id)
       expect(rule_set.canary_percent).to eq(25)
+      # 稳定版**不变**，金丝雀候选被发布但**没有**成为生效版
+      expect(rule_set.active_version_id).to eq(stable.id)
+      expect(canary_candidate.reload.state).to eq('published')
+      expect(stable.reload.state).to eq('published')
+    end
+
+    # AC-009
+    it 'validates the percent range and refuses unknown or archived versions' do
+      stable = described_class.create_draft(rule_set: rule_set, rules: valid_rules).value
+      described_class.publish(rule_set: rule_set, version: stable.version)
+
+      expect(described_class.set_canary(rule_set: rule_set, version: stable.version, percent: 101)).not_to be_success
+      expect(described_class.set_canary(rule_set: rule_set, version: stable.version, percent: 'abc')).not_to be_success
+      expect(described_class.set_canary(rule_set: rule_set, version: 99, percent: 10)).not_to be_success
+
+      newer = described_class.create_draft(
+        rule_set: rule_set,
+        rules: [{ 'code' => 'newer', 'action' => 'allow', 'conditions' => { 'amount_gte' => 1 } }]
+      ).value
+      described_class.publish(rule_set: rule_set, version: newer.version)
+      expect(stable.reload.state).to eq('archived')
+      expect(described_class.set_canary(rule_set: rule_set, version: stable.version, percent: 10)).not_to be_success
+      expect(rule_set.reload.canary_version_id).to be_nil
     end
 
     # AC-009（0 = 关闭）
     it 'clears the canary at zero percent' do
-      version = described_class.create_draft(rule_set: rule_set, rules: valid_rules).value
-      described_class.publish(rule_set: rule_set, version: version.version)
-      described_class.set_canary(rule_set: rule_set, version: version.version, percent: 50)
+      stable = described_class.create_draft(rule_set: rule_set, rules: valid_rules).value
+      described_class.publish(rule_set: rule_set, version: stable.version)
+      described_class.set_canary(rule_set: rule_set, version: stable.version, percent: 50)
 
       described_class.set_canary(rule_set: rule_set, percent: 0)
 
       expect(rule_set.reload.canary_version_id).to be_nil
       expect(rule_set.canary_percent).to eq(0)
       expect(audit_count(described_class::AUDIT_CANARY_UPDATED)).to eq(2)
+    end
+
+    # AC-009（发布新版本时清理指向已归档版本的金丝雀）
+    it 'clears a canary that points at a version archived by a later publish' do
+      stable = described_class.create_draft(rule_set: rule_set, rules: valid_rules).value
+      described_class.publish(rule_set: rule_set, version: stable.version)
+      described_class.set_canary(rule_set: rule_set, version: stable.version, percent: 40)
+
+      newer = described_class.create_draft(
+        rule_set: rule_set,
+        rules: [{ 'code' => 'newer', 'action' => 'block', 'conditions' => { 'amount_gte' => 1 } }]
+      ).value
+      described_class.publish(rule_set: rule_set, version: newer.version)
+
+      expect(rule_set.reload.canary_version_id).to be_nil
+      expect(rule_set.canary_percent).to eq(0)
+    end
+
+    # AC-009（金丝雀自己变成生效版后，灰度设置不再成立 → 清空，避免「生效版 == 金丝雀」重复）
+    it 'clears the canary when the canary version itself becomes the active version' do
+      stable = described_class.create_draft(rule_set: rule_set, rules: valid_rules).value
+      described_class.publish(rule_set: rule_set, version: stable.version)
+      canary_candidate = described_class.create_draft(
+        rule_set: rule_set,
+        rules: [{ 'code' => 'block_kp', 'action' => 'block', 'conditions' => { 'country_in' => %w[KP] } }]
+      ).value
+      described_class.set_canary(rule_set: rule_set, version: canary_candidate.version, percent: 30)
+      expect(rule_set.reload.canary_version_id).to eq(canary_candidate.id)
+
+      described_class.publish(rule_set: rule_set, version: canary_candidate.version)
+
+      rule_set.reload
+      expect(rule_set.active_version_id).to eq(canary_candidate.id)
+      expect(rule_set.canary_version_id).to be_nil
+      expect(rule_set.canary_percent).to eq(0)
+      expect(stable.reload.state).to eq('archived')
     end
   end
 

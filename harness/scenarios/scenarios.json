@@ -4227,6 +4227,7 @@
         "Validate rules at the gate: reject unknown condition keys, wrong types, illegal actions, duplicate rule codes and oversized rule sets before anything is stored, so a rule can never silently never-match",
         "Keep the condition vocabulary honest: every key reads an order fact you actually have, amount comparisons only inside one currency, and anything you cannot determine (missing subject, no BIN column, no device fingerprint) never guesses as a match",
         "Bucket canary traffic per order with a stable hash of the rule set and the order, so an order always sees the same version across requests and days, and record the bucket so the decision can be recomputed",
+        "Keep the canary reachable: let a draft be published as the canary without becoming the live version, refuse to resurrect an archived version as a canary, and drop a canary setting that no longer points at a published non-live version",
         "Judge only rule sets that are active and have an active version, prefer the store rule set over the global one, and report which version was consulted even when nothing matched",
         "Merge the rule action with the list action by strictness, never letting a rule relax what the list decided, and let an explicit allowlist still short-circuit everything",
         "Keep evaluation read-only: no writes, no provider calls, no order or payment state change, and do not alter what the checkout preflight blocks"
@@ -4235,6 +4236,7 @@
         "Rewrite or delete a published version to \"roll back\", or let rollback lose the reason it happened",
         "Accept a rule whose conditions can never be evaluated, or invent a BIN, device or geo signal you do not have",
         "Re-roll the canary bucket per request, per day or per version so rollout percentages drift or a single order flips versions",
+        "Ship a canary knob nobody can reach because publishing archives every other version, or grade traffic against a canary version that is not published",
         "Let a rule downgrade a denylist decision, or let the engine block checkout behind the operator's back",
         "Emit an event that carries customer or card data, or treat the event as the source of truth for what is live"
       ],

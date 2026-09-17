@@ -80,6 +80,7 @@ module PallasTrade
             record.update!(state: 'published', published_at: record.published_at || Time.current,
                            reason: reason.to_s.strip.presence || record.reason)
             rule_set.update!(active_version_id: record.id)
+            clear_stale_canary(rule_set, record)
           end
 
           payload = {
@@ -92,7 +93,13 @@ module PallasTrade
           success(record)
         end
 
-        # 金丝雀：percent = 0 关闭；> 0 时必须是已发布版本且属于该规则集
+        # 金丝雀：percent = 0 关闭；> 0 时必须是本集的**草稿或已发布**版本
+        #
+        # ⚠️ 语义（本次修复）：金丝雀与稳定版**并存** —— 把某版本设为金丝雀时：
+        #   * 版本是草稿 → 以金丝雀身份发布（`published`）**但不动 `active_version_id`**、**不归档他人**；
+        #   * 已是归档版 → 拒绝（历史版本要用就新建/回滚，不能直接复活）；
+        #   * 原因：`publish` 会把其它已发布版归档，因此「先 publish 再设金丝雀」永远拿不到
+        #     「已发布但不生效」的候选版 → 灰度实际不可达（dev 冒烟发现）。
         def set_canary(rule_set:, percent:, version: nil, actor: nil)
           return failure(nil, 'Rule set is required') if rule_set.nil?
 
@@ -113,9 +120,18 @@ module PallasTrade
           end
 
           record = resolve_version(rule_set, version)
-          return failure(nil, 'Canary requires a published version of this rule set') if record.nil? || !record.published?
+          return failure(nil, 'Canary requires a version of this rule set') if record.nil?
+          if record.archived?
+            return failure(nil, 'Archived versions cannot serve as a canary — create a new version instead')
+          end
 
-          rule_set.update!(canary_version_id: record.id, canary_percent: value)
+          ActiveRecord::Base.transaction do
+            if record.draft?
+              record.update!(state: 'published', published_at: record.published_at || Time.current)
+            end
+            rule_set.update!(canary_version_id: record.id, canary_percent: value)
+          end
+
           record_audit(AUDIT_CANARY_UPDATED, rule_set, actor, percent: value, version: record.version)
           success(rule_set)
         end
@@ -199,6 +215,17 @@ module PallasTrade
         def archive_other(rule_set, keep)
           rule_set.versions.where(state: 'published').where.not(id: keep.id)
                  .update_all(state: 'archived', updated_at: Time.current)
+        end
+
+        # 新版本生效后清理不再成立的金丝雀：只有「已发布且**不是**生效版」的版本才配称金丝雀；
+        # 指向归档版 / 丢失版 / **刚成为生效版的金丝雀** → 清空（避免灰度与稳定版重复或指向归档版）
+        def clear_stale_canary(rule_set, keep)
+          return if rule_set.canary_version_id.blank?
+
+          canary = rule_set.versions.find_by(id: rule_set.canary_version_id)
+          return if canary && canary.published? && canary.id != keep.id
+
+          rule_set.update!(canary_version_id: nil, canary_percent: 0)
         end
 
         def record_audit(action, rule_set, actor, payload)

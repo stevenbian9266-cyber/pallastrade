@@ -146,6 +146,7 @@ reversals** (chargeback / inquiry / warning / representment) — deliberately **
 - `pallastrade_risk_rule_versions`：`version`（每集从 1 递增，**唯一键 `(rule_set_id, version)`**）、`state`（draft/published/archived）、
   `rules` jsonb（`[{code, priority, action, conditions, note}]`）、`reason`、`source_version`（回滚来源）、`rolled_back`、`created_by`（polymorphic）、`published_at`、`metadata`；索引 `(rule_set_id, state)`、`(created_by_type, created_by_id)`。
 - ⚠️ **版本不可变**：已发布版的 `rules` 不允许改写（模型层拒绝）；改规则 = 新建版本；**回滚 = 以旧版内容生成新版本**（不是改写历史）。
+- ⚠️ **『已发布』不等于『生效』**：`active_version_id`（稳定版）与 `canary_version_id`（灰度版）可以**同时指向两个不同的 published 版** —— 设金丝雀时草稿版会被发布但**不会**成为生效版（`publish` 才会切换生效版并归档其它 published 版，同时清空指向已归档版的金丝雀）。
 - 两表均**只新增**，不回填；规则表不参与任何资金/订单写入（零资金副作用）。
 
 ## 支付费率策略（D13 切片3, 2026-09-16）

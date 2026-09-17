@@ -316,6 +316,7 @@ P8 的代码注册式规则之上，本切片把**规则内容**搬到数据层 
 - **动作**：`allow` / `review` / `block`（本切片）；**`force_3ds` 属切片3（3DS/SCA 与 provider 下发）**。
 - **发布闸门**：`Risk::Rules::Schema` 拒绝未知键 / 类型错 / 非法动作 / 空条件 / 重复规则码 / 超 50 条 / 非整数优先级 —— 校验不过**不落库**。
 - **灰度（确定性分桶）**：桶 = `SHA256("<rule_set_id>:<order prefixed_id>") % 100`，`桶 < canary_percent` → 金丝雀版，否则稳定版；**桶只由（规则集, 订单）决定**（跨请求/跨天恒定、可复算）；`0` 恒稳定版、`≥100` 恒金丝雀、**桶 == percent 归稳定版**。
+- **金丝雀与稳定版并存（发布语义）**：`set_canary(version:, percent:)` 时，草稿版会以金丝雀身份 `published`（**不动** `active_version_id`、**不归档**旧版）；已归档版拒绍（走回滚/新建）；`publish` 新版本后指向已归档版的**金丝雀自动清空**；`Evaluate` 只认**已发布**的金丝雀版（草稿/归档 → 回落稳定版，不猜）。
 - **决策合并（唯一口径）**：白名单命中 → `allow` **短路**；否则「名单动作（`Config[:risk_denylist_action]`，默认 `review`）vs 规则动作」**取最严者**（`allow(0) < review(1) < block(2)`）—— **规则不得把名单判定放宽**。
 - **留痕**：`PaymentRiskAssessment.signals['rule_engine']`（规则集/版本/是否金丝雀/桶/规则码/动作/命中条件/skip 原因）+ `metadata['rule_engine']`（jsonb，零迁移）。
 - **回滚（验收锚点「规则可回滚」）**：`Risk::Rules::Versioning.rollback` 以历史版本内容**生成新版本**（`rolled_back: true` + `source_version` + `reason` **必填**）并置为生效版；**历史版本内容永不改写**（模型层拒绝改已发布版的 `rules`）；审计 `risk_rule_version_rolled_back` + 同名事件。

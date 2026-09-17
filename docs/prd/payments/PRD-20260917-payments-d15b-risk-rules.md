@@ -88,8 +88,8 @@
 
 - `Risk::Rules::Versioning`：
   - `create_draft(rule_set:, rules:, reason:, actor:)` → 校验通过才落 `draft` 版本（版本号 = 当前最大 + 1）。
-  - `publish(rule_set:, version:, reason:, actor:)` → 该版本 `published` + 置为 `active_version_id`（旧生效版转 `archived`）。
-  - `set_canary(rule_set:, version:, percent:, actor:)` → 校验 percent 0–100 且版本属于该集且已 `published`。
+  - `publish(rule_set:, version:, reason:, actor:)` → 该版本 `published` + 置为 `active_version_id`（旧生效版转 `archived`，并将指向已归档版的**金丝雀清空**）。
+  - `set_canary(rule_set:, version:, percent:, actor:)` → 校验 percent 0–100；**金丝雀与稳定版并存**：草稿版本可以金丝雀身份发布（`published`，**不动** `active_version_id`、**不归档他人**）；已归档版本拒绍（要走回滚/新建）；`percent = 0` 关闭。
   - `rollback(rule_set:, to_version:, reason:, actor:)` → 以 `to_version` 的 `rules` **生成新版本**（`rolled_back: true`、`source_version: to_version`、`reason` 必填）并置为 active；**旧版本保持不可变**。
   - `deactivate(rule_set:, actor:)` / `activate`。
 - 每次动作写审计：`risk_rule_version_created` / `risk_rule_version_published` / `risk_rule_canary_updated` / `risk_rule_version_rolled_back` / `risk_rule_set_deactivated`；并发布事件 `risk.rule_version_published` / `risk.rule_version_rolled_back`（事件系统未启用只记日志，不阻断）。
@@ -221,9 +221,31 @@
 
 **已知限制 / 遗留**：`force_3ds` 动作与 provider 下发（切片3）；可视化规则构建器（本切片为 JSON + 服务端强校验 + 预览）；BIN/设备指纹条件不可得（不提供键）；IP 地理/网段判定不做；规则数上限 50/版本（未做性能工程）。
 
+## 9.2 后续修复记录（2026-09-17，bugfix）
+
+**缺陷**（dev 冒烟发现；纯推理没能暴露的盲区）：FR-005 原文要求「金丝雀目标版本必须已 `published`」，但 `publish` 会把**其它已发布版归档** → 系统里**不存在**「已发布但不生效」的候选版 → `set_canary` 永远被拒，**灰度实际不可达**（功能写了但用不了）。
+
+**修复**（最小面、不改数据模型、零迁移）：
+- `Versioning#set_canary`：**金丝雀与稳定版并存** —— 草稿版本以金丝雀身份发布（`published`），**不动 `active_version_id`**、**不归档他人**；已归档版拒绝（提示新建/回滚）；`percent = 0` 关闭。
+- `Versioning#publish`：新增 `clear_stale_canary` —— 金丝雀指向**已归档 / 丢失 / 刚成为生效版**的版本时清空（避免灰度与稳定版重复或指向历史版本）。
+- `Evaluate#effective_version`：只认**已发布**的金丝雀版；草稿/归档 → **回落稳定版**（不猜）。
+
+**回归**：`d15b_versioning_spec` 15 例 + `d15b_rules_evaluate_spec` 12 例 → verifier **112 examples, 0 failures**；dev 冒烟 **21 OK / 0 FAIL**（含「金丝雀与稳定版并存」「发布后清理过期金丝雀」「归档版不可作金丝雀」「回滚生成新版本且源版本一字不改」）。
+
+**知识同步门结论**（`harness sync-check --id PRD-20260917-payments-d15b-risk-rules`）：
+
+| 资产 | 结论 |
+|---|---|
+| `ai/skills/pallastrade-security/SKILL.md` | 已更新（金丝雀并存 / 发布清理 / 只认已发布） |
+| `ai/skills/pallastrade-data-model/SKILL.md` | 已更新（「已发布 ≠ 生效」；active 与 canary 可并存） |
+| `harness/scenarios/scenarios.json` | 已更新（GS-166 增补「金丝雀可达性」mustDo / mustNotDo） |
+| `ai/skills/pallastrade-prd/SKILL.md`、`AGENTS.md`、`.github/copilot-instructions.md` | 已评估，无需更新（命令与流程未变） |
+| `AGENTS.md` §8 危险操作 | 不适用（本修复未引入新的危险操作） |
+
 ## 10. 变更记录
 
 | 日期 | 变更 |
 |---|---|
 | 2026-09-17 | 初稿（D15 切片2，业务方案 §72.2；`prd new` 查重命中 D15 切片1 PRD 42% → 评审确认为新切片后 `--force` 新建；跨层搜索已完成，见 §6） |
 | 2026-09-17 | 实施完成：6 个新 spec（60 例）+ verifier 合并 108 例全绿；迁移 `20260917010000`；GS-166 入库（167/167）；5 个 Skill + `AGENTS.md` §6 + 业务方案 §72.2/§78-D15 回写；状态 → `done`（见 §9.1） |
+| 2026-09-17 | 后续修复（单独 bugfix）：**金丝雀在「发布即归档」语义下不可达** —— `set_canary` 改为「金丝雀与稳定版并存」（草稿版可以金丝雀身份发布且不改生效版；归档版拒绍），`publish` 新增「清理指向已归档版的金丝雀」，`Evaluate` 只认已发布的金丝雀版（否则回落稳定版）；FR-005 与对应 Skill 已同步；新增 5 例回归（见 §10 行） |

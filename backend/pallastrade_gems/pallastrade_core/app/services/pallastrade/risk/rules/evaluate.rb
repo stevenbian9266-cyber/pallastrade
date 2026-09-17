@@ -64,7 +64,8 @@ module PallasTrade
           bucket = bucket_for(rule_set)
           if rule_set.canary_active? && bucket < rule_set.canary_percent.to_i
             canary_version = rule_set.versions.find_by(id: rule_set.canary_version_id)
-            return [canary_version, true, bucket] if canary_version.present?
+            # 只认**已发布**的金丝雀版本（草稿/归档→回落稳定版，不猜）
+            return [canary_version, true, bucket] if canary_version&.published?
           end
 
           [stable, false, bucket]
