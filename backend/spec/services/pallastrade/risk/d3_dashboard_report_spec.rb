@@ -44,9 +44,14 @@ RSpec.describe PallasTrade::Risk::DashboardReport, type: :service do
     report.value[:metrics].detect { |row| row[:key] == key.to_s }
   end
 
+  # 只统计**应用发起**的 SQL：忽略 `SCHEMA`（表元数据加载，每进程一次，落在哪次测量取决于示例顺序）
+  # 与 `CACHE`（查询缓存命中）—— 它们与读模型的查询形状无关，却会让同一示例内的两次计数漂移
+  # （2026-09-17 CI 实测：同一断言 13 vs 12，本地稳定 13/13）。
   def count_queries
     count = 0
-    callback = ->(*) { count += 1 }
+    callback = lambda do |*, payload|
+      count += 1 unless payload[:cached] || payload[:name].to_s.in?(%w[SCHEMA CACHE])
+    end
     ActiveSupport::Notifications.subscribed(callback, 'sql.active_record') { yield }
     count
   end
@@ -245,6 +250,8 @@ RSpec.describe PallasTrade::Risk::DashboardReport, type: :service do
       large = count_queries { described_class.call(store: store) }
 
       expect(large).to eq(small)
+      # 上限：真出现「随行数增长」时，仅靠相等可能因两边同时变多而漏网
+      expect(large).to be <= 20
     end
 
     it 'keeps the query count flat when the store has no rows at all' do
@@ -260,6 +267,7 @@ RSpec.describe PallasTrade::Risk::DashboardReport, type: :service do
       populated = count_queries { described_class.call(store: store) }
 
       expect(empty_count).to eq(populated)
+      expect(populated).to be <= 20
     end
   end
 end
