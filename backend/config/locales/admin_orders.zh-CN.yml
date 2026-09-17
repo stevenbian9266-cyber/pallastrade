@@ -1,0 +1,121 @@
+# PALLAS-CUSTOM: 订单后台的宿主 zh-CN 覆盖（2026-09-17，最终批）。
+#
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.orders 一一对应。
+#
+# 口径提醒：
+#   - `avs_responses.*` / `cvv_responses.*` 是**收单机构返回码**的释义，
+#     必须逐条直译其判定内容，不可归纳简化（商家要靠它判断是否追加验证）；
+#   - `disputes_receipt_*` 三态（submitted/acknowledged/rejected）是**仅由服务商回写驱动**
+#     的状态，措辞不能暗示系统会自行推断；
+#   - `disputes_return_entry_help` 明确「处理争议不动库存与资金」，是安全承诺，不可弱化。
+
+zh-CN:
+  pallastrade:
+    admin:
+      orders:
+        add_user_to_this_order: 把客户加入该订单
+        avs_responses:
+          a: 街道地址匹配，但 5 位与 9 位邮编均不匹配。
+          b: 街道地址匹配，但邮编未验证。
+          c: 街道地址与邮编均不匹配。
+          d: 街道地址与邮编均匹配。
+          e: AVS 数据无效，或该卡类型不允许使用 AVS。
+          f: 持卡人姓名不匹配，但账单邮编匹配。
+          g: 非美国发卡行不支持 AVS。
+          h: 持卡人姓名不匹配，街道地址与邮编匹配。
+          i: 地址未验证。
+          j: 持卡人姓名、账单地址与邮编均匹配。
+          k: 持卡人姓名匹配，但账单地址与账单邮编不匹配。
+          l: 持卡人姓名与账单邮编匹配，但账单地址不匹配。
+          m: 街道地址与邮编均匹配。
+          n: 街道地址与邮编均不匹配。
+          o: 持卡人姓名与账单地址匹配，但账单邮编不匹配。
+          p: 邮编匹配，但街道地址未验证。
+          q: 持卡人姓名、账单地址与邮编均匹配。
+          r: 系统不可用。
+          s: 银行不支持 AVS。
+          t: 持卡人姓名不匹配，但街道地址匹配。
+          u: 地址信息不可用。当美国银行不支持非美国 AVS，或该行的 AVS 功能异常时返回。
+          v: 持卡人姓名、账单地址与账单邮编均匹配。
+          w: 街道地址不匹配，但 9 位邮编匹配。
+          x: 街道地址与 9 位邮编均匹配。
+          y: 街道地址与 5 位邮编均匹配。
+          z: 街道地址不匹配，但 5 位邮编匹配。
+        canceled: 已取消
+        child_orders: 子订单
+        cvv_responses:
+          blank: 交易失败：CVV2 输入错误或未输入
+          m: CVV2 匹配
+          n: CVV2 不匹配
+          p: 未处理
+          s: 发卡行表示卡上应有 CVV2 数据，但商户声明卡上没有该数据
+          u: 发卡行未取得 CVV2 认证，或未向 Visa 提供 CVV2 加密密钥
+        disputes_approvals: 草稿复核
+        disputes_approvals_empty: 尚无草稿复核记录。
+        disputes_approve_already_done: 你已经复核过这份完全相同的草稿——没有重复记录。
+        disputes_approve_draft: 批准草稿（第二位操作人）
+        disputes_approved_draft: 草稿已批准——现在可由另一位操作人原样提交这份载荷。
+        disputes_draft_precheck: 检查草稿
+        disputes_evidence_error_approval_requires_different_operator: 复核人必须与提交人不同。
+        disputes_evidence_error_evidence_review_required: 该草稿尚未获得第二位操作人的批准。
+        disputes_evidence_error_invalid_decision: 未知的复核结论。
+        disputes_evidence_error_payload_digest_missing: 草稿为空——没有可复核的内容。
+        disputes_evidence_library: 证据素材库
+        disputes_evidence_library_empty: 还没有保存的证据素材。可按店铺添加，以便加快后续争议处理。
+        disputes_evidence_library_help: 本店铺保存的可复用素材片段。插入只会填充草稿——绝不会自动提交。
+        disputes_evidence_suggestions: 该网关的建议
+        disputes_evidence_suggestions_help: 由网关的证据目录与已存素材库推导而来——仅供参考；不会生成或提交任何内容。
+        disputes_evidence_suggestions_unsupported: 该网关未声明证据目录，因此不提供建议。
+        disputes_precheck_blocked: 草稿检查被阻止——%{reasons}
+        disputes_precheck_ok: 草稿检查通过——%{count} 个字段可提交。
+        disputes_precheck_warnings: 警告：%{warnings}
+        disputes_receipt_acknowledged: 已受理
+        disputes_receipt_help: 仅由服务商的回写推进（已提交 → 已受理 → 已拒绝）；绝不推断。
+        disputes_receipt_none: 暂无回执
+        disputes_receipt_rejected: 已拒绝
+        disputes_receipt_state: 服务商回执：%{state}
+        disputes_receipt_submitted: 已提交
+        disputes_receipt_unknown: 未知
+        disputes_report_deadline: 按期完成
+        disputes_report_degraded: 部分数据缺失或不可用：%{reasons}
+        disputes_report_disputes: 争议
+        disputes_report_empty: 该时间窗内暂无争议。
+        disputes_report_handling: 平均处理时长
+        disputes_report_help: 本店铺近 90 天争议的只读汇总。数据仅来自已存储的争议——不写入任何内容，也不联系任何服务商。
+        disputes_report_money: 争议 %{amount} %{currency} · 费用 %{fees} %{currency}
+        disputes_report_reason: 原因码
+        disputes_report_title: 争议运营报表
+        disputes_report_win_rate: 胜诉率
+        disputes_return_entry: 退货 / 回库（手动）
+        disputes_return_entry_action: 打开退货 / 回库流程
+        disputes_return_entry_help: 处理争议本身不会移动库存或资金。请在订单流程中创建退货或回库——此链接只是打开既有的、需要显式确认的流程。
+        disputes_return_entry_missing_order: 该争议没有关联订单，因此暂时无可退。
+        disputes_review_required: 本店铺要求第二位操作人复核后才能提交证据。
+        disputes_timeline: 提交历史
+        disputes_timeline_diff: 新增 %{added} · 移除 %{removed}
+        disputes_timeline_empty: 尚未向服务商提交任何内容。
+        disputes_timeline_help: 仅追加的服务商回执。版本号按动作类型分别计数；差异比较的是证据键相对上一次提交的变化。
+        disputes_timeline_version: v%{version}
+        fulfilled: 已履约
+        no_email_present: 请先添加邮箱地址才能发送支付链接
+        orders_count:
+          one: '%{count} 个订单'
+          other: '%{count} 个订单'
+        parent_filter: 订单类型
+        parent_orders: 父订单
+        partially_refunded: 部分退款
+        payment_link_sent: 支付链接已发送给客户
+        placed_by_guest: 该订单由游客客户下单
+        provide_email: 填写邮箱地址
+        refunded: 已退款
+        remove_user_from_this_order: 把客户从该订单移除
+        repeat_customer_summary_html: 这是回头客，累计消费 %{amount}，共 %{count}，平均每单 %{average}。
+        transaction_not_recoverable: 该交易无法自动恢复。
+        transaction_recover: 执行恢复
+        transaction_recovery_queued: 已为该交易排队恢复作业。
+        transactions_help: 持久化的 CommerceTransaction 编排。需要恢复与需人工复核的交易需要关注；处于 payment_confirmed/finalizing 超过 1 小时的视为卡住。只允许从 recovery_required/finalizing 发起恢复。
+        transactions_manual_review: 人工复核
+        transactions_needs_attention: 需要关注
+        transactions_recovery_required: 需要恢复
+        transactions_stuck: 卡住
+        unfulfilled: 未履约

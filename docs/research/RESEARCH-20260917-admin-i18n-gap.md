@@ -304,3 +304,77 @@ when Symbol
 而 en 侧在顶层）。这类孤儿**不会造成 missing**，只是键位卫生问题；
 但其中若与 en 的**功能域 Hash 同址**（如曾经的 `imports` / `shipping_methods`），
 就会变成上面那类静默覆盖，**必须按批次逐个清除**。
+
+---
+
+## 最终批（2026-09-17）：收敛到 0
+
+### 口径修正：以 **I18n 合并树**为准，不再读原始 YAML
+
+前面的量化脚本直接读 YAML 文件，只列了部分 en 来源（漏掉 `en_minimal.yml`、
+`pallastrade_ai` / `pallastrade_stripe` / `pallastrade_adyen` 等 gem 的 en），
+于是把「其实有 en 定义」的键误报成孤儿（**103 vs 真实 22**，虚高 81 个）。
+
+改用 `I18n.t('pallastrade', locale: :en)` + `I18n.exists?(key, :'zh-CN')`
+后与断言同源，数字才可信。
+
+### 结果
+
+| 项 | 数值 |
+|---|---|
+| en 侧 `pallastrade.*` 叶子键 | **3536** |
+| zh-CN 已覆盖 | **3516** |
+| 未覆盖 | **20** |
+| zh 侧孤儿键 | **22** |
+
+**未覆盖的 20 个全部属于并行会话在途的 3DS 工作**（`three_d_secure` 15 +
+`admin.payment_methods.payment_option_three_d_secure*` 5）——
+它们的 en 定义还不在 HEAD 里，现在补 zh 会让这些键在干净检出上变成孤儿（CI 红）。
+已在 spec 的 `IN_FLIGHT_PREFIXES` 中显式登记并在注释里写明移除条件。
+
+→ **HEAD 已提交的 en 面，中文覆盖率为 100%。**
+
+### 本批新增的工程化守卫（比补键更重要）
+
+1. **全局断言**：en 侧每个叶子键 zh-CN 必须有值。
+   逐域断言会随域增长不断追加，全局断言才是「上架即中文」的总体保证。
+2. **同址覆盖守卫**：zh 的叶子键**不得**落在 en 的 Hash 路径上。
+   这是第三类缺陷（字符串 ↔ Hash 互相覆盖）的机器检查——
+   此前只能靠人读 YAML 发现。
+3. **第三个命名空间**：`activerecord.attributes.<model>.<attr>`（表单字段默认标签）。
+   缺失时中文后台显示 `Translation missing: zh-CN.activerecord…`，**比英文还糟**。
+   en 侧该命名空间有 1231 键，但**实测**（逐一访问 18 个新建/编辑表单页面）
+   只有 11 个真正渲染 → **只补这 11 个**，其余 1200+ 是永不渲染的回退项。
+   「不把死权重翻一遍」是刻意取舍，已写进 locale 文件注释。
+
+### 真渲染复验（locale=zh-CN，24 个页面）
+
+| 结果 | 页面数 |
+|---|---|
+| `translation missing` = 0 | **22 / 24** |
+| 仍有缺失 | 2（`/admin/products/new` 7 处、`/admin/markets/new` 1 处） |
+
+那 8 个键（`pallastrade.category_cascade.*`、`pallastrade.new_market`）经核实
+**在 en 侧也不存在**——是运行时动态拼接的键，英文后台同样缺。
+**不属 zh 覆盖问题**，已在报告中记录而非硬造中文。
+
+### 断言规模
+
+**212 examples，0 failures**（本会话从 153 → 208 → 212）。
+
+### 全流程累计
+
+| 批次 | 净补键数 | 缺口 |
+|---|---|---|
+| 批前 | — | 2135 |
+| 第四批（自建功能域 + 导航落点） | 643 | 1492 |
+| 最终批（顶层词表 + 邮件 + API + 域收尾 + 三个命名空间） | **1472** | **20**（全部在途） |
+
+### 遗留
+
+- 20 个在途键：待并行会话提交后，把 `IN_FLIGHT_PREFIXES` 条目删掉并补中文；
+  顺带提醒：他们的 `admin_three_d_secure.zh-CN.yml` 目前用的是
+  **`zh-CN.admin.three_d_secure`**，而 en 侧在**顶层** `pallastrade.three_d_secure`
+  —— 正是本文档描述的「键位置错」缺陷，其翻译当前读不到。
+- 22 个孤儿键：均为导航标签（宿主定义、gem en 无对应），无害；
+  同址覆盖的那类已由新增断言守住。

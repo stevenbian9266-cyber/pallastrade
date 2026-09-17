@@ -1,0 +1,154 @@
+# PALLAS-CUSTOM: 促销规则/动作、价格表、单位、排序、店铺积分的宿主 zh-CN 覆盖
+# （2026-09-17，最终批）。
+#
+# 覆盖 gem 的 pallastrade.promotion_rule_types.*、promotion_action_types.*、
+# promotion_form.*、price_list_form.*、price_list_statuses.*、price_rules.*、
+# products_sort_options.*、option_type_kinds.*、dimension_units.*、weight_units.*、
+# unit_systems.*、country_names.*、store_credit.*、store_credit_payment_method.*、
+# store_form.* 以及各规则的 choose_* 提示。
+
+zh-CN:
+  pallastrade:
+    promotion_rule_types:
+      category:
+        description: 订单包含指定分类中的商品
+        name: 分类
+      channel:
+        description: 限定通过指定渠道下单的订单
+        name: 销售渠道
+      country:
+        description: 限定收货地址在指定国家的订单
+        name: 国家
+      currency:
+        description: 限定使用指定币种的订单
+        name: 币种
+      customer:
+        description: 仅对指定客户可用
+        name: 客户
+      customer_group:
+        description: 仅对指定客户分组中的客户可用
+        name: 客户分组
+      customer_logged_in:
+        description: 仅对已登录的客户可用
+        name: 仅限已登录客户
+      first_order:
+        description: 必须是客户的首次下单
+        name: 首单
+      item_total:
+        description: 订单金额满足以下条件
+        name: 商品合计
+      market:
+        description: 限定在指定市场下单的订单
+        name: 市场
+      one_use_per_user:
+        description: 每位用户仅可使用一次
+        name: 每位用户仅可使用一次
+      option_value:
+        description: 订单包含匹配选项值的商品
+        name: 选项值
+      product:
+        description: 订单包含指定的商品
+        name: 商品
+    promotion_action_types:
+      create_adjustment:
+        description: 在订单上创建一条促销抵扣调整项
+        name: 创建整单调整项
+      create_item_adjustments:
+        description: 在订单行上创建一条促销抵扣调整项
+        name: 创建逐行调整项
+      create_line_items:
+        description: 把指定数量的变体加入购物车
+        name: 创建订单行
+      free_shipping:
+        description: 让订单的所有发货单免运费
+        name: 免运费
+    promotion_form:
+      match_policies:
+        all: 满足全部规则
+        any: 满足任一规则
+    price_list_form:
+      match_policies:
+        all: 满足全部规则
+        any: 满足任一规则
+    price_list_statuses:
+      active: 启用中
+      draft: 草稿
+      inactive: 已停用
+      scheduled: 已排期
+      scheduled_active: 已排期（生效中）
+    price_rules:
+      channel_rule:
+        description: 按销售渠道应用定价
+      customer_group_rule:
+        description: 对指定客户分组应用定价
+    products_sort_options:
+      best_selling: 销量优先
+      manual: 手动
+      name_a_z: 按名称，A-Z
+      name_z_a: 按名称，Z-A
+      newest_first: 最新
+      oldest_first: 最早
+      price_high_to_low: 价格（从高到低）
+      price_low_to_high: 价格（从低到高）
+      relevance: 相关度
+    option_type_kinds:
+      buttons: 按钮
+      color_swatch: 色块
+      dropdown: 下拉框
+    dimension_units:
+      centimeter: 厘米（cm）
+      foot: 英尺（ft）
+      inch: 英寸（in）
+      millimeter: 毫米（mm）
+    weight_units:
+      gram: 克（g）
+      kilogram: 千克（kg）
+      ounce: 盎司（oz）
+      pound: 磅（lb）
+    unit_systems:
+      imperial_system: 英制
+      metric: 公制
+      metric_system: 公制
+    country_names:
+      CA: 加拿大
+      FRA: 法国
+      ITA: 意大利
+      US: 美国
+    store_credit:
+      allocated: 已添加
+      authorized: 已授权
+      captured: 已使用
+      credit: 贷记
+      eligible: 可用
+      errors:
+        cannot_change_used_store_credit: 已使用过的店铺积分不能修改
+        unable_to_create: 无法创建店铺积分
+        unable_to_delete: 无法删除店铺积分
+        unable_to_update: 无法更新店铺积分
+      remaining: 剩余
+    store_credit_payment_method:
+      currency_mismatch: 店铺积分币种与订单币种不一致
+      insufficient_authorized_amount: 请款金额不能超过已授权金额
+      insufficient_funds: 店铺积分剩余金额不足
+      successful_action: '店铺积分「%{action}」成功'
+      unable_to_credit: '无法退款：%{auth_code}'
+      unable_to_find: 未找到店铺积分
+      unable_to_find_for_action: '未找到授权码 %{auth_code} 对应的店铺积分（操作：%{action}）'
+      unable_to_void: '无法作废：%{auth_code}'
+    store_form:
+      customer_support_email_help: 该邮箱会显示在店铺前台的页脚中
+      free_shipping_threshold:
+        description: 前台提示语，例如「满 $50 免运费」。留空则不显示；正在进行的免运费促销会覆盖此金额。
+        label: 免运费门槛
+      low_stock_threshold:
+        description: 剩余数量不超过该值的商品会在前台显示「仅剩少量」。前台永不展示精确库存数量。
+        label: 低库存阈值
+      new_order_notifications_email_help: 如果你希望在有人下订单时收到邮件通知，请提供接收该通知的邮箱地址
+    customer_group_rule:
+      choose_customer_groups: 选择该促销适用的客户分组：
+    product_rule:
+      choose_products: 选择商品
+    taxon_rule:
+      choose_taxons: 选择分类
+    user_rule:
+      choose_users: 在搜索框中输入已注册客户的完整邮箱，该折扣将只对其生效：

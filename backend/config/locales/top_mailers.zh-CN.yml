@@ -1,0 +1,144 @@
+# PALLAS-CUSTOM: 邮件文案的宿主 zh-CN 覆盖（2026-09-17，最终批）。
+#
+# 覆盖 gem core 的 order_mailer / admin_user_mailer / reimbursement_mailer /
+# shipment_mailer / newsletter_mailer / webhook_mailer / invitation_mailer /
+# customer_mailer / abandoned_cart_mailer / import_mailer / back_in_stock_mailer /
+# export_mailer / report_mailer。
+#
+# ⚠️ 以 `%{` 开头的插值串必须加引号（YAML 的 `%` 是指令起始字符）。
+
+zh-CN:
+  pallastrade:
+    order_mailer:
+      cancel_email:
+        dear_customer: 你好 %{name}，
+        instructions: 你的订单已被取消。请保留此取消信息以备查。
+        order_summary_canceled: 订单 %{number} 摘要【已取消】
+        subject: 取消订单
+        thanks: 感谢你在
+      confirm_email:
+        dear_customer: 你好 %{name}，
+        instructions: 请核对并保留以下订单信息以备查。
+        order_summary: 订单 %{number} 摘要
+        subject: 订单确认
+        thanks: 感谢
+      payment_link_email:
+        message: 请点击下方按钮为你的订单付款。
+        message_copy_link: 如果按钮无法点击，请把下面的链接复制到浏览器中打开：
+        pay_for_order: 为订单付款
+        subject: 订单 #%{number} 的支付链接
+      store_owner_notification_email:
+        heading: 收到新订单
+        instructions: 你收到了一笔新订单。
+        order_summary: 订单 %{number} 摘要
+        subject: '%{store_name} 收到一笔新订单'
+        thanks: 感谢
+      store_team: '%{store_name} 团队'
+      subtotal: 小计：
+      total: 订单合计：
+    admin_user_mailer:
+      confirmation_email:
+        action: 确认邮箱
+        greeting: 你好 %{name}，
+        ignore_notice: 如果这个账号不是你创建的，可以放心忽略此邮件。
+        instructions: 请点击下方按钮，确认你的 %{store_name} 管理后台账号邮箱。
+        subject: 邮箱确认指引
+      password_reset_email:
+        action: 重置密码
+        expiry_notice: 该重置链接即将失效。如果不是你发起的，无需任何操作。
+        greeting: 你好 %{name}，
+        ignore_notice: 如果你没有申请重置密码，可以放心忽略此邮件。你的密码不会被更改。
+        instructions: 我们收到了重置你的 %{store_name} 管理后台账号密码的请求。点击下方按钮设置新密码。
+        subject: 密码重置指引
+    reimbursement_mailer:
+      reimbursement_email:
+        days_to_send: 你有 %{days} 天时间寄回需要换货的商品。
+        dear_customer: 尊敬的 %{name}：
+        exchange_summary: 换货摘要
+        instructions: 你的退款已处理完毕。
+        refund_summary: 退款摘要
+        store_team: '%{store_name} 团队'
+        subject: 退款通知
+        thanks: 感谢你的惠顾。
+        total_refunded: 退款合计：%{total}
+    shipment_mailer:
+      shipped_email:
+        dear_customer: 尊敬的 %{name}：
+        instructions: 你的订单 %{number} 已发货
+        shipment_summary: 订单发货摘要
+        shipping_method: 配送方式：%{shipping_method}
+        store_team: '%{store_name} 团队'
+        subject: 发货通知
+        thanks: 感谢你的惠顾。
+        track_information: 物流信息：%{tracking}
+        track_link: 物流链接：%{url}
+    newsletter_mailer:
+      email_confirmation:
+        dear_customer: 你好，
+        ignore_disclaimer: 如果不是你本人操作，请忽略此邮件。
+        instructions: 请点击下方按钮验证你的邮箱地址。
+        message_copy_link: 如果按钮无法点击，请把下面的链接复制到浏览器中打开：
+        store_team: '%{store_name} 团队'
+        subject: 验证你的邮箱地址
+        thanks: 感谢
+        verify_email_address_link: 验证邮箱地址
+    webhook_mailer:
+      endpoint_disabled:
+        disabled_at_label: 停用时间
+        heading: Webhook 端点已停用
+        instructions: 请检查端点地址与服务，然后在「设置 → 开发者 → Webhook」中重新启用。
+        message: Webhook 端点「%{endpoint_name}」因连续投递失败已被自动停用。
+        name_label: 名称
+        reason_label: 原因
+        subject: 'Webhook 端点已停用：%{endpoint_name}'
+        url_label: URL
+    invitation_mailer:
+      greeting: 你好 %{user_name}，
+      invitation_accepted:
+        body: '%{invitee_name} 已接受你加入 %{resource_name} 的邀请'
+        subject: '%{invitee_name} 已接受你加入 %{resource_name} 的邀请'
+      invitation_email:
+        body: '%{inviter_name} 邀请你加入 %{resource_name}'
+        link_description: 请点击下方链接接受邀请：
+        subject: '加入 %{resource_name} 的邀请'
+      thanks: 感谢，
+    customer_mailer:
+      password_reset_email:
+        action: 重置密码
+        expiry_notice: 该重置链接即将失效。如果不是你发起的，无需任何操作。
+        greeting: 你好 %{name}，
+        ignore_notice: 如果你没有申请重置密码，可以放心忽略此邮件。你的密码不会被更改。
+        instructions: 我们收到了重置你密码的请求。点击下方按钮设置新密码。
+        subject: 密码重置指引
+    abandoned_cart_mailer:
+      recovery_email:
+        body: 你的购物车中还有 %{item_count} 件商品在等你。趁还没售罄，赶快完成下单吧。
+        greeting: 你有商品留在购物车里
+        resume_checkout: 继续结算
+        subject: '在 %{store_name} 完成你的订单'
+        view_cart: 查看购物车
+    import_mailer:
+      greeting: 你好 %{user_name}，
+      import_done:
+        failed_message: 有 %{failed_count} 行未能导入——请在导入报告中查看并重试。
+        message: 导入已完成。成功导入 %{completed_count} 行。
+        subject: '你的导入 %{import_number} 已处理完成'
+        view_results: 查看导入报告
+    back_in_stock_mailer:
+      back_in_stock:
+        body: 你在等的商品——%{product_name}——已经补货。赶快去店铺下单，别又卖光了。
+        greeting: 好消息！
+        subject: '%{product_name} 已补货！'
+        view_product: 查看商品
+    export_mailer:
+      export_done:
+        message: 干得漂亮，你的导出已就绪！请使用下面的链接下载。
+        subject: '你的导出 %{export_number} 已成功处理！'
+      greeting: 你好 %{user_name}，
+      thanks: 感谢，
+    report_mailer:
+      greeting: 你好 %{user_name}，
+      report_done:
+        message: 请使用下面的链接下载。
+        subject: '你的报表 %{report_name} 已就绪'
+      thanks: 感谢，

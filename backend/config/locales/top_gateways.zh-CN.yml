@@ -1,0 +1,30 @@
+# PALLAS-CUSTOM: 支付网关（Stripe / Adyen）与线下支付的宿主 zh-CN 覆盖
+# （2026-09-17，最终批）。
+#
+# 这两个 gem（`pallastrade_stripe` / `pallastrade_adyen`）只带 en，宿主需按
+# `PallasTrade.t` 的 scope 规则（只前置 `:pallastrade`）在 **顶层** 覆盖。
+#
+# 口径提醒：
+#   - Stripe 的 `requires_*` 是 **PaymentIntent 状态**（决定客户下一步要做什么），
+#     不是错误码 —— 译成「需要…」而不是「…失败」；
+#   - Adyen 的三个是**支付被拒/取消/过期**的终态，措辞要能让客户知道能否重试。
+
+zh-CN:
+  pallastrade:
+    stripe:
+      payment_intent_errors:
+        canceled: 支付意图已取消
+        processing: 支付意图处理中
+        requires_action: 支付意图需要额外验证
+        requires_capture: 支付意图等待请款
+        requires_confirmation: 支付意图等待确认
+        requires_payment_method: 支付意图需要支付方式
+        succeeded: 支付意图已成功
+      payment_session_errors:
+        zero_amount: 支付会话金额必须大于零
+    adyen:
+      payment_session_errors:
+        canceled: 支付已取消
+        expired: 支付已过期，请重试。
+        refused: 支付被拒绝
+    bank_transfer: 银行转账

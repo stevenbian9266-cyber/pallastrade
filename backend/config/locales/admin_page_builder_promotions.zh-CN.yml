@@ -1,0 +1,71 @@
+# PALLAS-CUSTOM: 页面搭建器 + 促销表单的宿主 zh-CN 覆盖（2026-09-17，最终批）。
+#
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.page_builder
+# 与 admin.promotions 一一对应。
+#
+# 口径提醒：promotions.redemption_* 是**促销核销台账**的字段
+# （reserved 冻结 → committed 提交 → released 释放），三者是状态而非动作，别译成动词。
+
+zh-CN:
+  pallastrade:
+    admin:
+      page_builder:
+        background_color: 背景色
+        border_bottom_width: 下边框宽度
+        border_color: 边框颜色
+        border_top_width: 上边框宽度
+        bottom_padding: 下内边距
+        button_alignment: 按钮对齐
+        button_background_color: 按钮背景色
+        button_style: 按钮样式
+        button_text: 按钮文字
+        button_text_color: 按钮文字颜色
+        category: 分类
+        description: 描述
+        description_alignment: 描述对齐
+        desktop_image_alignment: 桌面端图片对齐
+        desktop_logo_height: Logo 高度（桌面端）
+        heading: 标题
+        heading_alignment: 标题对齐
+        heading_size: 标题字号
+        height: 高度
+        image_click_hint: 点击图片会把用户带到所选的页面 / URL
+        left_aligned: 左对齐
+        logo_centered: Logo 居中
+        max_video_width_on_desktop: 桌面端最大视频宽度
+        maximum_products_to_show: 最多展示商品数
+        nav_centered: 导航居中
+        not_set: 未设置
+        separated: 分隔样式
+        show_more_button: 显示「浏览分类」按钮
+        show_taxon_image: 显示分类图片
+        text_color: 文字颜色
+        title: 标题
+        top_padding: 上内边距
+        use_description_from_admin: 使用后台填写的描述
+        vertical_alignment: 垂直对齐
+        youtube_video_url: YouTube 视频地址
+      promotions:
+        add_more_codes_help: 想生成更多优惠码，把该数字调大即可
+        code_prefix_example_html: '例如 %{example}'
+        code_prefix_placeholder: 优惠码前缀（选填）
+        coupon_code_placeholder: 你的优惠码
+        expires_at_help: 留空表示永不过期。时区：%{zone}
+        kind:
+          automatic_help: 该促销会自动应用到所有符合条件的订单。
+          multi_codes_help: 这些优惠码会自动生成，并可下载为 CSV 文件。码唯一且只能使用一次。
+          multi_codes_label: 生成唯一优惠码
+          one_code_help: 你可以限制该优惠码的使用次数。
+          one_code_label: 所有客户共用一个优惠码
+        name_help: 客户会在购物车与结算页看到该名称。
+        next_step_info: 下一步你可以为促销添加动作与规则
+        number_of_codes_help: 你想生成多少个优惠码。
+        number_of_codes_placeholder: 优惠码数量
+        promotion_category_help: 可选分组，用于在后台整理促销。
+        redemption_amount: 核销金额
+        redemption_committed_at: 提交时间
+        redemption_release_reason: 释放原因
+        redemption_released_at: 释放时间
+        redemption_reserved_at: 冻结时间
+        redemptions_help: 只读的促销核销台账——哪笔订单核销了哪个促销、何时提交、为何释放。
+        usage_limit_help: 留空表示不限次数。

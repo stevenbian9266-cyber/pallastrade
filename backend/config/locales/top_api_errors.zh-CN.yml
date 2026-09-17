@@ -1,0 +1,170 @@
+# PALLAS-CUSTOM: API 报错 / 校验 / 履约 / 结算前置条件的宿主 zh-CN 覆盖
+# （2026-09-17，最终批）。
+#
+# 覆盖 gem 的 pallastrade.api.*、pallastrade.errors.*、pallastrade.validation.*、
+# pallastrade.store_errors.*、pallastrade.fulfillments.*、pallastrade.stock_transfer.*、
+# pallastrade.checkout_requirements.*、pallastrade.item_total_rule.* 等。
+#
+# 口径：这些是**回给调用方/买家**的报错，措辞要让终端用户看得懂，
+# 不要出现「服务」「实体」这类内部术语（API 字段名保持原样，便于对日志）。
+
+zh-CN:
+  pallastrade:
+    api:
+      cannot_delete: '%{model} 无法删除'
+      current_password_invalid: 当前密码无效或未填写
+      errors:
+        guest_checkout_not_allowed: 你必须登录后才能完成结算。
+        storefront_login_required: 访问该店铺需要身份认证。
+      gateway_error: '支付网关出现问题：%{text}'
+      invalid_api_key: '指定的 API 密钥无效（%{key}）。'
+      invalid_position: new_position 必须是整数
+      invalid_resource: 资源无效。请修正错误后重试。
+      invalid_taxonomy_id: 分类 ID 无效。
+      must_specify_api_key: 你必须提供 API 密钥。
+      negative_quantity: 数量为负数
+      newsletter_verification_token_invalid: 订阅验证令牌无效或已过期。
+      order:
+        could_not_transition: 订单无法流转。请修正错误后重试。
+        insufficient_quantity: 购物车中有商品已无法购买。
+        invalid_shipping_method: 指定的配送方式无效。
+      password_reset_requested: 如果该邮箱对应的账号存在，我们已发送密码重置指引。
+      password_reset_token_invalid: 密码重置令牌无效或已过期。
+      payment:
+        credit_over_limit: 该支付的退款上限为 %{limit}。请填写不超过该数值的金额。
+        update_forbidden: 该支付处于 %{state} 状态，无法更新。
+      record_not_found: '未找到%{model}'
+      redirect_url_not_allowed: 该跳转地址不属于本店铺允许的来源。
+      resource_not_found: 未找到你要访问的资源。
+      shipment:
+        cannot_ready: 发货单无法置为就绪。
+      shipment_transfer_errors_occurred: 执行该操作时发生以下错误：
+      shipment_transfer_success: 变体已成功调拨
+      stock_location_required: 查询库存变动时必须提供 stock_location_id 参数。
+      turnstile_verification_failed: 人机验证未通过，请重试。
+      unauthorized: 你无权执行该操作。
+      v2:
+        cart:
+          no_coupon_code: 未提供优惠码，且该订单没有应用任何优惠码促销
+          wrong_quantity: 数量必须大于 0
+        digitals:
+          missing_file: 缺少数字商品：附件
+          unauthorized: 错误：你无权访问该资产
+        gift_card:
+          amount_not_valid: 礼品卡金额无效
+          not_found: 未找到礼品卡
+        metadata:
+          invalid_params: 公开与私有元数据参数必须是对象
+        wishlist:
+          errors:
+            the_wishlist_could_not_be_destroyed: 心愿单无法删除。
+          wrong_quantity: 数量必须大于 0
+      v3:
+        payments:
+          method_unavailable: 该支付方式不可用于此订单。
+          session_required: 该支付方式需要支付会话，请改用支付会话接口。
+      wrong_shipment_target: 目标发货单与原发货单相同
+    errors:
+      messages:
+        cannot_delete_default_channel: 默认渠道不能删除。请先把另一个渠道设为默认。
+        channel_store_mismatch: 必须属于同一个店铺
+        invalid_order_routing_rule: 不是已注册的订单路由规则
+        invalid_order_routing_strategy: 不是已注册的订单路由策略
+        invalid_storefront_access: 不是有效的前台可见性级别
+        must_be_origin_only: 必须是来源（协议 + 主机），不能包含路径、查询串或片段
+        store_association_can_not_be_changed: 店铺关联不可更改
+        store_is_already_set: 店铺已设置
+      services:
+        get_shipping_rates:
+          no_line_items: 要生成运费，需要先给订单添加订单行
+          no_shipping_address: 要生成运费，订单必须有收货地址
+    errors_prohibited_this_record_from_being_saved:
+      one: 有 1 个错误导致该记录无法保存
+      other: 有 %{count} 个错误导致该记录无法保存
+    validation:
+      is_too_large: 过大——现有库存不足以覆盖所需数量！
+      must_be_int: 必须是整数
+      unpaid_amount_not_zero: 金额未完全退款。仍欠：%{amount}
+    store_errors:
+      attachment_upload_incomplete: 上传未完成——请重新上传该文件。
+      unable_to_update: 无法更新店铺。
+    fulfillments:
+      errors:
+        insufficient_quantity: 商品 %{item} 的申请数量（%{requested}）超过其未履约数量（%{available}）
+        invalid_cost: 成本必须是非负数
+        invalid_quantity: 商品 %{item} 的数量必须是正整数
+        invalid_status: 提供状态时必须是 'shipped'
+        no_items_to_fulfill: 订单中没有待履约的商品
+        order_canceled: 已取消的订单不能创建履约单
+        order_not_completed: 只能在已完成的订单上手动创建履约单
+    stock_transfer:
+      errors:
+        must_have_variant: 你必须至少添加一个变体
+        same_location: 不能与调入库房相同
+        variants_unavailable: 部分变体在 %{stock} 中不可用
+    checkout_requirements:
+      email_required: 需要填写邮箱地址
+      line_items_required: 请至少添加一件商品到购物车
+      payment_required: 请添加支付方式
+      ship_address_required: 需要填写收货地址
+      shipping_method_required: 请为所有发货单选择配送方式
+    item_total_rule:
+      max_amount_help: 留空则不限制最大金额。
+      operators:
+        gt: 大于
+        gte: 大于等于
+        lt: 小于
+        lte: 小于等于
+    cart_line_item:
+      delivery_unavailable: '%{li_name} 无法配送到所选地址'
+      discontinued: '%{li_name} 已停售，因此被移除'
+      out_of_stock: '%{li_name} 已售罄，因此被移除'
+    digital:
+      digital_delivery: 数字交付
+    order_routing:
+      strategies:
+        legacy: 旧版
+        rules: 规则（按顺序）
+    notice_messages:
+      product_cloned: 商品已克隆
+      product_not_cloned: 商品克隆失败。原因：%{error}
+    invitation_expired:
+      body: 该邀请链接已失效。请联系邀请你的人重新发送。
+      heading: 邀请无效或已过期
+    address_book:
+      add_house_number: 如果有门牌号请填写
+    customers_added_to_group:
+      one: 已把 %{count} 位客户加入分组
+      other: 已把 %{count} 位客户加入分组
+    customers_removed_from_group:
+      one: 已把 %{count} 位客户移出分组
+      other: 已把 %{count} 位客户移出分组
+    parent_order_returns_success:
+      one: 已创建 %{count} 个退货授权
+      other: 已创建 %{count} 个退货授权
+    return_authorization_states:
+      authorized: 已授权
+      canceled: 已取消
+    adjustment_labels:
+      tax_rates:
+        excluding_tax: '%{name}%{amount}'
+        including_tax: '%{name}%{amount}（已含税）'
+    shipping_rates:
+      display_price:
+        excluding_tax: '%{price}（+ %{tax_amount} %{tax_rate_name}）'
+        including_tax: '%{price}（含 %{tax_amount} %{tax_rate_name}）'
+    report_names:
+      products_performance: 商品表现
+      sales_total: 销售合计
+    apis:
+      admin: 管理端 API
+      store: 店铺 API
+    seed:
+      shipping:
+        categories:
+          default: 默认
+          digital: 数字商品
+    i18n:
+      this_file_language: 简体中文
+    match_choices:
+      none: 无

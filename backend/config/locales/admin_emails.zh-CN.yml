@@ -1,0 +1,76 @@
+# PALLAS-CUSTOM: 邮件运营后台的宿主 zh-CN 覆盖（2026-09-17，最终批）。
+#
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.emails 一一对应。
+#
+# 口径提醒：
+#   - `scenarios.*` 是**通知场景**名（对应 mailer），不是模板，别译成「模板」；
+#   - `scenario_default_template` 的「默认」指**代码内置模板**（未被自定义模板覆盖时生效）；
+#   - `templates_help` 里的 `{order_number}` 是**单花括号**占位符（与 i18n 的 `%{}` 不同），
+#     必须原样保留。
+
+zh-CN:
+  pallastrade:
+    admin:
+      emails:
+        action: 操作
+        active_label: 启用
+        body_html: HTML 正文
+        body_text: 纯文本正文
+        edit_template: 编辑模板
+        error: 错误
+        from: 发件人
+        from_name: 发件人
+        inbox_help: 投诉、反馈与客户咨询会汇总到这里。请为每条消息分类（投诉 / 反馈 / 咨询 / 回复），并推动其从「待处理」→「处理中」→「已解决」。
+        key: 键
+        mailer: 邮件器
+        mark_resolved: 标记为已解决
+        message: 消息
+        message_resolved: 消息已标记为已解决。
+        new_template: 新建模板
+        placeholders: 占位符
+        placeholders_help: 支持的占位符列表，以逗号分隔，例如 order_number, store_name
+        preview: 预览
+        preview_hint: 预览在保存后使用示例占位符值渲染。
+        reply_switch: 允许客户回复邮件
+        reply_switch_help: 启用后，外发邮件会带上 Reply-To 地址（客服邮箱），回复会归集到「邮件 → 收件箱与反馈」下。关闭则不添加 Reply-To。
+        saved: 邮件设置已保存。
+        scenario: 场景
+        scenario_default_template: 默认（代码内置模板）
+        scenario_enabled: 已启用
+        scenario_not_found: 未找到该场景。
+        scenario_template: 模板
+        scenario_test: 测试
+        scenarios:
+          abandoned_cart: 弃单召回
+          back_in_stock: 到货通知
+          newsletter_confirmation: 订阅确认
+          order_canceled: 订单取消（订单状态）
+          order_confirmation: 订单确认（支付成功）
+          password_reset: 密码重置
+          payment_link: 支付链接（待付款提醒）
+          reimbursement: 退款 / 报销
+          shipment_shipped: 发货通知（订单状态）
+        scenarios_help: 控制哪些事务性邮件会被发送。每个场景对应一个邮件器，并可关联到自定义模板。
+        scenarios_saved: 通知场景设置已保存。
+        send_log: 发件记录
+        send_log_help: 店铺发出的每一封邮件都会记录在这里——收件人、主题、状态与时间。发送失败的会被标记，便于排查。
+        send_test: 发送测试邮件
+        sent_at: 发送时间
+        settings_help: 配置本店铺的邮件发送方式。回复开关决定客户能否回复事务性邮件（会添加 Reply-To 头，并把收到的回复归集到收件箱）。
+        smtp_help: 可选：为本站覆盖应用级 SMTP 设置。留空则使用平台默认值。
+        smtp_host_help: 例如 smtp.resend.com
+        smtp_password_help: 投递主机的 SMTP 密码或 API 密钥。
+        smtp_settings: SMTP 投递
+        subject: 主题
+        template_content: 模板内容
+        template_key_help: 与邮件器对应的稳定标识（例如 order.confirm_email）。可用键请见通知场景页。
+        templates_help: 编辑事务性邮件内容。使用 {placeholders} 占位符，例如 {order_number} 或 {store_name}——发送时会被替换为真实值。拥有「启用」行的模板会覆盖相同键的内置代码模板。
+        test_body: 这是来自你的 PallasTrade 店铺的测试邮件。如果你能读到它，说明 SMTP 投递正常。
+        test_send: 测试发送
+        test_send_button: 发送测试邮件
+        test_send_failed: 测试邮件发送失败。请检查 SMTP 配置与日志。
+        test_send_hint: 用当前 SMTP 配置发送一封测试邮件，以验证投递是否正常。
+        test_send_placeholder: 收件人邮箱
+        test_sent: 测试邮件已发送至 %{email}。
+        test_subject: 来自 %{store_name} 的测试邮件
+        to: 收件人

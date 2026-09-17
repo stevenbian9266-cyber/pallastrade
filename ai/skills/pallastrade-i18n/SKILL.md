@@ -424,6 +424,22 @@ when Symbol then PallasTrade.t(label, default: label.to_s.humanize)   # ← 只�
 zh 侧曾是**字符串**「导入」——同址时后加载的覆盖先加载的。
 **导航标签与功能域同名时，务必让标签留在顶层、功能域留在 `admin.` 下。**
 
+#### 三个命名空间，缺一个都会漏（2026-09-17 收敛批发现）
+
+后台文案分布在**三个互不相通**的命名空间里，只查其中一个必然漏：
+
+| 命名空间 | 谁在读 | 中文缺失时的表现 |
+|---|---|---|
+| `pallastrade.*`（含 `pallastrade.admin.*`） | `PallasTrade.t` | 显示英文 / `translation missing` |
+| `pallastrade.<key>`**顶层**（无 `admin.`） | Symbol 型导航标签（第六个坑） | **静默显示英文** |
+| `activerecord.attributes.<model>.<attr>` | `human_attribute_name`（表单默认标签） | **`Translation missing: zh-CN.activerecord…`** |
+
+第三个命名空间的坑点：
+- 模型键含斜杠，YAML 里必须引号：`'pallastrade/address':`；
+- en 侧本仓有 **1231** 个键，但**绝大多数永不渲染**（各表单都用了显式的
+  `PallasTrade.t('admin.…')` 标签）→ **不要全量翻**，要用实测（访问真实表单页并
+  扫描 `Translation missing`）确定真正渲染的那一小撮，只补它们。
+
 ### "Product name shows English even after I set Spanish"
 
 Walk this list:

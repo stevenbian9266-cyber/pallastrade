@@ -1,0 +1,32 @@
+# PALLAS-CUSTOM: ActiveRecord 模型属性名的宿主 zh-CN 覆盖（2026-09-17，最终批）。
+#
+# 这是**第三个命名空间**（前两个是 `pallastrade.*` 与 `pallastrade.admin.*`）：
+# `human_attribute_name` 读 `activerecord.attributes.<model>.<attr>`，
+# 用于**没有显式 label 的表单字段**。缺失时中文后台直接显示
+# `Translation missing: zh-CN.activerecord.attributes.…`（比英文还糟）。
+#
+# 为什么只补这 11 个：en 侧该命名空间有 1231 个键，但**实测**（逐一访问后台
+# 18 个新建/编辑表单页面并扫描渲染结果）只有下面这些真正出现在界面上——
+# 其余 1200+ 是永不渲染的回退项（各表单都用了自己的 `PallasTrade.t('admin.…')` 标签）。
+# 不把死权重翻一遍，是刻意的取舍；若后续实测发现新渲染项，按同样方式追加即可。
+#
+# ⚠️ 模型键含斜杠（`pallastrade/address`），YAML 里**必须加引号**。
+
+zh-CN:
+  activerecord:
+    attributes:
+      'pallastrade/address':
+        address1: 地址
+        address2: 地址（续）
+        city: 城市
+        company: 公司
+        phone: 电话
+      'pallastrade/metafield_definition':
+        namespace: 命名空间
+      'pallastrade/import':
+        preferred_delimiter: 分隔符
+      'pallastrade/store':
+        preferred_limit_digital_download_days: 数字商品下载有效期（天）
+        preferred_limit_digital_download_count: 数字商品下载次数上限
+        preferred_digital_asset_authorized_days: 数字商品授权有效期（天）
+        preferred_digital_asset_authorized_clicks: 数字商品授权点击次数

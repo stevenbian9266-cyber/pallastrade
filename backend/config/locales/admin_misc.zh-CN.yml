@@ -1,0 +1,136 @@
+# PALLAS-CUSTOM: 后台其余功能域与小规模缺口的宿主 zh-CN 覆盖（2026-09-17，最终批）。
+#
+# 收尾文件：把上一批之后剩余的 admin.* 全部补完（含直接挂在 admin 下的 41 个叶子键）。
+#
+# ⚠️ `admin.name` / `admin.errors` 这类**直接挂在 admin 下的叶子键**
+# 与 `admin.<功能域>` 的 Hash 是不同路径，放同一文件不冲突；
+# 但**不可**与同名功能域同址（见 i18n Skill 第三个坑）。
+
+zh-CN:
+  pallastrade:
+    admin:
+      amount_spent: 消费金额
+      assistant: 助手
+      back_to_dashboard: 返回概览
+      copied: 已复制！
+      copy_payment_link: 复制支付链接
+      copy_to_clipboard: 复制到剪贴板
+      created_at: 创建时间
+      datetime_field_timezone_help: 时区：%{zone}
+      digital_shipment_fulfillment_note: 用户下载数字商品后，该发货单会被标记为已履约
+      edit_billing_address: 编辑账单地址
+      edit_contact_information: 编辑联系信息
+      edit_shipping_address: 编辑收货地址
+      edit_theme: 编辑主题
+      errors: 错误
+      execution_time: 执行耗时
+      export_coupons: 把优惠券导出为 CSV 文件
+      export_created: 已开始导出。生成后你会收到一封带下载链接的邮件！
+      export_report: 把报表导出为 CSV 文件
+      filters: 筛选器
+      integrations_directory: 集成目录
+      manage_markets: 管理市场
+      manage_properties: 管理属性
+      manage_stock_locations: 管理库存点
+      manage_taxons: 管理分类
+      manage_zones: 管理区域
+      name: 名称
+      not_tracking_inventory: 未跟踪库存
+      notifications: 通知
+      num_orders: 订单数
+      personal_details: 个人信息
+      previous_page: 上一页
+      recommended_size: 建议尺寸
+      report_created: 报表正在生成。生成后你会收到一封带下载链接的邮件！
+      reset_digital_link_download_limits: 重置下载次数限制
+      response_code: 响应码
+      send_payment_link: 发送支付链接
+      show_json: 显示 JSON
+      successful: 成功
+      successfully_reset_digital_links_limit: 下载次数限制已重置
+      taxon_type: 分类类型
+      upload_new_asset: 上传新媒体
+      shipping_methods:
+        admin_name_help: 该名称会显示给管理员
+        checkout_info: 配送方式是客户进入结算时看到的选项，即用于寄送商品的承运商与服务。
+        estimated_transit_business_days_help: 包裹送达客户地址的预计工作日数。会显示在结算页。
+        name_help: 该名称会显示给客户
+        tracking_url_token_help: 会被替换为物流单号。
+      order:
+        events:
+          approve: 批准
+          cancel: 取消
+          resend: 重新发送
+          resume: 恢复
+      display_on_options:
+        back_end: 仅后台
+        both: 后台与前台均显示
+        front_end: 仅前台
+      newsletter_subscribers:
+        all: 全部
+        unverified: 未验证
+        verified: 已验证
+      payment_methods:
+        available_payment_methods: 可用支付方式
+        find_more_payment_methods_html: 在 %{integrations_link} 中查找更多支付方式
+        name_help: 该名称用于在前台标识该支付方式
+      variants:
+        count_at_location:
+          one: '%{count} 件于该库房'
+          other: '%{count} 件于该库房'
+        search_results:
+          no_variants: 没有找到匹配你搜索的变体 :(
+      abandoned_cart_notifications:
+        run_scan: 立即扫描
+        scan_started: 弃单扫描已启动，正在发送召回邮件。
+      admin_users:
+        audit_log_enterprise_notice: 审计日志属于 PallasTrade 企业版功能。
+        upgrade_to_enterprise: 升级到 PallasTrade 企业版
+      allowed_origins:
+        origin_help: 请输入你前台的完整来源地址（例如 https://myshop.com）。不要包含路径或查询串。
+        origin_settings: 来源设置
+      coupon_codes:
+        unused: 未使用
+        used: 已使用
+      metafield_definitions:
+        edit_warning: 元字段定义一旦被使用，就不能再修改资源类型或元字段类型。
+        used_in: 用于
+      reconciliation_cases:
+        difference_payout_amount_mismatch: 结算行金额不一致
+        difference_payout_unmatched: 结算行没有对应的本地记录
+      taxons:
+        seo:
+          placeholder: 添加标题与描述，即可查看该分类在搜索引擎结果中可能呈现的样子
+        square_image_help: 用于首页的主图。
+      user:
+        last_order_placed: 最近下单时间
+        no_store_credit: 该客户没有可用的店铺积分
+      user_sessions:
+        email_placeholder: steve@example.com
+        welcome_back: 欢迎回来
+      users:
+        filters:
+          search_placeholder: 按邮箱或姓名搜索客户
+        timeline: 时间线
+      json_preview:
+        no_api_response: 未找到该资源的 API 响应
+      metafields:
+        none_configured_for: 尚未为 %{resource} 配置元字段定义。
+      navigation:
+        nested_under: 归属于
+      shipment:
+        please_provide_tracking_details: 标记发货前请先填写物流信息
+      shipment_transfer:
+        wrong_destination: 目的地不正确
+      shipments:
+        stock_location_option: '%{name}（现有库存 %{count}）'
+      stock_transfers:
+        add_products_tip: 你需要先选择调入库房
+      store_credit:
+        amount_remaining_of_total: '<strong>%{amount}</strong> 可用（共 <strong>%{total}</strong>）'
+      utilities:
+        preview: 预览
+      vendors:
+        enterprise_feature: 多商家市场功能仅在 Enterprise 版本提供
+      zones:
+        info: 区域是地理分组，表示一组省/州或国家的集合。

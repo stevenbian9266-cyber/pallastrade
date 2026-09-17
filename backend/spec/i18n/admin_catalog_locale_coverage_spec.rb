@@ -219,4 +219,82 @@ RSpec.describe 'Admin zh-CN locale coverage' do
       end
     end
   end
+
+  # —— 全局保证（2026-09-17 最终批）——
+  #
+  # 逐域断言会随着域增长而不断追加；全局断言给出的是**总体保证**：
+  # en 侧 `pallastrade.*` 的每一个叶子键，zh-CN 侧都必须有值。
+  # CI 是干净检出，所以它等价于「中文后台不会出现英文/translation missing」。
+  #
+  # IN_FLIGHT_PREFIXES：**并行会话尚未提交**的 en 键。它们的 en 定义还不在 HEAD 里，
+  # 现在就补 zh 会让这些键在干净检出上变成孤儿（CI 红），故先从断言中排除。
+  # 对应批次提交后，把条目从这里删掉并补上中文即可。
+  IN_FLIGHT_PREFIXES = %w[
+    pallastrade.three_d_secure
+    pallastrade.admin.payment_methods.payment_option_three_d_secure
+  ].freeze
+
+  describe '上架即中文：en 有的 zh-CN 必须有（全局）' do
+    it 'has a zh-CN value for every en pallastrade leaf' do
+      en = flatten_keys(I18n.t('pallastrade', locale: :en, default: {}))
+      missing = en.reject do |key|
+        full = "pallastrade.#{key}"
+        IN_FLIGHT_PREFIXES.any? { |prefix| full.start_with?(prefix) } ||
+          I18n.exists?(full, :'zh-CN')
+      end
+
+      expect(missing).to be_empty,
+                         "中文后台会显示英文或 translation missing: #{missing.first(25).inspect}（共 #{missing.size} 个）"
+    end
+
+    # 第三类缺陷：**同一路径上 zh 是字符串、en 是 Hash**（或反之）时，
+    # i18n 深合并会让后加载的一方把另一方整个覆盖，且不报错、不 warning。
+    # 本仓真实案例：`pallastrade.admin.imports` 在 en 侧是导入向导的功能域 Hash，
+    # zh 侧曾是导航标签字符串「导入」——两边互相挤。
+    it 'never lets a zh-CN leaf shadow an en Hash at the same path' do
+      zh = flatten_keys(I18n.t('pallastrade', locale: :'zh-CN', default: {}))
+      colliding = zh.select do |key|
+        I18n.t("pallastrade.#{key}", locale: :en, default: nil).is_a?(Hash)
+      end
+
+      expect(colliding).to be_empty,
+                           "这些 zh 键与 en 的功能域 Hash 同址，会互相覆盖: #{colliding.inspect}"
+    end
+  end
+
+  # 第三个命名空间：`activerecord.attributes.<model>.<attr>`（表单字段的默认标签）。
+  # 缺失时中文后台显示 `Translation missing: zh-CN.activerecord.attributes.…`。
+  #
+  # 这里是**实测渲染到的**那一小撮（en 侧该命名空间有 1231 键，绝大多数永不渲染，
+  # 因为各表单都用显式的 `PallasTrade.t('admin.…')` 标签）。新增表单后若再出现
+  # translation missing，把新键追加到这里即可。
+  AR_ATTRIBUTES = %w[
+    pallastrade/address.address1 pallastrade/address.address2
+    pallastrade/address.city pallastrade/address.company pallastrade/address.phone
+    pallastrade/metafield_definition.namespace
+    pallastrade/import.preferred_delimiter
+    pallastrade/store.preferred_limit_digital_download_days
+    pallastrade/store.preferred_limit_digital_download_count
+    pallastrade/store.preferred_digital_asset_authorized_days
+    pallastrade/store.preferred_digital_asset_authorized_clicks
+  ].freeze
+
+  describe 'activerecord.attributes（表单字段默认标签）' do
+    it 'resolves every rendered attribute name in zh-CN' do
+      missing = AR_ATTRIBUTES.reject do |key|
+        I18n.exists?("activerecord.attributes.#{key}", :'zh-CN')
+      end
+
+      expect(missing).to be_empty, "中文后台会显示 Translation missing: #{missing.inspect}"
+    end
+
+    it 'never renders a translation-missing attribute label' do
+      values = AR_ATTRIBUTES.map do |key|
+        I18n.t("activerecord.attributes.#{key}", locale: :'zh-CN', default: nil)
+      end
+
+      expect(values).to all(be_a(String))
+      expect(values.grep(/translation missing/i)).to be_empty
+    end
+  end
 end
