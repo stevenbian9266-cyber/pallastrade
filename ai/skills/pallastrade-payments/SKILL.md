@@ -1,4 +1,4 @@
----
+﻿---
 name: pallastrade-payments
 description: Use when the user is working with PallasTrade's payment system — payment methods, gateways (Stripe, Adyen, PayPal), payment sessions, the payment state machine, refunds, store credits, gift cards. Common phrasings include "add payment gateway", "Stripe integration", "payment failed", "refund order", "store credit", "gift card", "payment state stuck", "configure PaymentMethod", "process payment manually". Provides the payment graph, the state machine, and the integration points.
 ---
@@ -1607,7 +1607,23 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
 - **铁律**：判定与闸门**零 provider I/O、零写库、零资金副作用**；不改 `Checkout::Preflight` 的启用条件与阻断行为；不改「支付成功 → 订单完成」链路；MIT 豁免、其它 provider 落地、挑战率看板属后续切片。
 - **回归**：`harness verify d15c-three-d-secure-rspec`（181 例；含 D8 / D11 / D16 / 契约 / 切片1·2 回归 + 导航）。
 
-## Changelog (P0 Payment, 2026-09-03)
+## manual_review 人工裁决 —— 排障台的「通过并捕获 / 拒绝并释放」（D2, 2026-09-17；PRD-20260917-payments-d2）
+
+业务方案 §78-D2 / §60.2-3 落地：`manual_review` 以前**只能 console 改状态**（自动恢复对它是禁区），现在有了**唯一的人工出口**——排障台两个动作，且证据链完整（谁、何时、为何、前后状态）。
+
+- **服务（唯一入口，纯人工）**：`PallasTrade::Transactions::Review.call(transaction:, decision:, reason:, actor:, provider_reference:)`。
+  - `decision='capture'`（通过并捕获）：要求存在**已授权未捕获**（`pending`）的 Payment → `Payment#capture!`（provider 真实捕获）→ `approve_after_review!`（新边 `manual_review → finalizing`）→ **既有** `Transactions::Finalize`（参与者订单完成 + 库存 commit）→ 交易 `completed`。
+  - `decision='release'`（拒绝并释放）：**不捕获** → `Payment#void_transaction!` 撤销未捕获授权（**任一笔撤不掉 → 整条回滚**，不静默留枚可用授权）→ 逐参与者订单 `Orders::Cancel`（既有原语：库存释放 + 取消台账；`refund_payments: false` → **零退款**）→ `release_after_review!`（新边 `manual_review → canceled`）。
+  - **不猜的拒绝**：无 pending 授权 → `no_pending_authorization`（capture 拒绝）；存在已捕获 Payment → `paid_payment_present`（release 拒绝，必须走 `Refunds::Request`）。两者都**不改状态**。
+  - `reason` **必填**；只接受 `state == 'manual_review'`（其它状态 → `transaction_not_reviewable`；自动恢复仍走 `Transactions::Recover`）。
+- **幂等键 = `(transaction, decision)` 的审计成功行**：重放返回 `already_applied: true`、零副作用（**幂等判定在状态守卫之前**，否则捕获后重放会误报不可复核）。
+- **审计（成功与失败都写）**：`transaction_review_captured` / `transaction_review_released` / `transaction_review_failed`，带 `before/after` 状态、`decision`、`reason`、操作人、`provider_reference`；释放另记 `voided_payment_ids` / `canceled_order_numbers`。
+- **取消原因枚举 vs 自由文本**：`OrderCancellation#reason` 是枚举（`customer/declined/fraud/inventory/staff/other/expired`）——人工裁决一律归 `staff`，操作人自由文本写 `note` + 审计（**不污染枚举语义**）。
+- **状态机**：只**新增两条出向边**（`approve_after_review` / `release_after_review`），`reopen_review` 与自动恢复边**不动**；两者都在 bang 事件表内（非法迁移抛 `InvalidTransitionError`）。
+- **后台**：`/admin/transactions/:id/approve_and_capture` 与 `/release_and_cancel`（member POST，与 `recover` 同权 → `:update` 授权），详情页复核卡（原因必填 + double confirm + 复核历史表；非 `manual_review` 只给说明**不给按钮**）。
+- **铁律**：**人工专用** —— job / sweeper / subscriber **永不调用**（spec 断言调用点唯一）；不新建交易、不新建 PaymentSession、不碰 `PaymentSessions::Start`；历史 Payment / Refund / 账本行零改写。
+- **回归**：`harness verify d2-manual-review-rspec`（含状态机 / 后台交易页 / Recover·Finalize 回归；110 例）。
+
 
 - D8 (2026-09-15, PRD-20260915-payments-d8): Payment availability scope —— 入口级 `rule_set`
   （market/country/zone/currency 首版 4 维度）+ `Payments::Availability::{RuleSet,Context,Evaluator,Resolver}`

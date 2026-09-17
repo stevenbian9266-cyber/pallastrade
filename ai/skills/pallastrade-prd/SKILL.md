@@ -30,6 +30,10 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 3. 命中相似 PRD → `harness prd update` 回写原 PRD（走优化迭代流程），不新建
 
 ### 2.2 分类判定
+
+> **关键词表随领域词汇演进扩充**：`harness/policies/prd-categories.json` 是唯一权威。
+> 2026-09-17 为 `payments` 补入「交易 / 排障 / manual_review / 捕获 / 释放 / capture / void / 授权 / payment session」——
+> 原因：交易运营类需求（如 D2 交易排障台审核动作）关键词全落空 → 误归 `other`，运营类 PRD 在索引里难被发现。
 1. 读取 `harness/policies/prd-categories.json`
 2. 需求描述匹配关键词 → 取命中数最多分类
 3. 无命中 → `other/`；AI 可语义微调（记录到 PRD 元数据）

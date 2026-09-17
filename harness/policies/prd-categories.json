@@ -10,7 +10,7 @@
       "keywords": ["购物车", "结算", "订单", "checkout", "cart", "order", "下单", "结账", "支付流程", "line item"]
     },
     "payments": {
-      "keywords": ["支付", "退款", "stripe", "adyen", "payment", "refund", "发票", "收款", "网关", "gift card", "store credit"]
+      "keywords": ["支付", "退款", "stripe", "adyen", "payment", "refund", "发票", "收款", "网关", "gift card", "store credit", "交易", "排障", "manual_review", "捕获", "释放", "capture", "void", "授权", "payment session"]
     },
     "promotions": {
       "keywords": ["促销", "优惠券", "折扣", "promotion", "coupon", "折扣码", "满减", "赠品", "活动"]

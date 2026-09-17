@@ -4415,7 +4415,7 @@
       }
     },
     {
-      "id": "GS-172",
+      "id": "GS-174",
       "name": "A stuck payment that only a human may unstick",
       "description": "PRD-20260917-payments-d2 (business plan §78-D2 / §60.2-3): a transaction stopped for manual review had no way out except editing its state in a console, because the automatic recovery loop is deliberately forbidden for it. The operator now gets exactly two verdicts - approve & capture, or reject & release - each reusing existing capture/finalize/cancel primitives, each refusing when the facts do not support it, and each leaving an audit trail that says who decided what, when, and why.",
       "mustDo": [

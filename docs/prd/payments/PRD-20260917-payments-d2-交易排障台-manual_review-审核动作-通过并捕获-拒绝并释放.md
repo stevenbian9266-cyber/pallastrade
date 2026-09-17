@@ -197,7 +197,7 @@
 ## 9. 文档同步清单（知识同步门）
 
 - [x] `ai/skills/pallastrade-payments/SKILL.md`：`manual_review` 人工裁决（两动作 + 幂等 + 人工专用 + 复用既有链路 + 两条新边）
-- [ ] `ai/skills/pallastrade-admin/SKILL.md`：排障台复核卡（权限/confirm/审计/历史）——⚠️ **本文件正被并行会话修改（Catalog Health 健康分）**，按用户裁决（选项 A）**暂留工作区**，待对方提交后补一条小提交
+- [x] `ai/skills/pallastrade-admin/SKILL.md`：排障台复核卡（权限映射/必填原因+confirm/失败码 i18n 映射/审计即历史/locale 同文件）——已写入工作区，**随共享文件后补提交**（该文件当时被并行会话修改）
 - [ ] `AGENTS.md` §6：`d2-manual-review-rspec` 行——同上（已写入工作区，随共享文件后补）
 - [ ] `harness/scenarios/scenarios.json`：GS-172（已写入工作区，随共享文件后补）→ `eval-ai --scenarios` 全绿
 - [x] `harness/policies/prd-categories.json` 变更 → `ai/skills/pallastrade-prd/SKILL.md` §2.2（已同步）
@@ -217,3 +217,5 @@
 |---|---|
 | 2026-09-17 | 初稿（D2；业务方案 §78-D2 / §60.2-3 / §63.2；`prd new` 未命中相似 PRD；跨层搜索见 §6；附带修正 `prd-categories.json` 的 payments 关键词） |
 | 2026-09-17 | 实施完成：`Transactions::Review` + 两条状态机边 + 后台两动作/复核卡/历史 + 双语键 + 服务/请求规格（22 例）+ 回归（合计 110 例 0 失败）；§7 补「实现期决定」6 条；verifier `d2-manual-review-rspec` 注册；状态 → done |
+| 2026-09-17 | 提交与收口：`62189849`（11 文件，代码/规格/PRD/REQ/README 索引）+ `6f4dab8d`（`en.yml` 英文键补提交 —— D2 代码提交时该文件的索引版本被并行会话的暂存覆盖，英文侧 `transaction_review_*` 缺失）；gate `GATE-2026-09-17T12-59-49` finished（test 证据 `EVD-20260917131704`），任务 `TASK-20260917121019-0a3b504b` completed |
+| 2026-09-17 | **待补小提交（用户裁决「选项 A」）**：`harness.config.mjs`（`d2-manual-review-rspec` 注册）、`harness/scenarios/scenarios.json`（GS-174）、`AGENTS.md` §6 行、`ai/skills/pallastrade-payments/SKILL.md`（D2 小节）、`ai/skills/pallastrade-prd/SKILL.md`（§2.2 关键词）、`harness/policies/prd-categories.json`、`ai/skills/pallastrade-admin/SKILL.md`（复核卡）——这些文件当时正被并行会话（Catalog Health 健康分 / 商品事件回流）编辑与暂存，含**双方**改动，随工作区保留，待对方落库后一次性补提交（内容已写好，`knowledge assess` 16/14 已登记） |

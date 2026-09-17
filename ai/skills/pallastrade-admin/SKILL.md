@@ -1022,3 +1022,15 @@ Orders 子项 `risk_rules`（position **59.5**，紧跟「风控名单」59，�
 - ⚠️ **新增 Orders 子项必须同步 `navigation_consistency_spec.rb` 的 orders 子项数组**（本次加 `:risk_rules`）。
 - ⚠️ **多态 `created_by` 不要赋字符串**：actor 归一在服务层（只有 AR 记录才落多态列，`'admin'` / `{type:,id:,label:}` 交给审计），否则会撞 `PrefixedId#assign_attributes` 报 `undefined method 'has_query_constraints?' for String`。
 - **回归**：`harness verify d15b-risk-rules-rspec`。
+
+## 交易排障台复核卡 `/admin/transactions/:id`（D2, 2026-09-17；PRD-20260917-payments-d2）
+
+`manual_review` 交易的人工出口（此前只能 console 改状态）。**动作与状态机细节见 `pallastrade-payments` SKILL**，此处只记后台接线约定：
+
+- **两个动作**（member POST，与既有 `recover` 同一资源）：`approve_and_capture` / `release_and_cancel`。授权沿用控制器级映射 —— `authorize_admin` 把 `%i[recover approve_and_capture release_and_cancel]` 统一按 `:update` 授权（CanCan 只到 `update/manage`）。
+- **复核卡只看状态**：`@object.state == 'manual_review'` 才渲染两表单（各含**必填原因** + `data: { turbo_confirm: ... }` 双重确认）；其它状态只给一句说明、**不给按钮**（自动恢复属于 `recover`）。
+- ⚠️ **按钮 label 含 `&`**（"Approve & capture"）→ ERB 转义成 `&amp;`，spec 断言要用 `CGI.escapeHTML(PallasTrade.t(...))`，别直接比对原文。
+- **失败码 → i18n 显式映射**（`REVIEW_ERROR_KEYS`）：`reason_required` / `not_reviewable` / `no_pending_authorization` / `capture_failed` / `finalize_failed` / `paid_payment_present` / `release_failed`，未知码回落 `generic`。**不要用「翻译不存在就回落」的探测式写法**（`PallasTrade.t` 对缺键的返回形式不稳定）。
+- **复核历史**：读同资源的 `AuditLog`（`action IN (transaction_review_captured|released|failed)`，倒序 limit 10）——**不新建台账表**，审计即历史。
+- **文案位置**：键加到既有 `pallastrade.admin.orders.*`（gem `en.yml` + 宿主 `config/locales/admin_orders.zh-CN.yml`），**不要**为此新建 locale 文件（同域键必须同文件，否则键集相等校验与加载顺序都会出问题）。
+- **回归**：`harness verify d2-manual-review-rspec`。
