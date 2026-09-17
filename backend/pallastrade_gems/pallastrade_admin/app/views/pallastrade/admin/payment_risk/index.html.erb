@@ -1,0 +1,160 @@
+<% content_for(:title, PallasTrade.t('admin.payment_risk.title')) %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.payment_risk.title') %>
+<% end %>
+<%= content_for(:page_actions) do %>
+  <%= form_with url: PallasTrade.admin_payment_risk_path, method: :get, class: 'd-flex gap-2 align-items-center' do %>
+    <%= select_tag :window_days,
+                   options_for_select(PallasTrade::Admin::PaymentRiskController::WINDOW_OPTIONS.map { |days|
+                     [PallasTrade.t('admin.payment_risk.window_days_option', count: days), days]
+                   }, @window_days),
+                   class: 'form-select', onchange: 'this.form.requestSubmit()' %>
+  <% end %>
+  <%= button_to PallasTrade.t('admin.payment_risk.reevaluate'),
+                PallasTrade.admin_payment_risk_reevaluate_path,
+                method: :post, class: 'btn btn-outline' %>
+<% end %>
+
+<p class="text-sm text-gray-500 mb-4"><%= PallasTrade.t('admin.payment_risk.subtitle') %></p>
+
+<% if @degraded.any? %>
+  <div class="alert alert-warning mb-4" data-testid="payment-risk-degraded">
+    <%= @degraded.map { |reason| PallasTrade.t("admin.payment_risk.reasons.#{PallasTrade::Admin::PaymentRiskController::REASON_KEYS.fetch(reason.to_s.split(':').first, 'unknown')}") }.uniq.join('；') %>
+  </div>
+<% end %>
+
+<%# 5 个水位指标：值 / 档位 / 阈值 / 窗口 / 明细 / 下钻。只读（本页不动钱）。 %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.payment_risk.title') %></h5>
+    <span class="text-sm text-gray-500 ml-2">
+      <%= PallasTrade.t('admin.payment_risk.window_days') %>:
+      <%= PallasTrade.t('admin.payment_risk.window_days_option', count: @window_days) %>
+    </span>
+  </div>
+  <div class="card-body">
+    <table class="table w-full text-sm" data-testid="payment-risk-metrics">
+      <thead>
+        <tr>
+          <th><%= PallasTrade.t('admin.payment_risk.status') %></th>
+          <th><%= PallasTrade.t('admin.payment_risk.value') %></th>
+          <th><%= PallasTrade.t('admin.payment_risk.threshold') %></th>
+          <th><%= PallasTrade.t('admin.payment_risk.detail') %></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @rows.each do |row| %>
+          <tr data-testid="payment-risk-metric-<%= row[:key] %>" data-metric-status="<%= row[:status] %>">
+            <td>
+              <div class="font-medium"><%= metric_label(row[:key]) %></div>
+              <span class="badge <%= status_badge_class(row[:status]) %>"><%= PallasTrade.t("admin.payment_risk.statuses.#{row[:status]}") %></span>
+              <% if metric_hint(row).present? %>
+                <div class="text-xs text-gray-500 mt-1"><%= metric_hint(row) %></div>
+              <% end %>
+            </td>
+            <td class="font-semibold"><%= metric_display(row) %></td>
+            <td><%= threshold_display(row[:threshold], row[:unit]) %></td>
+            <td class="text-xs text-gray-500">
+              <% row[:detail].to_h.each do |key, value| %>
+                <div><%= "#{key}: #{value}" %></div>
+              <% end %>
+            </td>
+            <td>
+              <% if drill_down_path(row[:key]).present? %>
+                <%= link_to PallasTrade.t('admin.payment_risk.drill_down'), drill_down_path(row[:key]), class: 'btn btn-sm btn-outline' %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <p class="text-xs text-gray-500 mt-2"><%= PallasTrade.t('admin.payment_risk.read_only_note') %></p>
+  </div>
+</div>
+
+<%# 阈值策略：窗口 + 逐指标开关与双阈值（未配置双阈值 → 不判定） %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.payment_risk.policy_title') %></h5>
+  </div>
+  <div class="card-body">
+    <p class="text-sm text-gray-500 mb-4"><%= PallasTrade.t('admin.payment_risk.policy_hint') %></p>
+    <%= form_with url: PallasTrade.admin_payment_risk_policy_path, method: :patch,
+                  data: { testid: 'payment-risk-policy' } do |f| %>
+      <div class="mb-4">
+        <label class="form-label" for="policy_window_days"><%= PallasTrade.t('admin.payment_risk.policy_window_days') %></label>
+        <%= number_field_tag 'policy[window_days]', @policy.window_days,
+                             class: 'form-input w-32', id: 'policy_window_days',
+                             min: PallasTrade::Risk::DashboardPolicy::MIN_WINDOW_DAYS,
+                             max: PallasTrade::Risk::DashboardPolicy::MAX_WINDOW_DAYS %>
+      </div>
+
+      <table class="table w-full text-sm" data-testid="payment-risk-policy-metrics">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.payment_risk.policy_enabled') %></th>
+            <th><%= PallasTrade.t('admin.payment_risk.policy_warning') %></th>
+            <th><%= PallasTrade.t('admin.payment_risk.policy_critical') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% PallasTrade::Risk::DashboardPolicy.metric_keys.each do |key| %>
+            <% config = @policy.metric_config(key) %>
+            <tr data-testid="payment-risk-policy-<%= key %>">
+              <td>
+                <%= hidden_field_tag "policy[metrics][#{key}][enabled]", '0' %>
+                <%= check_box_tag "policy[metrics][#{key}][enabled]", '1', config[:enabled], id: "policy_metrics_#{key}_enabled" %>
+                <label for="policy_metrics_<%= key %>_enabled" class="ml-2"><%= metric_label(key) %></label>
+              </td>
+              <td>
+                <%= number_field_tag "policy[metrics][#{key}][warning]", config[:warning], class: 'form-input w-24', min: 1 %>
+              </td>
+              <td>
+                <%= number_field_tag "policy[metrics][#{key}][critical]", config[:critical], class: 'form-input w-24', min: 1 %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+
+      <div class="mt-4">
+        <%= f.submit PallasTrade.t('admin.payment_risk.policy_save'), class: 'btn btn-primary' %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<%# 最近阈值告警（审计留痕即台账） %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.payment_risk.alerts_title') %></h5>
+  </div>
+  <div class="card-body">
+    <% if @alerts.any? %>
+      <table class="table w-full text-sm" data-testid="payment-risk-alerts">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.payment_risk.alerts_metric') %></th>
+            <th><%= PallasTrade.t('admin.payment_risk.alerts_status') %></th>
+            <th><%= PallasTrade.t('admin.payment_risk.alerts_value') %></th>
+            <th><%= PallasTrade.t('admin.payment_risk.alerts_time') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @alerts.each do |alert| %>
+            <% metadata = alert.metadata.to_h %>
+            <tr>
+              <td><%= PallasTrade.t("admin.payment_risk.metrics.#{metadata['metric']}", default: metadata['metric']) %></td>
+              <td><%= PallasTrade.t("admin.payment_risk.statuses.#{metadata['status']}", default: metadata['status']) %></td>
+              <td><%= metadata['value'] %></td>
+              <td><%= alert.created_at&.iso8601 %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-sm text-gray-500"><%= PallasTrade.t('admin.payment_risk.alerts_empty') %></p>
+    <% end %>
+  </div>
+</div>

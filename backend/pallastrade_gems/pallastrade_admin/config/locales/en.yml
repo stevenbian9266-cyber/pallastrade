@@ -737,6 +737,61 @@ en:
           cancel: Cancel
           resend: Resend
           resume: Resume
+      # PALLAS-CUSTOM: D3（PRD-20260917-payments-d3-risk-dashboard-threshold-alerts；业务方案 §78-D3）
+      # 支付风控看板：5 指标 + 阈值策略 + 告警留痕（只读统计）
+      payment_risk:
+        title: Payment risk
+        subtitle: Risk water level for this store - every number is recomputable from its source page.
+        window_days: Window
+        window_days_option: "%{count} days"
+        minutes_short: "%{count} min"
+        unavailable: Unavailable
+        value: Value
+        threshold: Threshold (warn / critical)
+        status: Status
+        detail: Detail
+        drill_down: Open
+        metrics:
+          risky_orders: Risky orders
+          three_ds_challenge_rate: 3DS challenge rate
+          dispute_rate: Dispute rate
+          refund_rate: Refund rate
+          review_queue_duration: Review queue wait
+        units:
+          bps: ratio
+          minutes: minutes
+        statuses:
+          ok: OK
+          approaching: Approaching
+          breached: Breached
+          unconfigured: Not configured
+          unavailable: Unavailable
+        reasons:
+          no_denominator: No denominator yet
+          no_data: No data yet
+          thresholds_not_configured: Thresholds not configured
+          value_unavailable: Value unavailable
+          report_unavailable: Source report unavailable
+          report_degraded: Source report degraded
+          unknown: Not classifiable
+        policy_title: Threshold policy
+        policy_hint: Leave a metric disabled to keep it out of the dashboard verdicts. A metric only gets a verdict once both thresholds are set.
+        policy_window_days: Window (days)
+        policy_enabled: Enabled
+        policy_warning: Warning
+        policy_critical: Critical
+        policy_save: Save policy
+        policy_saved: Threshold policy saved.
+        reevaluate: Evaluate now
+        reevaluated: "Evaluated - %{count} alert row(s) recorded."
+        reevaluate_failed: Evaluation failed; nothing was recorded.
+        alerts_title: Recent threshold alerts
+        alerts_empty: No threshold alert recorded yet.
+        alerts_metric: Metric
+        alerts_status: Tier
+        alerts_value: Value
+        alerts_time: Time
+        read_only_note: Read-only view. Nothing here moves money or changes orders.
       orders:
         add_user_to_this_order: Add customer to this order
         all_orders: All Orders

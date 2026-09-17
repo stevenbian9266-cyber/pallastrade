@@ -1045,6 +1045,18 @@ Orders 子项 `risk_rules`（position **59.5**，紧跟「风控名单」59，�
 - ⚠️ **多态 `created_by` 不要赋字符串**：actor 归一在服务层（只有 AR 记录才落多态列，`'admin'` / `{type:,id:,label:}` 交给审计），否则会撞 `PrefixedId#assign_attributes` 报 `undefined method 'has_query_constraints?' for String`。
 - **回归**：`harness verify d15b-risk-rules-rspec`。
 
+## 风控看板 `/admin/payment_risk`（D3, 2026-09-17；PRD-20260917-payments-d3）
+
+Orders 子项 `payment_risk`（position **64.5**，紧跟「拒付率」之后，同 `PaymentRiskAssessment` 权限域）：
+
+- **页面**：窗口选择（7/30/60/90 天）+ 5 行指标表（`data-testid="payment-risk-metrics"`，每行 `payment-risk-metric-<key>` + `data-metric-status`）+ 下钻链接 + 阈值策略表单（`payment-risk-policy`；每指标 enabled + 两档阈值，未勾选时 hidden `enabled=0`）+ 告警历史（`payment-risk-alerts`，最近 20 条审计）。
+- **动作**（均经服务层，控制器**不自算**）：`patch /admin/payment_risk/policy`（唯一写路径走 `DashboardPolicy.storable`：非法**不落库** + flash 错误；成功写审计 `store_payment_risk_dashboard_policy_updated`）/ `post /admin/payment_risk/reevaluate`（手动立即求值，复用同一个 `DashboardAlert` 判定）。
+- ⚠️ **路由写法**：用显式 `get/patch/post`（helper：`admin_payment_risk_path` / `_policy_path` / `_reevaluate_path`）。**不要**写 `resources :payment_risk, only: [:index]` —— 会自动复数化成 `admin_payment_risk_index_path`，与视图不符。
+- ⚠️ **新增 Orders 子项必须同步两处**：`navigation_consistency_spec.rb` 的 orders 子项数组 + `backend/config/initializers/pallastrade_permission_registry.rb`（本次登记 `:payment_risk`，`PaymentRiskAssessment`，`read update`）。
+- **i18n**：新域 → 新文件 `backend/config/locales/admin_payment_risk.zh-CN.yml` + gem `en.yml` 的 `admin.payment_risk.*`（en↔zh-CN **键集相等**，跑 `harness verify admin-i18n-rspec`）。
+- **「不可判定不猜」在 UI 的体现**：`unavailable` 行显示 `reason` 文案而非 `0`；`unconfigured` 行显示「未配置阈值」而非「正常」。
+- **回归**：`harness verify d3-risk-dashboard-rspec`（含导航一致性）。
+
 ## 交易排障台复核卡 `/admin/transactions/:id`（D2, 2026-09-17；PRD-20260917-payments-d2）
 
 `manual_review` 交易的人工出口（此前只能 console 改状态）。**动作与状态机细节见 `pallastrade-payments` SKILL**，此处只记后台接线约定：

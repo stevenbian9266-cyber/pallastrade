@@ -199,6 +199,15 @@ Rails.application.config.after_initialize do
               position: 64,
               active: -> { controller_name == 'dispute_rates' },
               if: -> { can?(:manage, PallasTrade::DisputeRateAlert) }
+
+    # PALLAS-CUSTOM: D3（PRD-20260917-payments-d3-risk-dashboard-threshold-alerts；业务方案 §78-D3 / §60.2-P3）
+    # 支付风控看板：5 个风控水位指标 + 阈值策略 + 告警留痕（只读统计；保存阈值需 update 权限）
+    orders.add :payment_risk,
+              label: 'admin.payment_risk.title',
+              url: :admin_payment_risk_path,
+              position: 64.5,
+              active: -> { controller_name == 'payment_risk' },
+              if: -> { can?(:read, PallasTrade::PaymentRiskAssessment) }
   end
 
   # Returns with submenu — P6：顶级落地 = Customer Returns

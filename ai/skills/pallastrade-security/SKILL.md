@@ -332,6 +332,17 @@ P8 的代码注册式规则之上，本切片把**规则内容**搬到数据层 
 - **豁免只放宽「是否挑战」**：`low_amount` / `country_allowlisted` / `option_allowlisted` 只把 `required` 降为 `false`；**绝不放宽 `block`**（阻断语义不变，仍走既有 `risk_order_flagged`/Preflight 口径）。
 - **闸门（本切片唯一新增的执行面）**：认证需求 = 是时，`Payments::Availability::Resolver` 只保留**入口目录已声明 `three_d_secure: 'supported'`** 的入口（未声明 = unsupported，**不猜**），前台列表与 `PaymentSessions::Start` 同源；客户端绕过 → 建会话**前** 422 `payment_option_not_available` + `reason='authentication_required'`，**零 session 行**。
 
+### 风控水位看板与阈值告警：把「不知道」当一等公民（D3, 2026-09-17；PRD-20260917-payments-d3）
+
+运营要「5 个水位一眼可见 + 越线告警」。安全/治理上真正要防的**不是漏告警，而是把「不知道」渲染成「健康」**：
+
+- **不可判定不猜（安全语义）**：分母为 0 / 上游报表降级或失败 → `value: nil` + `available: false` + 结构化 `reason`（`no_denominator` / `report_unavailable` / `report_degraded:*`），**绝不回落 0** —— 本页 0 的语义是「健康」，回落 0 会让「大面积数据缺失」看起来一片安宁；前端 `unavailable` 行必须显示原因文案。
+- **未配置 ≠ 通过**：阈值需 `warning` 与 `critical` **双档显式存在**才参与判定（`configured?`）；只配一档 / 未配置 → `unconfigured` 且**不告警**（与「已配置且正常」显式区分）。
+- **写入拒绝式**：策略写路径 `storable` 拒绝未知指标 / `warning ≥ critical` / 越界 / 类型错，**不落库**；读路径 fail-safe（坏载荷回落文档默认 + `reasons`）—— 运营写坏一个键不能让看板 500。
+- **告警留痕治理**：**进入更差档位才写**审计 `payment_risk_dashboard_threshold`（同日重复求值幂等、**同日不降档**）；事件 `payments.risk_dashboard_threshold` 载荷**无 PII**（仅 store/metric/status/value/两档阈值/direction），`Events.enabled?` 守卫 + rescue（发不出去不影响巡检）。
+- **零资金副作用**：看板与巡检**只读**（除审计留痕），不捕获/退款/取消、不调 provider；跨店严格隔离（一律按 `store` 收窄）。
+- **权限**：后台 `/admin/payment_risk` 复用 `PaymentRiskAssessment` 能力域（`read` 看看板 / `update` 保存策略 + 立即求值），已在 `pallastrade_permission_registry.rb` 登记 `:payment_risk`。
+
 ### Dependency hygiene
 
 ```bash

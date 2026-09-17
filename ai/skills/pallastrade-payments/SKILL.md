@@ -1607,6 +1607,26 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
 - **铁律**：判定与闸门**零 provider I/O、零写库、零资金副作用**；不改 `Checkout::Preflight` 的启用条件与阻断行为；不改「支付成功 → 订单完成」链路；MIT 豁免、其它 provider 落地、挑战率看板属后续切片。
 - **回归**：`harness verify d15c-three-d-secure-rspec`（181 例；含 D8 / D11 / D16 / 契约 / 切片1·2 回归 + 导航）。
 
+## 风控看板与阈值告警 —— 5 水位读模型 + 双档阈值（D3, 2026-09-17；PRD-20260917-payments-d3）
+
+业务方案 §78-D3 / §60.2-P3 落地：运营要「一眼看清 5 个水位」，但**看到数字 ≠ 知道真相** —— 空窗口或报表降级时，页面必须能说「我不知道」。
+
+- **只读读模型（唯一口径）**：`Risk::DashboardReport.call(store:, window_days:, now:)` → `success(scope:, policy:, metrics:, evaluated_at:, degraded:)`；`metrics` = 5 个 `{ key, value, unit, available, reason, window, detail, sources }`。
+  - `risky_orders`（bps）= 窗口内 `PaymentRiskAssessment.flagged` 去重订单 / `store.orders` 已提交数。
+  - `three_ds_challenge_rate`（bps）= 窗口内会话数中 `external_data ->> 'three_d_secure_hint' = 'three_d_secure'` 的占比（D15c 下发留痕）。
+  - `dispute_rate`（bps）= **委派** `Disputes::RateReport`（D14c 唯一权威，**禁止重算**）；抽出 `rate_report` 接缝以便规格注入失败/降级。
+  - `refund_rate`（bps）= 窗口内 Refund 金额 / 同窗口 `completed` Payment 金额。
+  - `review_queue_duration`（minutes）= 当前 `manual_review` 交易**排队最久** + 窗口内已处理（D2 裁决审计）**P90**。
+- **不可判定不猜（铁律）**：分母为 0 / 报表降级或失败 → `value: nil`、`available: false`、`reason` ∈ `no_denominator` / `report_unavailable` / `report_degraded:*`；**绝不回落 0**（0 在本页语义 = 健康）。整页级降级（如 `store_missing`）走 `degraded_envelope`（5 行仍齐、全 unavailable）。
+- **阈值策略（store 级，`private_metadata['payment_risk_dashboard_policy']`）**：`Risk::DashboardPolicy` —— `window_days`（1..365）+ 每指标 `{ enabled, warning, critical }`。
+  - `storable`（写）拒绝 `unknown_metric` / `warning_not_below_critical` / `out_of_range` / `invalid_type` 且**不落库**；`initialize`（读）**fail-safe**（坏载荷回落默认 + `reasons`，绝不让结账/看板 500）。
+  - `configured?(key)` 要求 **warning 与 critical 双档都显式存在** —— 只配一档 = **未配置 = 不判定**（不是「通过」）。默认开启仅 `dispute_rate` + `review_queue_duration`。
+- **判定**：`Risk::DashboardThreshold.classify(metrics:, policy:)` → 每指标 `ok / approaching / breached / unconfigured / unavailable`；**只对 `approaching` / `breached` 告警**（`unconfigured` 与 `unavailable` 是两种不同的「无可奉告」）。
+- **留痕与幂等**：`Risk::DashboardAlert.call(store:, now:, window_days:, report:)` —— **档位变差才写**（同日重复 sweep 幂等；同日**绝不降档** `no_downgrade_same_day`）；审计 `payment_risk_dashboard_threshold`（before/after + metadata：metric/status/value/unit/两档阈值/direction），事件 `payments.risk_dashboard_threshold`（**无 PII**；`Events.enabled?` 守卫 + rescue —— 发不出去不影响巡检）。
+- **巡检**：`Risk::DashboardAlertSweeperJob`（`risk_dashboard_alert_sweep`，每小时 `5 * * * *`，见 `backend/config/sidekiq_schedule.rb`）—— 逐店隔离（单店失败只计 `failed`）+ 指标 JSON 日志；`store_id:` 可单店重跑。
+- **铁律**：**零写库**（除审计留痕）、**零 provider I/O**、**零资金副作用**；查询数固定（不随行数增长）；跨店隔离（全部按 `store` 收窄）；不改前台支付可用性（`Availability::Resolver` 不读该策略）。
+- **回归**：`harness verify d3-risk-dashboard-rspec`。
+
 ## manual_review 人工裁决 —— 排障台的「通过并捕获 / 拒绝并释放」（D2, 2026-09-17；PRD-20260917-payments-d2）
 
 业务方案 §78-D2 / §60.2-3 落地：`manual_review` 以前**只能 console 改状态**（自动恢复对它是禁区），现在有了**唯一的人工出口**——排障台两个动作，且证据链完整（谁、何时、为何、前后状态）。

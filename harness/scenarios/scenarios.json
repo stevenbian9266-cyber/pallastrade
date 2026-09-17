@@ -4532,6 +4532,40 @@
         "authorizationAndScope": 15,
         "auditTrail": 10
       }
+    },
+    {
+      "id": "GS-177",
+      "name": "A dashboard must be able to say I do not know",
+      "description": "PRD-20260917-payments-d3-risk-dashboard-threshold-alerts (business plan 78-D3 / 60.2-P3): operations wanted one page showing the five payment risk water levels - risky-order share, 3DS challenge rate, dispute rate, refund rate and review queue age - with threshold alerts. The tempting shortcut is to render every tile as a number, so an empty window or a broken report silently reads as zero, and zero means healthy here, so the page would look calm exactly when it knows nothing. This reads the raw facts without re-deriving anyone else's ratio, and every tile that cannot be computed says so instead of guessing.",
+      "mustDo": [
+        "Return a nil value plus a structured reason for any ratio whose denominator is zero or whose source report is degraded or unavailable - never fall back to zero, because zero is this page's word for healthy",
+        "Treat an unconfigured threshold as its own state and leave it out of alerting, rather than treating a missing warning level as a pass",
+        "Delegate the dispute rate to the component that already owns that definition instead of recomputing it from a second query",
+        "Normalize the threshold policy on write, refusing any payload where the warning level is not strictly below the critical level, or where a value is out of range or of the wrong type",
+        "Read a corrupted policy fail-safe: fall back to the documented defaults, record why, and keep the page rendering",
+        "Alert only on entering a worse tier, keep the first record of the day, and never lower the recorded tier on the same day even if the metric improves",
+        "Scope every query to the current store and keep the query count flat as the data grows",
+        "Record the alert with an audit trail and publish a payload that carries no personal data, and let a failing publish never break the sweep",
+        "Isolate stores in the sweeper so one bad store cannot abort the run, and report the counters",
+        "Stay read-only: apart from the alert audit row, the page and the sweep must write nothing and touch no payment"
+      ],
+      "mustNotDo": [
+        "Render an unknown metric as zero, or let an empty window look like a healthy one",
+        "Recompute the dispute rate locally, or read across stores",
+        "Persist an invalid threshold policy, or store thresholds without both levels present",
+        "Re-alert the same tier every sweep, or let a same-day improvement rewrite history",
+        "Capture, refund, cancel or otherwise move money from a dashboard or a sweep",
+        "Let a degraded source report raise out of the request or the job, or put customer identifiers in the published payload",
+        "Add a new business-path read of these metrics, or let the admin page bypass the registry permission"
+      ],
+      "scoring": {
+        "honestUnavailability": 20,
+        "singleSourceDelegation": 15,
+        "policyNormalization": 15,
+        "alertIdempotency": 20,
+        "zeroMoneySideEffects": 15,
+        "storeIsolation": 15
+      }
     }
   ]
 }

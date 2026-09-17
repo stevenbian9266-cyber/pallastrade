@@ -507,6 +507,14 @@ PallasTrade::Core::Engine.add_routes do
         patch :policy, action: :update_policy
       end
     end
+
+    # PALLAS-CUSTOM: D3（PRD-20260917-payments-d3-risk-dashboard-threshold-alerts；业务方案 §78-D3 / §60.2-P3）——
+    # 支付风控看板：5 指标（risky 数 / 3DS 挑战率 / 拒付率 / 退款率 / 审核队列时长）
+    # + 阈值策略 + 立即评估（只读统计 + 审计留痕；零资金副作用）。
+    # 单数页面语义（一个店铺一页）→ 显式声明，不用 resources（否则 helper 会变成 _index）。
+    get 'payment_risk', to: 'payment_risk#index', as: :payment_risk
+    patch 'payment_risk/policy', to: 'payment_risk#update_policy', as: :payment_risk_policy
+    post 'payment_risk/reevaluate', to: 'payment_risk#reevaluate', as: :payment_risk_reevaluate
     get '/emails', to: 'emails#show', as: :emails
     patch '/emails', to: 'emails#update'
     post '/emails/test_send', to: 'emails#test_send', as: :emails_test_send

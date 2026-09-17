@@ -1,0 +1,58 @@
+zh-CN:
+  pallastrade:
+    admin:
+      # PALLAS-CUSTOM: D3（PRD-20260917-payments-d3-risk-dashboard-threshold-alerts；业务方案 §78-D3）
+      # 支付风控看板：5 指标 + 阈值策略 + 告警留痕（只读统计）
+      payment_risk:
+        title: 支付风控
+        subtitle: 本店风控水位 —— 每个数字都能回到它的来源页复算。
+        window_days: 观察窗口
+        window_days_option: "%{count} 天"
+        minutes_short: "%{count} 分钟"
+        unavailable: 不可判定
+        value: 当前值
+        threshold: 阈值（预警 / 严重）
+        status: 档位
+        detail: 明细
+        drill_down: 前往处理
+        metrics:
+          risky_orders: 风险单占比
+          three_ds_challenge_rate: 3DS 挑战率
+          dispute_rate: 拒付率
+          refund_rate: 退款率
+          review_queue_duration: 复核队列时长
+        units:
+          bps: 比率
+          minutes: 分钟
+        statuses:
+          ok: 正常
+          approaching: 逼近阈值
+          breached: 已超阈值
+          unconfigured: 未配置
+          unavailable: 不可判定
+        reasons:
+          no_denominator: 还没有分母（暂无可衡量的对象）
+          no_data: 暂无数据
+          thresholds_not_configured: 未配置双阈值（不判定）
+          value_unavailable: 数值不可判定
+          report_unavailable: 来源报表不可用
+          report_degraded: 来源报表降级
+          unknown: 暂不可判定
+        policy_title: 阈值策略
+        policy_hint: 指标不启用则不参与档位判定；只有两个阈值都填了才会给出档位。
+        policy_window_days: 观察窗口（天）
+        policy_enabled: 启用
+        policy_warning: 预警
+        policy_critical: 严重
+        policy_save: 保存策略
+        policy_saved: 阈值策略已保存。
+        reevaluate: 立即评估
+        reevaluated: 已评估 —— 记录 %{count} 条告警留痕。
+        reevaluate_failed: 评估失败，未记录任何告警。
+        alerts_title: 最近阈值告警
+        alerts_empty: 还没有阈值告警留痕。
+        alerts_metric: 指标
+        alerts_status: 档位
+        alerts_value: 值
+        alerts_time: 时间
+        read_only_note: 只读视图 —— 本页不会动钱，也不会改订单状态。

@@ -22,6 +22,14 @@ Rails.application.config.after_initialize do
                actions: %w[read create update destroy],
                data_fields: %w[store_id])
 
+  # PALLAS-CUSTOM: D3（PRD-20260917-payments-d3-risk-dashboard-threshold-alerts；业务方案 §78-D3）——
+  # 支付风控看板（5 指标 + 阈值策略 + 告警留痕）。看板只读，保存阈值需 update 权限。
+  # 数据范围按 `store_id`（风险留痕行自带 store_id）。
+  reg.register(:payment_risk,
+               model_class: PallasTrade::PaymentRiskAssessment,
+               actions: %w[read update],
+               data_fields: %w[store_id])
+
   reg.register(:products,
                model_class: PallasTrade::Product,
                actions: %w[read create update destroy export],

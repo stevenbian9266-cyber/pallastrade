@@ -115,5 +115,15 @@ PALLAS_CART_SCHEDULE = [
     class: 'PallasTrade::Disputes::RateAlertSweeperJob',
     cron: '45 * * * *',
     queue: 'default'
+  },
+  # D3 (2026-09-17, PRD-20260917-payments-d3-risk-dashboard-threshold-alerts；业务方案 §78-D3): 注册支付风控
+  # 水位巡检 —— **只读聚合 + 审计留痕 + 事件**（不改订单/支付/退款/交易状态，零 provider 外呼）：
+  # 5 指标档位判定 → 档位新进入/升级写审计并发布 `payments.risk_dashboard_threshold`；
+  # 同店 + 同指标 + 同档位 + 同评估日只记一次（同日不降档）。每小时 :05（错开 :45 的拒付率巡检）。
+  {
+    name: 'risk_dashboard_alert_sweep',
+    class: 'PallasTrade::Risk::DashboardAlertSweeperJob',
+    cron: '5 * * * *',
+    queue: 'default'
   }
 ].freeze
