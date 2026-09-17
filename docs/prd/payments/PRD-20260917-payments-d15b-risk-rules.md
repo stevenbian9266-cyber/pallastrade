@@ -251,6 +251,8 @@
 - 金丝雀提示文案（zh-CN / en）补「选草稿即可把它以金丝雀身份放出（不会成为生效版）；填 0 关闭」。
 - 回归（`admin/d15b_risk_rules_spec` +1 例）：下拉含草稿 option 且**不含**归档版 option；从界面把草稿设为金丝雀后 `canary_version_id` 指向草稿、草稿 `published`，而 `active_version_id` **仍是原生效版**。
 
+**dev 验证（2026-09-17）**：`a563978f` 部署完成后，dev 容器 `.deployed-revision` = `a563978f75ba41c358ef3da9962c7fdd4065a1b`；`rails db:migrate` 无待办（零新迁移，schema 一致）；冒烟 **21 OK / 0 FAIL**（含「金丝雀与稳定版并存」「发布后清理过期金丝雀」「归档版不可作金丝雀」「回滚生成新版本且源版本一字不改」「零资金副作用」「后台路由 helper 齐备」）；HTTP `/up` 200、`/admin/risk_rules` 302。
+
 ## 10. 变更记录
 
 | 日期 | 变更 |
