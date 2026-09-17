@@ -4,7 +4,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-17 |
 | 来源 | 「实施」→ 方案 §十六「AI-generated content edited before save」；G-5 明确留下的最后一片 |
 | 分类 | catalog |

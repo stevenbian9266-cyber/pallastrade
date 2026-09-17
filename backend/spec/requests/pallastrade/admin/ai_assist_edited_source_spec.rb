@@ -3,6 +3,12 @@
 require 'rails_helper'
 
 # PRD-20260917-catalog-ai-edited-before-save AC-006 AC-007 AC-008 AC-009
+# PRD-20260916-catalog-ai-acceptance-audit AC-009
+#
+# 两个 PRD 共用同一组源级断言：后者（较早）的 AC-009 描述的就是这段 JS 的容错契约
+# ——“accept()/discard() 均触发上报；上报抛错时表单写入与 UI 状态不变”，
+# 而本文件已把它钉在源码上（见 “swallows report failures so the save is never blocked”
+# 与 “keeps the report alive across the navigation” 两例）。此处只补标记，不重复写同义断言。
 #
 # 本项目**没有**前端 JS 单测基建（无 jest/vitest），而“采纳后被编辑”的核心风险是
 # **误报**与**阻断保存**。与其为此引入一套新测试基建，这里对控制器源码断言四个

@@ -4,7 +4,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-16 |
 | 来源 | 「继续」→ 商品域审计（`docs/research/RESEARCH-20260916-catalog-domain-audit.md`）的 **G-5（P1）** |
 | 分类 | catalog（AI 能力 PRD 惯例归此，见 E-1/E-2/E-3） |

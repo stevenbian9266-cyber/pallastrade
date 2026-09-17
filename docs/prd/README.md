@@ -215,10 +215,10 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260916-payments-d13c-fee-cost-report | payments | 2026-09-16 | （实施时回填） |
 | done | PRD-20260916-payments-d13d-fx-snapshot | payments | 2026-09-16 | （实施时回填） |
 | approved | PRD-20260916-shipping-catalog-observability-scope | shipping | 2026-09-16 | （实施时回填） |
-| approved | PRD-20260916-catalog-ai-acceptance-audit | catalog | 2026-09-16 | （实施时回填） |
+| done | PRD-20260916-catalog-ai-acceptance-audit | catalog | 2026-09-16 |  实施：AI 采纳审计——`AI::Run` 增采纳状态 + `RecordAcceptance` 服务 + `POST /admin/ai/acceptances`（跨店/非法/幂等/改判均有覆盖）+ Runs 列表展示状态；`run_acceptance_spec` / `ai_acceptances_spec` / `ai_assist_edited_source_spec` 绿 |
 | done | PRD-20260916-payments-d14c-dispute-rate-board | payments | 2026-09-16 | （实施时回填） |
 | done | PRD-20260916-catalog-operations-report | catalog | 2026-09-16 | （实施时回填） |
 | done | PRD-20260916-catalog-health-trend-snapshot | catalog | 2026-09-16 | （实施时回填） |
 | done | PRD-20260917-catalog-health-coverage-ratios | catalog | 2026-09-17 | （实施时回填） |
 | done | PRD-20260917-payments-d15b-risk-rules | payments | 2026-09-17 | （实施时回填） |
-| approved | PRD-20260917-catalog-ai-edited-before-save | catalog | 2026-09-17 | （实施时回填） |
+| done | PRD-20260917-catalog-ai-edited-before-save | catalog | 2026-09-17 | 实施：“采纳后修改”审计（补方案 §16 最后一项指标）——`accept()` 先写入再快照、提交前比**值**而非“是否碰过”、每次决策只上报一次、上报失败静默不阻断保存；`ai_edited_before_save_spec` + `ai_assist_edited_source_spec` 绿（17/17 AC） |
