@@ -17,6 +17,9 @@ module PallasTrade
         # PRD-20260917-catalog-health-coverage-ratios：计数没有分母就不可决策（「23 个缺 SEO」
         # 在 25 个商品的店里是灾难、在 5000 个的店里是噪声）—— 分子复用 Issues.count，分母各自自洽。
         @coverage = PallasTrade::CatalogHealth::Coverage.call(current_store)
+        # PRD-20260917-catalog-health-score：总分只是「一眼看结论」，可解释性靠它的明细表 ——
+        # 不可计算的维度既不按 0 也不按 1 计入，页面照实标注原因。
+        @score = PallasTrade::CatalogHealth::Score.call(current_store)
       end
 
       helper_method :catalog_health_target_path

@@ -339,6 +339,17 @@ en:
             customer_pays: Customer pays return shipping
       catalog_health:
         action: Action
+        score:
+          heading: Health score
+          out_of_100: out of 100
+          weighting: Every counted dimension weighs the same, so you can check this number yourself. Averaged over %{counted} of %{total} dimensions.
+          unknown: No score yet
+          unknown_hint: Nothing measurable in this store yet, so no score is shown.
+          coverage: Coverage
+          weight: Weight
+          excluded:
+            no_denominator: Not counted — nothing to measure here yet
+            count_failed: Not counted — this counter could not run
         coverage:
           heading: Coverage
           unknown: No data yet
@@ -347,6 +358,11 @@ en:
           metrics:
             missing_seo: SEO coverage
             missing_translations: Translation coverage
+            missing_media: Media coverage
+            missing_description: Description coverage
+            active_zero_stock: Availability coverage
+            old_drafts: Draft hygiene
+            redirect_unresolved: Redirect coverage
         trend:
           heading: Trend
           unknown: No trend yet

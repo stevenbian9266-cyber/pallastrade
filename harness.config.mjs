@@ -216,9 +216,11 @@ export default {
       },
       // 管理后台 Catalog Health V1（PRD-20260915-admin-catalog-health-v1）：7 类 issue 口径
       // + 计数与过滤列表同源一致性 + 筛选横幅 + 导航子项（含 navigation_consistency 回归）
+      // 2026-09-17 扩入覆盖率与健康分（PRD-20260917-catalog-health-{coverage-ratios,score}）：
+      // 这两项直接建在 7 类计数之上，口径漂了会同时弄错页面上的比率与总分。
       'admin-catalog-health-rspec': {
-        description: 'Admin catalog health specs (issue semantics + filtered products list + banner + navigation consistency)',
-        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/catalog_health_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
+        description: 'Admin catalog health specs (issue semantics + filtered products list + banner + coverage ratios + health score + navigation consistency)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/catalog_health_spec.rb spec/requests/pallastrade/admin/catalog_health_coverage_spec.rb spec/requests/pallastrade/admin/catalog_health_score_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
       },
       // 管理后台 i18n 覆盖率（2026-09-17 起）：en ↔ zh-CN 按功能域**双向**键集相等 +
       // 顶级键批次 + 已修缺陷回归。i18n 工作的产物是 locale YAML 与断言，

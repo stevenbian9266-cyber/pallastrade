@@ -10,6 +10,17 @@ zh-CN:
     admin:
       catalog_health:
         action: 操作
+        score:
+          heading: 健康分
+          out_of_100: 分（满分 100）
+          weighting: 各计入维度等权，你可以照着表里的数字自己算一遍。本次由 %{total} 个维度中的 %{counted} 个计算得出。
+          unknown: 暂无评分
+          unknown_hint: 本店暂无可衡量的对象，因此不显示分数。
+          coverage: 覆盖率
+          weight: 权重
+          excluded:
+            no_denominator: 未计入 —— 本店暂无可衡量的对象
+            count_failed: 未计入 —— 该项计数未成功执行
         coverage:
           heading: 覆盖率
           unknown: 暂无数据
@@ -18,6 +29,11 @@ zh-CN:
           metrics:
             missing_seo: SEO 覆盖率
             missing_translations: 翻译覆盖率
+            missing_media: 图片覆盖率
+            missing_description: 描述覆盖率
+            active_zero_stock: 在售可购率
+            old_drafts: 草稿新鲜度
+            redirect_unresolved: 跳转覆盖率
         trend:
           heading: 趋势
           unknown: 暂无趋势

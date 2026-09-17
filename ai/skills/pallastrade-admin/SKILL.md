@@ -624,7 +624,7 @@ Member routes (`PATCH /admin/reviews/:id/approve` etc.) live in
 
 ### Catalog Health —— 商品健康待办中心（2026-09-15，PRD-20260915-admin-catalog-health-v1）
 
-Products → **Catalog Health**（`/admin/catalog_health`）是商品运营的「待办中心」：不是报表，也不做健康分，直接给 **7 类 Actionable Issue 计数 + 一键下钻**。
+Products → **Catalog Health**（`/admin/catalog_health`）是商品运营的「待办中心」：不是报表，直接给 **7 类 Actionable Issue 计数 + 一键下钻**，并在其上给出**覆盖率**与**可解释健康分**（见下文两节）。
 
 | issue key | 口径（一律排除 archived） | 下钻目标 |
 |---|---|---|
@@ -656,16 +656,45 @@ Products → **Catalog Health**（`/admin/catalog_health`）是商品运营的�
 > `PallasTrade.t` 会 prepend `:pallastrade`。真实中文覆盖率比表面低，详见
 > `docs/research/RESEARCH-20260917-admin-i18n-gap.md`。
 
-### Catalog Health 覆盖率区（Coverage，2026-09-17；PRD-20260917-catalog-health-coverage-ratios）
+### Catalog Health 覆盖率区（Coverage，2026-09-17；PRD-20260917-catalog-health-coverage-ratios + PRD-20260917-catalog-health-score）
 
-`/admin/catalog_health` 顶部新增「覆盖率」卡：
+`/admin/catalog_health` 顶部「覆盖率」卡覆盖**全部 7 类 issue**（原先只有 SEO 与翻译两项）：
 
 - 控制器注入 `@coverage = PallasTrade::CatalogHealth::Coverage.call(current_store)`。
-- 每项显示 **覆盖率百分比 + 分子/分母**（例：`97.4%` / `38 中缺 1`）—— 给出分母是故意的：
-  商家能自己验算，也能看出比率是不是真的有分母（新店没有商品时应显示“暂无数据”）。
+- **每个 key 的分母与它自己的分子同单位**，由 `Coverage::DENOMINATORS` **一处**定义：
+  内容三类 = 未归档商品数；`active_zero_stock` = 未归档**且 active** 的商品数；
+  `old_drafts` = 未归档**且 draft** 的商品数；`missing_translations` = `Issues.translation_slots`
+  （商品 × 其它语言）；`redirect_unresolved` = `ProductUrlChange` 总条数。
+  这五套分母**互不相同** —— 共用一个会算出一个很像对的**错**比率。
+- ⚠️ 一个既存事实：`Issues.translation_slots` 走 `store.product_ids`（**含已归档**），
+  而内容三类走 `not_archived`。两套集合不同是既有口径（本改动不动它）——
+  关键是**分子与分母必须同一套**，否则比率才是错的。
+- 每项显示 **覆盖率百分比 + 分子/分母**（例：`97.4%` / `38 中缺 1`）；
+  分母为 0 → 「暂无数据」（既不是 0% 也不是 100%，两者都是编造）。
+- 单项计数抛错 → 该维标 `failed`、不计算，**也不计入健康分** ——
+  绝不能把降级返回的 `0` 当成「这一类全好」。
 - 文案键：`admin.catalog_health.coverage.{heading,unknown,unknown_hint,missing_of_total,metrics.*}`
-  （en + 宿主 zh-CN 双向必须都存在）。
+  （**7 个** metrics 键，en + 宿主 zh-CN 双向必须都存在）。
 - 只读；不动导航，不动 7 类 issue 的计数与下钻链接。
+
+### Catalog Health 健康分（Score，2026-09-17；PRD-20260917-catalog-health-score）
+
+在覆盖率之下再给一个 **0–100 总分**，并**把算法完整摊开**——分数的全部价值在于商家能拿计算器复算。
+
+- `PallasTrade::CatalogHealth::Score.call(store)` → `Result#out_of_100` / `#dimensions` /
+  `#counted_count` / `#dimension_count`；控制器注入 `@score`。
+- **总分 = 可计算维度的加权平均**（`Σ 权重 × 覆盖率 ÷ Σ 权重`），`Score::WEIGHTS` 为常量、默认**等权**（权重越复杂越难解释）。
+- **不可计算的维度既不按 0 也不按 1 计入**：分母为 0（新店 / 单语言 / 无 URL 变更）
+  或计数器报错 → 排除并在表里逐行标注 `Score::Dimension#excluded_reason`：
+  `:no_denominator`（还没有可衡量的对象）或 `:count_failed`（系统问题）—— 两者处理方式不同，必须分开说。
+- **全部维度都不可计算 → 总分为 `nil`**，页面显示空态文案而不是编一个数字。
+- 页面同时渲染：总分、`%{counted}/%{total}`、每维的分子/分母/覆盖率/权重/是否计入。
+- 文案键：`admin.catalog_health.score.{heading,out_of_100,weighting,unknown,unknown_hint,coverage,weight,excluded.{no_denominator,count_failed}}`
+  （en + 宿主 zh-CN 双向）。
+- ⚠️ **页面里有两张表**：给「issue 清单」那张加了 `data-testid="catalog-health-issues"`。
+  写与健康相关的渲染断言时**必须限定在这张表内**（`doc.css('tbody')` 会把健康分明细表也数进去，
+  既有 AI 建议 spec 就因此失败过一次）。
+- 回归：`harness verify admin-catalog-health-rspec`（2026-09-17 起已把覆盖率与健康分 spec 纳入）。
 
 ### Catalog Health 趋势列（Trend，2026-09-16；PRD-20260916-catalog-health-trend-snapshot；审计 G-7）
 

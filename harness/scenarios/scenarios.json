@@ -4413,6 +4413,65 @@
         "zeroNewEndpoints": 10,
         "regressionSafety": 10
       }
+    },
+    {
+      "id": "GS-172",
+      "name": "A stuck payment that only a human may unstick",
+      "description": "PRD-20260917-payments-d2 (business plan §78-D2 / §60.2-3): a transaction stopped for manual review had no way out except editing its state in a console, because the automatic recovery loop is deliberately forbidden for it. The operator now gets exactly two verdicts - approve & capture, or reject & release - each reusing existing capture/finalize/cancel primitives, each refusing when the facts do not support it, and each leaving an audit trail that says who decided what, when, and why.",
+      "mustDo": [
+        "Keep the verdicts human-only: no job, sweeper or subscriber may capture or release on the operator's behalf, and other states keep using automatic recovery",
+        "Approve & capture: require a pending authorization, capture it through the provider, then reuse the existing finalize path so participants complete and inventory commits",
+        "Reject & release: never capture, void the pending authorization, release inventory through the existing cancellation primitive and cancel the transaction with zero refunds",
+        "Refuse rather than guess, without changing state: no pending authorization blocks capture, an already captured payment blocks release",
+        "Require a reason on both verdicts and record decision, reason, actor and before/after state in the audit trail, including refusals",
+        "Make a repeated verdict with the same decision a no-op replay that reports already_applied instead of moving money twice",
+        "Keep the operator's free-text reason out of the cancel-reason enum: map it to the canonical staff reason and keep the text in the note and the audit",
+        "Leave the existing recovery edges (reopen_review / retry / repair) untouched and prove it with the transaction regressions"
+      ],
+      "mustNotDo": [
+        "Let any automated path call the review service, or let a replayed verdict move money twice",
+        "Capture without a pending authorization, or cancel a transaction whose money was already captured while pretending nothing was paid",
+        "Create a refund from the release verdict, rewrite historical payment/refund/ledger rows, or leave a voidable authorization alive after releasing",
+        "Half-apply a verdict (state changed while a step failed) or require the operator to edit the transaction from a console",
+        "Show verdict buttons for states that are not manual review, or ship the actions without localization and audit rendering"
+      ],
+      "scoring": {
+        "humanOnly": 25,
+        "capturePath": 20,
+        "releasePath": 20,
+        "noGuessing": 15,
+        "auditTrail": 10,
+        "idempotentReplay": 10
+      }
+    },
+    {
+      "id": "GS-173",
+      "name": "A score nobody can recompute is not a score",
+      "description": "PRD-20260917-catalog-health-score (business plan 6.1, Catalog Health V2): the worklist could count seven catalog problems and show two coverage ratios, but a merchant still had to read seven numbers and decide for themselves whether to panic. This adds a 0-100 health score on top of the existing counts - not by inventing a new caliber, but by extending the existing coverage ratios to all seven issues, each with a denominator that matches its own unit, and averaging only the dimensions that are actually computable. The number is only worth showing if the merchant can reproduce it from the rows on the same page.",
+      "mustDo": [
+        "Take every molecule from the existing single-source counts, so the score can never disagree with the worklist row it came from",
+        "Give each dimension the denominator its own unit implies (content issues count products, stock counts active products, drafts count draft products, translations count product-locale slots, redirects count URL changes) instead of sharing one product total",
+        "Exclude a dimension that cannot be computed - no denominator, or a counter that failed - from the average entirely, rather than scoring it zero or one",
+        "Keep the weights in one visible constant and equal by default, so the merchant can reproduce the number by hand from the rows on the page",
+        "Show how many dimensions were counted out of the total, and per dimension why it was left out, distinguishing 'nothing to measure yet' from 'this counter could not run'",
+        "Refuse to show a number at all when every dimension is uncomputable, and say so instead of inventing one",
+        "Stay read-only and leave the existing counts, drill-down links and trend column untouched"
+      ],
+      "mustNotDo": [
+        "Read a degraded counter's zero as a perfect score and quietly inflate the total",
+        "Let a dimension without a denominator participate as zero percent or one hundred percent",
+        "Publish a grade or threshold label the merchant never configured, or hide the weighting behind the number",
+        "Compute the score in the browser or from a second caliber, so the page and the service can disagree",
+        "Count anything the worklist would not count, change what the merchant is asked to fix, or write to the database from this path"
+      ],
+      "scoring": {
+        "recomputableScore": 25,
+        "denominatorDiscipline": 20,
+        "honestExclusion": 20,
+        "failureSeparation": 15,
+        "singleSourceMolecules": 10,
+        "readOnlyPurity": 10
+      }
     }
   ]
 }

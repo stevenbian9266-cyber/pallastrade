@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | draft |
+| 状态 | done |
 | 创建日期 | 2026-09-17 |
 | 来源 | 一句话需求「实施 B3 Catalog Health 可解释健康分」← `豆包梳理业务需求/商品升级方案.md` §6.1 |
 | 分类 | catalog |
@@ -135,3 +135,4 @@ AC 映射：AC-001~AC-005 / AC-007 / AC-008 → service spec；AC-006 / AC-009 �
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-17 | 0.1 | 初稿（B3：7 维覆盖率 + 可解释加权总分 + 不可计算排除） | AI |
+| 2026-09-17 | 1.0 | **已交付**。覆盖率 2 → 7 维（`Coverage::DENOMINATORS` 一处定义五套分母）；新增 `CatalogHealth::Score`（等权、只对可计算维度加权、不可计算则总分 `nil`）；工作台新增健康分卡片与逐维明细；`admin-catalog-health-rspec` 扩到含覆盖率与健康分 spec。18 例新 spec + 全套 catalog health 92 例全绿。实测发现：`Issues.translation_slots` 走 `store.product_ids`（**含已归档**）而内容三类走 `not_archived` —— 两套集合不同是既有口径，已如实记录并断言，未擅自改动。另一处交互：健康分表新增 `<tbody>` 撞坏了 AI 建议 spec 的全页 `doc.css('tbody')` 断言，已给 issue 清单表加 `data-testid` 并收窄选择器 | AI |

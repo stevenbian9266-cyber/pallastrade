@@ -4,6 +4,66 @@
 
 <p class="text-gray-500 mb-6"><%= PallasTrade.t('admin.catalog_health.intro') %></p>
 
+<%# PRD-20260917-catalog-health-score：总分只是「一眼看结论」，可解释性靠它下面那张表。
+    不可计算的维度（分母为 0，或计数器报错）**不参与加权** —— 既不按 0 也不按 1，
+    否则就是编一个数字给商家看；未计入的原因在表里逐行标注。 %>
+<div class="card-lg mb-6">
+  <div class="card-header">
+    <h3 class="card-title"><%= PallasTrade.t('admin.catalog_health.score.heading') %></h3>
+  </div>
+  <div class="card-body">
+    <% if @score.computable? %>
+      <div class="flex items-baseline gap-3">
+        <span class="text-4xl"><%= @score.out_of_100 %></span>
+        <span class="text-gray-500"><%= PallasTrade.t('admin.catalog_health.score.out_of_100') %></span>
+      </div>
+      <p class="text-gray-500 text-sm mb-4">
+        <%= PallasTrade.t('admin.catalog_health.score.weighting',
+                          counted: @score.counted_count, total: @score.dimension_count) %>
+      </p>
+    <% else %>
+      <div class="text-2xl text-gray-400"><%= PallasTrade.t('admin.catalog_health.score.unknown') %></div>
+      <p class="text-gray-500 text-sm mb-4"><%= PallasTrade.t('admin.catalog_health.score.unknown_hint') %></p>
+    <% end %>
+
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.catalog_health.issue') %></th>
+            <th class="text-center"><%= PallasTrade.t('admin.catalog_health.score.coverage') %></th>
+            <th class="text-center"><%= PallasTrade.t('admin.catalog_health.score.weight') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @score.dimensions.each do |dimension| %>
+            <tr>
+              <td><%= PallasTrade.t("admin.catalog_health.issues.#{dimension.key}") %></td>
+              <td class="text-center">
+                <% if dimension.counted %>
+                  <span class="font-medium"><%= dimension.coverage_percentage %>%</span>
+                  <div class="text-gray-500 text-sm">
+                    <%= PallasTrade.t('admin.catalog_health.coverage.missing_of_total',
+                                      missing: dimension.missing, total: dimension.total) %>
+                  </div>
+                <% else %>
+                  <span class="text-gray-400"><%= PallasTrade.t('admin.catalog_health.coverage.unknown') %></span>
+                  <div class="text-gray-500 text-sm">
+                    <%= PallasTrade.t("admin.catalog_health.score.excluded.#{dimension.excluded_reason}") %>
+                  </div>
+                <% end %>
+              </td>
+              <td class="text-center text-gray-500">
+                <%= dimension.counted ? dimension.weight : '—' %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <%# PRD-20260917-catalog-health-coverage-ratios：计数没有分母就不可决策 —— 给出覆盖率。
     分母为 0（新店 / 未配置语言）时显示「暂无数据」，绝不显示 0% 或 100%。 %>
 <div class="card-lg mb-6">
@@ -37,7 +97,10 @@
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
-      <table class="table mb-0">
+      <%# data-testid锛氱粰銆実ossue 娓呭崟銆嶄竴涓ǔ瀹氶挬瀛愩€?
+          椤甸潰涓婄幇鍦ㄦ湁涓ゅ紶琛紙锅ュ悍鍒嗘槑缁嗚〃 + 鏈〃锛夛紝娌℃湁閽╁瓙鐨勮瘽
+          「鏁?tbody 鏈夋病鏈夋寜閽€嶈繖绉嶆柇瑷€浼氭妸鍙︿竴寮犺〃涔熸暟杩涘幓銆?%>
+      <table class="table mb-0" data-testid="catalog-health-issues">
         <thead>
           <tr>
             <th><%= PallasTrade.t('admin.catalog_health.issue') %></th>

@@ -109,12 +109,25 @@ Catalog Health 工作台新增「可解释健康分」（0-100，分维度可见
 
 | 改动类型 | 改动文件 | 最低验证 | 执行结果 | 状态 |
 |---|---|---|---|---|
-| Core service | `catalog_health/coverage.rb` | Catalog Health service spec | 待实施 | ⬜ |
-| Core service（新建） | `catalog_health/score.rb` | Catalog Health service spec | 待实施 | ⬜ |
-| Admin 控制器/视图 | `catalog_health_controller.rb` + `index.html.erb` | `harness verify admin-catalog-health-rspec` + 页面渲染取证 | 待实施 | ⬜ |
-| i18n | `config/locales/admin_*.{en,zh-CN}.yml` | `harness verify admin-i18n-rspec` | 待实施 | ⬜ |
-| 整体 | — | `harness check --profile quick` | 待实施 | ⬜ |
+| Core service | `catalog_health/coverage.rb` | Catalog Health spec | 2 → 7 维；`DENOMINATORS` 五套分母均已断言（含「库存/草稿分母 ≠ 商品总数」） | ✅ |
+| Core service（新建） | `catalog_health/score.rb` | Catalog Health spec | 总分 == 手工复算；等权；分母为 0 与计数报错分别按 `:no_denominator` / `:count_failed` 排除 | ✅ |
+| Admin 控制器/视图 | `catalog_health_controller.rb` + `index.html.erb` | `harness verify admin-catalog-health-rspec` + 渲染取证 | 92 例 0 失败（含新增 18 例）；页面渲染总分/权重说明/逐维行/未计入原因/中文 | ✅ |
+| i18n | `admin_catalog_health.zh-CN.yml` + gem `en.yml` | `harness verify admin-i18n-rspec` | 键集 66 = 66 双向相等；门禁绿 | ✅ |
+| 选择器加固 | `index.html.erb` + `catalog_health_ai_suggestion_spec.rb` | 全套 catalog health 回归 | issue 清单表加 `data-testid="catalog-health-issues"`，收窄原本过宽的 `doc.css('tbody')` | ✅ |
+| 整体 | — | `harness check --profile quick` | 无反模式 / AP-009 干净 / nav-validate 0 警告 | ✅ |
 
 ### 验证结论
 
-待实施后回填。
+全绿。实施中有两处需要记录的发现：
+
+1. **既存口径不一致（未擅自改动）**：`Issues.translation_slots` 走 `store.product_ids`（**含已归档**），
+   而内容三类走 `not_archived`。所以「翻译维分母 == 未归档商品数」这个假设是**错的** ——
+   但分子与分母**同一套集合**，比率本身是对的。已如实写进 spec 断言与 Skill，未改动 `Issues`。
+2. **我自己的改动撞坏了别人的断言**：健康分表新增的 `<tbody>` 让 AI 建议 spec 的
+   全页 `doc.css('tbody')` 统计从 3 变 4。根因是那个选择器**过宽**（现在页面有两张表），
+   已给 issue 清单表加 `data-testid` 并把选择器限定到该表内 —— 断言原意（“每个 issue 一个 tbody，
+   只有计数 > 0 的行才有按钮”）完整保留。
+
+另：dev 环境实测 5/7 维计入、总分 85 且手工复算一致；
+`ACTIVE_TOTAL_NE_PRODUCTS=false`（dev 店全部商品都是 active）说明**手工验证无法证明两个分母真的不同**，
+该断言已在 spec 中用三种状态的数据补上。

@@ -214,8 +214,11 @@ RSpec.describe 'Admin catalog health AI suggestion', type: :request do
       get '/admin/catalog_health'
 
       doc = Nokogiri::HTML(response.body)
-      with_button = doc.css('tbody').count { |tbody| tbody.at_css('[data-ai-assist-role="generate"]').present? }
-      without_button = doc.css('tbody').count { |tbody| tbody.at_css('[data-ai-assist-role="generate"]').nil? }
+      # 把查询限定在「issue 清单」那张表：页面上还有别的表格（健康分明细），
+      # 不限定的话 `doc.css('tbody')` 会把它也数进来。
+      worklist = doc.at_css('[data-testid="catalog-health-issues"]')
+      with_button = worklist.css('tbody').count { |tbody| tbody.at_css('[data-ai-assist-role="generate"]').present? }
+      without_button = worklist.css('tbody').count { |tbody| tbody.at_css('[data-ai-assist-role="generate"]').nil? }
       zero_keys = PallasTrade::CatalogHealth::Issues::KEYS.count { |key| PallasTrade::CatalogHealth::Issues.count(store, key).zero? }
 
       # 每个 issue 一个 tbody；只有计数 > 0 的行才有按钮
