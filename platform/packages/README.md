@@ -31,6 +31,15 @@ Standard e-commerce flow (P1, PRD-20260829-checkout): `carts.submit(cartId, opti
 
 **3DS/SCA（D15 切片3, 2026-09-17）**：checkout 投影 `payment.available_payment_methods[]` 新增 `requires_authentication: boolean`（服务端权威；列表**只含可用入口**，隐藏 = 不出现）。该字段随 Typelizer 生成：`platform/packages/sdk/src/types/generated/StoreCheckoutCheckout.ts` 由 `scripts/ci/contracts.sh` 从 `backend/packages/sdk/...` 同步而来 —— **不要手改生成的类型文件**，改序列化器后跑一次 `bash scripts/ci/contracts.sh`（`harness generated:check` 验证零漂移）。
 
+**JSON-LD 第二阶段（PRD-20260917-catalog-json-ld-phase2, 2026-09-17）**：Store API 两个生成类型各增一个**加法**字段，供商品页结构化数据使用 ——
+
+- `Price.price_list_ends_at: string | null` —— **实际命中**的那张价目表的失效时刻（ISO8601）。未命中价目表（回落默认价格）或无时间窗时为 `null`，前台据此省略 `priceValidUntil`。
+- `Policy.merchant_return_policy: { category, days, method, fees, countries } | null` —— 退货政策上的结构化退货条款。**仅退货政策**且条款完整（有限窗口必须带天数）时有值，其余为 `null`，前台据此省略 `hasMerchantReturnPolicy`。值是**领域词**（`finite_window` / `by_mail` / `free`）而不是 schema.org URI；映射留在前台的 `storefront/src/lib/seo.ts`。
+
+两者都随 Typelizer 生成（`platform/packages/sdk/src/types/generated/{Price,Policy}.ts`）—— 改序列化器后跑 `bash scripts/ci/contracts.sh`，**不要手改生成文件**。
+
+⚠️ `harness generated:check` 是 docker-gated：在容器不可用时会**静默报「无漂移」**。实测过一次「改完序列化器它仍说无漂移、而 `store.yaml` 实际缺字段」——改契约后请**顺带肉眼确认生成物里有那个字段**。
+
 Order-module combined payment (PRD-20260829-checkout 订单模块): `paymentCombinations.get(id, { expand: ['orders'] }, options?)` expands member orders (items + shipping addresses) for the combined-flow shipping/itemized steps; `orders.updateShippingAddress(orderId, { shipping_address | shipping_address_id }, options?)` (`PATCH /customers/me/orders/:id/shipping_address`) updates an own unpaid order's shipping address.
 
 Order durable transactions (P2, 2026-09-05): `orders.transactions.create(orderId, { payment_method_id, purpose?, external_data?, expected_checkout_version?, expected_price_version? }, options?)` (`POST /orders/:order_id/transactions`) starts/reuses a durable `CommerceTransaction` with a frozen quote snapshot and returns the transaction plus its `payment_execution` (ps_ session for the provider UI); `transactions.get(id, options?)` (`GET /transactions/:id`) returns the resume read model (state, participants, payment sessions, recovery, completion). Business conflicts surface as 409 `checkout_not_ready` / `quote_changed` / `transaction_not_payable`. **Storefront TXN-P2-6 轮3 (2026-09-05)** consumes this as transaction-first: `/api/checkout/start` and the order-payment server action start the session via `orders.transactions.create` (session = `payment_execution`), while `PATCH` completion keeps using `orders.paymentSessions.complete`. Because the SDK's published types come from `dist`, rebuild it (`pnpm --filter @pallastrade/sdk build`) after adding client methods and commit the rebuilt `dist/` (hash chunks via `git add -f`).

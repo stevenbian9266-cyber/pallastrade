@@ -25428,6 +25428,9 @@ components:
         price_list_id:
           type: string
           nullable: true
+        price_list_ends_at:
+          type: string
+          nullable: true
         variant_id:
           type: string
           nullable: true
@@ -25447,6 +25450,7 @@ components:
       - display_amount
       - display_compare_at_amount
       - price_list_id
+      - price_list_ends_at
       - variant_id
       - created_at
       - updated_at

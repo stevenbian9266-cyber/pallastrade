@@ -3,9 +3,15 @@ import type {
   CustomField,
   Media,
   Product,
+  ShippingEstimate,
   Variant,
 } from "@pallastrade/sdk";
-import { ensureProtocol, getStoreName, getStoreUrl } from "@/lib/store";
+import {
+  ensureProtocol,
+  getDefaultCountry,
+  getStoreName,
+  getStoreUrl,
+} from "@/lib/store";
 import {
   type AvailabilityState,
   aggregateAvailability,
@@ -53,6 +59,205 @@ function variantAvailabilityState(variant: Variant): AvailabilityState {
 }
 
 /**
+ * schema.org 枚举值映射（PRD-20260917-catalog-json-ld-phase2 FR-005）。
+ *
+ * API 下发的是**小写蛇形内部值**（`finite_window` 等）而不是 schema.org URI ——
+ * 业务数据不该被硬编码成某个搜索引擎的词汇表；把词汇表留在展示层，
+ * schema.org 改版时只改这里。
+ */
+const RETURN_POLICY_CATEGORY_URL: Record<string, string> = {
+  not_permitted: "https://schema.org/MerchantReturnNotPermitted",
+  finite_window: "https://schema.org/MerchantReturnFiniteReturnWindow",
+  unlimited_window: "https://schema.org/MerchantReturnUnlimitedWindow",
+};
+
+const RETURN_POLICY_METHOD_URL: Record<string, string> = {
+  by_mail: "https://schema.org/ReturnByMail",
+  in_store: "https://schema.org/ReturnInStore",
+};
+
+const RETURN_POLICY_FEES_URL: Record<string, string> = {
+  free: "https://schema.org/FreeReturn",
+  customer_pays: "https://schema.org/ReturnShippingFees",
+};
+
+/** 结构化退货条款（来自退货政策的 `merchant_return_policy`）。 */
+export interface MerchantReturnPolicyTerms {
+  category: string;
+  days: number | null;
+  method: string | null;
+  fees: string | null;
+  countries: string[];
+}
+
+/**
+ * `buildProductJsonLd` 的可选上下文。
+ *
+ * 全部可选：调用方没有这些数据时，对应字段就**不出现**在结构化数据里 ——
+ * 宁可字段缺失，也不要发布一条编造的政策（会被判为结构化数据错误，比不输出更糟）。
+ */
+export interface ProductJsonLdContext {
+  /** PDP 已经取到的运费估算（复用，不为此新增请求）。 */
+  shippingEstimate?: ShippingEstimate | null;
+  /** 访问者国家（ISO-2），用作 `shippingDestination`。 */
+  country?: string | null;
+  /** 退货政策上配置的结构化条款。 */
+  returnPolicy?: MerchantReturnPolicyTerms | null;
+  /** 退货政策在站内的完整地址，用作 `MerchantReturnPolicy.url`。 */
+  returnPolicyUrl?: string | null;
+}
+
+/**
+ * 价格的失效日期（`YYYY-MM-DD`）。
+ *
+ * 三种情况一律返回 `null`（即不输出 `priceValidUntil`）：
+ *   1. 未命中价目表（回落默认价格）—— 没有「有效期」这个概念；
+ *   2. 价目表没有时间窗；
+ *   3. 时间窗已经过去 —— 搜索引擎只关心未来还成立的价格。
+ */
+function priceValidUntil(price: Product["price"]): string | null {
+  const raw = price?.price_list_ends_at;
+  if (!raw) return null;
+
+  const endsAt = new Date(raw);
+  if (Number.isNaN(endsAt.getTime())) return null;
+  if (endsAt.getTime() < Date.now()) return null;
+
+  return endsAt.toISOString().slice(0, 10);
+}
+
+/** `OfferShippingDetails`（运费 + 目的地 + 时效）。 */
+interface OfferShippingDetails {
+  "@type": "OfferShippingDetails";
+  shippingRate?: { "@type": "MonetaryAmount"; value: string; currency: string };
+  shippingDestination?: { "@type": "DefinedRegion"; addressCountry: string };
+  deliveryTime?: {
+    "@type": "ShippingDeliveryTime";
+    transitTime: {
+      "@type": "QuantitativeValue";
+      minValue: number;
+      maxValue: number;
+      unitCode: "DAY";
+    };
+  };
+}
+
+/**
+ * 把 PDP 的运费估算映射成 schema.org `shippingDetails`（FR-003）。
+ *
+ * **数字商品与不可用估算一律返回 null** —— 给数字商品承诺运费是错的。
+ *
+ * 关于 `shippingRate`：只有「确定免费」才写 0。API 给的估价是**本地化展示串**
+ * （如 `"$5.00"`），解析它等于猜，猜错会给出一个错误的运费数字，比不写更糟；
+ * 所以非免费时省略 `shippingRate`，只保留目的地与时效（两项都是结构化的数值）。
+ */
+function buildShippingDetails(
+  estimate: ShippingEstimate | null | undefined,
+  country: string | null | undefined,
+  currency: string | null | undefined,
+): OfferShippingDetails | null {
+  if (!estimate || estimate.digital || !estimate.available) return null;
+
+  const details: OfferShippingDetails = { "@type": "OfferShippingDetails" };
+
+  if (estimate.free_shipping && currency) {
+    details.shippingRate = {
+      "@type": "MonetaryAmount",
+      value: "0",
+      currency,
+    };
+  }
+
+  const destination = country?.trim().toUpperCase();
+  if (destination) {
+    details.shippingDestination = {
+      "@type": "DefinedRegion",
+      addressCountry: destination,
+    };
+  }
+
+  const minDays = estimate.min_days;
+  const maxDays = estimate.max_days ?? estimate.min_days;
+  if (typeof minDays === "number" && typeof maxDays === "number") {
+    details.deliveryTime = {
+      "@type": "ShippingDeliveryTime",
+      transitTime: {
+        "@type": "QuantitativeValue",
+        minValue: minDays,
+        maxValue: maxDays,
+        unitCode: "DAY",
+      },
+    };
+  }
+
+  return details;
+}
+
+/** `MerchantReturnPolicy`。 */
+interface MerchantReturnPolicy {
+  "@type": "MerchantReturnPolicy";
+  returnPolicyCategory: string;
+  url?: string;
+  merchantReturnDays?: number;
+  returnMethod?: string;
+  returnFees?: string;
+  applicableCountry?: string | string[];
+}
+
+/**
+ * 把退货政策上的结构化条款映射成 schema.org `hasMerchantReturnPolicy`（FR-005）。
+ *
+ * 两道门槛，任一不满足就返回 null（整体省略）：
+ *   1. **类目认不出** —— 与后端归一化同一原则：不认识就当作没填；
+ *   2. **有限窗口却没天数** —— 这是一条**残缺政策**，会被搜索引擎判为
+ *      结构化数据错误，比不输出更糟。
+ *
+ * `applicableCountry` 是 Google 的必填项：条款里没写就用门店的默认国家 ——
+ * 那是商家在后台配过的值，不是我们猜的。
+ */
+function buildMerchantReturnPolicy(
+  terms: MerchantReturnPolicyTerms | null | undefined,
+  url: string | null | undefined,
+): MerchantReturnPolicy | null {
+  if (!terms) return null;
+
+  const category = RETURN_POLICY_CATEGORY_URL[terms.category];
+  if (!category) return null;
+
+  const days = terms.days ?? 0;
+  if (terms.category === "finite_window" && days <= 0) return null;
+
+  const policy: MerchantReturnPolicy = {
+    "@type": "MerchantReturnPolicy",
+    returnPolicyCategory: category,
+  };
+
+  if (url) policy.url = url;
+  if (terms.category === "finite_window") policy.merchantReturnDays = days;
+
+  const method = terms.method
+    ? RETURN_POLICY_METHOD_URL[terms.method]
+    : undefined;
+  if (method) policy.returnMethod = method;
+
+  const fees = terms.fees ? RETURN_POLICY_FEES_URL[terms.fees] : undefined;
+  if (fees) policy.returnFees = fees;
+
+  const countries = (terms.countries ?? [])
+    .map((code) => code.trim().toUpperCase())
+    .filter(Boolean);
+  const applicable =
+    countries.length > 0 ? countries : [getDefaultCountry().toUpperCase()];
+
+  if (applicable.length > 0) {
+    policy.applicableCountry =
+      applicable.length === 1 ? applicable[0] : applicable;
+  }
+
+  return policy;
+}
+
+/**
  * Brand comes from a merchant-managed custom field while there is no Brand
  * model — `catalog.brand` / `brand` / `*.brand` keys, or a field labelled
  * "brand". Missing → omitted from the schema (never invent a value).
@@ -79,6 +284,7 @@ function findBrandName(product: Product): string | null {
 export function buildProductJsonLd(
   product: Product,
   canonicalUrl: string,
+  context: ProductJsonLdContext = {},
 ): Record<string, unknown> {
   const schema: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -116,6 +322,28 @@ export function buildProductJsonLd(
     .map((amount) => Number.parseFloat(amount))
     .filter((amount) => Number.isFinite(amount));
 
+  // 第二阶段字段（PRD-20260917-catalog-json-ld-phase2 FR-002/FR-003/FR-005）。
+  // 两个报价分支共享同一份，保证 AggregateOffer 与 Offer 口径一致（AC-005）；
+  // 每一项都可能缺失，**缺失就整项不出现**，不是输出 null。
+  const validUntil = priceValidUntil(product.price);
+  const shippingDetails = buildShippingDetails(
+    context.shippingEstimate,
+    context.country,
+    product.price?.currency,
+  );
+  const merchantReturnPolicy = buildMerchantReturnPolicy(
+    context.returnPolicy,
+    context.returnPolicyUrl,
+  );
+
+  const offerExtras = {
+    ...(validUntil ? { priceValidUntil: validUntil } : {}),
+    ...(shippingDetails ? { shippingDetails } : {}),
+    ...(merchantReturnPolicy
+      ? { hasMerchantReturnPolicy: merchantReturnPolicy }
+      : {}),
+  };
+
   if (
     variants.length > 1 &&
     variantAmounts.length > 0 &&
@@ -132,6 +360,7 @@ export function buildProductJsonLd(
         AVAILABILITY_URL[
           aggregateAvailability(variants.map(variantAvailabilityState))
         ],
+      ...offerExtras,
     };
   } else if (product.price?.amount && product.price?.currency) {
     schema.offers = {
@@ -140,6 +369,7 @@ export function buildProductJsonLd(
       priceCurrency: product.price.currency,
       price: product.price.amount,
       availability: AVAILABILITY_URL[productAvailabilityState(product)],
+      ...offerExtras,
     };
   }
 
@@ -147,6 +377,18 @@ export function buildProductJsonLd(
   const brandName = findBrandName(product);
   if (brandName) {
     schema.brand = { "@type": "Brand", name: brandName };
+  }
+
+  // 谁在卖（FR-001）。门店 URL 在生产环境未配置时为 undefined ——
+  // 与其给一个编不出来的地址，不如不输出 `seller`。
+  const sellerName = getStoreName().trim();
+  const sellerUrl = getStoreUrl();
+  if (sellerName && sellerUrl) {
+    schema.seller = {
+      "@type": "Organization",
+      name: sellerName,
+      url: sellerUrl,
+    };
   }
 
   // P0-4: aggregate rating over approved reviews (only when there is at

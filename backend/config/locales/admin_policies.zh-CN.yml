@@ -1,0 +1,36 @@
+# PALLAS-CUSTOM: 退货政策的「结构化退货条款」区块（后台 Policies 编辑页）简体中文覆盖。
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.policies.return_terms
+# 一一对应（en ↔ zh-CN 双向相等由 `admin-i18n-rspec` 守）。
+#
+# 背景（2026-09-17，PRD-20260917-catalog-json-ld-phase2 FR-005/FR-007）：
+# 这几个字段不显示给顾客看，而是被输出成商品页的结构化数据
+# （schema.org `hasMerchantReturnPolicy`），让搜索引擎能展示退货窗口与运费承担方。
+# 文案必须讲清「留空 = 不输出」，否则商家会以为随便填填没影响。
+
+zh-CN:
+  pallastrade:
+    admin:
+      policies:
+        return_terms:
+          seo_title: 搜索引擎用的退货条款
+          seo_help: 这些条款会作为结构化数据发布到商品页，供搜索引擎展示你的退货窗口以及退货运费由谁承担。留空的字段不会被输出——系统绝不替你猜。
+          category: 退货政策类型
+          category_help: 不接受退货请选「不支持退货」。「有限窗口」还必须填写下面的天数，否则不会发布任何内容。
+          days: 退货窗口（天）
+          days_help: 类型为「有限窗口」时必填。填 0 或负数会被忽略。
+          method: 顾客如何退货
+          method_help: 可选，留空则不输出。
+          fees: 退货运费由谁承担
+          fees_help: 可选，留空则不输出。
+          countries: 该政策适用的国家
+          countries_help: 逗号分隔的 ISO 国家代码（如 US, CA）。留空则使用门店的默认国家。
+          categories:
+            not_permitted: 不支持退货
+            finite_window: 有限窗口
+            unlimited_window: 无限期
+          methods:
+            by_mail: 邮寄退回
+            in_store: 到店退回
+          fees_options:
+            free: 免费退货
+            customer_pays: 顾客承担退货运费

@@ -166,6 +166,33 @@ Key components:
 - `BuyNowButton` (`components/products/BuyNowButton.tsx`, P5 2026-08-27) — PDP quick-purchase button. Creates a standalone cart with the current variant via `lib/data/buy-now.ts` `createBuyNowCart` and routes straight to `/checkout/{id}` (does not touch the cart). On the PDP it renders **in the same row as the Add to Cart button at equal width**: `ProductDetails` wraps both in `<div className="flex flex-1 gap-4">` with each action as `flex-1` (the `w-full` outline button fills its `flex-1` wrapper). The outer actions row is `flex flex-col gap-4 sm:flex-row sm:items-center`, so on mobile the quantity picker wraps to its own line while the two buttons share a row (bugfix 2026-08-29). i18n label: `products.buyNow`.
 - `ProductDetails` availability states + variant deep link (PRD-20260915-catalog-pdp-state-correctness, 2026-09-15) — the PDP derives its presentation state from **existing Store API flags only**, via the pure helpers in `lib/utils/variant-selection.ts` (`deriveAvailabilityState` / `resolveInitialVariant` / `buildVariantHref` / `aggregateAvailability`): **in stock > pre-order (purchasable) > backorder (purchasable) > sold out**; pre-order shows `products.preorder` + a localized `products.preorderShipsBy` date (from `preorder_ships_at`), backorder shows `products.backorder` + `products.backorderNote`, and `BackInStockNotify` renders only in the sold-out state. `?variant=` is the shareable SKU deep link: `page.tsx` seeds `initialVariantId` from `searchParams`, `ProductDetails` falls back on unknown/stale ids (default_variant → first purchasable → first) and updates the URL through `router.replace(..., { scroll: false })` while preserving other query params (e.g. `category_id`). GA4 `view_item` reports the variant the page was opened with (`trackViewItem(product, currency, initialVariant)`); variant switches deliberately don't re-fire it. `buildProductJsonLd` (`lib/seo.ts`) emits a plain `Offer` for single SKUs and an `AggregateOffer` (lowPrice/highPrice/offerCount + most favourable availability) for multi-SKU products, with `brand` read from a custom field (`catalog.brand` / `brand` / `*.brand`, omitted when absent). New i18n keys (`products.preorder` / `preorderShipsBy` / `backorder` / `backorderNote`) are guarded for all five locales by `lib/__tests__/checkout-i18n-keys.test.ts`.
 
+**JSON-LD phase 2** (PRD-20260917-catalog-json-ld-phase2, business plan 4.3) adds four
+fields to the same `Product` schema. `buildProductJsonLd(product, canonicalUrl, context?)`
+takes an optional third argument carrying what the page has **already** fetched — no new
+request, no new endpoint:
+
+| Field | Source | Omitted when |
+|---|---|---|
+| `seller` | `getStoreName()` + `getStoreUrl()` | the storefront URL is unconfigured (prod) |
+| `priceValidUntil` | `product.price.price_list_ends_at` (the price list that was **actually applied**) | no price list, no window, or the window already closed |
+| `shippingDetails` | the `getShippingEstimate` result the PDP already awaited | digital goods, or an unavailable/failed estimate |
+| `hasMerchantReturnPolicy` | `getReturnPolicy()` → the return policy's structured terms | nothing configured, unknown enum, or a finite window with no day count |
+
+**The rule is omit, never invent.** A missing field costs nothing; a wrong one is a
+structured-data error (and `aggregateRating` follows the same rule already). Two
+consequences worth naming: `shippingRate` is only ever written when shipping is
+**known to be free** — the API hands back a *localised display string* and parsing it
+would be a guess; and a `finite_window` return policy without `merchantReturnDays` is
+dropped rather than published half-formed.
+
+The return terms live on the store's return policy record (edited in **Settings →
+Policies**) and reach the PDP through the existing `client.policies.get("returns-policy")`
+call — the slug comes from `POLICY_LINKS`, not a second hardcoded string. The API
+carries domain values (`finite_window`, `by_mail`, `free`), and `lib/seo.ts` is the only
+place that maps them to schema.org vocabulary, so a schema.org revision touches one file.
+Tests: `lib/__tests__/seo.test.ts` (AC-001~AC-012, including the "key absent, not null"
+assertions).
+
 **Client-component import rule (build breaker):** a `"use client"` component MUST NOT import from the `@/lib/pallastrade` barrel (`index.ts`) — the barrel re-exports server-only cookie/`next/headers` helpers, and pulling them into the client bundle fails `next build` with "Ecmascript file had an error" on `import { cookies } from "next/headers"`. Import the specific client-safe module instead, e.g. `getClient` from `@/lib/pallastrade/config`. Server components / route handlers may keep using the barrel.
 
 **Client-component SDK calls go through server actions.** `PALLASTRADE_API_URL` / `PALLASTRADE_PUBLISHABLE_KEY` are **server-only env** (no `NEXT_PUBLIC_` prefix), so `getClient()` throws in the browser. A client component that needs the Store API must call a `"use server"` action in `src/lib/data/` (e.g. `cart.ts`, `backInStock.ts`) that runs `getClient()` server-side; the action returns a `{ success, error }` result (via `actionResult`). Never build an SDK client directly in a client component.

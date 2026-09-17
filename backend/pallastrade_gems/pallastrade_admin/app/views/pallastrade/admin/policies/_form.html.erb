@@ -5,3 +5,59 @@
     <%= f.pallastrade_rich_text_area :body %>
   </div>
 </div>
+
+<%# 结构化退货条款（PRD-20260917-catalog-json-ld-phase2 FR-005/FR-007）。
+    只对**退货政策**渲染：这些字段描述的是退货政策本身，挂在隐私/配送/条款政策上
+    既无意义、又会误导商家填错地方。
+
+    这些值不在页面上直接展示 —— 它们会被输出成商品页的结构化数据
+    （hasMerchantReturnPolicy），供搜索引擎展示退货窗口与运费承担方。
+    留空 = 不输出该字段（绝不编造）。 %>
+<% if f.object.returns_policy? %>
+  <div class="card mb-6">
+    <div class="card-header">
+      <h5 class="card-title mb-0"><%= PallasTrade.t('admin.policies.return_terms.seo_title') %></h5>
+    </div>
+    <div class="card-body">
+      <p class="form-text mb-4"><%= PallasTrade.t('admin.policies.return_terms.seo_help') %></p>
+
+      <%= f.pallastrade_select :preferred_merchant_return_policy_category,
+            options_for_select(
+              PallasTrade::Policy::RETURN_POLICY_CATEGORIES.map { |key|
+                [PallasTrade.t("admin.policies.return_terms.categories.#{key}"), key]
+              },
+              f.object.preferred_merchant_return_policy_category
+            ),
+            { label: PallasTrade.t('admin.policies.return_terms.category'),
+              help: PallasTrade.t('admin.policies.return_terms.category_help') } %>
+
+      <%= f.pallastrade_number_field :preferred_merchant_return_policy_days,
+            label: PallasTrade.t('admin.policies.return_terms.days'),
+            help: PallasTrade.t('admin.policies.return_terms.days_help') %>
+
+      <%= f.pallastrade_select :preferred_merchant_return_policy_method,
+            options_for_select(
+              PallasTrade::Policy::RETURN_POLICY_METHODS.map { |key|
+                [PallasTrade.t("admin.policies.return_terms.methods.#{key}"), key]
+              },
+              f.object.preferred_merchant_return_policy_method
+            ),
+            { label: PallasTrade.t('admin.policies.return_terms.method'),
+              help: PallasTrade.t('admin.policies.return_terms.method_help') } %>
+
+      <%= f.pallastrade_select :preferred_merchant_return_policy_fees,
+            options_for_select(
+              PallasTrade::Policy::RETURN_POLICY_FEES.map { |key|
+                [PallasTrade.t("admin.policies.return_terms.fees_options.#{key}"), key]
+              },
+              f.object.preferred_merchant_return_policy_fees
+            ),
+            { label: PallasTrade.t('admin.policies.return_terms.fees'),
+              help: PallasTrade.t('admin.policies.return_terms.fees_help') } %>
+
+      <%= f.pallastrade_text_field :preferred_merchant_return_policy_countries,
+            label: PallasTrade.t('admin.policies.return_terms.countries'),
+            help: PallasTrade.t('admin.policies.return_terms.countries_help') %>
+    </div>
+  </div>
+<% end %>

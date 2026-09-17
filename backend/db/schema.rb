@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_17_010000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_17_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -1821,6 +1821,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_17_010000) do
     t.string "name"
     t.bigint "owner_id"
     t.string "owner_type"
+    t.text "preferences"
     t.string "slug", null: false
     t.datetime "updated_at", null: false
     t.index ["owner_id", "owner_type", "slug"], name: "index_pt_policies_on_owner_id_and_owner_type_and_slug", unique: true

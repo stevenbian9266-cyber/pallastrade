@@ -8,6 +8,7 @@ import { RelatedProducts } from "@/components/products/RelatedProducts";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { getCachedProduct, PRODUCT_PAGE_EXPAND } from "@/lib/data/cached";
 import { isAuthenticated } from "@/lib/data/cookies";
+import { getReturnPolicy } from "@/lib/data/policies";
 import { getProductReviews } from "@/lib/data/reviews";
 import { getShippingEstimate } from "@/lib/data/shipping";
 import { generateProductMetadata } from "@/lib/metadata/product";
@@ -80,16 +81,31 @@ export default async function ProductPage({
 
   // P0-4 / F-1: approved reviews (first page + rating distribution) + auth state.
   // Catalog F-2: advisory shipping window for the visitor's country.
-  const [reviewList, authenticated, shippingEstimate] = await Promise.all([
-    getProductReviews(product.id),
-    isAuthenticated(),
-    getShippingEstimate(product.id, country?.toUpperCase()),
-  ]);
+  // JSON-LD phase 2: the structured return terms ride along on the same render.
+  const [reviewList, authenticated, shippingEstimate, returnPolicy] =
+    await Promise.all([
+      getProductReviews(product.id),
+      isAuthenticated(),
+      getShippingEstimate(product.id, country?.toUpperCase()),
+      getReturnPolicy(),
+    ]);
+
+  const returnPolicyUrl =
+    storeUrl && returnPolicy
+      ? buildCanonicalUrl(storeUrl, `/policies/${returnPolicy.slug}`)
+      : null;
 
   return (
     <>
       {canonicalUrl && (
-        <JsonLd data={buildProductJsonLd(product, canonicalUrl)} />
+        <JsonLd
+          data={buildProductJsonLd(product, canonicalUrl, {
+            shippingEstimate,
+            country,
+            returnPolicy: returnPolicy?.terms ?? null,
+            returnPolicyUrl,
+          })}
+        />
       )}
       {breadcrumbCategory && storeUrl && (
         <JsonLd

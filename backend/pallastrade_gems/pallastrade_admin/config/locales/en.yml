@@ -313,6 +313,30 @@ en:
           one: Last %{count} day
           other: Last %{count} days
         scope_note: All stores — the audit trail carries no store dimension yet.
+      policies:
+        return_terms:
+          seo_title: Return terms for search engines
+          seo_help: These terms are published as structured data on product pages so search engines can show your return window and who pays for return shipping. Leave a field blank to omit it — nothing is ever guessed.
+          category: Return policy type
+          category_help: Pick "Not permitted" if you do not accept returns. "Finite window" also needs the number of days below, otherwise nothing is published.
+          days: Return window (days)
+          days_help: Required when the type is "Finite window". A zero or negative number is ignored.
+          method: How customers return items
+          method_help: Optional. Leave blank to omit.
+          fees: Who pays for return shipping
+          fees_help: Optional. Leave blank to omit.
+          countries: Countries this policy applies to
+          countries_help: Comma-separated ISO codes (e.g. US, CA). Leave blank to use your store's default country.
+          categories:
+            not_permitted: Not permitted
+            finite_window: Finite window
+            unlimited_window: Unlimited window
+          methods:
+            by_mail: By mail
+            in_store: In store
+          fees_options:
+            free: Free returns
+            customer_pays: Customer pays return shipping
       catalog_health:
         action: Action
         coverage:

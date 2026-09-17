@@ -13706,12 +13706,16 @@ components:
         body_html:
           type: string
           nullable: true
+        merchant_return_policy:
+          type: object
+          nullable: true
       required:
       - id
       - name
       - slug
       - body
       - body_html
+      - merchant_return_policy
       x-typelizer: true
     Post:
       type: object
@@ -13811,6 +13815,9 @@ components:
         price_list_id:
           type: string
           nullable: true
+        price_list_ends_at:
+          type: string
+          nullable: true
       required:
       - id
       - amount
@@ -13821,6 +13828,7 @@ components:
       - display_amount
       - display_compare_at_amount
       - price_list_id
+      - price_list_ends_at
       x-typelizer: true
     ProductFilterAvailabilityOption:
       type: object
