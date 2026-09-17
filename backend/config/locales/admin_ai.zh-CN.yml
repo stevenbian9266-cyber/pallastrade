@@ -1,4 +1,16 @@
 zh-CN:
+  # AI Runs 页（PallasTrade.t 会 prepend :pallastrade，所以键必须放在这里 ——
+  # 下面的 `admin.ai.*` 是历史遗留结构，PallasTrade.t 取不到它）。
+  pallastrade:
+    ai:
+      run:
+        acceptance: 采纳情况
+        acceptance_pending: 未决定
+        acceptance_state:
+          accepted: 已采纳
+          discarded: 已丢弃
+          # PRD-20260917-catalog-ai-edited-before-save：采纳后、保存前又被改过
+          edited: 采纳后已修改
   admin:
     ai:
       store_switch: "Store AI Switch"

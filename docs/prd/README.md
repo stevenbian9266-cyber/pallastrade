@@ -221,3 +221,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260916-catalog-health-trend-snapshot | catalog | 2026-09-16 | （实施时回填） |
 | done | PRD-20260917-catalog-health-coverage-ratios | catalog | 2026-09-17 | （实施时回填） |
 | done | PRD-20260917-payments-d15b-risk-rules | payments | 2026-09-17 | （实施时回填） |
+| approved | PRD-20260917-catalog-ai-edited-before-save | catalog | 2026-09-17 | （实施时回填） |

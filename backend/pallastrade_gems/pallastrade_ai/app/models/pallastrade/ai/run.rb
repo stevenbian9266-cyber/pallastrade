@@ -33,7 +33,7 @@ module PallasTrade
       # what the merchant did with the draft. `nil` means "not decided yet" —
       # a draft nobody clicked is indistinguishable from one they never saw, so
       # there is deliberately no `pending`/`rejected` state.
-      ACCEPTANCE_STATES = %w[accepted discarded].freeze
+      ACCEPTANCE_STATES = %w[accepted discarded edited].freeze
 
       validates :status, inclusion: { in: STATUSES }
       validates :acceptance_state, inclusion: { in: ACCEPTANCE_STATES }, allow_nil: true

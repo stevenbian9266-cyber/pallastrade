@@ -29,7 +29,19 @@ export default class extends Controller {
   connect() {
     this.pending = null
     this.busy = false
+    // `edited before save`（PRD-20260917-catalog-ai-edited-before-save）：
+    // Accept 只把草稿写进表单（AI 绝不直接落库），真正保存是商家另一次动作。
+    // “原样保留”和“改写成能用的东西”是两个完全不同的信号 —— 只有后者说明 AI 输出其实不好用。
+    this.acceptedDraft = null
+    this.acceptedRunId = null
+    this.form = this.element.closest('form')
+    this.boundBeforeSubmit = this.beforeSubmit.bind(this)
+    this.form?.addEventListener('submit', this.boundBeforeSubmit)
     this.renderIdle()
+  }
+
+  disconnect() {
+    this.form?.removeEventListener('submit', this.boundBeforeSubmit)
   }
 
   async generate(event) {
@@ -62,13 +74,17 @@ export default class extends Controller {
     if (!this.pending) return
 
     const runId = this.pending.run_id
+    const written = []
 
     if (this.kindValue === 'seo') {
+      written.push(this.titleFieldTarget, this.metaDescriptionFieldTarget)
       this.writeValue(this.titleFieldTarget, this.pending.meta_title)
       this.writeValue(this.metaDescriptionFieldTarget, this.pending.meta_description)
     } else if (this.kindValue === 'translation') {
+      written.push(...this.translationInputs(this.pending.translations))
       this.acceptTranslation(this.pending.translations)
     } else {
+      written.push(this.fieldTarget)
       this.writeValue(this.fieldTarget, this.pending.text)
     }
 
@@ -76,6 +92,47 @@ export default class extends Controller {
     this.hidePreview()
     this.renderStatus(this.label('Accepted'))
     this.reportAcceptance(runId, 'accepted')
+    // 快照必须在**写值之后**取，否则记的是写入前的表单值，每次都会误报 edited。
+    this.captureDraft(runId, written)
+  }
+
+  /**
+   * 记住“刚刚写进去的到底是什么”。保存前用它做**值比较**（不是“表单被碰过吗”）——
+   * 后者会把商家改了别的字段也当成编辑，误报。
+   */
+  captureDraft(runId, inputs) {
+    const fields = inputs.filter(Boolean).filter(input => input.name)
+    if (!runId || fields.length === 0) return
+
+    this.acceptedRunId = runId
+    this.acceptedDraft = fields.map(input => [input.name, input.value])
+  }
+
+  /**
+   * 保存前比对快照与当前值；**只报一次**，报后立即清空（重复提交不得重复上报）。
+   * 找不到对应 input（字段被移除）也算被编辑过 —— 草稿确实没原样留下。
+   */
+  beforeSubmit() {
+    if (!this.acceptedDraft) return
+
+    const changed = this.acceptedDraft.some(([name, value]) => {
+      const input = this.form?.querySelector(`[name="${CSS.escape(name)}"]`)
+      return input ? input.value !== value : true
+    })
+
+    const runId = this.acceptedRunId
+    this.acceptedDraft = null
+    this.acceptedRunId = null
+
+    if (changed) this.reportAcceptance(runId, 'edited')
+  }
+
+  /** @return {Element[]} 翻译抽屉里被写入的那几个 input */
+  translationInputs(translations) {
+    return Object.keys(translations || {}).map(field => {
+      const row = this.element.querySelector(`[data-ai-translation-row="${field}"]`)
+      return row?.querySelector('input, textarea')
+    })
   }
 
   discard(event) {
@@ -103,6 +160,9 @@ export default class extends Controller {
       await fetch(ACCEPTANCE_ENDPOINT, {
         method: 'POST',
         credentials: 'same-origin',
+        // `keepalive`：Turbo 提交会接管并跳转，普通 fetch 会在导航中被中断 ——
+        // 而“采纳后被编辑”恰好发生在提交那一刻，丢了就永远统计不到。
+        keepalive: true,
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
