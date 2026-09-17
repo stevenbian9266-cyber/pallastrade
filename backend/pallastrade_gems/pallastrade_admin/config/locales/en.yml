@@ -744,7 +744,36 @@ en:
         transaction_recovery_queued: Recovery job queued for this transaction.
         transaction_not_recoverable: This transaction cannot be recovered automatically.
         transaction_recover: Run recovery
-        transactions_help: Durable CommerceTransaction orchestration. Recovery-required and manual-review transactions need attention; payment_confirmed/finalizing older than 1h are stuck. Run recovery only from recovery_required/finalizing.
+        # D2 (PRD-20260917-payments-d2; business plan §78-D2 / §60.2-3): manual_review human verdict.
+        transaction_review_title: Manual review
+        transaction_review_hint: This transaction stopped for manual review. Decide from provider facts — never let a job do this.
+        transaction_review_capture_title: Approve & capture
+        transaction_review_capture_hint: Capture the authorization of
+        transaction_review_capture_action: Approve & capture
+        transaction_review_capture_confirm: Capture this payment and complete the transaction? This charges the customer and cannot be undone.
+        transaction_review_release_title: Reject & release
+        transaction_review_release_hint: Void the authorization, release inventory and cancel the transaction. No refund is created.
+        transaction_review_release_action: Reject & release
+        transaction_review_release_confirm: Release the authorization, release inventory and cancel this transaction? No refund will be created.
+        transaction_review_reason_placeholder: Reason (required, recorded in the audit trail)
+        transaction_review_no_pending_authorization: No authorization is pending — capture is not possible.
+        transaction_review_not_in_review: This transaction is not waiting for manual review; automatic recovery applies to this state.
+        transaction_review_history: Review history
+        transaction_review_history_action: Decision
+        transaction_review_history_actor: Operator
+        transaction_review_history_reason: Reason
+        transaction_review_history_time: Time
+        transaction_review_capture_done: Approved & captured — the transaction completed.
+        transaction_review_release_done: Rejected & released — the transaction was canceled.
+        transaction_review_error_generic: The review action could not be applied.
+        transaction_review_error_reason_required: A reason is required.
+        transaction_review_error_not_reviewable: This transaction is not waiting for manual review.
+        transaction_review_error_no_pending_authorization: No pending authorization to capture.
+        transaction_review_error_capture_failed: The provider capture failed — the transaction is unchanged.
+        transaction_review_error_finalize_failed: Payment captured, but completion failed — automatic recovery will finish it.
+        transaction_review_error_paid_payment_present: A captured payment exists — release is refused; handle the refund instead.
+        transaction_review_error_release_failed: Release failed — the transaction is unchanged.
+        transactions_help: Durable CommerceTransaction orchestration. Recovery-required and manual-review transactions need attention; payment_confirmed/finalizing older than 1h are stuck. Run recovery only from recovery_required/finalizing. Manual review never runs automatically — use Approve & capture or Reject & release.
         refunds: Refunds
         refunds_help: Durable Refund operations — every refund across order cancellations, returns and refund-only flows. See state, original payment, ownership, provider reference & idempotency key, journal fact, reconciliation, restock and recovery. Read-only (manual review / retry actions land in a later package).
         refunds_retry: Retry (same key)
