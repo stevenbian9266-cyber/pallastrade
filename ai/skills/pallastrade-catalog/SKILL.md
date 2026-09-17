@@ -374,6 +374,27 @@ F-2 只是把它经 `PallasTrade::Shipping::Estimate` 与 `delivery_method_seria
 
 ## AI 采纳审计（Acceptance Audit，2026-09-16，PRD-20260916-catalog-ai-acceptance-audit）
 
+### 三个状态：`accepted` / `discarded` / `edited`（后两个是终态语义）
+
+| 状态 | 含义 |
+|---|---|
+| `accepted` | 商家点了 Accept，草稿被写进表单 |
+| `discarded` | 商家丢掉了草稿 |
+| `edited` | **采纳之后、保存之前又被改过**（PRD-20260917-catalog-ai-edited-before-save） |
+
+为什么 `edited` 重要：高采纳率 **+ 高编辑率** = 商家在“把 AI 草稿改成能用的东西”，采纳率**虚高**。
+只看 accepted 会把这两种情况混为一谈。
+
+**实现口径（容易错的两处）**：
+
+- **快照必须在写值之后取** —— Accept 只改 DOM，AI 绝不直接落库，
+  所以基准是“刚刚写进去的值”；取早了会把每次保存都报成 edited。
+- **按值比较，不是“表单被碰过吗”** —— 后者会让商家改个无关字段也报 edited（误报）。
+
+**边界**：`edited` **覆盖** `accepted`（`acceptance_state` 表达“商家最终怎么处理这份草稿”）；
+上报走既有 `POST /admin/ai/acceptances`，用 **`keepalive`** 的 fire-and-forget（Turbo 提交会跳转，
+普通 fetch 会被中断），**异常一律吞掉** —— 观测不得阻断保存。
+
 生成侧一直有留痕（每次调用写 `PallasTrade::AI::Run` + `AI::Artifact`，三个 copilot 服务的 `Result`
 **已带 `run_id`**、端点也已下发），但**采纳侧此前是空白** —— 商家点 Accept / Discard 只改表单与 UI、
 **不发任何请求**，于是「AI 接受率」无从计算（商品域审计 G-5）。

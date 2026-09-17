@@ -4155,6 +4155,31 @@
       }
     },
     {
+      "id": "GS-167",
+      "name": "Observability that cannot block the thing it observes",
+      "description": "The AI draft flow already recorded whether a draft was accepted or discarded, but not whether the merchant rewrote it before saving — the number that tells you whether the output was actually usable. Recording it means measuring a form the merchant is about to submit, which is exactly where a logging call can quietly turn into a save guard.",
+      "mustDo": [
+        "Take the snapshot after the draft is written into the form, or every save reports an edit",
+        "Compare the values that were written rather than whether the form was touched, or editing an unrelated field reads as a rewrite",
+        "Report at most once per decision, and clear the snapshot so a repeated submit does not double count",
+        "Keep the request alive across the navigation the submit triggers",
+        "Swallow report failures completely — observability never gets to block a save"
+      ],
+      "mustNotDo": [
+        "Let a failed or slow report change what the merchant sees",
+        "Infer 'edited' from focus or input events instead of comparing values",
+        "Leave a stale snapshot in place so a later save of an unrelated form reports an edit",
+        "Declare the frontend untestable and assert nothing — pin the four behaviours at source level instead"
+      ],
+      "scoring": {
+        "nonBlocking": 30,
+        "noFalsePositives": 25,
+        "snapshotTiming": 20,
+        "reportOnce": 15,
+        "honestTestCoverage": 10
+      }
+    },
+    {
       "id": "GS-158",
       "name": "A locked rate is a fact you can audit, not a number you recompute later",
       "description": "PRD-20260916-payments-d13d-fx-snapshot (slice 4 of the D13 reconciliation batch, business plan §70.4): the platform had no exchange-rate capability at all — when an order was priced in one currency and settled in another, the rate the buyer saw was nowhere recorded, and settlement-rate differences had no home in the reconciliation queue. This slice adds a multi-source rate registry (manual / provider / third-party with priority and an effective window), locks the display rate and the up-charged effective rate per order at submission, and compares that lock against the settlement rate (reported by the provider or derived from the settled amount) — queueing differences by basis point while leaving pricing and money movement alone.",

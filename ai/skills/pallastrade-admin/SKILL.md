@@ -645,6 +645,17 @@ Products → **Catalog Health**（`/admin/catalog_health`）是商品运营的�
 
 回归验证：`harness verify admin-catalog-health-rspec`（含导航一致性回归）。
 
+### AI Runs 的 Acceptance 列（三态，2026-09-17；PRD-20260917-catalog-ai-edited-before-save）
+
+`/admin/ai/runs` 的「采纳情况」列显示 `acceptance_state`：`accepted` / `discarded` / **`edited`**
+（最后一个是“采纳后、保存前又被改过”）。键：`ai.run.acceptance` / `ai.run.acceptance_pending` /
+`ai.run.acceptance_state.<state>`；视图用 `default:` 兜底所以**不会** missing，但中文要补在
+`admin_ai.zh-CN.yml` 的 **`pallastrade.ai.run.*`** 下。
+
+> ⚠️ 该文件里历史遗留的 `zh-CN.admin.ai.*` / `zh-CN.ai_tools` 等键**取不到** ——
+> `PallasTrade.t` 会 prepend `:pallastrade`。真实中文覆盖率比表面低，详见
+> `docs/research/RESEARCH-20260917-admin-i18n-gap.md`。
+
 ### Catalog Health 覆盖率区（Coverage，2026-09-17；PRD-20260917-catalog-health-coverage-ratios）
 
 `/admin/catalog_health` 顶部新增「覆盖率」卡：
