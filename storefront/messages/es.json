@@ -418,6 +418,8 @@
     "selectPaymentMethod": "Por favor selecciona un método de pago.",
     "payment": "Pago",
     "noShippingAddress": "No se proporcionó dirección de envío para este pedido.",
+    "noPaymentMethod": "Ahora mismo no hay ningún método de pago disponible para este pedido. Contacte con soporte.",
+    "authenticationRequired": "Este pedido requiere una verificación adicional de la tarjeta. Solo se muestran los métodos compatibles con 3-D Secure.",
     "checkoutNotReady": "Completa los datos de checkout que faltan antes de pagar.",
     "payAmount": "Pagar ahora {amount}",
     "edit": "Editar",

@@ -42,6 +42,7 @@ module PallasTrade
                               'description: string | null, type: string, session_required: boolean, ' \
                               'source_required: boolean, kind: string, frontend_kind: string, ' \
                               'option_id: string, method_key: string, display_name: string, ' \
+                              'requires_authentication: boolean, ' \
                               'client_config: { provider: string, environment: string | null, ' \
                               'publishable: Record<string, string>, session_token: string | null } }> }',
                      shipping_address: { nullable: true }, billing_address: { nullable: true }
@@ -151,12 +152,30 @@ module PallasTrade
                 option_id: payment_method.option_identifier,
                 method_key: payment_method.effective_payment_option['kind'] || payment_method.default_option_kind,
                 display_name: payment_method.option_display_name,
+                # PALLAS-CUSTOM: D15 切片3（PRD-20260917-checkout-d15-切片3）——
+                # 本单是否被要求 3DS/SCA 认证（服务端判定；前台只做提示，不做筛选）。
+                # 列表本身已经**只含可认证入口**（`Availability::Resolver` 同源求值），
+                # 因此前端不需要也不允许自行过滤。
+                requires_authentication: requires_authentication?,
                 # PALLAS-CUSTOM: D10（PRD-20260915-payments-d10-client-config 切片1）——
                 # 前台密钥下发（业务方案 §68.4/§76.1）：服务端下发 **publishable 级**凭据，
                 # 前端「先读 API、回落 NEXT_PUBLIC_*」，摆脱构建期内联依赖。
                 # 唯一组装点：PallasTrade::PaymentMethods::ClientConfig（secret 永不下发）。
                 client_config: PallasTrade::PaymentMethods::ClientConfig.call(payment_method)
               }
+            end
+
+            # D15 切片3：认证需求（订单级、只读、请求内只算一次 —— `Required` 在订单对象上记忆化）
+            def requires_authentication?
+              return false if order.blank?
+
+              PallasTrade::Payments::ThreeDSecure::Required.for_order(order)[:required] == true
+            rescue StandardError
+              false
+            end
+
+            def order
+              object&.order
             end
           end
         end

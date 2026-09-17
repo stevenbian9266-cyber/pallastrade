@@ -584,6 +584,12 @@ marks each `notified` (idempotent). Customers subscribe via
 `POST /api/v3/store/products/:id/back_in_stock_subscriptions`; emails go through the
 store's configured SMTP (e.g. Resend — see the deployment skill).
 
+## 认证需求事件（D15 切片3, 2026-09-17；PRD-20260917-checkout-d15-切片3）
+
+- `payment.three_d_secure_required` —— **仅当 `required=true`** 时发布；payload 无 PII：`{ order_id, mode, source, exemptions, risk_action }`。
+- 事件系统未启用或发布失败**不阻断**支付路径（与既有风控事件同约定）；**判定与闸门本身零 provider I/O**，事件只是通知。
+- 消费场景：运营观测「多少单被要求认证」与「哪个来源驱动」（`policy` / `risk_rule`）；挑战率看板属后续切片（§72.5）。
+
 ## Debugging
 
 ### "My subscriber doesn't fire"

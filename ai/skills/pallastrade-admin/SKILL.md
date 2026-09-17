@@ -971,6 +971,15 @@ For Turbo Streams (server-pushed UI updates), the same patterns apply as any Rai
 - **Scaffold generator:** `bundle show pallastrade_admin`/lib/generators/pallastrade/admin/scaffold/ has the template files you can copy for advanced customization.
 - **Form builder / components / helpers:** `node_modules/@pallastrade/docs/dist/developer/admin/form-builder.md`, `components.md`, `helper-methods.md` — the full option tables for everything in "Building admin UI" above.
 
+## 3DS / SCA 策略编辑（D15 切片3, 2026-09-17；PRD-20260917-checkout-d15-切片3）
+
+- **入口**：门店编辑页「结账」区块 → 新增 **3DS / SCA 策略** 小卡（`stores/form/_checkout.html.erb`）。
+- **字段**：模式 `always` / `risk_based`（默认）/ `off` + 低金额阈值 + 国家白名单（ISO-2，逗号或数组）+ 入口白名单（kind）。
+- **校验与落库**：写完只经 `Payments::ThreeDSecure::Policy.storable`（**写路径**：非法 mode / 负阈值 / 非法国家码 → `errors`，**不落库不静默**）；读路径 `normalize` 永不抛错（运营写坏键不能让结账 500）。落 `store.private_metadata['three_d_secure_policy']`，**零迁移**；保存写审计 `store_three_d_secure_policy_updated`。
+- **零影响**：未提交该键 → `private_metadata` 其它键**原样保留**；未配置门店 = 默认 `risk_based`（与今天行为一致）。
+- **入口能力列**：支付方式（Provider 详情「支付方式」页签）入口表新增**只读**「可强制认证」列（来自 provider `payment_option_catalog[i]['three_d_secure']`，未声明 = 不支持）；不读不写规则集，无新权限资源（沿用 `can :manage, PallasTrade::Store`）。
+- **规则动作文案**：`/admin/risk_rules` 的动作词汇与试算展示含 `force_3ds`（i18n en + zh-CN **键集相等**，与 D15 切片2 同表）。
+
 ## 风控规则工作台 `/admin/risk_rules`（D15 切片2, 2026-09-17；PRD-20260917-payments-d15b-risk-rules）
 
 Orders 子项 `risk_rules`（position **59.5**，紧跟「风控名单」59，同权限域）：

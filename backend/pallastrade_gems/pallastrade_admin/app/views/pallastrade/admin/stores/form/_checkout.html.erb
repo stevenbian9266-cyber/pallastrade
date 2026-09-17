@@ -34,5 +34,59 @@
         type: :number, step: '0.01', min: 0,
         label: PallasTrade.t('admin.store_form.free_shipping_threshold.label'),
         help: PallasTrade.t('admin.store_form.free_shipping_threshold.description') %>
+
+    <hr class="my-6">
+
+    <%# PALLAS-CUSTOM: D15 切片3（PRD-20260917-checkout-d15-切片3；业务方案 §72.1）——
+        3DS/SCA 策略：模式 + 豁免（低金额 TRA / 国家白名单 / 入口白名单）。
+        写入 `store.private_metadata['three_d_secure_policy']`（零迁移）；
+        `three_d_secure_policy[...]` 与门店字段同表单提交，控制器归一后写入。 %>
+    <% policy = PallasTrade::Payments::ThreeDSecure::Policy.for(f.object) %>
+    <div class="card mb-4" data-three-d-secure-policy-mode="<%= policy.mode %>">
+      <div class="card-header">
+        <strong><%= PallasTrade.t('admin.three_d_secure.title') %></strong>
+      </div>
+      <div class="card-body">
+        <p class="text-muted"><%= PallasTrade.t('admin.three_d_secure.help') %></p>
+
+        <div class="row g-3 align-items-end">
+          <div class="col-12 col-md-4">
+            <%= label_tag 'three_d_secure_policy[mode]', PallasTrade.t('admin.three_d_secure.mode'), class: 'form-label' %>
+            <%= select_tag 'three_d_secure_policy[mode]',
+                           options_for_select(PallasTrade::Payments::ThreeDSecure::Policy::MODES.map { |mode|
+                             [PallasTrade.t("admin.three_d_secure.modes.#{mode}"), mode]
+                           }, policy.mode),
+                           class: 'form-select', data: { three_d_secure_mode_input: true } %>
+          </div>
+          <div class="col-12 col-md-4">
+            <%= label_tag 'three_d_secure_policy[low_amount_threshold]',
+                          PallasTrade.t('admin.three_d_secure.low_amount_threshold'), class: 'form-label' %>
+            <%= text_field_tag 'three_d_secure_policy[low_amount_threshold]',
+                               policy.low_amount_threshold&.to_s('F'),
+                               class: 'form-control', inputmode: 'decimal',
+                               data: { three_d_secure_threshold_input: true } %>
+            <small class="text-muted"><%= PallasTrade.t('admin.three_d_secure.low_amount_threshold_help') %></small>
+          </div>
+          <div class="col-12 col-md-4">
+            <%= label_tag 'three_d_secure_policy[allowlisted_countries]',
+                          PallasTrade.t('admin.three_d_secure.allowlisted_countries'), class: 'form-label' %>
+            <%= text_field_tag 'three_d_secure_policy[allowlisted_countries]',
+                               policy.allowlisted_countries.join(','),
+                               class: 'form-control', placeholder: 'DE,FR',
+                               data: { three_d_secure_countries_input: true } %>
+            <small class="text-muted"><%= PallasTrade.t('admin.three_d_secure.allowlisted_countries_help') %></small>
+          </div>
+          <div class="col-12">
+            <%= label_tag 'three_d_secure_policy[allowlisted_option_kinds]',
+                          PallasTrade.t('admin.three_d_secure.allowlisted_option_kinds'), class: 'form-label' %>
+            <%= text_field_tag 'three_d_secure_policy[allowlisted_option_kinds]',
+                               policy.allowlisted_option_kinds.join(','),
+                               class: 'form-control', placeholder: 'card,apple_pay',
+                               data: { three_d_secure_option_kinds_input: true } %>
+            <small class="text-muted"><%= PallasTrade.t('admin.three_d_secure.allowlisted_option_kinds_help') %></small>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

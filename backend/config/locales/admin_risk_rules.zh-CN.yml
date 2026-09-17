@@ -103,6 +103,7 @@ zh-CN:
         preview_readonly_note: 试算为只读：不写留痕、不改订单状态。
         action_allow: 放行
         action_review: 人工复核
+        action_force_3ds: 强制 3DS
         action_block: 阻断
         condition_amount_gte: 金额 ≥
         condition_amount_lte: 金额 ≤

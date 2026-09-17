@@ -18,13 +18,15 @@ module PallasTrade
         COUNTRY_TYPE = 'PallasTrade::Country'
         STATE_TYPE = 'PallasTrade::State'
 
-        attr_reader :market_id, :country_iso, :zone_ids, :currency
+        attr_reader :market_id, :country_iso, :zone_ids, :currency, :authentication_required
 
-        def initialize(market_id: nil, country_iso: nil, zone_ids: nil, currency: nil)
+        def initialize(market_id: nil, country_iso: nil, zone_ids: nil, currency: nil, authentication_required: false)
           @market_id = presence_string(market_id)
           @country_iso = presence_string(country_iso)&.upcase
           @zone_ids = Array(zone_ids).map(&:to_s).uniq
           @currency = presence_string(currency)&.upcase
+          # D15 切片3：本单是否要求 3DS/SCA 认证（由 `ThreeDSecure::Required` 判定；缺省 false = 零回归）
+          @authentication_required = authentication_required == true
         end
 
         # @param order [PallasTrade::Order, nil]
@@ -34,8 +36,19 @@ module PallasTrade
             market_id: order&.market_id.presence || PallasTrade::Current.market&.id,
             country_iso: country_iso_for(order),
             zone_ids: zone_ids_for(order),
-            currency: order&.currency.presence || PallasTrade::Current.currency
+            currency: order&.currency.presence || PallasTrade::Current.currency,
+            # D15 切片3：订单级判定（已验证在订单对象上做请求内记忆化 → 查询数不随入口数增长）
+            authentication_required: authentication_required_for(order)
           )
+        end
+
+        # 无订单（后台预览/匿名场景）→ 不要求认证（fail safe，零回归）
+        def self.authentication_required_for(order)
+          return false if order.blank?
+
+          PallasTrade::Payments::ThreeDSecure::Required.for_order(order)[:required] == true
+        rescue StandardError
+          false
         end
 
         def self.country_iso_for(order)

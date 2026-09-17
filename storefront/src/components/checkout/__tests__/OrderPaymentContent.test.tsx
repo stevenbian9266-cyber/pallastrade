@@ -585,4 +585,47 @@ describe("OrderPaymentContent", () => {
       (screen.getByTestId("edit-address") as HTMLButtonElement).disabled,
     ).toBe(true);
   });
+
+  // D15 切片3 AC-011/FR-005：认证需求 = 是时服务端只投影可认证入口，前端仅负责解释
+  it("shows the authentication notice when the projection flags a capable entry (D15c AC-011)", () => {
+    const viewWithAuth = {
+      ...checkoutView,
+      payment: {
+        available_payment_methods: [
+          {
+            ...stripeMethod,
+            kind: "card",
+            frontend_kind: "inline",
+            option_id: "opt_card",
+            method_key: "card",
+            display_name: "Card",
+            requires_authentication: true,
+          },
+        ],
+        requires_authentication: true,
+      },
+    } as unknown as CheckoutView;
+
+    renderOrderPayment(order, viewWithAuth, countries);
+
+    expect(screen.getByTestId("authentication-required-notice")).toBeTruthy();
+    expect(screen.queryByTestId("no-payment-method")).toBeNull();
+  });
+
+  // D15 切片3 AC-011/FR-005：无可用入口时给显式提示（不静默空白，也不降级到弱认证入口）
+  it("shows the no-payment-method notice when the projection has no entry (D15c AC-011)", () => {
+    const viewWithoutMethods = {
+      ...checkoutView,
+      payment: { available_payment_methods: [], requires_authentication: true },
+    } as unknown as CheckoutView;
+
+    renderOrderPayment(
+      { ...order, payment_methods: [] } as unknown as Order,
+      viewWithoutMethods,
+      countries,
+    );
+
+    expect(screen.getByTestId("no-payment-method")).toBeTruthy();
+    expect(screen.queryByTestId("authentication-required-notice")).toBeNull();
+  });
 });

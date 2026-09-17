@@ -1,8 +1,11 @@
 module PallasTradeStripe
   class PaymentIntentPresenter
     SETUP_FUTURE_USAGE = 'off_session'
+    # D15 切片3：强制挑战取值（Stripe 卡入口）
+    THREE_D_SECURE_REQUEST = 'any'
 
-    def initialize(amount:, order:, customer: nil, payment_method_id: nil, off_session: false, capture_method: nil)
+    def initialize(amount:, order:, customer: nil, payment_method_id: nil, off_session: false, capture_method: nil,
+                   three_d_secure: false)
       @amount = amount
       @order = order
       @customer = customer
@@ -10,6 +13,7 @@ module PallasTradeStripe
       @payment_method_id = payment_method_id
       @off_session = off_session
       @capture_method = capture_method
+      @three_d_secure = three_d_secure == true
     end
 
     def call
@@ -78,16 +82,22 @@ module PallasTradeStripe
     end
 
     def new_payment_method_payload
+      card_options = { setup_future_usage: SETUP_FUTURE_USAGE }
+      # D15 切片3：本单要求认证 → 强制 3DS（Stripe 卡入口）
+      card_options[:request_three_d_secure] = THREE_D_SECURE_REQUEST if three_d_secure?
+
       {
         payment_method_options: {
-          card: {
-            setup_future_usage: SETUP_FUTURE_USAGE
-          },
+          card: card_options,
           sepa_debit: {
             setup_future_usage: SETUP_FUTURE_USAGE
           }
         }
       }
+    end
+
+    def three_d_secure?
+      @three_d_secure == true
     end
 
     def saved_payment_method_payload

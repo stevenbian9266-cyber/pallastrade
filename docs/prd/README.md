@@ -222,3 +222,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260917-catalog-health-coverage-ratios | catalog | 2026-09-17 | （实施时回填） |
 | done | PRD-20260917-payments-d15b-risk-rules | payments | 2026-09-17 | （实施时回填） |
 | done | PRD-20260917-catalog-ai-edited-before-save | catalog | 2026-09-17 | 实施：“采纳后修改”审计（补方案 §16 最后一项指标）——`accept()` 先写入再快照、提交前比**值**而非“是否碰过”、每次决策只上报一次、上报失败静默不阻断保存；`ai_edited_before_save_spec` + `ai_assist_edited_source_spec` 绿（17/17 AC） |
+| done | PRD-20260917-checkout-d15-切片3-3ds-sca-支付认证策略与-provider-下发-高风险订单只给-redirect-3ds | checkout | 2026-09-17 | 实施（D15 切片3）：门店 3DS/SCA 策略（always/risk_based/off + 豁免，两路径归一化）→ 订单级认证需求判定（唯一入口、只读、请求内缓存）→ 规则动作 `force_3ds`（严重度 `allow<review<force_3ds<block`）→ 入口闸门（高风险只给能认证的入口，与 `Start` 同源、建会话前 422）→ 已声明能力才下发（Stripe `request_three_d_secure='any'`）；契约 additive `requires_authentication` + SDK 类型同步；`d15c-three-d-secure-rspec`（181 例，含 D8/D11/D16/切片1·2 回归）绿；零迁移、零资金副作用 |

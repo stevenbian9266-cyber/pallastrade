@@ -150,7 +150,8 @@ RSpec.describe PallasTrade::Api::V3::Store::Checkout::CheckoutSerializer, type: 
         expect(entry[:frontend_kind]).to eq('manual')
         expect(entry.keys).to contain_exactly(:id, :name, :description, :type, :session_required, :source_required,
                                               :kind, :frontend_kind, :client_config,
-                                              :option_id, :method_key, :display_name)
+                                              :option_id, :method_key, :display_name,
+                                              :requires_authentication)
         # PRD-20260916-payments-d16-payment-method-presentation AC-003：D16 为 additive 变更 ——
         # 既有键集合只增不减（含 D10 的 client_config），且仍保持「每个 payment method 一行」的行基数
         # （视图口径 = order.payment_methods，不按入口 options 展开）。

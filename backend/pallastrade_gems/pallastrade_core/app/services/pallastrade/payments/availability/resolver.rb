@@ -64,11 +64,16 @@ module PallasTrade
               # D11：熔断（软置灰）作为独立 reason 暴露，便于后台/调试面板解释「为什么这个入口没出现」。
               reasons = outcome['reasons'].dup
               reasons << { 'dimension' => 'breaker', 'reason' => 'breaker_open' } if breaker_open?(payment_method, option)
+              # D15 切片3：认证需求导致的排除也作为独立 reason 暴露（“为什么这个入口没出现”可读）
+              if authentication_rejects?(payment_method, option, ctx)
+                reasons << { 'dimension' => 'three_d_secure', 'reason' => 'authentication_required' }
+              end
 
               {
                 'kind' => option['kind'],
                 'allowed' => outcome['allowed'] && !capability_rejects?(payment_method, option, ctx) &&
-                             !breaker_open?(payment_method, option),
+                             !breaker_open?(payment_method, option) &&
+                             !authentication_rejects?(payment_method, option, ctx),
                 'reasons' => reasons
               }
             end
@@ -81,10 +86,22 @@ module PallasTrade
             # 因此前台列表与 `PaymentSessions::Start` 同时生效（§66.5 同源硬约束）。
             return false if breaker_open?(payment_method, option)
 
+            # D15 切片3（PRD-20260917-checkout-d15-切片3）：本单要求 3DS/SCA 时，
+            # 只有**声明可强制认证**的入口可用（钱包/一键等拿不到强认证的入口直接消失）。
+            return false if authentication_rejects?(payment_method, option, context)
+
             rule_set = RuleSet.normalize(option['rule_set'])
             return false if rule_set.present? && !Evaluator.allowed?(rule_set, context)
 
             !capability_rejects?(payment_method, option, context)
+          end
+
+          # D15 切片3：认证闸门。要求认证时，仅 `three_d_secure: 'supported'` 的入口可用；
+          # 未声明能力的入口按**不支持**处理（不猜）。要求为假时零影响（零回归）。
+          def authentication_rejects?(payment_method, option, context)
+            return false unless context.respond_to?(:authentication_required) && context.authentication_required
+
+            !PallasTrade::Payments::ThreeDSecure::ProviderHint.option_supported?(payment_method, option['kind'])
           end
 
           # 熔断状态判定（到期即视为未置灰 —— 状态行由 SweepJob 清理）。

@@ -506,6 +506,21 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 - 覆盖测试：`components/checkout/__tests__/OrderPaymentContent.test.tsx`（有 `display_name` 渲染展示名 + 无 `display_name` 回落
   provider 名）；改动后跑 `storefront-test`。
 
+## 认证需求提示（D15 切片3, 2026-09-17；PRD-20260917-checkout-d15-切片3）
+
+结账页**不做支付入口筛选**（服务端权威）：认证需求 = 是时后端只会投影「能完成 3DS/SCA」的入口；前端只负责**解释**两种显式状态：
+
+```tsx
+// 投影里的每项带 requires_authentication（布尔）；订单快照回退可能没有该字段 → 组件内本地类型标为可选
+{paymentMethods.some((m) => m.requires_authentication) && <div data-testid="authentication-required-notice">…</div>}
+{paymentMethods.length === 0 && <div data-testid="no-payment-method">…</div>}
+```
+
+- ⚠️ **不得**在客户端根据 `kind`/`frontend_kind` 自己隐藏钱包入口 —— 隐藏 = 不出现由 `Payments::Availability::Resolver` 决定（D8 §66.5 同源硬约束），客户端筛选会造成「看得到、付不了」。
+- 「一个入口都没有」= **显式状态**（提示用户而非静默空白），且**不得**自动降级到弱认证入口。
+- 文案 5 语言（`messages/{en,de,es,fr,pl}.json`）**键集必须一致**（`pnpm check:locales`）；改完必跑 `npx tsc --noEmit`（一行两个值这类 JSON 手误只在 tsc 暴露）。
+- 覆盖测试：`components/checkout/__tests__/OrderPaymentContent.test.tsx`（新增 2 例：认证提示 / 无可用入口提示）。
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - P0 (2026-09-03): Express(Apple/Google Pay) 金额/行项目改由服务端 Cart#express_payment 权威提供（expressAmount/expressLineItems；legacy buildLineItems 仅 fallback）；Legacy cart 支付=Compatibility Only。

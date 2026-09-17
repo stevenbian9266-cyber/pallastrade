@@ -979,6 +979,12 @@ en:
         payment_option_method: Payment method
         payment_option_position: Position
         payment_option_scope: Availability
+        # PALLAS-CUSTOM: D15 切片3（PRD-20260917-checkout-d15-切片3）—— 入口认证能力（只读，来自 provider 目录）
+        payment_option_three_d_secure: Can force 3DS
+        payment_option_three_d_secure_yes: Yes
+        payment_option_three_d_secure_no: No
+        payment_option_three_d_secure_help: When the risk rules require authentication, only options that can force 3DS stay available; the rest are hidden automatically.
+        payment_option_three_d_secure_unsupported: Unsupported
         scope_country: Countries
         scope_currency: Currencies
         scope_help: Leave empty to keep the option available everywhere. Markets and zones are limited to this store.
@@ -1431,6 +1437,7 @@ en:
         preview_readonly_note: Preview is read-only — no assessment is recorded and no order state changes.
         action_allow: Allow
         action_review: Needs review
+        action_force_3ds: Force 3DS
         action_block: Block
         condition_amount_gte: Amount ≥
         condition_amount_lte: Amount ≤
@@ -2593,6 +2600,25 @@ en:
         label: Free shipping threshold
         description: Storefront hint such as "Free shipping over $50". Leave blank to hide it; a running free-shipping promotion overrides the amount.
     store_name_help: This is the name of your store. It will be displayed in the header and in the footer.
+    # PALLAS-CUSTOM: D15 切片3（PRD-20260917-checkout-d15-切片3；业务方案 §72.1）
+    three_d_secure:
+      title: 3DS / SCA policy
+      help: When a customer must be challenged for strong authentication. The default only challenges orders the risk rules mark as forcing 3DS — everything else keeps today's behaviour.
+      mode: Mode
+      modes:
+        always: Always challenge
+        risk_based: Risk based (recommended)
+        off: Never challenge
+      low_amount_threshold: Low-amount exemption
+      low_amount_threshold_help: Orders below this amount skip the challenge (same currency as the store only). Leave blank to disable.
+      allowlisted_countries: Exempt countries
+      allowlisted_countries_help: Comma-separated ISO codes (for example DE,FR). Leave blank to disable.
+      allowlisted_option_kinds: Exempt payment options
+      allowlisted_option_kinds_help: Comma-separated option kinds (for example card,apple_pay). Leave blank to disable.
+      errors:
+        unknown_mode: "3DS policy: mode %{detail} is not supported"
+        invalid_threshold: "3DS policy: low-amount threshold must be a positive number"
+        invalid_country: "3DS policy: %{detail} is not a two-letter country code"
     successfully_created: "%{resource} has been successfully created!"
     successfully_removed: "%{resource} has been successfully removed!"
     successfully_updated: "%{resource} has been successfully updated!"

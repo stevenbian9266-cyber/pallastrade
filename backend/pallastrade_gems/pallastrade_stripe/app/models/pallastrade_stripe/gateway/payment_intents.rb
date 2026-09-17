@@ -45,14 +45,16 @@ module PallasTradeStripe
       # @param off_session [Boolean] whether the payment intent is off session
       # @param customer_profile_id [String] Stripe customer profile id to use, eg.  cus_123
       # @return [PallasTrade::PaymentResponse] the response from the payment intent creation
-      def create_payment_intent(amount_in_cents, order, payment_method_id: nil, off_session: false, customer_profile_id: nil, idempotency_key: nil)
+      def create_payment_intent(amount_in_cents, order, payment_method_id: nil, off_session: false, customer_profile_id: nil, idempotency_key: nil, three_d_secure: false)
         payload = PallasTradeStripe::PaymentIntentPresenter.new(
           amount: amount_in_cents,
           order: order,
           customer: customer_profile_id || fetch_or_create_customer(order: order)&.profile_id,
           payment_method_id: payment_method_id,
           off_session: off_session,
-          capture_method: stripe_capture_method
+          capture_method: stripe_capture_method,
+          # D15 切片3：强制 3DS/SCA（受卡入口能力门控，在上层已判定）
+          three_d_secure: three_d_secure
         ).call
 
         protect_from_error do

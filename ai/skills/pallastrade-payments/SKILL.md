@@ -1584,6 +1584,29 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
 - **零回归**：无 `rule_set` 的 provider / 未选项化 provider / 无 market 上下文的店铺 → 行为与 D8 前一致。
 - **回归**：`harness verify d8-availability-rspec`。
 
+## 3DS / SCA —— 认证策略、订单级判定与 provider 下发（D15 切片3, 2026-09-17；PRD-20260917-checkout-d15-切片3）
+
+业务方案 §72.1 落地：「要不要挑战」从「provider 默认值」变成**商家可配置策略 + 订单级风险决策 → 单一判定 → 入口闸门 → provider 下发**的闭环（§78-D15 验收锚点：**高风险订单只给 redirect+3DS**）。**零迁移**（全部落在既有 jsonb）。
+
+- **策略（store 级，唯一读/写口径）**：`Payments::ThreeDSecure::Policy`，存 `store.private_metadata['three_d_secure_policy']`（与 `dispute_rate_policy` 同先例）。
+  - `mode`：`always` / **`risk_based`（默认）** / `off`；`low_amount_threshold`（**仅订单币种 == 店铺默认币种**时参与比较，否则记 `threshold_skipped='currency_mismatch'`，**不跨币种猜**）；`allowlisted_countries`（ISO-2）；`allowlisted_option_kinds`（入口白名单）。
+  - **两条路径语义不同**：`normalize`（读）**永不抛错** —— 运营写坏一个键不能让结账 500，非法值回落默认并记 `reasons`；`storable`（写）用于后台表单校验，非法值返回 `errors` **不落库**（未知 `mode` / 负阈值 / 非法国家码）。
+  - 保存写审计 `store_three_d_secure_policy_updated`。
+- **订单级判定（唯一入口、只读、零 provider）**：`Payments::ThreeDSecure::Required.call(order:, store:, risk_action:, now:)` → `{ required:, mode:, source: 'policy'|'risk_rule'|'policy+risk', reason:, exemptions:, exemption_policy:, risk_action:, policy_off_overridden_by:, threshold_used:, threshold_skipped: }`。
+  - 语义（写死）：`always` → 是（豁免可放宽为否）；`risk_based` → **仅当**最近一次 `PaymentRiskAssessment` 的决策是 `force_3ds` 时为是；`off` → 否，**但显式 `force_3ds` 优先**（`policy_off_overridden_by='risk_rule'`，且此时**不评估豁免**）。
+  - 请求内复用：`Required.for_order(order)` 以「最新留痕 `[id, decision]`」为指纹缓存 —— **N 个入口只查一次**（NFR：查询数不随入口数增长）；评估/策略变化后调用 `Required.reset_cache_for(order)`。
+- **规则动作**：`force_3ds`（见 `pallastrade-security` SKILL「3DS/SCA 认证需求」——严重度 `allow<review<force_3ds<block`，`force_3ds` 覆盖 `review`、不覆盖 `block`，白名单 `allow` 仍短路）。
+- **入口闸门（扩展 D8 同源求值，不新建第二套筛选）**：`Availability::Resolver` 逐入口多出一个原因维度 `{ dimension: 'three_d_secure', reason: 'authentication_required' }`；认证需求 = 是 → 只保留**入口目录声明 `three_d_secure: 'supported'`** 的入口（**未声明按 unsupported 处理，不猜**）。
+  - 前台列表（`Order#payment_methods` 投影）与 `PaymentSessions::Start` **自动同源生效**：客户端绕过 → 建会话**前** 422 `payment_option_not_available` + `reason='authentication_required'`（**不新增错误码家族**，沿用 D8 的「刷新列表 + 重选」约定），**零 session 行**。
+  - 「一个入口都没有」时**不静默空白**：契约给 `requires_authentication` 标志，前台显式提示；**不**自动降级到弱认证入口。
+- **provider 下发（诚实优先）**：`Payments::ThreeDSecure::ProviderHint.call(payment_method:, option_kind:, required:)`：
+  - 入口声明 `three_d_secure: 'supported'` 且要求认证 → `{ applied: true, hint: 'three_d_secure', external_data: { 'three_d_secure' => true } }`；Stripe 把它落到 `payment_intent_data.payment_method_options.card.request_three_d_secure = 'any'`（`CheckoutSessionPresenter` 透传），会话 `metadata` 记 `three_d_secure_hint`；
+  - `unsupported` / 不认识的入口 / 未要求认证 → `{ applied: false, hint: 'none' }`，**绝不发送 provider 不认识的参数**（宁可不下发）；无法强制认证的入口**本来就不可选**（由闸门保证），所以不存在「静默跳过」。
+- **契约**：checkout 投影的支付方式项新增 `requires_authentication`（布尔，additive；隐藏 = 不出现）；Typelizer 生成的 `StoreCheckoutCheckout` 类型随契约更新（`harness generated:check` 零漂移；平台副本由 `scripts/ci/contracts.sh` 同步）。
+- **后台**：门店编辑页「3DS / SCA 策略」区块（模式 + 阈值 + 两个白名单，en↔zh-CN 键集相等）+ 支付方式入口表**只读**「可强制认证」列（来自 catalog）。
+- **铁律**：判定与闸门**零 provider I/O、零写库、零资金副作用**；不改 `Checkout::Preflight` 的启用条件与阻断行为；不改「支付成功 → 订单完成」链路；MIT 豁免、其它 provider 落地、挑战率看板属后续切片。
+- **回归**：`harness verify d15c-three-d-secure-rspec`（181 例；含 D8 / D11 / D16 / 契约 / 切片1·2 回归 + 导航）。
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - D8 (2026-09-15, PRD-20260915-payments-d8): Payment availability scope —— 入口级 `rule_set`

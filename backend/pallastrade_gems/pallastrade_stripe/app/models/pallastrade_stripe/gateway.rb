@@ -65,9 +65,12 @@ module PallasTradeStripe
     # 未选项化（metadata["optionized"] 缺失）时前台仍按单一默认入口渲染 —— 零感迁移。
     def payment_option_catalog
       [
-        { 'kind' => 'card', 'frontend_kind' => 'inline', 'display_name' => 'Card' },
-        { 'kind' => 'apple_pay', 'frontend_kind' => 'express', 'display_name' => 'Apple Pay' },
-        { 'kind' => 'google_pay', 'frontend_kind' => 'express', 'display_name' => 'Google Pay' }
+        # D15 切片3（PRD-20260917-checkout-d15-切片3）：`three_d_secure` = 该入口能否被**强制**认证。
+        # 卡入口可（`payment_method_options.card.request_three_d_secure='any'`）；
+        # 钱包（Apple Pay / Google Pay）是 token 化快捷流程，**不声明**能力 → 高风险单下不可用（不猜）。
+        { 'kind' => 'card', 'frontend_kind' => 'inline', 'display_name' => 'Card', 'three_d_secure' => 'supported' },
+        { 'kind' => 'apple_pay', 'frontend_kind' => 'express', 'display_name' => 'Apple Pay', 'three_d_secure' => 'unsupported' },
+        { 'kind' => 'google_pay', 'frontend_kind' => 'express', 'display_name' => 'Google Pay', 'three_d_secure' => 'unsupported' }
       ]
     end
 

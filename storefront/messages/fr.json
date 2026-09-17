@@ -419,6 +419,8 @@
     "payment": "Paiement",
     "noShippingAddress": "Aucune adresse de livraison fournie pour cette commande.",
     "checkoutNotReady": "Veuillez compléter les informations de commande manquantes avant de payer.",
+    "noPaymentMethod": "Aucun moyen de paiement n'est disponible pour cette commande pour le moment. Contactez le support.",
+    "authenticationRequired": "Cette commande nécessite une vérification supplémentaire de la carte. Seuls les moyens de paiement compatibles 3-D Secure sont affichés.",
     "payAmount": "Payer maintenant {amount}",
     "edit": "Modifier",
     "cancel": "Annuler",

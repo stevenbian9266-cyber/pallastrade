@@ -421,6 +421,8 @@
     "payment": "Payment",
     "noShippingAddress": "No shipping address provided for this order.",
     "checkoutNotReady": "Please complete the missing checkout details before paying.",
+    "noPaymentMethod": "No payment method is available for this order right now. Please contact support.",
+    "authenticationRequired": "This order needs extra card verification. Only payment methods that support 3-D Secure are shown.",
     "payAmount": "Pay Now {amount}",
     "edit": "Edit",
     "cancel": "Cancel",

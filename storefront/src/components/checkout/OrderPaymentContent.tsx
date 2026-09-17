@@ -192,11 +192,16 @@ export function OrderPaymentContent({
   const effectiveView = liveView ?? view;
 
   // B1：支付方式服务端权威（CheckoutView.payment.available_payment_methods），order 快照回退。
-  const paymentMethods: PaymentMethod[] = useMemo(
+  // D15 切片3：结账投影新增 `requires_authentication`（服务端权威）；order 快照回退里
+  // 可能没有该字段 → 本地类型标为可选（不编号前端筛选，仅用于提示文案）。
+  type CheckoutPaymentMethod = PaymentMethod & {
+    requires_authentication?: boolean;
+  };
+  const paymentMethods: CheckoutPaymentMethod[] = useMemo(
     () =>
       (effectiveView?.payment?.available_payment_methods ??
         order.payment_methods ??
-        []) as PaymentMethod[],
+        []) as CheckoutPaymentMethod[],
     [effectiveView, order.payment_methods],
   );
   // 默认选中：URL 预选（?pm=）> 首个可用支付方式
@@ -688,6 +693,27 @@ export function OrderPaymentContent({
               </label>
             ))}
           </div>
+
+          {/* PALLAS-CUSTOM: D15 切片3（PRD-20260917-checkout-d15-切片3）——
+              服务端已按 3DS/SCA 认证需求过滤入口（前端**不做筛选**）；
+              这里只负责把「为什么只有这些 / 一个都没有」说清楚。 */}
+          {paymentMethods.some((m) => m.requires_authentication) && (
+            <div
+              data-testid="authentication-required-notice"
+              className="mt-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-800"
+            >
+              {t("authenticationRequired")}
+            </div>
+          )}
+
+          {paymentMethods.length === 0 && (
+            <div
+              data-testid="no-payment-method"
+              className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+            >
+              {t("noPaymentMethod")}
+            </div>
+          )}
 
           {/* Stripe 自绘卡字段（PRD-20260831-payments-stripe-自绘卡支付表单）：
               表单始终渲染，不依赖 client_secret / js.stripe.com iframe */}

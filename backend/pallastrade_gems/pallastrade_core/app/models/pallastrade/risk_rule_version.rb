@@ -14,7 +14,9 @@
 module PallasTrade
   class RiskRuleVersion < PallasTrade.base_class
     STATES = %w[draft published archived].freeze
-    ACTIONS = %w[allow review block].freeze
+    # D15 切片3（PRD-20260917-checkout-d15-切片3）：新增 `force_3ds`（强制 3DS/SCA 认证）——
+    # 严重度位于 `review` 与 `block` 之间（见 `Risk::Assess::DECISION_SEVERITY`）。
+    ACTIONS = %w[allow review force_3ds block].freeze
     MAX_RULES = 50
 
     belongs_to :rule_set, class_name: 'PallasTrade::RiskRuleSet', inverse_of: :versions

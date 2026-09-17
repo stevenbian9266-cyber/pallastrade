@@ -4353,6 +4353,36 @@
         "renderVerification": 15,
         "guardPlacement": 10
       }
+    },
+    {
+      "id": "GS-171",
+      "name": "A risky order may only pay with a method that can actually be challenged",
+      "description": "PRD-20260917-checkout-d15-切片3 (slice 3 of the D15 risk batch, business plan 72.1 / 78-D15): the platform could already flag an order as risky, but the challenge decision lived inside the provider's defaults and every entry stayed selectable - so a high-risk order could pick a wallet that cannot complete 3DS and only fail later. This slice makes the merchant own the policy (always / risk-based / off plus exemptions), resolves the requirement per order from policy + risk decision, gates the entries so an order that needs authentication can only see methods that declare they can authenticate, tells the provider to challenge when it declared it can, and explains the outcome - all read-only, zero provider I/O in the decision path.",
+      "mustDo": [
+        "Make the challenge decision explainable and single-sourced: policy first, then the risk decision, with the reason, the source and the exemptions recorded on the assessment",
+        "Let an explicit risk rule outrank a policy that turned challenges off, and never let an exemption widen what is payable - exemptions may only relax whether a challenge happens",
+        "Compare money only inside one currency: a low-amount threshold is skipped (with the skip recorded) when the order currency differs from the store default",
+        "Refuse a policy that cannot be honoured (unknown mode, negative threshold, malformed country code) instead of storing it, while keeping the read path fail-safe so a bad stored value never breaks checkout",
+        "Gate the entries from the same evaluation the front end and the session start already share, so a method that cannot authenticate simply does not appear and a hand-rolled request is refused before any session row exists",
+        "Treat an undeclared capability as unsupported: hide the entry when authentication is required and send nothing to a provider that never said it can challenge",
+        "Say it out loud when nothing is left: the projection carries an authentication flag so the buyer sees a reason, not an empty list, and the system never silently downgrades to a weaker entry",
+        "Keep the decision and the gate read-only and free of provider calls, and leave the existing checkout blocking behaviour untouched"
+      ],
+      "mustNotDo": [
+        "Gate the entries in the browser or in a second evaluator, so the list the buyer sees and the check the server applies can drift",
+        "Guessing a capability, sending an unknown parameter to a provider, or silently paying without a challenge when a challenge was required",
+        "Let an allowlist or a low-amount exemption turn a blocking decision into something payable",
+        "Treat a stored policy key that the operator broke as a reason to break checkout for everyone else",
+        "Change what checkout blocks, or charge, refund or cancel anything from this decision path"
+      ],
+      "scoring": {
+        "explainableDecision": 25,
+        "strictnessPrecedence": 20,
+        "honestCapabilityGating": 20,
+        "sameSourceEnforcement": 15,
+        "currencyDiscipline": 10,
+        "readOnlyPurity": 10
+      }
     }
   ]
 }

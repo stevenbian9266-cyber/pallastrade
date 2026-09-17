@@ -39,7 +39,10 @@ module PallasTrade
           unless payment_method_available?(order, payment_method, option_kind: option_kind)
             return failure(order, {
               code: 'payment_option_not_available',
-              message: 'Payment method is not available for this order'
+              message: 'Payment method is not available for this order',
+              # D15 切片3（PRD-20260917-checkout-d15-切片3）：把「为什么不可用」说清楚
+              # —— `authentication_required` = 本单要求 3DS/SCA，而该入口拿不到强认证。
+              reason: rejection_reason(order, payment_method, option_kind: option_kind)
             })
           end
 
@@ -59,11 +62,22 @@ module PallasTrade
         session_data['quote_refreshed'] = true if quote_refreshed
         # D9（PRD-20260915-payments-d9 切片1）：test 环境凭据产生的会话打标（对账/报表可排除非真实资金）。
         session_data['test_mode'] = true if payment_method.test_environment?
+        # D15 切片3：认证需求 → provider 指令（仅对**声明了能力**的入口下发；否则不下发、不猜）。
+        auth = PallasTrade::Payments::ThreeDSecure::Required.for_order(order)
+        hint = PallasTrade::Payments::ThreeDSecure::ProviderHint.call(
+          payment_method: payment_method, option_kind: option_kind, required: auth[:required]
+        ).value || {}
+        session_data.merge!(hint['external_data'].to_h)
+        # 留痕只在「本单被要求认证」时写（`applied` / `none`）——不要求时保持 external_data 与今天逐字节一致
+        session_data['three_d_secure_hint'] = hint['hint'] if auth[:required]
         session = payment_method.create_payment_session(
           order: order,
           amount: amount,
           external_data: session_data
         )
+
+        # D15 切片3：留痕事件（仅在「要求认证 **且** 真的建了会话」时发一次；payload 无 PII）。
+        publish_authentication_event(order, auth, hint) if auth[:required] && session.persisted?
 
         order.with_lock do
           order.reload
@@ -167,6 +181,41 @@ module PallasTrade
             session.external_data.to_h['mode'].presence == mode &&
             session.created_at >= REUSE_WINDOW.ago
         end
+      end
+
+      # D15 切片3：拒绝原因分类（可解释；不额外打 provider）
+      #   authentication_required —— 本单要求认证而该入口拿不到强认证（闸门主因）
+      #   scope_rule             —— 适用范围/熔断/配置导致的不可用（D8/D11 既有语义）
+      def rejection_reason(order, payment_method, option_kind: nil)
+        auth = PallasTrade::Payments::ThreeDSecure::Required.for_order(order)
+        kind = option_kind.to_s.presence || payment_method.default_option_kind.to_s
+        return 'scope_rule' unless auth[:required]
+
+        PallasTrade::Payments::ThreeDSecure::ProviderHint.option_supported?(payment_method, kind) ? 'scope_rule' : 'authentication_required'
+      end
+
+      AUTHENTICATION_EVENT = 'payment.three_d_secure_required'
+
+      # 认证需求事件：只描述事实（策略模式 / 来源 / 豁免 / 风险动作 / 下发结果），无 PII。
+      # 事件系统未启用或发布失败**不阻断**支付路径（与 D15 切片2 同口径）。
+      def publish_authentication_event(order, auth, hint)
+        return unless PallasTrade::Events.respond_to?(:enabled?) && PallasTrade::Events.enabled?
+
+        PallasTrade::Events.publish(
+          AUTHENTICATION_EVENT,
+          store_id: order.store_id,
+          payload: {
+            'order_id' => order.id,
+            'mode' => auth[:mode],
+            'source' => auth[:source],
+            'reason' => auth[:reason],
+            'exemptions' => Array(auth[:exemptions]),
+            'risk_action' => auth[:risk_action],
+            'provider_hint' => hint['hint']
+          }
+        )
+      rescue StandardError
+        nil
       end
 
       # Do not use Order#payment_methods here: it is memoized for rendering and

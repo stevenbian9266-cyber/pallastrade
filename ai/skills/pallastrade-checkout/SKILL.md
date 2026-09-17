@@ -289,6 +289,15 @@ module PallasTrade::OrderDecorator
 end
 ```
 
+## 结账页的 3DS/SCA 认证需求（D15 切片3, 2026-09-17；PRD-20260917-checkout-d15-切片3）
+
+- **契约**：`GET /api/v3/store/orders/:id/checkout` 的 `payment.available_payment_methods[]` 新增 `requires_authentication`（additive）。**列表仍只含可用入口**（隐藏 = 不出现）—— 认证需求 = 是时，不可保证认证的入口（钱包 express / 未声明能力的 provider）**不在列表里**，前端**零筛选逻辑**。
+- **「一个都没有」是显式状态**：列表为空且 `requires_authentication: true` → 展示提示（storefront `OrderPaymentContent` 的 `authentificationRequired` / `noPaymentMethod` 两块，i18n 五语言键集一致）；**不静默空白**、**不自动降级**到弱认证入口。
+- **重选约定沿用 D8**：客户端对不合规入口直接建会话 → 422 `payment_option_not_available`（`reason='authentication_required'`）→ 刷新列表 + 提示重选，不得拿旧列表重试。
+- **不改 Preflight**：`Checkout::Preflight` 的启用条件与阻断行为**本切片零改动**（认证需求不阻断结账，只收窄入口）。
+- **零感基线**：默认 `risk_based` + 无风险信号订单 → 入口集合与「加入本切片前」**逐项相同**（回归 spec 兜底）。
+- 判定/闸门/下发的领域细节见 `pallastrade-payments` SKILL「3DS / SCA」。
+
 ## Where to read further
 
 - **Core concepts:** `node_modules/@pallastrade/docs/dist/developer/core-concepts/orders.md`, `payments.md`

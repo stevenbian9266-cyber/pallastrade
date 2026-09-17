@@ -34,7 +34,9 @@ module PallasTradeStripe
           order: order,
           customer: customer&.profile_id,
           return_url: return_url,
-          capture_method: stripe_capture_method
+          capture_method: stripe_capture_method,
+          # D15 切片3：服务端判定「本单要求认证」时强制 3DS（由 `Start` 透传）
+          three_d_secure: external_data[:three_d_secure] || external_data['three_d_secure'] || false
         ).call
 
         idempotency_key = external_data[:idempotency_key] || external_data['idempotency_key']
@@ -75,7 +77,9 @@ module PallasTradeStripe
           amount_in_cents,
           order,
           customer_profile_id: customer&.profile_id,
-          idempotency_key: idempotency_key
+          idempotency_key: idempotency_key,
+          # D15 切片3：自绘卡（PaymentIntent 模式）也支持强制 3DS
+          three_d_secure: external_data[:three_d_secure] || external_data['three_d_secure'] || false
         )
         payment_intent = response.params
 

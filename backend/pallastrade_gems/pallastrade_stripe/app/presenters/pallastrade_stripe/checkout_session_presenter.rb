@@ -8,14 +8,19 @@ module PallasTradeStripe
   # with the session's client_secret and confirmed via `stripe.confirmPayment`.
   class CheckoutSessionPresenter
     SETUP_FUTURE_USAGE = 'off_session'
+    # D15 切片3：强制挑战（Stripe 卡入口在要求认证时的取值）
+    THREE_D_SECURE_REQUEST = 'any'
 
-    def initialize(amount_in_cents:, order:, customer: nil, return_url: nil, capture_method: nil)
+    def initialize(amount_in_cents:, order:, customer: nil, return_url: nil, capture_method: nil,
+                   three_d_secure: false)
       @amount_in_cents = amount_in_cents
       @order = order
       @customer = customer
       @return_url = return_url
       @capture_method = capture_method
       @ship_address = order.ship_address
+      # D15 切片3：本单是否要求强制 3DS/SCA（由 `Payments::ThreeDSecure::Required` 判定）
+      @three_d_secure = three_d_secure == true
     end
 
     def call
@@ -48,7 +53,7 @@ module PallasTradeStripe
 
     private
 
-    attr_reader :order, :amount_in_cents, :customer, :return_url, :capture_method, :ship_address
+    attr_reader :order, :amount_in_cents, :customer, :return_url, :capture_method, :ship_address, :three_d_secure
 
     # PallasTrade collects shipping in its own checkout UI; Stripe only needs a
     # single aggregated line item for the amount (which may be a merged
@@ -73,11 +78,21 @@ module PallasTradeStripe
         metadata: { pallastrade_order_id: order.id },
         setup_future_usage: SETUP_FUTURE_USAGE
       }
+      # D15 切片3：强制 3DS/SCA —— Stripe 只在卡入口认这个参数
+      # （https://docs.stripe.com/payments/3d-secure/strong-customer-authentication#manual-server-side）
+      if three_d_secure?
+        data[:payment_method_options] = { card: { request_three_d_secure: THREE_D_SECURE_REQUEST } }
+      end
       data
     end
 
     def manual_capture?
       capture_method.to_s == PallasTradeStripe::Gateway::PaymentIntents::MANUAL_CAPTURE_METHOD
+    end
+
+    # D15 切片3：要求认证（由调用方按 `Payments::ThreeDSecure::Required` 结论传入）
+    def three_d_secure?
+      three_d_secure == true
     end
 
     def shipping_present?

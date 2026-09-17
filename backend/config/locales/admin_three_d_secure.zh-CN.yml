@@ -1,0 +1,28 @@
+# PALLAS-CUSTOM: D15 切片3（PRD-20260917-checkout-d15-切片3；业务方案 §72.1）
+# 门店「3DS / SCA 策略」区块（stores checkout 设置）+ 入口认证能力列（payment methods 页）。
+# 键集必须与 gem en.yml 的 `admin.three_d_secure.*` 及 `admin.payment_methods.frontend_kind_authentication` 一致。
+zh-CN:
+  admin:
+    three_d_secure:
+      title: 3DS / SCA 策略
+      help: 什么时候必须对顾客做强认证。默认只在风控规则明确要求时才挑战，其余订单行为与今天完全一致。
+      mode: 策略模式
+      modes:
+        always: 全部挑战
+        risk_based: 基于风险（推荐）
+        off: 不挑战
+      low_amount_threshold: 低金额豁免
+      low_amount_threshold_help: 低于该金额的订单跳过挑战（仅在订单币种与门店默认币种一致时生效）。留空表示不启用。
+      allowlisted_countries: 豁免国家
+      allowlisted_countries_help: 逗号分隔的 ISO 两字母国家码（例如 DE,FR）。留空表示不启用。
+      allowlisted_option_kinds: 豁免入口
+      allowlisted_option_kinds_help: 逗号分隔的入口标识（例如 card,apple_pay）。留空表示不启用。
+      errors:
+        unknown_mode: "3DS 策略：不支持的模式 %{detail}"
+        invalid_threshold: "3DS 策略：低金额阈值必须是正数"
+        invalid_country: "3DS 策略：%{detail} 不是两位国家码"
+    payment_methods:
+      payment_option_three_d_secure: 可强制认证
+      payment_option_three_d_secure_yes: 可强制认证
+      payment_option_three_d_secure_no: 不支持
+      payment_option_three_d_secure_help: 高风险订单（风控要求认证）时，只保留可强制认证的入口；不支持强认证的入口会自动隐藏。

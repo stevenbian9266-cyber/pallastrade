@@ -88,10 +88,14 @@ module PallasTrade
         # blob 文件可能未落盘，ActiveStorage 在 logo=/mailer_logo= 赋值阶段会下载嗅探并抛
         # FileNotFoundError(500)。保存前校验并给出业务错误，替代不可读的 500。
         validate_store_attachment_uploads(store_params)
+        # PALLAS-CUSTOM: D15 切片3（PRD-20260917-checkout-d15-切片3）—— 3DS/SCA 策略
+        # （写 `private_metadata['three_d_secure_policy']`；非法值不落库）
+        apply_three_d_secure_policy if @store.errors.empty?
         @store.assign_attributes(store_params) if @store.errors.empty?
 
         if @store.errors.empty? && @store.save
           remove_assets(%w[logo mailer_logo], object: @store)
+          record_three_d_secure_policy_audit
           respond_to do |format|
             format.turbo_stream { flash.now[:success] = flash_message_for(@store, :successfully_updated) }
             format.html { flash[:success] = flash_message_for(@store, :successfully_updated) }
@@ -111,6 +115,54 @@ module PallasTrade
             format.html { redirect_to PallasTrade.edit_admin_store_path(section: params[:section]) }
           end
         end
+      end
+
+      # PALLAS-CUSTOM: D15 切片3 —— 门店 3DS/SCA 策略保存。
+      # 未提交该键 → 不动（零回归）；非法值 → 记在 `@store.errors`（阻止保存，不落库）；
+      # 成功 → 写入 `private_metadata` + 审计（前后值留痕）。
+      def apply_three_d_secure_policy
+        raw = params[:three_d_secure_policy]
+        return if raw.blank?
+
+        previous = PallasTrade::Payments::ThreeDSecure::Policy.for(@store)
+        attributes, errors = PallasTrade::Payments::ThreeDSecure::Policy.storable(policy_params(raw))
+        if errors.any?
+          errors.each { |error| @store.errors.add(:base, policy_error_message(error)) }
+          return
+        end
+
+        @store.private_metadata = (@store.private_metadata || {}).merge(
+          PallasTrade::Payments::ThreeDSecure::Policy::STORE_METADATA_KEY => attributes
+        )
+        @three_d_secure_policy_audit = { before: previous.to_h, after: attributes }
+      end
+
+      def policy_params(raw)
+        permitted = raw.respond_to?(:permit) ? raw.permit(:mode, :low_amount_threshold, :allowlisted_countries,
+                                                          :allowlisted_option_kinds) : raw
+        permitted.respond_to?(:to_h) ? permitted.to_h : permitted
+      end
+
+      def policy_error_message(error)
+        key = error.to_s.split(':').first
+        detail = error.to_s.split(':').last
+        I18n.t("admin.three_d_secure.errors.#{key}", detail: detail,
+                                                      default: "3DS policy: #{error}")
+      end
+
+      # 策略变更审计（前后值留痕；与 D14c 拒付率策略同口径）
+      def record_three_d_secure_policy_audit
+        return if @three_d_secure_policy_audit.blank?
+
+        PallasTrade::Audit.record(
+          action: 'store_three_d_secure_policy_updated',
+          actor: try(:audit_actor),
+          resource: @store,
+          before: @three_d_secure_policy_audit[:before],
+          after: @three_d_secure_policy_audit[:after]
+        )
+      rescue StandardError => e
+        Rails.logger.warn("[three_d_secure] policy audit failed: #{e.message}")
       end
 
       # PALLAS-CUSTOM: 直传附件校验（2026-09-09）——store[logo]/store[mailer_logo] 的 signed_id

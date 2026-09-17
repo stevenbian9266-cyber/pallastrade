@@ -24,7 +24,8 @@ module PallasTrade
       DEFAULT_DENYLIST_ACTION = 'review'
       DENYLIST_ACTIONS = %w[review block].freeze
       # 决策严重度（唯一口径）：取最严者，且规则不得放宽名单判定
-      DECISION_SEVERITY = { 'allow' => 0, 'review' => 1, 'block' => 2 }.freeze
+      # D15 切片3：`force_3ds`（强制认证）比 `review` 严、比 `block` 轻 —— 既不阻断成交，也不放过风险。
+      DECISION_SEVERITY = { 'allow' => 0, 'review' => 1, 'force_3ds' => 2, 'block' => 3 }.freeze
       # 重复投递去重窗口：同一订单**相同决策 + 相同命中集**在窗口内复用已有留痕行
       # （真正的再次评估（窗口之外 / 决策或命中变了）仍会新增一行，审计链路不丢）
       REUSE_WINDOW = 5.minutes
@@ -42,6 +43,7 @@ module PallasTrade
         rule_result = PallasTrade::Risk::Rules::Evaluate.call(order: order, now: now).value
 
         decision, hits, signals = decide(subjects, allow_hits, order, rule_result)
+        signals = signals.merge('three_d_secure' => three_d_secure_signal(order, decision))
 
         assessment = find_reusable(order, decision, hits) ||
                      record_assessment(order, decision, hits, signals, evaluated_at, rule_result)
@@ -96,6 +98,30 @@ module PallasTrade
         return 'rule_engine' if rule_action == decision && list_action != decision
 
         'both'
+      end
+
+      # D15 切片3（PRD-20260917-checkout-d15-切片3）：认证需求留痕（可解释：为什么本单会被要求 3DS）。
+      # 用**本轮刚算出的决策**作为 `risk_action`（留痕尚未落库，不能去读上一轮旧行）。
+      # 同时使订单上的判定缓存失效，使同一请求内接下来的可用性求值拿到最新结论。
+      def three_d_secure_signal(order, decision)
+        outcome = PallasTrade::Payments::ThreeDSecure::Required.call(order: order, risk_action: decision)
+        PallasTrade::Payments::ThreeDSecure::Required.reset_cache_for(order)
+        return { 'evaluated' => false } unless outcome.success?
+
+        value = outcome.value
+        {
+          'evaluated' => true,
+          'required' => value[:required],
+          'mode' => value[:mode],
+          'source' => value[:source],
+          'reason' => value[:reason],
+          'exemptions' => value[:exemptions],
+          'exemption_policy' => value[:exemption_policy],
+          'risk_action' => value[:risk_action],
+          'policy_off_overridden_by' => value[:policy_off_overridden_by],
+          'threshold_used' => value[:threshold_used]&.to_s,
+          'threshold_skipped' => value[:threshold_skipped]
+        }
       end
 
       # 规则引擎留痕（可解释性：用了哪一套规则的哪一版、是否金丝雀、桶、命中哪条、跳过了什么）

@@ -190,6 +190,10 @@ function renderProduct(product: Product) { ... }
 
 Types are generated from Alba serializers via `bundle exec rake typelizer:generate` and published with each release. They always match the API exactly (no drift).
 
+> ⚠️ **改动序列化器后必跑的单一管线**：`bash scripts/ci/contracts.sh` —— ① `rake typelizer:generate`（写 `backend/packages/{sdk,admin-sdk}/src/types/generated` 与 `backend/app/javascript/types/serializers/`）→ ② `rake api:docs:schemas`（OpenAPI `components.schemas`）→ ③ 把 `backend/packages/sdk` 与 `backend/public/api-docs/*.yaml` **同步到 `platform/` 副本**。**不要手改** `platform/packages/sdk/src/types/generated/*`（下次生成会覆盖，且易漏 `backend/` 侧两份）；`harness generated:check` 会重跑该管线并比对是否漂移。
+>
+> **D15 切片3 增量（2026-09-17）**：checkout 投影的 `payment.available_payment_methods[]` 新增 `requires_authentication: boolean`（`StoreCheckoutCheckout` 类型随之更新）—— 结账页据此提示「本单需 3DS/SCA」，**入口筛选仍在服务端**。
+
 ### Zod schemas (runtime validation)
 
 ```ts

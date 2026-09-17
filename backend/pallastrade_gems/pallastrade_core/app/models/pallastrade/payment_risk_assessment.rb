@@ -10,8 +10,9 @@
 # 铁律：留痕**只描述过去**，不触发任何动作（标记/阻断由调用方决定）。
 module PallasTrade
   class PaymentRiskAssessment < PallasTrade.base_class
-    DECISIONS = %w[allow review block].freeze
-    FLAGGED_DECISIONS = %w[review block].freeze
+    DECISIONS = %w[allow review force_3ds block].freeze
+    # `force_3ds` 属「需要人看到」的决策（与 review 同类：风控已作出非放行判断）
+    FLAGGED_DECISIONS = %w[review force_3ds block].freeze
 
     belongs_to :order, class_name: 'PallasTrade::Order', optional: true
     belongs_to :store, class_name: 'PallasTrade::Store', optional: true
@@ -35,6 +36,11 @@ module PallasTrade
 
     def review?
       decision == 'review'
+    end
+
+    # D15 切片3：本单要求 3DS/SCA 认证（决策来自规则 `force_3ds`）
+    def force_3ds?
+      decision == 'force_3ds'
     end
 
     def block?

@@ -684,6 +684,16 @@ store 侧支付方式 payload 的 **additive** 字段（不新增端点、不改
 三字段都已进 typelize（`backend/app/javascript/types/serializers/*` + SDK generated types + `{store,admin}.yaml`），
 契约漂移由 `harness generated:check` 守（漂移即失败）。**新增支付方式字段一律走这条链**，不要在控制器里手工拼 hash。
 
+## checkout 认证需求标志（D15 切片3, 2026-09-17；PRD-20260917-checkout-d15-切片3）
+
+`GET /api/v3/store/orders/:id/checkout` 的 `payment.available_payment_methods[]` **additive** 新增：
+
+- `requires_authentication`（布尔）：本单是否要求 3DS/SCA 认证（源：门店策略 + 最近一次风险决策）。
+- **列表仍只含可用入口**（隐藏 = 不出现）：认证需求 = 是时，未声明可认证能力的入口（如钱包 express）**不会出现在列表里**，客户端**不得**自己做筛选。
+- 列表为空 + `requires_authentication: true` = 「本店没有可完成认证的支付方式」→ 前台展示提示（不得静默空白、不得降级到弱认证入口）。
+- 入口不可用而客户端仍调 `POST .../payment_sessions` → 422 `payment_option_not_available`，`reason` 可能是 `authentication_required`（与 D8 其它不可用原因同码）；**不建会话**。
+- 类型同步：Typelizer 生成的 `StoreCheckoutCheckout`（`platform/packages/sdk/src/types/generated/`）已含该字段；`harness generated:check` 零漂移。
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - D8 适用范围 (2026-09-15, PRD-20260915-payments-d8): admin `options[]` 增 `rule_set`/`scope_summary`（typelizer → SDK 生成类型）；store 侧新增失败码 `payment_option_not_available`（两个 payment_sessions 创建端点 422 示例）；无端点增删。

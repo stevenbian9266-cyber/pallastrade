@@ -35,6 +35,11 @@
             <th scope="col"><%= PallasTrade.t('admin.payment_methods.payment_option_display_name') %></th>
             <th scope="col"><%= PallasTrade.t('admin.payment_methods.payment_option_position') %></th>
             <th scope="col"><%= PallasTrade.t('admin.payment_methods.payment_option_frontend_kind') %></th>
+            <%# PALLAS-CUSTOM: D15 切片3（PRD-20260917-checkout-d15-切片3）—— 入口能否被强制认证（只读） %>
+            <th scope="col">
+              <%= PallasTrade.t('admin.payment_methods.payment_option_three_d_secure') %>
+              <i class="ti ti-info-circle" title="<%= PallasTrade.t('admin.payment_methods.payment_option_three_d_secure_help') %>"></i>
+            </th>
             <%# PALLAS-CUSTOM: D8（PRD-20260915-payments-d8 切片2）—— 入口「适用范围」（市场/国家/Zone/币种） %>
             <th scope="col"><%= PallasTrade.t('admin.payment_methods.payment_option_scope') %></th>
           </tr>
@@ -63,6 +68,12 @@
               <td class="whitespace-normal">
                 <span class="text-gray-600">
                   <%= PallasTrade.t("admin.payment_methods.frontend_kind_#{row[:frontend_kind]}", default: row[:frontend_kind]) %>
+                </span>
+              </td>
+              <td class="whitespace-normal" data-payment-option-three-d-secure="<%= row[:three_d_secure] %>">
+                <span class="badge <%= row[:three_d_secure] ? 'badge-success' : 'badge-light border' %>">
+                  <%= row[:three_d_secure] ? PallasTrade.t('admin.payment_methods.payment_option_three_d_secure_yes') :
+                                             PallasTrade.t('admin.payment_methods.payment_option_three_d_secure_unsupported') %>
                 </span>
               </td>
               <td class="whitespace-normal">
