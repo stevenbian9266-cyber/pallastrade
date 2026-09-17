@@ -386,6 +386,44 @@ I18n.exists?('pallastrade.in_stock', :'zh-CN')   # false ⇒ 补键，收工
 却出现在**商家每天都会看的**商品列表库存列上（每行一个 missing）。
 另外注意视图里对这些标签调了 `.downcase`，**中文不受影响**，可以放心补中文。
 
+#### 第六个坑：键存在，但**位置错** → 静默显示英文（2026-09-17 实测，最难发现的一类）
+
+第五个坑解决的是"键缺失"；这一类是**键写对了、位置写错了**，比缺失更难发现，
+因为 `grep` 中文能找到、文件看起来完全正常、`translation missing` 也不出现——
+**只是那一项静默显示英文**。
+
+后台侧边栏的标签有两种写法，落点**完全不同**：
+
+```ruby
+# backend/pallastrade_gems/pallastrade_admin/config/initializers/pallastrade_admin_navigation.rb
+sidebar_nav.add :orders, label: 'admin.orders'   # String 含点 → pallastrade.admin.orders
+audits.add    :imports, label: :imports          # Symbol      → pallastrade.imports（顶层！）
+```
+
+`Navigation::Item#resolve_label`：
+
+```ruby
+when String then label.include?('.') ? PallasTrade.t(label) : label
+when Symbol then PallasTrade.t(label, default: label.to_s.humanize)   # ← 只前置 :pallastrade
+```
+
+`PallasTrade.t` 只前置 `:pallastrade`，**不补 `admin.`** → Symbol 标签的真实键路径是
+**顶层 `pallastrade.<key>`**。实测后果：`admin_nav.zh-CN.yml` 里这些中文写在
+`pallastrade.admin.<key>`，**永远读不到**，中文后台里 `Home` / `Orders` / `Draft orders` /
+税率 / 配送方式 / 库存项…… 全部显示英文（走 humanize 兜底）。
+
+**规则**：
+- 给后台加菜单/标签前，先看初始化器里是 `label: 'admin.x'`（String）还是 `label: :x`（Symbol）；
+- Symbol 标签的中文必须放**顶层** `zh-CN.pallastrade.<key>`；
+- 断言要覆盖
+  `backend/pallastrade_gems/pallastrade_admin/config/initializers/pallastrade_admin_navigation.rb`
+  里**全部** `label: :<key>`（本仓 48 个），只测单个页面会漏。
+
+**顺带**：同一路径下「字符串 vs Hash」还会**静默互相覆盖**（第三个坑）。
+本仓真实案例：`pallastrade.admin.imports` 在 en 侧是**功能域 Hash**（导入向导文案），
+zh 侧曾是**字符串**「导入」——同址时后加载的覆盖先加载的。
+**导航标签与功能域同名时，务必让标签留在顶层、功能域留在 `admin.` 下。**
+
 ### "Product name shows English even after I set Spanish"
 
 Walk this list:

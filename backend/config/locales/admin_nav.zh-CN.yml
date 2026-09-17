@@ -137,18 +137,6 @@ zh-CN:
         allowed_origins: 允许的来源
         redirects: 重定向
       audit_log: 审计日志
-      exports: 导出
-      imports: 导入
-      tax_rates: 税率
-      tax_categories: 税种
-      shipping_methods: 配送方式
-      shipping_categories: 配送类别
-      return_authorization_reasons: 退货授权原因
-      refund_reasons: 退款原因
-      reimbursement_types: 退款类型
-      stock_items: 库存项
-      stock_movements: 库存变动
-      stock_transfers: 库存调拨
       ai:
         overview: 概览
       emails:

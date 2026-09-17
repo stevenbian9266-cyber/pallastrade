@@ -15,11 +15,19 @@ require 'rails_helper'
 RSpec.describe 'Admin zh-CN locale coverage' do
   # 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.<domain> 一一对应。
   # products.ai 是 2026-09-16 实测发现的：缺它会让 AI 按钮的 title 属性被 HTML 撕开。
-  # products 是 2026-09-17 分批补齐的第一批；下面三个是第二批
-  # （量化与策略见 docs/research/RESEARCH-20260917-admin-i18n-gap.md）。
+  # products 是 2026-09-17 分批补齐的第一批；tables/variants_form/price_lists 是第二批；
+  # 下面是第四批（30 个域，496 键）——**自建功能域优先**，因为它们每天都被商家用到，
+  # 且翻译口径有权威依据（服务/模型语义），最不容易译错。
   DOMAINS = %w[
     catalog_health catalog_operations products.ai products
     tables variants_form price_lists
+    duplicate_products bulk_ops product_history
+    store_setup_tasks storefront_setup publishing dashboard
+    webhook_endpoints webhook_deliveries api_keys oauth_applications webhooks_subscribers
+    redirects channels imports markets checkout_settings store_form
+    product_translations translations taxon_rules taxon_types option_types reviews
+    promotion_categories gift_cards gift_card_batches posts
+    table invitations
   ].freeze
 
   def keys_for(locale, domain)
@@ -97,6 +105,15 @@ RSpec.describe 'Admin zh-CN locale coverage' do
     are_you_sure_delete authorization_failure automatic_promotion breadcrumbs
     cancel_order cannot_perform_operation
     in_stock variants
+    imports tax_rates tax_categories shipping_methods shipping_categories
+    return_authorization_reasons refund_reasons reimbursement_types
+    stock_items stock_movements stock_transfers
+    allowed_origins api_keys channels customer_groups customers developers
+    draft_orders gift_cards home invitations markets metafield_definitions
+    newsletter_subscribers options orders payments policies price_lists products
+    promotions reports return_authorizations returns roles shipping stock
+    stock_locations store_details tax translations users webhook_endpoints zones
+    total_sales loading date_range_presets
   ].freeze
 
   # 回归：商品列表库存列曾长期渲染 `translation missing:
@@ -136,6 +153,70 @@ RSpec.describe 'Admin zh-CN locale coverage' do
       missing = TOP_LEVEL_BATCH.reject { |key| I18n.exists?("pallastrade.#{key}", :'zh-CN') }
 
       expect(missing).to be_empty
+    end
+  end
+
+  # 2026-09-17 第四批发现的**第二类**缺陷：键存在，但**位置错**。
+  #
+  # `Navigation::Item#resolve_label` 对 Symbol 标签走
+  # `PallasTrade.t(label, default: label.to_s.humanize)`，而 `PallasTrade.t` 只前置
+  # `:pallastrade` → 真实键路径是**顶层** `pallastrade.<key>`。
+  # 这一批标签的中文此前被写在 `pallastrade.admin.<key>`，于是**永远读不到**，
+  # 中文后台里走 humanize 兜底显示英文。
+  #
+  # 真渲染证据（/admin，locale=zh-CN）：修复前面包屑与页标题是 "Home"、侧栏是
+  # "Orders" / "Draft orders"；修复后分别为「首页」「订单」「草稿订单」。
+  #
+  # 名单取自 `pallastrade_admin/config/initializers/pallastrade_admin_navigation.rb`
+  # 里全部 `label: :<key>` 形式（48 个）。**新增 Symbol 标签时必须同步此表**，
+  # 且中文必须落在顶层，不能写进 `admin.`。
+  NAV_SYMBOL_LABELS = %w[
+    allowed_origins api_keys blog channels customer_groups customers developers
+    draft_orders emails exports gift_cards home imports invitations markets
+    metafield_definitions newsletter_subscribers options orders payments policies
+    price_lists products promotions redirects refund_reasons reimbursement_types
+    reports return_authorization_reasons return_authorizations returns roles
+    shipping shipping_categories shipping_methods stock stock_items stock_locations
+    stock_movements stock_transfers store_details tax tax_categories tax_rates
+    translations users webhook_endpoints zones
+  ].freeze
+
+  describe 'admin sidebar Symbol labels' do
+    it 'resolves every Symbol label in zh-CN (no humanize fallback)' do
+      missing = NAV_SYMBOL_LABELS.reject { |key| I18n.exists?("pallastrade.#{key}", :'zh-CN') }
+
+      expect(missing).to be_empty, "这些导航标签会在中文后台显示英文: #{missing.inspect}"
+    end
+
+    it 'keeps them as plain labels, not shadowed by a feature-domain Hash' do
+      # 反向保护：`pallastrade.imports` 这类标签即使存在，若被同名的功能域 Hash 覆盖，
+      # 导航会直接把 Hash 渲染成标签（比显示英文更糟）。
+      hashed = NAV_SYMBOL_LABELS.select do |key|
+        I18n.t("pallastrade.#{key}", locale: :'zh-CN').is_a?(Hash)
+      end
+
+      expect(hashed).to be_empty, "导航标签被功能域 Hash 覆盖了: #{hashed.inspect}"
+    end
+  end
+
+  # 全站**共享**标签组：它们不属于任何单个功能域，却会同时出现在多个页面上
+  # （订单列表的状态徽章、各列表页的通用动作、购物车的优惠码报错、
+  # 仪表盘的时间区间选择器）。因此单独做 en ↔ zh-CN 的**叶子**键集比对，
+  # 而不是只断言组根存在（组根是 Hash，永远存在，断言它等于没测）。
+  SHARED_TOP_LEVEL_GROUPS = %w[
+    actions payment_states state_machine_states date_range_presets eligibility_errors
+    shipment_states
+  ].freeze
+
+  describe 'shared top-level label groups' do
+    SHARED_TOP_LEVEL_GROUPS.each do |group|
+      it "has full zh-CN leaf coverage for pallastrade.#{group}" do
+        en = flatten_keys(I18n.t("pallastrade.#{group}", locale: :en, default: {}))
+        zh = flatten_keys(I18n.t("pallastrade.#{group}", locale: :'zh-CN', default: {}))
+        missing = en - zh
+
+        expect(missing).to be_empty, "pallastrade.#{group} 缺中文: #{missing.inspect}"
+      end
     end
   end
 end

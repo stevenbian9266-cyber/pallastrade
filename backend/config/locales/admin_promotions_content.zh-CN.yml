@@ -1,0 +1,41 @@
+# PALLAS-CUSTOM: 促销分类 / 礼品卡 / 博客文章的宿主 zh-CN 覆盖（2026-09-17，第四批 i18n）。
+#
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.promotion_categories、
+# admin.gift_cards、admin.gift_card_batches、admin.posts 一一对应。
+#
+# 口径提醒：gift_cards.active 指礼品卡**状态**（可用的卡），不是「启用开关」；
+# gift_card_batches.codes_count 是「本批生成的卡号数量」。
+
+zh-CN:
+  pallastrade:
+    admin:
+      promotion_categories:
+        code_help: 供集成使用的可选短代码。
+        details: 详情
+        edit_promotion_category: 编辑促销分类
+        help: 把促销分组以便报表与商品运营。分类在店铺内共享，可以留空。
+        new_promotion_category: 新建促销分类
+        title: 促销分类
+      gift_cards:
+        active: 有效
+        all_statuses: 全部状态
+        code_help_text: 留空的话，我们会为你生成卡号
+        redeemed: 已兑换
+        usage: 用法
+      gift_card_batches:
+        codes_count: 卡号数量
+        expires_at_help: 礼品卡将在此日期之后过期。
+        new_gift_card_batch: 新建礼品卡批次
+        prefix: 前缀
+      posts:
+        content: 正文
+        cover_image_help: 可选封面图，会显示在博客列表与文章头部。
+        edit_post: 编辑文章
+        help: 发布博客文章来开展内容营销与 SEO。发布日期为空的文章是草稿；设为未来日期即定时发布。
+        new_post: 新建文章
+        published_at_help: 留空即为草稿，设为未来日期即定时发布。
+        publishing: 发布
+        seo: SEO
+        seo_description_help: 可选。会覆盖 meta 描述。
+        seo_title_help: 可选。会覆盖面向搜索引擎的页面标题。
+        title: 博客

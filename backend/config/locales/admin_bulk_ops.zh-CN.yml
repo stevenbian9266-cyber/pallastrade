@@ -1,0 +1,97 @@
+# PALLAS-CUSTOM: 商品/评论/客户批量操作的宿主 zh-CN 覆盖（2026-09-17，第四批 i18n）。
+#
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.bulk_ops 一一对应。
+# 口径以 `PallasTrade::Products::BulkOperation` 及其子类为准：
+#   - body.* 是操作说明（模态内），title.* 是动作名（菜单/按钮）；
+#   - warnings.* 是**逐条跳过**的原因（不整批失败），故一律用「跳过 N 个…」句式；
+#   - result.* 的 %{skipped} 是跳过计数，不是失败计数。
+
+zh-CN:
+  pallastrade:
+    admin:
+      bulk_ops:
+        customer_group_users:
+          body:
+            remove: 确定要把所选客户从该分组中移除吗？
+          title:
+            remove: 从分组中移除
+        price_list_products:
+          body:
+            remove: 确定要把所选商品从该价格表中移除吗？其价格也会一并删除。
+          title:
+            remove: 从价格表中移除
+        products:
+          body:
+            add_tags: 选择要添加到商品的标签：
+            add_to_channels: 把所选商品发布到指定的销售渠道。
+            add_to_taxons: 选择要把商品添加到哪些分类：
+            adjust_inventory: 调整某个库存点的现有库存数量。不跟踪库存的商品会被跳过。
+            adjust_price_percent: 按百分比上调或下调基础价格。在所选币种下没有价格的商品会被跳过。
+            remove_from_channels: 把所选商品从指定的销售渠道下架。
+            remove_from_taxons: 选择要把商品从哪些分类中移除：
+            remove_tags: 选择要从商品上移除的标签：
+            set_active: 把商品设为已上架后，它们将在前台可售。
+            set_archived: 把商品设为已归档后，它们将从前台隐藏。
+            set_draft: 把商品设为草稿后，它们将从前台隐藏。
+            set_price: 覆盖所选商品每个变体的基础价格（按币种）。
+          form:
+            amount: 新价格
+            channels: 销售渠道
+            currency: 币种
+            delta: 数量增减
+            delta_hint: 正数增加库存，负数减少库存。数量不会低于零。
+            percent: 百分比增减
+            stock_location: 库存点
+          preview:
+            confirm: 确认并执行
+            intro: 尚未做任何更改。请核对下面的数字后再确认。
+            selected: 已选商品
+            title: 核对变更
+            warnings_heading: 警告
+            will_skip: 将被跳过
+            will_update: 将被更新
+          result:
+            channels_updated: 已更新 %{count} 个商品（跳过 %{skipped} 个）。
+            inventory_updated: 已更新 %{count} 个商品（跳过 %{skipped} 个）。
+            price_updated: 已更新 %{count} 个商品（跳过 %{skipped} 个）。
+          title:
+            add_tags: 添加标签
+            add_to_channels: 加入销售渠道
+            add_to_taxons: 加入分类
+            adjust_inventory: 调整库存
+            adjust_price_percent: 按百分比调价
+            remove_from_channels: 从销售渠道移除
+            remove_from_taxons: 从分类移除
+            remove_tags: 移除标签
+            set_active: 设为已上架
+            set_archived: 设为已归档
+            set_draft: 设为草稿
+            set_price: 设置价格
+          warnings:
+            above_maximum: 跳过 %{count} 个变体——新价格会超过上限。
+            clamped_at_zero: 有 %{count} 条库存记录被收敛到零。
+            invalid_amount: 金额无效。
+            invalid_percent: 百分比无效。
+            invalid_request: 请求参数无效。
+            inventory_not_tracked: 跳过 %{count} 个商品——未开启库存跟踪。
+            negative_result: 跳过 %{count} 个变体——新价格会变成负数。
+            no_channels: 请至少选择一个销售渠道。
+            no_price: 跳过 %{count} 个商品——在所选币种下没有价格。
+            not_published: 有 %{count} 组商品/渠道未能发布。
+            permission_denied: 跳过 %{count} 个商品——你无权管理它们的价格或库存。
+            stock_location_missing: 请选择一个库存点。
+            zero_delta: 请输入非零的数量增减。
+        reviews:
+          body:
+            approve: 所选评论将公开显示，并开始计入商品评分。
+            reject: 所选评论将保持隐藏，且不再计入商品评分。
+          title:
+            approve: 批量通过所选评论
+            reject: 批量拒绝所选评论
+        users:
+          body:
+            add_tags: 选择要添加到客户的标签：
+            remove_tags: 选择要从客户上移除的标签：
+          title:
+            add_tags: 添加标签
+            remove_tags: 移除标签

@@ -4301,6 +4301,32 @@
         "regressionPin": 15,
         "cleanup": 10
       }
+    },
+    {
+      "id": "GS-169",
+      "name": "A translation that exists but is never read",
+      "description": "A Chinese admin showed English menu labels even though the Chinese strings were sitting in the locale file and grep found them. The keys were right; the path was wrong. Symbol nav labels resolve through PallasTrade.t, which prepends only :pallastrade, so they must live at the top level — but the Chinese had been written under admin. alongside the same label, which is where the dot-form string labels belong. Nothing errors, no translation-missing appears, and the page simply falls back to humanize.",
+      "mustDo": [
+        "Check how each label is declared before translating it (String with a dot vs Symbol) and follow the path that declaration actually resolves to",
+        "Confirm the real resolved path empirically rather than by reading the locale file",
+        "Enumerate every label of the offending form from the navigation initializer, not just the ones visible on one page",
+        "Verify in a real render, because a wrong-path key produces no error and no missing-translation marker",
+        "Assert against the full label list so a newly added Symbol label cannot silently regress"
+      ],
+      "mustNotDo": [
+        "Trust grep for the Chinese string as proof the label works",
+        "Fix only the labels visible on the page being looked at",
+        "Place a label that shares a name with a feature-domain Hash at the same path as that domain",
+        "Assume an English fallback is a missing key when the key is present but unreachable",
+        "Close the task on unit assertions alone when the defect class is invisible to them"
+      ],
+      "scoring": {
+        "pathResolution": 30,
+        "empiricalProof": 25,
+        "completeEnumeration": 20,
+        "collisionAvoidance": 15,
+        "renderEvidence": 10
+      }
     }
   ]
 }

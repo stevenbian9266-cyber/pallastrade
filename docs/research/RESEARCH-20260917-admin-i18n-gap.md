@@ -217,3 +217,90 @@ Rails 的 locale 区分大小写，因此**同一条键可能大小写不同而�
 
 > 注：视图对两个标签调用了 `.downcase`（`PallasTrade.t(:in_stock).downcase` 之类），
 > 中文不受 `downcase` 影响 —— 这是能安全补中文而非必须用英文的原因。
+
+---
+
+## 第四批（2026-09-17）：自建功能域 + 导航落点缺陷
+
+### 量化口径修正：真实缺口是 **2135**，不是 1234
+
+上一轮的 1234 只统计了「gem `pallastrade_admin/en.yml` 的 admin.* + 宿主未覆盖部分」。
+本批把 **en 侧全部来源**都算进来（gem `pallastrade_admin` / `pallastrade_core`
+（含 `en_pallastrade_translations.yml`）/ `pallastrade_api` + 宿主 `config/locales/en.yml`）：
+
+| 项 | 键数 |
+|---|---|
+| en 侧 `pallastrade.*` 全量 | **3422** |
+| zh-CN 覆盖（本批前） | 1399 |
+| **真实缺口** | **2135** |
+| 其中 `admin.*` | 819 |
+| 其中 非 `admin.*`（顶级与其它） | **1316** |
+
+→ 之前低估的原因：**只看 `admin.*` 会漏掉整个 `pallastrade_core` 的顶级词表**
+（`actions` / `payment_states` / `state_machine_states` / `eligibility_errors` …
+这些是订单列表、购物车、列表页按钮真正在读的东西）。
+
+### 本批交付（净补 643 键，缺口 2135 → 1492）
+
+| 部分 | 键数 | 说明 |
+|---|---|---|
+| 自建/常用功能域（30 个） | 496 | duplicate_products 86、bulk_ops 66、store_setup_tasks 24、storefront_setup 21、product_history 21、redirects 20、publishing 18、channels 17、imports 16、dashboard 16、webhook_* 40、api_keys 24 … |
+| 后台侧边栏 Symbol 标签 | 48 | 见下「第二类缺陷」 |
+| 仪表盘指标 + 图表区间 | 12 | 指标卡与 6 个时间区间（后者曾撕裂 HTML 属性） |
+| 全站共享标签组 | 79 | `actions` / `payment_states` / `state_machine_states` / `shipment_states` / `eligibility_errors` / `date_range_presets` |
+
+### ⚠️ 第二类缺陷：键存在，但**位置错**（本批最重要的发现）
+
+`Navigation::Item#resolve_label`：
+
+```ruby
+when Symbol
+  PallasTrade.t(label, default: label.to_s.humanize)
+```
+
+`PallasTrade.t` 只前置 `:pallastrade` → Symbol 标签的**真实键路径是顶层** `pallastrade.<key>`。
+但 `admin_nav.zh-CN.yml` 里这些中文被写在 **`pallastrade.admin.<key>`** —— **永远读不到**。
+
+| 状态 | 数量 | 后果 |
+|---|---|---|
+| 顶层已就位（`blog` / `emails` / `exports` / `redirects`） | 4 | 正常显示中文 |
+| 中文写错位置（存在但读不到） | **10** | 中文后台显示**英文**（humanize 兜底） |
+| 完全没有中文 | **34** | 同上 |
+
+真渲染证据（`/admin`，locale=zh-CN）：
+
+| | 修复前 | 修复后 |
+|---|---|---|
+| 面包屑与页标题 | `Home` | **首页** |
+| 侧栏 | `Orders`、`Draft orders` | **订单**、**草稿订单** |
+| 页面 `translation missing` 处数 | 16 | **0** |
+
+**为什么危险**：`imports` 尤其典型 —— `pallastrade.admin.imports` 在 en 侧是**功能域 Hash**
+（导入向导 16 条文案），而 zh 侧同址是**字符串**「导入」。两者同址时**后加载的覆盖先加载的**，
+即「一个单词键能把整个功能域挤掉」（skill 第三个坑）。本批把中文移到顶层后，
+两条线各自成立（`pallastrade.imports` = 导航标签，`pallastrade.admin.imports` = 功能域 Hash）。
+
+### 真渲染复验（locale=zh-CN）
+
+| 页面 | 批前 missing | 批后 |
+|---|---|---|
+| `/admin` | 16 | **0** |
+| `/admin/products` | 25（含库存列） | **0** |
+| `/admin/customers` | — | **0** |
+| `/admin/promotions` | — | **0** |
+| `/admin/orders` | — | 1（属尚未做的 `orders` 域） |
+
+断言从 153 例增至 **208 例 0 失败**（新增：30 个域的双向键集、48 个导航标签、
+6 个共享标签组的叶子键集比对）。
+
+### 剩余（缺口 1492）
+
+- `admin.*` **314**：主要是 `orders`(103)、`emails`(61)、`page_builder`(35)、`promotions`(22)
+- 非 `admin.*` **1178**：`pallastrade_core` 的顶级词表为主体（818 个顶级叶子键 + 各 mailer/规则类型组）
+
+### 已知的孤儿键（103）
+
+`admin_nav.zh-CN.yml` 里有一批键在 en 侧**不存在**（`allowed_origins` … 之类写在了 `admin.` 下
+而 en 侧在顶层）。这类孤儿**不会造成 missing**，只是键位卫生问题；
+但其中若与 en 的**功能域 Hash 同址**（如曾经的 `imports` / `shipping_methods`），
+就会变成上面那类静默覆盖，**必须按批次逐个清除**。

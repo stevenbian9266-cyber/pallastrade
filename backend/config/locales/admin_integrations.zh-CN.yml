@@ -1,0 +1,104 @@
+# PALLAS-CUSTOM: 集成面（Webhook / API 密钥）的宿主 zh-CN 覆盖（2026-09-17，第四批 i18n）。
+#
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.webhook_endpoints、
+# admin.webhook_deliveries、admin.api_keys、admin.oauth_applications、
+# admin.webhooks_subscribers 一一对应。
+#
+# 口径提醒：`publishable` 与 `secret` 是 API 密钥的**类型**（pk_/sk_），
+# 与「公开渠道」无关；这里统一译作「可公开 / 机密」，
+# 与 `admin_payment_methods.zh-CN.yml` 对凭据分级（publishable/secret/internal）的用词一致。
+
+zh-CN:
+  pallastrade:
+    admin:
+      webhook_endpoints:
+        auto_disabled: 该端点因连续投递失败已被自动停用。
+        back_to_endpoint: 返回端点
+        deliveries: 投递记录
+        endpoint_settings: 端点设置
+        event_subscriptions: 事件订阅
+        event_subscriptions_help: 选择哪些事件应触发向该端点投递 Webhook。
+        events: 个事件
+        failed_deliveries: 失败的投递
+        health:
+          degraded: 成功率 %{percentage}
+          disabled: 已停用
+          failing: 成功率 %{percentage}
+          healthy: 成功率 %{percentage}
+          no_deliveries: 暂无数据
+        health_label: 健康度
+        name_placeholder: 例如：前台邮件、履约服务
+        new: 新建 Webhook 端点
+        re_enable: 重新启用
+        secret_key: 密钥
+        secret_key_help: 用该密钥校验 Webhook 签名。请妥善保管，不要公开分享。
+        send_test: 发送测试
+        subscriptions: 订阅
+        successful_deliveries: 成功的投递
+        test_failed: 测试 Webhook 发送失败。请检查端点配置。
+        test_sent: 测试 Webhook 已发送。请在投递记录中查看结果。
+        url_placeholder: "https://example.com/webhooks"
+      webhook_deliveries:
+        delivered_at: 投递时间
+        delivery_details: 投递详情
+        delivery_info: 投递信息
+        endpoint_inactive: 无法重投——端点已停用
+        error_type: 错误类型
+        event: 事件
+        execution_time: 执行耗时
+        failed: 失败
+        pending: 待处理
+        redeliver_button: 重新投递
+        redelivered: Webhook 已重新投递。
+        request_errors: 请求错误
+        request_payload: 请求载荷
+        response_body: 响应正文
+        response_code: 响应码
+      api_keys:
+        example_request: 请求示例
+        key_revoked_message: 该 API 密钥已被吊销，不能再使用。
+        key_type_descriptions:
+          publishable: 可以安全地用在移动应用或浏览器等客户端代码中。
+          secret: 请妥善保管，仅在服务端使用。切勿公开暴露。
+        key_types:
+          publishable: 可公开
+          secret: 机密
+        last_used_at: 最近使用
+        list: API 密钥
+        name_placeholder: 例如：移动端生产环境
+        revoke: 吊销
+        revoke_confirmation: 确定要吊销该 API 密钥吗？此操作无法撤销。
+        revoked: API 密钥已吊销
+        revoked_at: 吊销时间
+        revoked_by: 吊销人
+        scopes: 权限范围
+        scopes_description: 机密密钥必填。请选择你的集成所需的最小权限集合。
+        scopes_immutable: 权限范围在密钥创建时即固定。如需更改，请用所需的权限范围新建一个密钥，并吊销当前这个。
+        secret_key_hidden: 该机密密钥无法再次显示。如果你已遗失，请吊销该密钥并新建一个。
+        statuses:
+          active: 有效
+          revoked: 已吊销
+        token_warning: 请妥善保存该密钥，它只会显示这一次。
+        usage: 用法
+        usage_instructions:
+          publishable: 该密钥用于客户端请求，可以安全地放进前端代码。
+          secret: 该密钥仅用于服务端请求。请保密，切勿暴露在客户端代码中。
+      oauth_applications:
+        client_id: 客户端 ID
+        client_secret: 客户端密钥
+        last_used: 最近使用
+        list: API 密钥
+        never: 从未
+        new: 新建 API 密钥
+        read_and_write: 读写
+        read_only: 只读
+        scopes: 权限范围
+      webhooks_subscribers:
+        all_events: 全部事件
+        new_webhooks_subscriber: 新建 Webhook 订阅者
+        no_events: 无事件
+        select_events: 选择事件
+        subscribe_to_all_events: 订阅全部事件
+        subscriptions: 订阅
+        time_of_last_event: 最近一次事件时间
+        webhooks_events: Webhook 事件

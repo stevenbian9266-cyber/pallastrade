@@ -1,0 +1,93 @@
+# PALLAS-CUSTOM: 商品侧栏/翻译/分类规则/选项/评论的宿主 zh-CN 覆盖
+# （2026-09-17，第四批 i18n）。
+#
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.product_history、
+# admin.product_translations、admin.translations、admin.taxon_rules、admin.taxon_types、
+# admin.option_types、admin.reviews 一一对应。
+#
+# 口径提醒：
+#   - product_history.kinds.* 是**动作类型**（不是状态）：bulk_* 来自批量操作，
+#     对应 `ProductHistory::Recorder` 写入的 metadata.source = 'bulk'；
+#   - reviews.bulk.result 的四个计数分别代表「已更新 / 无权限跳过 / 状态不允许跳过 / 未找到」，
+#     与 `ReviewsController#bulk` 的报告字段一一对应，不能合并措辞。
+
+zh-CN:
+  pallastrade:
+    admin:
+      product_history:
+        empty: 暂无历史记录。
+        fields:
+          available_on: 上架起始
+          currency: 币种
+          description: 描述
+          discontinue_on: 停售日期
+          meta_description: SEO 描述
+          meta_title: SEO 标题
+          name: 名称
+          price: 价格
+          slug: URL 别名
+          status: 状态
+        kinds:
+          bulk_channels_updated: 批量渠道更新
+          bulk_inventory_adjusted: 批量库存更新
+          bulk_price_updated: 批量改价
+          bulk_status_updated: 批量状态更新
+          created: 创建
+          price: 改价
+          updated: 更新
+        sku: SKU
+        system_actor: 系统
+        title: 历史记录
+      product_translations:
+        coverage: 翻译覆盖率
+        locale: 语言
+        manage_markets: 管理市场
+        no_locales_description: 配置带其它语言的市场后，即可开始翻译商品。
+        no_locales_title: 尚未配置其它语言
+        progress: 进度
+        total: 合计
+        translated: 已翻译
+      translations:
+        ai:
+          errors:
+            ai_credentials_missing: AI 服务商尚未配置凭据。
+            unsupported_locale: 该语言未在店铺中启用。
+          no_missing_fields: 该语言没有缺失字段。
+          review_hint: 请先审阅译文，再点「采纳」写入表单。
+          translate_missing: AI 补译缺失项
+        no_translations_configured: 尚未配置翻译。请先设置市场以使用翻译功能。
+      taxon_rules:
+        all_conditions: 所有条件
+        any_condition: 任一条件
+        available_on: 上架起始
+        match_policies:
+          contains: 包含
+          does_not_contain: 不包含
+          is_equal_to: 等于
+          is_not_equal_to: 不等于
+        on_sale: 促销中
+        products_must_match: 商品必须满足：
+        tag: 商品标签
+      taxon_types:
+        automatic: 自动
+        automatic_info: 商品只要符合你设置的规则，就会自动加入该分类。
+        manual: 手动
+        manual_info: 手动挑选商品。你可以批量添加或移除。
+      option_types:
+        intro_help: 选项用于对某些属性分组。例如，你可以创建一个名为「衬衫尺码」的选项，再为它创建「小号」「中号」等选项值。
+        learn_more: 了解选项
+        name_help_html: '该名称用于内部标识选项类型。<strong>它必须唯一。</strong>'
+        presentation_help: 该名称用于在前台展示选项类型。
+        showing_pagination: 显示第 %{from}-%{to} 条，共 %{total} 条
+        value_count:
+          one: '%{count} 个选项值'
+          other: '%{count} 个选项值'
+      reviews:
+        bulk:
+          empty: 请至少选择一条评论。
+          result: '批量审核完成——已更新：%{updated}，跳过（无权限）：%{skipped_unauthorized}，跳过（状态不允许）：%{skipped_invalid_state}，未找到：%{not_found}。'
+          too_many: 一次最多审核 %{count} 条评论。
+          unknown_event: 未知的批量操作。
+        helpful_votes: 有用票数
+        photo: 评论图片
+        photos: 图片

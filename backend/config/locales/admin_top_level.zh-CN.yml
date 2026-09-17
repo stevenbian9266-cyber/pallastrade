@@ -63,3 +63,204 @@ zh-CN:
     breadcrumbs: 面包屑
     cancel_order: 取消订单
     cannot_perform_operation: 无法执行该操作
+    # —— 后台侧边栏 Symbol 型标签（2026-09-17，第四批）——
+    #
+    # `Navigation::Item#resolve_label` 对 Symbol 标签走 `PallasTrade.t(label)`，
+    # 而 `PallasTrade.t` 只前置 `:pallastrade` → 真实键路径是**顶层** `pallastrade.<key>`。
+    # 下面这 11 个曾经被写在 `pallastrade.admin.<key>`，于是中文**永远读不到**，
+    # 中文后台里这些菜单项一直显示英文（走 humanize 兜底）。
+    #
+    # ⚠️ 其中 `imports` 尤其危险：`pallastrade.admin.imports` 在 en 侧是**功能域 Hash**
+    # （导入向导的 16 条文案），而旧的中文里是**字符串**「导入」——两者同址，
+    # 后加载的会覆盖先加载的。现已把中文移到顶层，两条线各自成立。
+    imports: 导入
+    tax_rates: 税率
+    tax_categories: 税种
+    shipping_methods: 配送方式
+    shipping_categories: 配送类别
+    return_authorization_reasons: 退货授权原因
+    refund_reasons: 退款原因
+    reimbursement_types: 退款类型
+    stock_items: 库存项
+    stock_movements: 库存变动
+    stock_transfers: 库存调拨
+    # —— 同一机制：**完全缺中文**的 Symbol 型标签（2026-09-17，第四批）——
+    #
+    # 下面这些在 zh 侧此前**没有任何**同路径文案（顶层与 admin.* 都没有），
+    # 于是中文后台里它们同样走 humanize 兜底显示英文。实测渲染确认过：
+    # `/admin` 的面包屑与页标题当时显示的就是 "Home"、侧栏显示 "Orders" / "Draft orders"。
+    #
+    # 取值一律对齐 gem / 宿主 en 侧同名键，避免自创措辞。
+    allowed_origins: 允许的来源
+    api_keys: API 密钥
+    channels: 销售渠道
+    customer_groups: 客户分组
+    customers: 客户
+    developers: 开发者
+    draft_orders: 草稿订单
+    gift_cards: 礼品卡
+    home: 首页
+    invitations: 邀请
+    markets: 市场
+    metafield_definitions: 元字段定义
+    newsletter_subscribers: 订阅者
+    options: 选项
+    orders: 订单
+    payments: 支付
+    policies: 政策
+    price_lists: 价格表
+    products: 商品
+    promotions: 促销
+    reports: 报表
+    return_authorizations: 退货授权
+    returns: 退货
+    roles: 角色
+    shipping: 配送
+    stock: 库存
+    stock_locations: 库存点
+    store_details: 店铺详情
+    tax: 税费
+    translations: 翻译
+    users: 用户
+    webhook_endpoints: Webhook 端点
+    zones: 区域
+    # —— 仪表盘指标卡与图表区间（2026-09-17，第四批；真渲染实测发现）——
+    #
+    # 实测 `/admin`：指标卡显示英文 Total Sales / Avg. Order Value / Total Orders / Sign-ups，
+    # 图表上方另有 6 处 translation missing（date_range_presets）。
+    #
+    # ⚠️ date_range_presets 是**嵌套 Hash**，而它的缺失值曾被拼进 HTML 属性
+    # （`title="translation missing: ...">Today</span>"`）——正是 skill 第二个坑。
+    # 补齐后这一处属性撕裂同时消失。
+    total_sales: 总销售额
+    loading: 加载中…
+    date_range_presets:
+      today: 今天
+      yesterday: 昨天
+      last_7_days: 近 7 天
+      last_30_days: 近 30 天
+      this_month: 本月
+      last_month: 上月
+    # 这几条虽然带 admin. 前缀，但都是**直接挂在 admin 下的叶子键**（不是功能域），
+    # 故与其它顶层键同处一个文件；与各 admin_<域>.zh-CN.yml 的 Hash 不冲突。
+    admin:
+      no_change: 无变化
+      avg_order_value: 客单价
+      total_orders: 订单数
+      sign_ups: 注册数
+      # 实测列表页出现 `translation missing: ...search_placeholder, resource: Product">
+      # —— 又一次属性撕裂（skill 第二个坑），补齐即消失。
+      search_placeholder: 搜索 %{resource}
+      selected: 已选中
+      next_page: 下一页
+      export_only_filtered_records: 仅导出筛选结果（匹配搜索条件）
+      export_all: 导出全部记录（数据量大时可能较慢）
+    # —— 列表页与状态标签（2026-09-17，第四批；真渲染实测发现）——
+    #
+    # ⚠️ `import` / `export` 是**顶层**键（视图写 `PallasTrade.t(:import)`），
+    # 不是 `admin.import` / `admin.export`（en 侧根本没有这两个键）。
+    # 之前误放进 admin. 下会成为孤儿，列表页依旧显示英文。
+    active: 已启用
+    all: 全部
+    import: 导入
+    export: 导出
+    filtered_records: 筛选结果
+    # 发货状态：与 state_machine_states.shipped 同源，但发货单用自己这一组
+    shipment_states:
+      backorder: 缺货补货
+      canceled: 已取消
+      partial: 部分发货
+      pending: 待处理
+      ready: 就绪
+      shipped: 已发货
+    # —— 全站共享标签（2026-09-17，第四批；真渲染实测发现）——
+    #
+    # 这三组不是某个页面的专属文案，而是**跨页面复用**：
+    #   actions            = 列表页/模态的通用动作（Save / Discard / Edit…）
+    #   payment_states     = 订单列表的支付状态徽章
+    #   state_machine_states = 订单/发货/退货的状态标签
+    # 因此它们缺失时，会在**多个**页面同时出现英文，值得单独守。
+    actions:
+      cancel: 取消
+      close: 关闭
+      connect: 连接
+      continue: 继续
+      create: 新建
+      destroy: 删除
+      discard: 放弃
+      edit: 编辑
+      open: 打开
+      reject: 拒绝
+      remove: 移除
+      resend: 重新发送
+      save: 保存
+      select_file: 选择文件
+      send_invitation: 发送邀请
+      update: 更新
+    payment_states:
+      balance_due: 待付款
+      capture_pending: 待请款
+      checkout: 结算中
+      complete: 已完成
+      completed: 已完成
+      credit_owed: 待退款
+      failed: 失败
+      paid: 已支付
+      partially_refunded: 部分退款
+      pending: 待处理
+      processing: 处理中
+      refunded: 已退款
+      void: 已作废
+      void_pending: 待作废
+    state_machine_states:
+      accepted: 已接受
+      address: 地址
+      authorized: 已授权
+      awaiting: 等待中
+      awaiting_return: 等待退货
+      backordered: 缺货预订
+      canceled: 已取消
+      cart: 购物车
+      checkout: 结算中
+      closed: 已关闭
+      complete: 已完成
+      completed: 已完成
+      confirm: 确认
+      delivery: 配送
+      errored: 出错
+      failed: 失败
+      given_to_customer: 已交给客户
+      invalid: 无效
+      manual_intervention_required: 需要人工介入
+      on_hand: 在库
+      open: 进行中
+      order: 订单
+      payment: 支付
+      pending: 待处理
+      processing: 处理中
+      ready: 就绪
+      reimbursed: 已退款
+      resumed: 已恢复
+      returned: 已退回
+      shipment: 发货
+      shipped: 已发货
+      void: 已作废
+    # 优惠码在购物车的资格报错（前台也读它，故措辞面向顾客而非商家）
+    eligibility_errors:
+      messages:
+        has_excluded_product: 购物车中含有无法使用该优惠码的商品。
+        item_total_less_than: 该优惠码不能用于金额低于 %{amount} 的订单。
+        item_total_less_than_or_equal: 该优惠码不能用于金额低于或等于 %{amount} 的订单。
+        item_total_more_than: 该优惠码不能用于金额高于 %{amount} 的订单。
+        item_total_more_than_or_equal: 该优惠码不能用于金额高于或等于 %{amount} 的订单。
+        limit_once_per_user: 该优惠码每位用户只能使用一次。
+        missing_product: 购物车中缺少该优惠码所需的商品，无法使用。
+        missing_taxon: 需要先添加所有适用分类中的商品，才能使用该优惠码。
+        no_applicable_products: 需要先添加适用的商品，才能使用该优惠码。
+        no_matching_channel: 该优惠码不适用于当前销售渠道。
+        no_matching_market: 该优惠码不适用于你所在的市场。
+        no_matching_taxons: 需要先添加适用分类中的商品，才能使用该优惠码。
+        no_user_or_email_specified: 需要先登录或填写邮箱，才能使用该优惠码。
+        no_user_specified: 需要先登录，才能使用该优惠码。
+        not_first_order: 该优惠码仅可用于首单。
+        wrong_country: 该优惠码不适用于你所在的国家

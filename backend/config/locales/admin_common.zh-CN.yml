@@ -1,0 +1,33 @@
+# PALLAS-CUSTOM: 表格筛选运算符 / 邀请的宿主 zh-CN 覆盖（2026-09-17，第四批 i18n）。
+#
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.table、admin.invitations
+# 一一对应。
+#
+# ⚠️ `'null'` 必须加引号：不加的话 YAML 会把它解析成**空键（nil）**，
+# 于是 `admin.table.operators.null` 永远取不到（en 侧同样写作 `'null':`）。
+# 注意 `admin.table`（单数，筛选运算符）与 `admin.tables`（复数，共享表格组件，
+# 已在第二批补过）是**两个不同的域**，不要混。
+
+zh-CN:
+  pallastrade:
+    admin:
+      table:
+        operators:
+          cont: 包含
+          end: 以…结尾
+          eq: 等于
+          gt: 大于
+          gteq: 大于等于
+          in: 是以下任一
+          lt: 小于
+          lteq: 小于等于
+          not_cont: 不包含
+          not_eq: 不等于
+          not_in: 不是以下任一
+          not_null: 不为空
+          'null': 为空
+          start: 以…开头
+      invitations:
+        email_placeholder: 例如 steve@apple.com
+        expires_at: 过期时间
+        invited_you_to_join_html: '%{inviter} 邀请你加入 %{resource}'

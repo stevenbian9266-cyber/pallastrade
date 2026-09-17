@@ -1,0 +1,103 @@
+# PALLAS-CUSTOM: 开店引导 / 前台接入 / 上架状态 / 概览的宿主 zh-CN 覆盖（2026-09-17，第四批 i18n）。
+#
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.store_setup_tasks、
+# admin.storefront_setup、admin.publishing、admin.dashboard 一一对应。
+#
+# 注意带 `_html` 后缀的键：值里有 `<a>` / `<strong>`，必须保留标签（含 data-turbo-frame），
+# 因此这些值用 YAML 单引号包裹以避免引号冲突。
+
+zh-CN:
+  pallastrade:
+    admin:
+      store_setup_tasks:
+        add_billing_address: 添加账单地址
+        add_products: 添加商品
+        add_products_task:
+          copy: 把商品添加到你的店铺，可以是自有商品，也可以邀请第三方商家一起销售。
+          done_subtitle: 记住，你随时可以继续添加！
+          done_title: 做得不错，你已经给店铺添加了商品！
+          import_hint: 你也可以从 CSV 或 Excel 文件批量导入商品。
+        customer_support_email_task:
+          copy: 我们需要你的客服邮箱以便在店铺前台展示。该邮箱将作为联系入口，方便客户就任何疑问或支持需求联系你。
+          current_html: 你的客服邮箱是 %{email}。
+          label: 客服邮箱
+        payment_methods:
+          copy: 为了能够收款，请至少配置一个在线支付服务商。
+          done: '全部就绪！你随时可以在<a href="%{link}" data-turbo-frame="_top">这个</a>页面管理支付方式。'
+          setup: 配置支付方式
+          title: 请为你的店铺配置支付方式
+        set_customer_support_email: 设置客服邮箱
+        setup_payment_method: 配置支付方式
+        setup_storefront: 配置前台
+        setup_taxes_collection: 配置税费代收
+        storefront:
+          copy: PallasTrade 是前后端分离的——可以把任何前台接到 Store API 上，无论是网页前台还是移动应用。还没有吗？一键部署官方 Next.js 前台。
+          done: 你的前台已接入并上线于
+          manage: 管理前台
+          setup: 配置前台
+        taxes:
+          copy: 为了能够收取税费，请配置你的税率。
+          done: '全部就绪！你随时可以在<a href="%{link}" data-turbo-frame="_top">设置</a>页面管理税费。'
+          setup: 配置税率
+      storefront_setup:
+        allow_origin_button: 允许该来源并完成配置
+        api_url_label: Store API 地址
+        connect_copy: 在任何一个访问 Store API 的客户端里使用这些凭据——网页前台、移动应用，或其它任何东西：
+        connect_title: 接入你的前台
+        connected_title: 已接入的前台
+        deployed_copy: 它现在上线于
+        deployed_title: 你的前台已部署完成！
+        deployment_already_allowed: 该前台来源已被允许——
+        description: 用下面的凭据接入你的网页前台或移动应用。
+        done: 你的前台已接入并上线于
+        env_description: 你的 PallasTrade Store API 地址与可公开密钥。两者都已按你的店铺预填——部署前如需调整可直接修改。
+        invalid_origin: 这看起来不是一个有效的前台地址。
+        local_installation_instructions: 本地安装说明
+        manage_allowed_origins: 管理允许的来源
+        origin_allowed: 现在 %{origin} 可以访问你的 Store API 了。
+        publishable_key_label: 可公开 API 密钥
+        see_online_demo: 查看在线演示
+        storefront_url_help: 客户访问你前台所使用的地址。它将成为客户邮件中链接的基础域名，并会自动加入允许来源，以便基于浏览器的前台可以调用 Store API。
+        storefront_url_label: 前台地址
+        storefront_url_saved: 前台地址已保存：%{url}
+        title: 配置前台
+      publishing:
+        caption_hidden_after: 将于 %{date} 下架
+        caption_live: 客户现在可以看到
+        caption_not_available: 已隐藏——商品当前为 %{product_status}
+        caption_scheduled: 将于 %{date} 上线
+        caption_unpublished: 已于 %{date} 隐藏
+        caption_window: 上架 %{start} → 下架 %{end}
+        empty: 尚未上架到任何销售渠道。
+        inactive_marker: 未启用
+        manage_cta: 管理
+        manage_description: 选择哪些销售渠道上架该商品。关闭某个渠道即在所有地方下架。
+        no_channels: 暂无销售渠道。请在「设置 → 销售渠道」中创建。
+        published_at_label: 上架起始
+        status_hidden: 已隐藏
+        status_live: 在售
+        status_not_available: 不可售
+        status_scheduled: 已排期
+        title: 上架状态
+        unpublished_at_label: 下架时间
+      dashboard:
+        getting_started:
+          description: 开始销售前你需要完成的所有配置。
+        hi: 你好
+        setup_progress:
+          steps_done_html: '已完成 <strong>%{done}</strong> / %{total} 步'
+          title: 你的整体配置进度
+        top_products: 热销商品
+        updater:
+          available_html: '有 %{version} 可用。'
+          current_version_html: '你当前的版本是 %{version}。'
+          view_release_notes: 查看发布说明
+        view_report: 查看报表
+        visits:
+          devices_title: 访客设备
+          landing_pages_title: 热门落地页
+          locations_title: 访客地区
+          no_data: 暂无数据
+          no_data_for_period: 该时间段暂无数据。
+          referrers_title: 访客来自哪里？
+        whats_happening_on_html: '这里是 <strong>%{store_name}</strong> 今天的情况。'

@@ -1,0 +1,106 @@
+# PALLAS-CUSTOM: 重复商品工作台的宿主 zh-CN 覆盖（2026-09-17，第四批 i18n）。
+#
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.duplicate_products 一一对应。
+# 该功能是本仓自建（D-2 批次），文案口径以 `Products::DuplicateCandidates` /
+# `Products::MergePreview` 的实际语义为准：
+#   - 「合并」只迁移变体/评论/图片/分类/促销，**历史订单永不改写**（history_note 即此含义）；
+#   - `skipped_heading` 下的条目是**故意留在原处**的冲突项，不是失败。
+
+zh-CN:
+  pallastrade:
+    admin:
+      duplicate_products:
+        action: 操作
+        attribute: 属性
+        attributes:
+          barcodes: 条码
+          categories: 分类
+          channels: 销售渠道
+          created_at: 创建时间
+          name: 名称
+          price: 基础价格
+          slug: URL 别名
+          status: 状态
+          stock: 现有库存
+          updated_at: 更新时间
+          variants: 变体（SKU）
+        blank_value: —
+        candidates_heading: 重复候选
+        compare: 对比
+        compare_empty: 请至少选择两个商品进行对比。
+        compare_intro: 把候选商品并排对比，然后修正其中一个的数据——或将一个合并到另一个（预览会精确显示将要迁移的内容，且合并可以撤销）。
+        compare_title: 对比重复商品
+        count: 分组
+        empty: 该信号下未发现重复商品。
+        filter:
+          active: 已按重复信号筛选：
+          clear: 清除筛选
+        hints:
+          duplicate_barcode: 本店中条码相同的变体。
+          duplicate_name: 本店中名称相同的商品（忽略大小写与空格）。
+          duplicate_sku: 本店中 SKU 相同的变体（不区分大小写）。
+        intro: 看起来重复的商品，并附带对比入口。请在此处修正商品数据——合并是另一个独立功能。
+        merge:
+          absorb_label: 把该商品合并掉
+          already_active: 该商品已被合并，且合并尚未撤销。
+          already_merged: 该合并已执行过——没有产生任何变更。
+          cancel: 取消
+          confirm: 合并商品
+          detail: 明细
+          disclaimer: 尚未做任何更改——此预览为只读。
+          done: 已把 %{count} 条记录合并到保留的商品。
+          entry_heading: 合并重复商品
+          entry_help: 保留一个商品并把另一个合并进来——变体、评论、图片、分类与促销会迁移过来，旧 URL 获得 301，历史订单永不被改写。
+          heading: 将「%{absorbed}」合并到「%{survivor}」
+          history_note: 有 %{count} 条历史订单行引用了被合并的商品——它们不会被改写。
+          impact_heading: 将要迁移的内容
+          invalid: 合并被拒绝：%{reason}
+          invalid_selection: 请选择两个不同的商品进行合并。
+          keep_label: 保留该商品
+          kept: 保留
+          merged: 已合并
+          moves: 迁移
+          not_found: 未找到合并记录。
+          preview_button: 预览合并
+          reason: 原因
+          reasons:
+            promotion_duplicate: 保留的商品上已有该促销
+            review_conflict: 客户已评论过保留的商品
+            sku_conflict: 保留的商品已使用该 SKU
+            stock_location_conflict: 保留的商品上已有该库存点
+            taxon_duplicate: 保留的商品上已有该分类
+          recent_empty: 暂无合并记录。
+          recent_heading: 最近的合并
+          redirects_heading: 旧 URL（301）
+          section: 分区
+          sections:
+            classifications: 分类
+            master_stock: 库存（主变体）
+            media: 图片
+            promotions: 促销
+            reviews: 评论
+            variants: 变体
+          skipped_heading: 保留在原处
+          skips: 已跳过
+          title: 合并商品
+          undo: 撤销合并
+          undo_blocked: 无法撤销：有 %{count} 条记录缺失或已被移到别处。
+          undo_confirm: 撤销本次合并并把所有内容还原？
+          undone: 合并已撤销。
+          undone_at: 撤销于 %{at}
+        more: 另有 %{count} 个
+        products: 商品
+        shared_value: 相同的值
+        signal: 信号
+        signals:
+          duplicate_barcode: 重复条码
+          duplicate_name: 重复名称
+          duplicate_sku: 重复 SKU
+        signals_heading: 信号
+        statuses:
+          active: 已上架
+          archived: 已归档
+          draft: 草稿
+          paused: 已暂停
+        title: 重复商品
+        view: 查看

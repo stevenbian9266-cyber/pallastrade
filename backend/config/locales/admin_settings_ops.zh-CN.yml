@@ -1,0 +1,107 @@
+# PALLAS-CUSTOM: 导入/重定向/渠道/市场/结算与店铺设置的宿主 zh-CN 覆盖
+# （2026-09-17，第四批 i18n）。
+#
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.imports、admin.redirects、
+# admin.channels、admin.markets、admin.checkout_settings、admin.store_form 一一对应。
+#
+# 口径提醒：
+#   - channels.guest_checkout_inherit / storefront_access_inherit / order_routing_strategy_inherit
+#     三处的 "Inherit from store" 必须是**同一句中文**（三态选择器的回退语义一致）；
+#   - storefront_access 的取值与 `CheckoutSettings::STOREFRONT_ACCESS_OPTIONS` 对应
+#     （public / prices_hidden / login_required）；
+#   - channels.code_hint 里的 X-PallasTrade-Channel 是真实请求头名，不可译。
+
+zh-CN:
+  pallastrade:
+    admin:
+      imports:
+        all_required_columns_mapped: 很好，所有必填列都已映射！
+        field_required: 必填字段
+        import_done: 全部完成！
+        json: JSON
+        large_import_background_note: 你可以关闭此页面——导入会在后台继续。
+        large_import_message: 本次导入包含 %{count} 行，数据量过大，无法逐行展示。
+        large_import_summary: 已完成 %{completed}，失败 %{failed}
+        mapping_required: 该字段为必填
+        please_map_all_required_fields: 请映射所有必填字段后再继续。
+        please_select_a_column: 请选择一列
+        rows_processed: 已处理 %{processed} / %{total} 行
+        schema: 结构定义
+        steps:
+          complete: 3. 完成
+          map_fields: 1. 映射字段
+          process_rows: 2. 处理数据行
+        waiting_for_file_to_be_processed: 正在等待文件处理完成…
+      redirects:
+        active_label: 启用
+        description_label: 描述
+        description_placeholder: 可选的备注，说明这条重定向的缘由。
+        form_intro: 创建一条规则：旧路径（源路径）→ 新路径（目标路径）。例如商品地址从 /old-shaver 改为 /new-shaver 时，源路径填 /old-shaver、目标路径填 /new-shaver——访问旧地址的访客会自动跳到新地址。状态码可选 301（永久迁移，推荐）或 302（临时跳转）。
+        from_help: 需要跳转的旧路径（例如 /old-product）。必须带前导斜杠。
+        intro_help: 重定向可以让旧链接自动跳到新链接。当商品改名、URL 变更或下架时，点击旧链接的访客会看到「页面不存在」（404）。创建一条重定向后，旧链接会自动跳到新页面——访客不会迷路，Google 等搜索引擎也能把原有的排名权重传递给新链接。
+        redirect_settings: 重定向设置
+        status_help: 301 = 永久（推荐用于 SEO），302 = 临时。
+        title_label: 标题
+        title_placeholder: 例如「浓缩咖啡改名重定向」——这条重定向是为了哪项业务？
+        to_help: 需要跳转到的目标路径（例如 /new-product）。必须是站内路径。
+        url_changes_action: 创建重定向
+        url_changes_handled: 已创建重定向
+        url_changes_heading: URL 已变更的商品
+        url_changes_intro: 这些商品的 URL 曾发生过变更。旧链接（例如来自搜索引擎或已分享的帖子）现在会返回 404——创建重定向后，旧链接会自动跳到新 URL。
+        url_changes_new_url: 新 URL
+        url_changes_old_url: 旧 URL
+        url_changes_pending: 需要重定向
+        url_changes_product: 商品
+        url_changes_status: 状态
+      channels:
+        code_hint: 一个简短稳定的标识（例如「online」「pos」「wholesale」）。API 客户端通过 X-PallasTrade-Channel 请求头使用它，并用于订单归因。
+        default: 默认渠道
+        default_hint: 每个店铺有且仅有一个默认渠道。未选择渠道时以它作为回退，它也是新商品的自动发布目标。
+        guest_checkout: 游客结算
+        guest_checkout_allowed: 允许
+        guest_checkout_blocked: 不允许
+        guest_checkout_hint: 该渠道下顾客能否不注册账号直接结算。未设置时继承店铺设置。
+        guest_checkout_inherit: 继承店铺设置
+        order_routing_strategy: 订单路由策略
+        order_routing_strategy_hint: 覆盖归属到该渠道的订单所使用的店铺级路由策略。
+        order_routing_strategy_inherit: 继承店铺设置
+        storefront_access: 前台可见性
+        storefront_access_hint: 控制匿名访客在该渠道上能看到什么。未设置时继承店铺设置。隐藏价格时，游客必须登录才能结算——游客结算不适用。
+        storefront_access_inherit: 继承店铺设置
+        storefront_access_options:
+          login_required: 需登录——访客必须登录后才能浏览
+          prices_hidden: 隐藏价格——访客必须登录后才能看到价格
+          public: 公开——任何人都可以浏览并查看价格
+      markets:
+        edit: 编辑市场
+        list: 市场
+        new: 新建市场
+        supported_locales_hint: 以逗号分隔的其它语言代码列表（例如 fr,de,es）
+      checkout_settings:
+        checkout_links:
+          description: 这些页面的链接会显示在结算页脚。
+          label: 结算页链接
+        checkout_message_description: 会在结算页右侧栏对客户可见。
+        countries_managed_by_markets_html: 国家与配送区域通过 %{link} 管理。
+        guest_checkout:
+          description: 允许客户不注册账号直接结算。
+          label: 允许游客结算
+        special_instructions:
+          description: 允许客户为自己的订单添加特别说明。
+          label: 显示特别说明字段
+        storefront_access:
+          description: 控制匿名访客在整个店铺范围内能看到什么的默认值。各销售渠道可单独覆盖。隐藏价格时，游客必须登录才能结算——游客结算不适用。
+          label: 前台可见性
+      store_form:
+        company_field:
+          description: 它决定「我的账户」与结算地址步骤的地址表单中是否显示公司字段。
+          label: 显示公司地址字段
+        currencies_managed_by_markets_html: 币种与语言现在由 %{markets_link} 管理。
+        customer_support_email_help: 该邮箱会显示在你店铺前台的页脚中
+        email_addresses: 邮箱地址
+        logo_help: 用于管理后台
+        mail_from_address_help: 请提供作为店铺所有邮件发件人的地址。
+        mailer_logo_format_hint: 建议使用透明背景的图片。仅支持 JPEG 与 PNG 格式。
+        mailer_logo_help: 该 Logo 会出现在所有邮件通知中，例如订单确认邮件
+        new_order_notifications_email_help: 如果你希望在有人下订单时收到邮件通知，请提供接收该通知的邮箱地址
+        send_consumer_transactional_emails_help: 取消勾选后，订单确认、发货通知等事务性邮件将不会发送给客户
