@@ -1,0 +1,59 @@
+# PALLAS-CUSTOM: 后台**顶级** `pallastrade.<key>` 文案的宿主 zh-CN 覆盖（2026-09-17，第三批）。
+#
+# 背景：量化（docs/research/RESEARCH-20260917-admin-i18n-gap.md）显示总缺 **1234** 键 ——
+# 其中 `admin.*` 819 个、**其它 415 个**（含 271 个顶级叶子键）。此前几批只补了 `admin.*`。
+#
+# 本批是顶级叶子键里的**高频一批**：通用动作（add_*/cancel_*）、列表页标题
+# （redirects/emails/blog/exports…）、调整项与退款说明、以及几个 help 文案。
+#
+# ⚠️ 注意 scope：这些键在 `zh-CN.pallastrade.<key>` 下（**没有** `admin.` 前缀）——
+# 视图用 `PallasTrade.t(:in_stock)` 这类写法取它们。
+#
+# ⚠️ 有两条（`admin_language_help` / `admin_locale_help`）原文较长且被工具输出截断，
+# 本批**跳过而非猜测**，留待下一批取完整原文后补。
+
+zh-CN:
+  pallastrade:
+    # —— 列表页 / 模块标题 ——
+    redirects: 跳转
+    emails: 邮件
+    variant: 变体
+    blog: 博客
+    back_in_stock_subscriptions: 到货通知订阅
+    abandoned_cart_notifications: 弃单提醒
+    profile: 个人资料
+    exports: 导出
+    webhook_deliveries: Webhook 投递
+    acceptance_errors: 受理错误
+    # —— 通用「添加」动作 ——
+    add_action_of_type: 添加动作类型
+    add_coupon_code: 添加优惠码
+    add_gift_card: 添加礼品卡
+    add_new_address: 添加新地址
+    add_one: 添加一个
+    add_option_value: 添加选项值
+    add_rule_of_type: 添加规则类型
+    add_selected: 添加所选
+    add_selected_products: 添加所选商品
+    add_selected_variant: 添加所选变体
+    add_variant: 添加变体
+    added_at: 添加时间
+    # —— 调整项 / 退款说明 ——
+    adjustment_amount_help: 正数为加收，负数为抵扣。
+    adjustment_closed_description: 该调整项已关闭，不会再被重算。
+    adjustment_open_description: 该调整项处于开启状态，会被重算。
+    all_items_have_been_returned: 所有商品均已退货
+    all_time: 全部时间
+    applied_to: 应用于
+    calculated_reimbursements: 已计算的退款
+    # —— 媒体 / 图片 ——
+    alt_text: 替代文本
+    assigned_variants: 关联的变体
+    assigned_variants_help: 选择这张图片对应的变体。留空表示适用于全部变体。
+    # —— 通用动作与状态 ——
+    are_you_sure_delete: 确定要删除这条记录吗？
+    authorization_failure: 授权失败
+    automatic_promotion: 自动
+    breadcrumbs: 面包屑
+    cancel_order: 取消订单
+    cannot_perform_operation: 无法执行该操作

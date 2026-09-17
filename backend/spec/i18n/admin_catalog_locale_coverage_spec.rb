@@ -82,4 +82,34 @@ RSpec.describe 'Admin zh-CN locale coverage' do
       expect(I18n.t(key, locale: :'zh-CN')).to eq(expected)
     end
   end
+
+  # 第三个来源：**顶级** `pallastrade.<key>`（视图用 `PallasTrade.t(:in_stock)` 这类写法，
+  # 没有 `admin.` 前缀）。量化显示总缺 1234 键，其中 415 个不在 admin.* 下 —— 上面的
+  # DOMAINS 结构检查不到它们，所以这里单独守一批（第三批补的高频顶级键）。
+  TOP_LEVEL_BATCH = %w[
+    redirects emails variant blog profile exports webhook_deliveries
+    add_action_of_type add_coupon_code add_gift_card add_new_address add_one
+    add_option_value add_rule_of_type add_selected add_selected_products
+    add_selected_variant add_variant added_at
+    adjustment_amount_help adjustment_closed_description adjustment_open_description
+    all_items_have_been_returned all_time applied_to calculated_reimbursements
+    alt_text assigned_variants assigned_variants_help
+    are_you_sure_delete authorization_failure automatic_promotion breadcrumbs
+    cancel_order cannot_perform_operation
+  ].freeze
+
+  describe 'top-level pallastrade keys' do
+    TOP_LEVEL_BATCH.each do |key|
+      it "has a zh-CN value for pallastrade.#{key}" do
+        expect(I18n.exists?("pallastrade.#{key}", :'zh-CN')).to be(true),
+                           "pallastrade.#{key} 缺中文（含 admin. 前缀的检查覆盖不到顶级键）"
+      end
+    end
+
+    it 'never leaves a top-level key rendering as en in the Chinese admin' do
+      missing = TOP_LEVEL_BATCH.reject { |key| I18n.exists?("pallastrade.#{key}", :'zh-CN') }
+
+      expect(missing).to be_empty
+    end
+  end
 end
