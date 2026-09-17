@@ -220,6 +220,14 @@ export default {
         description: 'Admin catalog health specs (issue semantics + filtered products list + banner + navigation consistency)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/catalog_health_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
       },
+      // 管理后台 i18n 覆盖率（2026-09-17 起）：en ↔ zh-CN 按功能域**双向**键集相等 +
+      // 顶级键批次 + 已修缺陷回归。i18n 工作的产物是 locale YAML 与断言，
+      // 不落在任何后端域验证器的覆盖范围里；后续还有约 1109 个键要分批补齐，
+      // 每次都需要这条命令作为可校验证据来源。
+      'admin-i18n-rspec': {
+        description: 'Admin i18n locale coverage specs (bidirectional en/zh-CN key-set parity per domain + top-level key batch + regression pins)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/i18n/admin_catalog_locale_coverage_spec.rb'],
+      },
       // SKU 级到货订阅（PRD-20260915-catalog-batch-c2-sku-back-in-stock）：variant_id 唯一约束
       // + 双通道通知（variant.back_in_stock → 该 SKU 订阅者；product.back_in_stock → 历史商品级）+ 后台 SKU 列
       'back-in-stock-rspec': {

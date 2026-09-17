@@ -265,6 +265,7 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | What you changed | Minimum check | Est. Time |
 |---|---|---|
 | Any Ruby file | `harness check --profile quick` | ≤5 min |
+| 后台 i18n（`backend/config/locales/admin_*.zh-CN.yml`、`backend/spec/i18n/**`） | + `harness verify admin-i18n-rspec`（按功能域 en↔zh-CN **双向**键集相等 + 顶级键批次 + 已修缺陷回归；改 locale 键后**必须重启容器**才生效，Rails dev 不重载 locale 文件） | ≤2 min |
 | Model / DB schema / migration | + `harness check --profile full` | ≤45 min |
 | API endpoint (new/modified) | + `harness generated:check` (OpenAPI + SDK types) | ≤5 min |
 | UI component / style | + `harness e2e dashboard` or `harness e2e storefront` | ≤15 min |
