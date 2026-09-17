@@ -44,7 +44,7 @@ zh-CN:
         canary_label: "第 %{version} 版，%{percent}%"
         canary_off: 关闭
         canary_title: 金丝雀灰度
-        canary_hint: 按订单维度稳定分桶：同一个订单永远命中同一版本，可复算。
+        canary_hint: 按订单维度稳定分桶：同一个订单永远命中同一版本，可复算。选草稿即可把它以金丝雀身份放出（不会成为生效版）；填 0 关闭金丝雀。
         canary_percent: 百分比
         canary_submit: 保存灰度
         canary_success: "灰度已更新（第 %{version} 版，%{percent}%）。"

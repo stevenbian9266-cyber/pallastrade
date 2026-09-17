@@ -137,6 +137,36 @@ RSpec.describe 'Admin risk rules (D15b)', type: :request do
     expect(rule_set.canary_version_id).to eq(version.id)
   end
 
+  # AC-013（可达性：金丝雀下拉必须列出**草稿**，否则运营侧永远只看到生效版 → 灰度用不了）
+  it 'offers draft versions in the canary picker and lets a draft be rolled out without becoming the live version' do
+    sign_in_as_admin
+    rule_set = build_published_rule_set(code: "canary_pick_#{suffix}")
+    stable = rule_set.active_version
+    draft = create(:risk_rule_version, rule_set: rule_set, version: 2, state: 'draft',
+                                       rules: [{ 'code' => 'block_kp', 'action' => 'block',
+                                                 'conditions' => { 'country_in' => %w[KP] } }])
+
+    get "/admin/risk_rules/#{rule_set.id}"
+
+    expect(response).to have_http_status(:ok)
+    # 草稿作为候选出现（含状态标注），已归档版本不出现
+    expect(response.body).to include(%(<option value="#{draft.version}">))
+    expect(response.body).to include(PallasTrade.t('admin.risk_rules.state_draft'))
+    archived = create(:risk_rule_version, rule_set: rule_set, version: 3, state: 'archived', rules: default_rules)
+    get "/admin/risk_rules/#{rule_set.id}"
+    expect(response.body).not_to include(%(<option value="#{archived.version}">))
+
+    post "/admin/risk_rules/#{rule_set.id}/canary", params: { version: draft.version, percent: 30 }
+
+    rule_set.reload
+    expect(rule_set.canary_version_id).to eq(draft.id)
+    expect(rule_set.canary_percent).to eq(30)
+    # 草稿被发布为金丝雀，但**没有**成为生效版
+    expect(draft.reload.state).to eq('published')
+    expect(rule_set.active_version_id).to eq(stable.id)
+    expect(stable.reload.state).to eq('published')
+  end
+
   # AC-013（回滚：原因必填）
   it 'rolls back to an older version only when a reason is given' do
     sign_in_as_admin

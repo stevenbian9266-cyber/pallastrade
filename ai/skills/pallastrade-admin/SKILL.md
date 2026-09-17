@@ -968,6 +968,7 @@ Orders 子项 `risk_rules`（position **59.5**，紧跟「风控名单」59，�
 - **动作**（均 `authorize! :manage, PallasTrade::RiskRuleSet` + 审计 + confirm）：`create_version` / `publish` / `canary` / `rollback`（**原因必填**）/ `toggle`。
   全部写路径经唯一服务 `Risk::Rules::Versioning`（控制器不直接写版本，避免口径分叉）。
 - **试算（preview）**：`data-preview-result` / `-version` / `-canary` / `-bucket` / `-rule` / `-action` / `-skipped`；**只读**：不写留痕、不改订单状态，找不到订单显示 `data-preview-error`（用 `data-*` 断言，**不要**整页文本断言）。
+- ⚠️ **金丝雀下拉必须列草稿（可达性）**：候选集 = `@versions.reject(&:archived?)`（**草稿 + 已发布**，归档版不可复活），标签 = `version_label + state_*`。若只列 `published?`，运营侧永远只有生效版可选 → 灰度功能**存在但用不了**（`publish` 会归档其它已发布版，不存在「已发布且不生效」的版本）。草稿被选中时以金丝雀身份发布但**不改**生效版（语义见 `pallastrade-security`）。
 - **权限**：`can :manage, PallasTrade::RiskRuleSet`（覆盖全部自定义动作）+ `can :manage, PallasTrade::RiskRuleVersion`；已在 `backend/config/initializers/pallastrade_permission_registry.rb` 登记 `:risk_rules`（新增授权资源必须登记，否则 `nav:validate` 难过）。
 - ⚠️ **新增 Orders 子项必须同步 `navigation_consistency_spec.rb` 的 orders 子项数组**（本次加 `:risk_rules`）。
 - ⚠️ **多态 `created_by` 不要赋字符串**：actor 归一在服务层（只有 AR 记录才落多态列，`'admin'` / `{type:,id:,label:}` 交给审计），否则会撞 `PrefixedId#assign_attributes` 报 `undefined method 'has_query_constraints?' for String`。

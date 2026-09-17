@@ -242,6 +242,15 @@
 | `ai/skills/pallastrade-prd/SKILL.md`、`AGENTS.md`、`.github/copilot-instructions.md` | 已评估，无需更新（命令与流程未变） |
 | `AGENTS.md` §8 危险操作 | 不适用（本修复未引入新的危险操作） |
 
+## 9.3 后续修复记录 2（2026-09-17，bugfix）
+
+**缺陷**（同一条可达性问题的第二处）：`show.html.erb` 的金丝雀下拉写作 `@versions.select(&:published?)` —— **只列已发布版**。结合「发布即归档」，运营侧永远只能选到生效版 → 即使服务层已修好，**灰度在界面上依然用不了**（功能存在但不可达）。
+
+**修复**：
+- 下拉候选改为 `@versions.reject(&:archived?)`（**草稿 + 已发布**；归档版不可复活），标签带状态标注（`version_label` + `state_draft/published`）。
+- 金丝雀提示文案（zh-CN / en）补「选草稿即可把它以金丝雀身份放出（不会成为生效版）；填 0 关闭」。
+- 回归（`admin/d15b_risk_rules_spec` +1 例）：下拉含草稿 option 且**不含**归档版 option；从界面把草稿设为金丝雀后 `canary_version_id` 指向草稿、草稿 `published`，而 `active_version_id` **仍是原生效版**。
+
 ## 10. 变更记录
 
 | 日期 | 变更 |

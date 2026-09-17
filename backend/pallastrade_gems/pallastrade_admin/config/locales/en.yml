@@ -1372,7 +1372,7 @@ en:
         canary_label: "v%{version} at %{percent}%"
         canary_off: Off
         canary_title: Canary rollout
-        canary_hint: "Traffic is bucketed per order (stable): the same order always gets the same version."
+        canary_hint: "Traffic is bucketed per order (stable): the same order always gets the same version. Pick a draft to roll it out as the canary without making it live; 0 turns the canary off."
         canary_percent: Percent
         canary_submit: Save canary
         canary_success: "Canary updated (v%{version} at %{percent}%)."

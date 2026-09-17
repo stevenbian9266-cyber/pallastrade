@@ -85,9 +85,11 @@
           <div class="row g-2 align-items-end">
             <div class="col-6">
               <%= label_tag :version, PallasTrade.t('admin.risk_rules.version'), class: 'form-label' %>
+              <%# 金丝雀候选 = 草稿 + 已发布（归档版不可复活）；草稿被选中时会以金丝雀身份发布，但**不改**生效版 %>
               <%= select_tag :version,
-                             options_for_select(@versions.select(&:published?).map { |v| [v.version, v.version] },
-                                                @canary_version&.version),
+                             options_for_select(@versions.reject(&:archived?).map { |v|
+                               ["#{PallasTrade.t('admin.risk_rules.version_label', version: v.version)} · #{PallasTrade.t("admin.risk_rules.state_#{v.state}")}", v.version]
+                             }, @canary_version&.version),
                              include_blank: true, class: 'form-select form-select-sm',
                              data: { canary_version_input: true } %>
             </div>
