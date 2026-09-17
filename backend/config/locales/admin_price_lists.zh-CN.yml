@@ -1,0 +1,21 @@
+# PALLAS-CUSTOM: 价格表后台的宿主 zh-CN 覆盖（2026-09-17，第二批 i18n）。
+#
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.price_lists 一一对应。
+
+zh-CN:
+  pallastrade:
+    admin:
+      price_lists:
+        activate: 启用
+        activated: 价格表已启用
+        confirm_activate: 确定启用该价格表吗？它会立即影响定价。
+        confirm_deactivate: 确定停用该价格表吗？
+        confirm_schedule: 确定要按计划启用该价格表吗？
+        confirm_unschedule: 确定要取消该价格表的计划吗？
+        deactivate: 停用
+        deactivated: 价格表已停用
+        learn_more: 了解价格表
+        page_info: 价格表是按客户分组、商品或其它条件管理定价策略的强大工具。
+        schedule: 排期
+        scheduled: 价格表已排期
+        unschedule: 取消排期

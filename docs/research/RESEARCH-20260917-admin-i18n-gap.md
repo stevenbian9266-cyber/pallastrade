@@ -100,8 +100,34 @@ YAML.load_file('config/locales/admin_ai.zh-CN.yml')['zh-CN']['pallastrade']['ai'
 | scope 错位 | ✅ `admin_ai.zh-CN.yml` 全部收进 `zh-CN.pallastrade.*` |
 | 键冲突 | ✅ 移除与功能域同名的单词键（`ai: AI` 等），`pallastrade.ai` 恢复为 Hash |
 | `ai.run.*` 表头 | ✅ 顺带补齐 8 个**原本就缺**的键（id/capability/model/status/tokens/latency/cost/time） |
-| `products` 域 | ✅ 23 键全部补齐（含保留 HTML 与 `%{link}` 插值的 `option_types_link`） |
-| 断言 | ✅ i18n 键集断言新增 `products` 域；孤儿键断言排除 4 个既有导航键（不阻塞，但仍抓新孤儿） |
-| 真实渲染 | ✅ AI Runs 页在中文后台 `translation missing` 计数 **0** |
+| `products` 域（第一批） | ✅ 23 键全部补齐（含保留 HTML 与 `%{link}` 插值的 `option_types_link`） |
+| `tables`（第二批） | ✅ 32 键（共享表格组件：筛选器/排序/列选择 —— 补一次全部列表页受益） |
+| `variants_form`（第二批） | ✅ 11 键（含保留 `<a href="%{link}">` 与 `%{stock_location}` 插值） |
+| `price_lists`（第二批） | ✅ 13 键 |
+| 断言 | ✅ i18n 键集断言新增 `products` / `tables` / `variants_form` / `price_lists`；孤儿键断言排除 4 个既有导航键 |
+| 真实渲染 | ✅ AI Runs 页零 missing；`/admin/products` 里**本批三域零 missing** |
 
-> 剩余：约 875 键 / 113 个域（`orders` 103 最大），按上述建议分批。
+## ⚠️ 真渲染新暴露的两件事（本批发现，尚未处理）
+
+### A. 顶级键也缺（量化脚本未覆盖）
+
+`/admin/products` 页面上还有一批 **`pallastrade.<key>` 顶级键**没有中文：
+
+```
+translation missing: zh-CN.pallastrade.products
+translation missing: zh-CN.pallastrade.import / .export
+translation missing: zh-CN.pallastrade.filtered_records
+translation missing: zh-CN.pallastrade.admin.export_only_filtered_records
+translation missing: zh-cn.pallastrade.in_stock / .variants
+```
+
+→ 本文开头的量化**只统计了 `pallastrade.admin.*`**，这份清单说明**顶级 `pallastrade.*` 也有一批缺口**。
+真实缺口规模**大于 898**，需要下一次量化把顶级键一起算。
+
+### B. locale 大小写不一致
+
+同一页上同时出现 `zh-CN.…` 与 **`zh-cn.…`**（小写）两种前缀。
+Rails 的 locale 区分大小写，因此**同一条键可能大小写不同而结果不同**；
+需排查是否某处 `I18n.locale` 被设成了 `:zh-cn` / `'zh-cn'`（而非 `zh-CN`）。
+
+> 两件都计在**下一批**处理（或单独一批）。

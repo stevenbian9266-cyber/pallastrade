@@ -343,6 +343,15 @@ YAML.load_file('config/locales/admin_ai.zh-CN.yml')['zh-CN']['pallastrade']['ai'
   "看起来对"正是这类错误藏身的地方；
 - 这类错误只能靠**真实取值或渲染**发现，静态审查抓不到。
 
+#### 第四个坑：嵌套结构必须与 en **逐层对应**（2026-09-17 实测）
+
+翻译时很容易"把子层拍平"—— 例如把 en 的 `tables.operators.equals` 写成 `tables.equals`。
+后果不是报错，而是**同时**产生一批缺失（`operators.*` 全缺）和一批孤儿（`equals` 等没人取）。
+
+**做法**：拿键时**直接按 en 的层级输出**（例如 `operators.equals = equals`），
+照抄层级而不是凭直觉归类；写完立刻跑键集断言 —— 它会把"缺失 + 孤儿"一起报出来，
+这正是发现这类错误最快的途径。
+
 ### "Product name shows English even after I set Spanish"
 
 Walk this list:

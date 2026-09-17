@@ -1,0 +1,24 @@
+# PALLAS-CUSTOM: 商品**变体表单**的宿主 zh-CN 覆盖（2026-09-17，第二批 i18n）。
+#
+# 结构与 gem en.yml 逐层对应（`add_option:` 是独立子层）。
+#
+# ⚠️ 两个键含 HTML 与插值，翻译时**只译可读文字**，结构必须原样保留：
+#   * `stock_locations_link` → `<a href="%{link}">…</a>`（丢了链接会变成死文案）
+#   * `total_inventory_html` → `%{stock_location}` / `%{count}`（丢了插值会显示占位符原文）
+
+zh-CN:
+  pallastrade:
+    admin:
+      variants_form:
+        add_option:
+          empty: 添加尺寸、颜色等选项
+          not_empty: 添加另一个选项
+        backorder_limit_hint: 可超卖的最大数量 —— 用于限制缺货销售与预售。留空表示不限。
+        backorder_limit_label: 缺货销售上限
+        compare_at_price_description: 该价格用于在商品页显示划线价。
+        preorder_ships_at_hint: 预计发货预售订单的时间。会作为交付承诺展示给顾客；该日期过后预售即结束。
+        preorder_ships_at_label: 预计发货日
+        preorderable_hint: 可在此变体到货前销售。用缺货销售上限约束可接单量，把在途库存填进数量，或将上限留空表示不限。
+        preorderable_label: 支持预售
+        stock_locations_link: 如需添加更多库存地点，请前往 <a href="%{link}">库存地点</a>
+        total_inventory_html: '%{stock_location} 地点的总库存：%{count} 可售'

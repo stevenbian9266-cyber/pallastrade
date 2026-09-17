@@ -1,0 +1,48 @@
+# PALLAS-CUSTOM: 后台**共享表格组件**的宿主 zh-CN 覆盖（2026-09-17，第二批 i18n）。
+#
+# 这是 ROI 最高的一批：`admin.tables.*` 是**所有后台列表页共用**的组件文案
+# （筛选器、排序、列选择），补一次，全部列表页同时变中文。
+#
+# ⚠️ 结构与 gem en.yml **逐层对应**（`operators:` 是独立子层，不能平铺到 tables 下 ——
+# 平铺会产生 14 个缺失 + 14 个孤儿，由 i18n 键集断言当场抓出）。
+#
+# 口径提醒：`ascending` / `descending` 及 `operators.*` 都是**拼接**进句子的
+# （如 "Sort by X ascending"、"is any of …"），所以中文保持**短词**形态，不写成带标点的句子。
+
+zh-CN:
+  pallastrade:
+    admin:
+      tables:
+        add_filter: 添加筛选
+        add_or_group: 添加「或」分组
+        apply: 应用
+        apply_filters: 应用筛选
+        ascending: 升序
+        clear_all: 全部清除
+        columns: 列
+        descending: 降序
+        enter_value: 输入值…
+        filter_builder: 筛选器
+        filters: 筛选
+        match: 匹配
+        of_the_following: 以下条件
+        operators:
+          contains: 包含
+          does_not_contain: 不包含
+          ends_with: 以…结尾
+          equals: 等于
+          greater_than: 大于
+          greater_than_or_equal: 大于或等于
+          is_any_of: 属于其中任一
+          is_empty: 为空
+          is_none_of: 不属于其中任一
+          is_not_empty: 不为空
+          less_than: 小于
+          less_than_or_equal: 小于或等于
+          not_equals: 不等于
+          starts_with: 以…开头
+        order: 顺序
+        reset_to_default: 恢复默认
+        select_field: 选择字段…
+        sort_by: 排序方式
+        visible_columns: 显示的列

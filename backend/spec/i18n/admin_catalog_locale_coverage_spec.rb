@@ -15,8 +15,12 @@ require 'rails_helper'
 RSpec.describe 'Admin zh-CN locale coverage' do
   # 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.<domain> 一一对应。
   # products.ai 是 2026-09-16 实测发现的：缺它会让 AI 按钮的 title 属性被 HTML 撕开。
-  # products 是 2026-09-17 分批补齐的第一批（量化见 docs/research/RESEARCH-20260917-admin-i18n-gap.md）。
-  DOMAINS = %w[catalog_health catalog_operations products.ai products].freeze
+  # products 是 2026-09-17 分批补齐的第一批；下面三个是第二批
+  # （量化与策略见 docs/research/RESEARCH-20260917-admin-i18n-gap.md）。
+  DOMAINS = %w[
+    catalog_health catalog_operations products.ai products
+    tables variants_form price_lists
+  ].freeze
 
   def keys_for(locale, domain)
     tree = I18n.t("pallastrade.admin.#{domain}", locale: locale, default: {})
