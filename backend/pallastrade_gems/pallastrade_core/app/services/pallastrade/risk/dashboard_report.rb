@@ -18,6 +18,7 @@ module PallasTrade
 
       # D2 人工裁决的审计动作 = 「已处理」样本（`transaction_review_*`）
       HANDLED_ACTIONS = %w[transaction_review_captured transaction_review_released].freeze
+      HANDLED_RESOURCE_TYPE = 'PallasTrade::CommerceTransaction'
       SAMPLES_LIMIT = 2_000
 
       THREE_DS_APPLIED = 'three_d_secure'
@@ -165,24 +166,28 @@ module PallasTrade
           .where(created_at: @from..@now)
       end
 
-      # 窗口内「已处理」时长（分钟）= 裁决审计时间 − manual_review_at（来源 D2 审计，即留痕）
+      # 窗口内「已处理」时长（分钟）= 裁决审计时间 − manual_review_at（来源 D2 审计，即留痕）。
+      #
+      # 两条不变量（AC-006 跨店隔离 / AC-007 查询数恒定）：
+      #   * **按店收窄**：`pallastrade_audit_logs` 无 `store_id` → 用 `JOIN` 限定到本店交易，
+      #     否则别店的裁决审计会被算进本店 P90（数据越多偏差越大）；
+      #   * **查询形状不依赖数据**：**单条** SQL 完成。旧写法「先查审计、再按 id 查交易起点」在空集时
+      #     会被 Rails 的 `where(id: [])` 短路掉第二条查询 → 空库 12 条 / 有数据 13 条（CI 有种子数据即红）。
       def handled_durations
-        audits = PallasTrade::AuditLog
-                 .where(action: HANDLED_ACTIONS, resource_type: 'PallasTrade::CommerceTransaction')
-                 .where(created_at: @from..@now)
-                 .order(:created_at)
-                 .limit(SAMPLES_LIMIT)
-        return [] if audits.empty?
+        pairs = PallasTrade::AuditLog
+                .joins('INNER JOIN pallastrade_commerce_transactions ct ON ct.id = pallastrade_audit_logs.resource_id')
+                .where(pallastrade_audit_logs: { action: HANDLED_ACTIONS,
+                                                resource_type: HANDLED_RESOURCE_TYPE,
+                                                created_at: @from..@now })
+                .where(ct: { store_id: @store.id })
+                .order(Arel.sql('pallastrade_audit_logs.created_at'))
+                .limit(SAMPLES_LIMIT)
+                .pluck(Arel.sql('pallastrade_audit_logs.created_at'), Arel.sql('ct.manual_review_at'))
 
-        starts = PallasTrade::CommerceTransaction
-                 .where(id: audits.map(&:resource_id).uniq, store_id: @store.id)
-                 .pluck(:id, :manual_review_at).to_h
-
-        audits.filter_map do |audit|
-          started_at = starts[audit.resource_id]
+        pairs.filter_map do |handled_at, started_at|
           next if started_at.nil?
 
-          ((audit.created_at - started_at) / 60.0).round
+          ((handled_at - started_at) / 60.0).round
         end
       end
 

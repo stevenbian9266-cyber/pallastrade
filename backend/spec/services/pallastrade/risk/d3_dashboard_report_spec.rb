@@ -191,6 +191,21 @@ RSpec.describe PallasTrade::Risk::DashboardReport, type: :service do
       expect(metric(report, :review_queue_duration)[:detail][:pending_count]).to eq(0)
     end
 
+    it 'keeps another store handled audits out of this store handled samples' do
+      # 审计表无 store_id：别店的 `transaction_review_*` 不得进入本店 P90（否则数据越多越歪）
+      other_store = create(:store, code: "d3_other_audit_#{SecureRandom.hex(4)}", default: false)
+      other_tx = manual_review_transaction(target_store: other_store,
+                                           currency: other_store.default_currency.to_s)
+      other_tx.update_columns(manual_review_at: 9.hours.ago)
+      PallasTrade::Audit.record(action: 'transaction_review_captured', actor: 'system', resource: other_tx)
+
+      row = metric(described_class.call(store: store), :review_queue_duration)
+
+      expect(row[:detail][:handled_samples]).to eq(0)
+      expect(row[:detail][:p90_handled_minutes]).to be_nil
+      expect(row[:detail][:pending_count]).to eq(0)
+    end
+
     it 'keeps the subject store isolated when both stores have data' do
       mine = submitted_order
       flagged_assessment(mine)
@@ -209,10 +224,13 @@ RSpec.describe PallasTrade::Risk::DashboardReport, type: :service do
 
   describe 'AC-007 查询数不随行数增长' do
     it 'keeps the query count flat when the row count grows 12x' do
+      # 两份数据集必须**走到同一组代码分支**（含「已处理」样本）——否则比较的是两种查询形状，
+      # 本地空库绿、CI 有种子数据红（2026-09-17 CI 实测：12 vs 13）。
       order = submitted_order
       payment_session(order, hint: 'three_d_secure')
       flagged_assessment(order)
-      manual_review_transaction(reviewed_at: 10.minutes.ago)
+      reviewed = manual_review_transaction(reviewed_at: 10.minutes.ago)
+      PallasTrade::Audit.record(action: 'transaction_review_captured', actor: 'system', resource: reviewed)
 
       small = count_queries { described_class.call(store: store) }
 
@@ -220,11 +238,28 @@ RSpec.describe PallasTrade::Risk::DashboardReport, type: :service do
         extra = submitted_order
         payment_session(extra)
         flagged_assessment(extra, decision: 'allow')
+        handled = manual_review_transaction(reviewed_at: 5.minutes.ago)
+        PallasTrade::Audit.record(action: 'transaction_review_released', actor: 'system', resource: handled)
       end
 
       large = count_queries { described_class.call(store: store) }
 
       expect(large).to eq(small)
+    end
+
+    it 'keeps the query count flat when the store has no rows at all' do
+      # 空库 vs 有数据 —— 正是本地绿 / CI 红的差异场景（查询形状不得依赖数据是否存在）
+      empty_store = create(:store, code: "d3_empty_#{SecureRandom.hex(4)}", default: false)
+      order = submitted_order
+      payment_session(order, hint: 'three_d_secure')
+      flagged_assessment(order)
+      reviewed = manual_review_transaction(reviewed_at: 10.minutes.ago)
+      PallasTrade::Audit.record(action: 'transaction_review_captured', actor: 'system', resource: reviewed)
+
+      empty_count = count_queries { described_class.call(store: empty_store) }
+      populated = count_queries { described_class.call(store: store) }
+
+      expect(empty_count).to eq(populated)
     end
   end
 end
