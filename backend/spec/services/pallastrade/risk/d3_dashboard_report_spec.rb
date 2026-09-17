@@ -227,17 +227,30 @@ RSpec.describe PallasTrade::Risk::DashboardReport, type: :service do
     end
   end
 
+  def query_shapes
+    shapes = []
+    callback = lambda do |*, payload|
+      next if payload[:cached] || payload[:name].to_s.in?(%w[SCHEMA CACHE])
+
+      # 归一化：抹掉绑定值与字面量，只留「语句形状」
+      sql = payload[:sql].to_s.gsub(/\s+/, ' ')
+      sql = sql.gsub(/\$\d+/, '?').gsub(/'[^']*'/, "'?'").gsub(/\b\d+\b/, 'N')
+      shapes << sql
+    end
+    ActiveSupport::Notifications.subscribed(callback, 'sql.active_record') { yield }
+    shapes
+  end
+
   describe 'AC-007 查询数不随行数增长' do
     it 'keeps the query count flat when the row count grows 12x' do
-      # 两份数据集必须**走到同一组代码分支**（含「已处理」样本）——否则比较的是两种查询形状，
-      # 本地空库绿、CI 有种子数据红（2026-09-17 CI 实测：12 vs 13）。
+      # 两份数据集必须**走到同一组代码分支**（含「已处理」样本）——否则比较的是两种查询形状。
       order = submitted_order
       payment_session(order, hint: 'three_d_secure')
       flagged_assessment(order)
       reviewed = manual_review_transaction(reviewed_at: 10.minutes.ago)
       PallasTrade::Audit.record(action: 'transaction_review_captured', actor: 'system', resource: reviewed)
 
-      small = count_queries { described_class.call(store: store) }
+      small = query_shapes { described_class.call(store: store) }
 
       12.times do
         extra = submitted_order
@@ -247,11 +260,13 @@ RSpec.describe PallasTrade::Risk::DashboardReport, type: :service do
         PallasTrade::Audit.record(action: 'transaction_review_released', actor: 'system', resource: handled)
       end
 
-      large = count_queries { described_class.call(store: store) }
+      large = query_shapes { described_class.call(store: store) }
 
-      expect(large).to eq(small)
+      diff = (large.tally.to_a - small.tally.to_a) + (small.tally.to_a - large.tally.to_a)
+      expect(diff).to be_empty, "small=#{small.size} large=#{large.size} diff=#{diff.inspect}"
+      expect(large.size).to eq(small.size)
       # 上限：真出现「随行数增长」时，仅靠相等可能因两边同时变多而漏网
-      expect(large).to be <= 20
+      expect(large.size).to be <= 20
     end
 
     it 'keeps the query count flat when the store has no rows at all' do
@@ -263,11 +278,14 @@ RSpec.describe PallasTrade::Risk::DashboardReport, type: :service do
       reviewed = manual_review_transaction(reviewed_at: 10.minutes.ago)
       PallasTrade::Audit.record(action: 'transaction_review_captured', actor: 'system', resource: reviewed)
 
-      empty_count = count_queries { described_class.call(store: empty_store) }
-      populated = count_queries { described_class.call(store: store) }
+      empty_shapes = query_shapes { described_class.call(store: empty_store) }
+      populated_shapes = query_shapes { described_class.call(store: store) }
 
-      expect(empty_count).to eq(populated)
-      expect(populated).to be <= 20
+      diff = (populated_shapes.tally.to_a - empty_shapes.tally.to_a) +
+             (empty_shapes.tally.to_a - populated_shapes.tally.to_a)
+      expect(diff).to be_empty, "empty=#{empty_shapes.size} populated=#{populated_shapes.size} diff=#{diff.inspect}"
+      expect(populated_shapes.size).to eq(empty_shapes.size)
+      expect(populated_shapes.size).to be <= 20
     end
   end
 end
