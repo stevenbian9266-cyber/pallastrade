@@ -316,6 +316,33 @@ PallasTrade.t(key, default: PallasTrade.t('admin.x.default'))
 **根治**：既然缺文案会连带撕坏 HTML，那么"补齐那个 locale 的键"才是真修复；
 上面只是让**下一次**漏键时不至于连页面结构都坏掉。
 
+#### 第三个陷阱：一个单词键能把整个功能域挤掉（2026-09-17 实测）
+
+宿主 zh-CN 文件里常见这种"单词翻译"：
+
+```yaml
+zh-CN:
+  pallastrade:
+    ai:            # ← 功能域（Hash：run / admin / …）
+      run: { … }
+    ai: AI         # ← 同名单词键！
+```
+
+YAML **后键覆盖前键** → `pallastrade.ai` 变成字符串 `"AI"` → 整个 `ai.run.*` **全部失效**，
+**且不报错、不 warning**。实测症状：文件顶层结构看起来完全正常，
+但 `I18n.t('pallastrade.ai.run.id', locale: 'zh-CN')` 返回 nil：
+
+```ruby
+YAML.load_file('config/locales/admin_ai.zh-CN.yml')['zh-CN']['pallastrade']['ai']
+# => "AI"   ← 应该是 Hash
+```
+
+**规则**：
+- 单词键**不得与功能域同名**（`ai` / `view` / `run` / `model` 这类最容易撞）；
+- 修正 scope 或搬运键之后，**必须验证取值**（`I18n.t(...)`），不要只看文件结构 ——
+  "看起来对"正是这类错误藏身的地方；
+- 这类错误只能靠**真实取值或渲染**发现，静态审查抓不到。
+
 ### "Product name shows English even after I set Spanish"
 
 Walk this list:

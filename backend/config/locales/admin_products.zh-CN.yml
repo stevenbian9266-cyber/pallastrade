@@ -1,0 +1,44 @@
+# PALLAS-CUSTOM: 后台「商品」域的宿主 zh-CN 覆盖。
+# 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.products 一一对应。
+#
+# 为什么单独补这批（2026-09-17）：后台 i18n 量化显示 en 侧 admin.products 有 23 个键
+# 没有中文（`docs/research/RESEARCH-20260917-admin-i18n-gap.md`）。商品是后台使用频率
+# 最高的域之一，因此作为分批补齐的第一批。
+#
+# ⚠️ `variants.option_types_link` 含 HTML 与 `%{link}` 插值 —— 必须原样保留结构，
+# 只翻译可读文字（该键用于 HTML 正文，不是属性，见 pallastrade-i18n Skill 的边界规则）。
+
+zh-CN:
+  pallastrade:
+    admin:
+      products:
+        active: 已上架
+        all_statuses: 全部状态
+        any_stock: 任意库存
+        archived: 已归档
+        by_status: 按状态
+        by_stock: 按库存
+        deleted: 已删除
+        draft: 草稿
+        help_bubble: 草稿商品不可购买；已上架商品才是正式在售。
+        in_stock: 有货
+        inventory:
+          barcode: 条码（ISBN、UPC、GTIN 等）
+          sku: SKU（库存单位）
+        learn_more: 了解如何管理商品
+        out_of_stock: 无货
+        paused: 已暂停
+        search_results:
+          no_products: 没有找到与你的搜索匹配的商品 :(
+        seo:
+          placeholder: 添加标题与描述，即可预览该商品在搜索引擎结果里的样子
+        status_form:
+          status: 草稿商品不可购买；已上架商品才是正式在售。
+        status_options:
+          active: 已上架
+          archived: 已归档
+          draft: 草稿
+        stores:
+          choose_stores: 选择该商品应在哪些门店上架
+        variants:
+          option_types_link: 如需添加更多选项类型，请前往 <a href="%{link}">选项类型</a>

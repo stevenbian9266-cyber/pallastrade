@@ -1,25 +1,39 @@
+# PALLAS-CUSTOM: AI 域后台中文覆盖。
+#
+# ⚠️ 2026-09-17 两处结构修正（见 docs/research/RESEARCH-20260917-admin-i18n-gap.md）：
+#
+# 1. **scope 错位**：原先把键放在 `zh-CN.admin.*` / `zh-CN.ai_tools` 等处，而
+#    `PallasTrade.t` 会 **prepend `:pallastrade`**（lib/pallastrade/i18n.rb）——
+#    那些键**永远取不到**，文件里残留的英文值也印证了它们从未生效。
+#
+# 2. **键冲突（更隐蔽）**：原来末尾有 `ai: AI` 这类"单词翻译"键，与**功能域**
+#    `pallastrade.ai`（一个 Hash）**同名**。YAML 后键覆盖前键 → `pallastrade.ai`
+#    变成字符串 `"AI"` → 整个 `ai.run.*` 全部失效。
+#    实测证据：`YAML.load_file(...)['zh-CN']['pallastrade']['ai']` 返回 String 而非 Hash。
+#    因此这批无引用的单词键**不再保留** —— 保留它们会把功能域挤掉。
+
 zh-CN:
-  # AI Runs 页（PallasTrade.t 会 prepend :pallastrade，所以键必须放在这里 ——
-  # 下面的 `admin.ai.*` 是历史遗留结构，PallasTrade.t 取不到它）。
   pallastrade:
     ai:
+      # AI Runs 页（backend/app/views/pallastrade/admin/ai/runs.html.erb）
       run:
         acceptance: 采纳情况
         acceptance_pending: 未决定
         acceptance_state:
           accepted: 已采纳
           discarded: 已丢弃
-          # PRD-20260917-catalog-ai-edited-before-save：采纳后、保存前又被改过
+          # 采纳之后、保存之前又被改过（PRD-20260917-catalog-ai-edited-before-save）
           edited: 采纳后已修改
-  admin:
-    ai:
-      store_switch: "Store AI Switch"
-      overview_warning: "AI is globally disabled."
-  ai_tools: "AI Tools"
-  providers: "Providers"
-  models: "Models"
-  capabilities: "Capabilities"
-  runs: "Runs"
-  manage: "Manage"
-  view: "View"
-  ai: "AI"
+        id: 编号
+        capability: 能力
+        model: 模型
+        status: 状态
+        tokens: Token 数
+        latency: 耗时
+        cost: 成本
+        time: 时间
+    # AI 概览页（backend/app/views/pallastrade/admin/ai/index.html.erb）
+    admin:
+      ai:
+        store_switch: 门店 AI 开关
+        overview_warning: AI 已在全局关闭。

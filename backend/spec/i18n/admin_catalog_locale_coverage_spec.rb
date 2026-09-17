@@ -15,7 +15,8 @@ require 'rails_helper'
 RSpec.describe 'Admin zh-CN locale coverage' do
   # 键集与 gem `pallastrade_admin/config/locales/en.yml` 的 admin.<domain> 一一对应。
   # products.ai 是 2026-09-16 实测发现的：缺它会让 AI 按钮的 title 属性被 HTML 撕开。
-  DOMAINS = %w[catalog_health catalog_operations products.ai].freeze
+  # products 是 2026-09-17 分批补齐的第一批（量化见 docs/research/RESEARCH-20260917-admin-i18n-gap.md）。
+  DOMAINS = %w[catalog_health catalog_operations products.ai products].freeze
 
   def keys_for(locale, domain)
     tree = I18n.t("pallastrade.admin.#{domain}", locale: locale, default: {})
@@ -41,7 +42,14 @@ RSpec.describe 'Admin zh-CN locale coverage' do
       end
 
       it 'has no orphan zh-CN keys that en does not define' do
-        orphan = keys_for(:'zh-CN', domain) - keys_for(:en, domain)
+        # 注意：keys_for 返回的是**相对** domain 的路径（`stock`，不是 `products.stock`）。
+        #
+        # 导航子项的中文键落在 admin.products.<nav_item>，而 en 侧对应键在别处
+        # （导航标签由 admin_nav.en.yml 提供）—— 这类是**既有**的、无害的孤儿：
+        # 孤儿键不会导致 translation missing，只是键位卫生问题。
+        # 这里只排除这四个已知项，新出现的孤儿仍会被抓。
+        known_preexisting = %w[stock translations options price_lists]
+        orphan = keys_for(:'zh-CN', domain) - keys_for(:en, domain) - known_preexisting
 
         expect(orphan).to be_empty, "#{domain} 有 en 侧不存在的孤儿键: #{orphan.inspect}"
       end
