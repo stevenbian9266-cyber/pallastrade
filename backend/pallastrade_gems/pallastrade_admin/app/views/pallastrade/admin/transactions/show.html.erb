@@ -44,6 +44,87 @@
   </div>
 </div>
 
+<%# D2（PRD-20260917-payments-d2；§78-D2 / §60.2-3）：人工裁决 —— manual_review 的唯一出口。
+    非 manual_review 状态只给说明、不给按钮（自动恢复走 Recover）。 %>
+<% review_audit_actions = [PallasTrade::Transactions::Review::AUDIT_CAPTURED,
+                           PallasTrade::Transactions::Review::AUDIT_RELEASED,
+                           PallasTrade::Transactions::Review::AUDIT_FAILED] %>
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.orders.transaction_review_title') %></h5>
+  </div>
+  <div class="card-body">
+    <% if @object.state == 'manual_review' %>
+      <% review_payments = PallasTrade::Payment.where(payment_session_id: @object.payment_sessions.select(:id)).order(:id) %>
+      <% pending_authorization = review_payments.select(&:pending?).last %>
+      <p class="text-sm text-gray-500 mb-4"><%= PallasTrade.t('admin.orders.transaction_review_hint') %></p>
+      <div class="grid grid-cols-2 gap-6">
+        <div>
+          <h6 class="font-semibold mb-2"><%= PallasTrade.t('admin.orders.transaction_review_capture_title') %></h6>
+          <% if pending_authorization %>
+            <p class="text-sm text-gray-500 mb-2">
+              <%= PallasTrade.t('admin.orders.transaction_review_capture_hint') %>
+              <%= "#{pending_authorization.currency} #{pending_authorization.amount}" %>
+            </p>
+            <%= form_with url: PallasTrade.approve_and_capture_admin_transaction_path(@object), method: :post,
+                          data: { turbo_confirm: PallasTrade.t('admin.orders.transaction_review_capture_confirm') } do |f| %>
+              <div class="mb-2">
+                <%= f.text_field :reason, required: true, class: 'form-input w-full',
+                                 placeholder: PallasTrade.t('admin.orders.transaction_review_reason_placeholder') %>
+              </div>
+              <%= f.submit PallasTrade.t('admin.orders.transaction_review_capture_action'), class: 'btn btn-primary' %>
+            <% end %>
+          <% else %>
+            <p class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.transaction_review_no_pending_authorization') %></p>
+          <% end %>
+        </div>
+        <div>
+          <h6 class="font-semibold mb-2"><%= PallasTrade.t('admin.orders.transaction_review_release_title') %></h6>
+          <p class="text-sm text-gray-500 mb-2"><%= PallasTrade.t('admin.orders.transaction_review_release_hint') %></p>
+          <%= form_with url: PallasTrade.release_and_cancel_admin_transaction_path(@object), method: :post,
+                        data: { turbo_confirm: PallasTrade.t('admin.orders.transaction_review_release_confirm') } do |f| %>
+            <div class="mb-2">
+              <%= f.text_field :reason, required: true, class: 'form-input w-full',
+                               placeholder: PallasTrade.t('admin.orders.transaction_review_reason_placeholder') %>
+            </div>
+            <%= f.submit PallasTrade.t('admin.orders.transaction_review_release_action'), class: 'btn btn-danger' %>
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <p class="text-sm text-gray-500"><%= PallasTrade.t('admin.orders.transaction_review_not_in_review') %></p>
+    <% end %>
+
+    <% review_history = PallasTrade::AuditLog
+                          .where(resource_type: @object.class.name, resource_id: @object.id,
+                                 action: review_audit_actions)
+                          .order(id: :desc).limit(10) %>
+    <% if review_history.any? %>
+      <h6 class="font-semibold mt-6 mb-2"><%= PallasTrade.t('admin.orders.transaction_review_history') %></h6>
+      <table class="table w-full text-sm">
+        <thead>
+          <tr>
+            <th><%= PallasTrade.t('admin.orders.transaction_review_history_action') %></th>
+            <th><%= PallasTrade.t('admin.orders.transaction_review_history_actor') %></th>
+            <th><%= PallasTrade.t('admin.orders.transaction_review_history_reason') %></th>
+            <th><%= PallasTrade.t('admin.orders.transaction_review_history_time') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% review_history.each do |log| %>
+            <tr>
+              <td><%= log.action %></td>
+              <td><%= log.actor_label.presence || [log.actor_type, log.actor_id].compact.join('#') %></td>
+              <td><%= log.metadata.to_h['reason'].presence || '—' %></td>
+              <td><%= log.created_at&.iso8601 %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </div>
+</div>
+
 <div class="card mb-6">
   <div class="card-header">
     <h5 class="card-title">Participants & payment sessions</h5>

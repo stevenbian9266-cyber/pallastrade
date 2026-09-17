@@ -108,6 +108,18 @@ module PallasTrade
       event :reopen_review do
         transition manual_review: :recovery_required
       end
+      # D2 (PRD-20260917-payments-d2；业务方案 §78-D2 / §60.2-3): manual_review 的
+      # **人工裁决**出口（唯一入口 Transactions::Review；自动恢复路径不受影响）：
+      #   approve_after_review — 通过并捕获 → 既有 finalizing 闭环
+      #     （Transactions::Finalize：参与者完成 + 库存 commit → completed）；
+      #   release_after_review — 拒绝并释放 → canceled（与 created/payment_pending 的
+      #     cancel 同语义终态，零退款、零历史改写）。
+      event :approve_after_review do
+        transition manual_review: :finalizing
+      end
+      event :release_after_review do
+        transition manual_review: :canceled
+      end
       # TXN-P2-4 (PRD-20260904-payments-txn-p2-4): recovery 出口——
       # UNPAID 复位重试支付；PAID+订单未完成 → 重试 finalize；
       # PAID+订单已完成 → 修复状态至 completed（不重复 finalize）。
@@ -248,7 +260,7 @@ module PallasTrade
     # 业务安全 bang 方法（非 bang 事件返回 false 时抛域错误，参考 PaymentCombination）
     %i[start_payment confirm_payment begin_finalizing complete cancel
        mark_recovery_required manual_review retry_payment retry_finalizing
-       repair_completed reopen_review].each do |event|
+       repair_completed reopen_review approve_after_review release_after_review].each do |event|
       define_method("#{event}!") do
         unless public_send(event)
           raise InvalidTransitionError.new(

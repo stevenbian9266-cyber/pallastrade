@@ -113,7 +113,36 @@ zh-CN:
         transaction_not_recoverable: 该交易无法自动恢复。
         transaction_recover: 执行恢复
         transaction_recovery_queued: 已为该交易排队恢复作业。
-        transactions_help: 持久化的 CommerceTransaction 编排。需要恢复与需人工复核的交易需要关注；处于 payment_confirmed/finalizing 超过 1 小时的视为卡住。只允许从 recovery_required/finalizing 发起恢复。
+        # D2（PRD-20260917-payments-d2；业务方案 §78-D2 / §60.2-3）：manual_review 人工裁决。
+        transaction_review_title: 人工复核
+        transaction_review_hint: 该交易已停在人工复核状态。请依据 provider 事实人工裁决——不得交给任何作业自动执行。
+        transaction_review_capture_title: 通过并捕获
+        transaction_review_capture_hint: 捕获该授权，金额：
+        transaction_review_capture_action: 通过并捕获
+        transaction_review_capture_confirm: 确认捕获该笔支付并完成交易？将真实向客户扣款，且不可撤销。
+        transaction_review_release_title: 拒绝并释放
+        transaction_review_release_hint: 撤销授权、释放库存并取消交易；不产生任何退款。
+        transaction_review_release_action: 拒绝并释放
+        transaction_review_release_confirm: 确认撤销授权、释放库存并取消该交易？不会产生任何退款。
+        transaction_review_reason_placeholder: 原因（必填，将写入审计留痕）
+        transaction_review_no_pending_authorization: 当前没有待捕获的授权，无法执行「通过并捕获」。
+        transaction_review_not_in_review: 该交易不在人工复核状态；此状态由自动恢复闭环处理。
+        transaction_review_history: 复核历史
+        transaction_review_history_action: 裁决
+        transaction_review_history_actor: 操作人
+        transaction_review_history_reason: 原因
+        transaction_review_history_time: 时间
+        transaction_review_capture_done: 已通过并捕获 —— 交易已完成。
+        transaction_review_release_done: 已拒绝并释放 —— 交易已取消。
+        transaction_review_error_generic: 复核动作未能执行。
+        transaction_review_error_reason_required: 必须填写原因。
+        transaction_review_error_not_reviewable: 该交易不在人工复核状态。
+        transaction_review_error_no_pending_authorization: 没有可捕获的待处理授权。
+        transaction_review_error_capture_failed: provider 捕获失败 —— 交易保持原状。
+        transaction_review_error_finalize_failed: 资金已捕获，但订单完成失败 —— 将由自动恢复闭环收尾。
+        transaction_review_error_paid_payment_present: 已存在已完成（已捕获）的支付 —— 拒绝释放，请走退款流程。
+        transaction_review_error_release_failed: 释放失败 —— 交易保持原状。
+        transactions_help: 持久化的 CommerceTransaction 编排。需要恢复与需人工复核的交易需要关注；处于 payment_confirmed/finalizing 超过 1 小时的视为卡住。只允许从 recovery_required/finalizing 发起恢复。人工复核是人为裁决：通过并捕获，或拒绝并释放。
         transactions_manual_review: 人工复核
         transactions_needs_attention: 需要关注
         transactions_recovery_required: 需要恢复

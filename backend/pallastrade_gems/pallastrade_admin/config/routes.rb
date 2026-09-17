@@ -364,6 +364,10 @@ PallasTrade::Core::Engine.add_routes do
     resources :transactions, only: [:index, :show] do
       member do
         post :recover
+        # D2（PRD-20260917-payments-d2；§78-D2 / §60.2-3）：manual_review 的人工裁决出口
+        # （通过并捕获 / 拒绝并释放）。仅此两处入口，job/sweeper 无路由。
+        post :approve_and_capture
+        post :release_and_cancel
       end
     end
     # PRD-20260910-promo-batch3c: 核销台账只读（Promotions → Redemptions）

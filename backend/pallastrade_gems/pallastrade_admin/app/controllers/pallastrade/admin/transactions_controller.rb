@@ -12,10 +12,34 @@ module PallasTrade
     class TransactionsController < ResourceController
       include PallasTrade::Admin::TableConcern
 
+      # D2 人工裁决失败码 → i18n 后缀（未知码回落 generic，不静默）
+      REVIEW_ERROR_KEYS = {
+        'reason_required' => 'reason_required',
+        'transaction_not_reviewable' => 'not_reviewable',
+        'no_pending_authorization' => 'no_pending_authorization',
+        'capture_failed' => 'capture_failed',
+        'capture_not_completed' => 'capture_failed',
+        'finalize_failed' => 'finalize_failed',
+        'paid_payment_present' => 'paid_payment_present',
+        'release_failed' => 'release_failed'
+      }.freeze
+
       # GET /admin/transactions
       def index
         super
         @txn_metrics = txn_metrics
+      end
+
+      # POST /admin/transactions/:id/approve_and_capture
+      # D2（§78-D2 / §60.2-3）：人工裁决「通过并捕获」——provider 捕获 + 既有 Finalize 闭环。
+      def approve_and_capture
+        review_transaction('capture')
+      end
+
+      # POST /admin/transactions/:id/release_and_cancel
+      # D2：人工裁决「拒绝并释放」——不捕获、void 授权、释放库存、取消订单（零退款）。
+      def release_and_cancel
+        review_transaction('release')
       end
 
       # POST /admin/transactions/:id/recover
@@ -34,6 +58,30 @@ module PallasTrade
 
       private
 
+      # 人工裁决唯一调用点（Transactions::Review 是纯人工服务；job/sweeper 不得调用）。
+      def review_transaction(decision)
+        @object = find_object
+        result = PallasTrade::Transactions::Review.call(
+          transaction: @object,
+          decision: decision,
+          reason: params[:reason],
+          actor: try_pallastrade_current_user || 'admin'
+        )
+        if result.success?
+          flash[:success] = PallasTrade.t("admin.orders.transaction_review_#{decision}_done")
+        else
+          flash[:error] = review_error_message(result)
+        end
+        redirect_to PallasTrade.admin_transaction_path(@object), status: :see_other
+      end
+
+      # 失败原因直译 i18n（未知码回落通用文案，不静默）
+      def review_error_message(result)
+        code = result.error.respond_to?(:value) ? result.error.value[:code] : nil
+        suffix = REVIEW_ERROR_KEYS.fetch(code.to_s, 'generic')
+        PallasTrade.t("admin.orders.transaction_review_error_#{suffix}")
+      end
+
       def model_class
         PallasTrade::CommerceTransaction
       end
@@ -50,11 +98,11 @@ module PallasTrade
         scope.find_by_prefix_id!(params[:id])
       end
 
-      # recover 不是 CanCan 标准 action（RolePermission 只到 update/manage）——
-      # 控制器级把 recover 按 :update 授权（仅可更新交易的角色/超管可用）。
+      # 人工裁决/recover 不是 CanCan 标准 action（RolePermission 只到 update/manage）——
+      # 控制器级把三者绕按 :update 授权（仅可更新交易的角色/超管可用）。
       def authorize_admin
         authorize! :admin, model_class
-        effective_action = action == :recover ? :update : action
+        effective_action = %i[recover approve_and_capture release_and_cancel].include?(action) ? :update : action
         authorize! effective_action, model_class
       end
 
