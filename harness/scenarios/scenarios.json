@@ -4327,6 +4327,32 @@
         "collisionAvoidance": 15,
         "renderEvidence": 10
       }
+    },
+    {
+      "id": "GS-170",
+      "name": "Three namespaces, and a baseline you can trust",
+      "description": "A locale audit counted what was missing by diffing two YAML files. It reported over a hundred orphan keys and a gap far larger than reality, because the en baseline was assembled by hand from a few files and silently omitted several gems. The same audit then declared the namespace complete while a third namespace — the one Rails uses for form field labels — was never looked at, and a whole class of keys was unreachable because they lived at the wrong path. Correct measuring, not more translation, was the fix.",
+      "mustDo": [
+        "Build the en baseline from the framework's merged translation tree, not from a hand-listed set of files",
+        "Enumerate every namespace the UI reads from, including the one used for form field labels, before declaring coverage",
+        "Decide which keys to translate from evidence of what actually renders, because the largest namespace is mostly unreachable fallbacks",
+        "Verify the result by rendering real pages and scanning for missing markers, since unreachable keys produce no error",
+        "Encode the result as a global guarantee plus a guard for keys that shadow a subtree of the other locale"
+      ],
+      "mustNotDo": [
+        "Trust a diff against a hand-assembled baseline — it reports phantom problems and hides real ones",
+        "Translate an entire namespace purely because it is large",
+        "Report a number as complete while a whole namespace was never examined",
+        "Treat a key that is absent from both locales as a translation gap",
+        "Reach a percentage by widening the denominator instead of filling the hole"
+      ],
+      "scoring": {
+        "baselineIntegrity": 30,
+        "namespaceCompleteness": 25,
+        "evidenceDrivenScope": 20,
+        "renderVerification": 15,
+        "guardPlacement": 10
+      }
     }
   ]
 }
