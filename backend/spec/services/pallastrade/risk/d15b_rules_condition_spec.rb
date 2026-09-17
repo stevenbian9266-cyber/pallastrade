@@ -44,12 +44,21 @@ RSpec.describe PallasTrade::Risk::Rules::Condition, type: :service do
     end
 
     # AC-002（不跨币种猜）
+    #
+    # ⚠️ 不要用 `create(:order_with_line_items, currency: 'EUR')` 造「币种不一致」的订单：
+    #    `PallasTrade::Order` 会校验 `store.supported_currencies_list`，而该列表在**店铺有 market 时
+    #    （seeds 建了默认国家 → 默认店铺自动带 market）直接来自 markets，**忽略** `supported_currencies` 列，
+    #    于是本地（无 market）过、CI（有 market）报 `Validation failed: Currency is not supported by this store`。
+    #    定式：先在店铺币种下建合法订单，再用 `update_columns` 改币种（绕开校验），币种取值按店铺默认币种推导。
     it 'skips amount comparisons when the order currency differs from the store default' do
-      store.update_columns(supported_currencies: 'USD,EUR')
-      order = build_order(amount: 150, currency: 'EUR')
+      order = build_order(amount: 150)
+      mismatched = store.default_currency.to_s.upcase == 'EUR' ? 'GBP' : 'EUR'
+      order.update_columns(currency: mismatched)
+      order.reload
 
       outcome = evaluate(order, 'amount_gte' => 10)
 
+      expect(order.currency).to eq(mismatched)
       expect(outcome[:matched]).to be(false)
       expect(outcome[:skipped]).to include('currency_mismatch')
     end

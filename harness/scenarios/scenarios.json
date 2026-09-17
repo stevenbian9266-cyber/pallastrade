@@ -4255,7 +4255,8 @@
         "Keep the canary reachable: let a draft be published as the canary without becoming the live version, refuse to resurrect an archived version as a canary, and drop a canary setting that no longer points at a published non-live version",
         "Judge only rule sets that are active and have an active version, prefer the store rule set over the global one, and report which version was consulted even when nothing matched",
         "Merge the rule action with the list action by strictness, never letting a rule relax what the list decided, and let an explicit allowlist still short-circuit everything",
-        "Keep evaluation read-only: no writes, no provider calls, no order or payment state change, and do not alter what the checkout preflight blocks"
+        "Keep evaluation read-only: no writes, no provider calls, no order or payment state change, and do not alter what the checkout preflight blocks",
+        "Make the verification deterministic in a seeded database: fixtures must not depend on the default store's market or currency state, because a seeded store with a market ignores the supported_currencies column"
       ],
       "mustNotDo": [
         "Rewrite or delete a published version to \"roll back\", or let rollback lose the reason it happened",

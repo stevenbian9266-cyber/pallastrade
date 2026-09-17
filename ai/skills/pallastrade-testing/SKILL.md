@@ -373,6 +373,7 @@ CI 的 backend job 用 `bin/rails db:prepare` 建库 —— **新建库时会执
 |---|---|---|
 | `Name has already been taken`（`ShippingCategory` / `TaxCategory` / `StoreCreditCategory` 等 `UniqueName` 模型） | `create!(name: 'Default')` 与 seed 撞名 | `find_or_create_by!(name: 'Default')` 复用 seed 行 |
 | 数量/总额被抬高，或 `free_shipping` 意外为 true | 单例口径查了**全局**表（如 `Shipping::Estimate#scoped_methods` 取全部 front-end 配送方式），把 seed 的零价 digital 配送方式也算进来 | 在 example 的 `before` 里先 `Model.destroy_all` 清空全局集合，再建自己的数据（`.rspec` 已 `--require rails_helper`，事务会回滚，不污染其他 spec） |
+| `Validation failed: Currency is not supported by this store`（建非店铺默认币种的订单时） | seed 建了默认国家 → 默认店铺 `after_create :ensure_default_market` 生成 market；`Store#supported_currencies_list` 在**有 market 时改从 `markets.pluck(:currency)` 取，完全忽略 `supported_currencies` 列**（且实例上 memoize）→ 本地无 market 时 `update_columns(supported_currencies: 'USD,EUR')` 看着生效，CI 上没用 | 别去改店铺的币种支持，改成：**先在店铺币种下建合法订单，再用 `update_columns(currency: …)` 改币种**（绕开 Order 校验），且不一致币种按 `store.default_currency` 推导（如 `store.default_currency == 'EUR' ? 'GBP' : 'EUR'`），不依赖支持列表 |
 
 **先做两个判定，不要靠猜**：
 
