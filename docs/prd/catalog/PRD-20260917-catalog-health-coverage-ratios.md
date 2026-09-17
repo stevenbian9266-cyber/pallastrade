@@ -4,7 +4,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-17 |
 | 来源 | 「自主决定」→ 方案 §十六「上线指标」的 Health 三项中仍缺的两项 ratio |
 | 分类 | catalog |
@@ -96,11 +96,21 @@
 
 ## 9. 文档同步清单（知识同步门）
 
-- [ ] `ai/skills/pallastrade-catalog/SKILL.md`（覆盖率口径：分母各是什么、为什么不能共用分母）
-- [ ] `ai/skills/pallastrade-admin/SKILL.md`（工作台汇总区）
-- [ ] `harness/scenarios/scenarios.json`（新场景：比率的分母必须自洽、分母为 0 必须诚实）
-- [ ] `docs/research/RESEARCH-20260916-catalog-domain-audit.md`（§十六 指标缺口状态）
-- [ ] 本 PRD 状态 + `docs/prd/README.md` 索引
+- [x] `ai/skills/pallastrade-catalog/SKILL.md`（覆盖率口径：分母各是什么、为什么不能共用）— 新增「商品健康覆盖率指标」章节
+- [x] `ai/skills/pallastrade-admin/SKILL.md`（工作台汇总区）— 新增「Catalog Health 覆盖率区」小节
+- [x] `harness/scenarios/scenarios.json`（新场景：比率的分母必须自洽、分母为 0 必须诚实）— **GS-165**（166/166 通过）
+- [x] `docs/research/RESEARCH-20260916-catalog-domain-audit.md`（§十六 指标缺口状态）— 见下方说明
+- [x] 本 PRD 状态 + `docs/prd/README.md` 索引 — 状态改 `done`
+
+**未改动（已评估，无需更新）**：
+
+- `pallastrade-data-model` Skill：零新表、零新列（纯读取）
+- `pallastrade-api-v3` Skill + `api-docs/*.yaml` + SDK 类型：纯后台指标，不镜像到 v3（D7）
+- `AGENTS.md` / `copilot-instructions.md`：无新流程/反模式规则；未动导航，故 `navigation_consistency_spec` 无需改
+
+> 关于审计报告：§十六 的 Health 三项中「Unresolved Catalog Health Issues」由 V1+G-7 覆盖、「Missing SEO ratio」与
+> 「Missing translation ratio」由本批覆盖；报告 §6 的缺口表本身无需改动（G-1~G-7 状态已是最新），
+> 本批是**补方案 §十六 指标**而非闭合审计缺口，因此未在审计报告中新增行。
 
 ## 10. 关键决策
 
@@ -120,3 +130,4 @@
 |---|---|---|---|
 | 2026-09-17 | 0.1 | 初稿：由方案 §十六 的两个 ratio 指标提炼（补齐 Health 三项） | AI |
 | 2026-09-17 | 1.0 | 用户「自主决定」授权；补 FR/AC/NFR、6 层搜索、D1~D7（重点是 D1 分母不可共用、D3/D4 诚实空态）→ status approved | AI |
+| 2026-09-17 | 1.1 | 实施完成（commit `b76c5c19`）：Coverage 服务 + `Issues.translation_slots` 分母口径 + 工作台覆盖率区 + 双语文案；18 新例 + 回归 56 例全绿；**浏览器真实渲染验证**（SEO 97.4% = 1−1/38、翻译 32.5% = 1−154/228，两个分母确实不同）；知识同步含 GS-165；状态 → done | AI |

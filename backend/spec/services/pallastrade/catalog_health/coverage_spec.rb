@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# PRD-20260917-catalog-health-coverage-ratios
+# PRD-20260917-catalog-health-coverage-ratios AC-001 AC-002 AC-003 AC-004 AC-005 AC-007 AC-010
 #   AC-001 SEO 分母 = 未归档商品数
 #   AC-002 翻译分母 = 商品数 × 支持语言数（与分子同单位）
 #   AC-003 分母为 0 时比率为 nil（不出现 0.0 / NaN）

@@ -316,6 +316,25 @@ F-2 只是把它经 `PallasTrade::Shipping::Estimate` 与 `delivery_method_seria
 回归验证：`harness verify d3-product-merge-rspec`。
 口径：`LOWER(TRIM(...))` 分组 + `HAVING COUNT(DISTINCT products.id) > 1`，同店 + 未删除 + 非 archived。
 
+## 商品健康覆盖率指标（Coverage Ratios，2026-09-17，PRD-20260917-catalog-health-coverage-ratios）
+
+工作台给的是**计数**，而计数没有分母就不可决策：「23 个商品缺 SEO」在只有 25 个商品的店里是**灾难**，
+在 5000 个的店里是**噪声**。`CatalogHealth::Coverage.call(store)` 补上这两个比率：
+
+- **分子**：只能来自 `Issues.count`（维持“计数 == 下钻列表条数”这条不变量）；
+- **分母：两个比率各自不同，不得共用** ——
+  - `missing_seo` → `store.products.not_archived.count`（按**商品**计数）
+  - `missing_translations` → `Issues.translation_slots(store)` = `商品数 × 支持语言数`
+    （`missing_translations_count` 数的是 **(商品 × 语言) 对数**，不是商品数）
+  - ⚠️ 共用一个分母会算出一个**错的比率，而且错得很像对的** —— 这是本批最容易踩的坑
+    （spec 里专门有一条断言：两个分母**必须不等**）
+- **分母为 0 / 门店无其它语言 → 比率 `nil`**，页面显示“暂无数据”：
+  显示 0% 会让人以为“已做完”，显示 100% 会让人以为“全坏了”—— **两者都是编造**
+  （与 G-7 趋势的 `unknown` 同一条原则）；
+- 页面同时给出分子与分母，让商家能**自己验算**比率。
+
+后台入口：`/admin/catalog_health` 顶部「覆盖率」区。回归验证：`harness verify catalog-health-coverage-rspec`。
+
 ## 商品运营报表（Catalog Operations Report，2026-09-16，PRD-20260916-catalog-operations-report；审计 G-6）
 
 `PallasTrade::Catalog::Operations::Report.call(window_days: 7)` —— **只读**聚合 `pallastrade_audit_logs`

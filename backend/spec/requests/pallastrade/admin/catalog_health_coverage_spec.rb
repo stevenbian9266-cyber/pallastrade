@@ -2,8 +2,9 @@
 
 require 'rails_helper'
 
-# PRD-20260917-catalog-health-coverage-ratios
+# PRD-20260917-catalog-health-coverage-ratios AC-006 AC-008 AC-009
 #   AC-006 工作台渲染两个比率（含分子/分母），分母为 0 时显示空态文案
+#   AC-008 既有 7 类计数与下钻链接不回归
 #   AC-009 中文后台渲染无 translation missing（含新增 coverage 文案）
 RSpec.describe 'Admin catalog health coverage ratios', type: :request do
   # 显式随机 code：store 工厂的序列 code 会与历史测试库残留冲突（已知测试卫生问题）

@@ -645,6 +645,17 @@ Products → **Catalog Health**（`/admin/catalog_health`）是商品运营的�
 
 回归验证：`harness verify admin-catalog-health-rspec`（含导航一致性回归）。
 
+### Catalog Health 覆盖率区（Coverage，2026-09-17；PRD-20260917-catalog-health-coverage-ratios）
+
+`/admin/catalog_health` 顶部新增「覆盖率」卡：
+
+- 控制器注入 `@coverage = PallasTrade::CatalogHealth::Coverage.call(current_store)`。
+- 每项显示 **覆盖率百分比 + 分子/分母**（例：`97.4%` / `38 中缺 1`）—— 给出分母是故意的：
+  商家能自己验算，也能看出比率是不是真的有分母（新店没有商品时应显示“暂无数据”）。
+- 文案键：`admin.catalog_health.coverage.{heading,unknown,unknown_hint,missing_of_total,metrics.*}`
+  （en + 宿主 zh-CN 双向必须都存在）。
+- 只读；不动导航，不动 7 类 issue 的计数与下钻链接。
+
 ### Catalog Health 趋势列（Trend，2026-09-16；PRD-20260916-catalog-health-trend-snapshot；审计 G-7）
 
 `/admin/catalog_health` 每行新增**趋势列**（计数与下钻链接原样保留）：
