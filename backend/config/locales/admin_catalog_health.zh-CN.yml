@@ -10,6 +10,14 @@ zh-CN:
     admin:
       catalog_health:
         action: 操作
+        coverage:
+          heading: 覆盖率
+          unknown: 暂无数据
+          unknown_hint: 本店暂无可衡量的对象。
+          missing_of_total: '%{total} 中缺 %{missing}'
+          metrics:
+            missing_seo: SEO 覆盖率
+            missing_translations: 翻译覆盖率
         trend:
           heading: 趋势
           unknown: 暂无趋势

@@ -4,6 +4,33 @@
 
 <p class="text-gray-500 mb-6"><%= PallasTrade.t('admin.catalog_health.intro') %></p>
 
+<%# PRD-20260917-catalog-health-coverage-ratios：计数没有分母就不可决策 —— 给出覆盖率。
+    分母为 0（新店 / 未配置语言）时显示「暂无数据」，绝不显示 0% 或 100%。 %>
+<div class="card-lg mb-6">
+  <div class="card-header">
+    <h3 class="card-title"><%= PallasTrade.t('admin.catalog_health.coverage.heading') %></h3>
+  </div>
+  <div class="card-body">
+    <div class="flex flex-wrap gap-8">
+      <% @coverage.metrics.each do |metric| %>
+        <div>
+          <div class="text-gray-500"><%= PallasTrade.t("admin.catalog_health.coverage.metrics.#{metric.key}") %></div>
+          <% if metric.computable? %>
+            <div class="text-2xl"><%= metric.coverage_percentage %>%</div>
+            <div class="text-gray-500 text-sm">
+              <%= PallasTrade.t('admin.catalog_health.coverage.missing_of_total',
+                                missing: metric.missing, total: metric.total) %>
+            </div>
+          <% else %>
+            <div class="text-2xl text-gray-400"><%= PallasTrade.t('admin.catalog_health.coverage.unknown') %></div>
+            <div class="text-gray-500 text-sm"><%= PallasTrade.t('admin.catalog_health.coverage.unknown_hint') %></div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
 <div class="card-lg mb-6">
   <div class="card-header">
     <h3 class="card-title"><%= PallasTrade.t('admin.catalog_health.issues_heading') %></h3>

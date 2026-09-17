@@ -14,6 +14,9 @@ module PallasTrade
         # G-7（PRD-20260916-catalog-health-trend-snapshot）：计数是「现在」，趋势是「在变好还是变差」。
         # 趋势只读快照表；没有两条可比快照时方向为 unknown（页面必须如实显示，不得当成持平）。
         @trend = PallasTrade::CatalogHealth::Trend.call(current_store)
+        # PRD-20260917-catalog-health-coverage-ratios：计数没有分母就不可决策（「23 个缺 SEO」
+        # 在 25 个商品的店里是灾难、在 5000 个的店里是噪声）—— 分子复用 Issues.count，分母各自自洽。
+        @coverage = PallasTrade::CatalogHealth::Coverage.call(current_store)
       end
 
       helper_method :catalog_health_target_path

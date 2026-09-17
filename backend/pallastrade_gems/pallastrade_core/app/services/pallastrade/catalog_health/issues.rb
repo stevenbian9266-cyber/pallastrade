@@ -103,6 +103,20 @@ module PallasTrade
           PallasTrade::ProductUrlChange.call(store).count { |change| change[:handled] == false }
         end
 
+        # 翻译覆盖率的**分母**（PRD-20260917-catalog-health-coverage-ratios D1）。
+        #
+        # `missing_translations_count` 数的是 **(product × locale) 对数**，不是商品数，
+        # 所以分母必须是同一个单位 —— 拿商品数当分母会算出一个**错的比率**（而且错得很像对的）。
+        # 放在这里而不是调用方，是为了让分子/分母**同源**：口径只在这一个文件里定义。
+        #
+        # @return [Integer] 0 表示门店没有其它支持语言（此时比率无意义，调用方须给 nil）
+        def translation_slots(store)
+          locales = other_locales(store)
+          return 0 if locales.empty?
+
+          store.product_ids.size * locales.size
+        end
+
         private
 
         def default_locale(store)

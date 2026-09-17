@@ -315,6 +315,14 @@ en:
         scope_note: All stores — the audit trail carries no store dimension yet.
       catalog_health:
         action: Action
+        coverage:
+          heading: Coverage
+          unknown: No data yet
+          unknown_hint: Nothing to measure in this store yet.
+          missing_of_total: '%{missing} missing of %{total}'
+          metrics:
+            missing_seo: SEO coverage
+            missing_translations: Translation coverage
         trend:
           heading: Trend
           unknown: No trend yet
@@ -1322,6 +1330,119 @@ en:
         decision_allow: Allow
         decision_review: Needs review
         decision_block: Block
+      # PALLAS-CUSTOM: D15 切片2（PRD-20260917-payments-d15b-risk-rules；业务方案 §72.2）
+      # 风控规则工作台（规则集/版本 + 发布/金丝雀/回滚 + 订单试算）
+      risk_rules:
+        title: Risk rules
+        detail_title: "Rule set %{code}"
+        filter: Filter
+        reset: Reset
+        scope: Scope
+        scope_filter_all: All scopes
+        scope_filter_global: Global only
+        scope_filter_store: This store only
+        scope_global: Global
+        scope_global_option: Global (all stores)
+        scope_store_option: This store
+        status: Status
+        status_filter_all: All statuses
+        status_filter_active: Active
+        status_filter_inactive: Inactive
+        status_active: Active
+        status_inactive: Inactive
+        code: Code
+        name: Name
+        description: Description
+        total: "%{total} rule set(s)"
+        prev_page: Previous page
+        next_page: Next page
+        new_set_title: New rule set
+        new_set_hint: A store rule set takes precedence over the global one with the same code.
+        new_set_submit: Create rule set
+        create_success: "Rule set %{code} created. Add a version to make it live."
+        create_failed: Could not create the rule set
+        sets_title: Rule sets
+        sets_empty: No rule set matches these filters.
+        detail: Details
+        active_version: Active version
+        no_active_version: Not published yet
+        version_label: "v%{version}"
+        version: Version
+        canary: Canary
+        canary_label: "v%{version} at %{percent}%"
+        canary_off: Off
+        canary_title: Canary rollout
+        canary_hint: "Traffic is bucketed per order (stable): the same order always gets the same version."
+        canary_percent: Percent
+        canary_submit: Save canary
+        canary_success: "Canary updated (v%{version} at %{percent}%)."
+        canary_failed: Could not update the canary
+        rules_count: Rules
+        rule_code: Rule
+        priority: Priority
+        conditions: Conditions
+        action: Action
+        actions: Actions
+        active_rules_title: Rules in the active version
+        active_rules_empty: No rules in the active version.
+        new_version_title: New draft version
+        new_version_hint: Rules are validated before saving — an invalid version is never stored.
+        new_version_submit: Save draft version
+        version_created: "Draft version v%{version} created."
+        version_create_failed: Could not create the version
+        versions_title: Version history
+        versions_empty: No version yet.
+        state: State
+        state_draft: Draft
+        state_published: Published
+        state_archived: Archived
+        source_version: Source
+        reason: Reason
+        published_at: Published at
+        publish_action: Publish
+        publish_success: "Version v%{version} is now live."
+        publish_failed: Could not publish the version
+        rollback_action: Roll back
+        rollback_reason_placeholder: Reason (required)
+        rollback_success: "Rolled back: new version v%{version} (content of v%{source_version}) is live."
+        rollback_failed: Could not roll back
+        activate_action: Activate
+        deactivate_action: Deactivate
+        toggle_success: "Rule set is now %{status}."
+        toggle_failed: Could not change the rule set status
+        preview_title: Rule preview
+        preview_action: Preview a rule
+        preview_hint: Evaluate the live rule set against one order (read-only, nothing is written).
+        preview_submit: Preview
+        order_number: Order number
+        back_to_sets: Back to rule sets
+        preview_order_not_found: No order with that number in this store.
+        preview_no_rule_set: No active rule set with a published version — nothing is evaluated.
+        preview_rule_set: Rule set
+        preview_version: Version
+        preview_canary: Canary
+        preview_canary_yes: Yes (canary bucket)
+        preview_canary_no: No (stable bucket)
+        preview_bucket: Bucket
+        preview_rule: Matched rule
+        preview_no_hit: No rule matched.
+        preview_action: Decision
+        preview_skipped: Skipped checks
+        preview_readonly_note: Preview is read-only — no assessment is recorded and no order state changes.
+        action_allow: Allow
+        action_review: Needs review
+        action_block: Block
+        condition_amount_gte: Amount ≥
+        condition_amount_lte: Amount ≤
+        condition_currency_in: Currency in
+        condition_country_in: Country in
+        condition_email_domain_in: Email domain in
+        condition_email_present: Email present
+        condition_ip_present: IP present
+        condition_card_brand_in: Card brand in
+        condition_customer_orders_gte: Completed orders ≥
+        condition_velocity_count_gte: Orders in window ≥
+        condition_velocity_window_minutes: Window (minutes)
       currency_rates:
         title: Currency Rates
         filter: Filter
