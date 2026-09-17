@@ -57,6 +57,38 @@ payload, computed from the same scope); moderation happens in the admin
 `PallasTrade::Admin::ReviewsController` (approve / reject / delete) and the admin reviews table
 carries a **photos** column. Pending reviews (and therefore their photos) are never public.
 
+## Catalog events (side-channel analytics)
+
+`PallasTrade::CatalogEvent` (table `pallastrade_catalog_events`) records storefront
+product **impressions / clicks / add-to-carts / searches** so the store can compute
+`Related Product CTR` from its own data instead of relying on a third-party analytics
+platform (PRD-20260917-catalog-product-events).
+
+- `store_id`, `event_id` (client UUID), `event_name`
+  (`impression` / `click` / `product_added` / `product_searched`), optional
+  `product_id` / `variant_id` / `list_id` / `list_name` / `position`,
+  `session_hash`, `occurred_at`, optional `metadata`, and **only** `created_at`.
+- **Idempotency**: unique `(store_id, event_id)` (index `idx_catalog_events_idempotency`) +
+  `insert_all(..., unique_by:)`, so a replayed batch never double counts. That unique key is
+  also why the model is written through `CatalogEvents::Record` rather than row-by-row.
+- **Zero PII**: there is deliberately no column for IP, user agent, email, customer/user id,
+  or the raw visitor id. `session_hash` is `HMAC-SHA256(visitor_id, "catalog_events:<store_id>:<secret_key_base>")`,
+  truncated to 32 hex chars — irreversible, and store-scoped so the same visitor is not
+  correlatable across stores. It is computed **server-side**; the raw value never leaves the
+  request.
+- **Append-only**: no `updated_at`; the table is only ever inserted into (business pruning by
+  `CatalogEvents::Prune` aside).
+- **Side channel — never business truth**: nothing in the pricing / stock / order / checkout
+  paths reads it, and the table can be truncated at any time without affecting them. Keep it
+  that way: a report that needs the events must `LEFT JOIN`/aggregate *outside* the business
+  write path.
+- **Bounded**: `RETENTION_DAYS = 90` + the idempotent, batched `CatalogEvents::Prune` job.
+- `Product#catalog_events` is intentionally **not** declared — aggregate through
+  `CatalogEvent.list_metrics(store)` / `.product_metrics(store)` so the side channel never
+  becomes an association someone reaches for on a business path.
+- Purge/rollback: the table is pure analytics state; dropping or truncating it loses metrics
+  only, never a business fact.
+
 ## Promotion redemptions (ledger)
 
 `PallasTrade::PromotionRedemption` (table `pallastrade_promotion_redemptions`, prefix id

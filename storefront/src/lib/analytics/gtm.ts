@@ -1,6 +1,13 @@
 import { sendGTMEvent } from "@next/third-parties/google";
 import type { Cart, LineItem, Order, Product, Variant } from "@pallastrade/sdk";
 
+import {
+  trackCatalogClick,
+  trackCatalogImpression,
+  trackCatalogProductAdded,
+  trackCatalogProductSearched,
+} from "@/lib/analytics/catalog-events";
+
 interface GA4Item {
   item_id: string;
   item_name: string;
@@ -148,6 +155,12 @@ export function trackViewItemList(
       mapProductToGA4Item(product, { index, listId, listName }),
     ),
   });
+
+  // Parallel sink into the store's own database (PRD-20260917-catalog-product-events).
+  // These impressions are the CTR denominator; the GA4 path above is untouched.
+  products.forEach((product, index) => {
+    trackCatalogImpression(product.id, listId, listName, index);
+  });
 }
 
 export function trackSelectItem(
@@ -163,6 +176,9 @@ export function trackSelectItem(
     currency,
     items: [mapProductToGA4Item(product, { index, listId, listName })],
   });
+
+  // Parallel sink: this is the CTR numerator matching the impressions above.
+  trackCatalogClick(product.id, listId, listName, index);
 }
 
 export function trackViewItem(
@@ -191,6 +207,8 @@ export function trackAddToCart(
     value: (item.price ?? 0) * quantity,
     items: [item],
   });
+
+  trackCatalogProductAdded(product.id, variant?.id);
 }
 
 export function trackRemoveFromCart(
@@ -329,6 +347,9 @@ export function trackQuickSearch(
       }),
     ),
   });
+
+  // Deliberately drops `searchTerm` — the backend stores no free-text input.
+  trackCatalogProductSearched();
 }
 
 let lastViewSearchResultsKey: string | null = null;

@@ -854,6 +854,35 @@ var StoreClient = class {
       body: params
     })
   };
+  // ============================================
+  // Catalog events (side-channel product analytics)
+  // ============================================
+  catalogEvents = {
+    /**
+     * Ingest a batch of storefront catalog events — `impression`, `click`,
+     * `product_added`, `product_searched`. Guest-accessible.
+     *
+     * **Side channel only**: these events never influence pricing, stock, orders
+     * or checkout, and the whole table can be discarded without any business
+     * consequence.
+     *
+     * **Idempotent**: a repeated `event_id` is silently ignored, so retries and
+     * double-sends never double count. The response reports how many valid
+     * events were received, not how many were newly inserted.
+     *
+     * **Zero PII**: no IP, user agent, email or customer identity is accepted.
+     * `visitor_id` is hashed server-side into an irreversible, store-scoped
+     * digest and the raw value is never stored.
+     *
+     * **Batching**: at most 100 events per call. The endpoint is rate limited per
+     * API key and a storefront shares one publishable key, so flush once per page
+     * view rather than once per event.
+     */
+    create: (params, options) => this.request("POST", "/catalog_events", {
+      ...options,
+      body: params
+    })
+  };
   customer = {
     /**
      * Get current customer profile

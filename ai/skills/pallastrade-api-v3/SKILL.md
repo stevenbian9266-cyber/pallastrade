@@ -68,6 +68,18 @@ New `pallastrade_carts` entity + order-domain payments (all under Store API, pub
 - `POST /api/v3/store/payment_combinations` — combines several unpaid customer orders into one payment. **`order_ids.first` is the primary order** (the payment session is created on it; the rest are members) and the server must preserve that request order: resolving them with a bare `where(id: ...)` leaves the primary up to the database row order, so the session can land on a different member order (a real defect that surfaced as an order-dependent flake — `resolve_orders` now re-indexes by the requested ids instead of trusting the query order).
 - `Order` serializer adds `state`, `status`, `submitted_at`, `cart_id`, `payment_methods` (the active `PaymentMethod` list for the order's market/currency).
 - Cart/CartItem serializers: new `ShoppingCart` shape with `status` and `items[].selected` (see `pallastrade-typescript-sdk`).
+- `POST /api/v3/store/catalog_events` — **guest-accessible** batch ingest of storefront
+  `impression` / `click` / `product_added` / `product_searched` events
+  (PRD-20260917-catalog-product-events). Strictly a **side channel**: nothing in the
+  pricing / stock / order / checkout paths reads it. Body is
+  `{ visitor_id, events: [...] }`; the whole batch is rejected (422, nothing written)
+  when any `event_name` is outside the whitelist or the batch exceeds 100 events.
+  `event_id` is the **idempotency key** (a repeat is silently ignored) and the response
+  reports `received` — the number of valid events, *not* rows inserted. Zero PII: no IP,
+  user agent, email or customer identity is accepted, `visitor_id` is hashed server-side
+  into a store-scoped HMAC digest and never stored, and free-form `metadata` is rejected
+  by the attribute allow-list. Because its rate-limit bucket is the store-wide
+  publishable key, clients must flush **at most once per page view**.
 
 ### Admin API
 
@@ -305,6 +317,51 @@ The API has per-key and per-endpoint rate limits configured via `PallasTrade::Ap
 Hit limits → `429 Too Many Requests` with `Retry-After` header. The `@pallastrade/sdk` retries with exponential backoff automatically.
 
 Tune via `PallasTrade::Api::Config[:rate_limit_per_key]` etc. in `config/initializers/pallastrade.rb`. For tougher global throttling (per-IP at the proxy edge), layer Rack::Attack or your CDN's WAF on top.
+
+### How the limit is actually implemented (read this before adding a high-volume endpoint)
+
+The limits above are Rails 8.1's built-in `rate_limit`, declared **once** on
+`PallasTrade::Api::V3::BaseController`:
+
+```ruby
+rate_limit to: PallasTrade::Api::Config[:rate_limit_per_key],
+           within: PallasTrade::Api::Config[:rate_limit_window].seconds,
+           store: Rails.cache,
+           by: -> { request.headers['X-PallasTrade-Api-Key'] || request.remote_ip },
+           with: RATE_LIMIT_RESPONSE
+```
+
+Four consequences that are easy to get wrong:
+
+1. **The counter is keyed by API key, not by IP.** A storefront serves every visitor
+   with a single publishable key, so `rate_limit_per_key` is a budget for the **whole
+   store**, not per shopper.
+2. **The bucket is scoped per controller** (`scope` defaults to `controller_path`, and
+   `RateLimitHeaders` reads the same composed key). A new endpoint therefore gets its
+   own budget and does **not** consume the products/cart/checkout budget.
+3. **A subclass cannot opt out.** `rate_limit` registers an anonymous `before_action`
+   lambda, so `skip_before_action` cannot target it — the inherited limit always
+   applies. Adding a second `rate_limit` in a subclass only *adds* a limiter (the
+   tighter one wins); it never relaxes the parent's.
+4. **`config.cache_store = :null_store` in the test env makes every `rate_limit`
+   inert**, and `store:` is captured when the class body is evaluated — so rate
+   limiting cannot be exercised from specs. Assert the declaration/design invariant
+   instead of expecting a 429.
+
+High-volume endpoints (e.g. `catalog_events`) must therefore be designed so the
+**request count scales with page views, not with events** — batch on the client, flush
+at most once per page view, and add a stricter per-IP limiter so a single abusive client
+cannot drain the store-wide budget.
+
+---
+
+## Store API — catalog events (side-channel product analytics)
+
+`POST /api/v3/store/catalog_events` (guest-accessible, publishable key) ingests a batch
+of storefront `impression` / `click` / `product_added` / `product_searched` events into
+the store's **own** database so `Related Product CTR` can be computed from first-party
+data. See `pallastrade-data-model` for the table and `pallastrade-storefront` for the
+client-side batching contract.
 
 ## Turnstile human verification (customer registration)
 

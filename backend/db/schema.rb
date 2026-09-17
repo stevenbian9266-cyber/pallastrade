@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_17_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_17_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -500,6 +500,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_17_090000) do
     t.index ["store_id"], name: "index_pallastrade_carts_on_store_id"
     t.index ["token"], name: "index_pallastrade_carts_on_token", unique: true
     t.index ["user_id"], name: "index_pallastrade_carts_on_user_id"
+  end
+
+  create_table "pallastrade_catalog_events", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "event_id", null: false
+    t.string "event_name", null: false
+    t.string "list_id"
+    t.string "list_name"
+    t.jsonb "metadata"
+    t.datetime "occurred_at", null: false
+    t.integer "position"
+    t.bigint "product_id"
+    t.string "session_hash", null: false
+    t.bigint "store_id", null: false
+    t.bigint "variant_id"
+    t.index ["store_id", "event_id"], name: "idx_catalog_events_idempotency", unique: true
+    t.index ["store_id", "list_id"], name: "idx_catalog_events_store_list_id"
+    t.index ["store_id", "occurred_at"], name: "idx_catalog_events_store_occurred_at"
+    t.index ["store_id", "product_id", "event_name"], name: "idx_catalog_events_store_product_name"
   end
 
   create_table "pallastrade_catalog_health_snapshots", force: :cascade do |t|

@@ -30,6 +30,10 @@ PallasTrade::Core::Engine.add_routes do
           # Product reviews (P0-4) — read approved, create as signed-in customer
           resources :reviews, only: [:index, :create]
         end
+        # Catalog events (A3 Step 1, PRD-20260917-catalog-product-events) —
+        # guest-accessible batch ingest of storefront impression / click /
+        # add-to-cart / search events. **Side channel**: never read by business paths.
+        resources :catalog_events, only: [:create]
         # Review helpful votes (F-5) — customer JWT required; one vote per customer
         # per review, revocable through DELETE on the same path. Top-level (not
         # nested under products): a review id is already globally unique, and the

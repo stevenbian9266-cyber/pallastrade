@@ -40,6 +40,14 @@ Standard e-commerce flow (P1, PRD-20260829-checkout): `carts.submit(cartId, opti
 
 ⚠️ `harness generated:check` 是 docker-gated：在容器不可用时会**静默报「无漂移」**。实测过一次「改完序列化器它仍说无漂移、而 `store.yaml` 实际缺字段」——改契约后请**顺带肉眼确认生成物里有那个字段**。
 
+**商品事件回流（PRD-20260917-catalog-product-events, 2026-09-17）**：新增 `catalogEvents.create({ visitor_id, events })`（`POST /api/v3/store/catalog_events`，访客可访问），把前台商品的**曝光 / 点击 / 加购 / 搜索**批量落到**自有库**，使 `Related Product CTR` 不再只存在于第三方分析平台。该端点**没有** Typelizer 序列化器（返回的是 `{ received }` 汇总而非资源），因此它的 OpenAPI 定义是**手写**在 `backend/public/api-docs/store.yaml` 的 `paths` 里，`api:docs:schemas` 只重写 `components.schemas`、不会覆盖它。
+
+- **旁路**：事件只用于分析，任何业务路径（库存 / 价格 / 订单 / 结账）都不读它，整表可随时清空。
+- **幂等**：重复的 `event_id` 被静默忽略（客户端重试 / 双发不会重复计数）；返回的 `received` 是**本批有效事件数**，不是新增行数。
+- **零 PII**：不收 IP / User-Agent / 邮箱 / 客户 ID；`visitor_id` 只在服务端派生 HMAC 摘要，原值**不落库**；白名单之外的字段（含自由 `metadata`）一律丢弃。
+- **批量**：单请求 ≤ 100 条；超限或出现未知 `event_name` 时**整批不写**（422）。
+- ⚠️ **配额形状（重要）**：`PallasTrade::Api::V3::BaseController` 的全局 `rate_limit` 按 **API key** 计数（300/60s），而一个 storefront 全店共用同一个 publishable key ⇒ 该端点上限 = **300 请求 / 60s / 整店**；且该回调是匿名 lambda，**子类 `skip_before_action` 无效**。因此前台 `storefront/src/lib/analytics/catalog-events.ts` 按「**每次页面浏览最多 flush 一次**」（`visibilitychange` / `pagehide`）设计，让请求数随**页面浏览量**而非事件数增长；端点本身另加了一条更严的 per-IP 限流，避免单个客户端独占整店预算。
+
 Order-module combined payment (PRD-20260829-checkout 订单模块): `paymentCombinations.get(id, { expand: ['orders'] }, options?)` expands member orders (items + shipping addresses) for the combined-flow shipping/itemized steps; `orders.updateShippingAddress(orderId, { shipping_address | shipping_address_id }, options?)` (`PATCH /customers/me/orders/:id/shipping_address`) updates an own unpaid order's shipping address.
 
 Order durable transactions (P2, 2026-09-05): `orders.transactions.create(orderId, { payment_method_id, purpose?, external_data?, expected_checkout_version?, expected_price_version? }, options?)` (`POST /orders/:order_id/transactions`) starts/reuses a durable `CommerceTransaction` with a frozen quote snapshot and returns the transaction plus its `payment_execution` (ps_ session for the provider UI); `transactions.get(id, options?)` (`GET /transactions/:id`) returns the resume read model (state, participants, payment sessions, recovery, completion). Business conflicts surface as 409 `checkout_not_ready` / `quote_changed` / `transaction_not_payable`. **Storefront TXN-P2-6 轮3 (2026-09-05)** consumes this as transaction-first: `/api/checkout/start` and the order-payment server action start the session via `orders.transactions.create` (session = `payment_execution`), while `PATCH` completion keeps using `orders.paymentSessions.complete`. Because the SDK's published types come from `dist`, rebuild it (`pnpm --filter @pallastrade/sdk build`) after adding client methods and commit the rebuilt `dist/` (hash chunks via `git add -f`).

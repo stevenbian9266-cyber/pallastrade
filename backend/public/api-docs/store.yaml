@@ -10431,6 +10431,161 @@ paths:
                     them, or when no allowed origins are configured at all.
               required:
               - email
+  "/api/v3/store/catalog_events":
+    post:
+      summary: Ingest a batch of storefront catalog events
+      tags:
+      - Catalog Events
+      security:
+      - api_key: []
+      description: |
+        Records a batch of storefront **side-channel** catalog events —
+        `impression`, `click`, `product_added`, `product_searched` — so the store
+        can compute its own `Related Product CTR` instead of relying on a
+        third-party analytics platform.
+
+        Guest-accessible (no customer JWT): impressions and clicks happen before
+        sign-in. These events never influence pricing, stock, orders or checkout.
+
+        **Idempotent** — an `event_id` that has already been stored is silently
+        ignored, so retries and double-sends never double count.
+
+        **Zero PII** — no IP address, user agent, email or customer identity is
+        accepted or stored. `visitor_id` is used only to derive an irreversible,
+        store-scoped digest on the server; the raw value is never persisted. A
+        free-form `metadata` object is deliberately not accepted.
+
+        **Batching** — at most 100 events per request, and the whole batch is
+        rejected (nothing written) when any event name is unknown or the batch is
+        oversized. The endpoint is rate limited per API key, and a storefront
+        shares a single publishable key, so clients should flush at most once per
+        page view.
+      x-codeSamples:
+      - lang: javascript
+        label: PallasTrade SDK
+        source: |-
+          import { createClient } from '@pallastrade/sdk'
+
+          const client = createClient({
+            baseUrl: 'https://your-store.com',
+            publishableKey: '<api-key>',
+          })
+
+          await client.catalogEvents.create({
+            visitor_id: 'a-1f3c9b2e',
+            events: [
+              { event_id: 'e1', event_name: 'impression', list_id: 'related', position: 0 },
+              { event_id: 'e2', event_name: 'click', list_id: 'related', position: 0 },
+            ],
+          })
+      parameters:
+      - name: x-pallastrade-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - visitor_id
+              - events
+              properties:
+                visitor_id:
+                  type: string
+                  description: |
+                    Opaque visitor identifier. Hashed server-side (store-scoped
+                    HMAC) and never stored.
+                events:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: object
+                    required:
+                    - event_id
+                    - event_name
+                    properties:
+                      event_id:
+                        type: string
+                        description: Client-generated idempotency key (UUID).
+                      event_name:
+                        type: string
+                        enum:
+                        - impression
+                        - click
+                        - product_added
+                        - product_searched
+                      product_id:
+                        type: string
+                        description: Prefixed product id (`prod_…`).
+                      variant_id:
+                        type: string
+                        description: Prefixed variant id (`variant_…`).
+                      list_id:
+                        type: string
+                        description: Recommendation surface identifier — the CTR dimension.
+                      list_name:
+                        type: string
+                      position:
+                        type: integer
+                        description: Zero-based position within the list.
+                      occurred_at:
+                        type: string
+                        format: date-time
+                        description: |
+                          Client timestamp. Values outside the retention window or
+                          more than 5 minutes in the future fall back to server time.
+            example:
+              visitor_id: a-1f3c9b2e
+              events:
+              - event_id: 8f0c1e6a-1f3c-4a0e-9d2b-6c1a2b3d4e5f
+                event_name: impression
+                list_id: related
+                position: 0
+                product_id: prod_UkLWZg9DAJ
+              - event_id: 2b7d4c19-9a3e-4f81-8c55-1d2e3f4a5b6c
+                event_name: click
+                list_id: related
+                position: 0
+                product_id: prod_UkLWZg9DAJ
+      responses:
+        '201':
+          description: batch accepted (already-stored event ids are ignored)
+          content:
+            application/json:
+              example:
+                received: 2
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: integer
+                    description: Number of valid events in the batch.
+        '422':
+          description: |
+            Invalid request — missing `visitor_id`, empty `events`, more than 100
+            events, or an `event_name` outside the whitelist. Nothing is written.
+          content:
+            application/json:
+              example:
+                error:
+                  code: invalid_request
+                  message: 'unknown event_name: nope'
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '429':
+          description: rate limited (per API key, plus a stricter per-IP limit)
+          content:
+            application/json:
+              example:
+                error:
+                  code: rate_limit_exceeded
+                  message: Too many requests. Please retry later.
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
   "/api/v3/store/contact_messages":
     post:
       summary: Submit a complaint / feedback / inquiry

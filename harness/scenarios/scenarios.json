@@ -4472,6 +4472,36 @@
         "singleSourceMolecules": 10,
         "readOnlyPurity": 10
       }
+    },
+    {
+      "id": "GS-175",
+      "name": "An analytics endpoint must not be able to starve the store",
+      "description": "PRD-20260917-catalog-product-events (business plan sections 14 and 16): the storefront wanted its own impression/click/add-to-cart data so Related Product CTR could be computed from first-party data instead of a third-party dashboard. The obvious implementation - report every event as it happens - turns out to be unsafe here, because the API rate limit is keyed by the publishable key that every visitor of a store shares, so per-event reporting would spend the shop's entire request budget on analytics. This records the events into a side channel that is batched per page view, is idempotent, carries no personal data, and is never read on a business path.",
+      "mustDo": [
+        "Treat the event table as a pure side channel: nothing in the pricing, stock, order or checkout paths reads it, and discarding the whole table changes no business fact",
+        "Make event_id the idempotency key at the database level so a retried or double-sent batch is absorbed instead of inflating the count",
+        "Key every write off current_store, and reject the whole batch when any event name is outside the whitelist or the batch exceeds the maximum, rather than writing a partial batch",
+        "Hash the visitor identifier server-side with a store-scoped secret into an irreversible digest and never persist the raw value, the IP, the user agent, the email, the customer id, or a free-form metadata object",
+        "Batch on the client so the request count scales with page views rather than events, because the rate-limit bucket is shared by every visitor of the store",
+        "Add a stricter per-IP limit on top of the inherited per-key limit so one client cannot drain the store-wide budget",
+        "Return a nil CTR when the denominator is zero instead of reporting zero or one",
+        "Bound the table with a retention window and an idempotent pruning job"
+      ],
+      "mustNotDo": [
+        "Report one request per event and let analytics consume the request budget real shoppers need",
+        "Store or accept an IP address, user agent, email, customer id, raw visitor id, or arbitrary metadata object",
+        "Let a failed analytics call surface an error to the shopper, block a navigation, or retry into the shared budget",
+        "Read the event table from a business path, or let a batch failure leave half of the events written",
+        "Fabricate a ratio when there is no impression to divide by"
+      ],
+      "scoring": {
+        "sideChannelPurity": 20,
+        "idempotency": 15,
+        "zeroPii": 20,
+        "batchDiscipline": 20,
+        "honestRatio": 15,
+        "boundedRetention": 10
+      }
     }
   ]
 }

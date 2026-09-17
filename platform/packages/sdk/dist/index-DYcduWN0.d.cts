@@ -718,6 +718,13 @@ type Policy = {
     slug: string;
     body: string | null;
     body_html: string | null;
+    merchant_return_policy: {
+        category: string;
+        days: number | null;
+        method: string | null;
+        fees: string | null;
+        countries: string[];
+    } | null;
 };
 
 type Post = {
@@ -753,6 +760,7 @@ type Price = {
     display_amount: string | null;
     display_compare_at_amount: string | null;
     price_list_id: string | null;
+    price_list_ends_at: string | null;
 };
 
 type Product = {

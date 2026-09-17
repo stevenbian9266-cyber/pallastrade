@@ -193,6 +193,32 @@ place that maps them to schema.org vocabulary, so a schema.org revision touches 
 Tests: `lib/__tests__/seo.test.ts` (AC-001~AC-012, including the "key absent, not null"
 assertions).
 
+### Catalog events — first-party analytics (PRD-20260917-catalog-product-events, 2026-09-17)
+
+`lib/analytics/catalog-events.ts` mirrors the GA4 calls in `lib/analytics/gtm.ts` into the
+store's **own** database so `Related Product CTR` can be computed from first-party data.
+The GA4/GTM path is untouched — the sink calls are added **inside** the existing
+`gtm.ts` functions (`trackViewItemList` → impressions, `trackSelectItem` → click,
+`trackAddToCart` → `product_added`, `trackQuickSearch` → `product_searched`), so every
+existing call site is covered without touching a component.
+
+**Batching is mandatory, not an optimisation.** The backend's `rate_limit` bucket is keyed
+by the publishable key that the whole store shares, and a subclass cannot opt out of it, so
+the request count must scale with **page navigations** rather than with events:
+
+- events accumulate in a queue for the life of a page view;
+- the queue is flushed **once** on `visibilitychange` → `hidden` and on `pagehide`;
+- an overflow flush fires only if one page view exceeds `CATALOG_EVENT_MAX_BATCH` (100);
+- a failed flush is **dropped, never retried**, so analytics can never compete with real
+  user traffic for the budget. `sendCatalogEvents` returns `null` on failure (AP-009b).
+
+The Store API call goes through the `"use server"` action in `lib/data/catalog-events.ts`
+because `PALLASTRADE_API_URL` / `PALLASTRADE_PUBLISHABLE_KEY` are server-only env vars — a
+client component must never build an SDK client itself. The visitor id is a **random** value
+kept in `localStorage` (`pallastrade_visitor_id`) and is hashed server-side; no IP, user
+agent, email, customer id, or search term is ever sent. Tests:
+`lib/analytics/__tests__/catalog-events.test.ts`.
+
 **Client-component import rule (build breaker):** a `"use client"` component MUST NOT import from the `@/lib/pallastrade` barrel (`index.ts`) — the barrel re-exports server-only cookie/`next/headers` helpers, and pulling them into the client bundle fails `next build` with "Ecmascript file had an error" on `import { cookies } from "next/headers"`. Import the specific client-safe module instead, e.g. `getClient` from `@/lib/pallastrade/config`. Server components / route handlers may keep using the barrel.
 
 **Client-component SDK calls go through server actions.** `PALLASTRADE_API_URL` / `PALLASTRADE_PUBLISHABLE_KEY` are **server-only env** (no `NEXT_PUBLIC_` prefix), so `getClient()` throws in the browser. A client component that needs the Store API must call a `"use server"` action in `src/lib/data/` (e.g. `cart.ts`, `backInStock.ts`) that runs `getClient()` server-side; the action returns a `{ success, error }` result (via `actionResult`). Never build an SDK client directly in a client component.

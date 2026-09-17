@@ -222,6 +222,12 @@ export default {
         description: 'Admin catalog health specs (issue semantics + filtered products list + banner + coverage ratios + health score + navigation consistency)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/catalog_health_spec.rb spec/requests/pallastrade/admin/catalog_health_coverage_spec.rb spec/requests/pallastrade/admin/catalog_health_score_spec.rb spec/requests/pallastrade/admin/navigation_consistency_spec.rb'],
       },
+      // 商品事件回流（PRD-20260917-catalog-product-events）：曝光/点击/加购/搜索落自有库。
+      // 覆盖幂等 event_id、事件名白名单、批量上限整批拒收、跨店隔离、零 PII 摘要、CTR 口径与保留策略。
+      'catalog-events-rspec': {
+        description: 'Catalog events side channel (idempotency + event-name whitelist + store scoping + zero-PII digest + CTR caliber + retention)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/catalog_event_spec.rb spec/requests/api/v3/store/catalog_events_spec.rb spec/services/pallastrade/catalog_events/prune_spec.rb'],
+      },
       // 管理后台 i18n 覆盖率（2026-09-17 起）：en ↔ zh-CN 按功能域**双向**键集相等 +
       // 顶级键批次 + 已修缺陷回归。i18n 工作的产物是 locale YAML 与断言，
       // 不落在任何后端域验证器的覆盖范围里；后续还有约 1109 个键要分批补齐，
