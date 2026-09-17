@@ -252,6 +252,18 @@ Rails.application.config.after_initialize do
                                                     position: 120,
                                                     condition: -> { can?(:manage, PallasTrade::ProductPublication) }
 
+  # PRD-20260917-catalog-bulk-media：批量移除媒体（方案 §5.1 Bulk Media 行）。
+  # 无配置项（只有「确认」），所以 form_partial 用框架自带的空确认 partial；
+  # 与其它破坏性批量一样，先经 *_preview（零写入）再确认执行。
+  PallasTrade.admin.tables.products.add_bulk_action :remove_media,
+                                                    label: 'admin.bulk_ops.products.title.remove_media',
+                                                    icon: 'photo-off',
+                                                    action_path: ->(view_context) { view_context.pallastrade.bulk_media_preview_admin_products_path },
+                                                    body: 'admin.bulk_ops.products.body.remove_media',
+                                                    form_partial: 'pallastrade/admin/bulk_operations/forms/confirmation',
+                                                    position: 130,
+                                                    condition: -> { can?(:manage, PallasTrade::Asset) }
+
   # Register Orders table
   PallasTrade.admin.tables.register(:orders, model_class: PallasTrade::Order, search_param: :search, date_range_param: :completed_at)
 

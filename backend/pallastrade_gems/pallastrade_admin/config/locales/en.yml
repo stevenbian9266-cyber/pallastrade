@@ -234,6 +234,7 @@ en:
             adjust_inventory: Adjust the on-hand count at one stock location. Products that do not track inventory are skipped.
             adjust_price_percent: Increase or decrease the base price by a percentage. Products without a price in the chosen currency are skipped.
             remove_from_channels: Unpublish the selected products from the chosen channels.
+            remove_media: Remove every image from the selected products (the product gallery and all of its variant images). This cannot be undone.
             remove_from_taxons: 'Select which categories to remove the products from:'
             remove_tags: 'Select tags to remove from the products:'
             set_active: Setting products to active will make those products available on the storefront.
@@ -259,6 +260,7 @@ en:
           result:
             channels_updated: 'Updated %{count} product(s) (%{skipped} skipped).'
             inventory_updated: 'Updated %{count} product(s) (%{skipped} skipped).'
+            media_removed: 'Removed media from %{count} product(s) (%{skipped} skipped).'
             price_updated: 'Updated %{count} product(s) (%{skipped} skipped).'
           title:
             add_tags: Add tags
@@ -268,6 +270,7 @@ en:
             adjust_price_percent: Adjust price by %
             remove_from_channels: Remove from channels
             remove_from_taxons: Remove from categories
+            remove_media: Remove media
             remove_tags: Remove tags
             set_active: Set as Active
             set_archived: Set as Archived
@@ -280,6 +283,7 @@ en:
             invalid_amount: The amount is invalid.
             invalid_percent: The percentage is invalid.
             invalid_request: The request parameters are invalid.
+            media_permission_denied: '%{count} product(s) skipped — you cannot manage their media.'
             negative_result: '%{count} variant(s) skipped — the new price would be negative.'
             no_channels: Select at least one channel.
             no_price: '%{count} product(s) skipped — no price in the selected currency.'

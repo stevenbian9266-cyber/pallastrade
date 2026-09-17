@@ -228,6 +228,12 @@ export default {
         description: 'Catalog events side channel (idempotency + event-name whitelist + store scoping + zero-PII digest + CTR caliber + retention)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/catalog_event_spec.rb spec/requests/api/v3/store/catalog_events_spec.rb spec/services/pallastrade/catalog_events/prune_spec.rb'],
       },
+      // 批量移除媒体（PRD-20260917-catalog-bulk-media）：预览零写入 + 商品级/变体级媒体清空 +
+      // primary_media 指针清理 + 权限逐项跳过 + 按 current_store 收窄 + bulk 审计。
+      'bulk-media-rspec': {
+        description: 'Admin bulk media removal (preview zero-write + gallery & variant images cleared + primary_media pointers nulled + no dangling VariantMedia + permission skip + store scoping + bulk audit)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/products/bulk_media_removal_spec.rb spec/requests/pallastrade/admin/bulk_media_removal_spec.rb'],
+      },
       // 管理后台 i18n 覆盖率（2026-09-17 起）：en ↔ zh-CN 按功能域**双向**键集相等 +
       // 顶级键批次 + 已修缺陷回归。i18n 工作的产物是 locale YAML 与断言，
       // 不落在任何后端域验证器的覆盖范围里；后续还有约 1109 个键要分批补齐，

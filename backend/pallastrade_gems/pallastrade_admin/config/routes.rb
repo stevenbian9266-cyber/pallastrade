@@ -24,6 +24,9 @@ PallasTrade::Core::Engine.add_routes do
         put :bulk_adjust_inventory
         put :bulk_channels_preview
         put :bulk_update_channels
+        # PRD-20260917-catalog-bulk-media：批量移除媒体（预览 → 确认）
+        put :bulk_media_preview
+        put :bulk_media_remove
       end
       member do
         post :clone

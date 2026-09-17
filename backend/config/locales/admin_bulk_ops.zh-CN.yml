@@ -28,6 +28,7 @@ zh-CN:
             adjust_inventory: 调整某个库存点的现有库存数量。不跟踪库存的商品会被跳过。
             adjust_price_percent: 按百分比上调或下调基础价格。在所选币种下没有价格的商品会被跳过。
             remove_from_channels: 把所选商品从指定的销售渠道下架。
+            remove_media: 移除所选商品的全部图片（商品图库及其所有变体图片）。此操作不可撤销，请先核对数量。
             remove_from_taxons: 选择要把商品从哪些分类中移除：
             remove_tags: 选择要从商品上移除的标签：
             set_active: 把商品设为已上架后，它们将在前台可售。
@@ -53,6 +54,7 @@ zh-CN:
           result:
             channels_updated: 已更新 %{count} 个商品（跳过 %{skipped} 个）。
             inventory_updated: 已更新 %{count} 个商品（跳过 %{skipped} 个）。
+            media_removed: 已移除 %{count} 个商品的媒体（跳过 %{skipped} 个）。
             price_updated: 已更新 %{count} 个商品（跳过 %{skipped} 个）。
           title:
             add_tags: 添加标签
@@ -62,6 +64,7 @@ zh-CN:
             adjust_price_percent: 按百分比调价
             remove_from_channels: 从销售渠道移除
             remove_from_taxons: 从分类移除
+            remove_media: 移除媒体
             remove_tags: 移除标签
             set_active: 设为已上架
             set_archived: 设为已归档
@@ -73,6 +76,7 @@ zh-CN:
             invalid_amount: 金额无效。
             invalid_percent: 百分比无效。
             invalid_request: 请求参数无效。
+            media_permission_denied: '%{count} 个商品被跳过——你没有管理其媒体的权限。'
             inventory_not_tracked: 跳过 %{count} 个商品——未开启库存跟踪。
             negative_result: 跳过 %{count} 个变体——新价格会变成负数。
             no_channels: 请至少选择一个销售渠道。

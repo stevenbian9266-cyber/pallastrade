@@ -622,6 +622,28 @@ Member routes (`PATCH /admin/reviews/:id/approve` etc.) live in
 - **i18n**：新增动作/表单/预览/结果/warning 必须补 `admin.bulk_ops.products.*` 键；规格断言用 `PallasTrade.t(key, default: nil)`（裸 `I18n.exists?` 在此环境查不到引擎翻译，含既有键）。
 - 回归验证：`harness verify admin-products-bulk-rspec`。
 
+### 批量移除媒体（Media，2026-09-17，PRD-20260917-catalog-bulk-media）
+
+方案 §5.1「Bulk Operations 2.0」表的**最后一行**。动作 `remove_media`（products 表，position 130）、
+服务 `PallasTrade::Products::BulkMediaRemoval`、控制器 `bulk_media_preview` / `bulk_media_remove`。
+无配置项，所以 `form_partial` 用框架自带的**空确认 partial**（`bulk_operations/forms/confirmation`）——
+`_preview.html.erb` 本身是通用的，**不需要新视图**。
+
+- **范围**：选中商品的**全部媒体** —— ① 商品级 `product.media`；② **所有变体（含 master）**的 `variant.images`。
+  口径与 Catalog Health 的 `missing_media`（「产品层与变体层都无资产」）对齐 ⇒ 清空后这些商品会
+  **自然出现在 Catalog Health 待办里**，正是「先清掉错的、再从待办重传」的闭环。
+- **级联不重建**：`Asset` 自带 `has_many :variant_media, dependent: :destroy`，删 Asset 会连带清关联
+  并触发 `refresh_variant_thumbnail`；**手写第二套级联反而会漏掉缩略图刷新**。
+- **指针必须手动清**：`Product#primary_media_id` 与 `Variant#primary_media_id` 都**没有** `dependent:`，
+  删除后必须把受影响记录的该列置 `nil`，否则留下悬空外键。
+- ⚠️ **`bulk_collection` 不做店铺作用域**（`model_class.accessible_by(ability, :update).where(id:)`），
+  而 superuser 的 ability 是跨店的 ⇒ **其余 bulk 动作未收窄**（既有行为，本 PRD 未改）。
+  媒体删除**不可逆**，所以 `bulk_media_removal` 额外 `merge(current_store.products)` 收窄：
+  合法路径（ids 来自当前店铺列表）是 no-op，被篡改的请求多一道防线。要给别的动作也加，需单独评估其 spec。
+- 权限：`can?(:manage, PallasTrade::Asset)` 不满足时**零写入**，原因走
+  `warnings.media_permission_denied`（不复用 `permission_denied`，那条文案写的是「价格或库存」）。
+- 回归：`harness verify bulk-media-rspec`；改动 locale 时另跑 `harness verify admin-i18n-rspec`。
+
 ### Catalog Health —— 商品健康待办中心（2026-09-15，PRD-20260915-admin-catalog-health-v1）
 
 Products → **Catalog Health**（`/admin/catalog_health`）是商品运营的「待办中心」：不是报表，直接给 **7 类 Actionable Issue 计数 + 一键下钻**，并在其上给出**覆盖率**与**可解释健康分**（见下文两节）。

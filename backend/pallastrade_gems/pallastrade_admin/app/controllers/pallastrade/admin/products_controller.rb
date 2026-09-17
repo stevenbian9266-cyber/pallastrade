@@ -173,6 +173,24 @@ module PallasTrade
         )
       end
 
+      # PRD-20260917-catalog-bulk-media：批量移除媒体（方案 §5.1 Bulk Media）。
+      # 与其它破坏性批量同样走「预览（零写入）→ 确认 → 执行」，不提供直接执行入口。
+      def bulk_media_preview
+        render_bulk_preview(
+          bulk_media_removal,
+          path: pallastrade.bulk_media_remove_admin_products_path,
+          fields: bulk_preview_fields('ids[]')
+        )
+      end
+
+      def bulk_media_remove
+        run_bulk_operation(
+          bulk_media_removal,
+          'admin.bulk_ops.products.result.media_removed',
+          history_action: 'product.bulk_media_removed'
+        )
+      end
+
       def select_options
         render json: current_store.products.not_archived.accessible_by(current_ability, :index).to_tom_select_json
       end
@@ -406,6 +424,18 @@ module PallasTrade
           ability: current_ability,
           channels: current_store.channels.where(id: params[:channel_ids]),
           mode: params[:mode]
+        )
+      end
+
+      def bulk_media_removal
+        PallasTrade::Products::BulkMediaRemoval.new(
+          # 媒体删除**不可逆**，所以这里额外按 current_store 收窄。
+          # 注意：共享的 `bulk_collection` 只按 ability 过滤（`accessible_by(...).where(id:)`），
+          # 而 superuser 的 ability 是跳店的 —— 其余 bulk 动作同样如此（既有行为，未改）。
+          # 合法路径下 ids 本就来自当前店铺的列表，所以此收窄对正常使用是 no-op，
+          # 对被篖改的请求则是一道防线。
+          products: bulk_collection.merge(current_store.products),
+          ability: current_ability
         )
       end
 

@@ -4502,6 +4502,36 @@
         "honestRatio": 15,
         "boundedRetention": 10
       }
+    },
+    {
+      "id": "GS-176",
+      "name": "A bulk delete you cannot undo has to be previewed",
+      "description": "PRD-20260917-catalog-bulk-media (business plan 5.1, Bulk Operations 2.0): merchants could bulk-edit price, stock and channels, but clearing bad product imagery was one product at a time, so a 128-product import meant 128 round trips. Adding media to the same toolbar is the easy part; the part that matters is that deleting media is irreversible and that media lives on two levels - the product gallery and every variant image. This removes both under the same preview-then-confirm discipline the other destructive bulk actions use, and cleans up the pointers and links that would otherwise dangle.",
+      "mustDo": [
+        "Run the preview and the execution through the same traversal so the previewed counts are the counts that happen, and make the preview write nothing at all",
+        "Remove both levels of media - the product gallery and every variant image - because Catalog Health only treats a product as having media when neither level is empty",
+        "Null out primary_media on the products and variants that pointed at the deleted assets, since that association has no dependent option and would otherwise dangle",
+        "Let the model cascade remove the variant-to-media links, so the thumbnail refresh hook still fires, instead of deleting those rows by hand",
+        "Report products with nothing to remove as skipped rather than failed, keeping updated plus skipped equal to the selection",
+        "Change nothing at all when the operator cannot manage assets, and say why in the warnings",
+        "Narrow the target set to the current store, because the shared bulk collection only filters by ability and a superuser ability is cross-store",
+        "Record the bulk action in the product timeline with the counts"
+      ],
+      "mustNotDo": [
+        "Let a single click delete media with no preview, or let the preview write before confirmation",
+        "Add a second cascade for the variant links, or leave primary_media pointing at a deleted asset",
+        "Fail the whole batch because some selected products had no media, or touch products that were not selected",
+        "Reach outside the current store, or change price, stock, status, channels or orders",
+        "Introduce a new model or table for a bulk admin action"
+      ],
+      "scoring": {
+        "previewBeforeDestroy": 25,
+        "bothMediaLevels": 15,
+        "danglingPointerCleanup": 20,
+        "countFidelity": 15,
+        "authorizationAndScope": 15,
+        "auditTrail": 10
+      }
     }
   ]
 }
