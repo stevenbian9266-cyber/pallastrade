@@ -150,6 +150,15 @@ Rails.application.config.after_initialize do
               active: -> { controller_name == 'risk_lists' },
               if: -> { can?(:manage, PallasTrade::PaymentRiskList) }
 
+    # D15 切片2: 风控规则（Orders → 风控规则；规则集/版本 + 发布/金丝雀/回滚 + 订单试算）
+    # 紧贴「风控名单」（59）→ 两个风控入口相邻；同权限域（configuration_management）
+    orders.add :risk_rules,
+              label: 'admin.risk_rules.title',
+              url: :admin_risk_rules_path,
+              position: 59.5,
+              active: -> { controller_name == 'risk_rules' },
+              if: -> { can?(:manage, PallasTrade::RiskRuleSet) }
+
     # PALLAS-CUSTOM: D13 切片3（PRD-20260916-payments-d13c-fee-cost-report；业务方案 §70.3）
     # 支付成本报表 + 费率策略（同一权限域：费用策略）
     orders.add :payment_costs,

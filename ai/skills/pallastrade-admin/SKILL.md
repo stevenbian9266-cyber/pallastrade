@@ -959,3 +959,16 @@ For Turbo Streams (server-pushed UI updates), the same patterns apply as any Rai
 - **Table API:** `PallasTrade::Admin::Table` (`app/models/pallastrade/admin/table.rb`) and `PallasTrade::Admin::Table::Column` (`app/models/pallastrade/admin/table/column.rb`) inside the gem — column types, options, sorting/filtering details. The registry behind `PallasTrade.admin.tables` is `PallasTrade::Admin::Engine::TablesEnvironment` in `lib/pallastrade/admin/engine.rb`.
 - **Scaffold generator:** `bundle show pallastrade_admin`/lib/generators/pallastrade/admin/scaffold/ has the template files you can copy for advanced customization.
 - **Form builder / components / helpers:** `node_modules/@pallastrade/docs/dist/developer/admin/form-builder.md`, `components.md`, `helper-methods.md` — the full option tables for everything in "Building admin UI" above.
+
+## 风控规则工作台 `/admin/risk_rules`（D15 切片2, 2026-09-17；PRD-20260917-payments-d15b-risk-rules）
+
+Orders 子项 `risk_rules`（position **59.5**，紧跟「风控名单」59，同权限域）：
+
+- **页面**：`index`（规则集筛选/与筛选同源计数 `data-count-scope` / 建集表单）+ `show`（生效规则表 `data-active-rules` + 金丝雀卡片 + **版本历史** `data-version-history` + 发草稿/发布/金丝雀/回滚）+ `preview`（订单试算）。
+- **动作**（均 `authorize! :manage, PallasTrade::RiskRuleSet` + 审计 + confirm）：`create_version` / `publish` / `canary` / `rollback`（**原因必填**）/ `toggle`。
+  全部写路径经唯一服务 `Risk::Rules::Versioning`（控制器不直接写版本，避免口径分叉）。
+- **试算（preview）**：`data-preview-result` / `-version` / `-canary` / `-bucket` / `-rule` / `-action` / `-skipped`；**只读**：不写留痕、不改订单状态，找不到订单显示 `data-preview-error`（用 `data-*` 断言，**不要**整页文本断言）。
+- **权限**：`can :manage, PallasTrade::RiskRuleSet`（覆盖全部自定义动作）+ `can :manage, PallasTrade::RiskRuleVersion`；已在 `backend/config/initializers/pallastrade_permission_registry.rb` 登记 `:risk_rules`（新增授权资源必须登记，否则 `nav:validate` 难过）。
+- ⚠️ **新增 Orders 子项必须同步 `navigation_consistency_spec.rb` 的 orders 子项数组**（本次加 `:risk_rules`）。
+- ⚠️ **多态 `created_by` 不要赋字符串**：actor 归一在服务层（只有 AR 记录才落多态列，`'admin'` / `{type:,id:,label:}` 交给审计），否则会撞 `PrefixedId#assign_attributes` 报 `undefined method 'has_query_constraints?' for String`。
+- **回归**：`harness verify d15b-risk-rules-rspec`。

@@ -305,6 +305,22 @@ API 级 rate limit 之上叠加**业务级下单风控**（`PallasTrade::Risk` �
 - 自定义规则：`PallasTrade::Risk.rules << MyRule`（`#call(order:, user:, store:)` → `{ code:, message: }`）。
 - 错误统一 `{ code:, message: }`（经 `render_service_error`），不泄露内部细节。
 
+### 风控规则引擎：版本化 / 灰度 / 回滚（D15 切片2, 2026-09-17；PRD-20260917-payments-d15b-risk-rules）
+
+P8 的代码注册式规则之上，本切片把**规则内容**搬到数据层 —— 运营可在后台维护、可回滚、可按流量灰度，无需发版：
+
+- **数据**：`pallastrade_risk_rule_sets`（作用域容器：`store_id` 空 = 全局 / 非空 = 本店优先；`active_version_id` / `canary_version_id` / `canary_percent`）
+  + `pallastrade_risk_rule_versions`（**不可变版本**：`rules` jsonb、`state` = draft/published/archived、`source_version` + `rolled_back` + `reason`）。
+- **条件词汇（白名单，全部满足 = 命中）**：`amount_gte` / `amount_lte`（**仅当订单币种 == 店铺默认币种**才可比，否则 `currency_mismatch` 跳过）、`currency_in`、`country_in`、`email_domain_in`、`email_present`、`ip_present`、`card_brand_in`（归一 `mastercard|maestro → master`、`amex → american_express`）、`customer_orders_gte`、`velocity_count_gte`（+ `velocity_window_minutes`，同邮箱**或**同 IP，含当前订单）。
+  ⚠️ **不可得主体不给条件键**：**BIN**（`pallastrade_credit_cards` 无 BIN 列）、**设备指纹**（平台无采集）、IP 地理/网段（无离线库）→ 一律不猜。
+- **动作**：`allow` / `review` / `block`（本切片）；**`force_3ds` 属切片3（3DS/SCA 与 provider 下发）**。
+- **发布闸门**：`Risk::Rules::Schema` 拒绝未知键 / 类型错 / 非法动作 / 空条件 / 重复规则码 / 超 50 条 / 非整数优先级 —— 校验不过**不落库**。
+- **灰度（确定性分桶）**：桶 = `SHA256("<rule_set_id>:<order prefixed_id>") % 100`，`桶 < canary_percent` → 金丝雀版，否则稳定版；**桶只由（规则集, 订单）决定**（跨请求/跨天恒定、可复算）；`0` 恒稳定版、`≥100` 恒金丝雀、**桶 == percent 归稳定版**。
+- **决策合并（唯一口径）**：白名单命中 → `allow` **短路**；否则「名单动作（`Config[:risk_denylist_action]`，默认 `review`）vs 规则动作」**取最严者**（`allow(0) < review(1) < block(2)`）—— **规则不得把名单判定放宽**。
+- **留痕**：`PaymentRiskAssessment.signals['rule_engine']`（规则集/版本/是否金丝雀/桶/规则码/动作/命中条件/skip 原因）+ `metadata['rule_engine']`（jsonb，零迁移）。
+- **回滚（验收锚点「规则可回滚」）**：`Risk::Rules::Versioning.rollback` 以历史版本内容**生成新版本**（`rolled_back: true` + `source_version` + `reason` **必填**）并置为生效版；**历史版本内容永不改写**（模型层拒绝改已发布版的 `rules`）；审计 `risk_rule_version_rolled_back` + 同名事件。
+- **铁律**：规则求值**只读**（零写库、零 provider、不改订单/支付/资金）；**不改 `Checkout::Preflight` 的启用条件与阻断行为** —— 阻断生效仍由 flag 决定，本切片只保证决策可被消费（命中的 `review`/`block` 走既有 `risk_order_flagged` 审计与人工复核标记）。
+
 ### Dependency hygiene
 
 ```bash

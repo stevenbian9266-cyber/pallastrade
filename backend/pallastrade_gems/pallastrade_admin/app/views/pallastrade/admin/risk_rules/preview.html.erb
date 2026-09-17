@@ -1,0 +1,70 @@
+<%# PALLAS-CUSTOM: D15 切片2（PRD-20260917-payments-d15b-risk-rules；业务方案 §72.2）——
+    规则试算：对某个订单**只读**评估（零写入、零审计）——「如今这条规则会不会命中这个订单、
+    用的是哪一版、是否金丝雀、桶是多少」。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.risk_rules.preview_title') %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= link_to PallasTrade.t('admin.risk_rules.back_to_sets'), PallasTrade.admin_risk_rules_path,
+              class: 'btn btn-outline-secondary' %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <p class="text-gray-600 mb-3"><%= PallasTrade.t('admin.risk_rules.preview_hint') %></p>
+    <%= form_with url: PallasTrade.preview_admin_risk_rules_path, method: :get, local: true do %>
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-4">
+          <%= label_tag :order_number, PallasTrade.t('admin.risk_rules.order_number'), class: 'form-label' %>
+          <%= text_field_tag :order_number, @order_number, class: 'form-control form-control-sm',
+                                                          data: { preview_order_input: true } %>
+        </div>
+        <div class="col-12 col-md-3">
+          <%= submit_tag PallasTrade.t('admin.risk_rules.preview_submit'), class: 'btn btn-sm btn-primary' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<% if @order_number.present? %>
+  <div class="card" data-preview-result>
+    <div class="card-body">
+      <% if @order.nil? %>
+        <p class="text-danger mb-0" data-preview-error><%= PallasTrade.t('admin.risk_rules.preview_order_not_found') %></p>
+      <% elsif @result.blank? %>
+        <p class="text-gray-600 mb-0" data-preview-none>
+          <%= PallasTrade.t('admin.risk_rules.preview_no_rule_set') %>
+        </p>
+      <% else %>
+        <dl class="row mb-0">
+          <dt class="col-3"><%= PallasTrade.t('admin.risk_rules.preview_rule_set') %></dt>
+          <dd class="col-9" data-preview-rule-set="<%= @result[:rule_set_code] %>"><%= @result[:rule_set_code] %></dd>
+          <dt class="col-3"><%= PallasTrade.t('admin.risk_rules.preview_version') %></dt>
+          <dd class="col-9" data-preview-version="<%= @result[:version] %>"><%= @result[:version] %></dd>
+          <dt class="col-3"><%= PallasTrade.t('admin.risk_rules.preview_canary') %></dt>
+          <dd class="col-9" data-preview-canary="<%= @result[:canary] %>">
+            <%= @result[:canary] ? PallasTrade.t('admin.risk_rules.preview_canary_yes') :
+                                   PallasTrade.t('admin.risk_rules.preview_canary_no') %>
+          </dd>
+          <dt class="col-3"><%= PallasTrade.t('admin.risk_rules.preview_bucket') %></dt>
+          <dd class="col-9" data-preview-bucket="<%= @result[:bucket] %>"><%= @result[:bucket] %></dd>
+          <dt class="col-3"><%= PallasTrade.t('admin.risk_rules.preview_rule') %></dt>
+          <dd class="col-9" data-preview-rule="<%= @result[:rule_code] %>">
+            <%= @result[:rule_code].presence || PallasTrade.t('admin.risk_rules.preview_no_hit') %>
+          </dd>
+          <dt class="col-3"><%= PallasTrade.t('admin.risk_rules.preview_action') %></dt>
+          <dd class="col-9" data-preview-action="<%= @result[:action] %>">
+            <%= @result[:action].present? ? risk_rule_action_label(@result[:action]) : '—' %>
+          </dd>
+          <dt class="col-3"><%= PallasTrade.t('admin.risk_rules.preview_skipped') %></dt>
+          <dd class="col-9" data-preview-skipped="<%= Array(@result[:skipped]).join(',') %>">
+            <%= Array(@result[:skipped]).presence&.join(', ') || '—' %>
+          </dd>
+        </dl>
+        <p class="text-gray-600 mt-3 mb-0"><%= PallasTrade.t('admin.risk_rules.preview_readonly_note') %></p>
+      <% end %>
+    </div>
+  </div>
+<% end %>

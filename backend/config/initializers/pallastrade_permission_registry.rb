@@ -12,6 +12,16 @@ Rails.application.config.after_initialize do
                model_class: PallasTrade::Order,
                actions: %w[read create update destroy export],
                data_fields: %w[user_id store_id channel_id])
+
+  # PALLAS-CUSTOM: D15 切片2（PRD-20260917-payments-d15b-risk-rules；业务方案 §72.2）——
+  # 风控规则工作台（规则集/版本 + 发布/金丝雀/回滚 + 订单试算）。
+  # 数据范围按 `store_id`（全局规则集的 store_id 为空 → 不参与按店过滤）。
+  reg.register(:risk_rules,
+               model_class: PallasTrade::RiskRuleSet,
+               models: [PallasTrade::RiskRuleSet, PallasTrade::RiskRuleVersion],
+               actions: %w[read create update destroy],
+               data_fields: %w[store_id])
+
   reg.register(:products,
                model_class: PallasTrade::Product,
                actions: %w[read create update destroy export],

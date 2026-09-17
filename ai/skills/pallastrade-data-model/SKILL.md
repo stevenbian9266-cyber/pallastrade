@@ -138,6 +138,16 @@ reversals** (chargeback / inquiry / warning / representment) — deliberately **
   业务上的重复投递去重靠服务层「同决策 + 同命中集」复用窗口（5 分钟），不靠数据库兜底。
 - 两者均为**只新增表**（不回填）；无金额列，也不写 `funds_*` 时间戳（不触发资金入账事件）。
 
+## 风控规则引擎两表（D15 切片2, 2026-09-17）
+
+- `pallastrade_risk_rule_sets`：`store_id` **可空 = 全局**（非空 = 店铺，**同 code 优先于全局**）；`code`（稳定标识）+ `name` + `status`（active/inactive）；
+  `active_version_id`（稳定版）+ `canary_version_id` + `canary_percent`（0–100）。
+  **唯一性用 partial unique**（Postgres 对 NULL 不去重）：`code` 唯一 `WHERE store_id IS NULL`、`(store_id, code)` 唯一 `WHERE store_id IS NOT NULL`；索引 `(store_id, status)`。
+- `pallastrade_risk_rule_versions`：`version`（每集从 1 递增，**唯一键 `(rule_set_id, version)`**）、`state`（draft/published/archived）、
+  `rules` jsonb（`[{code, priority, action, conditions, note}]`）、`reason`、`source_version`（回滚来源）、`rolled_back`、`created_by`（polymorphic）、`published_at`、`metadata`；索引 `(rule_set_id, state)`、`(created_by_type, created_by_id)`。
+- ⚠️ **版本不可变**：已发布版的 `rules` 不允许改写（模型层拒绝）；改规则 = 新建版本；**回滚 = 以旧版内容生成新版本**（不是改写历史）。
+- 两表均**只新增**，不回填；规则表不参与任何资金/订单写入（零资金副作用）。
+
 ## 支付费率策略（D13 切片3, 2026-09-16）
 
 - `pallastrade_payment_fee_policies`（§74.1 规划表名 `(scope_type, scope_id)` 索引要求）：

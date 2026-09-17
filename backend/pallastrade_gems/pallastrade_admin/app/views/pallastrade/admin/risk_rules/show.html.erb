@@ -1,0 +1,185 @@
+<%# PALLAS-CUSTOM: D15 切片2（PRD-20260917-payments-d15b-risk-rules；业务方案 §72.2）——
+    规则集详情：生效版规则表 + 金丝雀状态 + 版本历史（含回滚来源）+
+    四个动作（发草稿 / 发布 / 金丝雀 / 回滚）+ 停用。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.risk_rules.detail_title', code: @rule_set.code) %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= form_with url: PallasTrade.toggle_admin_risk_rule_path(@rule_set), method: :post, local: true do %>
+    <%= submit_tag(@rule_set.status == 'active' ? PallasTrade.t('admin.risk_rules.deactivate_action') :
+                                                   PallasTrade.t('admin.risk_rules.activate_action'),
+                   class: 'btn btn-outline-secondary') %>
+  <% end %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-3"><%= PallasTrade.t('admin.risk_rules.name') %></dt>
+      <dd class="col-9"><%= @rule_set.name %></dd>
+      <dt class="col-3"><%= PallasTrade.t('admin.risk_rules.scope') %></dt>
+      <dd class="col-9" data-rule-set-scope><%= risk_rule_scope_label(@rule_set) %></dd>
+      <dt class="col-3"><%= PallasTrade.t('admin.risk_rules.status') %></dt>
+      <dd class="col-9" data-rule-set-status="<%= @rule_set.status %>"><%= risk_rule_status_label(@rule_set) %></dd>
+      <dt class="col-3"><%= PallasTrade.t('admin.risk_rules.active_version') %></dt>
+      <dd class="col-9" data-rule-set-active-version="<%= @active_version&.version %>">
+        <%= @active_version ? PallasTrade.t('admin.risk_rules.version_label', version: @active_version.version) :
+                              PallasTrade.t('admin.risk_rules.no_active_version') %>
+      </dd>
+      <dt class="col-3"><%= PallasTrade.t('admin.risk_rules.canary') %></dt>
+      <dd class="col-9" data-rule-set-canary-percent="<%= @rule_set.canary_percent %>">
+        <% if @rule_set.canary_active? %>
+          <%= PallasTrade.t('admin.risk_rules.canary_label', version: @canary_version&.version,
+                                                             percent: @rule_set.canary_percent) %>
+        <% else %>
+          <%= PallasTrade.t('admin.risk_rules.canary_off') %>
+        <% end %>
+      </dd>
+      <dt class="col-3"><%= PallasTrade.t('admin.risk_rules.description') %></dt>
+      <dd class="col-9"><%= @rule_set.description.presence || '—' %></dd>
+    </dl>
+  </div>
+</div>
+
+<div class="grid grid-cols-12 gap-6 mb-6">
+  <div class="col-span-12 lg:col-span-7">
+    <div class="card h-full">
+      <div class="card-header"><strong><%= PallasTrade.t('admin.risk_rules.active_rules_title') %></strong></div>
+      <div class="table-responsive">
+        <table class="table" data-active-rules>
+          <thead>
+            <tr>
+              <th><%= PallasTrade.t('admin.risk_rules.priority') %></th>
+              <th><%= PallasTrade.t('admin.risk_rules.rule_code') %></th>
+              <th><%= PallasTrade.t('admin.risk_rules.conditions') %></th>
+              <th><%= PallasTrade.t('admin.risk_rules.action') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if @active_rules.empty? %>
+              <tr><td colspan="4" class="text-gray-600" data-active-rules-empty>
+                <%= PallasTrade.t('admin.risk_rules.active_rules_empty') %>
+              </td></tr>
+            <% end %>
+            <% @active_rules.each do |rule| %>
+              <tr data-rule-code="<%= rule['code'] %>" data-rule-action="<%= rule['action'] %>">
+                <td><%= rule['priority'] %></td>
+                <td><%= rule['code'] %></td>
+                <td data-rule-conditions><%= risk_rule_condition_summary(rule['conditions']) %></td>
+                <td data-rule-action-label><%= risk_rule_action_label(rule['action']) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-span-12 lg:col-span-5">
+    <div class="card h-full">
+      <div class="card-header"><strong><%= PallasTrade.t('admin.risk_rules.canary_title') %></strong></div>
+      <div class="card-body">
+        <p class="text-gray-600"><%= PallasTrade.t('admin.risk_rules.canary_hint') %></p>
+        <%= form_with url: PallasTrade.canary_admin_risk_rule_path(@rule_set), method: :post, local: true do %>
+          <div class="row g-2 align-items-end">
+            <div class="col-6">
+              <%= label_tag :version, PallasTrade.t('admin.risk_rules.version'), class: 'form-label' %>
+              <%= select_tag :version,
+                             options_for_select(@versions.select(&:published?).map { |v| [v.version, v.version] },
+                                                @canary_version&.version),
+                             include_blank: true, class: 'form-select form-select-sm',
+                             data: { canary_version_input: true } %>
+            </div>
+            <div class="col-6">
+              <%= label_tag :percent, PallasTrade.t('admin.risk_rules.canary_percent'), class: 'form-label' %>
+              <%= number_field_tag :percent, @rule_set.canary_percent, min: 0, max: 100,
+                                                          class: 'form-control form-control-sm',
+                                                          data: { canary_percent_input: true } %>
+            </div>
+            <div class="col-12">
+              <%= submit_tag PallasTrade.t('admin.risk_rules.canary_submit'), class: 'btn btn-sm btn-primary' %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header"><strong><%= PallasTrade.t('admin.risk_rules.new_version_title') %></strong></div>
+  <div class="card-body">
+    <p class="text-gray-600 mb-3"><%= PallasTrade.t('admin.risk_rules.new_version_hint') %></p>
+    <%= form_with url: PallasTrade.create_version_admin_risk_rule_path(@rule_set), method: :post, local: true do %>
+      <div class="mb-3">
+        <%= text_area_tag :rules, @active_version ? JSON.pretty_generate(@active_version.rules) : '',
+                          rows: 10, class: 'form-control', data: { rules_json_input: true } %>
+      </div>
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-6">
+          <%= label_tag :reason, PallasTrade.t('admin.risk_rules.reason'), class: 'form-label' %>
+          <%= text_field_tag :reason, nil, class: 'form-control form-control-sm', data: { reason_input: true } %>
+        </div>
+        <div class="col-12 col-md-3">
+          <%= submit_tag PallasTrade.t('admin.risk_rules.new_version_submit'), class: 'btn btn-sm btn-primary' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><strong><%= PallasTrade.t('admin.risk_rules.versions_title') %></strong></div>
+  <div class="table-responsive">
+    <table class="table" data-version-history>
+      <thead>
+        <tr>
+          <th><%= PallasTrade.t('admin.risk_rules.version') %></th>
+          <th><%= PallasTrade.t('admin.risk_rules.state') %></th>
+          <th><%= PallasTrade.t('admin.risk_rules.rules_count') %></th>
+          <th><%= PallasTrade.t('admin.risk_rules.source_version') %></th>
+          <th><%= PallasTrade.t('admin.risk_rules.reason') %></th>
+          <th><%= PallasTrade.t('admin.risk_rules.published_at') %></th>
+          <th><%= PallasTrade.t('admin.risk_rules.actions') %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @versions.empty? %>
+          <tr><td colspan="7" class="text-gray-600" data-version-history-empty>
+            <%= PallasTrade.t('admin.risk_rules.versions_empty') %>
+          </td></tr>
+        <% end %>
+        <% @versions.each do |version| %>
+          <tr data-version="<%= version.version %>"
+              data-version-state="<%= version.state %>"
+              data-version-rolled-back="<%= version.rolled_back %>">
+            <td data-version-label><%= version.version %></td>
+            <td data-version-state-label><%= risk_rule_version_state_label(version) %></td>
+            <td data-version-rules-count><%= version.rules_count %></td>
+            <td data-version-source><%= version.source_version || '—' %></td>
+            <td data-version-reason><%= version.reason.presence || '—' %></td>
+            <td data-version-published-at><%= version.published_at ? l(version.published_at, format: :short) : '—' %></td>
+            <td class="d-flex gap-2">
+              <% unless version.archived? %>
+                <%= form_with url: PallasTrade.publish_admin_risk_rule_path(@rule_set), method: :post, local: true do %>
+                  <%= hidden_field_tag :version, version.version %>
+                  <%= submit_tag PallasTrade.t('admin.risk_rules.publish_action'), class: 'btn btn-sm btn-outline-secondary' %>
+                <% end %>
+              <% end %>
+              <% unless version.draft? %>
+                <%= form_with url: PallasTrade.rollback_admin_risk_rule_path(@rule_set), method: :post, local: true do %>
+                  <%= hidden_field_tag :version, version.version %>
+                  <%= text_field_tag :reason, nil, placeholder: PallasTrade.t('admin.risk_rules.rollback_reason_placeholder'),
+                                                 class: 'form-control form-control-sm',
+                                                 data: { rollback_reason_input: version.version } %>
+                  <%= submit_tag PallasTrade.t('admin.risk_rules.rollback_action'), class: 'btn btn-sm btn-outline-danger' %>
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

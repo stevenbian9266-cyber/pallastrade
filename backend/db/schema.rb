@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_16_270000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_17_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -2497,6 +2497,42 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_270000) do
     t.index ["store_id", "status"], name: "index_pallastrade_reviews_on_store_id_and_status"
     t.index ["store_id"], name: "index_pallastrade_reviews_on_store_id"
     t.index ["user_id"], name: "index_pallastrade_reviews_on_user_id"
+  end
+
+  create_table "pallastrade_risk_rule_sets", force: :cascade do |t|
+    t.integer "active_version_id"
+    t.integer "canary_percent", default: 0, null: false
+    t.integer "canary_version_id"
+    t.string "code", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.jsonb "metadata", default: {}, null: false
+    t.string "name", null: false
+    t.string "status", default: "active", null: false
+    t.bigint "store_id"
+    t.datetime "updated_at", null: false
+    t.index ["code"], name: "idx_risk_rule_sets_global_code", unique: true, where: "(store_id IS NULL)"
+    t.index ["store_id", "code"], name: "idx_risk_rule_sets_store_code", unique: true, where: "(store_id IS NOT NULL)"
+    t.index ["store_id", "status"], name: "idx_risk_rule_sets_store_status"
+  end
+
+  create_table "pallastrade_risk_rule_versions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id"
+    t.string "created_by_type"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "published_at"
+    t.text "reason"
+    t.boolean "rolled_back", default: false, null: false
+    t.bigint "rule_set_id", null: false
+    t.jsonb "rules", default: [], null: false
+    t.integer "source_version"
+    t.string "state", default: "draft", null: false
+    t.datetime "updated_at", null: false
+    t.integer "version", null: false
+    t.index ["created_by_type", "created_by_id"], name: "idx_risk_rule_versions_creator"
+    t.index ["rule_set_id", "state"], name: "idx_risk_rule_versions_set_state"
+    t.index ["rule_set_id", "version"], name: "idx_risk_rule_versions_set_version", unique: true
   end
 
   create_table "pallastrade_role_permissions", force: :cascade do |t|

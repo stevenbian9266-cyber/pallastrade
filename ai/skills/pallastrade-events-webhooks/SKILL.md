@@ -375,6 +375,18 @@ Provider 发起的资金逆转（Stripe `charge.dispute.*`）走**入站** webho
 ②订阅者异常一律 rescue + 日志（**风控绝不能阻断下单**）；③评估留痕自带幂等（同决策复用窗口 + 唯一键），
 重复投递不会重复落行。
 
+### 风控规则版本事件（outbound, D15 切片2, 2026-09-17）
+
+| Event | When | 消费方 |
+|---|---|---|
+| `risk.rule_version_published` | 某版本被发布为生效版（旧生效版归档） | 审计、变更通知 |
+| `risk.rule_version_rolled_back` | **回滚**：以历史版内容生成新版本并生效 | 审计、告警 |
+
+要点：①payload **无 PII**：`{ rule_set_id, code, version, previous_version, canary_percent }`（回滚额外含 `source_version` / `reason`）；
+②发布者 `Risk::Rules::Versioning`（**版本状态先落库，事件只作通知**）—— 事件系统未启用或发布失败**不阻断**，只记日志；
+③金丝雀变更（`risk_rule_canary_updated`）**只写审计不发事件**（避免灰度调参刷屏）；
+④与名单/评估事件的关系：订单侧仍沿用既有 `order.submitted` → `Risk::Assess` 留痕，本切片**不新增订单侧事件**。
+
 ### Payment session lifecycle
 
 | Event | When |

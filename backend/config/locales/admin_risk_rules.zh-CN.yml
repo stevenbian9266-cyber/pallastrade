@@ -1,0 +1,117 @@
+# PALLAS-CUSTOM: D15 切片2（PRD-20260917-payments-d15b-risk-rules；业务方案 §72.2）——
+# 风控规则工作台（宿主 zh-CN 覆盖；键集与 gem en.yml 的 admin.risk_rules 一一对应）
+
+zh-CN:
+  pallastrade:
+    admin:
+      risk_rules:
+        title: 风控规则
+        detail_title: "规则集 %{code}"
+        filter: 筛选
+        reset: 重置
+        scope: 作用范围
+        scope_filter_all: 全部范围
+        scope_filter_global: 仅全局
+        scope_filter_store: 仅本店铺
+        scope_global: 全局
+        scope_global_option: 全局（所有店铺）
+        scope_store_option: 本店铺
+        status: 状态
+        status_filter_all: 全部状态
+        status_filter_active: 启用
+        status_filter_inactive: 停用
+        status_active: 启用
+        status_inactive: 停用
+        code: 标识
+        name: 名称
+        description: 说明
+        total: "共 %{total} 个规则集"
+        prev_page: 上一页
+        next_page: 下一页
+        new_set_title: 新建规则集
+        new_set_hint: 同标识时，店铺规则集优先于全局规则集（覆盖语义）。
+        new_set_submit: 创建规则集
+        create_success: "规则集 %{code} 已创建；还需发布一个版本才会参与评估。"
+        create_failed: 规则集创建失败
+        sets_title: 规则集
+        sets_empty: 没有符合筛选条件的规则集。
+        detail: 详情
+        active_version: 生效版本
+        no_active_version: 尚未发布
+        version_label: "第 %{version} 版"
+        version: 版本
+        canary: 金丝雀
+        canary_label: "第 %{version} 版，%{percent}%"
+        canary_off: 关闭
+        canary_title: 金丝雀灰度
+        canary_hint: 按订单维度稳定分桶：同一个订单永远命中同一版本，可复算。
+        canary_percent: 百分比
+        canary_submit: 保存灰度
+        canary_success: "灰度已更新（第 %{version} 版，%{percent}%）。"
+        canary_failed: 灰度更新失败
+        rules_count: 规则数
+        rule_code: 规则
+        priority: 优先级
+        conditions: 条件
+        action: 动作
+        actions: 操作
+        active_rules_title: 生效版本规则
+        active_rules_empty: 生效版本暂无规则。
+        new_version_title: 新建草稿版本
+        new_version_hint: 规则会先经服务端校验；校验不过的版本**不会落库**。
+        new_version_submit: 保存草稿版本
+        version_created: "已创建草稿版本第 %{version} 版。"
+        version_create_failed: 版本创建失败
+        versions_title: 版本历史
+        versions_empty: 暂无版本。
+        state: 状态
+        state_draft: 草稿
+        state_published: 已发布
+        state_archived: 已归档
+        source_version: 来源版本
+        reason: 原因
+        published_at: 发布时间
+        publish_action: 发布
+        publish_success: "第 %{version} 版已生效。"
+        publish_failed: 发布失败
+        rollback_action: 回滚
+        rollback_reason_placeholder: 回滚原因（必填）
+        rollback_success: "已回滚：新版本第 %{version} 版（内容取自第 %{source_version} 版）已生效。"
+        rollback_failed: 回滚失败
+        activate_action: 启用
+        deactivate_action: 停用
+        toggle_success: "规则集当前状态：%{status}。"
+        toggle_failed: 规则集状态变更失败
+        preview_title: 规则试算
+        preview_action: 规则试算
+        preview_hint: 对某个订单试算当前生效规则（只读，不写任何数据）。
+        preview_submit: 试算
+        order_number: 订单号
+        back_to_sets: 返回规则集
+        preview_order_not_found: 本店铺找不到该订单号。
+        preview_no_rule_set: 没有「已启用且有已发布版本」的规则集，因此不做任何评估。
+        preview_rule_set: 规则集
+        preview_version: 版本
+        preview_canary: 金丝雀
+        preview_canary_yes: 是（金丝雀桶）
+        preview_canary_no: 否（稳定桶）
+        preview_bucket: 分桶
+        preview_rule: 命中规则
+        preview_no_hit: 没有规则命中。
+        preview_action: 决策动作
+        preview_skipped: 跳过项
+        preview_readonly_note: 试算为只读：不写留痕、不改订单状态。
+        action_allow: 放行
+        action_review: 人工复核
+        action_block: 阻断
+        condition_amount_gte: 金额 ≥
+        condition_amount_lte: 金额 ≤
+        condition_currency_in: 币种属于
+        condition_country_in: 国家属于
+        condition_email_domain_in: 邮箱域名属于
+        condition_email_present: 邮箱存在
+        condition_ip_present: IP 存在
+        condition_card_brand_in: 卡品牌属于
+        condition_customer_orders_gte: 已完成订单数 ≥
+        condition_velocity_count_gte: 窗口内订单数 ≥
+        condition_velocity_window_minutes: 窗口（分钟）

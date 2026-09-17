@@ -68,6 +68,11 @@ module PallasTrade
         # PALLAS-CUSTOM: D15 切片1（PRD-20260916-payments-d15-risk-lists）——
         # 风控名单（名单维护 / 批量导入导出 / 撤销）。`:manage` 覆盖全部动作。
         can :manage, PallasTrade::PaymentRiskList
+        # PALLAS-CUSTOM: D15 切片2（PRD-20260917-payments-d15b-risk-rules；业务方案 §72.2）——
+        # 风控规则工作台（规则集/版本 + 发布/金丝雀/**回滚** + 订单试算）。
+        # `:manage` 覆盖全部自定义动作（create_version / publish / canary / rollback / toggle / preview）。
+        can :manage, PallasTrade::RiskRuleSet
+        can :manage, PallasTrade::RiskRuleVersion
         # PALLAS-CUSTOM: D13 切片3（PRD-20260916-payments-d13c-fee-cost-report；业务方案 §70.3）——
         # 支付成本域：费率策略维护 + 成本报表（同一权限域）
         can :manage, PallasTrade::PaymentFeePolicy

@@ -1,15 +1,19 @@
 # frozen_string_literal: true
 
 # PALLAS-CUSTOM: D15 切片1（PRD-20260916-payments-d15-risk-lists；业务方案 §72.2 底座 / §72.3）——
-# `Risk::Assess` —— 订单风控评估的**唯一入口**：名单命中 → 决策 → 留痕。
+# `Risk::Assess` —— 订单风控评估的**唯一入口**：名单 + 规则引擎 → 决策 → 留痕。
 #
 # 语义（保守 + 可追溯）：
-#   * 先算 `allowlist`：命中即 `allow` 并**短路**（白名单优先于黑名单）；
-#   * 再算 `denylist`：命中 → 决策取 `PallasTrade::Config[:risk_denylist_action]`（**默认 `review`**：
+#   * 先算 `allowlist`：命中即 `allow` 并**短路**（人工白名单优先于一切）；
+#   * 再算 `denylist`：命中 → 动作取 `PallasTrade::Config[:risk_denylist_action]`（**默认 `review`**：
 #     只标记待人工复核，绝不自动阻断；仅显式配置为 `block` 才是 `block`）；
+#   * **D15 切片2**：再算数据驱动规则引擎（`Risk::Rules::Evaluate`，版本化 + 灰度），
+#     最终决策 = 「名单动作 vs 规则动作」**取最严者**（allow < review < block）——
+#     保守方向：规则不得把名单判定放宽；
 #   * 无命中 / 主体不足（订单没有可比对的主体）→ `allow`（**不猜**）+ `signals['insufficient_subject']`；
 #   * **每次评估落一行留痕**（`PaymentRiskAssessment`），幂等键 `(order_id, evaluated_at 秒)`；
-#   * 本服务**不阻断、不改订单/支付状态、不调 provider**（处置留给后续切片）。
+#     规则引擎的版本/金丝雀/桶/命中规则写进 `signals['rule_engine']` 与 `metadata['rule_engine']`（jsonb，零迁移）；
+#   * 本服务**不阻断、不改订单/支付状态、不调 provider**（处置沿用既有「标记人工复核」路径与后续切片）。
 #
 # 店铺隔离（硬边界）：只命中「全局名单（store_id IS NULL）+ 本订单所属店铺名单」。
 module PallasTrade
@@ -19,6 +23,8 @@ module PallasTrade
 
       DEFAULT_DENYLIST_ACTION = 'review'
       DENYLIST_ACTIONS = %w[review block].freeze
+      # 决策严重度（唯一口径）：取最严者，且规则不得放宽名单判定
+      DECISION_SEVERITY = { 'allow' => 0, 'review' => 1, 'block' => 2 }.freeze
       # 重复投递去重窗口：同一订单**相同决策 + 相同命中集**在窗口内复用已有留痕行
       # （真正的再次评估（窗口之外 / 决策或命中变了）仍会新增一行，审计链路不丢）
       REUSE_WINDOW = 5.minutes
@@ -32,34 +38,82 @@ module PallasTrade
         evaluated_at = now.change(usec: 0)
         subjects = subjects_for(order)
         allow_hits = matches(order, subjects, 'allowlist')
+        # D15 切片2：规则引擎（版本化/灰度）——只读求值，结果并入决策与留痕
+        rule_result = PallasTrade::Risk::Rules::Evaluate.call(order: order, now: now).value
 
-        decision, hits, signals = decide(subjects, allow_hits, order)
+        decision, hits, signals = decide(subjects, allow_hits, order, rule_result)
 
-        assessment = find_reusable(order, decision, hits) || record_assessment(order, decision, hits, signals, evaluated_at)
-        record_audit(order, decision, hits, signals) if PallasTrade::PaymentRiskAssessment::FLAGGED_DECISIONS.include?(decision)
+        assessment = find_reusable(order, decision, hits) ||
+                     record_assessment(order, decision, hits, signals, evaluated_at, rule_result)
+        if PallasTrade::PaymentRiskAssessment::FLAGGED_DECISIONS.include?(decision)
+          record_audit(order, decision, hits, signals)
+        end
 
         success({
-          decision: decision,
-          assessment: assessment,
-          matched: hits.map(&:id),
-          matched_summary: hits.map { |entry| summary_for(entry) },
-          allowlisted: allow_hits.any?,
-          denylisted: allow_hits.empty? && hits.any?,
-          signals: signals
-        })
+                  decision: decision,
+                  assessment: assessment,
+                  matched: hits.map(&:id),
+                  matched_summary: hits.map { |entry| summary_for(entry) },
+                  allowlisted: allow_hits.any?,
+                  denylisted: allow_hits.empty? && hits.any?,
+                  signals: signals,
+                  rule_engine: rule_result
+                })
       end
 
       private
 
-      def decide(subjects, allow_hits, order)
+      # 决策合并（唯一口径）：白名单**短路**优先；否则「名单动作 vs 规则动作」取**最严**者。
+      def decide(subjects, allow_hits, order, rule_result)
+        base = signals_for(subjects).merge('rule_engine' => rule_signal(rule_result))
+
         if allow_hits.any?
-          ['allow', allow_hits, signals_for(subjects).merge('allowlisted' => true)]
-        else
-          deny_hits = matches(order, subjects, 'denylist')
-          decision = deny_hits.any? ? denylist_action : 'allow'
-          signals = signals_for(subjects).merge('denylisted' => deny_hits.any?, 'denylist_action' => denylist_action)
-          [decision, deny_hits, signals]
+          signals = base.merge('allowlisted' => true, 'rule_engine_overridden_by' => 'allowlist')
+          return ['allow', allow_hits, signals]
         end
+
+        deny_hits = matches(order, subjects, 'denylist')
+        list_action = deny_hits.any? ? denylist_action : 'allow'
+        rule_action = rule_result && rule_result[:action].to_s.presence
+        decision = strictest_action(list_action, rule_action)
+        signals = base.merge(
+          'denylisted' => deny_hits.any?,
+          'denylist_action' => list_action,
+          'rule_action' => rule_action,
+          'decision_source' => decision_source(list_action, rule_action, decision)
+        )
+        [decision, deny_hits, signals]
+      end
+
+      def strictest_action(list_action, rule_action)
+        return list_action if rule_action.blank?
+
+        [list_action, rule_action].max_by { |action| DECISION_SEVERITY.fetch(action.to_s, 1) }
+      end
+
+      def decision_source(list_action, rule_action, decision)
+        return 'denylist' if list_action == decision && rule_action != decision
+        return 'rule_engine' if rule_action == decision && list_action != decision
+
+        'both'
+      end
+
+      # 规则引擎留痕（可解释性：用了哪一套规则的哪一版、是否金丝雀、桶、命中哪条、跳过了什么）
+      def rule_signal(rule_result)
+        return { 'consulted' => false } if rule_result.blank?
+
+        {
+          'consulted' => true,
+          'rule_set_id' => rule_result[:rule_set_id],
+          'rule_set_code' => rule_result[:rule_set_code],
+          'version' => rule_result[:version],
+          'canary' => rule_result[:canary],
+          'bucket' => rule_result[:bucket],
+          'rule_code' => rule_result[:rule_code],
+          'action' => rule_result[:action],
+          'matched_conditions' => rule_result[:matched_conditions],
+          'skipped' => Array(rule_result[:skipped])
+        }
       end
 
       # 只解析**本地可得**的主体（零 provider I/O）；缺失主体不猜
@@ -122,7 +176,7 @@ module PallasTrade
       end
 
       # 幂等（并发兼底）：同一订单同一秒只落一行
-      def record_assessment(order, decision, hits, signals, evaluated_at)
+      def record_assessment(order, decision, hits, signals, evaluated_at, rule_result = nil)
         PallasTrade::PaymentRiskAssessment.create!(
           order_id: order.id,
           store_id: order.respond_to?(:store_id) ? order.store_id : nil,
@@ -130,7 +184,8 @@ module PallasTrade
           matched_entry_ids: hits.map(&:id),
           signals: signals,
           evaluated_at: evaluated_at,
-          metadata: { 'matched' => hits.map { |entry| summary_for(entry) } }
+          metadata: { 'matched' => hits.map { |entry| summary_for(entry) },
+                      'rule_engine' => rule_signal(rule_result) }
         )
       rescue ActiveRecord::RecordNotUnique
         PallasTrade::PaymentRiskAssessment.find_by(order_id: order.id, evaluated_at: evaluated_at)

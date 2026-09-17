@@ -452,6 +452,21 @@ PallasTrade::Core::Engine.add_routes do
         post :revoke
       end
     end
+    # PALLAS-CUSTOM: D15 切片2（PRD-20260917-payments-d15b-risk-rules；业务方案 §72.2）——
+    # 风控规则工作台（Orders → 风控规则）：规则集/版本 + 发布/金丝雀/**回滚** + 订单试算。
+    # 只写规则表 + 审计（零资金副作用、不调 provider、不改订单）。
+    resources :risk_rules, only: %i[index show create] do
+      collection do
+        get :preview
+      end
+      member do
+        post :create_version, path: 'versions'
+        post :publish
+        post :canary
+        post :rollback
+        post :toggle
+      end
+    end
     # PALLAS-CUSTOM: D13 切片3（PRD-20260916-payments-d13c-fee-cost-report；业务方案 §70.3）——
     # 支付成本报表 + 费率策略维护（Orders → 支付成本 / 费率策略）：只读核算，零资金副作用。
     resources :payment_costs, only: %i[index] do

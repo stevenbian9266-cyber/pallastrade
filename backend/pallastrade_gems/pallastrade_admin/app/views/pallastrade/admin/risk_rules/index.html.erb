@@ -1,0 +1,156 @@
+<%# PALLAS-CUSTOM: D15 切片2（PRD-20260917-payments-d15b-risk-rules；业务方案 §72.2）——
+    风控规则工作台：规则集列表（作用域/状态/生效版/金丝雀）+ 与筛选同源计数 + 建集入口。
+    铁律：本页只展示规则配置事实，不显示任何订单/支付/客户明细。 %>
+<% content_for :page_title do %>
+  <%= PallasTrade.t('admin.risk_rules.title') %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= link_to PallasTrade.t('admin.risk_rules.preview_action'),
+              PallasTrade.preview_admin_risk_rules_path,
+              class: 'btn btn-outline-secondary',
+              data: { preview_link: true } %>
+<% end %>
+
+<div class="card mb-6">
+  <div class="card-body">
+    <%= form_with url: PallasTrade.admin_risk_rules_path, method: :get, local: true do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-3">
+          <%= label_tag :scope_filter, PallasTrade.t('admin.risk_rules.scope'), class: 'form-label' %>
+          <%= select_tag :scope_filter,
+                         options_for_select(@scope_filters.map { |s| [PallasTrade.t("admin.risk_rules.scope_filter_#{s}"), s] }, @filters[:scope_filter]),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-6 col-md-3">
+          <%= label_tag :status_filter, PallasTrade.t('admin.risk_rules.status'), class: 'form-label' %>
+          <%= select_tag :status_filter,
+                         options_for_select(@status_filters.map { |s| [PallasTrade.t("admin.risk_rules.status_filter_#{s}"), s] }, @filters[:status_filter]),
+                         class: 'form-select form-select-sm' %>
+        </div>
+        <div class="col-12 col-md-4 d-flex gap-2">
+          <%= submit_tag PallasTrade.t('admin.risk_rules.filter'), class: 'btn btn-sm btn-primary' %>
+          <%= link_to PallasTrade.t('admin.risk_rules.reset'), PallasTrade.admin_risk_rules_path,
+                      class: 'btn btn-sm btn-outline-secondary' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="grid grid-cols-12 gap-6 mb-6">
+  <% @status_filters.each do |status_filter| %>
+    <div class="col-span-6 md:col-span-4">
+      <div class="card"><div class="card-body">
+        <div class="text-gray-600"><%= PallasTrade.t("admin.risk_rules.status_filter_#{status_filter}") %></div>
+        <h3 class="mb-0" data-count-scope="<%= status_filter %>"><%= @counts[status_filter] %></h3>
+      </div></div>
+    </div>
+  <% end %>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header"><strong><%= PallasTrade.t('admin.risk_rules.new_set_title') %></strong></div>
+  <div class="card-body">
+    <%# 说明：范围决定「覆盖谁」——店铺规则集优先于全局规则集（同 code 覆盖语义） %>
+    <p class="text-gray-600 mb-3"><%= PallasTrade.t('admin.risk_rules.new_set_hint') %></p>
+    <%= form_with url: PallasTrade.admin_risk_rules_path, scope: :risk_rule_set, method: :post, local: true do |f| %>
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <%= f.label :code, PallasTrade.t('admin.risk_rules.code'), class: 'form-label' %>
+          <%= f.text_field :code, value: @rule_set.code, class: 'form-control form-control-sm',
+                                  data: { rule_set_code_input: true } %>
+        </div>
+        <div class="col-6 col-md-3">
+          <%= f.label :name, PallasTrade.t('admin.risk_rules.name'), class: 'form-label' %>
+          <%= f.text_field :name, value: @rule_set.name, class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-6 col-md-2">
+          <%= label_tag :store_scope, PallasTrade.t('admin.risk_rules.scope'), class: 'form-label' %>
+          <%= select_tag :store_scope,
+                         options_for_select([[PallasTrade.t('admin.risk_rules.scope_global_option'), 'global'],
+                                             [PallasTrade.t('admin.risk_rules.scope_store_option'), 'store']], 'store'),
+                         class: 'form-select form-select-sm', data: { rule_set_scope_input: true } %>
+        </div>
+        <div class="col-6 col-md-3">
+          <%= f.label :description, PallasTrade.t('admin.risk_rules.description'), class: 'form-label' %>
+          <%= f.text_field :description, class: 'form-control form-control-sm' %>
+        </div>
+        <div class="col-12 col-md-2">
+          <%= submit_tag PallasTrade.t('admin.risk_rules.new_set_submit'), class: 'btn btn-sm btn-primary' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><strong><%= PallasTrade.t('admin.risk_rules.sets_title') %></strong></div>
+  <div class="table-responsive">
+    <table class="table" data-rule-sets-table>
+      <thead>
+        <tr>
+          <th><%= PallasTrade.t('admin.risk_rules.code') %></th>
+          <th><%= PallasTrade.t('admin.risk_rules.name') %></th>
+          <th><%= PallasTrade.t('admin.risk_rules.scope') %></th>
+          <th><%= PallasTrade.t('admin.risk_rules.status') %></th>
+          <th><%= PallasTrade.t('admin.risk_rules.active_version') %></th>
+          <th><%= PallasTrade.t('admin.risk_rules.canary') %></th>
+          <th><%= PallasTrade.t('admin.risk_rules.rules_count') %></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @rule_sets.empty? %>
+          <tr><td colspan="8" class="text-gray-600" data-rule-sets-empty>
+            <%= PallasTrade.t('admin.risk_rules.sets_empty') %>
+          </td></tr>
+        <% end %>
+        <% @rule_sets.each do |rule_set| %>
+          <tr data-rule-set-code="<%= rule_set.code %>"
+              data-rule-set-status="<%= rule_set.status %>"
+              data-rule-set-scope="<%= rule_set.store_id.present? ? 'store' : 'global' %>"
+              data-rule-set-active-version="<%= rule_set.active_version&.version %>"
+              data-rule-set-canary-percent="<%= rule_set.canary_percent %>">
+            <td><%= rule_set.code %></td>
+            <td><%= rule_set.name %></td>
+            <td data-rule-set-scope-label><%= risk_rule_scope_label(rule_set) %></td>
+            <td data-rule-set-status-label><%= risk_rule_status_label(rule_set) %></td>
+            <td data-rule-set-active-version-label><%= rule_set.active_version&.version || '—' %></td>
+            <td data-rule-set-canary-label>
+              <% if rule_set.canary_active? %>
+                <%= PallasTrade.t('admin.risk_rules.canary_label', version: rule_set.canary_version&.version,
+                                                                   percent: rule_set.canary_percent) %>
+              <% else %>
+                —
+              <% end %>
+            </td>
+            <td data-rule-set-rules-count><%= Array(rule_set.active_version&.rules).size %></td>
+            <td>
+              <%= link_to PallasTrade.t('admin.risk_rules.detail'), PallasTrade.admin_risk_rule_path(rule_set),
+                          class: 'btn btn-sm btn-outline-secondary' %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if @pages > 1 %>
+    <div class="card-body d-flex justify-content-between">
+      <span class="text-gray-600"><%= PallasTrade.t('admin.risk_rules.total', total: @total) %></span>
+      <span>
+        <% if @page > 1 %>
+          <%= link_to PallasTrade.t('admin.risk_rules.prev_page'),
+                      PallasTrade.admin_risk_rules_path(@filters.compact.merge(page: @page - 1)),
+                      class: 'btn btn-sm btn-outline-secondary' %>
+        <% end %>
+        <% if @page < @pages %>
+          <%= link_to PallasTrade.t('admin.risk_rules.next_page'),
+                      PallasTrade.admin_risk_rules_path(@filters.compact.merge(page: @page + 1)),
+                      class: 'btn btn-sm btn-outline-secondary' %>
+        <% end %>
+      </span>
+    </div>
+  <% end %>
+</div>

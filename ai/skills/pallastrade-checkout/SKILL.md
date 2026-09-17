@@ -72,6 +72,8 @@ Checkout is how an independent active `PallasTrade::Cart` becomes a submitted `P
 - **前置校验**：`PallasTrade::Checkout::Preflight`（`call(order:)`）——`Carts::Complete` 支付处理前评估 Risk，命中返回 `failure(order, { code:, message: })`；登录强制已由既有 `guest_checkout_disallowed?` 覆盖。flag `checkout_preflight_enabled` 默认关闭。
 - **统一错误**：`render_service_error` 支持 `ResultError` 解包 + `{ code:, message: }` Hash 结构化错误（黑名单/风控/防刷单等）。
 - **锁存双模式**：`Config[:stock_reservation_strategy]`（`:order` 默认 / `:payment`）——`:order` = cart 操作时 Reserve（现状）；`:payment` = cart 操作只校验不落 reservation（`Reserve.call(order:, validate_only: true)`，调用点：add_item/set_quantity/update/remove_line_item），支付确认后（`Carts::Complete` 内 `payment_total > 0` 时）真正 Reserve → complete 后 Release。
+- **与风控规则引擎的关系（D15 切片2, 2026-09-17）**：数据驱动规则（`Risk::Rules::Evaluate`，版本化/灰度）只产出**决策与留痕**（经 `Risk::Assess` → `PaymentRiskAssessment`）；
+  `Preflight` 的**启用条件与阻断行为本切片未改**（仍只看 `Risk.evaluate` 的代码规则 + flag）—— 即「规则变严不会突然阻断下单」，阻断生效由后续切片按运营开关决定。
 
 ### 订单模块：单笔 checkout / 多笔合并支付新流程（2026-08-29，PRD-20260829-checkout 订单模块）
 
