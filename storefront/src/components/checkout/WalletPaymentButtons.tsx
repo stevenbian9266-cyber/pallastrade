@@ -8,7 +8,7 @@ import {
 } from "@stripe/react-stripe-js";
 import type { StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
 import { useTranslations } from "next-intl";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type {
   PaymentEntry,
@@ -17,6 +17,7 @@ import type {
 import {
   expressErrorRoute,
   expressNoticeFor,
+  WALLET_READY_TIMEOUT_MS,
 } from "@/lib/checkout/express-canonical";
 import {
   completeOrderPaymentSessionAndRedirectToResult,
@@ -174,14 +175,31 @@ export function WalletPaymentButtons({
   // D7 补口 2（2026-09-18）：本设备无该钱包（Stripe `availablePaymentMethods` 明确 false）
   // → 不再留空白：渲染显式说明，父级据此置灰入口 + 回落卡支付。
   const [walletUnavailable, setWalletUnavailable] = useState(false);
+  /** D7 补口 2b：元素是否已上报过设备能力（看门狗据此决定是否降级）。 */
+  const availabilityReportedRef = useRef(false);
+  const onAvailabilityChangeRef = useRef(onAvailabilityChange);
+  onAvailabilityChangeRef.current = onAvailabilityChange;
 
   const handleAvailabilityChange = useCallback(
     (available: boolean) => {
+      availabilityReportedRef.current = true;
       setWalletUnavailable(!available);
       onAvailabilityChange?.(available);
     },
     [onAvailabilityChange],
   );
+
+  // D7 补口 2b（看门狗）：会话就绪、元素已挂载但**永不**上报设备能力（iframe 被中断 /
+  // 设备无钱包）→ 超时即降级，不给用户留一个无限加载的空槽位。
+  useEffect(() => {
+    if (!session || availabilityReportedRef.current) return;
+    const timer = setTimeout(() => {
+      if (availabilityReportedRef.current) return;
+      setWalletUnavailable(true);
+      onAvailabilityChangeRef.current?.(false);
+    }, WALLET_READY_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [session]);
 
   const clientConfig: PaymentClientConfig | null = method.client_config ?? null;
   const stripeConfigured = isStripeConfigured(clientConfig);

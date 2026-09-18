@@ -24,6 +24,7 @@ import {
   expressNoticeFor,
   expressResultUrl,
   startExpressCheckout,
+  WALLET_READY_TIMEOUT_MS,
 } from "@/lib/checkout/express-canonical";
 import {
   expressCheckoutResolveShipping,
@@ -81,6 +82,8 @@ function ExpressCheckoutInner({
   onProcessingChangeRef.current = onProcessingChange;
   const onAvailabilityChangeRef = useRef(onAvailabilityChange);
   onAvailabilityChangeRef.current = onAvailabilityChange;
+  /** D7 补口 2b：元素是否已上报过设备能力（看门狗据此决定是否降级）。 */
+  const availabilityReportedRef = useRef(false);
 
   const updateProcessing = useCallback((value: boolean) => {
     setProcessing(value);
@@ -102,6 +105,7 @@ function ExpressCheckoutInner({
 
   const handleReady = useCallback(
     (event: StripeExpressCheckoutElementReadyEvent) => {
+      availabilityReportedRef.current = true;
       const methods = event.availablePaymentMethods;
       // 未给数据（undefined）= **未知**，不得当作不可用：元素已挂载，Stripe 自己不会
       // 渲染设备用不了的钱包按钮。只有明确的全 false 才走降级（D7 补口 2）。
@@ -128,6 +132,18 @@ function ExpressCheckoutInner({
     },
     [cart],
   );
+
+  // D7 补口 2b（看门狗）：元素可能**永不**上报设备能力（Stripe iframe 被中断 / 设备无钱包）
+  // —— 只等回调会留下无限加载态；超时即按「本设备不可用」降级（说明 + 置灰 + 回落卡支付）。
+  useEffect(() => {
+    if (available !== null || availabilityReportedRef.current) return;
+    const timer = setTimeout(() => {
+      if (availabilityReportedRef.current) return;
+      setAvailable(false);
+      onAvailabilityChangeRef.current?.(false);
+    }, WALLET_READY_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [available]);
 
   const handleShippingAddressChange = useCallback(
     async (event: StripeExpressCheckoutElementShippingAddressChangeEvent) => {

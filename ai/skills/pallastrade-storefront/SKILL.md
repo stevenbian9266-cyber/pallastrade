@@ -618,6 +618,11 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 - **两个页面同口径**：cart 页（`UnifiedCheckout`）与 `or_` 页（`OrderPaymentContent` 的页内槽位 + 移动吸底条）接线一致；
   cart 页选中钱包入口时**隐藏 Pay Now**（与 `or_` 页一致；否则点击会在卡表单校验处静默 `return`，同样是死路）。
 - **未配置密钥**（`isStripeConfigured === false`）同样走显式说明，不允许静默消失。
+- **初始化看门狗（补口 2b）**：`onReady` **可能永不触发** —— 实测 Windows/Electron 上
+  `elements-inner-easel` 请求 `net::ERR_ABORTED`、元素高度停在 2px（卡片字段 iframe 正常），
+  用户看到的是**无限加载 spinner**。因此 `WALLET_READY_TIMEOUT_MS`（`lib/checkout/express-canonical.ts`，5s）
+  内未收到任何可用性上报 → 按「本设备不可用」走同一套降级（说明 + 置灰 + 回落卡支付）。
+  两个组件各自持有 `availabilityReportedRef`，一旦上报过就不再降级。
 - 覆盖测试：`__tests__/ExpressCheckoutButton.test.tsx` / `WalletPaymentButtons.test.tsx`（AC-011/AC-012 单元 + 未配置分支）、
   `__tests__/UnifiedCheckout.test.tsx` / `OrderPaymentContent.test.tsx`（父级回落 + 入口置灰）；改动后跑 `storefront-test`。
 

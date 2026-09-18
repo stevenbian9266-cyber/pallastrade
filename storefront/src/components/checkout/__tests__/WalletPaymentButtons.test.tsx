@@ -225,6 +225,26 @@ describe("WalletPaymentButtons (D7)", () => {
     expect(screen.queryByTestId("express-checkout-element")).toBeNull();
   });
 
+  // PRD-20260918-payments-d7-payment-section-express AC-011：
+  // 会话就绪、元素已挂载但**永不**回传设备能力（iframe 被中断 / 设备无钱包）→ 看门狗超时降级
+  it("degrades when the wallet element never reports availability (D7 AC-011)", async () => {
+    const user = userEvent.setup();
+    const onAvailabilityChange = vi.fn();
+    renderWallet({ onAvailabilityChange });
+
+    await user.click(screen.getByTestId("wallet-pay-button"));
+    await screen.findByTestId("express-checkout-element");
+    expect(screen.queryByTestId("wallet-unavailable-notice")).toBeNull();
+
+    // 等看门狗（WALLET_READY_TIMEOUT_MS）超时 → 显式降级
+    await waitFor(
+      () =>
+        expect(screen.getByTestId("wallet-unavailable-notice")).toBeTruthy(),
+      { timeout: 9000, interval: 250 },
+    );
+    expect(onAvailabilityChange).toHaveBeenCalledWith(false);
+  }, 15000);
+
   // PRD-20260918-payments-d7-payment-section-express AC-012：
   // 可用性**未知**（SDK 未给 availablePaymentMethods）→ 不得当作不可用
   it("treats unknown availability as usable instead of degrading (D7 AC-012)", async () => {

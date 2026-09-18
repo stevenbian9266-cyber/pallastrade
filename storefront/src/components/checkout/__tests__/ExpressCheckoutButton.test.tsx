@@ -293,6 +293,31 @@ describe("ExpressCheckoutButton (canonical wallet)", () => {
     expect(await screen.findByTestId("wallet-unavailable-notice")).toBeTruthy();
   });
 
+  // PRD-20260918-payments-d7-payment-section-express AC-011：
+  // 元素 iframe 被中断 / 设备无钱包 → `onReady` **永不**触发 → 看门狗超时降级（不留无限加载态）
+  it("degrades when the wallet element never reports availability (D7 AC-011)", async () => {
+    const onAvailabilityChange = vi.fn();
+    render(
+      <ExpressCheckoutButton
+        cart={cart}
+        basePath="/us/en"
+        onComplete={vi.fn()}
+        onAvailabilityChange={onAvailabilityChange}
+      />,
+    );
+    // 元素已挂载（onReady 已接线），但从未上报设备能力
+    expect(capturedElementProps.onReady).toBeDefined();
+    expect(screen.queryByTestId("wallet-unavailable-notice")).toBeNull();
+
+    // 等看门狗（WALLET_READY_TIMEOUT_MS）超时 → 显式降级
+    await waitFor(
+      () =>
+        expect(screen.getByTestId("wallet-unavailable-notice")).toBeTruthy(),
+      { timeout: 9000, interval: 250 },
+    );
+    expect(onAvailabilityChange).toHaveBeenCalledWith(false);
+  }, 15000);
+
   // PRD-20260918-payments-d7-payment-section-express AC-012：
   // 可用性**未知**（SDK 未给 availablePaymentMethods）→ 保持渲染，不得当成不可用
   it("keeps the wallet element when availability data is unknown (D7 AC-012)", async () => {

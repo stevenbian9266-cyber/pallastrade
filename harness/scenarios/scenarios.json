@@ -4766,6 +4766,7 @@
         "Report device capability to the parent and let it grey out / disable that entry row and fall back to the first usable entry (card first)",
         "Drop the wallet slot from the page once it renders nothing and disable the unusable row, so the dead end cannot be re-entered",
         "Make every checkout surface behave the same: single-page cart checkout, the order pay page, and the mobile sticky pay bar",
+    "Watchdog the element: when it never reports device capability at all (blocked or aborted provider iframe leaves a 2px element), degrade on a timeout instead of leaving an infinite loading spinner",
         "Do not leave a second, silently broken pay path behind: the in-page pay button must not stay clickable when a wallet entry owns the payment step",
         "Verify against the deployed environment with the real provider key before claiming the fix works"
       ],
@@ -4773,6 +4774,7 @@
         "Remove the entry from the list on the client - the entry set stays a server decision; the client only annotates device capability",
         "Treat a missing availability payload as unavailable (that silently hides wallets that do work)",
         "Keep rendering an empty slot wrapper when the child renders nothing",
+    "Leave an endless loading state when the provider element never reports - 'still loading' looks exactly like 'nothing rendered' to a shopper",
         "Assume a device supports a wallet: Apple Pay is Safari-only, and Google Pay depends on the signed-in browser session",
         "Conclude the fix works from unit tests alone while the deployed page still shows the empty box"
       ],
