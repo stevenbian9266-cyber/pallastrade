@@ -24,7 +24,7 @@ RSpec.describe PallasTrade::AI::ProvisionModels, type: :service do
 
         models = PallasTrade::AI::Model.where(provider: deepseek_provider).order(:position)
         expect(models.pluck(:provider_model_id)).to contain_exactly(
-          'deepseek-v4-flash', 'deepseek-v4-pro'
+          'deepseek-flash', 'deepseek-v4-pro'
         )
       end
 
@@ -43,7 +43,7 @@ RSpec.describe PallasTrade::AI::ProvisionModels, type: :service do
 
         flash_model = PallasTrade::AI::Model.find_by(
           provider: deepseek_provider,
-          provider_model_id: 'deepseek-v4-flash'
+          provider_model_id: 'deepseek-flash'
         )
         expect(flash_model.name).to eq('DeepSeek V4 Flash')
         expect(flash_model.kind).to eq('text')
@@ -82,7 +82,7 @@ RSpec.describe PallasTrade::AI::ProvisionModels, type: :service do
 
         flash = PallasTrade::AI::Model.find_by(
           provider: deepseek_provider,
-          provider_model_id: 'deepseek-v4-flash'
+          provider_model_id: 'deepseek-flash'
         )
         flash.update!(active: true, name: 'Custom Name')
 

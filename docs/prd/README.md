@@ -38,6 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
+| verifying | PRD-20260918-api-deepseek-structured-output | api | 2026-09-18 | REQ-20260918-deepseek-adapter-structured-output.md |
 | done | PRD-20260914-checkout-quote-confirmation-loop | checkout | 2026-09-14 | REQ-20260914-checkout-quote-confirmation-loop.md |
 | done | PRD-20260914-admin-disputes-evidence-params-whitelist | admin | 2026-09-14 | REQ-20260914-admin-disputes-evidence-params-whitelist.md |
 | done | PRD-20260914-shipping-category-name-i18n-fallback | shipping | 2026-09-14 | REQ-20260914-shipping-category-name-i18n-fallback.md |

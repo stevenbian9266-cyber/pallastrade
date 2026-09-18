@@ -38,11 +38,13 @@ module PallasTrade
           end
           latency_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).to_i
 
+          verified = response.success?
+
           {
-            success: response.success?,
-            status: 'verified',
+            success: verified,
+            status: verified ? 'verified' : 'error',
             latency_ms: latency_ms,
-            error: nil
+            error: verified ? nil : 'Provider responded with a non-success status'
           }
         rescue Faraday::UnauthorizedError
           {
@@ -63,6 +65,23 @@ module PallasTrade
             success: false,
             status: 'error',
             error: "Connection failed: #{e.message&.truncate(200)}",
+            latency_ms: nil
+          }
+        rescue Faraday::ServerError => e
+          # 5xx must honour the Base#test_connection contract (return a Hash)
+          # instead of letting the exception escape to the caller.
+          {
+            success: false,
+            status: 'error',
+            error: "Provider server error: #{e.message&.truncate(200)}",
+            latency_ms: nil
+          }
+        rescue Faraday::ConnectionFailed => e
+          # DNS/connect failures never reach the response stage.
+          {
+            success: false,
+            status: 'error',
+            error: "Could not reach the provider: #{e.message&.truncate(200)}",
             latency_ms: nil
           }
         end
@@ -122,7 +141,7 @@ module PallasTrade
         def build_request_body(request)
           body = {
             model: request.model,
-            messages: request.messages,
+            messages: build_messages(request),
             stream: false
           }
 
@@ -135,15 +154,45 @@ module PallasTrade
             body[:thinking] = { type: request.parameters[:reasoning_effort] }
           end
 
-          # Structured output via response_format
-          if request.response_schema
-            body[:response_format] = {
-              type: 'json_schema',
-              json_schema: request.response_schema
-            }
-          end
+          # Structured output: DeepSeek only supports `json_object`. Sending
+          # `json_schema` is rejected with
+          # "This response_format type is unavailable now", which made every
+          # schema-bearing capability fail with a 400. The field contract now
+          # travels inside the system message (see #build_messages) because
+          # DeepSeek validates the syntax but not the shape.
+          body[:response_format] = { type: 'json_object' } if request.response_schema
 
           body
+        end
+
+        # DeepSeek takes the system prompt as a regular `system` message. The
+        # adapter used to send `request.messages` only, silently dropping every
+        # capability's `system_instructions` (OpenAI's chat-completions path does
+        # inject them) — so domain constraints such as "never invent
+        # specifications" never reached the model.
+        #
+        # `json_object` mode additionally requires the literal word "json" to
+        # appear in the prompt, so the schema instruction is what satisfies that
+        # precondition and tells the model which fields to emit.
+        #
+        # @param request [PallasTrade::AI::Providers::Request]
+        # @return [Array<Hash>]
+        def build_messages(request)
+          messages = Array(request.messages)
+          system_parts = []
+          system_parts << request.system_instructions if request.system_instructions.present?
+          system_parts << structured_output_instructions(request.response_schema) if request.response_schema
+
+          return messages if system_parts.empty?
+
+          [{ role: 'system', content: system_parts.join("\n\n") }] + messages
+        end
+
+        # @param schema [Hash]
+        # @return [String]
+        def structured_output_instructions(schema)
+          'Respond with a single valid JSON object and nothing else. ' \
+            "Fill the json fields described by this schema: #{schema.to_json}"
         end
 
         def build_request_headers(api_key)
@@ -154,6 +203,9 @@ module PallasTrade
           }
         end
 
+        # DeepSeek returns reasoning models' chain of thought in
+        # `reasoning_content` and the answer in `content`; only `content` is the
+        # generated output, so it stays the sole source of `text`.
         def parse_response(body, latency_ms)
           data = body.is_a?(Hash) ? body : JSON.parse(body)
           choice = data.dig('choices', 0) || {}

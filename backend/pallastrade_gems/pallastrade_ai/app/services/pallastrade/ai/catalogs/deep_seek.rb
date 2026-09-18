@@ -7,7 +7,9 @@ module PallasTrade
       module DeepSeek
         MODELS = [
           {
-            provider_model_id: 'deepseek-v4-flash',
+            # DeepSeek's own model id — `deepseek-v4-flash` does not exist and
+            # `GET /models` returns `deepseek-flash` (verified 2026-09-18).
+            provider_model_id: 'deepseek-flash',
             name: 'DeepSeek V4 Flash',
             kind: 'text',
             capabilities: %w[text structured_output],

@@ -25,7 +25,7 @@ RSpec.describe 'Admin AI Models page', type: :request do
 
       expect(response).to have_http_status(:ok)
       # After auto-provisioning, should have 5 models (2 DeepSeek + 3 OpenAI)
-      expect(response.body).to include('deepseek-v4-flash')
+      expect(response.body).to include('deepseek-flash')
       expect(response.body).to include('deepseek-v4-pro')
       expect(response.body).to include('gpt-5.6-sol')
       expect(response.body).to include('gpt-5.6-terra')
@@ -61,7 +61,7 @@ RSpec.describe 'Admin AI Models page', type: :request do
     before { get '/admin/ai/models' } # auto-provision catalog models
 
     it 'updates active via turbo_stream without redirect (# PRD-20260808-admin-ai-tools-page-optimization AC-003/004)' do
-      model = PallasTrade::AI::Model.find_by(provider_model_id: 'deepseek-v4-flash')
+      model = PallasTrade::AI::Model.find_by(provider_model_id: 'deepseek-flash')
       expect(model.active).to be false
 
       patch "/admin/ai/models/#{model.id}", params: { active: '1' }, as: :turbo_stream
@@ -73,17 +73,17 @@ RSpec.describe 'Admin AI Models page', type: :request do
     end
 
     it 'persists active state across requests (# PRD-20260808-admin-ai-tools-page-optimization AC-005)' do
-      model = PallasTrade::AI::Model.find_by(provider_model_id: 'deepseek-v4-flash')
+      model = PallasTrade::AI::Model.find_by(provider_model_id: 'deepseek-flash')
 
       patch "/admin/ai/models/#{model.id}", params: { active: '1' }, as: :turbo_stream
       get '/admin/ai/models'
 
-      expect(response.body).to include('deepseek-v4-flash')
+      expect(response.body).to include('deepseek-flash')
       expect(model.reload.active).to be true
     end
 
     it 'supports html fallback with redirect' do
-      model = PallasTrade::AI::Model.find_by(provider_model_id: 'deepseek-v4-flash')
+      model = PallasTrade::AI::Model.find_by(provider_model_id: 'deepseek-flash')
 
       patch "/admin/ai/models/#{model.id}", params: { active: '1' }
 
@@ -92,7 +92,7 @@ RSpec.describe 'Admin AI Models page', type: :request do
     end
 
     it 'turns off when active is false (# PRD-20260808-admin-ai-tools-page-optimization AC-004)' do
-      model = PallasTrade::AI::Model.find_by(provider_model_id: 'deepseek-v4-flash')
+      model = PallasTrade::AI::Model.find_by(provider_model_id: 'deepseek-flash')
       model.update!(active: true)
 
       patch "/admin/ai/models/#{model.id}", params: { active: '0' }, as: :turbo_stream
@@ -101,7 +101,7 @@ RSpec.describe 'Admin AI Models page', type: :request do
     end
 
     it 'turns off when active param is missing (unchecked checkbox, no 500)' do
-      model = PallasTrade::AI::Model.find_by(provider_model_id: 'deepseek-v4-flash')
+      model = PallasTrade::AI::Model.find_by(provider_model_id: 'deepseek-flash')
       model.update!(active: true)
 
       patch "/admin/ai/models/#{model.id}", params: {}, as: :turbo_stream

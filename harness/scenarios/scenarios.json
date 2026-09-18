@@ -4566,6 +4566,40 @@
         "zeroMoneySideEffects": 15,
         "storeIsolation": 15
       }
+    },
+    {
+      "id": "GS-178",
+      "name": "A provider adapter must speak the provider's dialect",
+      "description": "PRD-20260918-api-deepseek-structured-output (dev AI Tools outage, TASK-20260918020017-217247b3): every schema-bearing AI capability failed against DeepSeek with HTTP 400. The adapter had copied OpenAI's structured-output shape (response_format type json_schema), which DeepSeek rejects outright, and it dropped system_instructions entirely, so each capability's domain constraints never reached the model - wrong output rather than an error. The catalogue also shipped a model id the vendor does not serve, and those models were declared in two places: the readable catalogue and the registry that provisioning actually reads, so correcting only the readable copy would have changed nothing. The tempting shortcuts are to treat any OpenAI-compatible endpoint as identical, to hand the schema to the vendor and hope it is enforced, and to accept whatever a connection-test button claims.",
+      "mustDo": [
+        "Send only the structured-output dialect the vendor documents; when the vendor validates syntax but not shape, carry the field contract inside the prompt instead of assuming the schema is enforced",
+        "Satisfy the vendor's documented precondition for that mode (for example the prompt must mention the format by name) rather than depending on a failing call to reveal it",
+        "Keep the payload's system instructions - a second adapter must not silently drop a field the first one sends, because that difference surfaces as wrong output, not as an error",
+        "Correct a model id against what the vendor actually serves, and fix every declaration of it, not just the one that reads best",
+        "Prove a declared capability against the live vendor API before trusting it in a gate, and keep the probe matrix (which request shapes return 200, which return 400) as the evidence",
+        "Derive a connection test's status from the response, and return a structured failure - never raise - when the vendor errors or the host is unreachable, so the result obeys the adapter contract",
+        "Cover the outgoing request body with a spec that stubs the HTTP layer, asserting the exact dialect sent and the presence of the system message, and assert every failure branch with no network call",
+        "Document, in the deployment templates, both the switch that gates the whole subsystem and the keys it depends on, so a new environment cannot come up silently disabled"
+      ],
+      "mustNotDo": [
+        "Assume an OpenAI-compatible endpoint accepts every OpenAI request field",
+        "Send a structured-output format the vendor has not shipped",
+        "Drop system instructions, or inject an empty system message when there are none",
+        "Edit only the catalogue that nothing reads while the provisioning source keeps the old value",
+        "Claim a vendor capability from a marketing page or a memo instead of a live probe",
+        "Report a passing connection test without deriving the result from a real response",
+        "Put a real credential in a template, or leave the subsystem's master switch undocumented",
+        "Treat the generic 'AI unavailable' message as the whole diagnosis - the gates are layered and each one fails the same way"
+      ],
+      "scoring": {
+        "vendorDialectFidelity": 20,
+        "payloadFidelity": 15,
+        "singleSourceOfTruth": 15,
+        "liveEvidence": 15,
+        "contractCompliance": 15,
+        "templateCompleteness": 10,
+        "noSilentDegradation": 10
+      }
     }
   ]
 }

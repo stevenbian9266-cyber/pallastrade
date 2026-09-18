@@ -76,7 +76,7 @@ prod 栈已删除（2026-08-31），服务器仅运行 dev 栈（常驻）。
 
 | 文件 | 内容 |
 |---|---|
-| `.env.dev` | backend 密钥（SECRET_KEY_BASE 等） |
+| `.env.dev` | backend 密钥（SECRET_KEY_BASE、AI 总开关 `PALLASTRADE_AI_ENABLED`、`ACTIVE_RECORD_ENCRYPTION_*` 等） |
 | `.env.storefront.dev` | storefront 运行时环境（API URL、STORE_LOGO_URL、tawk ID 等） |
 | `.env.storefront.dev.example` 等 | 模板（复制改名填写） |
 

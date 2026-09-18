@@ -171,11 +171,21 @@ export default {
         description: 'Admin page caching specs (no-store headers + back-forward-cache reload guard)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/page_caching_spec.rb'],
       },
+      // AI 供应商适配器与模型目录（PRD-20260918-api-deepseek-structured-output）：
+      // DeepSeek 结构化输出改用 json_object（不再发不受支持的 json_schema）+ 恢复被丢弃的
+      // system_instructions + test_connection 由响应派生 status 且 5xx/网络失败返回结构化失败；
+      // 目录与 provider registry 两处模型 ID 同步为 deepseek-flash。
+      'ai-provider-rspec': {
+        description: 'AI provider adapter + catalogue specs (DeepSeek json_object structured output, system instructions, connection test, model ids)',
+        command: ['docker', 'exec', '-e', 'DISABLE_SIMPLECOV_MINIMUM=1', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && bundle exec rspec spec/services/pallastrade/ai/providers/deep_seek_spec.rb spec/services/pallastrade/ai/catalogs/deep_seek_spec.rb'],
+      },
       // 仓库级回归守卫（2026-09-14）：部署脚本前滚检测 + 回滚演练 crontab 恢复 + PRD 状态同步
       // 台账收口 TASK-20260913113813-6b5a2a47 / TASK-20260913103421-bd645649 的证据来源。
+      // 2026-09-18 扩入 AI 部署模板契约（PRD-20260918-api-deepseek-structured-output）：
+      // PALLASTRADE_AI_ENABLED 与 ACTIVE_RECORD_ENCRYPTION_* 必须在模板登记且不得内置真实密钥。
       'repo-guards-test': {
-        description: 'Repo-level node:test guards (pull-deploy forward roll + drill crontab restore + PRD status sync)',
-        command: ['node', '--test', 'tests/pull-deploy-forward-roll.test.mjs', 'tests/drill-rollback-crontab.test.mjs', 'tests/prd-status-sync.test.mjs'],
+        description: 'Repo-level node:test guards (pull-deploy forward roll + drill crontab restore + PRD status sync + AI env template contract)',
+        command: ['node', '--test', 'tests/pull-deploy-forward-roll.test.mjs', 'tests/drill-rollback-crontab.test.mjs', 'tests/prd-status-sync.test.mjs', 'tests/ai-env-template.test.mjs'],
       },
       // 管理后台店铺表单（2026-09-09 bugfix 回归集）：logo/mailer_logo 直传失败提示 + 多店 CRUD
       'admin-stores-rspec': {

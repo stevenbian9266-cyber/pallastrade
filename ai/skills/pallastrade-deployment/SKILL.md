@@ -30,6 +30,25 @@ These must be set on every PallasTrade deployment:
 | `RAILS_FORCE_SSL` | Force HTTPS at the Rails layer (HTTP→HTTPS redirects, HSTS, secure cookies). **Default: on** — set `RAILS_FORCE_SSL=false` only when running without TLS (e.g. local Docker; pallastrade-starter's docker-compose.yml does this). Safe to leave on behind SSL-terminating load balancers because `RAILS_ASSUME_SSL` marks proxied requests as HTTPS. |
 | `RAILS_ASSUME_SSL` | Tells Rails it runs behind an SSL-terminating reverse proxy, so requests are treated as HTTPS. **Default: on** — set `false` only when there's no SSL anywhere (local dev, non-SSL proxy). |
 | `RAILS_HOST` | The public hostname. Used in email links and absolute URLs. |
+| `PALLASTRADE_AI_ENABLED` | Master switch for the AI Tools subsystem. **Default: off** — unless it is `true`, every AI capability is blocked at the availability gate and the admin reports only a generic "AI is globally disabled", no matter how the provider, model and capability bindings are configured in `/admin/ai`. See **AI Tools** below. |
+| `ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY` / `ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY` / `ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT` | Active Record Encryption keys (≥32 bytes each — `openssl rand -hex 32`; all three or none). They encrypt AI provider credentials and gateway preferences. When absent, `encrypts` silently degrades to plaintext and provider credentials fail closed, so configure them **before** saving any provider API key and keep them stable — rotating them makes existing ciphertext unreadable. |
+
+### AI Tools
+
+> AI is **off** unless `PALLASTRADE_AI_ENABLED=true`. Enabling it is a chain, and every
+> broken link reports the same generic "AI unavailable", so check the gates in order:
+
+1. `ACTIVE_RECORD_ENCRYPTION_*` set — otherwise provider credentials cannot be stored
+2. `PALLASTRADE_AI_ENABLED=true`
+3. An active provider with a valid API key, plus an active model under it (`/admin/ai`)
+4. The store's AI setting enabled **and** every capability bound to a model (`/admin/ai/capabilities`)
+
+Provider API keys live in the database as encrypted `ProviderSecret` rows — never in env
+vars or source. A provider's model ids must match what the vendor actually serves: they go
+into the request body verbatim, and a stale or invented id surfaces as a 400 from the
+vendor, not as a validation error. Verify with the vendor's own `GET /models` before
+relying on a catalogue entry, and remember that a vendor which accepts the request may
+still reject the structured-output dialect you send.
 
 ### Email (SMTP)
 

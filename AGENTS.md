@@ -271,7 +271,8 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | UI component / style | + `harness e2e dashboard` or `harness e2e storefront` | ≤15 min |
 | Payment logic | + payment sandbox gate | ≤30 min |
 | AI Skill file (`ai/skills/`) | + `harness eval ai --check-freshness` | ≤2 min |
-| `deploy/` scripts / repo-level guards (`tests/*.test.mjs`) | + `harness verify repo-guards-test` (前滚检测 + drill crontab 恢复 + PRD 状态同步契约守卫) | ≤1 min |
+| AI 供应商适配器 / 模型目录（`pallastrade_ai/**/providers/deep_seek.rb`、`catalogs/deep_seek.rb`、`config/initializers/provider_registry.rb`） | + `harness verify ai-provider-rspec`（结构化输出发 `json_object` 而非 DeepSeek 不支持的 `json_schema` + `system_instructions` 必须注入 system 消息 + `test_connection` 的 status 由响应派生、5xx/网络失败返回结构化失败 + 目录与 registry 两处模型 ID 同步） | ≤1 min |
+| `deploy/` scripts / repo-level guards (`tests/*.test.mjs`) | + `harness verify repo-guards-test` (前滚检测 + drill crontab 恢复 + PRD 状态同步 + AI 部署模板契约守卫) | ≤1 min |
 | Admin store form / direct-upload attachments | + `harness verify admin-stores-rspec` (logo/mailer_logo 直传失败提示 + 多店 CRUD) | ≤1 min |
 | Admin 样式 / 设计 token（`pallastrade_admin/app/assets/tailwind/**`、`pallastrade_admin.css`、后台 layout） | + `harness verify admin-theme-rspec`（品牌色阶/语义 token/密度双档 + 组件零直引 + WCAG AA 对比度契约） | ≤1 min |
 | 支付商选项化（`pallastrade_admin` payment_methods 视图/控制器、core `payment_method(s)` 服务、`pallastrade_stripe` 能力目录） | + `harness verify admin-payment-methods-rspec`（选项化页签/保存归一 + Test connection + 凭证脱敏 + optionized 门控/Start 同源校验回归） | ≤1 min |

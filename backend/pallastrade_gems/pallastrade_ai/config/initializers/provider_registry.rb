@@ -24,7 +24,7 @@ Rails.application.reloader.to_prepare do
     },
     connection_test_strategy: :list_models,
     recommended_models: [
-      { provider_model_id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash', kind: 'text', capabilities: ['text', 'structured_output'], default_parameters: { max_output_tokens: 8192, temperature: 0.7 }, description: 'Default high-throughput model.', pricing: { input_per_1k_tokens: 0.00014, output_per_1k_tokens: 0.00028, cached_input_per_1k_tokens: 0.000014, currency: 'USD', effective_date: '2026-07-24' } },
+      { provider_model_id: 'deepseek-flash', name: 'DeepSeek V4 Flash', kind: 'text', capabilities: ['text', 'structured_output'], default_parameters: { max_output_tokens: 8192, temperature: 0.7 }, description: 'Default high-throughput model.', pricing: { input_per_1k_tokens: 0.00014, output_per_1k_tokens: 0.00028, cached_input_per_1k_tokens: 0.000014, currency: 'USD', effective_date: '2026-07-24' } },
       { provider_model_id: 'deepseek-v4-pro', name: 'DeepSeek V4 Pro', kind: 'text', capabilities: ['text', 'structured_output', 'reasoning'], default_parameters: { max_output_tokens: 16384, temperature: 0.7, reasoning_effort: 'medium' }, description: 'High-quality model for complex reasoning.', pricing: { input_per_1k_tokens: 0.00055, output_per_1k_tokens: 0.00219, cached_input_per_1k_tokens: 0.000055, currency: 'USD', effective_date: '2026-07-24' } }
     ],
     supported_input_modalities: [:text],
