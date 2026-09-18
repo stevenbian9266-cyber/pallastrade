@@ -16,7 +16,8 @@ module PallasTrade
 
       helper_method :cost_amount, :cost_rate
 
-      before_action :add_cost_breadcrumbs
+      # 面包屑由导航自动推导（P6）：Orders > Payment Costs。控制器不再手写
+      # 模块/子页 crumb（2026-09-18 修复重复层级）。
 
       # GET /admin/payment_costs
       def index
@@ -146,11 +147,6 @@ module PallasTrade
             ]
           end
         end
-      end
-
-      def add_cost_breadcrumbs
-        add_breadcrumb PallasTrade.t(:orders), PallasTrade.admin_orders_path
-        add_breadcrumb PallasTrade.t('admin.payment_costs.title'), PallasTrade.admin_payment_costs_path
       end
 
       def audit_actor

@@ -3,17 +3,24 @@
    ========================================================================== */
 
 @layer components {
+  /* 颜色契约（2026-09-18）：整条 trail 使用**同一个**语义 token，不随
+     「该项是不是链接」而变化。
+     原因：渲染器（breadcrumbs_on_rails SimpleBuilder）用 link_to_unless_current，
+     当前页会被渲染成纯文本；若此处不定色，链接会命中全局
+     `a { color: var(--color-primary) }`（品牌蓝）、纯文本命中 body（#111827 黑），
+     同一条面包屑就会出现蓝黑混排。当前页只用字重区分（见 last-child 规则）。 */
   .breadcrumb {
     @apply flex flex-wrap items-center mb-0 list-none font-medium bg-transparent rounded-none;
-    @apply gap-2 p-0 ps-4 h-8 border-s border-gray-100;
+    @apply gap-2 p-0 ps-4 h-8 border-s border-border;
+    @apply text-text-muted;
   }
 
   .breadcrumb li a {
-    @apply no-underline;
+    @apply no-underline text-inherit;
   }
 
   .breadcrumb li a:hover {
-    @apply text-zinc-950 underline;
+    @apply text-text underline;
   }
 
   .breadcrumb li:last-child:not(:first-child) {

@@ -17,7 +17,8 @@ module PallasTrade
 
       helper_method :currency_rate_source_label, :rate_value
 
-      before_action :add_currency_rate_breadcrumbs
+      # 面包屑由导航自动推导（P6）：Orders > Currency Rates。控制器不再手写
+      # 模块/子页 crumb（2026-09-18 修复重复层级）。
       before_action :load_rate, only: %i[revoke]
 
       # GET /admin/currency_rates
@@ -105,11 +106,6 @@ module PallasTrade
         else
           user || 'admin'
         end
-      end
-
-      def add_currency_rate_breadcrumbs
-        add_breadcrumb PallasTrade.t(:orders), PallasTrade.admin_orders_path
-        add_breadcrumb PallasTrade.t('admin.currency_rates.title'), PallasTrade.admin_currency_rates_path
       end
 
       def load_rate

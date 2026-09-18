@@ -14,7 +14,8 @@ module PallasTrade
       PER_PAGE = 50
       POLICY_KEY = PallasTrade::Refunds::Policy::KEY
 
-      before_action :add_refund_approval_breadcrumbs
+      # 面包屑由导航自动推导（P6）：Orders > Refund Approvals。控制器不再手写
+      # 模块/子页 crumb（2026-09-18 修复重复层级）。
       before_action :load_approval, only: %i[approve reject]
 
       # GET /admin/refund_approvals
@@ -102,11 +103,6 @@ module PallasTrade
       # 授权锚点：`can :manage, PallasTrade::RefundApproval`（configuration_management）
       def model_class
         PallasTrade::RefundApproval
-      end
-
-      def add_refund_approval_breadcrumbs
-        add_breadcrumb PallasTrade.t(:orders), PallasTrade.admin_orders_path
-        add_breadcrumb PallasTrade.t('admin.refund_approvals.title'), PallasTrade.admin_refund_approvals_path
       end
 
       def load_approval

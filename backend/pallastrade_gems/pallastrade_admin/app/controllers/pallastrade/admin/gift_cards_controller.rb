@@ -48,12 +48,12 @@ module PallasTrade
       end
 
       def add_breadcrumbs
-        # 默认面包屑（Promotions > Gift Cards）由导航自动推导（P3）；
-        # 仅用户上下文需要追加：Customers > 用户名
+        # 默认面包屑（Promotions > Gift Cards）由导航自动推导（P3）；用户上下文下
+        # 导航已推导 Customers > Customers List，这里**只**追加用户名——
+        # 再手写 Customers 层会与推导结果重复（2026-09-18 修复）。
         return unless @user.present?
 
         @breadcrumb_icon = 'users'
-        add_breadcrumb PallasTrade.t(:customers), :admin_users_path
         add_breadcrumb @user.name, PallasTrade.admin_user_path(@user)
       end
 

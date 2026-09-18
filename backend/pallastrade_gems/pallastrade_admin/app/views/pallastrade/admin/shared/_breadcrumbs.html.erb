@@ -1,7 +1,8 @@
 <%# PALLAS-CUSTOM: P6 起设置区融入主区，不再有 Settings 前缀 crumb %>
+<%# 颜色契约在 components/_breadcrumbs.css（统一语义 token）；分隔符用更浅的 text-text-subtle %>
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <%= render_breadcrumb_icon %>
-    <%= render_breadcrumbs tag: :li, separator: icon('slash', class: 'text-gray-600 text-sm') %>
+    <%= render_breadcrumbs tag: :li, separator: icon('slash', class: 'text-text-subtle text-sm') %>
   </ol>
 </nav>

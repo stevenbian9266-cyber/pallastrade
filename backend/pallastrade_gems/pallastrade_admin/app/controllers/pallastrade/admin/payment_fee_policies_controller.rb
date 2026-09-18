@@ -18,7 +18,8 @@ module PallasTrade
 
       helper_method :fee_policy_scope_label
 
-      before_action :add_fee_policy_breadcrumbs
+      # 面包屑由导航自动推导（P6）：Orders > Payment Fee Policies。控制器不再手写
+      # 模块/子页 crumb（2026-09-18 修复重复层级）。
       before_action :load_policy, only: %i[edit update revoke]
 
       # GET /admin/payment_fee_policies
@@ -118,11 +119,6 @@ module PallasTrade
         else
           user || 'admin'
         end
-      end
-
-      def add_fee_policy_breadcrumbs
-        add_breadcrumb PallasTrade.t(:orders), PallasTrade.admin_orders_path
-        add_breadcrumb PallasTrade.t('admin.payment_fee_policies.title'), PallasTrade.admin_payment_fee_policies_path
       end
 
       def load_policy

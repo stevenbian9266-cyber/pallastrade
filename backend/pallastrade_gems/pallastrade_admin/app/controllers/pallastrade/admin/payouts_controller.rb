@@ -14,7 +14,8 @@ module PallasTrade
     class PayoutsController < BaseController
       PER_PAGE = 50
 
-      before_action :add_payout_breadcrumbs
+      # 面包屑由导航自动推导（P6）：Orders > Payouts。控制器不再手写
+      # 模块/子页 crumb（2026-09-18 修复重复层级）。
       before_action :load_payout, only: %i[show match]
 
       # GET /admin/payouts
@@ -96,11 +97,6 @@ module PallasTrade
       # 授权锚点：`can :manage, PallasTrade::Payout`
       def model_class
         PallasTrade::Payout
-      end
-
-      def add_payout_breadcrumbs
-        add_breadcrumb PallasTrade.t(:orders), PallasTrade.admin_orders_path
-        add_breadcrumb PallasTrade.t('admin.payouts.title'), PallasTrade.admin_payouts_path
       end
 
       def load_payout

@@ -61,7 +61,19 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
       PallasTrade::Admin::ReturnAuthorizationsController,
       PallasTrade::Admin::EmailLogsController,
       PallasTrade::Admin::ContactMessagesController,
-      PallasTrade::Admin::EmailNotificationScenariosController
+      PallasTrade::Admin::EmailNotificationScenariosController,
+      # D 系列支付/风控工作台（AC-012 面包屑回归新增，2026-09-18）
+      PallasTrade::Admin::CurrencyRatesController,
+      PallasTrade::Admin::FxSnapshotsController,
+      PallasTrade::Admin::PaymentCostsController,
+      PallasTrade::Admin::PaymentFeePoliciesController,
+      PallasTrade::Admin::PaymentRiskController,
+      PallasTrade::Admin::PayoutsController,
+      PallasTrade::Admin::ReconciliationCasesController,
+      PallasTrade::Admin::RefundApprovalsController,
+      PallasTrade::Admin::RiskListsController,
+      PallasTrade::Admin::RiskRulesController,
+      PallasTrade::Admin::DisputeRatesController
     ].each do |klass|
       allow_any_instance_of(klass).to receive(:current_store).and_return(store)
     end
@@ -398,6 +410,74 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
       crumb = breadcrumb_text
       expect(crumb).to include(PallasTrade.t(:orders))
       expect(crumb).to include(PallasTrade.t(:draft_orders))
+    end
+  end
+
+  # ============================================================
+  # AC-012：面包屑层级唯一 + 颜色不随「是否链接」变化（2026-09-18 bugfix）
+  # ============================================================
+  describe 'AC-012 — 面包屑无重复层级 + 单一颜色契约' do
+    # Orders 下的工作台页：推导链必须是恰好「Orders > 子项」，
+    # 控制器不得再手写模块/子页 crumb（否则会出现 Orders > X > Orders > X）。
+    ORDERS_CHILD_LABELS = {
+      '/admin/currency_rates' => 'admin.currency_rates.title',
+      '/admin/fx_snapshots' => 'admin.fx_snapshots.title',
+      '/admin/payment_costs' => 'admin.payment_costs.title',
+      '/admin/payment_fee_policies' => 'admin.payment_fee_policies.title',
+      '/admin/payment_risk' => 'admin.payment_risk.title',
+      '/admin/payouts' => 'admin.payouts.title',
+      '/admin/reconciliation_cases' => 'admin.reconciliation_cases.title',
+      '/admin/refund_approvals' => 'admin.refund_approvals.title',
+      '/admin/risk_lists' => 'admin.risk_lists.title',
+      '/admin/risk_rules' => 'admin.risk_rules.title',
+      '/admin/dispute_rates' => 'admin.dispute_rates.title'
+    }.freeze
+
+    def breadcrumb_items
+      Nokogiri::HTML(response.body).css('nav[aria-label="breadcrumb"] ol li')
+    end
+
+    def breadcrumb_labels
+      breadcrumb_items.map { |li| li.text.strip }
+    end
+
+    it '每个 Orders 工作台页只给一条「Orders > 子项」（无重复层级）' do
+      ORDERS_CHILD_LABELS.each do |path, key|
+        get path
+        expect(response).to have_http_status(:ok), "#{path} 未渲染"
+        expect(breadcrumb_labels).to eq([PallasTrade.t(:orders), PallasTrade.t(key)]),
+                                     "#{path} 面包屑层级错误：#{breadcrumb_labels.inspect}"
+      end
+    end
+
+    it 'Developers > Webhook Events（不再夹带 Webhook Endpoints 层）' do
+      get '/admin/webhook_events'
+      expect(response).to have_http_status(:ok)
+      expect(breadcrumb_labels).to eq([PallasTrade.t(:developers),
+                                       PallasTrade.t('admin.webhook_events.title')])
+    end
+
+    it '用户上下文礼品卡：Customers > Customers List > 用户名（Customers 不重复）' do
+      user = create(:user)
+      get "/admin/users/#{user.prefixed_id}/gift_cards"
+      expect(response).to have_http_status(:ok)
+      expect(breadcrumb_labels).to eq([PallasTrade.t(:customers),
+                                       PallasTrade.t('admin.customers.customers_list'),
+                                       user.name])
+    end
+
+    it 'DOM 契约：非末级是链接、末级是纯文本（颜色不得依赖「是否链接」）' do
+      get '/admin/currency_rates'
+      items = breadcrumb_items
+      expect(items.size).to eq(2)
+      expect(items.first.at_css('a')).to be_present
+      expect(items.last.at_css('a')).to be_nil
+    end
+
+    it '分隔符图标走语义 token（不再直引调色板）' do
+      get '/admin/currency_rates'
+      expect(response.body).to include('ti-slash text-text-subtle')
+      expect(response.body).not_to include('ti-slash text-gray-600')
     end
   end
 end

@@ -17,7 +17,8 @@ module PallasTrade
       PER_PAGE = 50
       EXPORT_LIMIT = 10_000
 
-      before_action :add_reconciliation_breadcrumbs
+      # 面包屑由导航自动推导（P6）：Orders > Reconciliation Cases。控制器不再手写
+      # 模块/子页 crumb（2026-09-18 修复重复层级）。
       before_action :load_case, only: %i[show assign note mark_investigating mark_explained mark_fixed dismiss reopen]
 
       # GET /admin/reconciliation_cases
@@ -147,12 +148,6 @@ module PallasTrade
       # 授权锚点：`can :manage, PallasTrade::ReconciliationCase`（配置管理权限集）。
       def model_class
         PallasTrade::ReconciliationCase
-      end
-
-      def add_reconciliation_breadcrumbs
-        add_breadcrumb PallasTrade.t(:orders), PallasTrade.admin_orders_path
-        add_breadcrumb PallasTrade.t('admin.reconciliation_cases.title'),
-                       PallasTrade.admin_reconciliation_cases_path
       end
 
       def load_case

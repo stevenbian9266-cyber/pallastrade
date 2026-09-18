@@ -25,7 +25,8 @@ module PallasTrade
 
       helper_method :rate_percent, :bps_percent, :bucket_label, :alert_scope
 
-      before_action :add_dispute_rate_breadcrumbs
+      # 面包屑由导航自动推导（P6）：Orders > Dispute Rates。控制器不再手写
+      # 模块/子页 crumb（2026-09-18 修复重复层级）。
 
       # GET /admin/dispute_rates
       def index
@@ -299,10 +300,6 @@ module PallasTrade
         else
           user || 'admin'
         end
-      end
-
-      def add_dispute_rate_breadcrumbs
-        add_breadcrumb PallasTrade.t('admin.dispute_rates.title'), PallasTrade.admin_dispute_rates_path
       end
 
       # 百分比展示（比率 → %；nil → 破折号由视图处理）

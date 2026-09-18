@@ -23,7 +23,8 @@ module PallasTrade
 
       helper_method :risk_list_status_label, :risk_list_status_class, :risk_list_scope_label
 
-      before_action :add_risk_list_breadcrumbs
+      # 面包屑由导航自动推导（P6）：Orders > Risk Lists。控制器不再手写
+      # 模块/子页 crumb（2026-09-18 修复重复层级）。
       before_action :load_entry, only: %i[revoke]
 
       # GET /admin/risk_lists
@@ -157,11 +158,6 @@ module PallasTrade
         else
           user || 'admin'
         end
-      end
-
-      def add_risk_list_breadcrumbs
-        add_breadcrumb PallasTrade.t(:orders), PallasTrade.admin_orders_path
-        add_breadcrumb PallasTrade.t('admin.risk_lists.title'), PallasTrade.admin_risk_lists_path
       end
 
       def load_entry

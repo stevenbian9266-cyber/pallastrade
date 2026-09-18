@@ -115,6 +115,36 @@ RSpec.describe 'Admin design tokens (B6-1)' do
     end
   end
 
+  describe '面包屑颜色契约（2026-09-18 bugfix）' do
+    # 面包屑的渲染器用 link_to_unless_current：当前页是纯文本、其余是 <a>。
+    # 组件若不显式定色，链接会命中全局 `a { color: var(--color-primary) }`（品牌蓝）、
+    # 纯文本命中 body（#111827 黑），同一条 trail 就会蓝黑混排。
+    let(:breadcrumbs_css) { File.read(COMPONENTS_DIR.join('_breadcrumbs.css')) }
+    let(:breadcrumbs_view) do
+      File.read(ADMIN_ROOT.join('app/views/pallastrade/admin/shared/_breadcrumbs.html.erb'))
+    end
+
+    it 'declares a single semantic colour for the whole trail (link and text alike)' do
+      expect(breadcrumbs_css).to include('text-text-muted'), '面包屑缺少统一语义色'
+      expect(breadcrumbs_css).to include('text-inherit'), '链接未继承容器色（会落回全局品牌蓝）'
+    end
+
+    it 'leaves no direct Tailwind palette usage in the breadcrumb component' do
+      [breadcrumbs_css, breadcrumbs_view].each do |source|
+        expect(source).not_to match(/text-(zinc|gray|slate|blue|neutral)-\d/)
+        expect(source).not_to match(/border-(zinc|gray|slate|blue|neutral)-\d/)
+      end
+    end
+
+    it 'routes the separator icon through a semantic token' do
+      expect(breadcrumbs_view).to include('text-text-subtle')
+    end
+
+    it 'keeps the current page distinguishable by weight, not by colour' do
+      expect(breadcrumbs_css).to include('font-semibold')
+    end
+  end
+
   describe '可访问性契约（WCAG AA）' do
     def hex_of(name) = token(name)
 

@@ -200,8 +200,18 @@ The full nav API is in `pallastrade/admin/app/models/pallastrade/admin/navigatio
    <% end %>
    ```
 
-### 统一单一侧边栏（P6）
+9. **面包屑颜色契约（2026-09-18 bugfix）**：整条 trail 用**同一个**语义 token ——
+   `.breadcrumb` 上 `text-text-muted`、`li a` 上 `text-inherit`（覆盖全局
+   `a { color: var(--color-primary) }` 的品牌蓝）、分隔符 `text-text-subtle`，
+   当前页只靠 `font-semibold` 区分（不改色）。
+   **原因**：渲染器（`breadcrumbs_on_rails` 的 `SimpleBuilder`）用 `link_to_unless_current`
+   —— 当前页是纯文本、其余是 `<a>`；组件不定色时链接落蓝、纯文本落 body 黑，
+   同一条面包屑就会蓝黑混排（叶子页整条黑、带层级页面前段蓝）。
+   改动后必须重建产物：`bin/rails pallastrade:admin:tailwindcss:build`。
+   回归：`spec/design/admin_theme_tokens_spec.rb`（面包屑颜色契约用例）+
+   `navigation_consistency_spec.rb` AC-012。
 
+### 统一单一侧边栏（P6）
 后台只有**一棵**侧边栏树（`PallasTrade.admin.navigation.sidebar`）：
 
 | 要素 | 要求 |
@@ -236,9 +246,12 @@ end
 # returns: { title: -> { "... & ..." }, tabs: :returns_tabs, nav_partials: :returns_and_refunds_nav_partials }
 ```
 
-⚠️ 通用禁忌：不要在 action 方法内手写 `add_breadcrumb` 拼模块/子页 crumb（已自动推导）；
+⚠️ 通用禁忌：不要在 action 方法内手写 `add_breadcrumb` 拼模块/子页 crumb（已自动推导）——
+否则会出现 `Orders > Currency Rates > Orders > Currency Rates` 这类**重复层级**
+（2026-09-18 已清理 12 个 D 系列工作台控制器与 gift_cards 用户上下文的 Customers 层）；
+控制器只负责**对象 crumb**（产品名/订单号/用户名）与声明了 `skip_breadcrumb_derivation` 的特殊上下文。
 所有页面都必须有页面头（否则 `page_actions` 丢失）。回归断言见
-`navigation_consistency_spec.rb`（AC-006~AC-011 用例）。
+`navigation_consistency_spec.rb`（AC-006~AC-012 用例）与 `admin_theme_tokens_spec.rb`（颜色契约）。
 
 ## 权限体系 + 可视化菜单配置（2026-08-16，P1-P6 权限体系重构）
 

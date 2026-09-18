@@ -19,7 +19,8 @@ module PallasTrade
       helper_method :risk_rule_scope_label, :risk_rule_status_label, :risk_rule_version_state_label,
                     :risk_rule_action_label, :risk_rule_condition_summary
 
-      before_action :add_risk_rule_breadcrumbs
+      # 面包屑由导航自动推导（P6）：Orders > Risk Rules。控制器不再手写
+      # 模块/子页 crumb（2026-09-18 修复重复层级）。
       before_action :load_rule_set, only: %i[show create_version publish canary rollback toggle]
 
       # GET /admin/risk_rules
@@ -146,11 +147,6 @@ module PallasTrade
 
       def model_class
         PallasTrade::RiskRuleSet
-      end
-
-      def add_risk_rule_breadcrumbs
-        add_breadcrumb PallasTrade.t(:orders), PallasTrade.admin_orders_path
-        add_breadcrumb PallasTrade.t('admin.risk_rules.title'), PallasTrade.admin_risk_rules_path
       end
 
       def load_rule_set

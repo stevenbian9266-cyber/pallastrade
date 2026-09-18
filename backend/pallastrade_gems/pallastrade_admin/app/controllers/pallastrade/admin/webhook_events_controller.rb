@@ -14,7 +14,8 @@ module PallasTrade
     class WebhookEventsController < BaseController
       PER_PAGE = 50
 
-      before_action :add_webhook_event_breadcrumbs
+      # 面包屑由导航自动推导（P6）：Developers > Webhook Events。控制器不再手写
+      # 模块/子页 crumb（2026-09-18 修复重复层级）。
 
       # GET /admin/webhook_events
       def index
@@ -79,11 +80,6 @@ module PallasTrade
       # 授权锚点：`can :manage, PallasTrade::PaymentWebhookEvent`（配置管理权限集）。
       def model_class
         PallasTrade::PaymentWebhookEvent
-      end
-
-      def add_webhook_event_breadcrumbs
-        add_breadcrumb PallasTrade.t(:webhook_endpoints), PallasTrade.admin_webhook_endpoints_path
-        add_breadcrumb PallasTrade.t('admin.webhook_events.title'), PallasTrade.admin_webhook_events_path
       end
 
       # 内部表无 prefixed id -> 直接按整数主键加载（不暴露资源 API）。
