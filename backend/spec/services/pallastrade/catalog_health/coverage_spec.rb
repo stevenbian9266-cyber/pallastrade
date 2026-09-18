@@ -113,8 +113,29 @@ RSpec.describe PallasTrade::CatalogHealth::Coverage do
   end
 
   describe 'shape' do
-    it 'always exposes both metrics in a stable order' do
-      expect(coverage.metrics.map(&:key)).to eq(%w[missing_seo missing_translations])
+    # 冻结的覆盖面清单：新增/删除一类 issue 时，必须**有意识地**同步
+    # `Issues::KEYS` / `DENOMINATORS` / `admin.catalog_health.coverage.metrics.<key>` 文案 / 本断言。
+    # 这条断言的价值不在「现在是 7 个」，而在「覆盖面变化不会静悄悄发生」。
+    # 2026-09-18 修复：上一版写死两项（覆盖率 PRD 落地时只有 SEO / 翻译），
+    # 7 类扩容（健康分批次）时漏改 → dev Backend CI 连续 4 个提交红。
+    let(:stable_metric_keys) do
+      %w[
+        missing_media missing_description missing_seo missing_translations
+        active_zero_stock redirect_unresolved old_drafts
+      ]
+    end
+
+    it 'exposes every issue key, in the authority order, with no extras' do
+      expect(coverage.metrics.map(&:key)).to eq(stable_metric_keys)
+      expect(stable_metric_keys).to eq(PallasTrade::CatalogHealth::Issues::KEYS),
+                                     '覆盖面与 Issues::KEYS 漂移：新增/删除 issue 类必须同步本断言'
+    end
+
+    it 'declares a denominator strategy for every issue key' do
+      # 未声明的 key 会落到 `zero_denominator` → total 恒为 0 → ratio 为 nil，
+      # 看上去像「诚实的缺失」，实际是漏配分母（页面会一直显示 "No data yet"）。
+      expect(described_class::DENOMINATORS.keys)
+        .to match_array(PallasTrade::CatalogHealth::Issues::KEYS)
     end
 
     it 'keeps its query count flat as products grow' do
