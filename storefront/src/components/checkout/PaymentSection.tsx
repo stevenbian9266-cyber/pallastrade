@@ -28,8 +28,14 @@ export interface PaymentEntry {
   position: number;
 }
 
-export interface PaymentMethodWithEntries extends PaymentMethod {
+export interface PaymentMethodWithEntries
+  extends Omit<PaymentMethod, "group" | "position"> {
   entries?: PaymentEntry[] | null;
+  /**
+   * provider 级分组 / 排序（additive 契约，Typelizer 生成里是必填）。
+   * 这里用 `Omit + 可选` 声明：既兼容**已重新生成**的 SDK（必填 `group`/`position`），
+   * 也兼容未重新生成、仍是旧类型的消费者（缺字段 → 由 `paymentEntriesFor` 推导）。
+   */
   group?: string;
   position?: number;
   /** D15 切片3：本单是否要求 3DS/SCA（服务端权威；仅用于提示，不做筛选）。 */
