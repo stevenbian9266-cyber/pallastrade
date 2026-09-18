@@ -220,7 +220,7 @@ describe("WalletPaymentButtons (D7)", () => {
           paymentMethods: Record<string, string>;
         }
       ).paymentMethods,
-    ).toEqual({ applePay: "auto", googlePay: "never", link: "never" });
+    ).toEqual({ applePay: "always", googlePay: "never", link: "never" });
   });
 
   // PRD-20260918-payments-d7-payment-section-express AC-011：

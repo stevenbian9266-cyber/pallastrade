@@ -25,6 +25,16 @@ export const EXPRESS_WALLET_KINDS = [
 /** Stripe `ExpressCheckoutElement.paymentMethods` 的键。 */
 export type StripeWalletKey = "applePay" | "googlePay" | "link";
 
+/**
+ * 逐键精确的类型（与 `@stripe/stripe-js` 的 `express-checkout.d.ts` 对齐）：
+ * `applePay` / `googlePay` 支持 `always`；**`link` 只支持 `auto` | `never`**。
+ */
+export interface ExpressPaymentMethodsConfig {
+  applePay: "always" | "auto" | "never";
+  googlePay: "always" | "auto" | "never";
+  link: "auto" | "never";
+}
+
 /** 设备能力三态。 */
 export type WalletState = "unknown" | "available" | "unavailable";
 
@@ -80,21 +90,29 @@ export function isExpressWalletKind(methodKey?: string | null): boolean {
 /**
  * 按选中入口构造 `paymentMethods`。
  *
- * - `methodKey` 为 `undefined` / `null` / `''` → **无入口上下文**（购物车抽屉：多钱包并排），
- *   三项均 `auto`（保持既有行为）。
+ * **为什么用 `always` 而不是 `auto`**（Stripe 官方文档 *Express Checkout Element* → 支持的浏览器）：
+ *   - 脚注 3：**非 Safari 桌面端浏览器仅在 `paymentMethods.applePay = 'always'` 时才支持 Apple Pay**
+ *     （`auto` 时 Chrome/Edge 桌面端不初始化 Apple Pay → 前台表现为一直加载/无按钮）；
+ *   - 脚注 4：**Firefox / Safari / iOS 浏览器仅在 `paymentMethods.googlePay = 'always'` 时支持 Google Pay**；
+ *   - 同名章节：「若要允许 Apple Pay 或 Google Pay 在**未设置时显示**，请设置为 `always`。但是，
+ *     如果平台不支持或付款时使用不受支持的货币，它们仍然不会被迫出现」。
+ * 即 `always` 只解除「未设置/浏览器未命中就不显示」的限制，**不会**在平台或币种不支持时强行渲染。
+ *
+ * - `methodKey` 为 `undefined` / `null` / `''` → **无入口上下文**（购物车抽屉：多钱包并排）→ 两个钱包 `always`。
  * - 有入口但 kind 前台不支持 → 返回 null（调用方不渲染钱包元素，走说明行）。
  */
 export function expressPaymentMethodsFor(
   methodKey?: string | null,
-): Record<StripeWalletKey, "auto" | "never"> | null {
+): ExpressPaymentMethodsConfig | null {
   if (methodKey === undefined || methodKey === null || methodKey === "") {
-    return { applePay: "auto", googlePay: "auto", link: "auto" };
+    return { applePay: "always", googlePay: "always", link: "auto" };
   }
   const selected = stripeWalletKeyFor(methodKey);
   if (!selected) return null;
   return {
-    applePay: selected === "applePay" ? "auto" : "never",
-    googlePay: selected === "googlePay" ? "auto" : "never",
+    applePay: selected === "applePay" ? "always" : "never",
+    googlePay: selected === "googlePay" ? "always" : "never",
+    // Link 的类型只允许 'auto' | 'never'（@stripe/stripe-js express-checkout.d.ts）
     link: selected === "link" ? "auto" : "never",
   };
 }

@@ -606,9 +606,14 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 钱包入口的**服务端可用性**（D8/D11/D15c）与**设备能力**是两件事，后者只有客户端知道。
 读数模型集中在 `lib/checkout/wallet-availability.ts`（**改钱包行为先看它**）：
 
-- **点谁显示谁（AC-013）**：`expressPaymentMethodsFor(method_key)` 把选中钱包设 `auto`、其余设 `never`
-  （此前三项均 `auto` → 点 Apple Pay 会同时出现该设备所有可用钱包）。
-  `method_key` 为 undefined/空 → **无入口上下文**（购物车抽屉）→ 保持三项 `auto`；
+- **点谁显示谁（AC-013）**：`expressPaymentMethodsFor(method_key)` 把选中钱包设 `always`、其余设 `never`。
+  **为什么是 `always` 而不是 `auto`**（Stripe 官方文档 *Express Checkout Element* → 支持的浏览器）：
+  **脚注 3** 非 Safari 桌面端浏览器（Chrome/Edge）**仅当 `paymentMethods.applePay = 'always'` 才支持 Apple Pay**；
+  **脚注 4** Firefox / Safari / iOS 浏览器**仅当 `googlePay = 'always'` 才支持 Google Pay**；
+  且 `always` 只解除「未设置/浏览器未命中就不显示」，**平台或币种不支持时仍不会强行渲染**（文档同名章节）。
+  坑（实测）：用 `auto` 时 PC 端 Apple Pay 永远不初始化（表现为一直加载），移动端 Safari 的 Google Pay 同理。
+  `link` 只接受 `auto` | `never`（`@stripe/stripe-js` 的 `express-checkout.d.ts` 类型即如此，写 `always` 会编译失败）。
+  `method_key` 为 undefined/空 → **无入口上下文**（购物车抽屉）→ 两个钱包 `always`、Link `auto`；
   非前台支持的 kind（`paypal` / `shop_pay` / `amazon_pay`）→ 返回 null → 不渲染钱包元素（只给说明行）。
 - **三态而非布尔（AC-015）**：`unknown`（未上报 = **不得判死**）/ `available` / `unavailable` + **原因**
   （`device` 支付商明确无此钱包 / `timeout` 看门狗超时 / `unsupported` 前台不支持 / `unconfigured` 无密钥）。

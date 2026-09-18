@@ -1312,8 +1312,9 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   隐藏与否一律由服务端决定。旧响应无 `entries` → 回落「一 provider 一行」（零回归）。
   - **补口 3（设备能力，2026-09-18）**：**设备钱包能力**是客户端唯一可知的第二个轴 —— 读数模型
     `storefront/src/lib/checkout/wallet-availability.ts`（**改钱包行为先看它**）：
-    - **点谁显示谁**：`expressPaymentMethodsFor(method_key)` 把选中钱包设 `auto`、其余设 `never`
-      （此前三项全 `auto` → 点 Apple Pay 会把该设备所有可用钱包一起渲染）；无入口上下文（抽屉）= 三项 `auto`。
+    - **点谁显示谁**：`expressPaymentMethodsFor(method_key)` 把选中钱包设 `always`、其余设 `never`
+      （Stripe 文档脚注：非 Safari 桌面端 Apple Pay、Firefox/Safari/iOS 的 Google Pay **只在 `always` 时才支持**；
+      `auto` 会让 PC 端 Apple Pay 永不初始化）；`link` 只接受 `auto|never`。无入口上下文（抽屉）→ 两个钱包 `always`。
     - **三态 + 原因**：`unknown`（未上报 = 不得判死）/ `available` / `unavailable` + 原因（`device` / `timeout` /
       `unsupported` / `unconfigured`）。`undefined` **不得**当作不可用；10s 看门狗超时 → `timeout`（可重试），
       文案不得写成「本设备不支持」。

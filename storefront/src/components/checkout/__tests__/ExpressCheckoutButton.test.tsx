@@ -375,7 +375,7 @@ describe("ExpressCheckoutButton (canonical wallet)", () => {
           paymentMethods: Record<string, string>;
         }
       ).paymentMethods,
-    ).toEqual({ applePay: "auto", googlePay: "never", link: "never" });
+    ).toEqual({ applePay: "always", googlePay: "never", link: "never" });
   });
 
   // AC-013（反例）：无入口上下文（购物车抽屉）→ 多钱包并排（保持既有行为）
@@ -395,6 +395,6 @@ describe("ExpressCheckoutButton (canonical wallet)", () => {
           paymentMethods: Record<string, string>;
         }
       ).paymentMethods,
-    ).toEqual({ applePay: "auto", googlePay: "auto", link: "auto" });
+    ).toEqual({ applePay: "always", googlePay: "always", link: "auto" });
   });
 });
