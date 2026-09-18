@@ -237,6 +237,30 @@ export function OrderPaymentContent({
 
   const [processing, setProcessing] = useState(false);
   const [walletProcessing, setWalletProcessing] = useState(false);
+  // D7 补口 2（2026-09-18）：**设备侧**不可用的入口（钱包 SDK 报告，如 Windows 无 Apple Pay）。
+  // 服务端不知道设备能力，只有客户端知道 → 只**标注 + 禁用 + 回落**，不删除入口。
+  const [unavailableEntryIds, setUnavailableEntryIds] = useState<string[]>([]);
+  /** 钱包组件报告本设备不可用 → 置灰该入口 + 自动回落卡支付 + 提示原因。 */
+  const markEntryUnavailable = useCallback(
+    (optionId: string) => {
+      setUnavailableEntryIds((prev) =>
+        prev.includes(optionId) ? prev : [...prev, optionId],
+      );
+      setSelectedOptionId((current) => {
+        if (current !== optionId) return current;
+        const usable = paymentOptions.filter(
+          (o) =>
+            o.entry.option_id !== optionId &&
+            !unavailableEntryIds.includes(o.entry.option_id),
+        );
+        const fallback =
+          usable.find((o) => o.entry.frontend_kind === "inline") ?? usable[0];
+        return fallback?.entry.option_id ?? current;
+      });
+      toast.error(t("walletUnavailable"));
+    },
+    [paymentOptions, t, unavailableEntryIds],
+  );
   const cardFormRef = useRef<CardPaymentFormHandle | null>(null);
 
   const isPaid = order.state === "paid" || order.state === "completed";
@@ -714,6 +738,7 @@ export function OrderPaymentContent({
             selectedOptionId={selectedOptionId}
             onSelect={(entry) => setSelectedOptionId(entry.option_id)}
             emptyLabel={t("noPaymentMethod")}
+            unavailableOptionIds={unavailableEntryIds}
             // PALLAS-CUSTOM: D15 切片3 —— 服务端已按 3DS/SCA 认证需求过滤入口
             //（前端**不做筛选**）；这里只把「为什么只剩这些」说清楚。
             authenticationNotice={
@@ -723,7 +748,10 @@ export function OrderPaymentContent({
             }
           >
             {/* 形态槽：inline → 卡表单；express → 钱包按钮（manual 仅说明行） */}
-            {selectedIsWallet && selectedMethod && selectedEntry ? (
+            {selectedIsWallet &&
+            selectedMethod &&
+            selectedEntry &&
+            !unavailableEntryIds.includes(selectedEntry.option_id) ? (
               <div className="mt-4 rounded-lg border border-gray-200 p-4">
                 <WalletPaymentButtons
                   orderId={order.id}
@@ -732,6 +760,12 @@ export function OrderPaymentContent({
                   entry={selectedEntry}
                   onProcessingChange={setWalletProcessing}
                   onUnavailable={refreshView}
+                  onAvailabilityChange={(available) => {
+                    // D7 补口 2：本设备无该钱包 → 置灰入口 + 回落卡支付（不再留空白）
+                    if (!available) {
+                      markEntryUnavailable(selectedEntry.option_id);
+                    }
+                  }}
                 />
               </div>
             ) : null}
@@ -793,7 +827,10 @@ export function OrderPaymentContent({
         <span className="text-sm font-semibold text-gray-900">
           {read.display_total ?? ""}
         </span>
-        {selectedIsWallet && selectedMethod && selectedEntry ? (
+        {selectedIsWallet &&
+        selectedMethod &&
+        selectedEntry &&
+        !unavailableEntryIds.includes(selectedEntry.option_id) ? (
           <div className="w-1/2">
             <WalletPaymentButtons
               orderId={order.id}
@@ -802,6 +839,12 @@ export function OrderPaymentContent({
               entry={selectedEntry}
               onProcessingChange={setWalletProcessing}
               onUnavailable={refreshView}
+              onAvailabilityChange={(available) => {
+                // D7 补口 2：同一套回落逻辑（吸底条与页内共用）
+                if (!available) {
+                  markEntryUnavailable(selectedEntry.option_id);
+                }
+              }}
             />
           </div>
         ) : (

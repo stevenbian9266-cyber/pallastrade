@@ -422,6 +422,8 @@
     "noPaymentMethod": "Aucun moyen de paiement n'est disponible pour cette commande pour le moment. Contactez le support.",
     "authenticationRequired": "Cette commande nécessite une vérification supplémentaire de la carte. Seuls les moyens de paiement compatibles 3-D Secure sont affichés.",
     "manualPaymentNote": "Cette option est réglée hors boutique (virement ou à la livraison).",
+    "walletUnavailable": "Le paiement par portefeuille (Apple Pay / Google Pay) n'est pas disponible sur cet appareil. Payez par carte.",
+    "walletUnavailableShort": "Non disponible sur cet appareil",
     "payAmount": "Payer maintenant {amount}",
     "edit": "Modifier",
     "cancel": "Annuler",

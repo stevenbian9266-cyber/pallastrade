@@ -421,6 +421,8 @@
     "noPaymentMethod": "Für diese Bestellung ist derzeit keine Zahlungsart verfügbar. Bitte wenden Sie sich an den Support.",
     "authenticationRequired": "Für diese Bestellung ist eine zusätzliche Kartenprüfung nötig. Es werden nur Zahlungsarten mit 3-D Secure angezeigt.",
     "manualPaymentNote": "Diese Option wird außerhalb des Shops abgewickelt (Überweisung oder Lieferung).",
+    "walletUnavailable": "Wallet-Zahlung (Apple Pay / Google Pay) ist auf diesem Gerät nicht verfügbar. Bitte mit Karte bezahlen.",
+    "walletUnavailableShort": "Auf diesem Gerät nicht verfügbar",
     "checkoutNotReady": "Bitte vervollständigen Sie die fehlenden Checkout-Angaben, bevor Sie bezahlen.",
     "payAmount": "Jetzt bezahlen {amount}",
     "edit": "Bearbeiten",

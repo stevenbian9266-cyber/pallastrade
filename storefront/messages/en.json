@@ -424,6 +424,8 @@
     "noPaymentMethod": "No payment method is available for this order right now. Please contact support.",
     "authenticationRequired": "This order needs extra card verification. Only payment methods that support 3-D Secure are shown.",
     "manualPaymentNote": "This option is settled outside the store (bank transfer or on delivery).",
+    "walletUnavailable": "Wallet payment (Apple Pay / Google Pay) isn't available on this device. Please pay with card instead.",
+    "walletUnavailableShort": "Not available on this device",
     "payAmount": "Pay Now {amount}",
     "edit": "Edit",
     "cancel": "Cancel",

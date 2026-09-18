@@ -422,6 +422,8 @@
     "noPaymentMethod": "Obecnie brak dostępnej metody płatności dla tego zamówienia. Skontaktuj się z obsługą.",
     "authenticationRequired": "To zamówienie wymaga dodatkowej weryfikacji karty. Wyświetlane są tylko metody obsługujące 3-D Secure.",
     "manualPaymentNote": "Ta opcja jest rozliczana poza sklepem (przelew lub płatność przy odbiorze).",
+    "walletUnavailable": "Płatność portfelem (Apple Pay / Google Pay) nie jest dostępna na tym urządzeniu. Zapłać kartą.",
+    "walletUnavailableShort": "Niedostępne na tym urządzeniu",
     "payAmount": "Zapłać teraz {amount}",
     "edit": "Edytuj",
     "cancel": "Anuluj",

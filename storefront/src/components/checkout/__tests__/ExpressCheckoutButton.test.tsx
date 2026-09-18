@@ -264,4 +264,55 @@ describe("ExpressCheckoutButton (canonical wallet)", () => {
     expect(pushMock).not.toHaveBeenCalled();
     expect(e.paymentFailed).toHaveBeenCalledWith({ reason: "fail" });
   });
+
+  // PRD-20260918-payments-d7-payment-section-express AC-011：
+  // 设备无可用钱包（全 false）→ 显式说明块（旧行为：静默 `return null` → 父级只剩空盒子）
+  it("renders an explicit notice when the device has no wallet available (D7 AC-011)", async () => {
+    const onAvailabilityChange = vi.fn();
+    render(
+      <ExpressCheckoutButton
+        cart={cart}
+        basePath="/us/en"
+        onComplete={vi.fn()}
+        onAvailabilityChange={onAvailabilityChange}
+      />,
+    );
+    await waitFor(() => expect(capturedElementProps.onReady).toBeDefined());
+
+    await act(async () => {
+      (capturedElementProps.onReady as (event: unknown) => void)({
+        availablePaymentMethods: {
+          applePay: false,
+          googlePay: false,
+          link: false,
+        },
+      });
+    });
+
+    expect(onAvailabilityChange).toHaveBeenCalledWith(false);
+    expect(await screen.findByTestId("wallet-unavailable-notice")).toBeTruthy();
+  });
+
+  // PRD-20260918-payments-d7-payment-section-express AC-012：
+  // 可用性**未知**（SDK 未给 availablePaymentMethods）→ 保持渲染，不得当成不可用
+  it("keeps the wallet element when availability data is unknown (D7 AC-012)", async () => {
+    const onAvailabilityChange = vi.fn();
+    render(
+      <ExpressCheckoutButton
+        cart={cart}
+        basePath="/us/en"
+        onComplete={vi.fn()}
+        onAvailabilityChange={onAvailabilityChange}
+      />,
+    );
+    await waitFor(() => expect(capturedElementProps.onReady).toBeDefined());
+
+    await act(async () => {
+      (capturedElementProps.onReady as (event: unknown) => void)({});
+    });
+
+    expect(onAvailabilityChange).toHaveBeenCalledWith(true);
+    expect(screen.getByTestId("express-checkout-element")).toBeTruthy();
+    expect(screen.queryByTestId("wallet-unavailable-notice")).toBeNull();
+  });
 });

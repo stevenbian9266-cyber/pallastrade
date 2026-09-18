@@ -1310,6 +1310,11 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   `validation_error` 通道错误码），**零 session 行**；前台按 D8 既有约定「刷新列表 + 提示重选」。
 - **前台红线**：**零筛选**——只按 `frontend_kind` 选渲染槽（`inline` 自绘卡字段 / `express` 钱包按钮 / `manual` 说明行），
   隐藏与否一律由服务端决定。旧响应无 `entries` → 回落「一 provider 一行」（零回归）。
+  - **补口 2（设备能力，2026-09-18）**：**设备钱包能力**是客户端唯一可知的第二个轴 —— 钱包 SDK（Stripe
+    `availablePaymentMethods`）报「本设备无该钱包」时，前台**只置灰/禁用**该入口（`PaymentSection.unavailableOptionIds`
+    + 行内备注）并**自动回落**卡支付，**不删除**入口行（集合仍由服务端决定）；`undefined`（未上报）不得当成不可用。
+    测试环境/设备差异：Windows 上 Apple Pay 必然不可用（`canMakePayment()` 可返回 `null`）——复现口径见
+    `pallastrade-storefront` Skill「设备钱包能力与降级」。
 - **回归**：`harness verify d7-payment-section-rspec` + 前端 `storefront-test`。
 
 ## 对账差异队列 — 只读结论 → 可运营案例（D13 切片1, 2026-09-16；PRD-20260916-payments-d13-reconciliation-cases）

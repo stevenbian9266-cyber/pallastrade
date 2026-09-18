@@ -85,15 +85,26 @@ export interface PaymentEntryRowProps {
   onSelect: (entry: PaymentEntry) => void;
   /** 单选组名（同一页多组时避免串组）。 */
   name?: string;
+  /**
+   * 设备侧不可用（如当前设备/浏览器没有 Apple Pay / Google Pay）。
+   *
+   * ⚠️ **只禁用、不删除**：入口集合仍由服务端 `Availability::Resolver` 决定（D8/D11/D15c 红线，
+   * 客户端不得按 `kind` / `frontend_kind` 隐藏入口）。这里表达的是**客户端唯一可知**的信息 ——
+   * 钱包 SDK（Stripe `availablePaymentMethods`）报告的本设备能力；不标注会得到
+   * 「看得到 → 点开空白」的结果（D7 补口 2）。
+   */
+  unavailable?: boolean;
 }
 
-/** 单个入口行（radio + 展示名）。 */
+/** 单个入口行（radio + 展示名；设备不可用 → 置灰禁用 + 备注）。 */
 export function PaymentEntryRow({
   entry,
   selected,
   onSelect,
   name = "payment-method",
+  unavailable = false,
 }: PaymentEntryRowProps) {
+  const t = useTranslations("checkout");
   const Icon = entryIconKind(entry) === "wallet" ? Wallet : CreditCard;
 
   return (
@@ -101,14 +112,20 @@ export function PaymentEntryRow({
       data-testid="payment-entry-row"
       data-option-id={entry.option_id}
       data-frontend-kind={entry.frontend_kind}
-      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:border-indigo-300 ${
-        selected ? "border-indigo-400 bg-indigo-50/40" : "border-gray-200"
+      data-unavailable={unavailable ? "true" : undefined}
+      className={`flex items-center gap-3 p-3 rounded-lg border ${
+        unavailable
+          ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
+          : `cursor-pointer hover:border-indigo-300 ${
+              selected ? "border-indigo-400 bg-indigo-50/40" : "border-gray-200"
+            }`
       }`}
     >
       <input
         type="radio"
         name={name}
         checked={selected}
+        disabled={unavailable}
         onChange={() => onSelect(entry)}
         className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
       />
@@ -116,6 +133,14 @@ export function PaymentEntryRow({
       <span className="flex-1 font-medium text-gray-900">
         {entry.display_name}
       </span>
+      {unavailable ? (
+        <span
+          data-testid="payment-entry-unavailable"
+          className="text-xs text-gray-500"
+        >
+          {t("walletUnavailableShort")}
+        </span>
+      ) : null}
     </label>
   );
 }
@@ -131,6 +156,11 @@ export interface PaymentSectionProps {
   emptyLabel: string;
   /** 认证需求提示（D15c；服务端已过滤入口，这里只解释「为什么只剩这些」）。 */
   authenticationNotice?: string | null;
+  /**
+   * 设备侧不可用的入口（`option_id`）——由父级在钱包 SDK 报告后回填。
+   * 仍**不删除**入口行，只置灰禁用 + 备注（见 `PaymentEntryRowProps.unavailable`）。
+   */
+  unavailableOptionIds?: string[];
   /** 其它需要出现在列表下方的说明（如 3DS 提示）。 */
   children?: React.ReactNode;
 }
@@ -145,6 +175,7 @@ export function PaymentSection({
   onSelect,
   emptyLabel,
   authenticationNotice,
+  unavailableOptionIds,
   children,
 }: PaymentSectionProps) {
   const t = useTranslations("checkout");
@@ -173,10 +204,20 @@ export function PaymentSection({
             entry={entry}
             method={method}
             selected={selectedOptionId === entry.option_id}
+            unavailable={unavailableOptionIds?.includes(entry.option_id)}
             onSelect={(selected) => onSelect(selected, method)}
           />
         ))}
       </div>
+
+      {unavailableOptionIds && unavailableOptionIds.length > 0 ? (
+        <p
+          data-testid="wallet-unavailable-note"
+          className="mt-3 text-xs text-gray-500"
+        >
+          {t("walletUnavailable")}
+        </p>
+      ) : null}
 
       {authenticationNotice ? (
         <div

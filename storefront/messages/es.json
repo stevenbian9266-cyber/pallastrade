@@ -421,6 +421,8 @@
     "noPaymentMethod": "Ahora mismo no hay ningún método de pago disponible para este pedido. Contacte con soporte.",
     "authenticationRequired": "Este pedido requiere una verificación adicional de la tarjeta. Solo se muestran los métodos compatibles con 3-D Secure.",
     "manualPaymentNote": "Esta opción se liquida fuera de la tienda (transferencia o contra reembolso).",
+    "walletUnavailable": "El pago con cartera (Apple Pay / Google Pay) no está disponible en este dispositivo. Paga con tarjeta.",
+    "walletUnavailableShort": "No disponible en este dispositivo",
     "checkoutNotReady": "Completa los datos de checkout que faltan antes de pagar.",
     "payAmount": "Pagar ahora {amount}",
     "edit": "Editar",

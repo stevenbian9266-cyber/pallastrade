@@ -18,6 +18,9 @@ import { WalletPaymentButtons } from "@/components/checkout/WalletPaymentButtons
 const tFn = (key: string) => key;
 vi.mock("next-intl", () => ({ useTranslations: () => tFn }));
 
+/** D7 补口 2：可切换「已配置/未配置」以覆盖降级分支。 */
+const stripeConfiguredState = vi.hoisted(() => ({ value: true }));
+
 const toastErrorMock = vi.fn();
 vi.mock("sonner", () => ({
   toast: { error: (...args: unknown[]) => toastErrorMock(...args) },
@@ -34,7 +37,7 @@ vi.mock("@/lib/data/order-payment", () => ({
 }));
 
 vi.mock("@/lib/utils/stripe", () => ({
-  isStripeConfigured: () => true,
+  isStripeConfigured: () => stripeConfiguredState.value,
   getStripePromise: () => Promise.resolve(null),
   resolveStripePublishableKey: () => "pk_test_mock",
   normalizeClientSecret: (s: string) => s,
@@ -103,6 +106,7 @@ function renderWallet(overrides?: {
 describe("WalletPaymentButtons (D7)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    stripeConfiguredState.value = true;
     capturedElementProps = {};
     createOrderPaymentSessionMock.mockResolvedValue({
       success: true,
@@ -198,5 +202,55 @@ describe("WalletPaymentButtons (D7)", () => {
     });
 
     expect(onAvailabilityChange).toHaveBeenCalledWith(true);
+  });
+
+  // PRD-20260918-payments-d7-payment-section-express AC-011：
+  // 本设备无该钱包（SDK 报告全 false）→ 显式降级说明 + 上报父级回落（不再留空白）
+  it("renders an explicit degradation notice when the device has no wallet (D7 AC-011)", async () => {
+    const user = userEvent.setup();
+    const onAvailabilityChange = vi.fn();
+    renderWallet({ onAvailabilityChange });
+
+    await user.click(screen.getByTestId("wallet-pay-button"));
+    await screen.findByTestId("express-checkout-element");
+
+    await act(async () => {
+      (capturedElementProps.onReady as (event: unknown) => void)({
+        availablePaymentMethods: { applePay: false, googlePay: false },
+      });
+    });
+
+    expect(onAvailabilityChange).toHaveBeenCalledWith(false);
+    expect(screen.getByTestId("wallet-unavailable-notice")).toBeTruthy();
+    expect(screen.queryByTestId("express-checkout-element")).toBeNull();
+  });
+
+  // PRD-20260918-payments-d7-payment-section-express AC-012：
+  // 可用性**未知**（SDK 未给 availablePaymentMethods）→ 不得当作不可用
+  it("treats unknown availability as usable instead of degrading (D7 AC-012)", async () => {
+    const user = userEvent.setup();
+    const onAvailabilityChange = vi.fn();
+    renderWallet({ onAvailabilityChange });
+
+    await user.click(screen.getByTestId("wallet-pay-button"));
+    await screen.findByTestId("express-checkout-element");
+
+    await act(async () => {
+      (capturedElementProps.onReady as (event: unknown) => void)({});
+    });
+
+    expect(onAvailabilityChange).toHaveBeenCalledWith(true);
+    expect(screen.queryByTestId("wallet-unavailable-notice")).toBeNull();
+    expect(screen.getByTestId("express-checkout-element")).toBeTruthy();
+  });
+
+  // PRD-20260918-payments-d7-payment-section-express AC-011：
+  // 未配置下发密钥（且无环境回落）→ 显式说明（旧行为是静默 `return null`）
+  it("shows the degradation notice instead of disappearing when Stripe is unconfigured (D7 AC-011)", () => {
+    stripeConfiguredState.value = false;
+    renderWallet();
+
+    expect(screen.getByTestId("wallet-unavailable-notice")).toBeTruthy();
+    expect(screen.queryByTestId("wallet-pay-button")).toBeNull();
   });
 });

@@ -89,6 +89,8 @@
 | AC-008 | `option_kind` 被服务端拒绝（不可用入口）→ 422 `payment_option_not_available`，**不建会话**，前台刷新列表并提示 |
 | AC-009 | 移动视口下 or_ 页出现吸底 Pay 条，金额与页内一致，点击与页内按钮同一 handler |
 | AC-010 | 无 `entries[]` 的旧响应（回退路径）→ 前台回落「一 provider 一行」（向后兼容，不炸） |
+| AC-011 | 钱包入口在**本设备不可用**（钱包 SDK 报告无可用钱包）或 provider 未下发可用密钥时 → 前台给出**显式说明**（不静默消失、不留空盒子），并将该入口**置灰禁用** + **自动回落**到可用入口（优先卡支付）；入口行仍保留（集合由服务端决定，客户端只标注不删除） |
+| AC-012 | 设备可用性**未知**（SDK 未给出 `availablePaymentMethods`）→ 不得当作不可用（保持渲染）；cart 页形态槽与 `or_` 页钱包槽位/移动吸底条行为一致 |
 
 ---
 
@@ -145,6 +147,8 @@
 - [x] `ai/skills/pallastrade-api-v3/SKILL.md`：`entries[]` 契约字段
 - [x] `AGENTS.md` §6：`d7-payment-section-rspec` 行
 - [x] `harness/scenarios/scenarios.json`：GS-183（「配了三个入口，前台只显示一个」）
+- [x] 补口 2 追加：`pallastrade-storefront` Skill 新增「设备钱包能力与降级」小节（已更新）、`pallastrade-payments` Skill D7 段补设备能力轴（已更新）、
+  `scenarios.json` 新增 **GS-184**（「设备用不了的钱包必须显式降级」）、5 语言 `messages/*.json` 同步 `walletUnavailable` / `walletUnavailableShort`（`check:locales` 通过）
 - [x] `docs/prd/README.md` 索引（`prd-status-sync --fix`）
 - [x] 评估（无需更新）：`platform/packages/README.md`（**已更新**：D7 条目）、`pallastrade-typescript-sdk Skill`（**已更新**：`option_kind` 与入口级投影）、`根 README` / `pallastrade-prd Skill` / `copilot-instructions.md`（reviewed-no-change）、`.env.example` / `pallastrade-deployment Skill` / 部署 README（not-applicable：零环境变量、零部署流程变化）
 - [ ] 业务方案 §78-D7 回写（本地文档，不入提交）
@@ -156,3 +160,4 @@
 | 2026-09-18 | 初稿（D7；业务方案 §78-D7 / §61–§62 / §76.1 / §29；根因＝入口在投影面被折叠为 `effective_payment_option` + 前台无 `frontend_kind` 分派 + 钱包组件只在购物车抽屉） |
 | 2026-09-18 | **实施完成 → done**：core 入口级读模型（`payment_option_entries` / `option_group` / `option_frontend_kind`）+ checkout 投影 `entries[]`/`group`/`position`（Resolver 同源过滤）+ `option_kind` 三通道透传（cart legacy / orders 会话 / durable `Transactions::Start`）+ 前端 `PaymentSection`（入口级外壳，旧响应回落单入口）+ `WalletPaymentButtons`（or_ 页钱包快付，复用 canonical 错误落点）+ cart 页复用既有 `ExpressCheckoutButton` + 移动吸底 Pay 条 + BFF/数据层 `option_kind`；契约 `store.yaml` 三端点 + Typelizer/SDK 手写类型同步（`generated:check` 零漂移）；验证器 **`d7-payment-section-rspec`**（后端 4 文件 + 交易/会话回归）与 `storefront-test` 全绿；GS-183。 |
 | 2026-09-18 | **补口（dev 复核后）**：cart 通道 `PaymentMethodSerializer` 同步下发 `entries[]`（dev 实测 `cart.payment_methods` 无 entries → 购物车单页结账仍只显示一行，钱包看不见）。该通道无订单上下文 → 入口集合为「已配置且启用」的**未过滤**集合；可用性仍由 `PaymentSessions::Start` 带订单上下文复算（拒绝 → 422 + 刷新重选）。契约再生成（`PaymentMethod.entries` 必填）+ 手写类型改用 `Omit<..., "entries">` 避免收窄；新增 cart 侧断言（AC-006）。 |
+| 2026-09-18 | **补口 2（dev 复现「点 Apple Pay / Google Pay 没有组件渲染」）**：设备侧无该钱包时（Windows / 非 Safari 上 Apple Pay 必然不可用；`canMakePayment()` 返回 `null`）`ExpressCheckoutButton` 走 `available === false → return null` **静默卸载**，父级只剩一个空边框盒子 → 用户以为「点了没反应」。修复：① 不可用 → 渲染**显式降级说明**（`wallet-unavailable-notice`），未配置密钥同样给显式状态；② **未知可用性**（`availablePaymentMethods === undefined`）与**明确不可用**（全 false）分开，前者不得隐藏（与 `WalletPaymentButtons` 原 fail-open 口径统一）；③ `PaymentSection` 支持 `unavailableOptionIds` → 入口行置灰禁用 + 行内备注（**只标注不删除**，守住「入口集合由服务端决定」红线）；④ cart（`UnifiedCheckout`）与 `or_`（`OrderPaymentContent` 页内槽位 + 移动吸底条）接 `onAvailabilityChange` → **自动回落卡支付** + toast 提示；⑤ cart 页选中钱包入口时隐藏 Pay Now（与 `or_` 页一致；此前点击会在卡表单校验处**静默 return**，同样是死路）。新增 AC-011 / AC-012 + 7 例前台测试；5 语言文案键同步（`walletUnavailable` / `walletUnavailableShort`）。 |

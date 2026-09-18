@@ -401,6 +401,33 @@ export function UnifiedCheckout({
   const [states, setStates] = useState<State[]>([]);
   const [loadingStates, setLoadingStates] = useState(false);
 
+  // D7 补口 2（2026-09-18）：**设备侧**不可用的入口（钱包 SDK 报告，如 Windows 无 Apple Pay）。
+  // 服务端不知道设备能力，只有客户端知道 → 这里只**标注 + 禁用 + 回落**，
+  // **不删除**入口（入口集合仍由服务端确定，守住 D8/D15c 红线）。
+  const [unavailableEntryIds, setUnavailableEntryIds] = useState<string[]>([]);
+  const [walletProcessing, setWalletProcessing] = useState(false);
+  /** 钱包组件报告本设备不可用 → 置灰该入口 + 自动回落卡支付 + 提示原因。 */
+  const markEntryUnavailable = useCallback(
+    (optionId: string) => {
+      setUnavailableEntryIds((prev) =>
+        prev.includes(optionId) ? prev : [...prev, optionId],
+      );
+      setSelectedOptionId((current) => {
+        if (current !== optionId) return current;
+        const usable = paymentOptions.filter(
+          (o) =>
+            o.entry.option_id !== optionId &&
+            !unavailableEntryIds.includes(o.entry.option_id),
+        );
+        const fallback =
+          usable.find((o) => o.entry.frontend_kind === "inline") ?? usable[0];
+        return fallback?.entry.option_id ?? current;
+      });
+      toast.error(t("walletUnavailable"));
+    },
+    [paymentOptions, t, unavailableEntryIds],
+  );
+
   // ── Billing address（PRD 3.6：Use shipping address as billing address，
   //    默认勾选；取消时展开独立账单地址表单）──────────────────────────
   // PRD-20260913-checkout-billing-mode FR-010：初值按购物车已有的独立账单地址推导，
@@ -1254,10 +1281,14 @@ export function UnifiedCheckout({
               selectedOptionId={selectedOptionId}
               onSelect={(entry) => setSelectedOptionId(entry.option_id)}
               emptyLabel={t("noPaymentMethods")}
+              unavailableOptionIds={unavailableEntryIds}
             >
               {/* 形态槽：express → 钱包按钮（cart 绑定，复用 canonical 编排）；
                   inline → 自绘卡字段；manual → 仅说明行 */}
-              {selectedIsWallet && selectedMethod && selectedEntry ? (
+              {selectedIsWallet &&
+              selectedMethod &&
+              selectedEntry &&
+              !unavailableEntryIds.includes(selectedEntry.option_id) ? (
                 <div className="mt-4 rounded-lg border border-gray-200 p-4">
                   {/* 钱包按钮是 cart 绑定组件（复用 canonical 编排）——两页拿到的都是
                       同一份服务端 cart 载荷（ShoppingCart/Cart 仅命名差异） */}
@@ -1266,6 +1297,13 @@ export function UnifiedCheckout({
                     basePath={basePath}
                     maxColumns={1}
                     clientConfig={selectedMethod.client_config ?? null}
+                    onAvailabilityChange={(available) => {
+                      // D7 补口 2：本设备无可用钱包 → 置灰入口 + 回落卡支付（不再留空盒子）
+                      if (!available) {
+                        markEntryUnavailable(selectedEntry.option_id);
+                      }
+                    }}
+                    onProcessingChange={setWalletProcessing}
                     onComplete={async () => {
                       router.push(`${basePath}/cart`);
                     }}
@@ -1366,25 +1404,30 @@ export function UnifiedCheckout({
             </div>
           ) : null}
 
-          <Button
-            size="lg"
-            className="w-full mt-6"
-            disabled={!canSubmit || payProcessing}
-            onClick={handlePayNow}
-          >
-            {payProcessing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {processingStage === "confirming"
-                  ? t("processing")
-                  : t("submitting")}
-              </>
-            ) : preparedOrder?.quote ? (
-              t("confirmAndPay")
-            ) : (
-              t("payNow")
-            )}
-          </Button>
+          {/* D7 补口 2：选中钱包入口时，支付控件就是钱包按钮本身 ——
+              与 or_ 页（`OrderPaymentContent` 的 `!selectedIsWallet`）保持一致；
+              此前这里仍渲染 Pay Now，点它会在卡表单校验处**静默 return**（死路）。 */}
+          {!selectedIsWallet ? (
+            <Button
+              size="lg"
+              className="w-full mt-6"
+              disabled={!canSubmit || payProcessing || walletProcessing}
+              onClick={handlePayNow}
+            >
+              {payProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {processingStage === "confirming"
+                    ? t("processing")
+                    : t("submitting")}
+                </>
+              ) : preparedOrder?.quote ? (
+                t("confirmAndPay")
+              ) : (
+                t("payNow")
+              )}
+            </Button>
+          ) : null}
         </section>
 
         {/* Save my information — UI placeholder */}

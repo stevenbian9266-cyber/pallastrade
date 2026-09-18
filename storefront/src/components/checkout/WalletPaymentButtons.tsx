@@ -7,6 +7,7 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 import type { StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
+import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import type {
@@ -88,10 +89,15 @@ function WalletInner({
   const handleReady = useCallback(
     (event: { availablePaymentMethods?: Record<string, boolean> }) => {
       const methods = event.availablePaymentMethods;
+      // 未给数据（undefined）= **未知**，不得当作不可用（与 ExpressCheckoutButton 一致）。
+      if (methods === undefined) {
+        onAvailabilityChange?.(true);
+        return;
+      }
       const isWallet = entry.method_key.startsWith("google")
-        ? methods?.googlePay === true
-        : methods?.applePay === true;
-      onAvailabilityChange?.(methods === undefined || isWallet);
+        ? methods.googlePay === true
+        : methods.applePay === true;
+      onAvailabilityChange?.(isWallet);
     },
     [entry.method_key, onAvailabilityChange],
   );
@@ -160,12 +166,34 @@ export function WalletPaymentButtons({
   onUnavailable,
   onAvailabilityChange,
 }: WalletPaymentButtonsProps) {
+  const t = useTranslations("checkout");
   const [session, setSession] = useState<{
     id: string;
     clientSecret: string;
   } | null>(null);
+  // D7 补口 2（2026-09-18）：本设备无该钱包（Stripe `availablePaymentMethods` 明确 false）
+  // → 不再留空白：渲染显式说明，父级据此置灰入口 + 回落卡支付。
+  const [walletUnavailable, setWalletUnavailable] = useState(false);
+
+  const handleAvailabilityChange = useCallback(
+    (available: boolean) => {
+      setWalletUnavailable(!available);
+      onAvailabilityChange?.(available);
+    },
+    [onAvailabilityChange],
+  );
 
   const clientConfig: PaymentClientConfig | null = method.client_config ?? null;
+  const stripeConfigured = isStripeConfigured(clientConfig);
+
+  const unavailableNotice = (
+    <div
+      data-testid="wallet-unavailable-notice"
+      className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+    >
+      {t("walletUnavailable")}
+    </div>
+  );
 
   const handleStart = useCallback(async () => {
     onProcessingChange?.(true);
@@ -216,7 +244,8 @@ export function WalletPaymentButtons({
     orderId,
   ]);
 
-  if (!isStripeConfigured(clientConfig)) return null;
+  // 不可用（没配 Stripe 或本设备无该钱包）→ 显式状态，不返回 null。
+  if (!stripeConfigured || walletUnavailable) return unavailableNotice;
 
   if (session) {
     return (
@@ -232,7 +261,7 @@ export function WalletPaymentButtons({
           sessionId={session.id}
           onProcessingChange={onProcessingChange}
           onUnavailable={onUnavailable}
-          onAvailabilityChange={onAvailabilityChange}
+          onAvailabilityChange={handleAvailabilityChange}
           onDone={() => setSession(null)}
         />
       </Elements>

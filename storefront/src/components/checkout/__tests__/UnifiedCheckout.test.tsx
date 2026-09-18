@@ -1,5 +1,5 @@
 import type { ShoppingCart } from "@pallastrade/sdk";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,6 +8,21 @@ import { CheckoutProvider, CheckoutSummary } from "@/contexts/CheckoutContext";
 
 const pushMock = vi.fn();
 const replaceMock = vi.fn();
+
+/** D7 补口 2：钱包可用性分支需要「已配置 Stripe」的环境（默认关闭保持既有用例不变）。 */
+const stripeConfiguredState = vi.hoisted(() => ({ value: false }));
+
+/** 捕获 ExpressCheckoutElement 的 props（驱动 onReady 上报设备钱包能力）。 */
+let capturedExpressProps: Record<string, unknown> = {};
+vi.mock("@stripe/react-stripe-js", () => ({
+  Elements: ({ children }: { children: React.ReactNode }) => children,
+  ExpressCheckoutElement: (props: Record<string, unknown>) => {
+    capturedExpressProps = props;
+    return <div data-testid="express-checkout-element" />;
+  },
+  useStripe: () => ({ confirmPayment: vi.fn() }),
+  useElements: () => ({ submit: vi.fn().mockResolvedValue({}) }),
+}));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
@@ -27,7 +42,7 @@ const fetchMock = vi.fn();
 
 vi.mock("@/lib/utils/stripe", () => ({
   getStripePromise: () => Promise.resolve(null),
-  isStripeConfigured: () => false,
+  isStripeConfigured: () => stripeConfiguredState.value,
   resolveStripePublishableKey: () => null,
   normalizeClientSecret: (s: string) => s,
   extractSessionClientSecret: (
@@ -174,6 +189,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     pushMock.mockReset();
     replaceMock.mockReset();
     fetchMock.mockReset();
+    stripeConfiguredState.value = false;
+    capturedExpressProps = {};
     // PRD-20260914-checkout-quote-confirmation-loop：报价快照存 sessionStorage，
     // 用例间必须隔离，否则快照会泄漏到其它用例的载荷断言。
     sessionStorage.clear();
@@ -409,6 +426,74 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(rows[1].getAttribute("data-frontend-kind")).toBe("express");
     expect(screen.getByText("Apple Pay")).toBeTruthy();
     expect(screen.getByText("Google Pay")).toBeTruthy();
+  });
+
+  // PRD-20260918-payments-d7-payment-section-express AC-011（cart 通道）：
+  // 本设备无可用钱包（Stripe 报告全 false）→ 入口行置灰禁用 + 自动回落卡支付 +
+  // 显式说明（旧行为：组件静默 `return null` → 页面只剩一个空盒子）。
+  it("greys out the wallet entry and falls back to card when the device has no wallet (D7 AC-011)", async () => {
+    const user = userEvent.setup();
+    stripeConfiguredState.value = true;
+    const cart = makeCart({
+      currency: "usd",
+      payment_methods: [
+        {
+          id: "pm_stripe",
+          name: "Stripe",
+          type: "stripe",
+          session_required: true,
+          entries: [
+            {
+              option_id: "pm_stripe:card",
+              method_key: "card",
+              display_name: "Card",
+              frontend_kind: "inline",
+              group: "card",
+              position: 1,
+            },
+            {
+              option_id: "pm_stripe:apple_pay",
+              method_key: "apple_pay",
+              display_name: "Apple Pay",
+              frontend_kind: "express",
+              group: "wallet",
+              position: 2,
+            },
+          ],
+        },
+      ],
+    } as never);
+    renderCheckout(cart);
+
+    await user.click(screen.getByText("Apple Pay"));
+
+    // cart 页钱包组件按需加载（next/dynamic）+ 直接挂载 ExpressCheckoutElement：
+    // 只有确认时才创建会话，因此这里直接得到可探测的元素。
+    await screen.findByTestId("express-checkout-element");
+    await act(async () => {
+      (capturedExpressProps.onReady as (event: unknown) => void)({
+        availablePaymentMethods: {
+          applePay: false,
+          googlePay: false,
+          link: false,
+        },
+      });
+    });
+
+    // ① 入口行置灰禁用（只标注，不删除服务端下发的入口集合）
+    const walletRow = screen
+      .getAllByTestId("payment-entry-row")
+      .find((r) => r.getAttribute("data-option-id") === "pm_stripe:apple_pay");
+    expect(walletRow?.getAttribute("data-unavailable")).toBe("true");
+    const walletRadio = walletRow?.querySelector("input");
+    expect((walletRadio as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByTestId("payment-entry-unavailable")).toBeTruthy();
+
+    // ② 自动回落卡支付：卡表单回来，空盒子不再存在
+    await waitFor(() =>
+      expect(screen.getByTestId("card-payment-form")).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId("express-checkout-element")).toBeNull();
   });
 
   it("non-session payment (Check) goes straight to the placed page after submit", async () => {

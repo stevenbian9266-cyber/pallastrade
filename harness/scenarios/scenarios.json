@@ -4755,6 +4755,35 @@
         "walletReuseNotSecondFlow": 10,
         "testsPerSurface": 10
       }
+    },
+    {
+      "id": "GS-184",
+      "name": "A device that cannot pay with a wallet must degrade explicitly, not vanish",
+      "description": "A buyer tapping Apple Pay / Google Pay on the checkout page got an empty bordered box: the wallet element mounted, the provider reported that no wallet exists on this device (Apple Pay is Safari-only; a Windows Chromium returns null from canMakePayment), and the component answered a definitely-unavailable device by returning null. The parent renders the slot wrapper unconditionally, so the shopper saw a blank panel with no explanation and no way back to the card form, while the payment entry row stayed selectable and re-enterable. The durable fix treats device capability as the one availability axis only the client knows: degrade explicitly, report upward, and let the parent forbid the dead end without ever removing a server-owned entry.",
+      "mustDo": [
+        "Tell three states apart: the provider has not reported yet (unknown), it reported that no wallet is usable on this device (unavailable), or it reported a usable wallet - and keep unknown rendered",
+        "Render an explicit notice when the wallet is unusable (or the provider key is missing) instead of returning null, so the panel never stays blank",
+        "Report device capability to the parent and let it grey out / disable that entry row and fall back to the first usable entry (card first)",
+        "Drop the wallet slot from the page once it renders nothing and disable the unusable row, so the dead end cannot be re-entered",
+        "Make every checkout surface behave the same: single-page cart checkout, the order pay page, and the mobile sticky pay bar",
+        "Do not leave a second, silently broken pay path behind: the in-page pay button must not stay clickable when a wallet entry owns the payment step",
+        "Verify against the deployed environment with the real provider key before claiming the fix works"
+      ],
+      "mustNotDo": [
+        "Remove the entry from the list on the client - the entry set stays a server decision; the client only annotates device capability",
+        "Treat a missing availability payload as unavailable (that silently hides wallets that do work)",
+        "Keep rendering an empty slot wrapper when the child renders nothing",
+        "Assume a device supports a wallet: Apple Pay is Safari-only, and Google Pay depends on the signed-in browser session",
+        "Conclude the fix works from unit tests alone while the deployed page still shows the empty box"
+      ],
+      "scoring": {
+        "distinguishUnknownFromUnavailable": 25,
+        "explicitDegradationNotBlank": 20,
+        "parentFallbackAndAnnotate": 20,
+        "noSecondBrokenPath": 15,
+        "bothSurfacesAligned": 10,
+        "deviceRealisticVerification": 10
+      }
     }
   ]
 }

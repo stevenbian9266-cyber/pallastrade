@@ -67,6 +67,8 @@ function ExpressCheckoutInner({
   const elements = useElements();
   const router = useRouter();
   const t = useTranslations("expressCheckout");
+  // D7 补口 2：降级说明属于结账页文案（与 PaymentSection / WalletPaymentButtons 同命名空间）
+  const tCheckout = useTranslations("checkout");
   const [available, setAvailable] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -101,10 +103,16 @@ function ExpressCheckoutInner({
   const handleReady = useCallback(
     (event: StripeExpressCheckoutElementReadyEvent) => {
       const methods = event.availablePaymentMethods;
-      console.log("[ExpressCheckout] availablePaymentMethods:", methods);
-      const isAvailable =
-        methods !== undefined &&
-        (methods.applePay || methods.googlePay || methods.link);
+      // 未给数据（undefined）= **未知**，不得当作不可用：元素已挂载，Stripe 自己不会
+      // 渲染设备用不了的钱包按钮。只有明确的全 false 才走降级（D7 补口 2）。
+      if (methods === undefined) {
+        setAvailable(true);
+        onAvailabilityChangeRef.current?.(true);
+        return;
+      }
+      const isAvailable = Boolean(
+        methods.applePay || methods.googlePay || methods.link,
+      );
       setAvailable(isAvailable);
       onAvailabilityChangeRef.current?.(isAvailable);
     },
@@ -376,7 +384,19 @@ function ExpressCheckoutInner({
     // and will be overwritten by next checkout attempt.
   }, []);
 
-  if (available === false) return null;
+  // D7 补口 2（2026-09-18）：**不得静默消失**。本设备无可用钱包时保留一个显式说明块，
+  // 父级已接 `onAvailabilityChange` → 自动回落到卡支付并置灰该入口（见 UnifiedCheckout /
+  // OrderPaymentContent）；未接的调用方（cart 抽屉）也能看到原因而不是空白。
+  if (available === false) {
+    return (
+      <div
+        data-testid="wallet-unavailable-notice"
+        className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+      >
+        {tCheckout("walletUnavailable")}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
@@ -505,6 +525,7 @@ function ExpressCheckoutWithElements({
 
 export function ExpressCheckoutButton(props: ExpressCheckoutButtonProps) {
   const { onAvailabilityChange, clientConfig } = props;
+  const t = useTranslations("checkout");
   const configured = isStripeConfigured(clientConfig);
 
   useEffect(() => {
@@ -513,8 +534,16 @@ export function ExpressCheckoutButton(props: ExpressCheckoutButtonProps) {
     }
   }, [configured, onAvailabilityChange]);
 
+  // 未配置 publishable key：同样给显式状态（旧行为是静默 `return null` → 空白）。
   if (!configured) {
-    return null;
+    return (
+      <div
+        data-testid="wallet-unavailable-notice"
+        className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+      >
+        {t("walletUnavailable")}
+      </div>
+    );
   }
 
   return <ExpressCheckoutWithElements {...props} />;

@@ -601,6 +601,26 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 - 覆盖测试：`__tests__/WalletPaymentButtons.test.tsx`（AC-007/008：option_kind 下发、client_secret 确认、拒绝后刷新）、
   `__tests__/OrderPaymentContent.test.tsx`（AC-006/007/008/009/010）；改动后跑 `storefront-test`。
 
+### 设备钱包能力与降级（D7 补口 2, 2026-09-18；PRD-20260918-payments-d7-payment-section-express AC-011/AC-012）
+
+钱包入口的**服务端可用性**（D8/D11/D15c）与**设备能力**是两件事，后者只有客户端知道：
+
+- **能力探测**：`ExpressCheckoutElement.onReady` 的 `availablePaymentMethods`（`applePay` / `googlePay` / `link`）。
+  Apple Pay 只在 Safari（macOS/iOS）可用；Google Pay 需 Chrome + 已登录 Google 账号；Windows 上
+  `stripe.paymentRequest({...}).canMakePayment()` 可能返回 `null`（全都不可用）。
+- **三种状态必须分开**：`undefined`（未上报 = **未知** → 保持渲染）/ 全 `false`（**明确不可用** → 降级）/ 有真值（渲染）。
+  历史坑：把 `undefined` 也当不可用 → 元素在 `onReady` 后被静默卸载（实测 t≈1.3s 槽位 HTML 由 3054 → 0），
+  而形态槽包裹层是无条件渲染的 → 页面只剩一个**空边框盒子**。
+- **降级要求**：不可用时渲染 `data-testid="wallet-unavailable-notice"` 的显式说明（不允许 `return null`），
+  并**上报父级** `onAvailabilityChange(false)` → 父级把入口加入 `unavailableOptionIds`
+  （`PaymentSection` 行置灰禁用 + 行内备注）并**自动回落**到第一个可用入口（优先 `inline` 卡支付）。
+  ⚠️ **入口行不删除**：入口集合仍由服务端决定（D15c 红线），客户端只表达设备能力（置灰/禁用）。
+- **两个页面同口径**：cart 页（`UnifiedCheckout`）与 `or_` 页（`OrderPaymentContent` 的页内槽位 + 移动吸底条）接线一致；
+  cart 页选中钱包入口时**隐藏 Pay Now**（与 `or_` 页一致；否则点击会在卡表单校验处静默 `return`，同样是死路）。
+- **未配置密钥**（`isStripeConfigured === false`）同样走显式说明，不允许静默消失。
+- 覆盖测试：`__tests__/ExpressCheckoutButton.test.tsx` / `WalletPaymentButtons.test.tsx`（AC-011/AC-012 单元 + 未配置分支）、
+  `__tests__/UnifiedCheckout.test.tsx` / `OrderPaymentContent.test.tsx`（父级回落 + 入口置灰）；改动后跑 `storefront-test`。
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - P0 (2026-09-03): Express(Apple/Google Pay) 金额/行项目改由服务端 Cart#express_payment 权威提供（expressAmount/expressLineItems；legacy buildLineItems 仅 fallback）；Legacy cart 支付=Compatibility Only。
