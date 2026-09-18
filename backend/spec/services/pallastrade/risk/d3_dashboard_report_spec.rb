@@ -250,6 +250,11 @@ RSpec.describe PallasTrade::Risk::DashboardReport, type: :service do
       reviewed = manual_review_transaction(reviewed_at: 10.minutes.ago)
       PallasTrade::Audit.record(action: 'transaction_review_captured', actor: 'system', resource: reviewed)
 
+      # 预热：报告里含 store 级记忆化路径（market 首次加载 `SELECT markets.*`、之后 `SELECT 1 AS one`），
+      # 首次掉用的语句形状取决于该 store 实例此前是否被调用过 → 不预热时 CI 上 small/large 会
+      # 相差一条 markets 语句（2026-09-17 CI 实测 diff 已直接给出该语句）。预热不计入测量。
+      described_class.call(store: store)
+
       small = query_shapes { described_class.call(store: store) }
 
       12.times do
@@ -277,6 +282,10 @@ RSpec.describe PallasTrade::Risk::DashboardReport, type: :service do
       flagged_assessment(order)
       reviewed = manual_review_transaction(reviewed_at: 10.minutes.ago)
       PallasTrade::Audit.record(action: 'transaction_review_captured', actor: 'system', resource: reviewed)
+
+      # 两侧各预热一次（不同 store 实例）→ 从同一记忆化状态出发
+      described_class.call(store: empty_store)
+      described_class.call(store: store)
 
       empty_shapes = query_shapes { described_class.call(store: empty_store) }
       populated_shapes = query_shapes { described_class.call(store: store) }
