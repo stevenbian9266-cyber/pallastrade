@@ -187,7 +187,9 @@ function renderCheckout(cart: ShoppingCart = makeCart()) {
 // 本文件渲染最完整的 checkout 树（含 next/dynamic 钱包片段）+ 大量 userEvent 交互：
 // 全量套件并行跑 jsdom 时，单个用例超过 vitest 默认 5s 会**随机**超时（与断言无关的假红）。
 // 因此整块给足预算；断言本身不做任何放宽。
-describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", { timeout: 20000 }, () => {
+describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
+  timeout: 20000,
+}, () => {
   beforeEach(() => {
     pushMock.mockReset();
     replaceMock.mockReset();
@@ -473,7 +475,11 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", { timeout: 200
     // cart 页钱包组件按需加载（next/dynamic）+ 直接挂载 ExpressCheckoutElement：
     // 只有确认时才创建会话，因此这里直接得到可探测的元素。
     // ⚠️ 动态导入 + 全量套件并行时，默认 1s 等待会随机爆掉（与本用例断言无关的假红）→ 显式给足预算。
-    await screen.findByTestId("express-checkout-element", {}, { timeout: 10000 });
+    await screen.findByTestId(
+      "express-checkout-element",
+      {},
+      { timeout: 10000 },
+    );
     await act(async () => {
       (capturedExpressProps.onReady as (event: unknown) => void)({
         availablePaymentMethods: {
