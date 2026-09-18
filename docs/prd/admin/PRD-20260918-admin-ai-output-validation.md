@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | verifying |
+| 状态 | done |
 | 创建日期 | 2026-09-18 |
 | 来源 | `实施这项风险优化`（承接 `PRD-20260918-api-deepseek-structured-output` §7.2 残留风险） |
 | 分类 | admin（自动判定；改动面跨 `pallastrade_ai` 网关与 `pallastrade_admin` 后台） |
@@ -177,12 +177,14 @@ Gateway#call ── execute_provider_call ── validate_output!（← 被 .pre
 
 ## 9. 文档同步清单（知识同步门）
 
-- [ ] API 文档：预判**无需更新**（无契约变更），收尾以 `doc-impact` 实测为准
-- [ ] Skill 文档：改动位于 `pallastrade_ai` / `pallastrade_admin` gem —— `doc-impact` 规则按实测判定；
-      若触及 `ai/skills/**` 则同步 `harness/scenarios/scenarios.json`
-- [ ] `harness.config.mjs` 变更 → 至少同步 `AGENTS.md` §6（新增验证器行）
-- [ ] 反模式库 / 任务规则：预判无需更新
-- [ ] 本 PRD 状态更新 + `docs/prd/README.md` 索引
+- [x] API 文档：**已确认无需更新** —— 本次无 API 契约变更（未触碰 API v3 控制器/序列化器），`doc-impact` 实测无 API 文档要求
+- [x] Skill 文档：改动位于 `pallastrade_ai` / `pallastrade_admin` gem（服务/作业/视图/JS/locale），未触及 `ai/skills/**`；
+      但缺陷性质值得沉淀，故仍回填场景库 GS-179「A failure that only exists after the request」
+- [x] `harness.config.mjs` 变更 → 已同步 `AGENTS.md` §6（新增「AI 输出校验 / 后台 AI 助手接线」验证器行 + 更新 `repo-guards-test` 行描述）
+- [x] 反模式库 / 任务规则：**已评估，无需更新** —— D4 属「属性名编码错误」，与 AP-001/006/008 等样式或复制类反模式不同源；
+      其可机检部分已由 `tests/ai-assist-wiring.test.mjs` 静态契约守卫覆盖（进 `repo-guards-test`，CI 执行）
+- [x] 双语键集：`products.ai.errors` 由 6 键扩至 11 键，en / zh-CN 双向一致（实测「各 11 键，键集相同」）
+- [x] 本 PRD 状态更新（verifying → done）+ `docs/prd/README.md` 索引
 
 ## 10. 变更记录
 
@@ -190,3 +192,4 @@ Gateway#call ── execute_provider_call ── validate_output!（← 被 .pre
 |---|---|---|---|
 | 2026-09-18 | 0.1 | 初稿：由前序 PRD §7.2 残留风险立项；实施前走查新增 D2/D3/D4 三项同源缺陷 | AI |
 | 2026-09-18 | 0.2 | **实施期重大修订（用户已同意扩围）**：D4 由「某些码显示空白」重新定性为「**五处容器从未接上 Stimulus**」——属性缺 `data-` 前缀，按钮点了没反应；新增 D5（异步失败被 Sentry 未初始化反噬）；FR-004 扩为四款（接线/文案下发/兜底/新码文案），新增 FR-007 与 AC-016/017 | AI |
+| 2026-09-18 | 1.0 | **实施完成并落库**（`2de6a87b`）：D1 网关校验前置、D2 异步同判定、D3 错误码归位、D4 接线修复、D5 监控守卫；19+27 examples 全绿、双守卫通过、rubocop 零新增违规；PRD → done | AI |
