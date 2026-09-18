@@ -49,16 +49,6 @@ const RECOVERY_NOTICE_CODES = new Set([
 ]);
 
 /**
- * D7 补口 2b（2026-09-18）：钱包元素**初始化上限**（毫秒）。
- *
- * Stripe 的 `ExpressCheckoutElement` 通过 `onReady` 上报本设备能力；但元素 iframe 被中断
- * （实测 Windows/Electron 上 `elements-inner-easel` 请求 `net::ERR_ABORTED`，元素高度停在 2px）
- * 或浏览器完全没有钱包时，该回调**可能永不触发** —— 只等回调会留下**无限加载态**，
- * 用户视角同样等于「组件没渲染出来」。超过此上限仍未上报 → 按「本设备不可用」走显式降级。
- */
-export const WALLET_READY_TIMEOUT_MS = 5000;
-
-/**
  * 错误落点（PRD FR-005）：
  * - `recovery` → 结果页 `?notice=recovery|processing`（已收款/处理中，绝不能重付）
  * - `inline`   → 抽屉内提示（无 PSP 扣款：库存/报价/未就绪/支付方式不可用等）

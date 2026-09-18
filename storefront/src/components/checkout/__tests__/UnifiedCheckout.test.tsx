@@ -480,20 +480,25 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
       });
     });
 
-    // ① 入口行置灰禁用（只标注，不删除服务端下发的入口集合）
+    // ① 入口行标注原因（只标注，不删除服务端下发的入口集合）+ **保持可点击 = 重试**
     const walletRow = screen
       .getAllByTestId("payment-entry-row")
       .find((r) => r.getAttribute("data-option-id") === "pm_stripe:apple_pay");
-    expect(walletRow?.getAttribute("data-unavailable")).toBe("true");
+    expect(walletRow?.getAttribute("data-unavailable")).toBe("device");
     const walletRadio = walletRow?.querySelector("input");
-    expect((walletRadio as HTMLInputElement).disabled).toBe(true);
-    expect(screen.getByTestId("payment-entry-unavailable")).toBeTruthy();
+    expect((walletRadio as HTMLInputElement).disabled).toBe(false);
+    expect(
+      screen
+        .getByTestId("payment-entry-unavailable")
+        .getAttribute("data-reason"),
+    ).toBe("device");
 
-    // ② 自动回落卡支付：卡表单回来，空盒子不再存在
+    // ② 自动回落卡支付：卡表单回来，空盒子不再存在；且**不**出现无意义的「Processing...」
     await waitFor(() =>
       expect(screen.getByTestId("card-payment-form")).toBeInTheDocument(),
     );
     expect(screen.queryByTestId("express-checkout-element")).toBeNull();
+    expect(screen.queryByText("processing")).toBeNull();
   });
 
   it("non-session payment (Check) goes straight to the placed page after submit", async () => {

@@ -50,6 +50,11 @@ import { Input } from "@/components/ui/input";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import {
+  isExpressWalletKind,
+  type WalletAvailability,
+  type WalletUnavailableReason,
+} from "@/lib/checkout/wallet-availability";
+import {
   type CheckoutQuote,
   diffQuotes,
   expectedVersions,
@@ -401,31 +406,52 @@ export function UnifiedCheckout({
   const [states, setStates] = useState<State[]>([]);
   const [loadingStates, setLoadingStates] = useState(false);
 
-  // D7 补口 2（2026-09-18）：**设备侧**不可用的入口（钱包 SDK 报告，如 Windows 无 Apple Pay）。
-  // 服务端不知道设备能力，只有客户端知道 → 这里只**标注 + 禁用 + 回落**，
-  // **不删除**入口（入口集合仍由服务端确定，守住 D8/D15c 红线）。
-  const [unavailableEntryIds, setUnavailableEntryIds] = useState<string[]>([]);
+  // D7 补口 3（2026-09-18）：**设备侧**不可用的入口（`option_id` → 原因）。
+  // 服务端不知道设备能力，只有客户端知道 → 这里只**标注 + 回落**，**不删除**入口
+  // （入口集合仍由服务端确定，守住 D8/D15c 红线）；行保持可点击 = 重试（见下）。
+  const [unavailableEntries, setUnavailableEntries] = useState<
+    Partial<Record<string, WalletUnavailableReason>>
+  >({});
+  /** 每个入口的重试令牌：递增 → 钱包槽位 `key` 变化 → 重新挂载并重新探测。 */
+  const [walletProbeTokens, setWalletProbeTokens] = useState<
+    Record<string, number>
+  >({});
   const [walletProcessing, setWalletProcessing] = useState(false);
-  /** 钱包组件报告本设备不可用 → 置灰该入口 + 自动回落卡支付 + 提示原因。 */
-  const markEntryUnavailable = useCallback(
-    (optionId: string) => {
-      setUnavailableEntryIds((prev) =>
-        prev.includes(optionId) ? prev : [...prev, optionId],
-      );
+  /** 钱包组件上报设备能力：可用 → 清除标注（可恢复）；不可用 → 标注 + 回落 + 提示。 */
+  const handleWalletAvailability = useCallback(
+    (optionId: string, result: WalletAvailability) => {
+      if (result.state === "available") {
+        setUnavailableEntries((prev) => {
+          if (!(optionId in prev)) return prev;
+          const next = { ...prev };
+          delete next[optionId];
+          return next;
+        });
+        return;
+      }
+      if (result.state !== "unavailable") return;
+      const reason = result.reason ?? "device";
+      setUnavailableEntries((prev) => ({ ...prev, [optionId]: reason }));
       setSelectedOptionId((current) => {
         if (current !== optionId) return current;
         const usable = paymentOptions.filter(
           (o) =>
             o.entry.option_id !== optionId &&
-            !unavailableEntryIds.includes(o.entry.option_id),
+            !(o.entry.option_id in unavailableEntries),
         );
         const fallback =
           usable.find((o) => o.entry.frontend_kind === "inline") ?? usable[0];
         return fallback?.entry.option_id ?? current;
       });
-      toast.error(t("walletUnavailable"));
+      toast.error(
+        reason === "timeout"
+          ? t("walletRetryHint")
+          : reason === "unsupported" || reason === "unconfigured"
+            ? t("walletUnsupported")
+            : t("walletUnavailable"),
+      );
     },
-    [paymentOptions, t, unavailableEntryIds],
+    [paymentOptions, t, unavailableEntries],
   );
 
   // ── Billing address（PRD 3.6：Use shipping address as billing address，
@@ -506,6 +532,19 @@ export function UnifiedCheckout({
   const selectedIsWallet = selectedEntry?.frontend_kind === "express";
   const selectedIsInline =
     !selectedIsWallet && selectedEntry?.frontend_kind === "inline";
+
+  /** 前台不支持的钱包 kind（如 paypal / shop_pay）只标注一次，避免反复 toast。 */
+  const unsupportedHandledRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (selectedEntry?.frontend_kind !== "express") return;
+    if (isExpressWalletKind(selectedEntry.method_key)) return;
+    if (unsupportedHandledRef.current.has(selectedEntry.option_id)) return;
+    unsupportedHandledRef.current.add(selectedEntry.option_id);
+    handleWalletAvailability(selectedEntry.option_id, {
+      state: "unavailable",
+      reason: "unsupported",
+    });
+  }, [selectedEntry, handleWalletAvailability]);
 
   // 折扣码回调（BFF 保持 SDK 凭证/guest token 服务端）
   const handleCouponApply = useCallback(
@@ -1279,30 +1318,48 @@ export function UnifiedCheckout({
             <PaymentSection
               methods={paymentMethods}
               selectedOptionId={selectedOptionId}
-              onSelect={(entry) => setSelectedOptionId(entry.option_id)}
+              onSelect={(entry, method) => {
+                // D7 补口 3：重新点已标注的入口 = **重试**（清除标注 + 重新探测）
+                if (entry.option_id in unavailableEntries) {
+                  setUnavailableEntries((prev) => {
+                    const next = { ...prev };
+                    delete next[entry.option_id];
+                    return next;
+                  });
+                  setWalletProbeTokens((prev) => ({
+                    ...prev,
+                    [entry.option_id]: (prev[entry.option_id] ?? 0) + 1,
+                  }));
+                }
+                setWalletProcessing(false);
+                setSelectedOptionId(entry.option_id);
+                void method;
+              }}
               emptyLabel={t("noPaymentMethods")}
-              unavailableOptionIds={unavailableEntryIds}
+              unavailableEntries={unavailableEntries}
             >
               {/* 形态槽：express → 钱包按钮（cart 绑定，复用 canonical 编排）；
                   inline → 自绘卡字段；manual → 仅说明行 */}
               {selectedIsWallet &&
               selectedMethod &&
               selectedEntry &&
-              !unavailableEntryIds.includes(selectedEntry.option_id) ? (
+              isExpressWalletKind(selectedEntry.method_key) ? (
                 <div className="mt-4 rounded-lg border border-gray-200 p-4">
                   {/* 钱包按钮是 cart 绑定组件（复用 canonical 编排）——两页拿到的都是
                       同一份服务端 cart 载荷（ShoppingCart/Cart 仅命名差异） */}
                   <ExpressCheckoutButton
+                    key={`${selectedEntry.option_id}:${
+                      walletProbeTokens[selectedEntry.option_id] ?? 0
+                    }`}
                     cart={cart as unknown as Cart}
                     basePath={basePath}
                     maxColumns={1}
+                    showDivider={false}
+                    entryKind={selectedEntry.method_key}
                     clientConfig={selectedMethod.client_config ?? null}
-                    onAvailabilityChange={(available) => {
-                      // D7 补口 2：本设备无可用钱包 → 置灰入口 + 回落卡支付（不再留空盒子）
-                      if (!available) {
-                        markEntryUnavailable(selectedEntry.option_id);
-                      }
-                    }}
+                    onAvailabilityChange={(result) =>
+                      handleWalletAvailability(selectedEntry.option_id, result)
+                    }
                     onProcessingChange={setWalletProcessing}
                     onComplete={async () => {
                       router.push(`${basePath}/cart`);
@@ -1358,7 +1415,7 @@ export function UnifiedCheckout({
                     )}
                   </div>
                 </div>
-              ) : isSessionBased ? (
+              ) : selectedIsWallet ? null : isSessionBased ? (
                 // 其他会话类支付方式（PayPal/Adyen 等）：同页支付或跳转由网关决定
                 <p className="text-sm text-gray-500">{t("processing")}</p>
               ) : (

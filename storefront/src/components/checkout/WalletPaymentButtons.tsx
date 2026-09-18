@@ -17,8 +17,13 @@ import type {
 import {
   expressErrorRoute,
   expressNoticeFor,
-  WALLET_READY_TIMEOUT_MS,
 } from "@/lib/checkout/express-canonical";
+import {
+  expressPaymentMethodsFor,
+  selectedWalletAvailability,
+  WALLET_READY_TIMEOUT_MS,
+  type WalletAvailability,
+} from "@/lib/checkout/wallet-availability";
 import {
   completeOrderPaymentSessionAndRedirectToResult,
   createOrderPaymentSession,
@@ -54,8 +59,8 @@ export interface WalletPaymentButtonsProps {
   onProcessingChange?: (processing: boolean) => void;
   /** 入口被服务端拒绝 → 父级刷新支付方式列表 + 提示重选。 */
   onUnavailable?: () => void;
-  /** 钱包在该设备不可用（如未安装）→ 父级可回落其它入口。 */
-  onAvailabilityChange?: (available: boolean) => void;
+  /** 钱包在该设备不可用（含原因）→ 父级可置灰入口 + 回落其它入口。 */
+  onAvailabilityChange?: (result: WalletAvailability) => void;
 }
 
 interface WalletInnerProps extends Omit<WalletPaymentButtonsProps, "method"> {
@@ -89,16 +94,13 @@ function WalletInner({
 
   const handleReady = useCallback(
     (event: { availablePaymentMethods?: Record<string, boolean> }) => {
-      const methods = event.availablePaymentMethods;
-      // 未给数据（undefined）= **未知**，不得当作不可用（与 ExpressCheckoutButton 一致）。
-      if (methods === undefined) {
-        onAvailabilityChange?.(true);
-        return;
-      }
-      const isWallet = entry.method_key.startsWith("google")
-        ? methods.googlePay === true
-        : methods.applePay === true;
-      onAvailabilityChange?.(isWallet);
+      // D7 补口 3：**只认选中钱包那一个键**（点谁显示谁），未知不判死
+      onAvailabilityChange?.(
+        selectedWalletAvailability(
+          entry.method_key,
+          event.availablePaymentMethods,
+        ),
+      );
     },
     [entry.method_key, onAvailabilityChange],
   );
@@ -152,7 +154,13 @@ function WalletInner({
       <ExpressCheckoutElement
         onReady={handleReady}
         onConfirm={handleConfirm}
-        options={{ buttonHeight: 44 }}
+        options={{
+          buttonHeight: 44,
+          // D7 补口 3：点谁显示谁
+          ...(expressPaymentMethodsFor(entry.method_key)
+            ? { paymentMethods: expressPaymentMethodsFor(entry.method_key)! }
+            : {}),
+        }}
       />
     </div>
   );
@@ -172,44 +180,75 @@ export function WalletPaymentButtons({
     id: string;
     clientSecret: string;
   } | null>(null);
-  // D7 补口 2（2026-09-18）：本设备无该钱包（Stripe `availablePaymentMethods` 明确 false）
-  // → 不再留空白：渲染显式说明，父级据此置灰入口 + 回落卡支付。
-  const [walletUnavailable, setWalletUnavailable] = useState(false);
-  /** D7 补口 2b：元素是否已上报过设备能力（看门狗据此决定是否降级）。 */
+  // D7 补口 3：三态可用性（unknown / available / unavailable + 原因）
+  const [availability, setAvailability] = useState<WalletAvailability>({
+    state: "unknown",
+  });
+  const [retryToken, setRetryToken] = useState(0);
+  /** 元素是否已上报过设备能力（看门狗据此决定是否降级）。 */
   const availabilityReportedRef = useRef(false);
   const onAvailabilityChangeRef = useRef(onAvailabilityChange);
   onAvailabilityChangeRef.current = onAvailabilityChange;
 
   const handleAvailabilityChange = useCallback(
-    (available: boolean) => {
+    (result: WalletAvailability) => {
       availabilityReportedRef.current = true;
-      setWalletUnavailable(!available);
-      onAvailabilityChange?.(available);
+      setAvailability(result);
+      onAvailabilityChange?.(result);
     },
     [onAvailabilityChange],
   );
 
-  // D7 补口 2b（看门狗）：会话就绪、元素已挂载但**永不**上报设备能力（iframe 被中断 /
-  // 设备无钱包）→ 超时即降级，不给用户留一个无限加载的空槽位。
+  // D7 补口 3（看门狗）：会话就绪、元素已挂载但**永不**上报（iframe 被中断 / 移动网络慢）
+  // → 超时 = `unavailable(timeout)`（**可重试**，不判死）。
+  // biome-ignore lint/correctness/useExhaustiveDependencies: retryToken 仅作触发器（重试后重新计时）
   useEffect(() => {
     if (!session || availabilityReportedRef.current) return;
     const timer = setTimeout(() => {
       if (availabilityReportedRef.current) return;
-      setWalletUnavailable(true);
-      onAvailabilityChangeRef.current?.(false);
+      const result: WalletAvailability = {
+        state: "unavailable",
+        reason: "timeout",
+      };
+      setAvailability(result);
+      onAvailabilityChangeRef.current?.(result);
     }, WALLET_READY_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [session]);
+  }, [session, retryToken]);
 
   const clientConfig: PaymentClientConfig | null = method.client_config ?? null;
   const stripeConfigured = isStripeConfigured(clientConfig);
 
-  const unavailableNotice = (
+  const unavailableNotice = (reason: string) => (
     <div
       data-testid="wallet-unavailable-notice"
+      data-reason={reason}
       className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
     >
-      {t("walletUnavailable")}
+      <p>
+        {reason === "timeout"
+          ? t("walletRetryHint")
+          : reason === "unsupported"
+            ? t("walletUnsupported")
+            : reason === "unconfigured"
+              ? t("walletUnconfigured")
+              : t("walletUnavailable")}
+      </p>
+      {reason !== "unsupported" && reason !== "unconfigured" ? (
+        <button
+          type="button"
+          data-testid="wallet-retry"
+          onClick={() => {
+            setAvailability({ state: "unknown" });
+            availabilityReportedRef.current = false;
+            setSession(null);
+            setRetryToken((token) => token + 1);
+          }}
+          className="mt-2 h-8 rounded-md border border-amber-300 bg-white px-3 text-xs font-medium text-amber-900 hover:bg-amber-100"
+        >
+          {t("walletRetry")}
+        </button>
+      ) : null}
     </div>
   );
 
@@ -262,12 +301,20 @@ export function WalletPaymentButtons({
     orderId,
   ]);
 
-  // 不可用（没配 Stripe 或本设备无该钱包）→ 显式状态，不返回 null。
-  if (!stripeConfigured || walletUnavailable) return unavailableNotice;
+  // 前台不支持该钱包 kind（如 paypal / shop_pay）→ 不建会话，直接说明行
+  if (!expressPaymentMethodsFor(entry.method_key)) {
+    return unavailableNotice("unsupported");
+  }
+  // 不可用（没配 Stripe / 探测为不可用）→ 显式状态，不返回 null。
+  if (!stripeConfigured) return unavailableNotice("unconfigured");
+  if (availability.state === "unavailable") {
+    return unavailableNotice(availability.reason ?? "device");
+  }
 
   if (session) {
     return (
       <Elements
+        key={retryToken}
         stripe={getStripePromise(clientConfig)}
         options={{ clientSecret: session.clientSecret }}
       >

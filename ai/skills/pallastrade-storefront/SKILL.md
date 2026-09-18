@@ -601,30 +601,32 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 - 覆盖测试：`__tests__/WalletPaymentButtons.test.tsx`（AC-007/008：option_kind 下发、client_secret 确认、拒绝后刷新）、
   `__tests__/OrderPaymentContent.test.tsx`（AC-006/007/008/009/010）；改动后跑 `storefront-test`。
 
-### 设备钱包能力与降级（D7 补口 2, 2026-09-18；PRD-20260918-payments-d7-payment-section-express AC-011/AC-012）
+### 设备钱包能力与降级（D7 补口 2/3, 2026-09-18；AC-011~AC-015）
 
-钱包入口的**服务端可用性**（D8/D11/D15c）与**设备能力**是两件事，后者只有客户端知道：
+钱包入口的**服务端可用性**（D8/D11/D15c）与**设备能力**是两件事，后者只有客户端知道。
+读数模型集中在 `lib/checkout/wallet-availability.ts`（**改钱包行为先看它**）：
 
-- **能力探测**：`ExpressCheckoutElement.onReady` 的 `availablePaymentMethods`（`applePay` / `googlePay` / `link`）。
-  Apple Pay 只在 Safari（macOS/iOS）可用；Google Pay 需 Chrome + 已登录 Google 账号；Windows 上
-  `stripe.paymentRequest({...}).canMakePayment()` 可能返回 `null`（全都不可用）。
-- **三种状态必须分开**：`undefined`（未上报 = **未知** → 保持渲染）/ 全 `false`（**明确不可用** → 降级）/ 有真值（渲染）。
-  历史坑：把 `undefined` 也当不可用 → 元素在 `onReady` 后被静默卸载（实测 t≈1.3s 槽位 HTML 由 3054 → 0），
-  而形态槽包裹层是无条件渲染的 → 页面只剩一个**空边框盒子**。
-- **降级要求**：不可用时渲染 `data-testid="wallet-unavailable-notice"` 的显式说明（不允许 `return null`），
-  并**上报父级** `onAvailabilityChange(false)` → 父级把入口加入 `unavailableOptionIds`
-  （`PaymentSection` 行置灰禁用 + 行内备注）并**自动回落**到第一个可用入口（优先 `inline` 卡支付）。
-  ⚠️ **入口行不删除**：入口集合仍由服务端决定（D15c 红线），客户端只表达设备能力（置灰/禁用）。
-- **两个页面同口径**：cart 页（`UnifiedCheckout`）与 `or_` 页（`OrderPaymentContent` 的页内槽位 + 移动吸底条）接线一致；
-  cart 页选中钱包入口时**隐藏 Pay Now**（与 `or_` 页一致；否则点击会在卡表单校验处静默 `return`，同样是死路）。
-- **未配置密钥**（`isStripeConfigured === false`）同样走显式说明，不允许静默消失。
-- **初始化看门狗（补口 2b）**：`onReady` **可能永不触发** —— 实测 Windows/Electron 上
-  `elements-inner-easel` 请求 `net::ERR_ABORTED`、元素高度停在 2px（卡片字段 iframe 正常），
-  用户看到的是**无限加载 spinner**。因此 `WALLET_READY_TIMEOUT_MS`（`lib/checkout/express-canonical.ts`，5s）
-  内未收到任何可用性上报 → 按「本设备不可用」走同一套降级（说明 + 置灰 + 回落卡支付）。
-  两个组件各自持有 `availabilityReportedRef`，一旦上报过就不再降级。
-- 覆盖测试：`__tests__/ExpressCheckoutButton.test.tsx` / `WalletPaymentButtons.test.tsx`（AC-011/AC-012 单元 + 未配置分支）、
-  `__tests__/UnifiedCheckout.test.tsx` / `OrderPaymentContent.test.tsx`（父级回落 + 入口置灰）；改动后跑 `storefront-test`。
+- **点谁显示谁（AC-013）**：`expressPaymentMethodsFor(method_key)` 把选中钱包设 `auto`、其余设 `never`
+  （此前三项均 `auto` → 点 Apple Pay 会同时出现该设备所有可用钱包）。
+  `method_key` 为 undefined/空 → **无入口上下文**（购物车抽屉）→ 保持三项 `auto`；
+  非前台支持的 kind（`paypal` / `shop_pay` / `amazon_pay`）→ 返回 null → 不渲染钱包元素（只给说明行）。
+- **三态而非布尔（AC-015）**：`unknown`（未上报 = **不得判死**）/ `available` / `unavailable` + **原因**
+  （`device` 支付商明确无此钱包 / `timeout` 看门狗超时 / `unsupported` 前台不支持 / `unconfigured` 无密钥）。
+  入口行的 `data-unavailable` 值就是原因，行内文案与区块说明按原因分档。
+- **看门狗**：`WALLET_READY_TIMEOUT_MS`（10s，移动网络较慢）内未收到任何上报 → `unavailable(timeout)`，
+  文案是「加载失败，可重试」而**不是**「本设备不支持」——两者不得混同（旧文案把网络/初始化失败
+  误报成设备不支持，移动端因此被错误置灰）。
+- **可恢复 + 重试（AC-014）**：探测为不可用 → 标注 + 自动回落卡支付；
+  **重新点该入口 = 重试**（父级清除标注 + `walletProbeTokens` 递增 → 槽位 `key` 变化 → 重新挂载元素重新探测）；
+  后续上报 `available` → 父级自动**解除**标注（单向置灰是旧缺陷）。
+  ⚠️ 入口行**不 disabled**（否则无法重试）；入口集合仍不删除（服务端决定，D15c 红线）。
+- **不可用时的显式态**：`wallet-unavailable-notice`（带 `data-reason`，超时/不可用时附 `wallet-retry`），
+  不允许 `return null`；加载态显示 `walletLoading` 提示。
+- **两页同口径**：cart 页（`UnifiedCheckout`）与 `or_` 页（`OrderPaymentContent` 页内槽位 + 移动吸底条）接线一致；
+  cart 页选中钱包入口时**隐藏 Pay Now**、且不再渲染无意义的 `Processing...`；cart 页钱包槽位 **`showDivider={false}`**
+  （只有抽屉下面真的有「去结账」按钮，分隔线才成立）。
+- 覆盖测试：`__tests__/ExpressCheckoutButton.test.tsx` / `WalletPaymentButtons.test.tsx`（三态 + 按入口过滤 + 看门狗 + 未配置）、
+  `__tests__/UnifiedCheckout.test.tsx` / `OrderPaymentContent.test.tsx`（回落 + 原因标注 + 重试 + 无 `Processing...`）；改动后跑 `storefront-test`。
 
 ## Changelog (P0 Payment, 2026-09-03)
 

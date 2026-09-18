@@ -289,8 +289,12 @@ describe("ExpressCheckoutButton (canonical wallet)", () => {
       });
     });
 
-    expect(onAvailabilityChange).toHaveBeenCalledWith(false);
-    expect(await screen.findByTestId("wallet-unavailable-notice")).toBeTruthy();
+    expect(onAvailabilityChange).toHaveBeenCalledWith({
+      state: "unavailable",
+      reason: "device",
+    });
+    const notice = await screen.findByTestId("wallet-unavailable-notice");
+    expect(notice.getAttribute("data-reason")).toBe("device");
   });
 
   // PRD-20260918-payments-d7-payment-section-express AC-011：
@@ -309,17 +313,22 @@ describe("ExpressCheckoutButton (canonical wallet)", () => {
     expect(capturedElementProps.onReady).toBeDefined();
     expect(screen.queryByTestId("wallet-unavailable-notice")).toBeNull();
 
-    // 等看门狗（WALLET_READY_TIMEOUT_MS）超时 → 显式降级
+    // 等看门狗（WALLET_READY_TIMEOUT_MS）超时 → 显式降级（可重试）
     await waitFor(
       () =>
         expect(screen.getByTestId("wallet-unavailable-notice")).toBeTruthy(),
-      { timeout: 9000, interval: 250 },
+      { timeout: 14000, interval: 250 },
     );
-    expect(onAvailabilityChange).toHaveBeenCalledWith(false);
-  }, 15000);
+    expect(onAvailabilityChange).toHaveBeenCalledWith({
+      state: "unavailable",
+      reason: "timeout",
+    });
+    // 超时可重试（不是永久判死）：说明块内提供「重试」
+    expect(screen.getByTestId("wallet-retry")).toBeTruthy();
+  }, 20000);
 
   // PRD-20260918-payments-d7-payment-section-express AC-012：
-  // 可用性**未知**（SDK 未给 availablePaymentMethods）→ 保持渲染，不得当成不可用
+  // 可用性**未知**（SDK 未给 availablePaymentMethods）→ 保持渲染，不得当成不可用、不得上报结论
   it("keeps the wallet element when availability data is unknown (D7 AC-012)", async () => {
     const onAvailabilityChange = vi.fn();
     render(
@@ -336,8 +345,56 @@ describe("ExpressCheckoutButton (canonical wallet)", () => {
       (capturedElementProps.onReady as (event: unknown) => void)({});
     });
 
-    expect(onAvailabilityChange).toHaveBeenCalledWith(true);
+    // 未知 → 保持加载，且**不**给出「可用/不可用」结论（旧行为 fail-open 会导致空按钮区）
+    expect(onAvailabilityChange).toHaveBeenLastCalledWith({
+      state: "unknown",
+    });
+    expect(onAvailabilityChange).not.toHaveBeenCalledWith({
+      state: "available",
+    });
     expect(screen.getByTestId("express-checkout-element")).toBeTruthy();
     expect(screen.queryByTestId("wallet-unavailable-notice")).toBeNull();
+  });
+
+  // PRD-20260918-payments-d7-payment-section-express AC-013：
+  // **点谁显示谁** —— 选中 Apple Pay 入口 → 元素只启用 Apple Pay（其余 never）
+  it("renders only the selected wallet entry (D7 AC-013)", async () => {
+    render(
+      <ExpressCheckoutButton
+        cart={cart}
+        basePath="/us/en"
+        entryKind="apple_pay"
+        onComplete={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(capturedElementProps.options).toBeDefined());
+
+    expect(
+      (
+        capturedElementProps.options as {
+          paymentMethods: Record<string, string>;
+        }
+      ).paymentMethods,
+    ).toEqual({ applePay: "auto", googlePay: "never", link: "never" });
+  });
+
+  // AC-013（反例）：无入口上下文（购物车抽屉）→ 多钱包并排（保持既有行为）
+  it("keeps every wallet enabled when there is no entry context (D7 AC-013)", async () => {
+    render(
+      <ExpressCheckoutButton
+        cart={cart}
+        basePath="/us/en"
+        onComplete={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(capturedElementProps.options).toBeDefined());
+
+    expect(
+      (
+        capturedElementProps.options as {
+          paymentMethods: Record<string, string>;
+        }
+      ).paymentMethods,
+    ).toEqual({ applePay: "auto", googlePay: "auto", link: "auto" });
   });
 });

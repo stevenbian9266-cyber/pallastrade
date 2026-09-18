@@ -503,20 +503,34 @@ describe("OrderPaymentContent", () => {
       });
     });
 
-    // ① 入口行置灰禁用 + 行内备注（只标注，不删除服务端下发的入口集合）
+    // ① 入口行标注原因（只标注，不删除服务端下发的入口集合）+ **保持可点击 = 重试**
     const walletRow = screen
       .getAllByTestId("payment-entry-row")
       .find((r) => r.getAttribute("data-option-id") === "pm_stripe:apple_pay");
-    expect(walletRow?.getAttribute("data-unavailable")).toBe("true");
+    expect(walletRow?.getAttribute("data-unavailable")).toBe("device");
     const walletRadio = walletRow?.querySelector("input");
-    expect((walletRadio as HTMLInputElement).disabled).toBe(true);
-    expect(screen.getByTestId("payment-entry-unavailable")).toBeTruthy();
+    expect((walletRadio as HTMLInputElement).disabled).toBe(false);
+    expect(
+      screen
+        .getByTestId("payment-entry-unavailable")
+        .getAttribute("data-reason"),
+    ).toBe("device");
 
     // ② 自动回落卡支付：卡表单回来，钱包槽位不再留空白
     await waitFor(() =>
       expect(screen.getByTestId("card-payment-form")).toBeInTheDocument(),
     );
     expect(screen.queryByTestId("express-checkout-element")).toBeNull();
+
+    // ③ 重新点该入口 = 重试：清除标注 + 重新挂载钱包组件重新探测（D7 AC-014）
+    await user.click(screen.getByText("Apple Pay"));
+    await screen.findAllByTestId("wallet-pay-button");
+    expect(
+      screen
+        .getAllByTestId("payment-entry-row")
+        .find((r) => r.getAttribute("data-option-id") === "pm_stripe:apple_pay")
+        ?.getAttribute("data-unavailable"),
+    ).toBeNull();
   });
 
   // PRD-20260916-payments-d16-payment-method-presentation AC-005：

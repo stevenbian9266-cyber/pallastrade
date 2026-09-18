@@ -24,8 +24,13 @@ import {
   expressNoticeFor,
   expressResultUrl,
   startExpressCheckout,
-  WALLET_READY_TIMEOUT_MS,
 } from "@/lib/checkout/express-canonical";
+import {
+  expressPaymentMethodsFor,
+  selectedWalletAvailability,
+  WALLET_READY_TIMEOUT_MS,
+  type WalletAvailability,
+} from "@/lib/checkout/wallet-availability";
 import {
   expressCheckoutResolveShipping,
   expressCheckoutSelectRates,
@@ -48,9 +53,15 @@ export interface ExpressCheckoutButtonProps {
   basePath: string;
   onComplete: () => void | Promise<void>;
   onProcessingChange?: (processing: boolean) => void;
-  onAvailabilityChange?: (available: boolean) => void;
+  /** 设备能力读数（三态 + 原因）；父级据此置灰入口并回落。 */
+  onAvailabilityChange?: (result: WalletAvailability) => void;
   maxColumns?: number;
   showDivider?: boolean;
+  /**
+   * 选中入口的 `method_key`（如 `apple_pay`）。
+   * 传入 → **点谁显示谁**（其余钱包 `never`）；不传 → 无入口上下文（抽屉：多钱包并排）。
+   */
+  entryKind?: string | null;
   /** PALLAS-CUSTOM: D10 —— 服务端下发的 client_config（缺省回落环境变量）。 */
   clientConfig?: PaymentClientConfig | null;
 }
@@ -63,14 +74,19 @@ function ExpressCheckoutInner({
   onAvailabilityChange,
   maxColumns = 1,
   showDivider = true,
-}: ExpressCheckoutButtonProps) {
+  entryKind,
+  onRetry,
+}: ExpressCheckoutButtonProps & { onRetry?: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
   const t = useTranslations("expressCheckout");
   // D7 补口 2：降级说明属于结账页文案（与 PaymentSection / WalletPaymentButtons 同命名空间）
   const tCheckout = useTranslations("checkout");
-  const [available, setAvailable] = useState<boolean | null>(null);
+  // D7 补口 3：三态可用性（unknown / available / unavailable+原因）
+  const [availability, setAvailability] = useState<WalletAvailability>({
+    state: "unknown",
+  });
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const isConfirmingRef = useRef(false);
@@ -106,22 +122,22 @@ function ExpressCheckoutInner({
   const handleReady = useCallback(
     (event: StripeExpressCheckoutElementReadyEvent) => {
       availabilityReportedRef.current = true;
-      const methods = event.availablePaymentMethods;
-      // 未给数据（undefined）= **未知**，不得当作不可用：元素已挂载，Stripe 自己不会
-      // 渲染设备用不了的钱包按钮。只有明确的全 false 才走降级（D7 补口 2）。
-      if (methods === undefined) {
-        setAvailable(true);
-        onAvailabilityChangeRef.current?.(true);
-        return;
-      }
-      const isAvailable = Boolean(
-        methods.applePay || methods.googlePay || methods.link,
+      const result = selectedWalletAvailability(
+        entryKind,
+        event.availablePaymentMethods,
       );
-      setAvailable(isAvailable);
-      onAvailabilityChangeRef.current?.(isAvailable);
+      setAvailability(result);
+      onAvailabilityChangeRef.current?.(result);
     },
-    [],
+    [entryKind],
   );
+
+  // 切换选中入口（或重试）→ 重新探测：清掉上一轮结论并重新看门狗计时。
+  // biome-ignore lint/correctness/useExhaustiveDependencies: entryKind 仅作触发器（重跑探测），不参与计算
+  useEffect(() => {
+    availabilityReportedRef.current = false;
+    setAvailability({ state: "unknown" });
+  }, [entryKind]);
 
   const handleClick = useCallback(
     (event: StripeExpressCheckoutElementClickEvent) => {
@@ -133,17 +149,24 @@ function ExpressCheckoutInner({
     [cart],
   );
 
-  // D7 补口 2b（看门狗）：元素可能**永不**上报设备能力（Stripe iframe 被中断 / 设备无钱包）
-  // —— 只等回调会留下无限加载态；超时即按「本设备不可用」降级（说明 + 置灰 + 回落卡支付）。
+  // D7 补口 3（看门狗）：元素可能**永不**上报设备能力（Stripe iframe 被中断 / 移动网络慢）。
+  // 只等回调会留下无限加载态；超时 → `unavailable(timeout)`（**可重试**，不判死）。
+  // biome-ignore lint/correctness/useExhaustiveDependencies: entryKind 仅作触发器（换入口重计时）
   useEffect(() => {
-    if (available !== null || availabilityReportedRef.current) return;
+    if (availability.state !== "unknown" || availabilityReportedRef.current) {
+      return;
+    }
     const timer = setTimeout(() => {
       if (availabilityReportedRef.current) return;
-      setAvailable(false);
-      onAvailabilityChangeRef.current?.(false);
+      const result: WalletAvailability = {
+        state: "unavailable",
+        reason: "timeout",
+      };
+      setAvailability(result);
+      onAvailabilityChangeRef.current?.(result);
     }, WALLET_READY_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [available]);
+  }, [availability.state, entryKind]);
 
   const handleShippingAddressChange = useCallback(
     async (event: StripeExpressCheckoutElementShippingAddressChangeEvent) => {
@@ -400,19 +423,40 @@ function ExpressCheckoutInner({
     // and will be overwritten by next checkout attempt.
   }, []);
 
-  // D7 补口 2（2026-09-18）：**不得静默消失**。本设备无可用钱包时保留一个显式说明块，
-  // 父级已接 `onAvailabilityChange` → 自动回落到卡支付并置灰该入口（见 UnifiedCheckout /
-  // OrderPaymentContent）；未接的调用方（cart 抽屉）也能看到原因而不是空白。
-  if (available === false) {
+  // D7 补口 3：**不得静默消失**，也不得把「没上报」当不可用。
+  // - `unknown` → 加载中（附提示文案，移动端更慢但不判死）
+  // - `unavailable` → 按**原因**给文案 + 「重试」（父级通常已自动回落卡支付）
+  if (availability.state === "unavailable") {
+    const reason = availability.reason ?? "device";
     return (
       <div
         data-testid="wallet-unavailable-notice"
+        data-reason={reason}
         className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
       >
-        {tCheckout("walletUnavailable")}
+        <p>
+          {reason === "timeout"
+            ? tCheckout("walletRetryHint")
+            : reason === "unsupported"
+              ? tCheckout("walletUnsupported")
+              : tCheckout("walletUnavailable")}
+        </p>
+        {onRetry && reason !== "unsupported" ? (
+          <button
+            type="button"
+            data-testid="wallet-retry"
+            onClick={onRetry}
+            className="mt-2 h-8 rounded-md border border-amber-300 bg-white px-3 text-xs font-medium text-amber-900 hover:bg-amber-100"
+          >
+            {tCheckout("walletRetry")}
+          </button>
+        ) : null}
       </div>
     );
   }
+
+  const paymentMethodsOption = expressPaymentMethodsFor(entryKind);
+  if (!paymentMethodsOption) return null;
 
   return (
     <div className="w-full">
@@ -434,28 +478,30 @@ function ExpressCheckoutInner({
         <div className="relative min-h-12">
           {/* Spinner — overlays the button area, fades out when ready */}
           <div
-            className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
-              available === null && !processing
+            className={`absolute inset-0 flex flex-col items-center justify-center gap-2 transition-opacity duration-300 ${
+              availability.state === "unknown" && !processing
                 ? "opacity-100"
                 : "opacity-0 pointer-events-none"
             }`}
           >
             <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+            <span className="text-xs text-gray-500">
+              {tCheckout("walletLoading")}
+            </span>
           </div>
 
           {/* Buttons — always mounted so Stripe can init, fade in when ready */}
           <div
             className={`transition-opacity duration-300 ease-out ${
-              available === true && !processing ? "opacity-100" : "opacity-0"
+              availability.state === "available" && !processing
+                ? "opacity-100"
+                : "opacity-0"
             }`}
           >
             <ExpressCheckoutElement
               options={{
-                paymentMethods: {
-                  applePay: "auto",
-                  googlePay: "auto",
-                  link: "auto",
-                },
+                // D7 补口 3：点谁显示谁（选中钱包 auto，其余 never）
+                paymentMethods: paymentMethodsOption,
                 buttonType: {
                   applePay: "check-out",
                   googlePay: "checkout",
@@ -480,7 +526,7 @@ function ExpressCheckoutInner({
               onShippingRateChange={handleShippingRateChange}
             />
             {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-            {available && showDivider && (
+            {availability.state === "available" && showDivider && (
               <div className="relative mt-4">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-200" />
@@ -506,8 +552,11 @@ function ExpressCheckoutWithElements({
   maxColumns,
   showDivider,
   clientConfig,
+  entryKind,
 }: ExpressCheckoutButtonProps) {
   const currency = cart.currency.toLowerCase();
+  // D7 补口 3：重试 = 重挂载 Elements（重新初始化元素并重新探测设备能力）
+  const [retryToken, setRetryToken] = useState(0);
 
   // P0-4 (FR-040/041): 初始 Elements 金额 = 服务端权威 amount（order.amount_due 子单位）。
   // 后续金额变化走 elements.update()（内层组件）。用 ref 保持 options 稳定、避免重挂载。
@@ -525,7 +574,11 @@ function ExpressCheckoutWithElements({
   );
 
   return (
-    <Elements stripe={getStripePromise(clientConfig)} options={options}>
+    <Elements
+      key={retryToken}
+      stripe={getStripePromise(clientConfig)}
+      options={options}
+    >
       <ExpressCheckoutInner
         cart={cart}
         basePath={basePath}
@@ -534,6 +587,8 @@ function ExpressCheckoutWithElements({
         onAvailabilityChange={onAvailabilityChange}
         maxColumns={maxColumns}
         showDivider={showDivider}
+        entryKind={entryKind}
+        onRetry={() => setRetryToken((token) => token + 1)}
       />
     </Elements>
   );
@@ -546,7 +601,7 @@ export function ExpressCheckoutButton(props: ExpressCheckoutButtonProps) {
 
   useEffect(() => {
     if (!configured) {
-      onAvailabilityChange?.(false);
+      onAvailabilityChange?.({ state: "unavailable", reason: "unconfigured" });
     }
   }, [configured, onAvailabilityChange]);
 
@@ -555,9 +610,10 @@ export function ExpressCheckoutButton(props: ExpressCheckoutButtonProps) {
     return (
       <div
         data-testid="wallet-unavailable-notice"
+        data-reason="unconfigured"
         className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
       >
-        {t("walletUnavailable")}
+        {t("walletUnconfigured")}
       </div>
     );
   }

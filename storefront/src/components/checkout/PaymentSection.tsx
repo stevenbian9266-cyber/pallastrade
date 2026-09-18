@@ -3,6 +3,7 @@
 import type { PaymentMethod } from "@pallastrade/sdk";
 import { CreditCard, Wallet } from "lucide-react";
 import { useTranslations } from "next-intl";
+import type { WalletUnavailableReason } from "@/lib/checkout/wallet-availability";
 
 /**
  * PALLAS-CUSTOM: D7（PRD-20260918-payments-d7-payment-section-express）
@@ -86,37 +87,50 @@ export interface PaymentEntryRowProps {
   /** 单选组名（同一页多组时避免串组）。 */
   name?: string;
   /**
-   * 设备侧不可用（如当前设备/浏览器没有 Apple Pay / Google Pay）。
+   * 设备侧不可用**原因**（null/未设 = 可用）。
    *
-   * ⚠️ **只禁用、不删除**：入口集合仍由服务端 `Availability::Resolver` 决定（D8/D11/D15c 红线，
-   * 客户端不得按 `kind` / `frontend_kind` 隐藏入口）。这里表达的是**客户端唯一可知**的信息 ——
-   * 钱包 SDK（Stripe `availablePaymentMethods`）报告的本设备能力；不标注会得到
-   * 「看得到 → 点开空白」的结果（D7 补口 2）。
+   * ⚠️ **只标注、不删除、不 disabled**：入口集合仍由服务端 `Availability::Resolver` 决定
+   * （D8/D11/D15c 红线，客户端不得按 `kind` / `frontend_kind` 隐藏入口）。这里表达的是
+   * **客户端唯一可知**的信息 —— 钱包 SDK（Stripe `availablePaymentMethods`）报告的本设备能力。
+   * 行保留**可点击**（点它 = 重新探测 = 重试），避免移动网络下一次超时即永久失能（D7 补口 3）。
    */
-  unavailable?: boolean;
+  unavailableReason?: WalletUnavailableReason | null;
 }
 
-/** 单个入口行（radio + 展示名；设备不可用 → 置灰禁用 + 备注）。 */
+/**
+ * 行内短文案（按原因）。
+ * @param reason 设备能力不可用原因
+ */
+function rowNoteKey(reason: WalletUnavailableReason): string {
+  if (reason === "timeout") return "walletRetryShort";
+  if (reason === "unsupported" || reason === "unconfigured") {
+    return "walletUnsupportedShort";
+  }
+  return "walletUnavailableShort";
+}
+
+/** 单个入口行（radio + 展示名；设备不可用 → 置灰 + 原因 + **可点击重试**）。 */
 export function PaymentEntryRow({
   entry,
   selected,
   onSelect,
   name = "payment-method",
-  unavailable = false,
+  unavailableReason = null,
 }: PaymentEntryRowProps) {
   const t = useTranslations("checkout");
   const Icon = entryIconKind(entry) === "wallet" ? Wallet : CreditCard;
+  const unavailable = unavailableReason !== null;
 
   return (
     <label
       data-testid="payment-entry-row"
       data-option-id={entry.option_id}
       data-frontend-kind={entry.frontend_kind}
-      data-unavailable={unavailable ? "true" : undefined}
-      className={`flex items-center gap-3 p-3 rounded-lg border ${
+      data-unavailable={unavailableReason ?? undefined}
+      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer ${
         unavailable
-          ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
-          : `cursor-pointer hover:border-indigo-300 ${
+          ? "border-gray-200 bg-gray-50 opacity-70"
+          : `hover:border-indigo-300 ${
               selected ? "border-indigo-400 bg-indigo-50/40" : "border-gray-200"
             }`
       }`}
@@ -125,7 +139,6 @@ export function PaymentEntryRow({
         type="radio"
         name={name}
         checked={selected}
-        disabled={unavailable}
         onChange={() => onSelect(entry)}
         className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
       />
@@ -133,12 +146,13 @@ export function PaymentEntryRow({
       <span className="flex-1 font-medium text-gray-900">
         {entry.display_name}
       </span>
-      {unavailable ? (
+      {unavailableReason ? (
         <span
           data-testid="payment-entry-unavailable"
+          data-reason={unavailableReason}
           className="text-xs text-gray-500"
         >
-          {t("walletUnavailableShort")}
+          {t(rowNoteKey(unavailableReason))}
         </span>
       ) : null}
     </label>
@@ -157,10 +171,10 @@ export interface PaymentSectionProps {
   /** 认证需求提示（D15c；服务端已过滤入口，这里只解释「为什么只剩这些」）。 */
   authenticationNotice?: string | null;
   /**
-   * 设备侧不可用的入口（`option_id`）——由父级在钱包 SDK 报告后回填。
-   * 仍**不删除**入口行，只置灰禁用 + 备注（见 `PaymentEntryRowProps.unavailable`）。
+   * 设备侧不可用的入口（`option_id` → 原因）——由父级在钱包 SDK 上报后回填。
+   * 仍**不删除**入口行，只标注 + 允许点击重试（见 `PaymentEntryRowProps.unavailableReason`）。
    */
-  unavailableOptionIds?: string[];
+  unavailableEntries?: Partial<Record<string, WalletUnavailableReason>>;
   /** 其它需要出现在列表下方的说明（如 3DS 提示）。 */
   children?: React.ReactNode;
 }
@@ -175,7 +189,7 @@ export function PaymentSection({
   onSelect,
   emptyLabel,
   authenticationNotice,
-  unavailableOptionIds,
+  unavailableEntries,
   children,
 }: PaymentSectionProps) {
   const t = useTranslations("checkout");
@@ -195,6 +209,10 @@ export function PaymentSection({
     );
   }
 
+  const reasons = Object.values(unavailableEntries ?? {}).filter(
+    Boolean,
+  ) as WalletUnavailableReason[];
+
   return (
     <div data-testid="payment-section">
       <div className="flex flex-col gap-3">
@@ -204,18 +222,22 @@ export function PaymentSection({
             entry={entry}
             method={method}
             selected={selectedOptionId === entry.option_id}
-            unavailable={unavailableOptionIds?.includes(entry.option_id)}
+            unavailableReason={unavailableEntries?.[entry.option_id] ?? null}
             onSelect={(selected) => onSelect(selected, method)}
           />
         ))}
       </div>
 
-      {unavailableOptionIds && unavailableOptionIds.length > 0 ? (
+      {reasons.length > 0 ? (
         <p
           data-testid="wallet-unavailable-note"
           className="mt-3 text-xs text-gray-500"
         >
-          {t("walletUnavailable")}
+          {reasons.includes("device")
+            ? t("walletUnavailable")
+            : reasons.includes("timeout")
+              ? t("walletRetryHint")
+              : t("walletUnsupported")}
         </p>
       ) : null}
 
