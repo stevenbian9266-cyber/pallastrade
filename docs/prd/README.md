@@ -38,7 +38,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
 |---|---|---|---|---|
-| implementing | PRD-20260918-payments-隐藏-stripe-elements-开发者工具入口-测试模式右下角浮层 | payments | 2026-09-18 | REQ-20260918-stripe-devtools.md |
+| done | PRD-20260918-payments-隐藏-stripe-elements-开发者工具入口-测试模式右下角浮层 | payments | 2026-09-18 | REQ-20260918-stripe-devtools.md |
 | done | PRD-20260914-checkout-quote-confirmation-loop | checkout | 2026-09-14 | REQ-20260914-checkout-quote-confirmation-loop.md |
 | done | PRD-20260914-admin-disputes-evidence-params-whitelist | admin | 2026-09-14 | REQ-20260914-admin-disputes-evidence-params-whitelist.md |
 | done | PRD-20260914-shipping-category-name-i18n-fallback | shipping | 2026-09-14 | REQ-20260914-shipping-category-name-i18n-fallback.md |

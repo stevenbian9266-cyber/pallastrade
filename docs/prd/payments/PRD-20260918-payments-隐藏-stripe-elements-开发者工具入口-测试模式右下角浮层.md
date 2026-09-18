@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing |
+| 状态 | done |
 | 创建日期 | 2026-09-18 |
 | 来源 | 优化：checkout 页面右下角会显示 Stripe 开发者工具入口，隐藏掉 |
 | 分类 | payments（自动判定） |
@@ -131,4 +131,4 @@
 | 日期 | 版本 | 变更 | 操作者 |
 |---|---|---|---|
 | 2026-09-18 | 0.1 | 初稿：根因（Stripe 测试模式开发者工具 + 官方 `developerTools` 开关）+ FR/AC/跨层搜索/测试计划 | AI |
-| 2026-09-18 | 0.2 | 用户确认「按 PRD 实施（前台 + platform 两处）」→ 实施：`stripe.ts` 常量 + 两处实例化点 + 3 例单测（含既有 2 例断言补第二参）；文档同步 payments/storefront Skill | AI |
+| 2026-09-18 | 0.3 | 部署验证（dev `1a58be20`，前台镜像 `sha256:f4db4ce2…`）：产物 chunk 确认携带 `developerTools:{assistant:{enabled:!1}}`；结账页仍渲染 3 个入口（card/apple_pay/google_pay，零回归）；Stripe Elements 正常初始化；CI 全绿（Storefront/Platform/Deploy/Monorepo）+ 状态收口 done | AI |
