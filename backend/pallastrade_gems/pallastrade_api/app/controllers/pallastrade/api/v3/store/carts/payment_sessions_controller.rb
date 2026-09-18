@@ -42,7 +42,10 @@ module PallasTrade
               result = PallasTrade::PaymentSessions::Start.call(
                 order: @cart,
                 payment_method: payment_method,
-                external_data: permitted_params[:external_data] || {}
+                external_data: permitted_params[:external_data] || {},
+                # PALLAS-CUSTOM: D7（PRD-20260918-payments-d7-payment-section-express）——
+                # 与 orders 通道对齐：可选入口（method kind）同源校验参数（不传 = 零回归）。
+                option_kind: permitted_params[:option_kind]
               )
 
               if result.success?
@@ -125,7 +128,9 @@ module PallasTrade
             end
 
             def permitted_params
-              params.permit(PallasTrade::PermittedAttributes.payment_session_attributes)
+              # PALLAS-CUSTOM: D7（PRD-20260918-payments-d7-payment-section-express）——
+              # 可选入口 kind（与 orders 通道对齐；不传 = 零回归）。
+              params.permit(PallasTrade::PermittedAttributes.payment_session_attributes + [:option_kind])
             end
 
             def complete_params

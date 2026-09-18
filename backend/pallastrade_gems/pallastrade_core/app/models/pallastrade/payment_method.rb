@@ -450,6 +450,67 @@ module PallasTrade
       "#{prefixed_id}:#{resolved_kind}"
     end
 
+    # PALLAS-CUSTOM: D7（PRD-20260918-payments-d7-payment-section-express；业务方案 §76.1 / §78-D7）--
+    # 入口分组（前台支付区按组渲染与排序）：`card` / `wallet` / `redirect` / `manual`。
+    WALLET_OPTION_KINDS = %w[apple_pay google_pay link shop_pay amazon_pay paypal paypal_checkout].freeze
+
+    # @param kind [String, nil] 指定入口；缺省用生效入口
+    # @return [String] card / wallet / redirect / manual
+    def option_group(kind = nil)
+      resolved = (kind.presence || effective_payment_option['kind'] || default_option_kind).to_s
+      frontend = option_frontend_kind(resolved)
+      return 'manual' if frontend == 'manual'
+      return 'wallet' if WALLET_OPTION_KINDS.include?(resolved)
+      # `card` 与「inline 入口」（含未选项化 provider 的隐式入口，如 Stripe 的 api_type 入口）均归卡组
+      return 'card' if resolved == 'card' || frontend == 'inline'
+
+      'redirect'
+    end
+
+    # 入口前端形态（按 kind 取配置；钱包类 kind 未显式配置时回落 `express` —— 不猜成 inline，
+    # 否则前台会把钱包入口渲染成卡表单，属「形态错配」）。
+    # @param kind [String, nil] 指定入口；缺省用 provider 默认形态
+    # @return [String] inline / express / manual
+    def option_frontend_kind(kind = nil)
+      resolved = kind.to_s.presence
+      return default_option_frontend_kind if resolved.blank?
+
+      option = effective_payment_options.find { |candidate| candidate['kind'].to_s == resolved }
+      configured = option&.[]('frontend_kind').presence
+      return configured if configured.present?
+      return 'express' if WALLET_OPTION_KINDS.include?(resolved)
+
+      default_option_frontend_kind
+    end
+
+    # 入口级投影（前台支付区「一行一入口」；顺序 = `effective_payment_options` 既有顺序）。
+    #
+    # ⚠️ 入口集合的**唯一权威**是 `Payments::Availability::Resolver`（与 `PaymentSessions::Start`
+    # 同源）：调用方应传 `available_kinds:`（范围规则 / 熔断 / 3DS 闸门过滤后的入口）。不传 =
+    # 不过滤（仅用于无订单上下文的只读展示，**不得**作为「可否支付」的依据）。
+    #
+    # @param available_kinds [Array<String>, nil]
+    # @return [Array<Hash>] [{ 'option_id', 'method_key', 'display_name', 'frontend_kind', 'group', 'position' }]
+    def payment_option_entries(available_kinds: nil)
+      options = effective_payment_options
+      if available_kinds
+        allowed = Array(available_kinds).map(&:to_s)
+        options = options.select { |option| allowed.include?(option['kind'].to_s) }
+      end
+
+      options.each_with_index.map do |option, index|
+        kind = option['kind'].to_s
+        {
+          'option_id' => option_identifier(kind),
+          'method_key' => kind,
+          'display_name' => option_display_name(kind),
+          'frontend_kind' => option_frontend_kind(kind),
+          'group' => option_group(kind),
+          'position' => option['position'].to_i.zero? ? index : option['position'].to_i
+        }
+      end
+    end
+
     # 默认 kind：优先用网关的 `api_type`（stripe / adyen / paypal…），否则从类名推导。
     def default_option_kind
       return api_type.to_s if respond_to?(:api_type) && api_type.present?

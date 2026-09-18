@@ -574,6 +574,31 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 - 文案 5 语言（`messages/{en,de,es,fr,pl}.json`）**键集必须一致**（`pnpm check:locales`）；改完必跑 `npx tsc --noEmit`（一行两个值这类 JSON 手误只在 tsc 暴露）。
 - 覆盖测试：`components/checkout/__tests__/OrderPaymentContent.test.tsx`（新增 2 例：认证提示 / 无可用入口提示）。
 
+## 入口级支付区（D7, 2026-09-18；PRD-20260918-payments-d7-payment-section-express）
+
+前台支付区从「一 provider 一行」升级为 **一入口一行**（信用卡 / Apple Pay / Google Pay 同时可见）。
+
+- **共用外壳**：`components/checkout/PaymentSection.tsx`
+  - `paymentEntriesFor(method)` —— 读服务端 `entries[]`；**旧响应无 `entries` → 合成单入口**（
+    `option_id = `${method.id}:default``、`display_name = display_name ?? name`、`frontend_kind` 缺失时按
+    `session_required` 推导 `inline`/`manual`）→ 零回归（AC-010）。
+  - `PaymentSection` 渲染 radio 行（`data-testid="payment-entry-row"` + `data-option-id` + `data-frontend-kind`），
+    顺序即服务端 `position`；`manual` 入口出说明行；认证提示与空态仍由这里渲染。
+- **形态槽（父级决定）**：`frontend_kind === "express"` → 钱包按钮；`"inline"` → `CardPaymentForm`；`"manual"` → 无额外控件。
+  ⚠️ **仍然零筛选**：只按形态选渲染槽，**不按 kind 隐藏入口**（隐藏与否由服务端 `Availability::Resolver` 决定，见上节 D15）。
+- **钱包快付（or_ 订单页）**：`components/checkout/WalletPaymentButtons.tsx`
+  - 点钱包入口 → `createOrderPaymentSession(orderId, methodId, undefined, "payment_intent", { optionKind: method_key })`
+    → 挂 `ExpressCheckoutElement`（clientSecret）→ `stripe.confirmPayment` → `completeOrderPaymentSessionAndRedirectToResult`。
+  - 错误落点复用 `lib/checkout/express-canonical.ts`（`expressErrorRoute` / `expressNoticeFor`）：入口不可用 → 提示 + 刷新列表。
+  - **cart 页不新建流程**：选中 `express` 入口时复用既有 cart 绑定 `ExpressCheckoutButton`（`next/dynamic`，`ssr: false`）。
+- **移动吸底 Pay 条**：`OrderPaymentContent` 的 `data-testid="mobile-pay-bar"`（`lg:hidden fixed bottom-0`）——
+  与页内按钮**同一 handler**（钱包入口则复用同一钱包组件，不复制支付逻辑）；两个 Pay 按钮各有 testid
+  （`pay-now-button` / `mobile-pay-button`）避免同名查询歧义。
+- **`option_kind` 透传**：`lib/data/order-payment.ts`（第 5 个参数 `startOptions.optionKind`）与
+  BFF `/api/checkout/start`（`body.option_kind`）两处；cart Pay 请求也会带 `option_kind`。
+- 覆盖测试：`__tests__/WalletPaymentButtons.test.tsx`（AC-007/008：option_kind 下发、client_secret 确认、拒绝后刷新）、
+  `__tests__/OrderPaymentContent.test.tsx`（AC-006/007/008/009/010）；改动后跑 `storefront-test`。
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - P0 (2026-09-03): Express(Apple/Google Pay) 金额/行项目改由服务端 Cart#express_payment 权威提供（expressAmount/expressLineItems；legacy buildLineItems 仅 fallback）；Legacy cart 支付=Compatibility Only。

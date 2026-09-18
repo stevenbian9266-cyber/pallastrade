@@ -42,6 +42,10 @@ module PallasTrade
                               'description: string | null, type: string, session_required: boolean, ' \
                               'source_required: boolean, kind: string, frontend_kind: string, ' \
                               'option_id: string, method_key: string, display_name: string, ' \
+                              'group: string, position: number, ' \
+                              'entries: Array<{ option_id: string, method_key: string, ' \
+                              'display_name: string, frontend_kind: string, group: string, ' \
+                              'position: number }>, ' \
                               'requires_authentication: boolean, ' \
                               'client_config: { provider: string, environment: string | null, ' \
                               'publishable: Record<string, string>, session_token: string | null } }> }',
@@ -152,6 +156,14 @@ module PallasTrade
                 option_id: payment_method.option_identifier,
                 method_key: payment_method.effective_payment_option['kind'] || payment_method.default_option_kind,
                 display_name: payment_method.option_display_name,
+                # PALLAS-CUSTOM: D7（PRD-20260918-payments-d7-payment-section-express；业务方案 §76.1 / §78-D7）——
+                # **入口级列表**（一入口一行）：修「配了三个入口，前台只显示一行」
+                # （根因：投影只带 effective_payment_option 单入口）。
+                # 入口集合来自 `Availability::Resolver`（范围规则 / 熔断 / 3DS 闸门）——
+                # **与 `PaymentSessions::Start` 同源**，前台才可能「看得到就付得了」。
+                entries: payment_method.payment_option_entries(available_kinds: available_option_kinds_for(payment_method)),
+                group: payment_method.option_group,
+                position: payment_method.effective_payment_option['position'].to_i,
                 # PALLAS-CUSTOM: D15 切片3（PRD-20260917-checkout-d15-切片3）——
                 # 本单是否被要求 3DS/SCA 认证（服务端判定；前台只做提示，不做筛选）。
                 # 列表本身已经**只含可认证入口**（`Availability::Resolver` 同源求值），
@@ -172,6 +184,18 @@ module PallasTrade
               PallasTrade::Payments::ThreeDSecure::Required.for_order(order)[:required] == true
             rescue StandardError
               false
+            end
+
+            # D7：入口级可用集合（唯一求值点 = `Availability::Resolver`，与 Start 同源）。
+            # 无订单上下文（或求值异常）→ nil = 不做过滤（投影回退为配置的入口，安全降级）。
+            def available_option_kinds_for(payment_method)
+              return nil if order.blank?
+
+              PallasTrade::Payments::Availability::Resolver.available_option_kinds(
+                order: order, payment_method: payment_method
+              )
+            rescue StandardError
+              nil
             end
 
             def order

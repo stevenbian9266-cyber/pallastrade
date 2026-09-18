@@ -120,6 +120,19 @@ page → 「支付方式」tab with Test connection), not through this SDK; both
 consumers keep working. Regenerate with `scripts/ci/contracts.sh` whenever a payment serializer's
 `typelize` changes.
 
+Entry-level payment section (PRD-20260918-payments-d7-payment-section-express, D7, 2026-09-18): the
+checkout projection `payment.available_payment_methods[]` gains an additive `entries[]` array (one
+item per enabled storefront entry: `option_id` / `method_key` / `display_name` / `frontend_kind` /
+`group` / `position`, ordered by the configured position) plus provider-level `group` and `position`;
+the generated `PaymentMethod` type gains `group` / `position` too (the cart/order channel deliberately
+does **not** expose `entries` — it has no order context, so it cannot share the session start gate's
+evaluation). The hand-written request types `CreateOrderTransactionParams` and
+`CreatePaymentSessionParams` gain an optional `option_kind` so a client can state which entry the
+buyer picked; the server re-evaluates it against the same availability set as the rendered list and
+refuses an unavailable entry with `422 payment_option_not_available` (legacy cart channel:
+`validation_error`) **without creating a session row**. All fields are additive; regenerate with
+`scripts/ci/contracts.sh` (Typelizer + platform copy) and keep `harness generated:check` drift-free.
+
 Back-in-stock subscriptions are SKU-aware (PRD-20260915-catalog-batch-c2-sku-back-in-stock, 2026-09-15):
 `backInStockSubscriptions.create(productId, { email, variant_id? })` now takes an optional prefixed
 `variant_id` (`variant_…`) so a customer watches one SKU; the response gains `variant_id` (null for the

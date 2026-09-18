@@ -4,7 +4,6 @@ import type {
   Cart,
   Country,
   DeliveryMethod,
-  PaymentMethod,
   ShoppingCart,
   State,
 } from "@pallastrade/sdk";
@@ -18,6 +17,7 @@ import {
   ShoppingBag,
   Truck,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -25,6 +25,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -37,6 +38,11 @@ import {
 } from "@/components/checkout/CardPaymentForm";
 import { CheckoutSectionTitle } from "@/components/checkout/CheckoutSectionTitle";
 import { CouponCode } from "@/components/checkout/CouponCode";
+import {
+  type PaymentMethodWithEntries,
+  PaymentSection,
+  paymentEntriesFor,
+} from "@/components/checkout/PaymentSection";
 import { SaveInfoSection } from "@/components/checkout/SaveInfoSection";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -62,6 +68,16 @@ import {
 } from "@/lib/utils/address";
 import { safeParseFloat } from "@/lib/utils/format";
 import { extractBasePath } from "@/lib/utils/path";
+
+// D7（PRD-20260918-payments-d7-payment-section-express）：钱包按钮（cart 绑定）按需加载
+// —— 仅在选中 `express` 入口时渲染（与 CartDrawer 同一引入方式，不新增第二条流程）。
+const ExpressCheckoutButton = dynamic(
+  () =>
+    import("@/components/checkout/ExpressCheckoutButton").then((m) => ({
+      default: m.ExpressCheckoutButton,
+    })),
+  { ssr: false },
+);
 
 interface UnifiedCheckoutProps {
   cart: ShoppingCart;
@@ -349,7 +365,16 @@ export function UnifiedCheckout({
   const basePath = extractBasePath(pathname);
   const { setSummaryContent } = useCheckout();
 
-  const paymentMethods: PaymentMethod[] = cart.payment_methods ?? [];
+  const paymentMethods: PaymentMethodWithEntries[] = cart.payment_methods ?? [];
+  // D7（PRD-20260918-payments-d7-payment-section-express）：cart 页同样按**入口**
+  // 渲染（一入口一行）；`entries` 缺失的旧响应由 `paymentEntriesFor` 回退单入口。
+  const paymentOptions = useMemo(
+    () =>
+      paymentMethods.flatMap((method) =>
+        paymentEntriesFor(method).map((entry) => ({ entry, method })),
+      ),
+    [paymentMethods],
+  );
   const [email, setEmail] = useState(cart.email ?? "");
   const [emailError, setEmailError] = useState<string | null>(null);
   // PRD-20260914-checkout-placeholder-controls-governance FR-001：Marketing 已接线
@@ -366,9 +391,11 @@ export function UnifiedCheckout({
     cart.shipping_method_id ?? "",
   );
   // PRD: Credit card 默认选中（优先 Stripe，否则回退第一个可用方式）。
-  const [paymentMethodId, setPaymentMethodId] = useState(
-    paymentMethods.find((m) => m.type === "stripe")?.id ??
-      paymentMethods[0]?.id ??
+  // D7：选择粒度 = 入口（`option_id`）；默认取首个 `inline` 入口（卡），否则首个入口。
+  const [selectedOptionId, setSelectedOptionId] = useState(
+    paymentOptions.find((o) => o.entry.frontend_kind === "inline")?.entry
+      .option_id ??
+      paymentOptions[0]?.entry.option_id ??
       "",
   );
   const [states, setStates] = useState<State[]>([]);
@@ -440,10 +467,18 @@ export function UnifiedCheckout({
     quote: CheckoutQuote | null;
   } | null>(null);
 
-  const selectedMethod =
-    paymentMethods.find((m) => m.id === paymentMethodId) ?? paymentMethods[0];
+  const selectedOption =
+    paymentOptions.find((o) => o.entry.option_id === selectedOptionId) ??
+    paymentOptions[0];
+  const selectedMethod = selectedOption?.method;
+  const selectedEntry = selectedOption?.entry;
+  const paymentMethodId = selectedMethod?.id ?? "";
   const isSessionBased = selectedMethod?.session_required === true;
   const isStripe = selectedMethod?.type === "stripe";
+  // D7：形态由服务端投影的 `frontend_kind` 决定（钱包 = express；卡字段 = inline）
+  const selectedIsWallet = selectedEntry?.frontend_kind === "express";
+  const selectedIsInline =
+    !selectedIsWallet && selectedEntry?.frontend_kind === "inline";
 
   // 折扣码回调（BFF 保持 SDK 凭证/guest token 服务端）
   const handleCouponApply = useCallback(
@@ -778,6 +813,10 @@ export function UnifiedCheckout({
           // 两段语义 Pay：只对 Prepare 建好的订单启动交易（不再 update/submit）。
           order_id: orderId,
           payment_method_id: selectedMethod.id,
+          // D7：入口（method kind）—— 服务端按同一入口集合复算可用性。
+          ...(selectedEntry?.method_key
+            ? { option_kind: selectedEntry.method_key }
+            : {}),
           session_required: isSessionBased,
           ...(isStripe && { payment_mode: "payment_intent" }),
           // PRD-20260914-checkout-quote-confirmation-loop FR-004：
@@ -928,11 +967,8 @@ export function UnifiedCheckout({
     }
   };
 
-  const handlePaymentMethodChange = (methodId: string) => {
-    if (methodId === paymentMethodId) return;
-    setPaymentMethodId(methodId);
-    cardFormRef.current = null;
-  };
+  // D7：入口切换由 `PaymentSection` 直接回调 `setSelectedOptionId`；
+  // 旧的 provider 级 setter 已不再需要（避免与入口粒度选择不一致）。
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
@@ -1213,38 +1249,36 @@ export function UnifiedCheckout({
               <p className="text-sm text-gray-500">{t("noPaymentMethods")}</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {paymentMethods.map((method) => (
-                <label
-                  key={method.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:border-indigo-300 ${
-                    paymentMethodId === method.id
-                      ? "border-indigo-400 bg-indigo-50/40"
-                      : "border-gray-200"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment-method"
-                    checked={paymentMethodId === method.id}
-                    onChange={() => handlePaymentMethodChange(method.id ?? "")}
-                    className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
+            <PaymentSection
+              methods={paymentMethods}
+              selectedOptionId={selectedOptionId}
+              onSelect={(entry) => setSelectedOptionId(entry.option_id)}
+              emptyLabel={t("noPaymentMethods")}
+            >
+              {/* 形态槽：express → 钱包按钮（cart 绑定，复用 canonical 编排）；
+                  inline → 自绘卡字段；manual → 仅说明行 */}
+              {selectedIsWallet && selectedMethod && selectedEntry ? (
+                <div className="mt-4 rounded-lg border border-gray-200 p-4">
+                  {/* 钱包按钮是 cart 绑定组件（复用 canonical 编排）——两页拿到的都是
+                      同一份服务端 cart 载荷（ShoppingCart/Cart 仅命名差异） */}
+                  <ExpressCheckoutButton
+                    cart={cart as unknown as Cart}
+                    basePath={basePath}
+                    maxColumns={1}
+                    clientConfig={selectedMethod.client_config ?? null}
+                    onComplete={async () => {
+                      router.push(`${basePath}/cart`);
+                    }}
                   />
-                  <div className="flex-1">
-                    {/* PALLAS-CUSTOM: D16 切片1 —— 入口级展示名（回落 provider 名） */}
-                    <p className="font-medium text-gray-900">
-                      {method.display_name ?? method.name}
-                    </p>
-                  </div>
-                </label>
-              ))}
-            </div>
+                </div>
+              ) : null}
+            </PaymentSection>
           )}
 
-          {/* 选中支付方式后的对应表单 */}
+          {/* 选中入口后的对应表单 */}
           {selectedMethod ? (
             <div className="mt-4">
-              {isSessionBased && isStripe ? (
+              {selectedIsInline && isSessionBased && isStripe ? (
                 // Stripe 自绘卡字段（PRD-20260831-payments-stripe-自绘卡支付表单）：
                 // 纯 HTML 卡字段立即渲染，不依赖 client_secret / js.stripe.com iframe。
                 <div className="rounded-lg border border-gray-200 p-4">

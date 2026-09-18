@@ -751,6 +751,29 @@ store 侧支付方式 payload 的 **additive** 字段（不新增端点、不改
 - 入口不可用而客户端仍调 `POST .../payment_sessions` → 422 `payment_option_not_available`，`reason` 可能是 `authentication_required`（与 D8 其它不可用原因同码）；**不建会话**。
 - 类型同步：Typelizer 生成的 `StoreCheckoutCheckout`（`platform/packages/sdk/src/types/generated/`）已含该字段；`harness generated:check` 零漂移。
 
+## 入口级支付投影与 `option_kind`（D7, 2026-09-18；PRD-20260918-payments-d7-payment-section-express）
+
+**响应（additive）**：
+
+- `GET /api/v3/store/orders/:id/checkout` → `payment.available_payment_methods[]` 新增：
+  - `entries[]`：`option_id`（`"pm_x:card"`）/ `method_key`（kind）/ `display_name` / `frontend_kind`（`inline`|`express`|`manual`）/
+    `group`（`card`|`wallet`|`redirect`|`manual`）/ `position`；**有序**（= 后台排序），集合 = `Availability::Resolver.available_option_kinds`
+    （无订单上下文时不过滤，安全降级）。
+  - `group` / `position`（provider 级，取首个生效入口）。
+- store `PaymentMethodSerializer`（cart / order / shopping_cart 同族）：新增 `group` / `position`；
+  **不下发 `entries`**（该通道无订单上下文，无法与 Start 同源求值 —— 避免「看得到、付不了」）。
+
+**请求（additive）**：三处创建支付会话的端点接受 `option_kind`（缺省 = provider 默认入口，零回归）——
+
+| 端点 | 行为 |
+|---|---|
+| `POST /api/v3/store/orders/:order_id/payment_sessions` | 透传 `PaymentSessions::Start` |
+| `POST /api/v3/store/orders/:order_id/transactions` | 经 `Transactions::Start`（新 `option_kind:` 关键字参数）透传 |
+| `POST /api/v3/store/carts/:cart_id/payment_sessions`（legacy） | 透传；拒绝时沿用通道通用错误码 `validation_error`（B5 治理：不新增 legacy 契约） |
+
+不可用入口 → **建会话前** `422 payment_option_not_available`（orders/transactions；`details.reason` 说明原因），**零 session 行**。
+`store.yaml` 三个端点均补了 `option_kind` 说明；SDK 手写类型 `CreateOrderTransactionParams` / `CreatePaymentSessionParams` 同步该字段。
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - D8 适用范围 (2026-09-15, PRD-20260915-payments-d8): admin `options[]` 增 `rule_set`/`scope_summary`（typelizer → SDK 生成类型）；store 侧新增失败码 `payment_option_not_available`（两个 payment_sessions 创建端点 422 示例）；无端点增删。

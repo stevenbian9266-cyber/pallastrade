@@ -20,6 +20,10 @@ module PallasTrade
                 payment_method: payment_method,
                 purpose: permitted_params[:purpose].presence || 'purchase',
                 external_data: permitted_params[:external_data] || {},
+                # PALLAS-CUSTOM: D7（PRD-20260918-payments-d7-payment-section-express）——
+                # 入口（method kind，如 apple_pay/google_pay）同源校验：一入口一行是前台
+                # 实际选择粒度，必须能传到 `PaymentSessions::Start` 的入口门禁。不传 = 零回归。
+                option_kind: permitted_params[:option_kind],
                 expected: {
                   checkout_version: permitted_params[:expected_checkout_version],
                   price_version: permitted_params[:expected_price_version]
@@ -42,7 +46,7 @@ module PallasTrade
 
             def permitted_params
               params.permit(
-                :payment_method_id, :purpose,
+                :payment_method_id, :purpose, :option_kind,
                 :expected_checkout_version, :expected_price_version,
                 external_data: {}
               )

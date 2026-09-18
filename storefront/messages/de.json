@@ -420,6 +420,7 @@
     "noShippingAddress": "Für diese Bestellung wurde keine Lieferadresse angegeben.",
     "noPaymentMethod": "Für diese Bestellung ist derzeit keine Zahlungsart verfügbar. Bitte wenden Sie sich an den Support.",
     "authenticationRequired": "Für diese Bestellung ist eine zusätzliche Kartenprüfung nötig. Es werden nur Zahlungsarten mit 3-D Secure angezeigt.",
+    "manualPaymentNote": "Diese Option wird außerhalb des Shops abgewickelt (Überweisung oder Lieferung).",
     "checkoutNotReady": "Bitte vervollständigen Sie die fehlenden Checkout-Angaben, bevor Sie bezahlen.",
     "payAmount": "Jetzt bezahlen {amount}",
     "edit": "Bearbeiten",

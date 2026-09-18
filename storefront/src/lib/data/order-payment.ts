@@ -45,6 +45,11 @@ export async function createOrderPaymentSession(
   paymentMethodId: string,
   externalData?: Record<string, unknown>,
   mode?: "payment_intent",
+  // PALLAS-CUSTOM: D7（PRD-20260918-payments-d7-payment-section-express）——
+  // 前台按**入口**（method kind）选择支付方式（一入口一行）；把入口随请求下发，
+  // 服务端 `PaymentSessions::Start` 用同一入口集合同源复算可用性（不可用 → 422
+  // `payment_option_not_available`，不建会话）。缺省 = provider 默认入口（零回归）。
+  startOptions?: { optionKind?: string },
 ): Promise<CreateOrderPaymentSessionResult> {
   try {
     const options = await getCheckoutOptions(orderId);
@@ -52,6 +57,9 @@ export async function createOrderPaymentSession(
       orderId,
       {
         payment_method_id: paymentMethodId,
+        ...(startOptions?.optionKind
+          ? { option_kind: startOptions.optionKind }
+          : {}),
         ...(externalData || mode
           ? {
               external_data: {

@@ -67,6 +67,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         orderId,
         {
           payment_method_id: body.payment_method_id,
+          // D7（PRD-20260918-payments-d7-payment-section-express）：入口（method kind）
+          // 同源校验 —— 前台按入口选择，服务端 `PaymentSessions::Start` 复算可用性。
+          ...(typeof body.option_kind === "string" &&
+          body.option_kind.length > 0
+            ? { option_kind: body.option_kind }
+            : {}),
           ...(body.payment_mode
             ? { external_data: { mode: body.payment_mode } }
             : {}),
@@ -145,6 +151,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         submittedOrder.id,
         {
           payment_method_id: method.id,
+          // D7：入口（method kind）随请求下发（可选；缺省 = provider 默认入口）。
+          ...(typeof body.option_kind === "string" &&
+          body.option_kind.length > 0
+            ? { option_kind: body.option_kind }
+            : {}),
           ...(body.payment_mode
             ? { external_data: { mode: body.payment_mode } }
             : {}),

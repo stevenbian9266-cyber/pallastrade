@@ -92,6 +92,19 @@ New `Cart` entity (`pallastrade_carts`) plus order-domain payments:
 - 非 `cart_`（`or_…`）调用 = legacy 流量：后端回 `Deprecation: true` + `Warning: 299` + `Link: rel="successor-version"`，并计入 `cart.legacy_flow.used`（`payment_sessions` 仍为 `payment.legacy_flow.used`）；canonical 替代：`orders.paymentSessions` / `orders.transactions` / `PATCH /orders/:id/checkout`。
 - 新代码不得新增 legacy 消费者（storefront 有守护测试）；SDK 方法本身**不删**，等流量到退役阀值后由独立 PRD 处理。
 
+### 支付入口（`option_kind`）与入口级投影（D7, 2026-09-18；PRD-20260918-payments-d7-payment-section-express）
+
+- **手写请求类型**：`sdk/src/types/index.ts` 的 `CreateOrderTransactionParams` 与 `CreatePaymentSessionParams` 新增可选 `option_kind?: string`
+  （`card` / `apple_pay` / `google_pay` …）。三条通道都接受：`orders.transactions.create`、`orders.paymentSessions.create`、
+  `carts.paymentSessions.create`（legacy）；缺省 = provider 默认入口（零回归）。
+- **响应类型（Typelizer 生成，勿手改）**：
+  - `StoreCheckoutCheckout.payment.available_payment_methods[]` 新增 `entries[]`（`option_id` / `method_key` / `display_name` /
+    `frontend_kind` / `group` / `position`）+ provider 级 `group` / `position`；
+  - `PaymentMethod` 新增 `group` / `position`（cart / order 通道**不下发** `entries` —— 无订单上下文，无法与 Start 同源求值）。
+- **失败语义**：不可用入口 → `422 payment_option_not_available`（cart legacy 为 `validation_error`），**零 session 行**；
+  `PallasTradeError.code` 透出，UI 按 D8 约定刷新列表 + 提示重选。
+- 类型再生成走 `bash scripts/ci/contracts.sh`（Typelizer + platform 副本），随后 `harness generated:check` 必须零漂移。
+
 ### Customer auth (JWT)
 
 After login, attach the JWT per request via `options.token`. There is no `setAccessToken` — the SDK doesn't hold customer tokens in client state.

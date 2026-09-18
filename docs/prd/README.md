@@ -232,4 +232,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260918-admin-ai-output-validation | admin | 2026-09-18 | （实施时回填） |
 | done | PRD-20260918-api-deepseek-structured-output | api | 2026-09-18 | （实施时回填） |
 | approved | PRD-20260918-infra-dev-deploy-storefront-image-path-filter | infra | 2026-09-18 | （实施时回填） |
-
+| done | PRD-20260918-payments-d7-payment-section-express | payments | 2026-09-18 | （实施时回填） |

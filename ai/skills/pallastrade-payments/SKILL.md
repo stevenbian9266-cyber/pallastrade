@@ -1288,6 +1288,29 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   缺失 `display_name` 的行**必须**回落 provider 名（老数据零回归）。
 - **回归**：`harness verify d16-payment-presentation-rspec` + 前端 `storefront-test`。
 
+## 入口级支付区 — 列表展开 + 钱包快付（D7, 2026-09-18；PRD-20260918-payments-d7-payment-section-express；业务方案 §76.1 / §78-D7）
+
+**问题**：投影只带 `effective_payment_option`（**单入口**）→ 前台一 provider 一行，配了 Apple Pay / Google Pay 也看不见；
+商家只能「关掉卡支付」才逐个暴露钱包（与业务需求背离）。
+
+- **读模型（入口级投影，additive）**：`PallasTrade::PaymentMethod#payment_option_entries(available_kinds: nil)`
+  —— 选项化 provider → **每个启用入口一条**（按 `position`）；未选项化 → **1 条**隐式入口（`default_option_kind`）。
+  字段：`option_id`（`"pm_x:card"`）/ `method_key`（kind）/ `display_name` / `frontend_kind` / `group` / `position`。
+  辅助：`option_group(kind)`（manual → wallet → card(inline) → redirect 归一）、`option_frontend_kind(kind)`（未配置入口回落 wallet=express）。
+- **入口集合 = 服务端唯一求值点**：`Payments::Availability::Resolver.available_option_kinds(order:, payment_method:)`
+  （D8 范围规则 / D11 熔断 / D15c 认证闸门）。checkout 投影在**有订单上下文**时按该集合过滤；无上下文回退不过滤（安全降级）。
+- **下发契约（additive）**：
+  - store `CheckoutSerializer.payment.available_payment_methods[]`：新增 `entries[]`（每入口含上述六字段）+ provider 级 `group` / `position`；
+  - store `PaymentMethodSerializer`：新增 `group` / `position`（**不下发 `entries`** —— cart/order 通道没有订单上下文，无法做同源求值）。
+- **`option_kind` 全链路**：cart legacy 会话（`POST /carts/:id/payment_sessions`，此前**静默丢弃**该参数）、
+  orders 会话（`POST /orders/:id/payment_sessions`）、durable 交易（`POST /orders/:id/transactions` → `Transactions::Start` → `PaymentSessions::Start`）
+  三处均把入口传进门禁；`Transactions::Start` 新增 `option_kind:` 关键字参数（不传 = 零回归）。
+- **失败语义不变**：不可用入口 → **建会话前** `422 payment_option_not_available`（orders/transactions；cart legacy 沿用
+  `validation_error` 通道错误码），**零 session 行**；前台按 D8 既有约定「刷新列表 + 提示重选」。
+- **前台红线**：**零筛选**——只按 `frontend_kind` 选渲染槽（`inline` 自绘卡字段 / `express` 钱包按钮 / `manual` 说明行），
+  隐藏与否一律由服务端决定。旧响应无 `entries` → 回落「一 provider 一行」（零回归）。
+- **回归**：`harness verify d7-payment-section-rspec` + 前端 `storefront-test`。
+
 ## 对账差异队列 — 只读结论 → 可运营案例（D13 切片1, 2026-09-16；PRD-20260916-payments-d13-reconciliation-cases）
 
 业务方案 §70.1：P4-6/7 的对账结论此前**不落表**（只 warn + rake），差异没有队列/指派/备注/关单/导出。

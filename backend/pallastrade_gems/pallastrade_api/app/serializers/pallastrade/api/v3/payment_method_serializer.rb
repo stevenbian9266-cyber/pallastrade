@@ -6,6 +6,7 @@ module PallasTrade
                  session_required: :boolean, source_required: :boolean,
                  kind: :string, frontend_kind: :string,
                  option_id: :string, method_key: :string, display_name: :string,
+                 group: :string, position: :number,
                  client_config: '{ provider: string, environment: string | null, ' \
                                  'publishable: Record<string, string>, session_token: string | null }'
 
@@ -35,6 +36,19 @@ module PallasTrade
         # `option_id` 作行键、`method_key` 作入口维度。additive（既有字段语义不变）。
         attribute :option_id do |payment_method|
           payment_method.option_identifier
+        end
+
+        # PALLAS-CUSTOM: D7（PRD-20260918-payments-d7-payment-section-express；§76.1）——
+        # 入口分组与顺序（前台支付区按组渲染、按 position 排序）。
+        # ⚠️ 本通道（cart / order 的 `payment_methods[]`）**不**下发 `entries[]`：入口级集合
+        # 需要订单上下文才能与 `Resolver` 同源；权威入口列表在 checkout 通道
+        # （`payment.available_payment_methods[].entries`）。
+        attribute :group do |payment_method|
+          payment_method.option_group
+        end
+
+        attribute :position do |payment_method|
+          payment_method.effective_payment_option['position'].to_i
         end
 
         attribute :method_key do |payment_method|

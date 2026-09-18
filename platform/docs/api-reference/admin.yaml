@@ -25087,6 +25087,10 @@ components:
           type: boolean
         option_id:
           type: string
+        group:
+          type: string
+        position:
+          type: number
         method_key:
           type: string
         display_name:
@@ -25104,8 +25108,6 @@ components:
           nullable: true
         storefront_visible:
           type: boolean
-        position:
-          type: number
         environment:
           type: string
         created_at:
@@ -25131,6 +25133,8 @@ components:
       - frontend_kind
       - session_required
       - option_id
+      - group
+      - position
       - method_key
       - display_name
       - source_required
@@ -25139,7 +25143,6 @@ components:
       - active
       - auto_capture
       - storefront_visible
-      - position
       - environment
       - created_at
       - updated_at

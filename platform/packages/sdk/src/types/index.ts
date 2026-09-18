@@ -157,6 +157,10 @@ export interface CreateOrderTransactionParams {
   payment_method_id: string
   purpose?: 'purchase' | 'balance_collection' | 'combined_payment'
   external_data?: Record<string, unknown>
+  // PALLAS-CUSTOM: D7 (PRD-20260918-payments-d7-payment-section-express)
+  // 支付入口（method kind）：前台按入口粒度选择（card / apple_pay / google_pay …），
+  // 服务端 `PaymentSessions::Start` 用同一入口集合同源复算可用性。
+  option_kind?: string
   expected_checkout_version?: number
   expected_price_version?: string
 }
@@ -564,6 +568,9 @@ export interface CreatePaymentSessionParams {
   payment_method_id: string
   amount?: string
   external_data?: Record<string, unknown>
+  // PALLAS-CUSTOM: D7 (PRD-20260918-payments-d7-payment-section-express)
+  // 可选入口（method kind）；不传 = 按 provider 默认入口（零回归）。
+  option_kind?: string
 }
 
 // Payment Combinations (P5, 2026-08-27): 合并支付

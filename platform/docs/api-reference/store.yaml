@@ -4946,6 +4946,14 @@ paths:
                   type: string
                   example: pm_abc123
                   description: Payment method ID
+                option_kind:
+                  type: string
+                  example: apple_pay
+                  description: |-
+                    Payment entry (method kind). Re-evaluated server-side with the
+                    same entry set as the storefront list; unavailable entries are
+                    refused with 422 `payment_option_not_available` and no session is
+                    created. Omit to use the provider's default entry.
                 amount:
                   type: string
                   example: '99.99'
@@ -6306,6 +6314,14 @@ paths:
                 payment_method_id:
                   type: string
                   description: Prefixed payment method ID (pm_...)
+                option_kind:
+                  type: string
+                  example: apple_pay
+                  description: |-
+                    Payment entry (method kind). Re-evaluated server-side with the
+                    same entry set as the storefront list; an unavailable entry is
+                    refused with 422 `payment_option_not_available` and no session is
+                    created. Omit to use the provider's default entry.
                 amount:
                   type: string
                 external_data:
@@ -6489,6 +6505,15 @@ paths:
                   - balance_collection
                   - combined_payment
                   description: Transaction purpose (defaults to purchase)
+                option_kind:
+                  type: string
+                  description: |-
+                    Payment entry (method kind such as `card` / `apple_pay` /
+                    `google_pay`). The storefront lets buyers pick an entry, and the
+                    server re-evaluates availability with the same entry set inside
+                    PaymentSessions::Start; an entry outside the available set is
+                    refused with 422 `payment_option_not_available` and **no session
+                    is created**. Omit to use the provider's default entry.
                 external_data:
                   type: object
                   description: Opaque data passed through to the payment provider start
@@ -13647,6 +13672,10 @@ components:
           type: boolean
         option_id:
           type: string
+        group:
+          type: string
+        position:
+          type: number
         method_key:
           type: string
         display_name:
@@ -13664,6 +13693,8 @@ components:
       - frontend_kind
       - session_required
       - option_id
+      - group
+      - position
       - method_key
       - display_name
       - source_required

@@ -24,10 +24,13 @@ module PallasTrade
       # @param payment_method [PallasTrade::PaymentMethod]
       # @param purpose [String] purchase | balance_collection（combined 延后，TXN-P2-5）
       # @param external_data [Hash] 透传 PaymentSessions::Start
+      # @param option_kind [String, nil] 支付入口（method kind，如 card/apple_pay/google_pay）——
+      #        D7（PRD-20260918-payments-d7-payment-section-express）：透传给
+      #        `PaymentSessions::Start` 做**入口级同源校验**（不传 = 零回归）。
       # @param expected [Hash] 客户端所见 quote {checkout_version:, price_version:}
       #        （未过期场景交 P1-5 校验）
       # @return Result success({ transaction:, payment_session: }) | failure(code: ...)
-      def call(order:, payment_method:, purpose: 'purchase', external_data: {}, expected: {})
+      def call(order:, payment_method:, purpose: 'purchase', external_data: {}, option_kind: nil, expected: {})
         expected_version = expected[:checkout_version]
         expected_price_version = expected[:price_version]
         order = order.to_model if order.respond_to?(:to_model)
@@ -69,6 +72,9 @@ module PallasTrade
           order: order,
           payment_method: payment_method,
           external_data: external_data,
+          # D7（PRD-20260918-payments-d7-payment-section-express）：入口（method kind）
+          # 一路透传到会话门禁——前台选的是哪个入口，服务端就按哪个入口复算可用性。
+          option_kind: option_kind,
           expected_version: refreshed ? nil : expected_version,
           expected_price_version: refreshed ? nil : expected_price_version
         )

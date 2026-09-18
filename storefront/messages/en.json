@@ -423,6 +423,7 @@
     "checkoutNotReady": "Please complete the missing checkout details before paying.",
     "noPaymentMethod": "No payment method is available for this order right now. Please contact support.",
     "authenticationRequired": "This order needs extra card verification. Only payment methods that support 3-D Secure are shown.",
+    "manualPaymentNote": "This option is settled outside the store (bank transfer or on delivery).",
     "payAmount": "Pay Now {amount}",
     "edit": "Edit",
     "cancel": "Cancel",

@@ -151,10 +151,12 @@ RSpec.describe PallasTrade::Api::V3::Store::Checkout::CheckoutSerializer, type: 
         expect(entry.keys).to contain_exactly(:id, :name, :description, :type, :session_required, :source_required,
                                               :kind, :frontend_kind, :client_config,
                                               :option_id, :method_key, :display_name,
+                                              :entries, :group, :position,
                                               :requires_authentication)
         # PRD-20260916-payments-d16-payment-method-presentation AC-003：D16 为 additive 变更 ——
-        # 既有键集合只增不减（含 D10 的 client_config），且仍保持「每个 payment method 一行」的行基数
-        # （视图口径 = order.payment_methods，不按入口 options 展开）。
+        # 既有键集合只增不减（含 D10 的 client_config）。
+        # PRD-20260918-payments-d7-payment-section-express AC-005：D7 增 `entries` / `group` / `position`——
+        # **行基数不变**（仍一 provider 一行），入口集合挂在行内的 `entries[]`（修「配了多入口只显示一行」）。
         expect(serialized['payment'][:available_payment_methods].size).to eq(order.payment_methods.size)
       end
 

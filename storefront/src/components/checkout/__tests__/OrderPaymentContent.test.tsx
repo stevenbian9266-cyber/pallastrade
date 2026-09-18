@@ -1,5 +1,5 @@
 import type { CheckoutView, Country, Order } from "@pallastrade/sdk";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrderPaymentContent } from "@/components/checkout/OrderPaymentContent";
@@ -85,6 +85,25 @@ const stripeMethod = {
   name: "Stripe",
   type: "stripe",
   session_required: true,
+  // D7（PRD-20260918-payments-d7-payment-section-express）：服务端下发入口级列表
+  entries: [
+    {
+      option_id: "pm_stripe:card",
+      method_key: "card",
+      display_name: "Credit Card",
+      frontend_kind: "inline",
+      group: "card",
+      position: 1,
+    },
+    {
+      option_id: "pm_stripe:apple_pay",
+      method_key: "apple_pay",
+      display_name: "Apple Pay",
+      frontend_kind: "express",
+      group: "wallet",
+      position: 2,
+    },
+  ],
 };
 
 const checkMethod = {
@@ -92,6 +111,16 @@ const checkMethod = {
   name: "Check",
   type: "check",
   session_required: false,
+  entries: [
+    {
+      option_id: "pm_check:check",
+      method_key: "check",
+      display_name: "Check",
+      frontend_kind: "manual",
+      group: "manual",
+      position: 1,
+    },
+  ],
 };
 
 const order = {
@@ -307,13 +336,15 @@ describe("OrderPaymentContent", () => {
     expect(screen.getByTestId("card-payment-form")).toBeInTheDocument();
 
     // 点 Pay → 创建 PaymentIntent 会话 → confirmCardPayment
-    await user.click(screen.getByRole("button", { name: "payAmount" }));
+    await user.click(screen.getByTestId("pay-now-button"));
     await waitFor(() =>
       expect(createOrderSessionMock).toHaveBeenCalledWith(
         "or_1",
         "pm_stripe",
         undefined,
         "payment_intent",
+        // D7 FR-005：入口（method kind）随请求下发做同源校验
+        { optionKind: "card" },
       ),
     );
     await waitFor(() =>
@@ -348,11 +379,96 @@ describe("OrderPaymentContent", () => {
     expect(screen.getByText("Check")).toBeTruthy();
   });
 
+  // ── D7（PRD-20260918-payments-d7-payment-section-express）─────────────────
+  // PRD-20260918-payments-d7-payment-section-express AC-006：入口级列表 —— 一入口一行（顺序 = 服务端 position），形态来自 frontend_kind
+  it("renders one row per server-projected entry in position order (D7 AC-006)", () => {
+    renderOrderPayment();
+
+    const rows = screen.getAllByTestId("payment-entry-row");
+    expect(rows.map((row) => row.getAttribute("data-option-id"))).toEqual([
+      "pm_stripe:card",
+      "pm_stripe:apple_pay",
+      "pm_check:check",
+    ]);
+    expect(rows[1].getAttribute("data-frontend-kind")).toBe("express");
+    expect(screen.getByText("Apple Pay")).toBeTruthy();
+  });
+
+  // PRD-20260918-payments-d7-payment-section-express AC-007：选中钱包入口 → 创建会话前不渲染卡表单；钱包按钮就位
+  it("renders the wallet entry as a wallet button instead of the card form (D7 AC-007)", async () => {
+    const user = userEvent.setup();
+    renderOrderPayment();
+
+    await user.click(screen.getByText("Apple Pay"));
+
+    // 卡表单只在 inline 入口选中时渲染
+    expect(screen.queryByTestId("card-payment-form")).not.toBeInTheDocument();
+    // 未配置 Stripe 的测试环境 → 钱包组件不渲染具体按钮，但也不得回落卡表单
+    expect(createOrderSessionMock).not.toHaveBeenCalled();
+  });
+
+  // PRD-20260918-payments-d7-payment-section-express AC-010：旧响应（无 entries）→ 回落「一 provider 一行」（display_name ?? name）
+  it("falls back to one row per provider when the projection has no entries (D7 AC-010)", () => {
+    const legacyOrder = {
+      ...order,
+      payment_methods: [{ ...checkMethod, entries: undefined }],
+    } as unknown as Order;
+
+    renderOrderPayment(legacyOrder);
+
+    const rows = screen.getAllByTestId("payment-entry-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].getAttribute("data-option-id")).toBe("pm_check:default");
+    expect(screen.getByText("Check")).toBeTruthy();
+  });
+
+  // PRD-20260918-payments-d7-payment-section-express AC-009：移动端吸底 Pay 条 —— 与页内 Pay 同一 handler（同一 session 创建调用）
+  it("exposes a mobile sticky pay bar wired to the same pay handler (D7 AC-009)", async () => {
+    const user = userEvent.setup();
+    renderOrderPayment();
+
+    const bar = screen.getByTestId("mobile-pay-bar");
+    expect(bar).toBeInTheDocument();
+    expect(bar.textContent).toContain("$10.00");
+
+    // 吸底条按钮与页内按钮同一 handler：点击同样走 session 创建 → 确认 → 完成
+    const barButton = within(bar).getByRole("button");
+    await user.click(barButton);
+
+    await waitFor(() =>
+      expect(createOrderSessionMock).toHaveBeenCalledWith(
+        "or_1",
+        "pm_stripe",
+        undefined,
+        "payment_intent",
+        { optionKind: "card" },
+      ),
+    );
+  });
+
+  // PRD-20260918-payments-d7-payment-section-express AC-008：入口被服务端拒绝 → 刷新支付方式列表（不进入支付流程）
+  it("refreshes the payment list when the server rejects the option kind (D7 AC-008)", async () => {
+    const user = userEvent.setup();
+    createOrderSessionMock.mockResolvedValueOnce({
+      success: false,
+      code: "payment_option_not_available",
+      error: "Payment method is not available for this order",
+    });
+    renderOrderPayment();
+
+    await user.click(screen.getByTestId("pay-now-button"));
+
+    await waitFor(() => expect(getOrderCheckoutMock).toHaveBeenCalled());
+  });
+
   // PRD-20260916-payments-d16-payment-method-presentation AC-005：
   // 支付方法行优先渲染服务端下发的入口级展示名（display_name），缺失时回落 provider 名。
+  // D7 后：入口级列表存在时以 `entries[].display_name` 为准；无 entries 的旧响应回落
+  // provider 级 `display_name ?? name`（本用例即该回退路径）。
   it("renders the entry-level display name when the API provides one (D16 AC-005)", () => {
     const brandedMethod = {
       ...checkMethod,
+      entries: undefined,
       display_name: "信用卡",
       method_key: "card",
     };
@@ -399,8 +515,7 @@ describe("OrderPaymentContent", () => {
       "contact,shipping_address",
     );
     expect(
-      (screen.getByRole("button", { name: "payAmount" }) as HTMLButtonElement)
-        .disabled,
+      (screen.getByTestId("pay-now-button") as HTMLButtonElement).disabled,
     ).toBe(true);
   });
 
@@ -415,9 +530,7 @@ describe("OrderPaymentContent", () => {
 
     renderOrderPayment(order, notReadyView);
 
-    const pay = screen.getByRole("button", {
-      name: "payAmount",
-    }) as HTMLButtonElement;
+    const pay = screen.getByTestId("pay-now-button") as HTMLButtonElement;
     // 禁用态下 userEvent 不触发 onClick；直接断言未创建会话。
     expect(pay.disabled).toBe(true);
     await user.click(screen.getByTestId("checkout-not-ready"));
@@ -470,7 +583,7 @@ describe("OrderPaymentContent", () => {
 
     renderOrderPayment(order, checkoutView);
 
-    await user.click(screen.getByRole("button", { name: "payAmount" }));
+    await user.click(screen.getByTestId("pay-now-button"));
 
     await waitFor(() =>
       expect(getOrderCheckoutMock).toHaveBeenCalledWith("or_1"),
@@ -491,7 +604,7 @@ describe("OrderPaymentContent", () => {
 
     renderOrderPayment(order, checkoutView);
 
-    await user.click(screen.getByRole("button", { name: "payAmount" }));
+    await user.click(screen.getByTestId("pay-now-button"));
 
     await waitFor(() =>
       expect(getOrderCheckoutMock).toHaveBeenCalledWith("or_1"),
@@ -545,9 +658,7 @@ describe("OrderPaymentContent", () => {
 
     renderOrderPayment(order, notPayableView);
 
-    const pay = screen.getByRole("button", {
-      name: "payAmount",
-    }) as HTMLButtonElement;
+    const pay = screen.getByTestId("pay-now-button") as HTMLButtonElement;
     expect(pay.disabled).toBe(true);
   });
 
@@ -563,7 +674,7 @@ describe("OrderPaymentContent", () => {
 
     renderOrderPayment(orderWithoutMethods, viewWithMethods);
 
-    expect(screen.getByText("Stripe")).toBeTruthy();
+    expect(screen.getByText("Credit Card")).toBeTruthy();
     expect(screen.getByTestId("card-payment-form")).toBeInTheDocument();
   });
 

@@ -49,6 +49,12 @@ export interface CheckoutStartBody {
   cart_id?: string;
   payment_method_id: string;
   payment_mode?: "payment_intent";
+  /**
+   * PALLAS-CUSTOM: D7（PRD-20260918-payments-d7-payment-section-express）
+   * 支付入口（method kind，如 card / apple_pay / google_pay）——前台按入口选择；
+   * 服务端 `PaymentSessions::Start` 用同一入口集合同源复算可用性（可选，缺省 = 默认入口）。
+   */
+  option_kind?: string;
   /** 该支付方式是否需要向 provider 建会话（前端从 PaymentMethod.session_required 带入）。 */
   session_required?: boolean;
   /** PRD-20260914-checkout-quote-confirmation-loop FR-001：客户端所见报价版本（可选） */

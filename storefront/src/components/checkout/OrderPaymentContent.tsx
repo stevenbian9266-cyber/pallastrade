@@ -1,12 +1,6 @@
 "use client";
 
-import type {
-  CheckoutView,
-  Country,
-  Order,
-  PaymentMethod,
-  State,
-} from "@pallastrade/sdk";
+import type { CheckoutView, Country, Order, State } from "@pallastrade/sdk";
 import { X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -24,6 +18,12 @@ import {
   CardPaymentForm,
   type CardPaymentFormHandle,
 } from "@/components/checkout/CardPaymentForm";
+import {
+  type PaymentMethodWithEntries,
+  PaymentSection,
+  paymentEntriesFor,
+} from "@/components/checkout/PaymentSection";
+import { WalletPaymentButtons } from "@/components/checkout/WalletPaymentButtons";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
@@ -192,29 +192,51 @@ export function OrderPaymentContent({
   const effectiveView = liveView ?? view;
 
   // B1：支付方式服务端权威（CheckoutView.payment.available_payment_methods），order 快照回退。
-  // D15 切片3：结账投影新增 `requires_authentication`（服务端权威）；order 快照回退里
-  // 可能没有该字段 → 本地类型标为可选（不编号前端筛选，仅用于提示文案）。
-  type CheckoutPaymentMethod = PaymentMethod & {
-    requires_authentication?: boolean;
-  };
-  const paymentMethods: CheckoutPaymentMethod[] = useMemo(
+  // D7（PRD-20260918-payments-d7-payment-section-express）：支付方式列表 = 服务端投影
+  // 的**入口级**列表（一入口一行）；`entries` 缺失的旧响应由 `paymentEntriesFor` 回退单入口。
+  const paymentMethods = useMemo(
     () =>
       (effectiveView?.payment?.available_payment_methods ??
         order.payment_methods ??
-        []) as CheckoutPaymentMethod[],
+        []) as PaymentMethodWithEntries[],
     [effectiveView, order.payment_methods],
   );
-  // 默认选中：URL 预选（?pm=）> 首个可用支付方式
-  const [selectedMethodId, setSelectedMethodId] = useState(() => {
-    const preset = searchParams?.get("pm") ?? "";
-    return paymentMethods.some((m) => m.id === preset)
-      ? preset
-      : (paymentMethods[0]?.id ?? "");
-  });
-  const selectedMethod =
-    paymentMethods.find((m) => m.id === selectedMethodId) ?? paymentMethods[0];
+
+  // 入口展开（顺序 = 服务端 `position`）
+  const paymentOptions = useMemo(
+    () =>
+      paymentMethods.flatMap((method) =>
+        paymentEntriesFor(method).map((entry) => ({ entry, method })),
+      ),
+    [paymentMethods],
+  );
+
+  // 默认选中：URL 预选（`?pm=` 兼容 provider id 与 option_id）> 首个可用入口
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(
+    () => {
+      const preset = searchParams?.get("pm") ?? "";
+      const presetOption =
+        paymentOptions.find((o) => o.entry.option_id === preset) ??
+        paymentOptions.find((o) => o.method.id === preset);
+      return (
+        presetOption?.entry.option_id ??
+        paymentOptions[0]?.entry.option_id ??
+        null
+      );
+    },
+  );
+  const selectedOption =
+    paymentOptions.find((o) => o.entry.option_id === selectedOptionId) ??
+    paymentOptions[0];
+  const selectedMethod = selectedOption?.method;
+  const selectedEntry = selectedOption?.entry;
+  // 渲染形态由服务端投影的 `frontend_kind` 决定（钱包 = express；卡字段 = inline）
+  const selectedIsWallet = selectedEntry?.frontend_kind === "express";
+  const selectedIsInline =
+    !selectedIsWallet && selectedEntry?.frontend_kind === "inline";
 
   const [processing, setProcessing] = useState(false);
+  const [walletProcessing, setWalletProcessing] = useState(false);
   const cardFormRef = useRef<CardPaymentFormHandle | null>(null);
 
   const isPaid = order.state === "paid" || order.state === "completed";
@@ -325,6 +347,13 @@ export function OrderPaymentContent({
   // quote_changed / checkout_version_conflict（P1-5），同一映射（INV-07）。
   const handleSessionCreateError = useCallback(
     async (result: { success: false; code?: string; error: string }) => {
+      // D7（PRD-20260918-payments-d7-payment-section-express）：入口级可用性拒绝
+      // —— 沿用 D8 约定：刷新支付方式列表 + 提示重选（不进入支付流程）。
+      if (result.code === "payment_option_not_available") {
+        toast.error(result.error);
+        await refreshView();
+        return;
+      }
       if (
         result.code === "checkout_version_conflict" ||
         result.code === "quote_changed"
@@ -340,6 +369,7 @@ export function OrderPaymentContent({
 
   const handlePay = async () => {
     if (!selectedMethod) return;
+
     // CHK-P1-4: server readiness gate（前端镜像；后端 Start Gate 兜底）
     if (!checkoutReady) {
       toast.error(t("checkoutNotReady"));
@@ -362,6 +392,9 @@ export function OrderPaymentContent({
           selectedMethod.id,
           undefined,
           "payment_intent",
+          // D7：入口（method kind）随请求下发 —— 服务端 `PaymentSessions::Start`
+          // 用同一入口集合同源复算可用性（不可用 → 422，不建会话）。
+          { optionKind: selectedEntry?.method_key },
         );
         if (!result.success) {
           await handleSessionCreateError(result);
@@ -407,6 +440,9 @@ export function OrderPaymentContent({
         const result = await createOrderPaymentSession(
           order.id,
           selectedMethod.id,
+          undefined,
+          undefined,
+          { optionKind: selectedEntry?.method_key },
         );
         if (!result.success) {
           await handleSessionCreateError(result);
@@ -667,95 +703,125 @@ export function OrderPaymentContent({
           </section>
         )}
 
-        {/* 支付方式 */}
+        {/* 支付方式 —— D7：入口级列表（一入口一行；服务端决定出现哪些） */}
         <section className="bg-white rounded-xl border border-gray-200 p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">
             {t("paymentMethod")}
           </h2>
 
-          <div className="flex flex-col gap-3">
-            {paymentMethods.map((method) => (
-              <label
-                key={method.id}
-                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-indigo-300"
-              >
-                <input
-                  type="radio"
-                  name="payment-method"
-                  checked={selectedMethodId === method.id}
-                  onChange={() => setSelectedMethodId(method.id ?? "")}
-                  className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
+          <PaymentSection
+            methods={paymentMethods}
+            selectedOptionId={selectedOptionId}
+            onSelect={(entry) => setSelectedOptionId(entry.option_id)}
+            emptyLabel={t("noPaymentMethod")}
+            // PALLAS-CUSTOM: D15 切片3 —— 服务端已按 3DS/SCA 认证需求过滤入口
+            //（前端**不做筛选**）；这里只把「为什么只剩这些」说清楚。
+            authenticationNotice={
+              paymentMethods.some((m) => m.requires_authentication)
+                ? t("authenticationRequired")
+                : null
+            }
+          >
+            {/* 形态槽：inline → 卡表单；express → 钱包按钮（manual 仅说明行） */}
+            {selectedIsWallet && selectedMethod && selectedEntry ? (
+              <div className="mt-4 rounded-lg border border-gray-200 p-4">
+                <WalletPaymentButtons
+                  orderId={order.id}
+                  basePath={basePath}
+                  method={selectedMethod}
+                  entry={selectedEntry}
+                  onProcessingChange={setWalletProcessing}
+                  onUnavailable={refreshView}
                 />
-                {/* PALLAS-CUSTOM: D16 切片1 —— 入口级展示名（运营在后台配置，回落 provider 名） */}
-                <span className="font-medium text-gray-900">
-                  {method.display_name ?? method.name}
-                </span>
-              </label>
-            ))}
+              </div>
+            ) : null}
+
+            {/* Stripe 自绘卡字段（PRD-20260831-payments-stripe-自绘卡支付表单）：
+                表单始终渲染，不依赖 client_secret / js.stripe.com iframe */}
+            {selectedIsInline &&
+            selectedMethod?.type === "stripe" &&
+            selectedMethod.session_required ? (
+              <div className="mt-4 rounded-lg border border-gray-200 p-4">
+                {/* PALLAS-CUSTOM: D10 —— 服务端下发 client_config（回落 NEXT_PUBLIC_*） */}
+                <CardPaymentForm
+                  onReady={handleCardReady}
+                  clientConfig={selectedMethod.client_config ?? null}
+                />
+              </div>
+            ) : null}
+
+            {/* CHK-P1-4: server readiness 门控——ready=false 时禁用 Pay 并提示 */}
+            {!checkoutReady && (
+              <div
+                data-testid="checkout-not-ready"
+                data-missing={missingRequirements.join(",")}
+                className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+              >
+                {t("checkoutNotReady")}
+              </div>
+            )}
+            {!selectedIsWallet && (
+              <Button
+                size="lg"
+                data-testid="pay-now-button"
+                className="w-full mt-6"
+                disabled={
+                  !selectedMethod ||
+                  !checkoutReady ||
+                  processing ||
+                  read.capabilities?.can_pay === false
+                }
+                onClick={handlePay}
+              >
+                {processing
+                  ? t("processing")
+                  : t("payAmount", {
+                      amount: read.display_total ?? "",
+                    })}
+              </Button>
+            )}
+          </PaymentSection>
+        </section>
+      </div>
+
+      {/* D7 FR-007 / AC-009：移动端吸底 Pay 条 —— 与页内按钮**同一 handler**
+          （钱包入口交给同一个钱包组件，不复制支付逻辑） */}
+      <div
+        data-testid="mobile-pay-bar"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur px-4 py-3 flex items-center justify-between gap-4"
+      >
+        <span className="text-sm font-semibold text-gray-900">
+          {read.display_total ?? ""}
+        </span>
+        {selectedIsWallet && selectedMethod && selectedEntry ? (
+          <div className="w-1/2">
+            <WalletPaymentButtons
+              orderId={order.id}
+              basePath={basePath}
+              method={selectedMethod}
+              entry={selectedEntry}
+              onProcessingChange={setWalletProcessing}
+              onUnavailable={refreshView}
+            />
           </div>
-
-          {/* PALLAS-CUSTOM: D15 切片3（PRD-20260917-checkout-d15-切片3）——
-              服务端已按 3DS/SCA 认证需求过滤入口（前端**不做筛选**）；
-              这里只负责把「为什么只有这些 / 一个都没有」说清楚。 */}
-          {paymentMethods.some((m) => m.requires_authentication) && (
-            <div
-              data-testid="authentication-required-notice"
-              className="mt-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-800"
-            >
-              {t("authenticationRequired")}
-            </div>
-          )}
-
-          {paymentMethods.length === 0 && (
-            <div
-              data-testid="no-payment-method"
-              className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
-            >
-              {t("noPaymentMethod")}
-            </div>
-          )}
-
-          {/* Stripe 自绘卡字段（PRD-20260831-payments-stripe-自绘卡支付表单）：
-              表单始终渲染，不依赖 client_secret / js.stripe.com iframe */}
-          {selectedMethod?.type === "stripe" &&
-          selectedMethod.session_required ? (
-            <div className="mt-4 rounded-lg border border-gray-200 p-4">
-              {/* PALLAS-CUSTOM: D10 —— 服务端下发 client_config（回落 NEXT_PUBLIC_*） */}
-              <CardPaymentForm
-                onReady={handleCardReady}
-                clientConfig={selectedMethod.client_config ?? null}
-              />
-            </div>
-          ) : null}
-
-          {/* CHK-P1-4: server readiness 门控——ready=false 时禁用 Pay 并提示 */}
-          {!checkoutReady && (
-            <div
-              data-testid="checkout-not-ready"
-              data-missing={missingRequirements.join(",")}
-              className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
-            >
-              {t("checkoutNotReady")}
-            </div>
-          )}
+        ) : (
           <Button
             size="lg"
-            className="w-full mt-6"
+            data-testid="mobile-pay-button"
             disabled={
               !selectedMethod ||
               !checkoutReady ||
               processing ||
+              walletProcessing ||
               read.capabilities?.can_pay === false
             }
             onClick={handlePay}
           >
             {processing
               ? t("processing")
-              : t("payAmount", {
-                  amount: read.display_total ?? "",
-                })}
+              : t("payAmount", { amount: read.display_total ?? "" })}
           </Button>
-        </section>
+        )}
       </div>
     </div>
   );
