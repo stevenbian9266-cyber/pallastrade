@@ -277,8 +277,14 @@ RSpec.describe PallasTrade::Risk::DashboardReport, type: :service do
     it 'keeps the query count flat when the store has no rows at all' do
       # 空库 vs 有数据 —— 正是本地绿 / CI 红的差异场景（查询形状不得依赖数据是否存在）
       empty_store = create(:store, code: "d3_empty_#{SecureRandom.hex(4)}", default: false)
+      # 两侧**店铺级配置必须等价**：`Store#has_markets?` 用 `@has_markets ||= …` 只记忆真值，
+      # 无市场的一侧每次调用都会重探 `SELECT 1 AS one FROM "pallastrade_markets" … LIMIT ?`。
+      # CI 的测试库由 `db:prepare` seed（默认店铺 `after_create :ensure_default_market` 建了 market），
+      # 本地库往往没有 → 只在 CI 出现的形状差（2026-09-18 CI 实测 diff）。
+      [empty_store, store].each { |s| create(:market, :default, store: s) if s.markets.none? }
+
       order = submitted_order
-      payment_session(order, hint: 'three_d_secure')
+      payment_session(order, hint: 'three_secure')
       flagged_assessment(order)
       reviewed = manual_review_transaction(reviewed_at: 10.minutes.ago)
       PallasTrade::Audit.record(action: 'transaction_review_captured', actor: 'system', resource: reviewed)
