@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing |
+| 状态 | done |
 | 创建日期 | 2026-09-18 |
 | 来源 | 优化：管理后台导航Settings收起展开与新增Fund一级菜单 |
 | 分类 | admin（自动判定，关键词命中 3） |
@@ -208,3 +208,4 @@
 | 2026-09-18 | 0.2 | 用户确认（approved）；实施完成：nav 配置/Item/渲染器/JS/CSS/i18n/两个 spec；新增场景 GS-186；补充 AC-008 实证方式与支付页面包屑遗留项 | AI |
 | 2026-09-18 | 1.0 | done：提交 c3458b5a（14 files, +803/-100）；门禁 GATE-2026-09-18T14-42-22 完结（三个注册验证器 + 知识评估 12/10 + 证据验证通过）；知识同步门 sync-check --ack 已确认 | AI |
 | 2026-09-18 | 1.1 | 行为修正（用户实测反馈）：默认收起；展开仅二级；消除 hover 浮层；分区内无箭头 icon；仅 Settings 生效；手风琴关闭 | AI |
+| 2026-09-18 | 1.1 | done：提交 502ddb87 已推送并部署 dev（repo HEAD=502ddb87，容器内 collapsible=true / Fund 16 / Orders 3，部署日志确认运行态一致）；真机验证三阶段通过（证据 artifacts/harness-evidence/20260918-admin-nav-settings-v11.md） | AI |
