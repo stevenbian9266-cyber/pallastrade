@@ -9,7 +9,10 @@
     "harness": "harness",
     "eval:llm": "harness eval-llm",
     "eval:llm:generate": "harness eval-llm --generate",
-    "eval:llm:check": "harness eval-llm --check"
+    "eval:llm:check": "harness eval-llm --check",
+    "docker:health": "node scripts/ops/docker-health.mjs",
+    "docker:health:fix": "node scripts/ops/docker-health.mjs --fix",
+    "docker:health:prune": "node scripts/ops/docker-health.mjs --prune"
   },
   "devDependencies": {
     "lefthook": "^1.11.0",

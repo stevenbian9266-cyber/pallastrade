@@ -308,6 +308,32 @@ Meilisearch index wasn't built. Run `bundle exec rake pallastrade:search:reindex
   dockerignore/gitignore 可达性、严格模式与 dev-only 守卫）。
 - 排查口诀：状态文件绿 ≠ 部署完成 —— 对不准就先 `docker exec … cat /rails/.deployed-revision`。
 
+## 本地 Docker exec 卡死（Docker Desktop / Windows，2026-09-18 bugfix）
+
+症状：`docker exec` / `harness verify <verifier>` **静默挂死**数分钟——命令其实已经执行完
+（`backend/log/test.log` 停止写入、`docker stats` CPU ≈ 0%），但 CLI 进程永不退出；放任后会累积成
+「僵尸层」，之后**所有** `docker exec` 都报 `cannot exec in a stopped state`，而 `docker inspect`
+仍显示 `running=true`（两条链路状态自相矛盾，重启容器也无效）。
+
+根因：Docker Desktop CLI 在**非控制台 stdio**（Node `spawnSync` —— harness 的 `runEvidenceCommand`
+跑注册验证器走的就是它，且**未设超时**）下不会自行退出；挂死的 CLI 会互相堵住。
+
+处置（一条命令）：
+
+```bash
+npm run docker:health          # 诊断（只读，~1s）：ok / cli-hung / container-inconsistent…
+npm run docker:health:fix      # 自愈：清僵尸 docker exec CLI → 必要时 docker start 容器 → 重探
+npm run docker:health:prune    # 主动维护：环境健康时也清扫历史僵尸（实测一次清掉 24 个）
+```
+
+- 实现：`scripts/ops/docker-health.mjs`（纯函数可单测：`tests/docker-health.test.mjs`，
+  已纳入 `harness verify repo-guards-test`）。
+- 只清「`docker exec` + 存活 > 120s + 指向目标容器」的 CLI 进程，**绝不误伤**
+  `docker compose up` / `docker logs -f` 这类长任务；CI 与无 Docker 环境自动跳过（不阻断）。
+- pre-commit 在 docker / harness 相关文件被暂存时给提示（advisory，不阻断提交）。
+- 手工兜底（不推荐）：`Get-Process docker | Stop-Process -Force` —— 只杀 CLI 进程，
+  **不要**杀 `Docker Desktop` / `com.docker.backend`。
+
 ## Where to read further
 
 - **PallasTrade-starter Dockerfile + docker-compose:** https://github.com/stevenbian9266-cyber/pallastrade — reference production-ready Docker setup.

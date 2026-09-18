@@ -192,9 +192,11 @@ export default {
       // PALLASTRADE_AI_ENABLED 与 ACTIVE_RECORD_ENCRYPTION_* 必须在模板登记且不得内置真实密钥。
       // 2026-09-18 再扩入 AI 助手接线契约（PRD-20260918-admin-ai-output-validation）：
       // 五处容器必须走共享 helper（data: 前缀），控制器必须保留兜底文案分支。
+      // 第三次扩入 Docker 健康守卫（本地 Docker Desktop `docker exec` 卡死的自愈工具）：
+      // 探测分类 / 自愈动作序列 / 进程解析 / 僵尸筛选（绝不误伤 compose up、logs -f）。
       'repo-guards-test': {
-        description: 'Repo-level node:test guards (pull-deploy forward roll + drill crontab restore + PRD status sync + AI env template + AI assist wiring)',
-        command: ['node', '--test', 'tests/pull-deploy-forward-roll.test.mjs', 'tests/drill-rollback-crontab.test.mjs', 'tests/prd-status-sync.test.mjs', 'tests/ai-env-template.test.mjs', 'tests/ai-assist-wiring.test.mjs'],
+        description: 'Repo-level node:test guards (pull-deploy forward roll + drill crontab restore + PRD status sync + AI env template + AI assist wiring + docker health guard)',
+        command: ['node', '--test', 'tests/pull-deploy-forward-roll.test.mjs', 'tests/drill-rollback-crontab.test.mjs', 'tests/prd-status-sync.test.mjs', 'tests/ai-env-template.test.mjs', 'tests/ai-assist-wiring.test.mjs', 'tests/docker-health.test.mjs'],
       },
       // 管理后台店铺表单（2026-09-09 bugfix 回归集）：logo/mailer_logo 直传失败提示 + 多店 CRUD
       'admin-stores-rspec': {

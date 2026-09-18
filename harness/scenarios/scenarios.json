@@ -4637,6 +4637,37 @@
         "i18nParity": 10,
         "noSilentStates": 10
       }
+    },
+    {
+      "id": "GS-180",
+      "name": "A hung docker exec must not turn into five minutes of silence",
+      "description": "On Docker Desktop (Windows) the docker CLI can finish its work yet never exit when its stdio is a pipe - which is exactly how harness launches registered verifiers (spawnSync, no timeout). One hung invocation is invisible; a few of them accumulate into a layer of zombie `docker exec` processes after which every docker exec fails with 'cannot exec in a stopped state' while `docker inspect` still reports running=true. A repo-level guard must classify the failure (cli-hung vs container-inconsistent vs not-applicable), clean only genuine zombies, and be one command to run; the docs must say so where a developer looks (deployment skill) and a node:test must pin the classification and the never-touch-compose-up rule.",
+      "mustDo": [
+        "Give every probe a timeout, so the guard itself can never become the next hung process",
+        "Classify before acting: ok / cli-hung / container-inconsistent / container-missing / docker-unavailable, and treat the text 'cannot exec in a stopped state' (container) as distinct from a timeout (CLI)",
+        "Make the not-applicable cases non-blocking (no docker, no dev stack, CI) so the guard never reddens a pipeline it cannot help",
+        "Prune only `docker exec` CLI processes older than a threshold that point at the target container - never `docker compose up` / `docker logs -f` / any long-running session",
+        "Order the self-heal as clean-zombies-then-start-container and re-probe after each step instead of assuming success",
+        "Expose the recovery as one command (npm run docker:health:fix), offer a read-only diagnose mode and an explicit --prune maintenance mode, and mention the advisory pre-commit hint",
+        "Pin the pure logic (classification, recovery order, Windows CIM / POSIX ps parsing, zombie selection) with node:test and register it in the repo-guards verifier",
+        "Document the symptom, the root cause and the one-command fix where a developer looks for environment/deployment answers"
+      ],
+      "mustNotDo": [
+        "Wrap docker in a helper that waits forever, or add timeouts only to the prose and not to the probe",
+        "Kill every docker process, or every `docker exec`, regardless of age and target - that kills a colleague's or a peer agent's in-flight run",
+        "Report the failure as a provider/daemon outage without first exhausting the zombie-CLI explanation",
+        "Let a hung verifier stay silent for minutes: the guard must fail loudly with the fix command",
+        "Treat docker-unavailable or a missing container as a repository defect to fix in code"
+      ],
+      "scoring": {
+        "probeTimeout": 15,
+        "classification": 20,
+        "safePruning": 20,
+        "orderedSelfHeal": 15,
+        "operatorErgonomics": 10,
+        "unitGuard": 10,
+        "docsDiscoverability": 10
+      }
     }
   ]
 }

@@ -31,6 +31,11 @@ pre-commit:
     harness-prd-status:
       glob: "docs/prd/**/*.md"
       run: node scripts/ci/prd-status-sync.mjs --check
+    # 本地环境守卫（advisory，不阻断提交）：Docker Desktop 上 `docker exec` 会「有输出但不退出」，
+    # 这时跑 harness verify / rspec 会静默挂死数分钟。这里提前报警并给出一条命令的修法。
+    docker-health:
+      glob: "{harness.config.mjs,lefthook.yml,package.json,scripts/**,deploy/**,backend/docker-compose*.yml}"
+      run: node scripts/ops/docker-health.mjs --warn-only
 
 pre-push:
   commands:
