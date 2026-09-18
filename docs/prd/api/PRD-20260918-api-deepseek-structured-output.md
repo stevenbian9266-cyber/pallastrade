@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | verifying |
+| 状态 | done |
 | 创建日期 | 2026-09-18 |
 | 来源 | `实施`（承接「修复：DeepSeek 适配器结构化输出 400 与 test_connection 误导」方案） |
 | 分类 | api（自动判定，关键词命中 `schema`；语义上为「AI 供应商 API 适配」） |
@@ -198,3 +198,4 @@
 | 2026-09-18 | 0.1 | 初稿：由 dev DeepSeek 实测诊断（D1–D5）收敛为 5 条 FR / 12 条 AC | AI |
 | 2026-09-18 | 0.2 | 更正 D3 表述（`raise_error` 中间件使 401 已被正确捕获），并登记 §7.2 后续风险 | AI |
 | 2026-09-18 | 0.3 | 实施期发现 D6（`catalogs/*::MODELS` 是死数据，真正供应源为 provider registry）→ FR-004 改为两处同改并由规格锁住；AC-012 从 RSpec 改为仓库级 node:test（容器内仓库根不可达）；补充验证器注册与 AGENTS.md §6 同步 | AI |
+| 2026-09-18 | 1.0 | **done**：提交 `d2c334c3` 并在 dev 完成真实 DeepSeek 端到端验证 —— 四个能力全部 `succeeded`（Run #9–#17），对比修复前 Run #4–#8 全为 400。详见 `harness/reviews/REVIEW-20260918-deepseek-adapter-fix-verification.md` | AI |
