@@ -4818,6 +4818,39 @@
         "noBlankOrDanglingUi": 10,
         "bothSurfacesAndDevices": 10
       }
+    },
+    {
+      "id": "GS-186",
+      "name": "Collapse a sidebar section without losing the items that ride as siblings - and give money work its own top-level menu",
+      "description": "Two nav-IA asks landed together. First, the admin sidebar's Settings block could not be folded away: 'Settings' is only a section heading (a `section_label` root item), so everything under it is a *sibling* - and every item that has a submenu renders as a bare `<li>` plus a sibling `<ul class=\"nav-submenu\">` and `<ul class=\"nav-submenu-dropdown\">`. Collapsing just the `<li>`s leaves those menus visible. Second, `Orders` had swollen to 19 children because sixteen money/payment/risk consoles (transactions, payouts, reconciliation, refund approvals, fee policies, FX, disputes, risk rules, …) lived under it, mixing order operations with treasury work.",
+      "mustDo": [
+        "Scope the toggle as 'every following sibling until the next section toggle' - that is what also catches the submenu and dropdown `<ul>`s, which are siblings of the item's `<li>`, not its children",
+        "Render the section heading as a real disclosure control: a `<button>` with `aria-expanded`, a chevron, and a semantic-token colour - not a styled `<span>`",
+        "Persist the state per section (localStorage, default expanded) and, on load, force the section open when the current page lives inside it, so the active item is never hidden by a stale memory",
+        "Keep the change inside the nav config/rendering layer: declare `collapsible: true` on the section, keep the JS in the existing sidebar controller, and stay progressive - with no JS the section is simply expanded",
+        "When moving items to the new top-level menu, keep their keys, `if:` conditions and active lambdas untouched: menu-permission keys, breadcrumb derivation and i18n labels all ride on the keys",
+        "Make the parent visible exactly when it has something to show (any child permission grants it) so nobody gets an empty group",
+        "Order the new menu by the money lifecycle (transaction → payment → refund → dispute → reconciliation/settlement → FX/cost → risk) and give the top level a `landing` pointing at its first child",
+        "Add the label to both locales (gem en + host zh-CN) - an English-only key renders silently as `translation missing` in a Chinese admin"
+      ],
+      "mustNotDo": [
+        "Tag items one by one and hide only the `<li>`s - the submenu/dropdown `<ul>` siblings stay on screen and the group looks half-collapsed",
+        "Collapse the whole sidebar or other sections, or hide the section while the page the user is looking at sits inside it",
+        "Rewrite item keys/URLs while moving them - menu permissions, breadcrumbs and locale keys silently break",
+        "Hand-write the new parent level into controllers: breadcrumbs derive from the nav tree, so moving the item is enough",
+        "Ship a parent menu that renders empty (all children filtered out) or a money page that still claims `Orders > …`",
+        "Forget the zh-CN side of the new label, or hardcode palette colours for the new control",
+        "Call an interaction done from server-rendered markup alone - assert the DOM scope and click behaviour (real JS, real built CSS)"
+      ],
+      "scoring": {
+        "siblingScopeIncludesSubmenus": 25,
+        "stateMemoryPlusForcedExpand": 20,
+        "keyStabilityKeepsPermissionsAndCrumbs": 15,
+        "parentVisibleIffChildrenVisible": 10,
+        "lifecycleOrderAndLanding": 10,
+        "bilingualAndSemanticTokens": 10,
+        "realDomVerification": 10
+      }
     }
   ]
 }

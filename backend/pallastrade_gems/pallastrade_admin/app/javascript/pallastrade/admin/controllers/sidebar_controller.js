@@ -36,6 +36,9 @@ export default class extends Controller {
       this.element.classList.remove("sidebar-collapsed");
     }
 
+    // Restore collapsible section state (default expanded; active section forced open)
+    this.restoreSectionStates();
+
     // Re-enable transitions after initial state is set
     requestAnimationFrame(() => {
       this.element.classList.remove("sidebar-no-transition");
@@ -79,6 +82,78 @@ export default class extends Controller {
     if (this.hasMobileTarget) {
       this.mobileTarget.classList.remove("sidebar-mobile-open");
     }
+  }
+
+  // PALLAS-CUSTOM: 导航分区收起 / 展开（2026-09-18）
+  // 作用域 = 分区标题（[data-nav-section-toggle]）之后的**同级元素**，直到下一个
+  // 分区标题（或列表结束）。该范围既含普通 <li>，也含带子菜单项产生的
+  // <ul class="nav-submenu"> / <ul class="nav-submenu-dropdown"> 兄弟节点，
+  // 因此按「同级元素」整体收起即可，无需逐项打标。
+  sectionStorageKey(key) {
+    return `pallastrade_admin_nav_section_${key}`;
+  }
+
+  sectionElements(toggle) {
+    const elements = [];
+    let node = toggle.nextElementSibling;
+    while (node && !node.hasAttribute("data-nav-section-toggle")) {
+      elements.push(node);
+      node = node.nextElementSibling;
+    }
+    return elements;
+  }
+
+  applySectionState(toggle, collapsed, { persist = false } = {}) {
+    const key = toggle.dataset.navSectionToggle;
+
+    this.sectionElements(toggle).forEach((element) => {
+      element.classList.toggle("hidden", collapsed);
+    });
+
+    toggle.dataset.navSectionCollapsed = collapsed ? "true" : "false";
+
+    const button = toggle.querySelector("button[aria-expanded]");
+    if (button) {
+      button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    }
+
+    if (persist && key) {
+      try {
+        localStorage.setItem(this.sectionStorageKey(key), String(collapsed));
+      } catch (_error) {
+        // localStorage 不可用（隐私模式 / 配额）→ 忽略持久化，交互仍可用
+      }
+    }
+  }
+
+  restoreSectionStates() {
+    document.querySelectorAll("[data-nav-section-toggle]").forEach((toggle) => {
+      const key = toggle.dataset.navSectionToggle;
+
+      // 当前页落在该分区内 → 强制展开（优先于记忆状态），否则用上次记忆
+      const hasActiveItem = this.sectionElements(toggle).some((element) =>
+        element.querySelector(".nav-link.active")
+      );
+
+      let collapsed = false;
+      if (!hasActiveItem && key) {
+        try {
+          collapsed = localStorage.getItem(this.sectionStorageKey(key)) === "true";
+        } catch (_error) {
+          collapsed = false;
+        }
+      }
+
+      this.applySectionState(toggle, collapsed);
+    });
+  }
+
+  toggleSection(event) {
+    const toggle = event.currentTarget.closest("[data-nav-section-toggle]");
+    if (!toggle) return;
+
+    const collapsed = toggle.dataset.navSectionCollapsed !== "true";
+    this.applySectionState(toggle, collapsed, { persist: true });
   }
 
   setupCollapsedSubmenuHandlers() {

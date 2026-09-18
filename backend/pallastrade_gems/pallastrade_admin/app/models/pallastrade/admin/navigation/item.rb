@@ -4,7 +4,7 @@ module PallasTrade
       class Item
         attr_accessor :key, :label, :url, :icon, :position, :parent_key,
                       :condition, :badge, :badge_class, :tooltip, :target, :data_attributes, :children, :section_label, :active_condition,
-                      :landing, :tabs
+                      :landing, :tabs, :collapsible
 
         def initialize(key, **options)
           @key = key.to_sym
@@ -21,6 +21,7 @@ module PallasTrade
           @target = options[:target]
           @data_attributes = options[:data_attributes] || {}
           @section_label = options[:section_label]
+          @collapsible = options[:collapsible] ? true : false
           @landing = options[:landing]&.to_sym
           @tabs = options[:tabs]&.to_sym
           @children = []
@@ -199,6 +200,14 @@ module PallasTrade
           section_label.present?
         end
 
+        # PALLAS-CUSTOM: 可折叠分区（2026-09-18）
+        # 除 `section_label` 外再声明 `collapsible: true` 的分区，渲染层把它渲染成
+        # 收起 / 展开开关（由 sidebar Stimulus 控制器切换该标题之后的同级元素显隐）。
+        # @return [Boolean]
+        def collapsible?
+          collapsible == true
+        end
+
         # Add a child item
         def add_child(item)
           children << item
@@ -239,6 +248,7 @@ module PallasTrade
             target: target,
             data_attributes: data_attributes,
             section_label: section_label,
+            collapsible: collapsible,
             landing: landing,
             tabs: tabs
           }

@@ -602,6 +602,8 @@ en:
       export_only_filtered_records: Export only filtered records, matching the search criteria
       export_report: Export report as CSV file
       filters: Filters
+      fund:
+        title: Fund
       getting_started: Getting started
       gift_card_batches:
         codes_count: Codes count
@@ -701,6 +703,7 @@ en:
       metafields:
         none_configured_for: No metafield definitions configured for %{resource}.
       name: Name
+      nav_section_toggle_hint: Collapse or expand this group
       navigation:
         nested_under: Nested under
       newsletter_subscribers:

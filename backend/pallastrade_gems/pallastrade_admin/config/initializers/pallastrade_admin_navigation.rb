@@ -77,135 +77,156 @@ Rails.application.config.after_initialize do
               position: 20,
               active: -> { controller_name == 'checkouts' || (@order.present? && !@order.completed?) },
               if: -> { can?(:manage, :checkouts) }
+  end
 
+  # Fund —— PALLAS-CUSTOM（2026-09-18）：资金 / 支付 / 风控一级菜单。
+  # 原 Orders 下的 16 个资金类工作台整体迁入（**键位 / 权限 / active 条件不变**），
+  # Orders 回归纯订单作业（All Orders / Orders to Fulfill / Draft Orders）。
+  # 界面顺序 = 资金生命周期：交易 → 支付 → 退款 → 争议 → 对账结算 → 汇率成本 → 风控。
+  # 面包屑随层级自动推导为「Fund > 子项」（控制器零改动）；
+  # 顶级点击落到 landing（资金生命周期第一站：交易）。
+  # 顶级可见性 = 资金域任一权限（任一子项可见则 Fund 可见，避免出现空组）。
+  sidebar_nav.add :fund,
+          label: 'admin.fund.title',
+          url: :admin_transactions_path,
+          icon: 'wallet',
+          position: 22,
+          landing: :transactions,
+          if: -> {
+            can?(:manage, PallasTrade::Order) ||
+              can?(:manage, PallasTrade::Payout) ||
+              can?(:manage, PallasTrade::ReconciliationCase) ||
+              can?(:manage, PallasTrade::RefundApproval) ||
+              can?(:manage, PallasTrade::RiskRuleSet) ||
+              can?(:manage, PallasTrade::DisputeRateAlert)
+          } do |fund|
     # TXN-P2-7 slice2: durable CommerceTransaction inspection + manual recovery
-    orders.add :transactions,
+    fund.add :transactions,
               label: 'admin.orders.transactions',
               url: :admin_transactions_path,
-              position: 30,
+              position: 10,
               active: -> { controller_name == 'transactions' },
               if: -> { can?(:read, PallasTrade::CommerceTransaction) || can?(:manage, PallasTrade::Order) }
 
-    # REV-P6-8a: durable Refund inspection（只读；Orders → Refunds）
-    orders.add :refunds,
+    # REV-P6-8h: Payment Ops（只读；Payments，含孤儿退款配对）
+    fund.add :payments_ops,
+              label: 'admin.orders.payments_ops',
+              url: :admin_payments_path,
+              position: 20,
+              active: -> { controller_name == 'payments_ops' },
+              if: -> { can?(:read, PallasTrade::Payment) || can?(:manage, PallasTrade::Order) }
+
+    # REV-P6-8g: PaymentCombination 组合可视化（只读；Payment Combinations）
+    fund.add :payment_combinations,
+              label: 'admin.orders.payment_combinations',
+              url: :admin_payment_combinations_path,
+              position: 30,
+              active: -> { controller_name == 'payment_combinations' },
+              if: -> { can?(:read, PallasTrade::PaymentCombination) || can?(:manage, PallasTrade::Order) }
+
+    # REV-P6-8a: durable Refund inspection（只读；Refunds）
+    fund.add :refunds,
               label: 'admin.orders.refunds',
               url: :admin_refunds_path,
               position: 40,
               active: -> { controller_name == 'refunds_ops' },
               if: -> { can?(:read, PallasTrade::Refund) || can?(:manage, PallasTrade::Refund) }
 
-    # REV-P6-8g: PaymentCombination 组合可视化（只读；Orders → Payment Combinations）
-    orders.add :payment_combinations,
-              label: 'admin.orders.payment_combinations',
-              url: :admin_payment_combinations_path,
-              position: 45,
-              active: -> { controller_name == 'payment_combinations' },
-              if: -> { can?(:read, PallasTrade::PaymentCombination) || can?(:manage, PallasTrade::Order) }
-
-    # REV-P6-8h: Payment Ops（只读；Orders → Payments，含孤儿退款配对）
-    orders.add :payments_ops,
-              label: 'admin.orders.payments_ops',
-              url: :admin_payments_path,
-              position: 48,
-              active: -> { controller_name == 'payments_ops' },
-              if: -> { can?(:read, PallasTrade::Payment) || can?(:manage, PallasTrade::Order) }
-
-    # DSP-P7-7: Dispute Ops（Orders → Disputes；只读展现 + 安全动作）
-    orders.add :disputes_ops,
-              label: 'admin.orders.disputes_ops',
-              url: :admin_disputes_path,
-              position: 50,
-              active: -> { controller_name == 'disputes_ops' },
-              if: -> { can?(:read, PallasTrade::Dispute) || can?(:manage, PallasTrade::Order) }
-
-    # D13 切片1: 对账差异队列（Orders → 对账队列；可指派/备注/关单 + CSV 导出；零资金副作用）
-    orders.add :reconciliation_cases,
-              label: 'admin.reconciliation_cases.title',
-              url: :admin_reconciliation_cases_path,
-              position: 55,
-              active: -> { controller_name == 'reconciliation_cases' },
-              if: -> { can?(:manage, PallasTrade::ReconciliationCase) }
-
-    # D13 切片2: 结算（Payout）台账（Orders → 结算台账；CSV 导入 + 匹配 + 差异进队列）
-    orders.add :payouts,
-              label: 'admin.payouts.title',
-              url: :admin_payouts_path,
-              position: 57,
-              active: -> { controller_name == 'payouts' },
-              if: -> { can?(:manage, PallasTrade::Payout) }
-
-    # D14 切片1: 退款审批（Orders → 退款审批；超阈值退款需第二人批准，不能自批）
-    orders.add :refund_approvals,
+    # D14 切片1: 退款审批（超阈值退款需第二人批准，不能自批）
+    fund.add :refund_approvals,
               label: 'admin.refund_approvals.title',
               url: :admin_refund_approvals_path,
-              position: 58,
+              position: 50,
               active: -> { controller_name == 'refund_approvals' },
               if: -> { can?(:manage, PallasTrade::RefundApproval) }
 
-    # D15 切片1: 风控名单（Orders → 风控名单；批量导入/导出 + 到期 + 审计；评估留痕驱动人工复核）
-    orders.add :risk_lists,
-              label: 'admin.risk_lists.title',
-              url: :admin_risk_lists_path,
-              position: 59,
-              active: -> { controller_name == 'risk_lists' },
-              if: -> { can?(:manage, PallasTrade::PaymentRiskList) }
-
-    # D15 切片2: 风控规则（Orders → 风控规则；规则集/版本 + 发布/金丝雀/回滚 + 订单试算）
-    # 紧贴「风控名单」（59）→ 两个风控入口相邻；同权限域（configuration_management）
-    orders.add :risk_rules,
-              label: 'admin.risk_rules.title',
-              url: :admin_risk_rules_path,
-              position: 59.5,
-              active: -> { controller_name == 'risk_rules' },
-              if: -> { can?(:manage, PallasTrade::RiskRuleSet) }
-
-    # PALLAS-CUSTOM: D13 切片3（PRD-20260916-payments-d13c-fee-cost-report；业务方案 §70.3）
-    # 支付成本报表 + 费率策略（同一权限域：费用策略）
-    orders.add :payment_costs,
-              label: 'admin.payment_costs.title',
-              url: :admin_payment_costs_path,
+    # DSP-P7-7: Dispute Ops（争议；只读展现 + 安全动作）
+    fund.add :disputes_ops,
+              label: 'admin.orders.disputes_ops',
+              url: :admin_disputes_path,
               position: 60,
-              active: -> { controller_name == 'payment_costs' },
-              if: -> { can?(:manage, PallasTrade::PaymentFeePolicy) }
-
-    orders.add :payment_fee_policies,
-              label: 'admin.payment_fee_policies.title',
-              url: :admin_payment_fee_policies_path,
-              position: 61,
-              active: -> { controller_name == 'payment_fee_policies' },
-              if: -> { can?(:manage, PallasTrade::PaymentFeePolicy) }
-
-    # PALLAS-CUSTOM: D13 切片4（PRD-20260916-payments-d13d-fx-snapshot；业务方案 §70.4）
-    # 汇率域：汇率表 + 汇率快照（同一权限域：结算差核算）
-    orders.add :currency_rates,
-              label: 'admin.currency_rates.title',
-              url: :admin_currency_rates_path,
-              position: 62,
-              active: -> { controller_name == 'currency_rates' },
-              if: -> { can?(:manage, PallasTrade::CurrencyRate) }
-
-    orders.add :fx_snapshots,
-              label: 'admin.fx_snapshots.title',
-              url: :admin_fx_snapshots_path,
-              position: 63,
-              active: -> { controller_name == 'fx_snapshots' },
-              if: -> { can?(:manage, PallasTrade::CurrencyRate) }
+              active: -> { controller_name == 'disputes_ops' },
+              if: -> { can?(:read, PallasTrade::Dispute) || can?(:manage, PallasTrade::Order) }
 
     # PALLAS-CUSTOM: D14 切片3（PRD-20260916-payments-d14c-dispute-rate-board；业务方案 §71.3 + §72.5）
     # 拒付率看板：按卡组织双阈值预警 + 下钻 + 名单联动（只读统计；写动作另需名单权限）
-    orders.add :dispute_rates,
+    fund.add :dispute_rates,
               label: 'admin.dispute_rates.title',
               url: :admin_dispute_rates_path,
-              position: 64,
+              position: 70,
               active: -> { controller_name == 'dispute_rates' },
               if: -> { can?(:manage, PallasTrade::DisputeRateAlert) }
 
+    # D13 切片1: 对账差异队列（可指派/备注/关单 + CSV 导出；零资金副作用）
+    fund.add :reconciliation_cases,
+              label: 'admin.reconciliation_cases.title',
+              url: :admin_reconciliation_cases_path,
+              position: 80,
+              active: -> { controller_name == 'reconciliation_cases' },
+              if: -> { can?(:manage, PallasTrade::ReconciliationCase) }
+
+    # D13 切片2: 结算（Payout）台账（CSV 导入 + 匹配 + 差异进队列）
+    fund.add :payouts,
+              label: 'admin.payouts.title',
+              url: :admin_payouts_path,
+              position: 90,
+              active: -> { controller_name == 'payouts' },
+              if: -> { can?(:manage, PallasTrade::Payout) }
+
+    # PALLAS-CUSTOM: D13 切片4（PRD-20260916-payments-d13d-fx-snapshot；业务方案 §70.4）
+    # 汇率域：汇率表 + 汇率快照（同一权限域：结算差核算）
+    fund.add :currency_rates,
+              label: 'admin.currency_rates.title',
+              url: :admin_currency_rates_path,
+              position: 100,
+              active: -> { controller_name == 'currency_rates' },
+              if: -> { can?(:manage, PallasTrade::CurrencyRate) }
+
+    fund.add :fx_snapshots,
+              label: 'admin.fx_snapshots.title',
+              url: :admin_fx_snapshots_path,
+              position: 110,
+              active: -> { controller_name == 'fx_snapshots' },
+              if: -> { can?(:manage, PallasTrade::CurrencyRate) }
+
+    # PALLAS-CUSTOM: D13 切片3（PRD-20260916-payments-d13c-fee-cost-report；业务方案 §70.3）
+    # 支付成本报表 + 费率策略（同一权限域：费用策略）
+    fund.add :payment_costs,
+              label: 'admin.payment_costs.title',
+              url: :admin_payment_costs_path,
+              position: 120,
+              active: -> { controller_name == 'payment_costs' },
+              if: -> { can?(:manage, PallasTrade::PaymentFeePolicy) }
+
+    fund.add :payment_fee_policies,
+              label: 'admin.payment_fee_policies.title',
+              url: :admin_payment_fee_policies_path,
+              position: 130,
+              active: -> { controller_name == 'payment_fee_policies' },
+              if: -> { can?(:manage, PallasTrade::PaymentFeePolicy) }
+
+    # D15 切片1: 风控名单（批量导入/导出 + 到期 + 审计；评估留痕驱动人工复核）
+    fund.add :risk_lists,
+              label: 'admin.risk_lists.title',
+              url: :admin_risk_lists_path,
+              position: 140,
+              active: -> { controller_name == 'risk_lists' },
+              if: -> { can?(:manage, PallasTrade::PaymentRiskList) }
+
+    # D15 切片2: 风控规则（规则集/版本 + 发布/金丝雀/回滚 + 订单试算）
+    fund.add :risk_rules,
+              label: 'admin.risk_rules.title',
+              url: :admin_risk_rules_path,
+              position: 150,
+              active: -> { controller_name == 'risk_rules' },
+              if: -> { can?(:manage, PallasTrade::RiskRuleSet) }
+
     # PALLAS-CUSTOM: D3（PRD-20260917-payments-d3-risk-dashboard-threshold-alerts；业务方案 §78-D3 / §60.2-P3）
     # 支付风控看板：5 个风控水位指标 + 阈值策略 + 告警留痕（只读统计；保存阈值需 update 权限）
-    orders.add :payment_risk,
+    fund.add :payment_risk,
               label: 'admin.payment_risk.title',
               url: :admin_payment_risk_path,
-              position: 64.5,
+              position: 160,
               active: -> { controller_name == 'payment_risk' },
               if: -> { can?(:read, PallasTrade::PaymentRiskAssessment) }
   end
@@ -459,9 +480,13 @@ Rails.application.config.after_initialize do
   # 多页面模块带子菜单（landing = 第一个子项），单页面模块保持叶子项。
   # ===============================================
 
-  # Section divider（仅视觉分隔）
+  # Section divider —— PALLAS-CUSTOM（2026-09-18）：可折叠分区。
+  # 点击标题收起 / 展开「该分区标题之后直到下一分区标题」的全部同级条目
+  # （含带子菜单项产生的 nav-submenu / nav-submenu-dropdown 兄弟节点）。
+  # 状态由 sidebar Stimulus 控制器记忆（localStorage）；当前页落在分区内时强制展开。
   sidebar_nav.add :settings_section,
           section_label: 'Settings',
+          collapsible: true,
           position: 90
 
   # PALLAS-CUSTOM: 多店铺管理（2026-08-17）——店铺列表

@@ -6,6 +6,10 @@
 zh-CN:
   pallastrade:
     admin:
+      # 2026-09-18：新增 Fund 一级菜单（资金）+ 分区折叠开关无障碍提示
+      fund:
+        title: 资金
+      nav_section_toggle_hint: 收起或展开此分组
       orders:
         all_orders: 全部订单
         orders_to_fulfill: 待发货订单

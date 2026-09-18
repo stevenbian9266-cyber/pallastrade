@@ -412,6 +412,33 @@
     @apply hidden;
   }
 
+  /* PALLAS-CUSTOM: 分区收起 / 展开开关（2026-09-18）—— Settings 分区。
+     `data-nav-section-collapsed` 由 sidebar Stimulus 控制器维护（默认 false = 展开）。 */
+  .nav-section-toggle-btn {
+    @apply flex w-full items-center gap-1 p-0 border-0 bg-transparent uppercase font-light text-sm text-text-subtle cursor-pointer transition-colors duration-150;
+  }
+
+  .nav-section-toggle-btn:hover {
+    @apply text-text;
+  }
+
+  .nav-section-toggle-btn:focus-visible {
+    @apply outline-none ring-2 ring-focus-ring rounded-sm;
+  }
+
+  .nav-section-chevron {
+    @apply transition-transform duration-200;
+  }
+
+  .nav-section-toggle[data-nav-section-collapsed="true"] .nav-section-chevron {
+    @apply -rotate-90;
+  }
+
+  /* icon-only 折叠态：分区标题只保留分隔线，隐藏开关箭头 */
+  body.sidebar-collapsed #main-sidebar .sidebar-content .nav-section-toggle .nav-section-chevron {
+    @apply hidden;
+  }
+
   body.sidebar-collapsed #content {
     margin-inline-start: calc(var(--spacing-sidebar-collapsed) + 1px);
   }

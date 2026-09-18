@@ -449,8 +449,34 @@ module PallasTrade
       end
 
       # Renders a section header
+      # PALLAS-CUSTOM: 分区折叠（2026-09-18）——`collapsible: true` 的分区渲染为
+      # 收起 / 展开开关（button + `aria-expanded` + `data-nav-section-toggle`），
+      # 由 sidebar Stimulus 控制器切换「该标题之后直到下一个分区标题」的全部
+      # 同级元素显隐（含带子菜单项产生的 nav-submenu / nav-submenu-dropdown）。
+      # 非折叠分区保持原样（纯视觉分隔线）。
       # @return [SafeBuffer] the section header HTML
       def render_nav_section_header(item)
+        return render_nav_section_label(item) unless item.collapsible?
+
+        content_tag :li, class: 'nav-item nav-section-header nav-section-toggle mt-4 border-t pt-4 pl-2',
+                    data: { nav_section_toggle: item.key } do
+          content_tag :button,
+                      type: 'button',
+                      class: 'nav-section-toggle-btn text-text-subtle uppercase font-light text-sm',
+                      title: PallasTrade.t('admin.nav_section_toggle_hint'),
+                      aria: { expanded: 'true' },
+                      data: { action: 'click->sidebar#toggleSection' } do
+            safe_join([
+                        content_tag(:span, item.section_label),
+                        icon('chevron-down', class: 'nav-section-chevron ms-auto')
+                      ])
+          end
+        end
+      end
+
+      # Non-collapsible section header（纯视觉分隔线）
+      # @return [SafeBuffer] the section header HTML
+      def render_nav_section_label(item)
         content_tag :li, class: 'nav-item nav-section-header mt-4 border-t pt-4 pl-2' do
           content_tag :span, item.section_label, class: 'text-gray-600 uppercase font-light text-sm'
         end

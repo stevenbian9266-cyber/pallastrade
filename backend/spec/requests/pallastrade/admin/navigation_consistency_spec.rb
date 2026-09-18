@@ -115,17 +115,11 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
       # REV-P6-8a: Orders 下新增 durable Refund Ops 检视项（:refunds，只读）
       # REV-P6-8g: Orders 下新增 PaymentCombination 组合可视化项（:payment_combinations，只读）
       # REV-P6-8h: Orders 下新增 Payment Ops 项（:payments_ops，只读）
-      # DSP-P7-7: Orders 下新增 Dispute Ops 项（:disputes_ops，只读展现 + 安全动作）
-      # D13 切片1: Orders 下新增对账队列（:reconciliation_cases，案例工作台 + CSV 导出）
-      # D13 切片2: Orders 下新增结算台账（:payouts，结算导入 + 匹配）
-      # D14 切片1: Orders 下新增退款审批（:refund_approvals，超阈值退款需第二人批准）
-      # D15 切片1: Orders 下新增风控名单（:risk_lists，批量导入/导出 + 到期 + 审计）
-      # D13 切片3: Orders 下新增支付成本报表（:payment_costs）与费率策略（:payment_fee_policies）
-      # D13 切片4: Orders 下新增汇率表（:currency_rates）与汇率快照（:fx_snapshots）
-      # DSP-P7-8: Orders 下新增争议费率预警（:dispute_rates，只读看板）
-      # D15 切片2: Orders 下新增风控规则（:risk_rules，规则集/版本 + 发布/金丝雀/回滚）
-      # D3: Orders 下新增支付风控看板（:payment_risk，5 指标 + 阈值策略 + 告警留痕，只读）
-    expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders transactions refunds payment_combinations payments_ops disputes_ops reconciliation_cases payouts refund_approvals risk_lists risk_rules payment_costs payment_fee_policies currency_rates fx_snapshots dispute_rates payment_risk])
+      # PRD-20260918-admin-管理后台导航settings收起展开与新增fund一级菜单 FR-006/FR-007:
+      # 16 个资金类工作台整体迁入 Fund（键位不变），Orders 回归纯订单作业。
+    expect(sidebar.find(:orders).children.map(&:key)).to eq(%i[all_orders orders_to_fulfill draft_orders])
+    # Fund = 资金生命周期序：交易 → 支付 → 退款 → 争议 → 对账结算 → 汇率成本 → 风控
+    expect(sidebar.find(:fund).children.map(&:key)).to eq(%i[transactions payments_ops payment_combinations refunds refund_approvals disputes_ops dispute_rates reconciliation_cases payouts currency_rates fx_snapshots payment_costs payment_fee_policies risk_lists risk_rules payment_risk])
       # 审计 G-6: Products 下新增商品运营报表（:catalog_operations，只读聚合）
       expect(sidebar.find(:products).children.map(&:key)).to eq(%i[products_list catalog_health duplicate_products catalog_operations price_lists stock translations taxonomies options])
       expect(sidebar.find(:customers).children.map(&:key)).to eq(%i[customers_list customer_groups newsletter_subscribers])
@@ -331,6 +325,7 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
         admin.payment_fee_policies.title
         admin.currency_rates.title
         admin.fx_snapshots.title
+        admin.fund.title
       ]
     end
 
@@ -415,16 +410,20 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
 
   # ============================================================
   # AC-012：面包屑层级唯一 + 颜色不随「是否链接」变化（2026-09-18 bugfix）
+  # 2026-09-18 迁移：原 Orders 工作台页改挂 Fund ⇒ 推导链变为「Fund > 子项」。
   # ============================================================
   describe 'AC-012 — 面包屑无重复层级 + 单一颜色契约' do
-    # Orders 下的工作台页：推导链必须是恰好「Orders > 子项」，
-    # 控制器不得再手写模块/子页 crumb（否则会出现 Orders > X > Orders > X）。
-    ORDERS_CHILD_LABELS = {
+    # Fund 下的工作台页：推导链必须是恰好「Fund > 子项」，
+    # 控制器不得再手写模块/子页 crumb（否则会出现 Fund > X > Fund > X）。
+    # ⚠️ /admin/payment_risk 暂不在矩阵内：并行会话未提交的 worktree 版
+    # payment_risk_controller.rb 重新手写了「Orders > Payment Risk」crumb，
+    # 会与本迁移的 Fund 层级叠加（Fund > Payment risk > Orders > Payment risk）。
+    # 本任务不触碰对方文件；待其收尾后把该页面补回本矩阵。
+    FUND_CHILD_LABELS = {
       '/admin/currency_rates' => 'admin.currency_rates.title',
       '/admin/fx_snapshots' => 'admin.fx_snapshots.title',
       '/admin/payment_costs' => 'admin.payment_costs.title',
       '/admin/payment_fee_policies' => 'admin.payment_fee_policies.title',
-      '/admin/payment_risk' => 'admin.payment_risk.title',
       '/admin/payouts' => 'admin.payouts.title',
       '/admin/reconciliation_cases' => 'admin.reconciliation_cases.title',
       '/admin/refund_approvals' => 'admin.refund_approvals.title',
@@ -441,11 +440,11 @@ RSpec.describe 'Admin navigation (P6 unified sidebar: landing + tabs + config)',
       breadcrumb_items.map { |li| li.text.strip }
     end
 
-    it '每个 Orders 工作台页只给一条「Orders > 子项」（无重复层级）' do
-      ORDERS_CHILD_LABELS.each do |path, key|
+    it '每个 Fund 工作台页只给一条「Fund > 子项」（无重复层级）' do
+      FUND_CHILD_LABELS.each do |path, key|
         get path
         expect(response).to have_http_status(:ok), "#{path} 未渲染"
-        expect(breadcrumb_labels).to eq([PallasTrade.t(:orders), PallasTrade.t(key)]),
+        expect(breadcrumb_labels).to eq([PallasTrade.t('admin.fund.title'), PallasTrade.t(key)]),
                                      "#{path} 面包屑层级错误：#{breadcrumb_labels.inspect}"
       end
     end

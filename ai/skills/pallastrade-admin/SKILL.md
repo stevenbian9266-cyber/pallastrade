@@ -140,6 +140,35 @@ PallasTrade.admin.navigation.sidebar.update :products, position: 5
 
 The full nav API is in `pallastrade/admin/app/models/pallastrade/admin/navigation.rb` if you need to read the source.
 
+### 分区折叠（collapsible section，2026-09-18）
+
+分区标题（`section_label`）可声明 `collapsible: true`，渲染为**收起 / 展开开关**：
+
+```ruby
+sidebar_nav.add :settings_section, section_label: 'Settings', collapsible: true, position: 90
+```
+
+- **作用域**：开关切换「该分区标题**之后**直到下一个分区标题」的**全部同级元素** ——
+  包含带子菜单项产生的 `ul.nav-submenu` / `ul.nav-submenu-dropdown`（它们是 `<li>` 的
+  **兄弟节点**、不在 `<li>` 内），因此按「同级元素」整体收起即可，**不要**给条目逐项打标。
+- **交互**（`sidebar_controller.js`）：`toggleSection` 把状态写入
+  `localStorage['pallastrade_admin_nav_section_<key>']`（缺省展开）；`connect()` 时
+  `restoreSectionStates` 恢复；**当前页落在该分区内**（DOM 内存在 `.nav-link.active`）时
+  **强制展开**，优先于记忆状态；无 JS 时保持展开（渐进增强）。
+- **样式**：`.nav-section-toggle-btn` / `.nav-section-chevron`（`_layout.css`），颜色走语义 token。
+- icon-only 折叠态只保留分区分隔线，隐藏开关箭头。
+
+### 资金域一级菜单 Fund（2026-09-18）
+
+资金 / 支付 / 风控工作台统一挂 `Fund`（`label: 'admin.fund.title'`、icon `wallet`、`position: 22`、
+`landing: :transactions`）：交易 → 支付 → 组合支付 → 退款 → 退款审批 → 争议 → 拒付率 →
+对账队列 → 结算台账 → 汇率表 → 汇率快照 → 支付成本 → 费率策略 → 风控名单 → 风控规则 → 风控看板。
+
+- 新增**资金类**后台页应挂到 `Fund` 下（不要塞进 `Orders`）；面包屑随之自动变为 `Fund > 子项`，
+  控制器**零改动**（禁止手写模块 crumb）。
+- `Orders` 只保留订单作业（All Orders / Orders to Fulfill / Draft Orders）。
+- 顶级可见性 = 资金域任一权限（任一子项可见则 Fund 可见，避免出现空组）。
+
 ## Breadcrumbs & page headers（统一单一侧边栏规范，2026-08，P6 起）
 
 **2026-08（P3 起）面包屑由导航配置自动推导，P6 起主区/设置区统一为单一 sidebar 树，
