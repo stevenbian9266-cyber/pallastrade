@@ -1249,6 +1249,22 @@ The webhook arrived before the storefront's redirect-back, OR the PaymentSession
 - **下发通道**：store `CheckoutSerializer.payment.available_payment_methods[].client_config` + store `PaymentMethodSerializer`（cart / order / shopping_cart）→ admin 序列化器继承同字段（publishable 非密）。
 - 回归：`harness verify d10-client-config-rspec`；前端 `storefront-test`。
 
+### Stripe 开发者工具入口必须关闭（2026-09-18；PRD-20260918-payments-隐藏-stripe-elements-开发者工具入口）
+
+测试密钥（`pk_test_…`）下 Stripe.js 会向**结账页右下角**注入一个悬浮的 **Stripe Developer Tools**（黑色按钮 + 面板：填测试卡 / 模拟失败 / 事件）。
+它**不是我们的代码**：iframe 标题常量 `title.easel = "Stripe developer tools frame"`、按钮 aria-label `Open Stripe Developer Tools`；
+注入条件是 `window.top === window` + `keyMode() === "test"` + 组件名单 + `developerToolsOptions.assistant.enabled`。
+Stripe 自述「仅开发环境显示、客户不会看到」，但 dev / staging / 预发都用测试密钥，演示与验收会误判为产品缺陷。
+
+- **关闭方式（唯一正确做法）**：`loadStripe(pk, { developerTools: { assistant: { enabled: false } } })` / `Stripe(pk, {…})`。
+  `developerTools` 是 `@stripe/stripe-js` `StripeConstructorOptions` 的公开字段（无需类型断言）；Stripe.js 内部
+  `undefined !== e.assistant.enabled ? 采用用户值（上报 easel.user_set_easel_option） : 默认值` —— 显式 `false` 会被尊重。
+- **禁止 CSS/DOM 屏蔽**：该浮层属 Stripe 的 **Easel** UI 体系（`<hash>__Easel-contentWrapper`），类名 hash 随 Stripe.js 版本漂移，
+  且同一体系承载**真实支付面**（卡表单 / 钱包 / 弹层）——盲屏蔽会把支付 UI 一并弄挂。
+- **全仓两处实例化点必须同修**：① `storefront/src/lib/utils/stripe.ts` 的 `STRIPE_DEVELOPER_TOOLS_DISABLED`（前台单例 `getStripePromise`）；
+  ② `platform/payments/pallastrade_stripe/app/javascript/.../stripe_button_controller.js`（Stimulus，`loadStripe` 与全局 `Stripe` 两条分支）。
+- 回归：`storefront-test`（`stripe-client-config.test.ts` 断言必须传该选项 + 密钥双路径 + 缓存语义）。
+
 ## Webhook 治理 — 入站事件运营面（D12 首版, 2026-09-15；PRD-20260915-payments-d12-webhook-governance）
 
 business方案 §69：把「已具备但看不见」的入站事件变成可看/可筛/可处置（排障不再写 SQL）。

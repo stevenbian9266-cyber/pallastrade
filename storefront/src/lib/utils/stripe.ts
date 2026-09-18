@@ -1,4 +1,30 @@
-import { loadStripe, type Stripe } from "@stripe/stripe-js";
+import {
+  loadStripe,
+  type Stripe,
+  type StripeConstructorOptions,
+} from "@stripe/stripe-js";
+
+/**
+ * PRD-20260918-payments-隐藏-stripe-elements-开发者工具入口（2026-09-18）——
+ * 关闭 Stripe.js 在**测试模式**下注入的开发者工具浮层（右下角黑色按钮 + 面板）。
+ *
+ * 为什么必须关：dev / staging / 预发均使用测试密钥（`pk_test_…`），Stripe.js 会注入
+ * "Stripe developer tools"（iframe 标题 `Stripe developer tools frame`，按钮 aria-label
+ * `Open Stripe Developer Tools`）。Stripe 自述「仅开发环境显示，客户不会看到」，但演示、
+ * 录屏、验收时会被误认为产品缺陷；且团队对页面右下角冒出未知控件有安全/合规疑虑。
+ *
+ * 为什么用这个选项而不是 CSS 隐藏：该浮层属于 Stripe 的 Easel UI 体系
+ * （`<hash>__Easel-contentWrapper`），类名 hash 随 Stripe.js 版本漂移，且同一体系还承载
+ * **真实支付面**（卡表单 / 钱包 / 弹层）—— 盲屏蔽会把支付 UI 一并弄挂。
+ * `developerTools` 是 `@stripe/stripe-js` 的 `StripeConstructorOptions` 公开字段；
+ * Stripe.js 内部逻辑为 `undefined !== e.assistant.enabled ? 采用用户值（上报
+ * easel.user_set_easel_option） : 默认值`，因此显式传 `false` 会被尊重。
+ *
+ * 需要临时恢复调试能力：把 `enabled` 改回 `true`（或移除该选项）即可，仅影响本机。
+ */
+export const STRIPE_DEVELOPER_TOOLS_DISABLED: StripeConstructorOptions = {
+  developerTools: { assistant: { enabled: false } },
+};
 
 /**
  * PALLAS-CUSTOM: D10（PRD-20260915-payments-d10-client-config）——
@@ -54,7 +80,7 @@ export function getStripePromise(
   const cached = stripePromises.get(publishableKey);
   if (cached) return cached;
 
-  const created = loadStripe(publishableKey);
+  const created = loadStripe(publishableKey, STRIPE_DEVELOPER_TOOLS_DISABLED);
   stripePromises.set(publishableKey, created);
   return created;
 }

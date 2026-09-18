@@ -13,6 +13,14 @@ const ZERO_DECIMAL_CURRENCIES = new Set([
 // drives address + shipping selection against `/api/v3/store/carts`, then a
 // payment session is created and confirmed; completion is handled server-side by
 // ConfirmPaymentsController via the `return_url` (same as the regular flow).
+
+// PRD-20260918-payments-隐藏-stripe-elements-开发者工具入口（2026-09-18）——
+// 测试密钥下 Stripe.js 会向结账页右下角注入开发者工具浮层（Easel UI：
+// iframe `Stripe developer tools frame` + 黑色按钮）。它属 Stripe 自有 UI，
+// 类名 hash 随版本漂移且同体系承载**真实支付面**，因此**不得**用 CSS 屏蔽；
+// `developerTools` 是官方 `StripeConstructorOptions` 字段，显式传 `false` 会被尊重。
+// 临时恢复调试：改为 `enabled: true` 或删本选项。
+const DEVELOPER_TOOLS_DISABLED = { developerTools: { assistant: { enabled: false } } }
 export default class extends Controller {
   static values = {
     apiKey: String,
@@ -43,12 +51,12 @@ export default class extends Controller {
 
   initStripe() {
     if (typeof Stripe === 'undefined') {
-      loadStripe(this.apiKeyValue).then((stripe) => {
+      loadStripe(this.apiKeyValue, DEVELOPER_TOOLS_DISABLED).then((stripe) => {
         this.stripe = stripe
         this.prepareExpressCheckoutElement()
       })
     } else if (typeof this.stripe !== 'function') {
-      this.stripe = Stripe(this.apiKeyValue)
+      this.stripe = Stripe(this.apiKeyValue, DEVELOPER_TOOLS_DISABLED)
       this.prepareExpressCheckoutElement()
     }
   }
