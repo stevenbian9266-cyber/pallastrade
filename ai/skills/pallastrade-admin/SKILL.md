@@ -140,7 +140,7 @@ PallasTrade.admin.navigation.sidebar.update :products, position: 5
 
 The full nav API is in `pallastrade/admin/app/models/pallastrade/admin/navigation.rb` if you need to read the source.
 
-### 分区折叠（collapsible section，2026-09-18）
+### 分区折叠（collapsible section，2026-09-18；v1.1 行为修正）
 
 分区标题（`section_label`）可声明 `collapsible: true`，渲染为**收起 / 展开开关**：
 
@@ -148,15 +148,37 @@ The full nav API is in `pallastrade/admin/app/models/pallastrade/admin/navigatio
 sidebar_nav.add :settings_section, section_label: 'Settings', collapsible: true, position: 90
 ```
 
-- **作用域**：开关切换「该分区标题**之后**直到下一个分区标题」的**全部同级元素** ——
+**v1.1 目标行为（用户实测反馈后收敛，新实现必须按此）**
+
+| # | 行为 |
+|---|---|
+| 1 | **默认收起**（首次进入后台不显示分区内条目）；分区行有 chevron 图标，点击切换；状态记忆在 `localStorage['pallastrade_admin_nav_section_<key>']` |
+| 2 | 展开后**只显示二级条目**；三级保持各自收起状态 |
+| 3 | 二级条目被点击 = **导航到其落地页 + 展开其三级**（首个三级即落地页，成为当前项）；**分区内不渲染任何箭头 icon**（只有分区标题有 chevron） |
+| 4 | 各二级项的三级**互不影响**（不做手风琴）；**只对 Settings 分区生效**，主区菜单行为不变 |
+| 5 | 当前页落在分区内 → **自动展开到当前页**（服务端 + JS 双保险） |
+| 6 | **永不显形 `ul.nav-submenu-dropdown`**（`.dropdown-container` 是 `position:absolute` + 阴影的浮层，只服务 icon-only 模式的 hover） |
+
+**实现要点**
+
+- **作用域**：开关作用范围 = 「分区标题**之后**直到下一个分区标题」的**同级元素** ——
   包含带子菜单项产生的 `ul.nav-submenu` / `ul.nav-submenu-dropdown`（它们是 `<li>` 的
-  **兄弟节点**、不在 `<li>` 内），因此按「同级元素」整体收起即可，**不要**给条目逐项打标。
-- **交互**（`sidebar_controller.js`）：`toggleSection` 把状态写入
-  `localStorage['pallastrade_admin_nav_section_<key>']`（缺省展开）；`connect()` 时
-  `restoreSectionStates` 恢复；**当前页落在该分区内**（DOM 内存在 `.nav-link.active`）时
-  **强制展开**，优先于记忆状态；无 JS 时保持展开（渐进增强）。
-- **样式**：`.nav-section-toggle-btn` / `.nav-section-chevron`（`_layout.css`），颜色走语义 token。
-- icon-only 折叠态只保留分区分隔线，隐藏开关箭头。
+  **兄弟节点**、不在 `<li>` 内）。
+- **显隐规则（关键，v1.0 缺陷点）**：分区状态**只切换二级 `<li>`**；三级 `ul.nav-submenu` 仅在
+  **收起时**隐藏并打 `data-nav-section-restore="true"` 记录原状态，展开时**只恢复被自己隐藏过的**；
+  `ul.nav-submenu-dropdown` **永不被显性化**。旧实现用
+  `classList.toggle('hidden', collapsed)` 无差别切换同级元素，展开时把浮层容器一起放开
+  → 侧边栏出现菜单浮层（已修复，不得回归）。
+- **服务端也参与**：`navigation_helper#section_collapse_plan` 计算每个可折叠分区是否收起（含激活项 →
+  展开）；收起态下分区内条目的 `<li>` 直接带 `hidden`（首屏不闪烁）；分区行输出
+  `data-nav-section-collapsed` 供 chevron 首帧旋转（`true` → `-rotate-90`）。
+- **JS**：`sidebar_controller.js` 的 `applySectionState` / `restoreSectionStates`；默认收起 =
+  `localStorage 值 !== 'false'`，且**含激活项时强制展开**。
+- **样式**：`.nav-section-toggle-btn` / `.nav-section-chevron`（`_layout.css`），颜色走语义 token；
+  icon-only 折叠态只保留分区分隔线并隐藏开关箭头。
+- **验证**：服务端断言在 `spec/requests/pallastrade/admin/nav_collapsible_fund_spec.rb`
+  （AC-001 / AC-010 / AC-011）；**客户端行为必须真机验证**，且修改 `app/javascript/**` 后
+  **必须重启本地容器** —— 资源管线热缓存会继续下发旧 JS，导致验证结论失真。
 
 ### 资金域一级菜单 Fund（2026-09-18）
 

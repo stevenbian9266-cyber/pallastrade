@@ -36,7 +36,7 @@ export default class extends Controller {
       this.element.classList.remove("sidebar-collapsed");
     }
 
-    // Restore collapsible section state (default expanded; active section forced open)
+    // Restore collapsible section state (v1.1: default collapsed; active section forced open)
     this.restoreSectionStates();
 
     // Re-enable transitions after initial state is set
@@ -84,11 +84,14 @@ export default class extends Controller {
     }
   }
 
-  // PALLAS-CUSTOM: 导航分区收起 / 展开（2026-09-18）
-  // 作用域 = 分区标题（[data-nav-section-toggle]）之后的**同级元素**，直到下一个
-  // 分区标题（或列表结束）。该范围既含普通 <li>，也含带子菜单项产生的
-  // <ul class="nav-submenu"> / <ul class="nav-submenu-dropdown"> 兄弟节点，
-  // 因此按「同级元素」整体收起即可，无需逐项打标。
+  // PALLAS-CUSTOM: 导航分区收起 / 展开（2026-09-18，v1.1 行为修正）
+  // 作用域 = 分区标题（[data-nav-section-toggle]）之后的**同级元素**，直到下一个分区标题。
+  // 该范围含三类节点，处理方式严格区分：
+  //   1. 二级条目 <li class="nav-item">            → 按分区状态显隐
+  //   2. 三级菜单 <ul class="nav-submenu">          → 收起时隐藏并记录「原为展开」，展开时仅恢复这些
+  //   3. hover 下拉 <ul class="nav-submenu-dropdown">→ **永不显形**（.dropdown-container 是绝对定位浮层，
+  //      只服务 icon-only 模式的鼠标悬停，绝不能因分区展开而被显性化）
+  // 默认值：**收起**（除非分区内含当前激活项，或用户上次显式展开）。
   sectionStorageKey(key) {
     return `pallastrade_admin_nav_section_${key}`;
   }
@@ -107,6 +110,24 @@ export default class extends Controller {
     const key = toggle.dataset.navSectionToggle;
 
     this.sectionElements(toggle).forEach((element) => {
+      // 3) hover 浮层容器：任何分区操作都不得动它（保持服务端渲染的 hidden）
+      if (element.classList.contains("nav-submenu-dropdown")) return;
+
+      // 2) 三级菜单：收起时隐藏 + 记录原状态；展开时仅恢复被自己隐藏过的
+      if (element.classList.contains("nav-submenu")) {
+        if (collapsed) {
+          if (!element.classList.contains("hidden")) {
+            element.dataset.navSectionRestore = "true";
+            element.classList.add("hidden");
+          }
+        } else if (element.dataset.navSectionRestore === "true") {
+          delete element.dataset.navSectionRestore;
+          element.classList.remove("hidden");
+        }
+        return;
+      }
+
+      // 1) 二级条目
       element.classList.toggle("hidden", collapsed);
     });
 
@@ -130,17 +151,18 @@ export default class extends Controller {
     document.querySelectorAll("[data-nav-section-toggle]").forEach((toggle) => {
       const key = toggle.dataset.navSectionToggle;
 
-      // 当前页落在该分区内 → 强制展开（优先于记忆状态），否则用上次记忆
+      // 当前页落在该分区内 → 强制展开（优先于记忆状态）
       const hasActiveItem = this.sectionElements(toggle).some((element) =>
         element.querySelector(".nav-link.active")
       );
 
+      // v1.1：无激活项时默认收起；仅当用户上次显式展开（记忆值 === "false"）才展开
       let collapsed = false;
       if (!hasActiveItem && key) {
         try {
-          collapsed = localStorage.getItem(this.sectionStorageKey(key)) === "true";
+          collapsed = localStorage.getItem(this.sectionStorageKey(key)) !== "false";
         } catch (_error) {
-          collapsed = false;
+          collapsed = true;
         }
       }
 

@@ -412,8 +412,9 @@
     @apply hidden;
   }
 
-  /* PALLAS-CUSTOM: 分区收起 / 展开开关（2026-09-18）—— Settings 分区。
-     `data-nav-section-collapsed` 由 sidebar Stimulus 控制器维护（默认 false = 展开）。 */
+  /* PALLAS-CUSTOM: 分区收起 / 展开开关（2026-09-18，v1.1 行为修正）—— Settings 分区。
+     `data-nav-section-collapsed` 由服务端首次渲染 + sidebar Stimulus 控制器维护
+     （v1.1 默认 true = 收起；分区内含当前页或用户上次显式展开时为 false）。 */
   .nav-section-toggle-btn {
     @apply flex w-full items-center gap-1 p-0 border-0 bg-transparent uppercase font-light text-sm text-text-subtle cursor-pointer transition-colors duration-150;
   }

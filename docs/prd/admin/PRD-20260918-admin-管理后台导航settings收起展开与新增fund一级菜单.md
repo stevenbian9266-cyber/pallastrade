@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | done |
+| 状态 | implementing |
 | 创建日期 | 2026-09-18 |
 | 来源 | 优化：管理后台导航Settings收起展开与新增Fund一级菜单 |
 | 分类 | admin（自动判定，关键词命中 3） |
@@ -158,6 +158,48 @@
 - [ ] `docs/prd/README.md`：登记本 PRD 索引
 - [ ] `harness sync-check --id <PRD-ID>` → `--ack`
 
+## 11. 行为修正 v1.1（2026-09-18，用户实测反馈）
+
+> 背景：v1.0 交付后用户反馈「Settings 展开时出现菜单浮层」「默认应为收起」「展开后应先只显示二级」。
+> 本节覆盖 v1.0 中与之冲突的表述（FR-003 / FR-004 / AC-008）。
+
+**修正后的目标行为（用户答复原文为准）**
+
+| # | 行为 |
+|---|---|
+| A | Settings **默认收起**（首次进入不显示分区内条目）；分区行有**方向图标**，点击切换展开/收起 |
+| B | 展开后**只显示二级菜单**；三级保持收起（不出现 hover 浮层） |
+| C | 点击二级菜单 = **导航到落地页（即第一个三级）并展开其三级菜单**（默认显示第一个三级）；**分区内不出现任何箭头 icon** |
+| D | 多个二级项的三级可**同时展开**（互不影响，不做手风琴） |
+| E | 当前页在 Settings 内 → **自动展开到当前页**（分区展开 + 当前子树展开 + 当前项高亮） |
+| F | **适用范围仅 Settings 分区**；主区菜单（Orders / Fund / Products / …）行为不变 |
+| G | 任何情况下**不得出现 `.nav-submenu-dropdown` 浮层**（该容器只服务 icon-only 模式的 hover 下拉，必须始终 `hidden`） |
+
+**根因（v1.0 缺陷）**：`sidebar_controller.js#applySectionState` 对分区内全部同级元素做
+`classList.toggle("hidden", collapsed)` —— 展开时（`collapsed=false`）把 `hidden` 从
+`ul.nav-submenu`（三级）与 `ul.nav-submenu-dropdown`（`.dropdown-container`：`position:absolute`
++ 白底 + 阴影 + `popIn` 动画）上**摘掉**，于是三级全部展开且 hover 浮层显形。
+
+**修复要点**：分区显隐只作用于二级 `<li>`；三级 `ul.nav-submenu` 仅在收起时隐藏并记录原状态、
+展开时**按原状态恢复**；`ul.nav-submenu-dropdown` 永不被显性化；默认值反转（服务端
+`aria-expanded="false"`，且分区内条目在「无激活项」时服务端即渲染 `hidden`，避免首屏闪烁）；
+控件与交互范围限在 Settings 分区。
+
+**AC-010** ← A/B/E/G：`/admin/orders` 首次渲染 Settings 收起（`aria-expanded="false"` + 分区内 `<li>` 带 `hidden`），页面内**无可见** `.dropdown-container`；`/admin/policies` 渲染时分区自动展开且仅二级可见。
+**AC-011** ← C/D/F：二级项（Users）点击 = 导航到其首个三级且该三级展开；主区菜单 DOM/行为与 v1.0 一致（分区开关不作用于主区）。
+
+**验证记录（真机，2026-09-18）**
+
+| 阶段 | 实测（localhost:3000，真实登录 + 真实资源） |
+|---|---|
+| 首访 `/admin/orders` | `data-nav-section-collapsed=true`、`aria-expanded=false`、chevron `rotate:-90deg`、二级可见 0/19、浮层可见 **0** |
+| 点击展开 | 二级可见 19/19、**三级可见 0**、`.dropdown-container` 可见 **0**、绝对定位 `ul` 可见 **0**（截图核对无浮层） |
+| 点击二级 Users | 跳转 `/admin/admin_users`；分区自动展开；`nav-submenu-users` 可见且首项 `nav_link-admin_users` 为 `.active`；其余子树保持收起；浮层仍为 0 |
+
+验证过程中发现并修复了两个仅真机可见的问题（服务端 spec 无法覆盖）：
+1. **JS 默认值分支写反**：包含激活项时反而把分区收起（与 AC-010 的"自动展开到当前页"相反）；
+2. **资源管线缓存旧 JS**：修改 `app/javascript/**` 后不重启容器，验证会拿到旧控制器 → 结论失真（已写入 Skill 的验证提醒）。
+
 ## 10. 变更记录
 
 | 日期 | 版本 | 变更 | 操作者 |
@@ -165,3 +207,4 @@
 | 2026-09-18 | 0.1 | 初稿：需求拆解 + 现状核查 + 6 层跨层搜索 + AC/测试映射 + 并行冲突评估 | AI |
 | 2026-09-18 | 0.2 | 用户确认（approved）；实施完成：nav 配置/Item/渲染器/JS/CSS/i18n/两个 spec；新增场景 GS-186；补充 AC-008 实证方式与支付页面包屑遗留项 | AI |
 | 2026-09-18 | 1.0 | done：提交 c3458b5a（14 files, +803/-100）；门禁 GATE-2026-09-18T14-42-22 完结（三个注册验证器 + 知识评估 12/10 + 证据验证通过）；知识同步门 sync-check --ack 已确认 | AI |
+| 2026-09-18 | 1.1 | 行为修正（用户实测反馈）：默认收起；展开仅二级；消除 hover 浮层；分区内无箭头 icon；仅 Settings 生效；手风琴关闭 | AI |

@@ -7,8 +7,8 @@ module PallasTrade
       # @param [String, nil] icon Optional icon name to prepend to the label
       # @param [Boolean, nil] active Whether the link should be marked as active
       # @return [SafeBuffer] The navigation item HTML
-      def nav_item(label = nil, url, icon: nil, active: nil, data: {}, **options)
-        content_tag :li, class: 'nav-item', role: 'presentation' do
+      def nav_item(label = nil, url, icon: nil, active: nil, data: {}, li_class: nil, **options)
+        content_tag :li, class: ['nav-item', li_class].compact.join(' '), role: 'presentation' do
           if block_given?
             active_link_to url, class: 'nav-link', active: active, data: data, **options do
               yield
@@ -367,17 +367,58 @@ module PallasTrade
       def render_navigation_items(items, context)
         return ''.html_safe if items.empty?
 
+        owner, section_state = section_collapse_plan(items)
+
         content_tag :ul, class: 'nav flex-col' do
-          safe_join(items.map { |item| render_navigation_item(item, context) })
+          safe_join(items.each_with_index.map do |item, index|
+            key = owner[index]
+            collapsed = key.present? && section_state[key]
+
+            render_navigation_item(
+              item,
+              context,
+              collapsed_section: collapsed ? key : nil,
+              section_collapsed: key.present? ? collapsed : nil
+            )
+          end)
         end
+      end
+
+      # PALLAS-CUSTOM: 可折叠分区的收起状态（2026-09-18，v1.1 行为修正）
+      # 服务端即决定分区内条目是否带 hidden，避免「先展开后收起」的首屏闪烁；
+      # 分区内存在激活项（当前页在该分区内）→ 保持展开（当前页自动展开到当前页）。
+      # 注：仅作用于分区内的**二级条目**；三级 ul.nav-submenu 仍由激活态自行决定显隐，
+      # hover 下拉容器（ul.nav-submenu-dropdown）始终保持 hidden。
+      # @return [Array(Array<Symbol,nil>, Hash{Symbol=>Boolean})]
+      #   owner = 与 items 等长的「归属分区 key（仅可折叠分区，标题行归属自身）」
+      #   section_state = 各可折叠分区是否处于收起态
+      def section_collapse_plan(items)
+        owner = Array.new(items.length)
+        collapsed = {}
+        current = nil
+
+        items.each_with_index do |item, index|
+          if item.section?
+            current = item.collapsible? ? item.key : nil
+            owner[index] = current
+            collapsed[current] = true if current
+          elsif current
+            owner[index] = current
+            collapsed[current] = false if item.active?(request.path, self)
+          end
+        end
+
+        [owner, collapsed]
       end
 
       # Renders a single navigation item
       # @param item [PallasTrade::Admin::Navigation::Item] the navigation item
       # @param context [Symbol] the navigation context
+      # @param collapsed_section [Symbol, nil] 归属的「已收起」分区 key（该条目服务端渲染 hidden）
+      # @param section_collapsed [Boolean, nil] 分区标题自身的收起状态（aria-expanded / chevron）
       # @return [SafeBuffer] the rendered HTML
-      def render_navigation_item(item, context)
-        return render_nav_section_header(item) if item.section?
+      def render_navigation_item(item, context, collapsed_section: nil, section_collapsed: nil)
+        return render_nav_section_header(item, collapsed: section_collapsed.nil? ? true : section_collapsed) if item.section?
 
         item_url = item.resolve_url(self)
         item_label = item.resolve_label
@@ -407,9 +448,11 @@ module PallasTrade
         complete_label = build_nav_label(item_label, badge_value, item.badge_class, tooltip_text)
 
         if has_children
-          render_nav_item_with_children(item, complete_label, item_url, item_label, is_active, data_attrs, html_options, context)
+          render_nav_item_with_children(item, complete_label, item_url, item_label, is_active, data_attrs, html_options, context,
+                                        hidden: collapsed_section.present?)
         else
-          nav_item(complete_label, item_url, icon: item.icon, active: is_active, data: data_attrs, **html_options)
+          nav_item(complete_label, item_url, icon: item.icon, active: is_active, data: data_attrs,
+                   li_class: ('hidden' if collapsed_section.present?), **html_options)
         end
       end
 
@@ -449,22 +492,22 @@ module PallasTrade
       end
 
       # Renders a section header
-      # PALLAS-CUSTOM: 分区折叠（2026-09-18）——`collapsible: true` 的分区渲染为
-      # 收起 / 展开开关（button + `aria-expanded` + `data-nav-section-toggle`），
-      # 由 sidebar Stimulus 控制器切换「该标题之后直到下一个分区标题」的全部
-      # 同级元素显隐（含带子菜单项产生的 nav-submenu / nav-submenu-dropdown）。
-      # 非折叠分区保持原样（纯视觉分隔线）。
+      # PALLAS-CUSTOM: 分区折叠（2026-09-18，v1.1 行为修正）——`collapsible: true` 的分区渲染为
+      # 收起 / 展开开关（button + `aria-expanded` + `data-nav-section-toggle`），**默认收起**，
+      # 由 sidebar Stimulus 控制器切换分区内**二级条目**的显隐（三级保持各自收起状态；
+      # hover 下拉容器永不显形）。非折叠分区保持原样（纯视觉分隔线）。
+      # @param collapsed [Boolean] 首次渲染是否收起（服务端默认收起；分区含激活项时展开）
       # @return [SafeBuffer] the section header HTML
-      def render_nav_section_header(item)
+      def render_nav_section_header(item, collapsed: true)
         return render_nav_section_label(item) unless item.collapsible?
 
         content_tag :li, class: 'nav-item nav-section-header nav-section-toggle mt-4 border-t pt-4 pl-2',
-                    data: { nav_section_toggle: item.key } do
+                    data: { nav_section_toggle: item.key, nav_section_collapsed: collapsed ? 'true' : 'false' } do
           content_tag :button,
                       type: 'button',
                       class: 'nav-section-toggle-btn text-text-subtle uppercase font-light text-sm',
                       title: PallasTrade.t('admin.nav_section_toggle_hint'),
-                      aria: { expanded: 'true' },
+                      aria: { expanded: collapsed ? 'false' : 'true' },
                       data: { action: 'click->sidebar#toggleSection' } do
             safe_join([
                         content_tag(:span, item.section_label),
@@ -483,8 +526,9 @@ module PallasTrade
       end
 
       # Renders a nav item that has children (with submenu)
+      # @param hidden [Boolean] 归属的折叠分区处于收起态时，服务端即渲染 hidden（首屏不闪烁）
       # @return [SafeBuffer] the nav item with submenu HTML
-      def render_nav_item_with_children(item, complete_label, item_url, item_label, is_active, data_attrs, html_options, context)
+      def render_nav_item_with_children(item, complete_label, item_url, item_label, is_active, data_attrs, html_options, context, hidden: false)
         # PALLAS-CUSTOM: 菜单权限过滤（P3 权限体系重构）
         # DB 驱动角色按菜单权限过滤子项；否则按代码 if: 条件。
         visible_children = item.children.select do |child|
@@ -493,7 +537,8 @@ module PallasTrade
         return '' if visible_children.empty? && !menu_granted?(item)
 
         # Main nav item
-        main_item = nav_item(complete_label, item_url, icon: item.icon, active: is_active, data: data_attrs, **html_options)
+        main_item = nav_item(complete_label, item_url, icon: item.icon, active: is_active, data: data_attrs,
+                             li_class: ('hidden' if hidden), **html_options)
 
         # Submenu for expanded sidebar (only shown when active)
         submenu = content_tag :ul, class: "nav-submenu#{' hidden' unless is_active}", id: "nav-submenu-#{item.key}" do
