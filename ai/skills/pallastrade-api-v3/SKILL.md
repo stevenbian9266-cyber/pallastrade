@@ -760,8 +760,11 @@ store 侧支付方式 payload 的 **additive** 字段（不新增端点、不改
     `group`（`card`|`wallet`|`redirect`|`manual`）/ `position`；**有序**（= 后台排序），集合 = `Availability::Resolver.available_option_kinds`
     （无订单上下文时不过滤，安全降级）。
   - `group` / `position`（provider 级，取首个生效入口）。
-- store `PaymentMethodSerializer`（cart / order / shopping_cart 同族）：新增 `group` / `position`；
-  **不下发 `entries`**（该通道无订单上下文，无法与 Start 同源求值 —— 避免「看得到、付不了」）。
+- store `PaymentMethodSerializer`（cart / order / shopping_cart 同族）：新增 `group` / `position` **与 `entries[]`**。
+  ⚠️ 该通道**没有订单上下文**，所以入口列表是「已配置且启用」的集合（**不过滤**）——
+  前台因此能显示 Apple Pay / Google Pay；真正的可用性判定仍在 `PaymentSessions::Start`（带订单上下文，D8/D11/D15c 同源），
+  被拒 → `422 payment_option_not_available` → 前台刷新列表 + 提示重选。
+  （checkout 通道的 `entries[]` 才是带订单上下文的**过滤后**集合；两者字段形状一致。）
 
 **请求（additive）**：三处创建支付会话的端点接受 `option_kind`（缺省 = provider 默认入口，零回归）——
 

@@ -100,7 +100,10 @@ New `Cart` entity (`pallastrade_carts`) plus order-domain payments:
 - **响应类型（Typelizer 生成，勿手改）**：
   - `StoreCheckoutCheckout.payment.available_payment_methods[]` 新增 `entries[]`（`option_id` / `method_key` / `display_name` /
     `frontend_kind` / `group` / `position`）+ provider 级 `group` / `position`；
-  - `PaymentMethod` 新增 `group` / `position`（cart / order 通道**不下发** `entries` —— 无订单上下文，无法与 Start 同源求值）。
+  - `PaymentMethod` 新增 `group` / `position` / `entries` —— **cart / order 通道也下发 `entries`**（购物车单页结账需要的入口列表）；
+    该通道无订单上下文 → 入口集合为「已配置且启用」的**未过滤**集合，可用性仍由 Start 带订单上下文复算。
+  - ⚠️ 手写类型扩展**不要 `extends`** 后再把生成契约的必填字段写成 `?:`（TS2430，CI 才暴露）——用
+    `extends Omit<Base, "group" | "position" | "entries">` + 可选重声明。
 - **失败语义**：不可用入口 → `422 payment_option_not_available`（cart legacy 为 `validation_error`），**零 session 行**；
   `PallasTradeError.code` 透出，UI 按 D8 约定刷新列表 + 提示重选。
 - 类型再生成走 `bash scripts/ci/contracts.sh`（Typelizer + platform 副本），随后 `harness generated:check` 必须零漂移。

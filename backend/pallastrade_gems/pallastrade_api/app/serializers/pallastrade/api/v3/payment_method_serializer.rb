@@ -7,6 +7,8 @@ module PallasTrade
                  kind: :string, frontend_kind: :string,
                  option_id: :string, method_key: :string, display_name: :string,
                  group: :string, position: :number,
+                 entries: 'Array<{ option_id: string, method_key: string, display_name: string, ' \
+                          'frontend_kind: string, group: string, position: number }>',
                  client_config: '{ provider: string, environment: string | null, ' \
                                  'publishable: Record<string, string>, session_token: string | null }'
 
@@ -40,15 +42,22 @@ module PallasTrade
 
         # PALLAS-CUSTOM: D7（PRD-20260918-payments-d7-payment-section-express；§76.1）——
         # 入口分组与顺序（前台支付区按组渲染、按 position 排序）。
-        # ⚠️ 本通道（cart / order 的 `payment_methods[]`）**不**下发 `entries[]`：入口级集合
-        # 需要订单上下文才能与 `Resolver` 同源；权威入口列表在 checkout 通道
-        # （`payment.available_payment_methods[].entries`）。
         attribute :group do |payment_method|
           payment_method.option_group
         end
 
         attribute :position do |payment_method|
           payment_method.effective_payment_option['position'].to_i
+        end
+
+        # PALLAS-CUSTOM: D7 补口（2026-09-18）—— **入口级列表**也要下发到 cart / order 通道：
+        # 购物车单页结账（`cart.payment_methods`）与抽屉都读这条通道，之前只下发了
+        # provider 级单入口 → 前台只能显示一行（Apple Pay / Google Pay 看不见）。
+        # ⚠️ 本通道**没有订单上下文**，因此入口列表是「已配置且启用」的集合（不过滤）——
+        # 真正的可用性判定仍在 `PaymentSessions::Start`（带订单上下文，D8/D11/D15c 同源），
+        # 被拒 → 422 `payment_option_not_available` → 前台刷新列表 + 提示重选（既有约定）。
+        attribute :entries do |payment_method|
+          payment_method.payment_option_entries
         end
 
         attribute :method_key do |payment_method|

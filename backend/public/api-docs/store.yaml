@@ -13676,6 +13676,8 @@ components:
           type: string
         position:
           type: number
+        entries:
+          type: object
         method_key:
           type: string
         display_name:
@@ -13695,6 +13697,7 @@ components:
       - option_id
       - group
       - position
+      - entries
       - method_key
       - display_name
       - source_required

@@ -91,4 +91,39 @@ RSpec.describe 'D7 checkout entries projection' do
     expect(entry[:entries].size).to eq(1)
     expect(entry[:entries].first['method_key']).to eq(provider.default_option_kind)
   end
+
+  # PRD-20260918-payments-d7-payment-section-express AC-006（cart 通道）
+  # 购物车单页结账读 `cart.payment_methods`（store `PaymentMethodSerializer`）——
+  # 该通道**没有订单上下文**，因此下发「已配置且启用」的入口集合（不过滤），
+  # 前台据此才能显示 Apple Pay / Google Pay（可用性仍由 Start 带订单上下文复算）。
+  describe 'store PaymentMethodSerializer (cart / order 通道)' do
+    def serialized_provider(provider)
+      PallasTrade::Api::V3::PaymentMethodSerializer.new(provider, params: { store: store }).to_h
+    end
+
+    it 'exposes the entry list so the cart checkout can render every entry' do
+      provider = optionized_provider([
+        { 'kind' => 'card', 'active' => true, 'position' => 1, 'frontend_kind' => 'inline',
+          'display_name' => 'Card' },
+        { 'kind' => 'apple_pay', 'active' => true, 'position' => 2, 'frontend_kind' => 'express',
+          'display_name' => 'Apple Pay' }
+      ])
+
+      data = serialized_provider(provider)
+
+      expect(data['entries'].map { |e| e['method_key'] }).to eq(%w[card apple_pay])
+      expect(data['entries'].map { |e| e['frontend_kind'] }).to eq(%w[inline express])
+      expect(data['entries'].first['option_id']).to eq("#{provider.prefixed_id}:card")
+    end
+
+    it 'keeps a single implicit entry for providers that were never optionized' do
+      provider = create(:stripe_gateway, store: store, active: true, display_on: 'front_end',
+                                         name: 'Plain cart provider')
+
+      data = serialized_provider(provider)
+
+      expect(data['entries'].size).to eq(1)
+      expect(data['entries'].first['method_key']).to eq(provider.default_option_kind)
+    end
+  end
 end

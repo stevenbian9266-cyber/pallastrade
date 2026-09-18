@@ -579,9 +579,11 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 前台支付区从「一 provider 一行」升级为 **一入口一行**（信用卡 / Apple Pay / Google Pay 同时可见）。
 
 - **共用外壳**：`components/checkout/PaymentSection.tsx`
-  - `paymentEntriesFor(method)` —— 读服务端 `entries[]`；**旧响应无 `entries` → 合成单入口**（
-    `option_id = `${method.id}:default``、`display_name = display_name ?? name`、`frontend_kind` 缺失时按
-    `session_required` 推导 `inline`/`manual`）→ 零回归（AC-010）。
+  - `paymentEntriesFor(method)` —— 读服务端 `entries[]`（**两条通道都下发**：cart/order 的
+    `payment_methods[].entries` 为「已配置且启用」集合，checkout 投影的为带订单上下文过滤后的集合）；
+    **旧响应无 `entries` → 合成单入口**（`option_id = `${method.id}:default``、
+    `display_name = display_name ?? name`、`frontend_kind` 缺失时按 `session_required` 推导
+    `inline`/`manual`）→ 零回归（AC-010）。
   - `PaymentSection` 渲染 radio 行（`data-testid="payment-entry-row"` + `data-option-id` + `data-frontend-kind`），
     顺序即服务端 `position`；`manual` 入口出说明行；认证提示与空态仍由这里渲染。
 - **形态槽（父级决定）**：`frontend_kind === "express"` → 钱包按钮；`"inline"` → `CardPaymentForm`；`"manual"` → 无额外控件。

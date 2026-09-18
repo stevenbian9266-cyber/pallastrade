@@ -124,9 +124,10 @@ Entry-level payment section (PRD-20260918-payments-d7-payment-section-express, D
 checkout projection `payment.available_payment_methods[]` gains an additive `entries[]` array (one
 item per enabled storefront entry: `option_id` / `method_key` / `display_name` / `frontend_kind` /
 `group` / `position`, ordered by the configured position) plus provider-level `group` and `position`;
-the generated `PaymentMethod` type gains `group` / `position` too (the cart/order channel deliberately
-does **not** expose `entries` — it has no order context, so it cannot share the session start gate's
-evaluation). The hand-written request types `CreateOrderTransactionParams` and
+the generated `PaymentMethod` type gains `group` / `position` / `entries` too — the cart / order channel
+reports the **configured, enabled** entry set (no order context, so no scope filtering there; the
+session start gate still re-evaluates the entry handed back as `option_kind`). The hand-written request
+types `CreateOrderTransactionParams` and
 `CreatePaymentSessionParams` gain an optional `option_kind` so a client can state which entry the
 buyer picked; the server re-evaluates it against the same availability set as the rendered list and
 refuses an unavailable entry with `422 payment_option_not_available` (legacy cart channel:

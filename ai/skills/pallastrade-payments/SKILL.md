@@ -1301,7 +1301,8 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   （D8 范围规则 / D11 熔断 / D15c 认证闸门）。checkout 投影在**有订单上下文**时按该集合过滤；无上下文回退不过滤（安全降级）。
 - **下发契约（additive）**：
   - store `CheckoutSerializer.payment.available_payment_methods[]`：新增 `entries[]`（每入口含上述六字段）+ provider 级 `group` / `position`；
-  - store `PaymentMethodSerializer`：新增 `group` / `position`（**不下发 `entries`** —— cart/order 通道没有订单上下文，无法做同源求值）。
+  - store `PaymentMethodSerializer`：新增 `group` / `position` **与 `entries[]`**（cart/order/shopping_cart 同族；
+    该通道无订单上下文 → 入口集合为「已配置且启用」的**未过滤**集合，可用性仍由 `Start` 带订单上下文复算）；
 - **`option_kind` 全链路**：cart legacy 会话（`POST /carts/:id/payment_sessions`，此前**静默丢弃**该参数）、
   orders 会话（`POST /orders/:id/payment_sessions`）、durable 交易（`POST /orders/:id/transactions` → `Transactions::Start` → `PaymentSessions::Start`）
   三处均把入口传进门禁；`Transactions::Start` 新增 `option_kind:` 关键字参数（不传 = 零回归）。

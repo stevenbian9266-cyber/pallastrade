@@ -110,6 +110,11 @@ function makeCart(overrides: Partial<ShoppingCart> = {}): ShoppingCart {
         name: "Card",
         type: "stripe",
         session_required: true,
+        // 服务端真实载荷口径（D16/D7）：入口身份与形态随 provider 下发
+        kind: "card",
+        method_key: "card",
+        display_name: "Card",
+        frontend_kind: "inline",
       },
     ],
     items: [
@@ -336,6 +341,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(JSON.parse(postOptions.body as string)).toMatchObject({
       order_id: "or_123",
       payment_method_id: "pm_card",
+      // D7 FR-005：入口（method kind）随 Pay 请求下发（服务端同源复算可用性）
+      option_kind: "card",
       payment_mode: "payment_intent",
       session_required: true,
     });
@@ -349,6 +356,59 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     expect(replaceMock).toHaveBeenCalledWith(
       "/us/en/payment-result/or_123?session=ps_1",
     );
+  });
+
+  // PRD-20260918-payments-d7-payment-section-express AC-006（cart 通道）：
+  // 购物车单页结账读 `cart.payment_methods[].entries` → **一入口一行**；
+  // 钱包入口以 express 形态出现（不再需要后台关掉卡支付才能看到）。
+  it("renders one row per server-projected entry from the cart (D7 AC-006)", () => {
+    const cart = makeCart({
+      payment_methods: [
+        {
+          id: "pm_stripe",
+          name: "Stripe",
+          type: "stripe",
+          session_required: true,
+          entries: [
+            {
+              option_id: "pm_stripe:card",
+              method_key: "card",
+              display_name: "Card",
+              frontend_kind: "inline",
+              group: "card",
+              position: 1,
+            },
+            {
+              option_id: "pm_stripe:apple_pay",
+              method_key: "apple_pay",
+              display_name: "Apple Pay",
+              frontend_kind: "express",
+              group: "wallet",
+              position: 2,
+            },
+            {
+              option_id: "pm_stripe:google_pay",
+              method_key: "google_pay",
+              display_name: "Google Pay",
+              frontend_kind: "express",
+              group: "wallet",
+              position: 3,
+            },
+          ],
+        },
+      ],
+    } as never);
+    renderCheckout(cart);
+
+    const rows = screen.getAllByTestId("payment-entry-row");
+    expect(rows.map((row) => row.getAttribute("data-option-id"))).toEqual([
+      "pm_stripe:card",
+      "pm_stripe:apple_pay",
+      "pm_stripe:google_pay",
+    ]);
+    expect(rows[1].getAttribute("data-frontend-kind")).toBe("express");
+    expect(screen.getByText("Apple Pay")).toBeTruthy();
+    expect(screen.getByText("Google Pay")).toBeTruthy();
   });
 
   it("non-session payment (Check) goes straight to the placed page after submit", async () => {
