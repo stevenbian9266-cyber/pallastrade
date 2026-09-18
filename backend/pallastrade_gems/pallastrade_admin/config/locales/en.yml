@@ -2010,9 +2010,14 @@ en:
           errors:
             ai_budget_exceeded: The monthly AI budget for this store is used up.
             ai_capability_disabled: This assistant is turned off in AI Tools.
+            ai_credentials_invalid: The AI provider rejected the API key. Check AI Tools.
+            ai_credentials_missing: This AI provider has no credentials yet. Add an API key in AI Tools.
             ai_disabled: AI is turned off for this store.
             ai_model_disabled: No AI model is configured for this assistant.
+            ai_output_invalid: The model replied without the structured result this assistant needs. Try again.
             ai_provider_disabled: The AI provider is inactive or has no credentials.
+            ai_provider_unavailable: The AI provider could not be reached. Try again in a moment.
+            ai_unavailable: The AI request could not be completed. Check AI Tools and try again.
             default: The AI request could not be completed. Check AI Tools and try again.
           generate: Generate with AI
           generate_seo: Generate SEO

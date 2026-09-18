@@ -88,6 +88,11 @@ module PallasTrade
         # @return [Hash]
         def normalize_error(error)
           case error
+          when PallasTrade::AI::Errors::OutputValidationError
+            # Deterministic: the model answered, it just did not answer usably.
+            # Retrying the same prompt is not the fix, so keep it non-retryable
+            # and name it for what it is instead of blaming the provider.
+            { code: 'ai_output_invalid', message: error.message&.truncate(500), retryable: false }
           when Faraday::UnauthorizedError
             { code: 'ai_credentials_invalid', message: 'Authentication failed', retryable: false }
           when Faraday::TimeoutError

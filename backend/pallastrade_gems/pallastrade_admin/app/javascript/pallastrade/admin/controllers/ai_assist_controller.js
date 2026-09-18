@@ -29,6 +29,7 @@ export default class extends Controller {
   connect() {
     this.pending = null
     this.busy = false
+    this.labels = undefined
     // `edited before save`（PRD-20260917-catalog-ai-edited-before-save）：
     // Accept 只把草稿写进表单（AI 绝不直接落库），真正保存是商家另一次动作。
     // “原样保留”和“改写成能用的东西”是两个完全不同的信号 —— 只有后者说明 AI 输出其实不好用。
@@ -266,7 +267,10 @@ export default class extends Controller {
   renderError(code) {
     this.previewBodyTarget.textContent = ''
     this.previewTarget.classList.add('hidden')
-    this.renderStatus(this.label(`Error${code ? `:${code}` : ''}`))
+    // A code without wording of its own still has to say something: a blank
+    // status reads as "nothing happened" and invites another click.
+    const specific = code ? this.label(`Error:${code}`) : ''
+    this.renderStatus(specific || this.label('ErrorFallback'))
   }
 
   renderIdle() {
@@ -280,8 +284,24 @@ export default class extends Controller {
     this.statusTarget.textContent = text
   }
 
+  /**
+   * Wording travels as one JSON attribute (`data-ai-assist-labels`), not as a
+   * set of individual `data-…-label` attributes.
+   *
+   * It cannot travel that way: HTML lowercases attribute names and folds dashes
+   * into camelCase dataset keys, so a lookup name like `Error:ai_output_invalid`
+   * cannot survive the encoding. The map keeps the names exactly as authored.
+   */
   label(name) {
-    return this.element.dataset[`aiAssist${name}Label`] || ''
+    if (this.labels === undefined) {
+      try {
+        this.labels = JSON.parse(this.element.dataset.aiAssistLabels || '{}')
+      } catch (_error) {
+        this.labels = {}
+      }
+    }
+
+    return this.labels[name] || ''
   }
 
   setBusy(busy) {

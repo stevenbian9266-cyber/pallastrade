@@ -117,30 +117,12 @@
               既有「计数链接 / View」保持在原位不动。 %>
           <% ai_state = issue.count.positive? && defined?(PallasTrade::AI::Catalog::HealthFixSuggestion) ? ai_assist_state(PallasTrade::AI::Catalog::HealthFixSuggestion::CAPABILITY) : nil %>
           <% ai_data = if ai_state
-                         {
-                           controller: 'ai-assist',
-                           ai_assist_endpoint_value: PallasTrade.admin_ai_catalog_health_suggestion_path,
-                           ai_assist_kind_value: 'suggestion',
-                           ai_assist_issue_key_value: issue.key,
-                           ai_assist_idle_label: '',
-                           ai_assist_generating_label: PallasTrade.t('admin.catalog_health.ai.generating'),
-                           ai_assist_review_label: PallasTrade.t('admin.catalog_health.ai.summary_heading'),
-                           ai_assist_accepted_label: '',
-                           'ai_assist_error:nothing_to_fix_label': PallasTrade.t('admin.catalog_health.ai.errors.nothing_to_fix'),
-                           'ai_assist_error:unknown_issue_label': PallasTrade.t('admin.catalog_health.ai.errors.unknown_issue'),
-                           'ai_assist_error:ai_capability_disabled_label': PallasTrade.t('admin.catalog_health.ai.errors.default'),
-                           'ai_assist_error:ai_disabled_label': PallasTrade.t('admin.catalog_health.ai.errors.default'),
-                           'ai_assist_error:ai_model_disabled_label': PallasTrade.t('admin.catalog_health.ai.errors.default'),
-                           'ai_assist_error:ai_provider_disabled_label': PallasTrade.t('admin.catalog_health.ai.errors.default'),
-                           'ai_assist_error:ai_budget_exceeded_label': PallasTrade.t('admin.catalog_health.ai.errors.default'),
-                           'ai_assist_error:ai_unavailable_label': PallasTrade.t('admin.catalog_health.ai.errors.default'),
-                           'ai_assist_entry:product_edit_ai_label': PallasTrade.t('admin.catalog_health.ai.entries.product_edit_ai'),
-                           'ai_assist_entry:translations_drawer_label': PallasTrade.t('admin.catalog_health.ai.entries.translations_drawer'),
-                           'ai_assist_entry:product_media_label': PallasTrade.t('admin.catalog_health.ai.entries.product_media'),
-                           'ai_assist_entry:variant_inventory_label': PallasTrade.t('admin.catalog_health.ai.entries.variant_inventory'),
-                           'ai_assist_entry:redirects_label': PallasTrade.t('admin.catalog_health.ai.entries.redirects'),
-                           'ai_assist_entry:publishing_label': PallasTrade.t('admin.catalog_health.ai.entries.publishing')
-                         }
+                         ai_assist_attributes(
+                           endpoint: PallasTrade.admin_ai_catalog_health_suggestion_path,
+                           kind: 'suggestion',
+                           issue_key: issue.key,
+                           labels: catalog_health_ai_labels
+                         )
                        else
                          {}
                        end %>

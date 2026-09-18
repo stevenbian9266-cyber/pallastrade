@@ -56,6 +56,90 @@ module PallasTrade
         method_name = "current_#{klass.model_name.singular_route_key}"
         respond_to?(method_name) ? send(method_name) : nil
       end
+
+      # Error codes the AI endpoints can hand back (availability gates, gateway,
+      # capability layer) plus `<code>` values the controller raises itself.
+      # Anything outside this list still renders — see `ErrorFallback`.
+      AI_ASSIST_ERROR_CODES = %w[
+        ai_disabled ai_capability_disabled ai_model_disabled ai_provider_disabled
+        ai_budget_exceeded ai_credentials_missing ai_credentials_invalid
+        ai_provider_unavailable ai_output_invalid ai_unavailable
+      ].freeze
+
+      # Attributes for an `ai-assist` container.
+      #
+      # ⚠️ The `data:` wrapper is not cosmetic. Stimulus only attaches through
+      # `data-controller` and only reads `data-ai-assist-*-value`; emitting the
+      # same names without the `data-` prefix (which is what these five views did
+      # until 2026-09-18) produces inert attributes — the controller is never
+      # constructed, so `data-action="click->ai-assist#generate"` never fires and
+      # the buttons look broken.
+      #
+      # @param endpoint [String] the AI endpoint this container calls
+      # @param labels [Hash] extra labels, keyed by the controller's lookup name
+      # @param values [Hash] extra Stimulus values (`product_id:`, `kind:`, …)
+      # @return [Hash] ready for `tag.attributes`
+      def ai_assist_attributes(endpoint:, labels: {}, **values)
+        {
+          data: {
+            controller: 'ai-assist',
+            ai_assist_endpoint_value: endpoint,
+            ai_assist_labels: ai_assist_labels(labels).to_json,
+            **values.transform_keys { |key| :"ai_assist_#{key}_value" }
+          }
+        }
+      end
+
+      # The controller resolves wording with `label(name)` and falls back to
+      # `ErrorFallback` when a code has no wording of its own — a blank status
+      # reads as "nothing happened" and sends the merchant clicking again.
+      #
+      # Keys must match the controller's lookup names character for character,
+      # including case and the colon (`Entry:product_edit_ai`, `Error:<code>`);
+      # they ride along as one JSON attribute precisely because those names
+      # cannot survive being encoded as attribute names.
+      #
+      # @param extra [Hash] view-specific labels; merged last, so it can override
+      # @return [Hash]
+      def ai_assist_labels(extra = {})
+        fallback = I18n.t('pallastrade.admin.products.ai.errors.default',
+                          default: 'The AI request could not be completed.')
+
+        labels = {
+          'Idle' => I18n.t('pallastrade.admin.products.ai.idle', default: ''),
+          'Generating' => I18n.t('pallastrade.admin.products.ai.generating', default: '…'),
+          'Review' => I18n.t('pallastrade.admin.products.ai.review_hint', default: fallback),
+          'Accepted' => I18n.t('pallastrade.admin.products.ai.accepted', default: fallback),
+          'ErrorFallback' => fallback
+        }
+
+        AI_ASSIST_ERROR_CODES.each do |code|
+          labels["Error:#{code}"] =
+            I18n.t("pallastrade.admin.products.ai.errors.#{code}", default: fallback)
+        end
+
+        labels.merge(extra)
+      end
+
+      # Catalog Health pages carry their own wording for the shared states and
+      # the two codes only they raise.
+      # @return [Hash]
+      def catalog_health_ai_labels
+        {
+          'Idle' => '',
+          'Accepted' => '',
+          'Generating' => PallasTrade.t('admin.catalog_health.ai.generating'),
+          'Review' => PallasTrade.t('admin.catalog_health.ai.summary_heading'),
+          'Error:nothing_to_fix' => PallasTrade.t('admin.catalog_health.ai.errors.nothing_to_fix'),
+          'Error:unknown_issue' => PallasTrade.t('admin.catalog_health.ai.errors.unknown_issue'),
+          'Entry:product_edit_ai' => PallasTrade.t('admin.catalog_health.ai.entries.product_edit_ai'),
+          'Entry:translations_drawer' => PallasTrade.t('admin.catalog_health.ai.entries.translations_drawer'),
+          'Entry:product_media' => PallasTrade.t('admin.catalog_health.ai.entries.product_media'),
+          'Entry:variant_inventory' => PallasTrade.t('admin.catalog_health.ai.entries.variant_inventory'),
+          'Entry:redirects' => PallasTrade.t('admin.catalog_health.ai.entries.redirects'),
+          'Entry:publishing' => PallasTrade.t('admin.catalog_health.ai.entries.publishing')
+        }
+      end
     end
   end
 end

@@ -25,9 +25,14 @@ zh-CN:
           errors:
             ai_budget_exceeded: 该门店本月的 AI 预算已用完。
             ai_capability_disabled: 该助手已在「AI 工具」中关闭。
+            ai_credentials_invalid: AI 服务商拒绝了该密钥，请到「AI 工具」检查。
+            ai_credentials_missing: 该 AI 服务商尚未配置密钥，请到「AI 工具」补充。
             ai_disabled: 该门店已关闭 AI。
             ai_model_disabled: 该助手尚未配置 AI 模型。
+            ai_output_invalid: 模型没有返回该助手所需的结构化结果，请重试。
             ai_provider_disabled: AI 服务商未启用或缺少凭据。
+            ai_provider_unavailable: 无法连接 AI 服务商，请稍后重试。
+            ai_unavailable: AI 请求未能完成，请检查「AI 工具」后重试。
             default: AI 请求未能完成，请检查「AI 工具」后重试。
           generate: 用 AI 生成
           generate_seo: 生成 SEO

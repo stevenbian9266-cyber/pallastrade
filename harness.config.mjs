@@ -179,13 +179,22 @@ export default {
         description: 'AI provider adapter + catalogue specs (DeepSeek json_object structured output, system instructions, connection test, model ids)',
         command: ['docker', 'exec', '-e', 'DISABLE_SIMPLECOV_MINIMUM=1', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && bundle exec rspec spec/services/pallastrade/ai/providers/deep_seek_spec.rb spec/services/pallastrade/ai/catalogs/deep_seek_spec.rb'],
       },
+      // AI 输出校验与后端接线（PRD-20260918-admin-ai-output-validation）：
+      // 声明了 output schema 却拿不到结构化输出 → 同步/异步两路径都判失败且报 ai_output_invalid；
+      // 五个助手容器走 data: 前缀 + 单一 JSON 文案属性（此前裸属性名使 Stimulus 从未挂载）。
+      'ai-output-validation-rspec': {
+        description: 'AI output validation + admin assist wiring specs (gateway/job/adapter error codes, assistant data attributes and labels)',
+        command: ['docker', 'exec', '-e', 'DISABLE_SIMPLECOV_MINIMUM=1', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && bundle exec rspec spec/services/pallastrade/ai/gateway_output_validation_spec.rb spec/jobs/pallastrade/ai/execute_run_job_spec.rb spec/services/pallastrade/ai/providers/normalize_error_spec.rb spec/requests/pallastrade/admin/ai_assist_wiring_spec.rb'],
+      },
       // 仓库级回归守卫（2026-09-14）：部署脚本前滚检测 + 回滚演练 crontab 恢复 + PRD 状态同步
       // 台账收口 TASK-20260913113813-6b5a2a47 / TASK-20260913103421-bd645649 的证据来源。
       // 2026-09-18 扩入 AI 部署模板契约（PRD-20260918-api-deepseek-structured-output）：
       // PALLASTRADE_AI_ENABLED 与 ACTIVE_RECORD_ENCRYPTION_* 必须在模板登记且不得内置真实密钥。
+      // 2026-09-18 再扩入 AI 助手接线契约（PRD-20260918-admin-ai-output-validation）：
+      // 五处容器必须走共享 helper（data: 前缀），控制器必须保留兜底文案分支。
       'repo-guards-test': {
-        description: 'Repo-level node:test guards (pull-deploy forward roll + drill crontab restore + PRD status sync + AI env template contract)',
-        command: ['node', '--test', 'tests/pull-deploy-forward-roll.test.mjs', 'tests/drill-rollback-crontab.test.mjs', 'tests/prd-status-sync.test.mjs', 'tests/ai-env-template.test.mjs'],
+        description: 'Repo-level node:test guards (pull-deploy forward roll + drill crontab restore + PRD status sync + AI env template + AI assist wiring)',
+        command: ['node', '--test', 'tests/pull-deploy-forward-roll.test.mjs', 'tests/drill-rollback-crontab.test.mjs', 'tests/prd-status-sync.test.mjs', 'tests/ai-env-template.test.mjs', 'tests/ai-assist-wiring.test.mjs'],
       },
       // 管理后台店铺表单（2026-09-09 bugfix 回归集）：logo/mailer_logo 直传失败提示 + 多店 CRUD
       'admin-stores-rspec': {

@@ -138,10 +138,10 @@ module PallasTrade
         latency = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).to_i
         response.instance_variable_set(:@latency_ms, latency)
 
-        # Validate output schema if structured output
-        if response.structured_output.present? && @capability_entry&.output_schema_class
-          validate_output!(response.structured_output)
-        end
+        # A capability that declares an output schema owes its caller a
+        # structured result. Checking only when one is already present would
+        # validate the successes and wave the failures through.
+        validate_output!(response)
 
         response
       end
@@ -175,13 +175,35 @@ module PallasTrade
         true # Schema class not loaded 鈥?skip validation for now
       end
 
-      def validate_output!(output)
-        return true unless @capability_entry&.output_schema_class
+      # A provider that answers with prose (the model ignoring the format
+      # instruction, a truncated response, a wrong model) used to slip through
+      # as a success: the capability then handed back an empty draft while the
+      # run read `succeeded`. Both "no structured output" and "structured output
+      # that does not match the schema" are the same class of failure, and they
+      # carry the same reason code so a merchant can tell an output problem
+      # apart from a provider outage.
+      #
+      # @param response [PallasTrade::AI::Providers::Response]
+      # @raise [PallasTrade::AI::Errors::OutputValidationError]
+      def validate_output!(response)
+        schema_class_name = @capability_entry&.output_schema_class
+        return true unless schema_class_name
 
-        schema_class = @capability_entry.output_schema_class.constantize
-        unless schema_class.valid?(output)
-          raise PallasTrade::AI::Errors::OutputValidationError, 'Output does not match expected schema'
+        schema_class = schema_class_name.constantize
+        output = response.structured_output
+
+        unless output.is_a?(Hash) && output.present?
+          raise PallasTrade::AI::Errors::OutputValidationError,
+                "#{@capability_key}: provider returned no usable structured output " \
+                "(finish_reason=#{response.finish_reason.inspect})"
         end
+
+        unless schema_class.valid?(output)
+          raise PallasTrade::AI::Errors::OutputValidationError,
+                "#{@capability_key}: output does not match #{schema_class_name}"
+        end
+
+        true
       rescue NameError
         true
       end

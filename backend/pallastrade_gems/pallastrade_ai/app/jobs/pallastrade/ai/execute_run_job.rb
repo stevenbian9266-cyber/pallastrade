@@ -73,6 +73,11 @@ module PallasTrade
         response = adapter.generate(provider, request)
         latency = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).to_i
 
+        # Same rule as the synchronous gateway: a capability that declares an
+        # output schema must come back with a usable one, otherwise the run
+        # would be recorded as a success while producing nothing.
+        validate_output!(cap_entry, response)
+
         @run.succeed!(
           usage: response.usage,
           provider_request_id: response.provider_request_id,
@@ -89,26 +94,68 @@ module PallasTrade
         end
       end
 
+      # @param cap_entry [PallasTrade::AI::CapabilityRegistry::Entry, nil]
+      # @param response [PallasTrade::AI::Providers::Response]
+      # @raise [PallasTrade::AI::Errors::OutputValidationError]
+      def validate_output!(cap_entry, response)
+        schema_class_name = cap_entry&.output_schema_class
+        return true unless schema_class_name
+
+        schema_class = schema_class_name.constantize
+        output = response.structured_output
+
+        unless output.is_a?(Hash) && output.present?
+          raise PallasTrade::AI::Errors::OutputValidationError,
+                "#{@run.capability_key}: provider returned no usable structured output " \
+                "(finish_reason=#{response.finish_reason.inspect})"
+        end
+
+        unless schema_class.valid?(output)
+          raise PallasTrade::AI::Errors::OutputValidationError,
+                "#{@run.capability_key}: output does not match #{schema_class_name}"
+        end
+
+        true
+      rescue NameError
+        true
+      end
+
       def handle_error(error)
         normalized = normalize_error(error)
         @run&.fail!(error_code: normalized[:code], error_message: normalized[:message])
 
-        # Report to Sentry with safe context
-        if defined?(Sentry)
-          Sentry.with_scope do |scope|
-            scope.set_tags(
-              ai_run_id: @run&.id,
-              ai_capability: @run&.capability_key,
-              ai_provider: @run&.provider_type,
-              ai_model: @run&.provider_model_id,
-              ai_error_code: normalized[:code]
-            )
-            Sentry.capture_exception(error)
-          end
+        # Report to Sentry with safe context.
+        #
+        # `defined?(Sentry)` is true whenever the gem is loaded, but `with_scope`
+        # only yields a usable scope once Sentry is initialized — with no
+        # SENTRY_DSN configured it yields nil, and calling `set_tags` on it
+        # raised NoMethodError *after* the run had already been marked failed.
+        # That turned a recorded, deterministic failure into a raising job, which
+        # Sidekiq then retried. Reporting is best-effort; the run record is the
+        # source of truth.
+        return unless defined?(Sentry) && Sentry.initialized?
+
+        Sentry.with_scope do |scope|
+          scope.set_tags(
+            ai_run_id: @run&.id,
+            ai_capability: @run&.capability_key,
+            ai_provider: @run&.provider_type,
+            ai_model: @run&.provider_model_id,
+            ai_error_code: normalized[:code]
+          )
+          Sentry.capture_exception(error)
         end
       end
 
+      def output_error?(error)
+        error.is_a?(PallasTrade::AI::Errors::OutputValidationError)
+      end
+
       def normalize_error(error)
+        # Output problems are deterministic and have nothing to do with provider
+        # availability — answer them even when the provider cannot be resolved.
+        return { code: 'ai_output_invalid', message: error.message&.truncate(500) } if output_error?(error)
+
         if @run&.provider
           provider_entry = PallasTrade::AI.providers[@run.provider.key.to_sym]
           if provider_entry

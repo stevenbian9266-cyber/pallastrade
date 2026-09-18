@@ -806,7 +806,7 @@
     {
       "id": "GS-034",
       "name": "Admin unified single sidebar (P6): landing + tabs + full configurability + bilingual",
-      "description": "Since the P6 nav architecture refactor (2026-08-16), the admin has ONE sidebar tree: settings modules are merged into the main sidebar (no separate settings context, no 'Settings' breadcrumb prefix). Top-level items with children MUST declare landing (top-level click lands on the landing child = first submenu, breadcrumb '一级 > 二级'); query-bearing items (Orders to Fulfill q[shipment_state_not_in]) match only when path+query both equal. Items declaring tabs: (e.g. Products > Stock tabs: :stock_tabs) append the matched tab as the final crumb (Products > Stock > Stock Movements) via Navigation#find_breadcrumb_nodes. BreadcrumbConcern derives everything from the single sidebar tree (Navigation#find_breadcrumb_nodes = find_breadcrumb_chain + active-condition fallback + tab node). New nav labels that are i18n keys must be bilingual (en + zh-CN under the pallastrade: namespace). nav:validate enforces landing existence, registered tabs, bilingual i18n, permission-only if:, and constant-display.",
+      "description": "Since the P6 nav architecture refactor (2026-08-16), the admin has ONE sidebar tree: settings modules are merged into the main sidebar (no separate settings context, no 'Settings' breadcrumb prefix). Top-level items with children MUST declare landing (top-level click lands on the landing child = first submenu, breadcrumb '一级 > 二级'); query-bearing items (Orders to Fulfill q[shipment_state_not_in]) match only when path+query both equal. Items declaring tabs: (e.g. Products > Stock tabs: :stock_tabs) append the matched tab as the final crumb (Products > Stock > Stock Movements) via Navigation#find_breadcrumb_nodes. BreadcrumbConcern derives everything from the single sidebar tree (Navigation#find_breadcrumb_nodes = find_breadcrumb_chain + active-condition fallback + tab node). Controllers own ONLY object/special-context crumbs — hand-writing the module/sub-page crumb duplicates the derived level (bug fixed 2026-09-18: 'Orders > Currency Rates > Orders > Currency Rates' on 12 Orders workbenches). The trail also has ONE colour contract: breadcrumbs_on_rails renders the current page as plain text via link_to_unless_current, so without an explicit colour the ancestors hit the global a{color:primary} (blue) and the current page hits body (black) — the component must pin one semantic token instead. New nav labels that are i18n keys must be bilingual (en + zh-CN under the pallastrade: namespace). nav:validate enforces landing existence, registered tabs, bilingual i18n, permission-only if:, and constant-display.",
       "mustDo": [
         "Keep ONE sidebar tree (PallasTrade.admin.navigation.sidebar) — no separate settings_nav rendering; settings modules are top-level collapsible items (Developers [API Keys★, Webhook Endpoints...], Users [Admin Users★...], Tax, Shipping, Audit, Return Settings...)",
         "Every top-level item with children declares landing: pointing to an existing child (= first submenu item); the top-level link resolves to the landing child URL and the landing child is highlighted by default",
@@ -814,7 +814,9 @@
         "Query-bearing items match ONLY when path+query both equal (never fall through to path-only matching) so Orders to Fulfill and All Orders stay distinct",
         "Add new nav labels as i18n keys with en + zh-CN translations (gem en.yml under pallastrade: + backend/config/locales/admin_nav.zh-CN.yml under pallastrade:)",
         "Run harness nav:validate (rake pallastrade:admin:nav_validate) after any nav config change — it enforces landing/tabs/i18n/permission/constant-display",
-        "Add navigation_consistency_spec regressions for AC-006~AC-011 (landing breadcrumb, tab breadcrumb, no Settings prefix, bilingual keys)"
+        "Add navigation_consistency_spec regressions for AC-006~AC-011 (landing breadcrumb, tab breadcrumb, no Settings prefix, bilingual keys)",
+        "Keep exactly one crumb per nav level — never re-add the module/sub-page crumb in a controller (orders workbenches, webhook_events, gift cards user context); guard with navigation_consistency_spec AC-012 asserting the exact trail (Orders > Currency Rates, Developers > Webhook Events, Customers > Customers List > user) plus the no-duplicate invariant",
+        "Pin ONE semantic colour for the whole breadcrumb trail (.breadcrumb text-text-muted, li a text-inherit, separator text-text-subtle) and keep the current page distinguishable by font-weight, then rebuild the Tailwind bundle"
       ],
       "mustNotDo": [
         "Reintroduce a separate settings navigation context or a 'Settings' breadcrumb prefix (P6 unified)",
@@ -822,6 +824,8 @@
         "Let a query-bearing nav item match by path alone (would collapse Orders to Fulfill into All Orders)",
         "Add a nav label i18n key without both en and zh-CN (nav:validate blocks it)",
         "Hand-write module/sub-page breadcrumbs in controllers now that the single-tree derivation covers them (stock_movements/stock_transfers/ai sub-pages etc.)",
+        "Let the same level appear twice in a trail (duplicate crumb) or leave a workbench page without its derived parent crumb",
+        "Style breadcrumbs with direct Tailwind palette classes (text-gray-600/text-zinc-950/border-gray-100) or rely on the global `a` colour — the current page is plain text, so the trail would mix link-blue with text-black",
         "Push while doc-impact reports docs-required or nav:validate fails"
       ],
       "scoring": {
@@ -4599,6 +4603,39 @@
         "contractCompliance": 15,
         "templateCompleteness": 10,
         "noSilentDegradation": 10
+      }
+    },
+    {
+      "id": "GS-179",
+      "name": "A failure that only exists after the request",
+      "description": "PRD-20260918-admin-ai-output-validation (TASK-20260918025044-fc936a9e): a capability with a declared output schema could come back with prose instead of the promised shape, and every layer below treated that as success - the gateway only checked the schema once a structured output was already present, the async worker did not check at all, and the capability handed back an empty draft. The merchant saw 'generated' over a blank preview. Worse, the admin assistant had never been wired to Stimulus: the attribute hash was emitted without the `data-` prefix, so `data-controller` never existed, the click action never fired, and no label could be found - while every server-side spec passed, because they asserted markup that the browser ignores. The tempting shortcuts are to validate only the happy shape, to trust a green test suite that never rendered the page, and to let an error-reporting hook become the error.",
+      "mustDo": [
+        "Treat 'the capability promised a structured result and got none' as a failure, checked before the run is recorded as succeeded, on both the synchronous and asynchronous paths",
+        "Name the failure for what it is - an output problem, not a provider outage - with a non-retryable code, so the two are told apart when someone is debugging",
+        "Attach enough context to the failure to act on it (which capability, what the provider reported) rather than a generic message",
+        "Verify that a browser-facing feature exists in the form the browser needs: `data-controller`, `data-*-value`, and label keys that survive HTML attribute-name encoding",
+        "Assert the wiring where it actually breaks - render the real page and check the attributes Stimulus reads, and cover the remaining views with a contract guard",
+        "Give every failure path a wording that is always non-empty, so an unmapped code still tells the merchant something happened",
+        "Keep best-effort side channels (error reporting) from failing the work they are reporting on: guard on the client actually being initialized, and treat the durable record as the source of truth",
+        "Confirm both languages carry the same key set whenever wording is added, and prove it with a check rather than by eye"
+      ],
+      "mustNotDo": [
+        "Validate output only when output is already present - that validates successes and waves failures through",
+        "Report an output-quality problem as a provider outage, or leave a deterministic failure retryable",
+        "Emit Stimulus attributes without the `data-` prefix, or assume an attribute name survives lowercasing and dash-to-camel conversion unchanged",
+        "Call a feature verified because request specs pass, when none of them asserted the attribute the framework actually binds to",
+        "Let an unhandled path in error reporting turn a recorded failure into a raising, retried job",
+        "Render a blank status for an unknown error code - silence reads as 'nothing happened' and invites another click",
+        "Add wording to one locale only, or duplicate a provisioning source of truth and fix the copy nothing reads"
+      ],
+      "scoring": {
+        "failureSurfacing": 20,
+        "errorCodeTruthfulness": 15,
+        "browserFidelity": 20,
+        "renderLevelEvidence": 15,
+        "sideChannelSafety": 10,
+        "i18nParity": 10,
+        "noSilentStates": 10
       }
     }
   ]
