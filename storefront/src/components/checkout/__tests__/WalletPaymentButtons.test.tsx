@@ -272,9 +272,10 @@ describe("WalletPaymentButtons (D7)", () => {
     expect(screen.getByTestId("wallet-retry")).toBeTruthy();
   }, 20000);
 
-  // PRD-20260918-payments-d7-payment-section-express AC-012：
-  // 可用性**未知**（SDK 未给 availablePaymentMethods）→ 不得当作不可用，也不得给结论
-  it("keeps the wallet element when availability data is unknown (D7 AC-012)", async () => {
+  // PRD-20260918-payments-d7-payment-section-express AC-012（补口 5 修订）：
+  // `onReady` 触发但 `availablePaymentMethods === undefined` = **该环境没有任何钱包可显示**
+  // （官方类型定义："undefined if no payment methods can show"）→ 立即判为 device 不可用
+  it("treats a ready event without any available wallet as device-unavailable (D7 AC-012)", async () => {
     const user = userEvent.setup();
     const onAvailabilityChange = vi.fn();
     renderWallet({ onAvailabilityChange });
@@ -286,15 +287,13 @@ describe("WalletPaymentButtons (D7)", () => {
       (capturedElementProps.onReady as (event: unknown) => void)({});
     });
 
-    // 未知 → 保持渲染，不得给父级「可用/不可用」结论
     expect(onAvailabilityChange).toHaveBeenLastCalledWith({
-      state: "unknown",
+      state: "unavailable",
+      reason: "device",
     });
-    expect(onAvailabilityChange).not.toHaveBeenCalledWith({
-      state: "available",
-    });
-    expect(screen.queryByTestId("wallet-unavailable-notice")).toBeNull();
-    expect(screen.getByTestId("express-checkout-element")).toBeTruthy();
+    const notice = screen.getByTestId("wallet-unavailable-notice");
+    expect(notice.getAttribute("data-reason")).toBe("device");
+    expect(screen.queryByTestId("express-checkout-element")).toBeNull();
   });
 
   // PRD-20260918-payments-d7-payment-section-express AC-011：

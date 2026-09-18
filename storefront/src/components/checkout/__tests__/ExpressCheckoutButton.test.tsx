@@ -327,9 +327,11 @@ describe("ExpressCheckoutButton (canonical wallet)", () => {
     expect(screen.getByTestId("wallet-retry")).toBeTruthy();
   }, 20000);
 
-  // PRD-20260918-payments-d7-payment-section-express AC-012：
-  // 可用性**未知**（SDK 未给 availablePaymentMethods）→ 保持渲染，不得当成不可用、不得上报结论
-  it("keeps the wallet element when availability data is unknown (D7 AC-012)", async () => {
+  // PRD-20260918-payments-d7-payment-section-express AC-012（补口 5 修订）：
+  // `onReady` 触发但 `availablePaymentMethods === undefined` = **该环境没有任何钱包可显示**
+  // （Stripe 官方类型定义："undefined if no payment methods can show"）→ 必须**立即**判为
+  // 本环境不可用（device），而不是停在加载态、也不是 10s 后误报成「加载失败」。
+  it("treats a ready event without any available wallet as device-unavailable (D7 AC-012)", async () => {
     const onAvailabilityChange = vi.fn();
     render(
       <ExpressCheckoutButton
@@ -345,15 +347,12 @@ describe("ExpressCheckoutButton (canonical wallet)", () => {
       (capturedElementProps.onReady as (event: unknown) => void)({});
     });
 
-    // 未知 → 保持加载，且**不**给出「可用/不可用」结论（旧行为 fail-open 会导致空按钮区）
     expect(onAvailabilityChange).toHaveBeenLastCalledWith({
-      state: "unknown",
+      state: "unavailable",
+      reason: "device",
     });
-    expect(onAvailabilityChange).not.toHaveBeenCalledWith({
-      state: "available",
-    });
-    expect(screen.getByTestId("express-checkout-element")).toBeTruthy();
-    expect(screen.queryByTestId("wallet-unavailable-notice")).toBeNull();
+    const notice = await screen.findByTestId("wallet-unavailable-notice");
+    expect(notice.getAttribute("data-reason")).toBe("device");
   });
 
   // PRD-20260918-payments-d7-payment-section-express AC-013：

@@ -615,9 +615,13 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
   `link` 只接受 `auto` | `never`（`@stripe/stripe-js` 的 `express-checkout.d.ts` 类型即如此，写 `always` 会编译失败）。
   `method_key` 为 undefined/空 → **无入口上下文**（购物车抽屉）→ 两个钱包 `always`、Link `auto`；
   非前台支持的 kind（`paypal` / `shop_pay` / `amazon_pay`）→ 返回 null → 不渲染钱包元素（只给说明行）。
-- **三态而非布尔（AC-015）**：`unknown`（未上报 = **不得判死**）/ `available` / `unavailable` + **原因**
-  （`device` 支付商明确无此钱包 / `timeout` 看门狗超时 / `unsupported` 前台不支持 / `unconfigured` 无密钥）。
+- **三态而非布尔（AC-015）**：`unknown`（**仅** `onReady` 未触发的初始态，由看门狗兜底）/ `available` / `unavailable` + **原因**
+  （`device` 本环境无此钱包 / `timeout` 看门狗超时 / `unsupported` 前台不支持 / `unconfigured` 无密钥）。
   入口行的 `data-unavailable` 值就是原因，行内文案与区块说明按原因分档。
+  ⚠️ **`onReady` 一旦触发，`availablePaymentMethods === undefined` 是确定性结论而非「未知」**
+  （官方类型原文：*"or undefined if **no payment methods can show**"*）→ 必须立即判 `unavailable(device)`；
+  当成「还在加载」会让界面停住转圈、10s 后还把确定性结论误报成「加载失败」（实测：VS Code 内嵌 Electron /
+  无 `ApplePaySession` 的 Windows 浏览器上两个钱包都必然 `undefined`）。
 - **看门狗**：`WALLET_READY_TIMEOUT_MS`（10s，移动网络较慢）内未收到任何上报 → `unavailable(timeout)`，
   文案是「加载失败，可重试」而**不是**「本设备不支持」——两者不得混同（旧文案把网络/初始化失败
   误报成设备不支持，移动端因此被错误置灰）。

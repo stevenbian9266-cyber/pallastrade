@@ -1315,8 +1315,9 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
     - **点谁显示谁**：`expressPaymentMethodsFor(method_key)` 把选中钱包设 `always`、其余设 `never`
       （Stripe 文档脚注：非 Safari 桌面端 Apple Pay、Firefox/Safari/iOS 的 Google Pay **只在 `always` 时才支持**；
       `auto` 会让 PC 端 Apple Pay 永不初始化）；`link` 只接受 `auto|never`。无入口上下文（抽屉）→ 两个钱包 `always`。
-    - **三态 + 原因**：`unknown`（未上报 = 不得判死）/ `available` / `unavailable` + 原因（`device` / `timeout` /
-      `unsupported` / `unconfigured`）。`undefined` **不得**当作不可用；10s 看门狗超时 → `timeout`（可重试），
+    - **三态 + 原因**：`unknown`（仅 onReady 未触发）/ `available` / `unavailable` + 原因（`device` / `timeout` /
+      `unsupported` / `unconfigured`）。**`onReady` 触发后的 `availablePaymentMethods === undefined` 是确定性**
+      「没有任何钱包可显示」（官方类型原文），必须立即判 `device`，不得当作还在加载；10s 看门狗超时 → `timeout`（可重试），
       文案不得写成「本设备不支持」。
     - **可恢复 + 重试**：不可用 → 父级标注（`PaymentSection.unavailableEntries`，行内按原因给短文案）+
       **自动回落**卡支付；重新点该入口 = 重试（清标注 + 探针令牌递增 → 重挂载元素）；后续上报 `available` → 解除标注。

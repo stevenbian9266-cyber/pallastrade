@@ -120,9 +120,24 @@ export function expressPaymentMethodsFor(
 /**
  * 读取本设备可用性（`onReady` 事件的 `availablePaymentMethods`）。
  *
+ * ⚠️ **`undefined` 是确定性结论，不是「未知」**（Stripe 官方类型定义原文，
+ * `@stripe/stripe-js` → `ExpressCheckoutElementReadyEvent`）：
+ *
+ * ```
+ * availablePaymentMethods: undefined | AvailablePaymentMethods;
+ *   // "The list of payment methods that could possibly show in the element,
+ *   //  or undefined if no payment methods can show."
+ * ```
+ *
+ * 即：`onReady` 一旦触发，`undefined` = **该环境没有任何钱包可显示** → `unavailable(device)`。
+ * 旧实现把它当「未知」→ 界面一直停在加载态，10s 后才报「加载失败」，把确定性结论说成了网络问题
+ * （实测：VS Code 内嵌 Electron 浏览器 / Windows 无 `ApplePaySession` → 两个钱包都必然
+ * `undefined`，而用户看到的就是「一直加载」）。
+ *
+ * 真正的「未知」只存在于 **`onReady` 尚未触发**时（初始态），由看门狗兜底。
+ *
  * - 无入口上下文 → 任一钱包可用即 `available`（抽屉语义）。
  * - 有入口 → **只认选中钱包那一个键**（点谁显示谁）。
- * - 未上报（undefined）= `unknown` —— **不得**当作不可用。
  */
 export function selectedWalletAvailability(
   methodKey: string | null | undefined,
@@ -133,7 +148,13 @@ export function selectedWalletAvailability(
   if (hasEntryContext && !key) {
     return { state: "unavailable", reason: "unsupported" };
   }
-  if (!availablePaymentMethods) return { state: "unknown" };
+  // onReady 已触发但**没有任何**可显示的钱包 → 本环境确定性不可用
+  if (
+    availablePaymentMethods === undefined ||
+    availablePaymentMethods === null
+  ) {
+    return { state: "unavailable", reason: "device" };
+  }
   const usable = key
     ? availablePaymentMethods[key] === true
     : Boolean(

@@ -184,7 +184,10 @@ function renderCheckout(cart: ShoppingCart = makeCart()) {
   );
 }
 
-describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
+// 本文件渲染最完整的 checkout 树（含 next/dynamic 钱包片段）+ 大量 userEvent 交互：
+// 全量套件并行跑 jsdom 时，单个用例超过 vitest 默认 5s 会**随机**超时（与断言无关的假红）。
+// 因此整块给足预算；断言本身不做任何放宽。
+describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", { timeout: 20000 }, () => {
   beforeEach(() => {
     pushMock.mockReset();
     replaceMock.mockReset();
@@ -469,7 +472,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
 
     // cart 页钱包组件按需加载（next/dynamic）+ 直接挂载 ExpressCheckoutElement：
     // 只有确认时才创建会话，因此这里直接得到可探测的元素。
-    await screen.findByTestId("express-checkout-element");
+    // ⚠️ 动态导入 + 全量套件并行时，默认 1s 等待会随机爆掉（与本用例断言无关的假红）→ 显式给足预算。
+    await screen.findByTestId("express-checkout-element", {}, { timeout: 10000 });
     await act(async () => {
       (capturedExpressProps.onReady as (event: unknown) => void)({
         availablePaymentMethods: {
@@ -494,8 +498,9 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", () => {
     ).toBe("device");
 
     // ② 自动回落卡支付：卡表单回来，空盒子不再存在；且**不**出现无意义的「Processing...」
-    await waitFor(() =>
-      expect(screen.getByTestId("card-payment-form")).toBeInTheDocument(),
+    await waitFor(
+      () => expect(screen.getByTestId("card-payment-form")).toBeInTheDocument(),
+      { timeout: 10000 },
     );
     expect(screen.queryByTestId("express-checkout-element")).toBeNull();
     expect(screen.queryByText("processing")).toBeNull();
