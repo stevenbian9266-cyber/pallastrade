@@ -231,3 +231,5 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260917-payments-d3-risk-dashboard-threshold-alerts | payments | 2026-09-17 | 实施（D3）：5 水位只读看板 + 阈值告警 —— `Risk::Dashboard{Policy,Report,Threshold,Alert}`（risky 单占比 / 3DS 挑战率 / **拒付率委派 D14c 不重算** / 退款率 / 审核队列时长含已处理 P90；**不可判定不猜**：分母 0 或报表降级 → `nil` + 结构化 `reason`，绝不回落 0）+ 阈值策略归一化（`warning < critical` 强制、非法不落库、坏载荷 fail-safe 读、双档齐备才算已配置）+ 五态判定（`unconfigured` 不判定）+ 留痕幂等且**同日不降档** + `DashboardAlertSweeperJob`（每小时、逐店隔离）+ 后台 `/admin/payment_risk`（5 卡/策略/告警历史/立即评估）+ 双语键 + GS-177；零迁移、零契约、零资金副作用；`d3-risk-dashboard-rspec` 144 例绿 |
 | done | PRD-20260918-admin-ai-output-validation | admin | 2026-09-18 | （实施时回填） |
 | done | PRD-20260918-api-deepseek-structured-output | api | 2026-09-18 | （实施时回填） |
+| approved | PRD-20260918-infra-dev-deploy-storefront-image-path-filter | infra | 2026-09-18 | （实施时回填） |
+

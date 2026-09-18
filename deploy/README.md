@@ -85,8 +85,12 @@ prod 栈已删除（2026-08-31），服务器仅运行 dev 栈（常驻）。
 > ⚠️ 跨境 SSH（GitHub runner 美国 → 阿里云杭州）TCP 22 被阻断，rsync/scp/ssh 推送式部署不可用。
 
 **拉取式机制**：
-1. `deploy.yml`（监听 `[dev]` 推送）：runner 构建 storefront 镜像 → **push 到 ghcr.io**（`ghcr.io/stevenbian9266-cyber/pallastrade-storefront:dev`），不再连接服务器
+1. `deploy.yml`（监听 `[dev]` 推送，**且仅当 storefront 构建输入变化时**）：runner 构建 storefront 镜像 → **push 到 ghcr.io**（`ghcr.io/stevenbian9266-cyber/pallastrade-storefront:dev`），不再连接服务器
 2. 服务器 cron 每 5 分钟运行 `deploy/pull-deploy.sh dev`：`git fetch` + `docker pull`，检测到 HEAD 或镜像 digest 变化才执行 `deploy.sh`
+
+> **为什么 storefront 构建要加路径过滤（2026-09-18 优化）**：原先每次 push 都重建镜像，而构建产物随源码 mtime 变化 —— 即便 storefront 一个字节未改也会产出**新的 manifest digest**，服务器因此每轮都要先做一次跨境拉取（预算 900s，实测是**真实下载**而非空转），把**与 storefront 无关的后端部署**推迟最多 15 分钟（其间每 5 分钟的 cron tick 都被 flock 跳过）。
+>
+> 过滤集合 = `storefront/**`、`platform/packages/{sdk,sdk-core,cli}/**`、`.github/workflows/deploy.yml`，即 `storefront/Dockerfile` 的全部 COPY 来源；由 `tests/deploy-paths-filter.test.mjs` 机器守护（Dockerfile 新增 COPY 来源却漏同步 paths → 测试失败）。**需要强制重建镜像时**用 `gh workflow run deploy.yml`（`workflow_dispatch`）。
 
 **前提（一次性配置）**：
 - GitHub 仓库 Deploy Keys 已添加服务器公钥（`/root/.ssh/id_ed25519.pub`，名称 `pallastrade-deploy`）

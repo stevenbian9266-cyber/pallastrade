@@ -1,8 +1,26 @@
 name: Deploy
 
+# 仅在 storefront 镜像的**构建输入**变化时重建（2026-09-18 优化，
+# PRD-20260918-infra-dev-deploy-storefront-image-path-filter）。
+#
+# 旧行为 = 对 dev 的每次 push 都重建并推送 `:dev` 镜像：构建产物随源码 mtime 变化，
+# 于是**即便 storefront 一个字节未改也会产出新的 manifest digest**。服务器
+# `deploy/pull-deploy.sh` 每轮都要先做一次跨境拉取（预算最多 900s，实测为真实下载而非空转），
+# 把**与 storefront 无关的后端部署**推迟最多 15 分钟（其间所有 cron tick 被 flock 跳过）。
+#
+# ⚠️ 过滤集合必须覆盖 `storefront/Dockerfile` 的**全部 COPY 来源** ——
+# `tests/deploy-paths-filter.test.mjs` 机器强制；给 Dockerfile 加新 COPY 来源却忘了同步这里，
+# 守卫测试会失败（否则本优化会静默地挡住 storefront 变更的构建）。
+# 需要**强制重建**镜像时（基础镜像/构建参数变更、镜像损坏等）用 workflow_dispatch 手工触发。
 on:
   push:
     branches: [dev]
+    paths:
+      - 'storefront/**'
+      - 'platform/packages/sdk/**'
+      - 'platform/packages/sdk-core/**'
+      - 'platform/packages/cli/**'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 concurrency:

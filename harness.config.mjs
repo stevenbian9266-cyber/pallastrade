@@ -195,8 +195,8 @@ export default {
       // 第三次扩入 Docker 健康守卫（本地 Docker Desktop `docker exec` 卡死的自愈工具）：
       // 探测分类 / 自愈动作序列 / 进程解析 / 僵尸筛选（绝不误伤 compose up、logs -f）。
       'repo-guards-test': {
-        description: 'Repo-level node:test guards (pull-deploy forward roll + drill crontab restore + PRD status sync + AI env template + AI assist wiring + docker health guard)',
-        command: ['node', '--test', 'tests/pull-deploy-forward-roll.test.mjs', 'tests/drill-rollback-crontab.test.mjs', 'tests/prd-status-sync.test.mjs', 'tests/ai-env-template.test.mjs', 'tests/ai-assist-wiring.test.mjs', 'tests/docker-health.test.mjs'],
+        description: 'Repo-level node:test guards (pull-deploy forward roll + drill crontab restore + PRD status sync + AI env template + AI assist wiring + docker health guard + deploy paths filter)',
+        command: ['node', '--test', 'tests/pull-deploy-forward-roll.test.mjs', 'tests/drill-rollback-crontab.test.mjs', 'tests/prd-status-sync.test.mjs', 'tests/ai-env-template.test.mjs', 'tests/ai-assist-wiring.test.mjs', 'tests/docker-health.test.mjs', 'tests/deploy-paths-filter.test.mjs'],
       },
       // 管理后台店铺表单（2026-09-09 bugfix 回归集）：logo/mailer_logo 直传失败提示 + 多店 CRUD
       'admin-stores-rspec': {

@@ -308,6 +308,21 @@ Meilisearch index wasn't built. Run `bundle exec rake pallastrade:search:reindex
   dockerignore/gitignore 可达性、严格模式与 dev-only 守卫）。
 - 排查口诀：状态文件绿 ≠ 部署完成 —— 对不准就先 `docker exec … cat /rails/.deployed-revision`。
 
+### storefront 镜像的**重建触发条件**（2026-09-18 优化）
+
+> 教训：镜像构建**没有路径过滤**时，每次 push 都产出新 manifest digest（构建产物随源码 mtime 变化），
+> 服务器因此每轮都要先跨境下载一次 —— 与 storefront 无关的后端部署被推迟最多 15 分钟。
+> 注意「拉取慢」≠「拉取空转」：实测镜像收敛后同一 `docker pull` 在交互式/重定向/`-q`/后台四种
+> 上下文下都是 1–2s 返回，超时轮次确实在下载。
+
+- `deploy.yml` 的 `on.push.paths` = **`storefront/Dockerfile` 的全部 COPY 来源**：
+  `storefront/**`、`platform/packages/{sdk,sdk-core,cli}/**`、`.github/workflows/deploy.yml`。
+- **机器守卫**：`node --test tests/deploy-paths-filter.test.mjs`（AC-001..004）—— Dockerfile 新增 COPY
+  来源却漏同步 `paths` 时立刻失败；否则该优化会**静默挡住 storefront 变更的构建**。
+- **需要强制重建镜像**（基础镜像/构建参数变更、镜像损坏、镜像被误删）：
+  `gh workflow run deploy.yml`（`workflow_dispatch` 不受 paths 过滤限制）。
+- 判断某次 push 是否会重建：`git diff --name-only <before>..<after> | grep -E '^(storefront/|platform/packages/(sdk|sdk-core|cli)/)'`。
+
 ## 本地 Docker exec 卡死（Docker Desktop / Windows，2026-09-18 bugfix）
 
 症状：`docker exec` / `harness verify <verifier>` **静默挂死**数分钟——命令其实已经执行完
