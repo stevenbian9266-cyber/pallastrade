@@ -7,6 +7,9 @@ require 'spec_helper'
 #   AC-011：只增字段（响应是既有键的超集）+ generated:check 无漂移（CI 门禁，见 PRD §9）
 # 另：AC-004（列表查询数不随条数增长，见 product list 第二例）
 #     AC-011（只增不改：既有布尔字段仍是超集的一部分）
+# PRD-20260916-shipping-catalog-observability-scope AC-007 AC-012
+#   AC-007：响应键集合是既有键的超集（本文件「只增不改」两例）
+#   AC-012：F-2 既有例全绿（本文件即回归载体；口径修正后不得回归）
 RSpec.describe 'Store API stock status & shipping', type: :request do
   include_context 'API v3 Store authenticated'
 

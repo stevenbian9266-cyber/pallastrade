@@ -4,7 +4,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-16 |
 | 来源 | 「实施」→ 商品域审计（`docs/research/RESEARCH-20260916-catalog-domain-audit.md`）的 G-1（P0）+ G-2/G-3/G-4（P1） |
 | 分类 | shipping（自动判定） |
@@ -111,8 +111,8 @@
 
 | 文件 | 变更 | 覆盖 AC |
 |---|---|---|
-| `backend/spec/services/pallastrade/shipping/estimate_spec.rb` | 扩：digital 方式排除、按分类匹配、无分类保守保留、`free_shipping` 语义 | AC-001/003/004/005/006 |
-| `backend/spec/requests/api/v3/store/stock_status_and_shipping_spec.rb` | 扩：响应键超集 + 数字商品短路不变 | AC-002/007/012 |
+| `backend/spec/services/pallastrade/shipping/estimate_spec.rb` | 扩：digital 方式排除、按分类匹配、无分类保守保留、`free_shipping` 语义；**并承载 AC-002（数字商品短路）与 AC-006（免运费促销不回归）** | AC-001~AC-007 |
+| `backend/spec/requests/api/v3/store/stock_status_and_shipping_spec.rb` | 扩：响应键超集 + F-2 回归（AC-002 实际由 `estimate_spec` 的 `describe 'digital products'` 承载） | AC-007/012 |
 | `storefront/src/components/products/__tests__/RelatedProducts.test.tsx` | 新/扩：`listId` 传递 | AC-008 |
 | `storefront/src/components/products/__tests__/RecentlyViewed.test.tsx` | 同上 | AC-009 |
 | `storefront/src/components/products/__tests__/BackInStockNotify.test.tsx` | 新/扩：成功/失败事件、埋点抛错不阻断 | AC-010/011 |
@@ -122,12 +122,17 @@
 
 ## 9. 文档同步清单（知识同步门）
 
-- [ ] `ai/skills/pallastrade-catalog/SKILL.md`（配送读模型口径：排除数字商品方式 + 分类匹配 + 保守回退）
-- [ ] `ai/skills/pallastrade-storefront/SKILL.md`（列表归因 `listId` 约定 + back-in-stock 事件 + 埋点不阻塞交互）
-- [ ] `harness/scenarios/scenarios.json`（新增场景：配送提示不得由不适用方式产生；列表点击必须可归因）
-- [ ] `docs/research/RESEARCH-20260916-catalog-domain-audit.md`（G-1 措辞更正：无 store 维度）
-- [ ] 本 PRD 状态 + `docs/prd/README.md` 索引（`prd-status-sync --fix`）
-- [ ] API 文档：**预计无需改**（字段不变）；以 `harness generated:check` 结果为准
+> 实施提交 `81f3e451`（2026-09-16 19:37，18 文件）。以下为 2026-09-18 收口时的逐项核实结果。
+
+- [x] `ai/skills/pallastrade-catalog/SKILL.md`（配送读模型口径：排除数字商品方式 + 分类匹配 + 保守回退）—— 已同步，见该文件「配送方式的适用性口径（收口批次，2026-09-16，PRD-20260916-shipping-catalog-observability-scope）」一节
+- [x] `ai/skills/pallastrade-storefront/SKILL.md`（列表归因 `listId` 约定 + back-in-stock 事件 + 埋点不阻塞交互）—— 已同步（§组件约定「转化类动作也要发事件」）
+- [x] `harness/scenarios/scenarios.json`（新增场景：配送提示不得由不适用方式产生；列表点击必须可归因）—— 已新增 **GS-157**
+- [x] `docs/research/RESEARCH-20260916-catalog-domain-audit.md`（G-1 措辞更正：无 store 维度）—— 已回填「2026-09-16 收口批次已修复」
+- [x] 本 PRD 状态 + `docs/prd/README.md` 索引（`prd-status-sync --fix`）—— 2026-09-18 由 `approved` 回填为 `done`（原来只写了立项行，状态/清单/变更记录三处均未回填；本次补齐）
+- [x] API 文档：**确认无需改**（`methods[]` 内容更准确但键集不变）；`harness generated:check` 无漂移
+- [x] AC ↔ 测试标记（2026-09-18 补齐）：此前仅 `estimate_spec.rb` 用了**完整 PRD-ID**，
+      且 4 个前台组件测试与 1 个请求 spec 用的是**缩写批次名**或**无标记** → `harness prd verify` 无法识别。
+      已统一为完整 PRD-ID（并补 AC-002 / AC-009 / AC-007+AC-012 的实际覆盖点）
 
 ## 10. 关键决策
 
@@ -145,3 +150,5 @@
 |---|---|---|---|
 | 2026-09-16 | 0.1 | 初稿：由商品域审计 G-1/G-2/G-3/G-4 提炼为「口径修正 + 可测性」单批次 | AI |
 | 2026-09-16 | 1.0 | 用户「实施」确认；补 D1~D5 决策、AC 表、测试与文档同步清单 → 状态 approved | AI |
+| 2026-09-18 | 1.1 | **状态回填（approved → done）+ AC 标记校准**：代码已于 `81f3e451` 落地（18 文件 —— `Estimate#applicable_methods` 排除 `ShippingMethod.digital` + 配送分类交集；`RelatedProducts`/`RecentlyViewed` 传 `listId`；`gtm.ts#trackBackInStockSubscribe` + `BackInStockNotify` 调用；5 个测试文件；2 个 Skill；GS-157）。本期仅补记交付状态与 AC 标记，**未改任何生产行为**；同时把 §8 的 AC 归属校准为实测（AC-002 由 `estimate_spec` 承载） | AI |
+| 2026-09-18 | 1.1 | **状态回填（approved → done）**：代码已于 `81f3e451` 落地（18 文件：`Estimate#applicable_methods` 排除 `ShippingMethod.digital` + 配送分类交集；`RelatedProducts`/`RecentlyViewed` 传 `listId`；`gtm.ts#trackBackInStockSubscribe` + `BackInStockNotify` 调用；5 个测试文件；2 个 Skill；GS-157）。本期仅补记交付状态与 AC 标记，**未改任何生产行为** | AI |

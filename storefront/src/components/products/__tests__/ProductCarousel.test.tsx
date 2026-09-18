@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ProductCarousel } from "@/components/products/ProductCarousel";
 
 /**
- * PRD-20260916-shipping-商品域收口批次 AC-008/AC-009 (mechanism):
+ * PRD-20260916-shipping-catalog-observability-scope AC-008/AC-009 (mechanism):
  * one carousel serves every rail, and it used to hard-code `featured-products`
  * / `Featured Products` — so Related and Recently Viewed clicks were reported
  * as Featured clicks. The rail id must come from the caller, with Featured as

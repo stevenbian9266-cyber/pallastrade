@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { RelatedProducts } from "@/components/products/RelatedProducts";
 
 /**
- * PRD-20260916-shipping-商品域收口批次 AC-008: the related rail must attribute
+ * PRD-20260916-shipping-catalog-observability-scope AC-008: the related rail must attribute
  * its clicks to itself. `ProductCarousel` used to hard-code
  * `featured-products` / `Featured Products`, so every click in this rail was
  * counted as a Featured click (worse than no attribution at all).

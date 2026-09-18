@@ -37,7 +37,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 ## PRD 列表
 
 | 状态 | PRD | 分类 | 日期 | 关联 REQ |
-|---|---|---|---|---|| draft | PRD-20260918-admin-ai-output-validation | admin | 2026-09-18 | REQ-20260918-ai-output-validation.md || done | PRD-20260918-api-deepseek-structured-output | api | 2026-09-18 | REQ-20260918-deepseek-adapter-structured-output.md |
+|---|---|---|---|---|
 | done | PRD-20260914-checkout-quote-confirmation-loop | checkout | 2026-09-14 | REQ-20260914-checkout-quote-confirmation-loop.md |
 | done | PRD-20260914-admin-disputes-evidence-params-whitelist | admin | 2026-09-14 | REQ-20260914-admin-disputes-evidence-params-whitelist.md |
 | done | PRD-20260914-shipping-category-name-i18n-fallback | shipping | 2026-09-14 | REQ-20260914-shipping-category-name-i18n-fallback.md |
@@ -214,7 +214,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260916-catalog-d3-product-merge | catalog | 2026-09-16 | （实施时回填） |
 | done | PRD-20260916-payments-d13c-fee-cost-report | payments | 2026-09-16 | （实施时回填） |
 | done | PRD-20260916-payments-d13d-fx-snapshot | payments | 2026-09-16 | （实施时回填） |
-| approved | PRD-20260916-shipping-catalog-observability-scope | shipping | 2026-09-16 | （实施时回填） |
+| done | PRD-20260916-shipping-catalog-observability-scope | shipping | 2026-09-16 | （实施时回填） |
 | done | PRD-20260916-catalog-ai-acceptance-audit | catalog | 2026-09-16 |  实施：AI 采纳审计——`AI::Run` 增采纳状态 + `RecordAcceptance` 服务 + `POST /admin/ai/acceptances`（跨店/非法/幂等/改判均有覆盖）+ Runs 列表展示状态；`run_acceptance_spec` / `ai_acceptances_spec` / `ai_assist_edited_source_spec` 绿 |
 | done | PRD-20260916-payments-d14c-dispute-rate-board | payments | 2026-09-16 | （实施时回填） |
 | done | PRD-20260916-catalog-operations-report | catalog | 2026-09-16 | （实施时回填） |

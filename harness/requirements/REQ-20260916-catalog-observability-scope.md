@@ -1,6 +1,6 @@
 # REQ-20260916-catalog-observability-scope
 
-> 关联 PRD：`docs/prd/shipping/PRD-20260916-shipping-catalog-observability-scope.md`（approved）
+> 关联 PRD：`docs/prd/shipping/PRD-20260916-shipping-catalog-observability-scope.md`（done，实施 `81f3e451`；2026-09-18 回填）
 > 任务：`TASK-20260916112140-489b50f0` · Gate：`GATE-2026-09-16T11-21-50`
 > 来源：商品域审计 `docs/research/RESEARCH-20260916-catalog-domain-audit.md` 的 G-1（P0）+ G-2/G-3/G-4（P1）
 

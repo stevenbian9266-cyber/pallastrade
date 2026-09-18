@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BackInStockNotify } from "@/components/products/BackInStockNotify";
 
 /**
- * PRD-20260916-shipping-商品域收口批次 AC-010/AC-011: subscribing used to be
+ * PRD-20260916-shipping-catalog-observability-scope AC-010/AC-011: subscribing used to be
  * invisible to analytics (no way to answer "did 缺货订阅 bring sales"), and
  * tracking must never be able to break the flow.
  */

@@ -3,7 +3,9 @@
 require 'spec_helper'
 
 # PRD-20260916-catalog-batch-f2-stock-shipping AC-006
-# PRD-20260916-shipping-catalog-observability-scope AC-001 AC-003 AC-004 AC-005 AC-007
+# PRD-20260916-shipping-catalog-observability-scope AC-001 AC-002 AC-003 AC-004 AC-005 AC-006 AC-007
+#   AC-002：数字商品仍走既有短路分支（见 `describe 'digital products'`）
+#   AC-006：店铺有运行中的免运费促销 → free_shipping=true（见 `describe 'free shipping (FR-008)'`）
 RSpec.describe PallasTrade::Shipping::Estimate do
   let(:store) { PallasTrade::Store.default }
   let(:product) { create(:product, store: store, status: 'active') }

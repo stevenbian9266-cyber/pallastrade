@@ -103,6 +103,8 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 - preparation checks 清除后即可进入 implementation；task-bound `verify-test` 禁止手工 clear，必须在知识评估完成后运行 `harness evidence verify --task <TASK-ID> --gate <GATE-ID>`
 - Standard/Critical 任务需满足 review/knowledge 等证据；Critical 任务还必须有 `harness recovery create|verify` 的人工恢复计划
 - 最后运行 `harness task finish --task <TASK-ID>`；PRD 状态 `verifying` → `done`
+- **状态回填不是可选项（2026-09-18 第二次实测）**：PRD 与实施**同批提交**时最容易漂移 —— 立项那一笔就把状态写成 `approved`，代码落地后没人再回来改，于是索引里长期挂着「approved」而功能其实已上线（实例：`PRD-20260916-shipping-catalog-observability-scope`，代码在 `81f3e451` 落地，状态到 9-18 才回填）。收尾时**五处同时核对**：① 状态头 ② §9 同步清单勾选 ③ §11 变更记录 ④ `docs/prd/README.md` 索引 ⑤ REQ 头部引用 —— 任一处落后于代码都算未收口。
+- **AC 标记必须用完整 PRD-ID**：`harness prd verify` 只认「完整 PRD-ID + AC-x 同一行」；写成批次别称（如 `PRD-20260916-shipping-商品域收口批次`）或只写 `AC-00x` 都**不算覆盖**。收尾跑一次 `harness prd verify --id <PRD-ID>`；有缺失就补标记 —— 既有用例已覆盖时**补一行注释即可**，不要为凑覆盖写虚测试。
 - **复盘沉淀（可选）**：任务结束后可运行 `harness review new|propose|apply`（复盘 → 规则提案 → 写回通用规则库 `rules/base-*.json`），把本次踩坑/经验沉淀为跨项目可复用规则；engine/docs 类提案进入待办清单随版本发布
 
 ## 8. 阶段 4：知识同步门（收尾）
@@ -142,10 +144,12 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 - 禁止创建重复 PRD（`harness prd new` 自动查重；相似 PRD 必须用 `harness prd update` 回写原文档）
 - 禁止跳过分层测试或知识同步门
 - 禁止在 PRD 未 done 时关闭 gate（verify-test 前置）
+- 禁止 PRD 状态落后于代码：实施与 PRD 同批提交时，也必须回填状态/清单/变更记录/索引/REQ 五处
 
 ## 11. 变更记录
 
 | 日期 | 变更 | 操作者 |
 |---|---|---|
 | 2026-09-05 | 同步 `docs/prd/_TEMPLATE.md` 变更说明：P2 收口包（PRD-20260905-other-txn-p2-closure）沿用模板扩展章节结构（元数据表/背景/FR/AC/跨层/测试/同步清单/变更记录）；分类语义微调记录于 PRD 元数据 | AI |
+| 2026-09-18 | §7 增「状态回填五处核对」与「AC 标记必须用完整 PRD-ID」（第二次同类漂移后沉淀）；§10 增对应禁止事项 | AI |
 

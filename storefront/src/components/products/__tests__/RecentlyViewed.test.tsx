@@ -8,6 +8,12 @@ import {
   serializeRecentlyViewed,
 } from "@/lib/utils/recently-viewed";
 
+/**
+ * PRD-20260916-shipping-catalog-observability-scope AC-009: the recently viewed
+ * rail must report its own list identity — otherwise its clicks are attributed
+ * to the Featured rail and the metric answers the wrong question.
+ */
+
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));
