@@ -29,6 +29,7 @@ import {
 import {
   expressPaymentMethodsFor,
   expressPaymentMethodsForKinds,
+  isExpressWalletKind,
   selectedWalletAvailability,
   WALLET_READY_TIMEOUT_MS,
   type WalletAvailability,
