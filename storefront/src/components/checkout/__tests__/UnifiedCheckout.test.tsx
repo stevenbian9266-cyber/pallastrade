@@ -27,6 +27,7 @@ vi.mock("@stripe/react-stripe-js", () => ({
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
     values ? `${key}:${JSON.stringify(values)}` : key,
+  useLocale: () => "en",
 }));
 
 vi.mock("next/navigation", () => ({
@@ -44,6 +45,7 @@ vi.mock("@/lib/utils/stripe", () => ({
   getStripePromise: () => Promise.resolve(null),
   isStripeConfigured: () => stripeConfiguredState.value,
   resolveStripePublishableKey: () => null,
+  stripeLocaleFor: (locale: string) => locale,
   normalizeClientSecret: (s: string) => s,
   extractSessionClientSecret: (
     session: {
@@ -545,6 +547,67 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     renderCheckout(makeCart({ payment_methods: [] as never }));
 
     expect(screen.getByText("noPaymentMethods")).toBeTruthy();
+  });
+
+  // PRD-20260919-payments-checkout-top-express-pay-locale AC-001：
+  // 顶部快捷支付区位于 H1 之下、第 1 节（Contact Information 的邮箱输入）之前。
+  it("renders the top express area before the contact section (AC-001)", async () => {
+    // 未配置 Stripe 时顶部区按 FR-007 静默隐藏，因此这里需要已配置。
+    stripeConfiguredState.value = true;
+    const cart = makeCart({
+      currency: "USD",
+      payment_methods: [
+        {
+          id: "pm_stripe",
+          name: "Stripe",
+          type: "stripe",
+          session_required: true,
+          kind: "gateway",
+          frontend_kind: "inline",
+          option_id: "pm_stripe:card",
+          method_key: "card",
+          display_name: "Card",
+          entries: [
+            {
+              option_id: "pm_stripe:card",
+              method_key: "card",
+              display_name: "Card",
+              frontend_kind: "inline",
+              group: "card",
+              position: 1,
+            },
+            {
+              option_id: "pm_stripe:apple_pay",
+              method_key: "apple_pay",
+              display_name: "Apple Pay",
+              frontend_kind: "express",
+              group: "wallet",
+              position: 2,
+            },
+          ],
+        },
+      ],
+    } as never);
+    renderCheckout(cart);
+
+    const top = await screen.findByTestId(
+      "top-express-payment",
+      {},
+      { timeout: 10000 },
+    );
+    const email = screen.getByLabelText("email");
+    expect(
+      top.compareDocumentPosition(email) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  // PRD-20260919-payments-checkout-top-express-pay-locale AC-002 AC-009：
+  // 无 express 入口（默认 cart 仅 inline）→ 顶部区不渲染；第 5 节照常。
+  it("does not render the top express area without express entries (AC-002)", () => {
+    renderCheckout();
+
+    expect(screen.queryByTestId("top-express-payment")).toBeNull();
+    expect(screen.getByText("paymentMethod")).toBeTruthy();
   });
 
   it("keeps the user on checkout when orchestration fails before an order exists", async () => {

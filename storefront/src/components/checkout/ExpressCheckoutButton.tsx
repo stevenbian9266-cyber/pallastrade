@@ -15,8 +15,9 @@ import type {
   StripeExpressCheckoutElementShippingRateChangeEvent,
 } from "@stripe/stripe-js";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   completeExpressCheckout,
   expressClientSecret,
@@ -27,9 +28,11 @@ import {
 } from "@/lib/checkout/express-canonical";
 import {
   expressPaymentMethodsFor,
+  expressPaymentMethodsForKinds,
   selectedWalletAvailability,
   WALLET_READY_TIMEOUT_MS,
   type WalletAvailability,
+  walletAvailabilityForKinds,
 } from "@/lib/checkout/wallet-availability";
 import {
   expressCheckoutResolveShipping,
@@ -46,6 +49,7 @@ import {
   getStripePromise,
   isStripeConfigured,
   type PaymentClientConfig,
+  stripeLocaleFor,
 } from "@/lib/utils/stripe";
 
 export interface ExpressCheckoutButtonProps {
@@ -62,6 +66,20 @@ export interface ExpressCheckoutButtonProps {
    * 传入 → **点谁显示谁**（其余钱包 `never`）；不传 → 无入口上下文（抽屉：多钱包并排）。
    */
   entryKind?: string | null;
+  /**
+   * PRD-20260919-payments-checkout-top-express-pay-locale（2026-09-19）——
+   * **多入口集合**（顶部快捷支付区）：服务端投影中全部可渲染的 express 入口。
+   * 传入 → 一次启用集合内全部钱包（`always`；`link` 为 `auto`）；与 `entryKind`
+   * 二者取一（`entryKinds` 优先，集合为空视为未传）。
+   */
+  entryKinds?: string[] | null;
+  /**
+   * 降级展示（PRD-20260919-payments-checkout-top-express-pay-locale FR-007）：
+   * `notice`（默认，第 5 节入口槽）= 行内提示 + 重试；
+   * `toast`（顶部快捷区）= 加载失败/超时弹 3s toast 后整区隐藏；`device` 等
+   * 确定性不可用保持静默（不打扰、不占位）。
+   */
+  degradedDisplay?: "notice" | "toast";
   /** PALLAS-CUSTOM: D10 —— 服务端下发的 client_config（缺省回落环境变量）。 */
   clientConfig?: PaymentClientConfig | null;
 }
@@ -75,6 +93,8 @@ function ExpressCheckoutInner({
   maxColumns = 1,
   showDivider = true,
   entryKind,
+  entryKinds,
+  degradedDisplay = "notice",
   onRetry,
 }: ExpressCheckoutButtonProps & { onRetry?: () => void }) {
   const stripe = useStripe();
@@ -91,6 +111,9 @@ function ExpressCheckoutInner({
   const [processing, setProcessing] = useState(false);
   const isConfirmingRef = useRef(false);
   const isGooglePayRef = useRef(false);
+  /** PRD-20260919-payments-checkout-top-express-pay-locale AC-005：用户实际点击
+   *  的钱包 kind（confirm 时作为 `option_kind` 透传 → 服务端同源复算）。 */
+  const clickedKindRef = useRef<string | null>(null);
   const shippingRateMapRef = useRef(
     new Map<string, Array<{ fulfillmentId: string; rateId: string }>>(),
   );
@@ -122,26 +145,43 @@ function ExpressCheckoutInner({
   const handleReady = useCallback(
     (event: StripeExpressCheckoutElementReadyEvent) => {
       availabilityReportedRef.current = true;
-      const result = selectedWalletAvailability(
-        entryKind,
-        event.availablePaymentMethods,
-      );
+      // PRD-20260919-payments-checkout-top-express-pay-locale：多入口集合（顶部快捷区）
+      // 与单入口（第 5 节槽位）分别读数——集合任一可用即可用。
+      const result =
+        entryKinds && entryKinds.length > 0
+          ? walletAvailabilityForKinds(
+              entryKinds,
+              event.availablePaymentMethods,
+            )
+          : selectedWalletAvailability(
+              entryKind,
+              event.availablePaymentMethods,
+            );
       setAvailability(result);
       onAvailabilityChangeRef.current?.(result);
     },
-    [entryKind],
+    [entryKind, entryKinds],
   );
 
-  // 切换选中入口（或重试）→ 重新探测：清掉上一轮结论并重新看门狗计时。
-  // biome-ignore lint/correctness/useExhaustiveDependencies: entryKind 仅作触发器（重跑探测），不参与计算
+  // 切换选中入口/入口集合（或重试）→ 重新探测：清掉上一轮结论并重新看门狗计时。
+  // biome-ignore lint/correctness/useExhaustiveDependencies: entryKind/entryKinds 仅作触发器（重跑探测），不参与计算
   useEffect(() => {
     availabilityReportedRef.current = false;
     setAvailability({ state: "unknown" });
-  }, [entryKind]);
+  }, [entryKind, entryKinds]);
 
   const handleClick = useCallback(
     (event: StripeExpressCheckoutElementClickEvent) => {
-      isGooglePayRef.current = event.expressPaymentType === "google_pay";
+      const paymentType = event.expressPaymentType;
+      isGooglePayRef.current = paymentType === "google_pay";
+      // PRD-20260919-payments-checkout-top-express-pay-locale AC-005：记录用户实际点击
+      // 的钱包（apple_pay / google_pay / link），confirm 时作为 `option_kind` 透传。
+      clickedKindRef.current =
+        paymentType === "apple_pay" ||
+        paymentType === "google_pay" ||
+        paymentType === "link"
+          ? paymentType
+          : null;
       event.resolve({
         lineItems: expressLineItems(cart),
       });
@@ -151,7 +191,7 @@ function ExpressCheckoutInner({
 
   // D7 补口 3（看门狗）：元素可能**永不**上报设备能力（Stripe iframe 被中断 / 移动网络慢）。
   // 只等回调会留下无限加载态；超时 → `unavailable(timeout)`（**可重试**，不判死）。
-  // biome-ignore lint/correctness/useExhaustiveDependencies: entryKind 仅作触发器（换入口重计时）
+  // biome-ignore lint/correctness/useExhaustiveDependencies: entryKind/entryKinds 仅作触发器（换入口重计时）
   useEffect(() => {
     if (availability.state !== "unknown" || availabilityReportedRef.current) {
       return;
@@ -166,7 +206,20 @@ function ExpressCheckoutInner({
       onAvailabilityChangeRef.current?.(result);
     }, WALLET_READY_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [availability.state, entryKind]);
+  }, [availability.state, entryKind, entryKinds]);
+
+  // PRD-20260919-payments-checkout-top-express-pay-locale AC-008（FR-007）：
+  // 顶部快捷区（`degradedDisplay="toast"`）加载失败/超时 → 3s toast（每次挂载最多
+  // 一次）；确定性不可用（device / unsupported / unconfigured）保持静默不打扰。
+  const toastFiredRef = useRef(false);
+  useEffect(() => {
+    if (degradedDisplay !== "toast") return;
+    if (availability.state !== "unavailable") return;
+    if (availability.reason !== "timeout") return;
+    if (toastFiredRef.current) return;
+    toastFiredRef.current = true;
+    toast(t("unavailableToast"), { duration: 3000 });
+  }, [availability, degradedDisplay, t]);
 
   const handleShippingAddressChange = useCallback(
     async (event: StripeExpressCheckoutElementShippingAddressChangeEvent) => {
@@ -325,10 +378,22 @@ function ExpressCheckoutInner({
         // PRD-20260915-checkout B4 FR-001：地址/邮箱并入 canonical start body；
         // BFF 内部完成 carts.update → 幂等 submit → orders.transactions.create
         // （Transactions::Start → StockReserve → PaymentSessions::Start）。
+        // PRD-20260919-payments-checkout-top-express-pay-locale AC-005：入口级同源校验——
+        // 把用户实际点击的钱包 kind（或单入口上下文）作为 `option_kind` 透传；
+        // 服务端复算可用性，不可用 → 422（不建会话，前台按既有约定提示重选）。
+        const kindFromEntry =
+          entryKind && isExpressWalletKind(entryKind) ? entryKind : null;
+        const kindFromKinds =
+          entryKinds?.length === 1 && isExpressWalletKind(entryKinds[0])
+            ? (entryKinds[0] ?? null)
+            : null;
+        const optionKind =
+          clickedKindRef.current ?? kindFromEntry ?? kindFromKinds;
         const startResult = await startExpressCheckout({
           cart_id: cart.id,
           payment_method_id: sessionPaymentMethod.id,
           payment_mode: "payment_intent",
+          ...(optionKind ? { option_kind: optionKind } : {}),
           checkout: {
             email: email || undefined,
             shipping_address: buildPallasTradeAddress(
@@ -412,6 +477,8 @@ function ExpressCheckoutInner({
       cart.id,
       cart.payment_methods,
       basePath,
+      entryKind,
+      entryKinds,
       onComplete,
       router,
       updateProcessing,
@@ -427,6 +494,8 @@ function ExpressCheckoutInner({
   // - `unknown` → 加载中（附提示文案，移动端更慢但不判死）
   // - `unavailable` → 按**原因**给文案 + 「重试」（父级通常已自动回落卡支付）
   if (availability.state === "unavailable") {
+    // 顶部快捷区（toast 模式）：不渲染行内提示/占位（异常由 3s toast 表达，整区由父级隐藏）。
+    if (degradedDisplay === "toast") return null;
     const reason = availability.reason ?? "device";
     return (
       <div
@@ -455,7 +524,10 @@ function ExpressCheckoutInner({
     );
   }
 
-  const paymentMethodsOption = expressPaymentMethodsFor(entryKind);
+  const paymentMethodsOption =
+    entryKinds && entryKinds.length > 0
+      ? expressPaymentMethodsForKinds(entryKinds)
+      : expressPaymentMethodsFor(entryKind);
   if (!paymentMethodsOption) return null;
 
   return (
@@ -553,7 +625,10 @@ function ExpressCheckoutWithElements({
   showDivider,
   clientConfig,
   entryKind,
+  entryKinds,
+  degradedDisplay,
 }: ExpressCheckoutButtonProps) {
+  const locale = useLocale();
   const currency = cart.currency.toLowerCase();
   // D7 补口 3：重试 = 重挂载 Elements（重新初始化元素并重新探测设备能力）
   const [retryToken, setRetryToken] = useState(0);
@@ -569,8 +644,11 @@ function ExpressCheckoutWithElements({
       amount: initialAmountRef.current(),
       currency: initialCurrencyRef.current,
       paymentMethodCreation: "manual" as const,
+      // PRD-20260919-payments-checkout-top-express-pay-locale FR-006：
+      // Stripe 渲染面（钱包按钮/弹层内文案）跟随站点语种。
+      locale: stripeLocaleFor(locale),
     }),
-    [],
+    [locale],
   );
 
   return (
@@ -588,6 +666,8 @@ function ExpressCheckoutWithElements({
         maxColumns={maxColumns}
         showDivider={showDivider}
         entryKind={entryKind}
+        entryKinds={entryKinds}
+        degradedDisplay={degradedDisplay}
         onRetry={() => setRetryToken((token) => token + 1)}
       />
     </Elements>

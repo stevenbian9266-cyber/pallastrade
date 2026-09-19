@@ -44,6 +44,7 @@ import {
   paymentEntriesFor,
 } from "@/components/checkout/PaymentSection";
 import { SaveInfoSection } from "@/components/checkout/SaveInfoSection";
+import { TopExpressPay } from "@/components/checkout/TopExpressPay";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -1041,6 +1042,18 @@ export function UnifiedCheckout({
       <h1 className="text-3xl font-bold text-gray-900 mb-8">
         {t("orderConfirmation")}
       </h1>
+
+      {/* PRD-20260919-payments-checkout-top-express-pay-locale FR-001：顶部快捷支付区
+          （服务端 express 入口 → 钱包按钮直接可见、横向自适应；
+          第 5 节入口行按用户决策保留，双触点）。 */}
+      <TopExpressPay
+        cart={cart as unknown as Cart}
+        basePath={basePath}
+        methods={paymentMethods}
+        onComplete={async () => {
+          router.push(`${basePath}/cart`);
+        }}
+      />
 
       {/* PRD-20260914-checkout-quote-confirmation-loop FR-005：报价漂移的页内确认 */}
       {quoteDiff && (

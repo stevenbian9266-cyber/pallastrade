@@ -845,6 +845,8 @@
     "removeAria": "Retirer de la liste de souhaits"
   },
   "expressCheckout": {
+    "title": "Paiement express",
+    "unavailableToast": "Le paiement rapide par portefeuille n'a pas pu être chargé. Veuillez utiliser les options de paiement ci-dessous.",
     "shipping": "Livraison",
     "finalizingPayment": "Finalisation du paiement...",
     "or": "ou"

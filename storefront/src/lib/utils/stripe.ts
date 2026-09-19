@@ -43,6 +43,33 @@ export interface PaymentClientConfig {
 const stripePromises = new Map<string, Promise<Stripe | null>>();
 
 /**
+ * PRD-20260919-payments-checkout-top-express-pay-locale（2026-09-19）——
+ * Stripe 渲染面跟随**站点语种**。此前所有 `Elements`/`loadStripe` 均未传 `locale`，
+ * Stripe 按**浏览器语言**自动检测 → 中文浏览器上钱包按钮/卡表单渲染中文，
+ * 与商城前台语种（messages/{de,en,es,fr,pl}.json 五语言）不符。
+ *
+ * 站点五语种均映射为 Stripe 同码 locale；未知/缺省回落 `auto`（= 维持旧的
+ * 浏览器语言行为，不劣于现状）。
+ */
+export type StorefrontStripeLocale = "auto" | "de" | "en" | "es" | "fr" | "pl";
+
+const SITE_LOCALE_TO_STRIPE: Record<string, StorefrontStripeLocale> = {
+  de: "de",
+  en: "en",
+  es: "es",
+  fr: "fr",
+  pl: "pl",
+};
+
+/** 站点 locale（如 `en` / `en-US`）→ Stripe `Elements` 的 `locale` 选项值。 */
+export function stripeLocaleFor(
+  siteLocale?: string | null,
+): StorefrontStripeLocale {
+  const base = (siteLocale ?? "").toLowerCase().split("-")[0] ?? "";
+  return SITE_LOCALE_TO_STRIPE[base] ?? "auto";
+}
+
+/**
  * 解析 Stripe publishable key：API 下发值优先 → 回落 `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`。
  * @returns 非空字符串；两处都缺时返回 null。
  */

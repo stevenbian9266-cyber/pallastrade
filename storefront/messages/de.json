@@ -845,6 +845,8 @@
     "removeAria": "Von der Merkliste entfernen"
   },
   "expressCheckout": {
+    "title": "Express-Bezahlung",
+    "unavailableToast": "Die Wallet-Schnellzahlung konnte nicht geladen werden. Bitte nutzen Sie die Zahlungsoptionen unten.",
     "shipping": "Versand",
     "finalizingPayment": "Zahlung wird abgeschlossen...",
     "or": "oder"

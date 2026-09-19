@@ -9,7 +9,7 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 import { Loader2, Lock } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   forwardRef,
   useCallback,
@@ -19,7 +19,11 @@ import {
   useState,
 } from "react";
 import { Input } from "@/components/ui/input";
-import { getStripePromise, type PaymentClientConfig } from "@/lib/utils/stripe";
+import {
+  getStripePromise,
+  type PaymentClientConfig,
+  stripeLocaleFor,
+} from "@/lib/utils/stripe";
 
 export interface CardPaymentFormHandle {
   /** 校验卡字段并用 Elements 卡号字段 confirmCardPayment(pi_secret)。 */
@@ -77,8 +81,14 @@ export const CardPaymentForm = forwardRef<
   CardPaymentFormHandle,
   CardPaymentFormProps
 >(function CardPaymentForm({ onReady, clientConfig }, ref) {
+  const locale = useLocale();
+  // PRD-20260919-payments-checkout-top-express-pay-locale FR-006：
+  // Stripe 渲染面（卡字段校验/错误文案）跟随站点语种。
   return (
-    <Elements stripe={getStripePromise(clientConfig)}>
+    <Elements
+      stripe={getStripePromise(clientConfig)}
+      options={{ locale: stripeLocaleFor(locale) }}
+    >
       <CardPaymentFormInner onReady={onReady} ref={ref} />
     </Elements>
   );

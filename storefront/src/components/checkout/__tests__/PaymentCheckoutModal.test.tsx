@@ -14,6 +14,7 @@ const tFn = (key: string, params?: Record<string, unknown>) =>
 
 vi.mock("next-intl", () => ({
   useTranslations: () => tFn,
+  useLocale: () => "en",
 }));
 
 vi.mock("next/navigation", () => ({
@@ -33,6 +34,7 @@ vi.mock("@/lib/utils/stripe", () => ({
   getStripePromise: () => Promise.resolve(null),
   isStripeConfigured: () => false,
   resolveStripePublishableKey: () => null,
+  stripeLocaleFor: (locale: string) => locale,
   normalizeClientSecret: (s: string) => s,
   extractSessionClientSecret: (
     session: {

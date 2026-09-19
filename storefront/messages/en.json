@@ -845,6 +845,8 @@
     "removeAria": "Remove from wishlist"
   },
   "expressCheckout": {
+    "title": "Express checkout",
+    "unavailableToast": "Wallet quick pay couldn't be loaded. Please continue with the payment options below.",
     "shipping": "Shipping",
     "finalizingPayment": "Finalizing your payment...",
     "or": "or"

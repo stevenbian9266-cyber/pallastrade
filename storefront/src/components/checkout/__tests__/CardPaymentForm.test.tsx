@@ -8,6 +8,7 @@ import {
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => "en",
 }));
 
 const confirmCardPaymentMock = vi.fn();

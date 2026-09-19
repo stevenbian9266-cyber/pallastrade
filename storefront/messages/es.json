@@ -845,6 +845,8 @@
     "removeAria": "Quitar de la lista de deseos"
   },
   "expressCheckout": {
+    "title": "Pago rápido",
+    "unavailableToast": "No se pudo cargar el pago rápido con cartera. Continúa con las opciones de pago a continuación.",
     "shipping": "Envio",
     "finalizingPayment": "Finalizando tu pago...",
     "or": "o"

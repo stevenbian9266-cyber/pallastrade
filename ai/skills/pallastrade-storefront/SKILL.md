@@ -637,6 +637,27 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 - 覆盖测试：`__tests__/ExpressCheckoutButton.test.tsx` / `WalletPaymentButtons.test.tsx`（三态 + 按入口过滤 + 看门狗 + 未配置）、
   `__tests__/UnifiedCheckout.test.tsx` / `OrderPaymentContent.test.tsx`（回落 + 原因标注 + 重试 + 无 `Processing...`）；改动后跑 `storefront-test`。
 
+### 顶部快捷支付区 + Stripe 语种跟随（2026-09-19；PRD-20260919-payments-checkout-top-express-pay-locale）
+
+- **顶部快捷支付区**（cart_ 统一下单页，`components/checkout/TopExpressPay.tsx`）：位于 `<h1>` 之下、
+  第 1 节之前；把服务端 `payment_methods[].entries` 中 `frontend_kind === "express"` 且**元素可承载**的
+  kind（`apple_pay` / `google_pay` / `link`）一次性以钱包按钮呈现（`entryKinds` → `expressPaymentMethodsForKinds`：
+  集合内 `always`、集合外 `never`，`link` 用 `auto`），`maxColumns=2` 横向自适应（**不自动堆叠**）。
+  不可承载 kind（paypal / shop_pay / …）不进顶部区，**仍保留在第 5 节入口列表**（零筛选红线）。
+- **双触点（用户决策）**：第 5 节入口行与「选中 express 入口 → 钱包槽位」保持既有行为，**不删除**。
+- **顶部区降级**（`degradedDisplay="toast"`）：加载失败/超时 → `sonner` toast 3 秒（每次挂载一次）+ 整区隐藏；
+  `device` / `unsupported` / `unconfigured` → **静默隐藏**（桌面零噪音）；`unknown` 期间保留加载态。
+- **`option_kind` 透传**：钱包 confirm 时把用户**实际点击**的 kind（`expressPaymentType`，或单入口上下文）
+  作为 `option_kind` 随 `/api/checkout/start` 下发 → 服务端 `PaymentSessions::Start` 入口级同源复算。
+- **Stripe 语种跟随**：`lib/utils/stripe.ts#stripeLocaleFor`（`en/de/es/fr/pl` → 同码；未知 → `auto`），
+  三处 `Elements`（`ExpressCheckoutButton` / `WalletPaymentButtons` / `CardPaymentForm`）均传 `locale` ——
+  此前未传 → Stripe 按**浏览器语言**渲染（中文浏览器上显示中文按钮，与站点语种不符）。
+  ⚠️ **平台限制**：Apple Pay 按钮/弹层语言由 **Apple 设备系统**决定，站点 `locale` 不保证改变之
+  （Google Pay 同理有 Google 侧规则）；实测口径见 PRD §NFR-007。
+- 覆盖测试：`__tests__/TopExpressPay.test.tsx`（渲染条件/入口集合/整区隐藏/凭据）、
+  `ExpressCheckoutButton.test.tsx` 的 `(top express area)` 段（多入口配置/2 列/locale/option_kind/toast 降级）、
+  `lib/__tests__/stripe-locale.test.ts`；改动后跑 `storefront-test`。
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - P0 (2026-09-03): Express(Apple/Google Pay) 金额/行项目改由服务端 Cart#express_payment 权威提供（expressAmount/expressLineItems；legacy buildLineItems 仅 fallback）；Legacy cart 支付=Compatibility Only。

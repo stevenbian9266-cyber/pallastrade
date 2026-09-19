@@ -7,7 +7,7 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 import type { StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type {
@@ -33,6 +33,7 @@ import {
   getStripePromise,
   isStripeConfigured,
   type PaymentClientConfig,
+  stripeLocaleFor,
 } from "@/lib/utils/stripe";
 
 /**
@@ -176,6 +177,7 @@ export function WalletPaymentButtons({
   onAvailabilityChange,
 }: WalletPaymentButtonsProps) {
   const t = useTranslations("checkout");
+  const locale = useLocale();
   const [session, setSession] = useState<{
     id: string;
     clientSecret: string;
@@ -316,7 +318,12 @@ export function WalletPaymentButtons({
       <Elements
         key={retryToken}
         stripe={getStripePromise(clientConfig)}
-        options={{ clientSecret: session.clientSecret }}
+        options={{
+          clientSecret: session.clientSecret,
+          // PRD-20260919-payments-checkout-top-express-pay-locale FR-006：
+          // Stripe 渲染面跟随站点语种。
+          locale: stripeLocaleFor(locale),
+        }}
       >
         <WalletInner
           orderId={orderId}

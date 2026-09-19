@@ -17,7 +17,10 @@ import type { WalletAvailability } from "@/lib/checkout/wallet-availability";
  */
 
 const tFn = (key: string) => key;
-vi.mock("next-intl", () => ({ useTranslations: () => tFn }));
+vi.mock("next-intl", () => ({
+  useTranslations: () => tFn,
+  useLocale: () => "en",
+}));
 
 /** D7 补口 2：可切换「已配置/未配置」以覆盖降级分支。 */
 const stripeConfiguredState = vi.hoisted(() => ({ value: true }));
@@ -41,6 +44,7 @@ vi.mock("@/lib/utils/stripe", () => ({
   isStripeConfigured: () => stripeConfiguredState.value,
   getStripePromise: () => Promise.resolve(null),
   resolveStripePublishableKey: () => "pk_test_mock",
+  stripeLocaleFor: (locale: string) => locale,
   normalizeClientSecret: (s: string) => s,
   extractSessionClientSecret: (session: {
     external_data?: Record<string, unknown> | null;

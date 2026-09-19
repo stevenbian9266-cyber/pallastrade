@@ -118,6 +118,24 @@ export function expressPaymentMethodsFor(
 }
 
 /**
+ * PRD-20260919-payments-checkout-top-express-pay-locale（2026-09-19）——
+ * **多入口**构造 `paymentMethods`（顶部快捷支付区）：把服务端投影中全部可渲染的
+ * express 入口一次性启用（`always` —— 非 Safari 桌面 Apple Pay / Firefox、Safari、
+ * iOS 的 Google Pay 仅在 `always` 时才会初始化，见上）；未列入集合的 kind 一律
+ * `never`（点谁显示谁的多入口版）；`link` 的类型只允许 `auto | never`，列入集合时用 `auto`。
+ */
+export function expressPaymentMethodsForKinds(
+  kinds: string[],
+): ExpressPaymentMethodsConfig {
+  const keys = new Set(kinds.map((kind) => stripeWalletKeyFor(kind)));
+  return {
+    applePay: keys.has("applePay") ? "always" : "never",
+    googlePay: keys.has("googlePay") ? "always" : "never",
+    link: keys.has("link") ? "auto" : "never",
+  };
+}
+
+/**
  * 读取本设备可用性（`onReady` 事件的 `availablePaymentMethods`）。
  *
  * ⚠️ **`undefined` 是确定性结论，不是「未知」**（Stripe 官方类型定义原文，
@@ -163,6 +181,30 @@ export function selectedWalletAvailability(
           availablePaymentMethods.link,
       );
   return usable
+    ? { state: "available" }
+    : { state: "unavailable", reason: "device" };
+}
+
+/**
+ * PRD-20260919-payments-checkout-top-express-pay-locale（2026-09-19）——
+ * 多入口（顶部快捷支付区）的设备能力读数：**任一**列入集合的可渲染 kind 可用
+ * 即 `available`；集合里一个可渲染 kind 都没有 → `unsupported`。
+ */
+export function walletAvailabilityForKinds(
+  kinds: string[],
+  availablePaymentMethods?: Record<string, boolean> | null,
+): WalletAvailability {
+  const keys = kinds
+    .map((kind) => stripeWalletKeyFor(kind))
+    .filter((key): key is StripeWalletKey => key !== null);
+  if (keys.length === 0) return { state: "unavailable", reason: "unsupported" };
+  if (
+    availablePaymentMethods === undefined ||
+    availablePaymentMethods === null
+  ) {
+    return { state: "unavailable", reason: "device" };
+  }
+  return keys.some((key) => availablePaymentMethods[key] === true)
     ? { state: "available" }
     : { state: "unavailable", reason: "device" };
 }

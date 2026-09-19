@@ -845,6 +845,8 @@
     "removeAria": "Usuń z listy życzeń"
   },
   "expressCheckout": {
+    "title": "Szybka płatność",
+    "unavailableToast": "Nie udało się wczytać szybkiej płatności portfelem. Skorzystaj z opcji płatności poniżej.",
     "shipping": "Dostawa",
     "finalizingPayment": "Finalizowanie płatności...",
     "or": "lub"

@@ -4884,6 +4884,40 @@
         "noNewConfigSurface": 10,
         "staticNoPatchCheck": 5
       }
+    },
+    {
+      "id": "GS-188",
+      "name": "Move wallet quick-pay to the top of checkout and make Stripe speak the storefront language",
+      "description": "The unified checkout page lists Apple Pay / Google Pay as entry rows in the payment section near the bottom, so the one-tap wallets sit below the address form, and the wallet buttons render in the browser language (a Chinese browser shows Chinese buttons on an English storefront) because no Stripe Elements instance receives a `locale`. The ask: put a quick-pay area at the top of the page (industry convention), make the buttons follow the storefront language, keep the existing bottom entry rows (both touchpoints), and keep the failure handling quiet.",
+      "mustDo": [
+        "Place the express area between the page title and the first form section, built only from the server's `payment_methods[].entries` projection (`frontend_kind === \"express\"`) - the client renders what the server allows and never filters by kind",
+        "Build the wallet widget from ALL renderable express entries at once (`expressPaymentMethodsForKinds`: entries in the set get `always`, the rest `never`; `link` only accepts `auto`/`never`), with `maxColumns: 2` so the buttons stay horizontal and width-adaptive instead of stacking",
+        "Keep express kinds the Stripe element cannot render (paypal, shop_pay, ...) out of the top area but still in the bottom entry list - relocation, not hiding",
+        "Preserve the existing entry rows and the selected-entry wallet slot in the payment section: both touchpoints coexist (the relocation is additive)",
+        "Pass the storefront locale to every Stripe Elements instance (`stripeLocaleFor`: en/de/es/fr/pl map to the same code, anything else falls back to `auto`), covering the wallet element, the card form and the order-pay page",
+        "State the platform limit in the docs and PRD: the Apple Pay button and sheet are localised by the Apple device, so the site locale cannot be guaranteed to change them",
+        "Record the wallet the shopper actually tapped (`expressPaymentType`, or the single-entry context) as `option_kind` on the canonical start call so the server re-checks the entry",
+        "Degrade quietly on the top surface: loading timeout/failure -> a 3-second toast (once per mount) and the whole area hides; a definitive device/unsupported/unconfigured verdict hides silently with no notice, no empty box and no layout residue",
+        "Prove it with focused tests: area renders from server entries, hides with none, skips unrenderable kinds, two columns, locale forwarded, option_kind forwarded, toast-once-on-timeout, silent on device verdict - plus the existing entry-row suite staying green"
+      ],
+      "mustNotDo": [
+        "Let the client pick which wallet entries exist: hiding a server-provided entry breaks the same-source rule (availability belongs to the server resolver)",
+        "Stack the wallets vertically on mobile, or render one wallet per element just to control the layout",
+        "Delete the bottom entry rows 'to avoid duplication' - the recorded decision keeps both touchpoints",
+        "Set the locale by guessing: `auto` is only the fallback for unknown codes, and a raw locale string must not be cast blindly into Stripe's option",
+        "Let a device verdict toast: a desktop shopper with no wallet must not be told about a wallet experience they never asked for (the toast is reserved for load failure/timeout)",
+        "Leave a permanent placeholder or spinner in the top area after the verdict arrives, or render a bordered empty box",
+        "Claim the language requirement is fully met without checking on a real device or recording which part the platform owns (Apple Pay button language)"
+      ],
+      "scoring": {
+        "serverProjectionNotClientFilter": 20,
+        "multiEntryHorizontalLayout": 15,
+        "localeForwardedAllInstances": 20,
+        "optionKindOnConfirm": 15,
+        "quietDegradationContract": 15,
+        "dualTouchpointPreserved": 10,
+        "platformLimitDocumented": 5
+      }
     }
   ]
 }

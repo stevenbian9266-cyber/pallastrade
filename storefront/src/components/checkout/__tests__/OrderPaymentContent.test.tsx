@@ -38,6 +38,7 @@ vi.mock("@stripe/react-stripe-js", () => ({
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => "en",
 }));
 
 vi.mock("next/navigation", () => ({
@@ -65,6 +66,7 @@ vi.mock("@/lib/utils/stripe", () => ({
   getStripePromise: () => Promise.resolve(null),
   isStripeConfigured: () => stripeConfiguredState.value,
   resolveStripePublishableKey: () => null,
+  stripeLocaleFor: (locale: string) => locale,
   normalizeClientSecret: (s: string) => s,
   extractSessionClientSecret: (
     session: {

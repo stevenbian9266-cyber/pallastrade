@@ -45,6 +45,12 @@ const REQUIRED: Record<string, string[]> = {
     "reviewCart",
     "retryInventoryCheck",
   ],
+  expressCheckout: [
+    // PRD-20260919-payments-checkout-top-express-pay-locale AC-007：
+    // 顶部快捷支付区标题 + 加载失败/超时 toast 文案（五语言齐备）。
+    "title",
+    "unavailableToast",
+  ],
   paymentResult: [
     "recoveryTitle",
     "recoveryDescription",

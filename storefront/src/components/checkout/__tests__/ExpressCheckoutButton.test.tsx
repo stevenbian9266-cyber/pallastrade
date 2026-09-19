@@ -10,7 +10,10 @@ import { ExpressCheckoutButton } from "@/components/checkout/ExpressCheckoutButt
  */
 
 const tFn = (key: string) => key;
-vi.mock("next-intl", () => ({ useTranslations: () => tFn }));
+vi.mock("next-intl", () => ({
+  useTranslations: () => tFn,
+  useLocale: () => "en",
+}));
 
 const pushMock = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -21,6 +24,7 @@ vi.mock("@/lib/utils/stripe", () => ({
   isStripeConfigured: () => true,
   getStripePromise: () => Promise.resolve(null),
   resolveStripePublishableKey: () => "pk_test_mock",
+  stripeLocaleFor: (locale: string) => locale,
 }));
 
 vi.mock("@/lib/data/express-checkout-flow", () => ({
@@ -40,14 +44,23 @@ const elementsStub = {
 };
 
 let capturedElementProps: Record<string, unknown> = {};
+let capturedElementsProps: Record<string, unknown> = {};
 vi.mock("@stripe/react-stripe-js", () => ({
-  Elements: ({ children }: { children: React.ReactNode }) => children,
+  Elements: (props: { children: React.ReactNode }) => {
+    capturedElementsProps = props as unknown as Record<string, unknown>;
+    return props.children;
+  },
   ExpressCheckoutElement: (props: Record<string, unknown>) => {
     capturedElementProps = props;
     return <div data-testid="express-checkout-element" />;
   },
   useStripe: () => stripeStub,
   useElements: () => elementsStub,
+}));
+
+const toastMock = vi.fn();
+vi.mock("sonner", () => ({
+  toast: (...args: unknown[]) => toastMock(...args),
 }));
 
 const fetchMock = vi.fn();
@@ -396,4 +409,145 @@ describe("ExpressCheckoutButton (canonical wallet)", () => {
       ).paymentMethods,
     ).toEqual({ applePay: "always", googlePay: "always", link: "auto" });
   });
+});
+
+// PRD-20260919-payments-checkout-top-express-pay-locale（2026-09-19）：
+// 顶部快捷支付区扩展 —— 多入口集合 / 横向自适应 / 站点 locale / toast 降级 / option_kind。
+describe("ExpressCheckoutButton (top express area)", () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+    pushMock.mockReset();
+    confirmPaymentMock.mockReset();
+    elementsSubmitMock.mockClear();
+    toastMock.mockReset();
+    capturedElementProps = {};
+    capturedElementsProps = {};
+  });
+
+  // PRD-20260919-payments-checkout-top-express-pay-locale AC-003 AC-006
+  it("enables every server entry, uses two columns and passes the site locale", async () => {
+    render(
+      <ExpressCheckoutButton
+        cart={cart}
+        basePath="/us/en"
+        entryKinds={["apple_pay", "google_pay"]}
+        degradedDisplay="toast"
+        maxColumns={2}
+        onComplete={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(capturedElementProps.options).toBeDefined());
+
+    const options = capturedElementProps.options as {
+      paymentMethods: Record<string, string>;
+      layout: { maxColumns: number };
+    };
+    expect(options.paymentMethods).toEqual({
+      applePay: "always",
+      googlePay: "always",
+      link: "never",
+    });
+    expect(options.layout.maxColumns).toBe(2);
+    expect(
+      (capturedElementsProps.options as { locale?: string } | undefined)
+        ?.locale,
+    ).toBe("en");
+  });
+
+  // PRD-20260919-payments-checkout-top-express-pay-locale AC-005：
+  // 用户实际点击的钱包 kind 作为 `option_kind` 随 canonical start 透传
+  // （服务端 `PaymentSessions::Start` 入口级同源复算）。
+  it("passes the clicked wallet kind as option_kind", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          order: { id: "or_9" },
+          transaction: { id: "txn_9", state: "payment_pending" },
+          session: { id: "ps_9", external_data: { client_secret: "cs_9" } },
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse(200, { order: { id: "or_9" } }));
+    confirmPaymentMock.mockResolvedValue({ error: undefined });
+
+    render(
+      <ExpressCheckoutButton
+        cart={cart}
+        basePath="/us/en"
+        entryKinds={["apple_pay", "google_pay"]}
+        degradedDisplay="toast"
+        maxColumns={2}
+        onComplete={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(capturedElementProps.onClick).toBeDefined());
+
+    await act(async () => {
+      (capturedElementProps.onClick as (event: unknown) => void)({
+        expressPaymentType: "google_pay",
+        resolve: vi.fn(),
+      });
+    });
+
+    const e = await confirm();
+    expect(e.paymentFailed).not.toHaveBeenCalled();
+    const [startUrl, startInit] = fetchMock.mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    expect(startUrl).toBe("/api/checkout/start");
+    expect(JSON.parse(String(startInit.body))).toMatchObject({
+      cart_id: "cart_1",
+      option_kind: "google_pay",
+    });
+  });
+
+  // PRD-20260919-payments-checkout-top-express-pay-locale AC-008：
+  // 设备明确无钱包（onReady 上报 undefined）→ 静默隐藏：不弹 toast、不留提示/空盒。
+  it("hides silently when no wallet can show on this device", async () => {
+    render(
+      <ExpressCheckoutButton
+        cart={cart}
+        basePath="/us/en"
+        entryKinds={["apple_pay"]}
+        degradedDisplay="toast"
+        maxColumns={2}
+        onComplete={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(capturedElementProps.onReady).toBeDefined());
+
+    await act(async () => {
+      (capturedElementProps.onReady as (event: unknown) => void)({});
+    });
+
+    expect(toastMock).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("wallet-unavailable-notice")).toBeNull();
+    expect(screen.queryByTestId("express-checkout-element")).toBeNull();
+  });
+
+  // PRD-20260919-payments-checkout-top-express-pay-locale AC-008：
+  // 加载失败/超时（看门狗）→ 3s toast（仅一次），不渲染行内提示。
+  it("toasts once and hides when the wallet element times out", async () => {
+    render(
+      <ExpressCheckoutButton
+        cart={cart}
+        basePath="/us/en"
+        entryKinds={["apple_pay"]}
+        degradedDisplay="toast"
+        maxColumns={2}
+        onComplete={vi.fn()}
+      />,
+    );
+    expect(capturedElementProps.onReady).toBeDefined();
+
+    await waitFor(() => expect(toastMock).toHaveBeenCalledTimes(1), {
+      timeout: 14000,
+      interval: 250,
+    });
+    expect(toastMock).toHaveBeenCalledWith("unavailableToast", {
+      duration: 3000,
+    });
+    expect(screen.queryByTestId("wallet-unavailable-notice")).toBeNull();
+    expect(screen.queryByTestId("express-checkout-element")).toBeNull();
+  }, 20000);
 });
