@@ -4975,6 +4975,37 @@
         "realSurfacePreserved": 25,
         "testsReversedNotDeleted": 15
       }
+    },
+    {
+      "id": "GS-191",
+      "name": "Make the order summary's fee lines honest before the order exists - and authoritative the moment it does",
+      "description": "The checkout order summary shows a full sentence ('Shipping cost is calculated when you submit your order') where the shipping amount belongs, hides the discount/tax/gift-card rows whenever the shopper has not touched a coupon this session (they are gated on a legacy cart object that is only populated after an apply/remove action), and prints the undiscounted subtotal under the label 'Total'. The cart entity itself carries no pricing at all - authoritative amounts only exist on the Order - so the ask is a read-model fix: honest labels while unknown, intent-driven rows that never disappear, and the authoritative amounts pushed into the summary the moment the two-stage prepare step produces them.",
+      "mustDo": [
+        "Check what the cart entity actually knows before inventing estimates: if the cart exposes only an item total, say so in the PRD and do not fake a fee the server never computed",
+        "Pick the fee rows by server intent (`discount_code` / `gift_card` / `store_credit` on the cart payload), so an applied code that survives a page reload still renders its row",
+        "Resolve each amount with a documented precedence: authoritative quote, then the legacy computed value when present, then a short 'calculated at submit' label - never a fabricated zero",
+        "Split the total label: authoritative amount due once the order exists, otherwise an estimated total that still reflects the applied discount (never the undiscounted subtotal under the old label)",
+        "Add a single note line under the breakdown explaining that shipping and taxes are computed when the order is submitted, replacing the sentence that used to sit in the amount column",
+        "Feed the summary the same quote object the main column already renders after prepare, so both surfaces show one number (and cover it with a test)",
+        "Keep consuming only existing server fields: the checkout view already exposes tax totals, so extend the BFF quote snapshot instead of adding an endpoint",
+        "Ship the new labels in all five locales and register them in the i18n guard table"
+      ],
+      "mustNotDo": [
+        "Compute shipping, tax or discount in the browser to fill the gap - money comes from the server or it is not shown",
+        "Invent a cart-level pricing service just for this page: the pricing pipeline lives on the order and a parallel implementation would drift (record the feasibility finding instead)",
+        "Render a row with 0 or a dash when the value is simply unknown - 'calculated at submit' is the honest answer",
+        "Leave the fee rows dependent on a client-side object that only exists after an action, which is exactly why they vanish on reload",
+        "Change when the order gets created (prepare must stay a deliberate shopper action, never a side effect of browsing)",
+        "Silently keep the placeholder sentence somewhere else after removing it from the amount column"
+      ],
+      "scoring": {
+        "cartCapabilityCheckedFirst": 15,
+        "intentDrivenRows": 20,
+        "amountPrecedenceDocumented": 15,
+        "totalLabelSplit": 20,
+        "authoritativeQuoteSharedIntoSummary": 20,
+        "noFabricatedFees": 10
+      }
     }
   ]
 }

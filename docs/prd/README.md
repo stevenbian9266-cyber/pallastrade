@@ -238,3 +238,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | verifying | PRD-20260919-payments-checkout-top-express-pay-locale | payments | 2026-09-19 | （实施时回填） |
 | approved | PRD-20260919-checkout-remove-items-block-mobile-summary-meta | checkout | 2026-09-19 | （实施时回填） |
 | approved | PRD-20260919-checkout-remove-shipping-change-placeholder-banner | checkout | 2026-09-19 | （实施时回填） |
+| approved | PRD-20260919-checkout-order-summary-fee-read-model | checkout | 2026-09-19 | （实施时回填） |

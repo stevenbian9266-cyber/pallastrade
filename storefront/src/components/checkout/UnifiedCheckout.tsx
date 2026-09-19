@@ -129,10 +129,16 @@ function UnifiedOrderSummary({
   cart,
   discountCart,
   couponHandlers,
+  quote,
 }: {
   cart: ShoppingCart;
   discountCart: Cart | null;
   couponHandlers: CouponHandlers;
+  /**
+   * PRD-20260919-checkout-order-summary-fee-read-model FR-006：`Prepare` 成功后
+   * 的 Order 权威报价（与主列确认区同源同值）。无报价时不传 → 走「提交订单时计算」。
+   */
+  quote?: CheckoutQuote | null;
 }) {
   const t = useTranslations("checkout");
   const tc = useTranslations("common");
@@ -143,6 +149,41 @@ function UnifiedOrderSummary({
   const savings = Math.abs(safeParseFloat(couponCart.discount_total) || 0);
   const hasDiscounts =
     discountCart !== null && (savings > 0 || couponCart.discounts?.length > 0);
+
+  // PRD-20260919-checkout-order-summary-fee-read-model（FR-001 ~ FR-005）：
+  // 费用行**三级优先** —— ① Order 权威报价（Prepare 后）→ ② legacy 计算值
+  // （用户本次操作抵扣后才有）→ ③ 明确的「提交订单时计算」标签。
+  // 存在性由**服务端意图**（`cart.discount_code` / `cart.gift_card` /
+  // `cart.store_credit`）驱动，修复旧实现"费用行只在本次操作后才出现、
+  // 刷新即消失"的缺陷；金额未知时绝不显示 0/占位数字。
+  const authoritative = quote ?? null;
+  const hasDiscountIntent = Boolean(cart.discount_code) || hasDiscounts;
+  const hasGiftCardIntent =
+    Boolean(cart.gift_card) || Boolean(couponCart.gift_card);
+  const hasStoreCreditIntent = Boolean(cart.store_credit);
+  const discountDisplay =
+    authoritative?.display_discount_total ??
+    (safeParseFloat(couponCart.discount_total) !== 0
+      ? couponCart.display_discount_total
+      : null);
+  const shippingDisplay = authoritative?.display_delivery_total ?? null;
+  const taxDisplay =
+    authoritative?.display_tax_total ??
+    (safeParseFloat(couponCart.tax_total) > 0
+      ? couponCart.display_tax_total
+      : null);
+  const giftCardDisplay =
+    safeParseFloat(couponCart.gift_card_total) > 0
+      ? couponCart.display_gift_card_total
+      : null;
+  const storeCreditDisplay =
+    safeParseFloat(couponCart.store_credit_total) > 0
+      ? couponCart.display_store_credit_total
+      : null;
+  const pendingLabel = t("calculatedAtSubmit");
+  // 预估总额：权威 amount_due → legacy 计算值（含已应用折扣；`buildCouponCart`
+  // 在无 legacy 值时回落为小计）→ 小计。绝不用未折扣小计冒充“含折扣总额”。
+  const estimatedTotal = couponCart.display_total ?? cart.display_item_total;
 
   const trustBenefits = [
     { icon: RefreshCcw, label: t("benefitMoneyBack") },
@@ -210,44 +251,89 @@ function UnifiedOrderSummary({
           <dd className="text-gray-900">{cart.display_item_total}</dd>
         </div>
 
-        {/* Shipping — FREE highlighted green when a zero-cost method is selected */}
-        <div className="flex justify-between text-sm">
-          <dt className="text-gray-700">{tc("shipping")}</dt>
-          <dd className="text-gray-900">{t("shippingCalculatedAtSubmit")}</dd>
-        </div>
-
-        {hasDiscounts && safeParseFloat(couponCart.discount_total) !== 0 && (
+        {/* 折扣 —— 有意图即渲染（金额未知则写“提交订单时计算”） */}
+        {hasDiscountIntent && (
           <div className="flex justify-between text-sm">
-            <dt className="text-gray-700">{tc("discount")}</dt>
-            <dd className="text-green-700">
-              {couponCart.display_discount_total}
+            <dt className="text-gray-700">
+              {tc("discount")}
+              {cart.discount_code ? (
+                <span className="ml-1 text-gray-500">
+                  ({cart.discount_code})
+                </span>
+              ) : null}
+            </dt>
+            <dd
+              className={discountDisplay ? "text-green-700" : "text-gray-500"}
+            >
+              {discountDisplay ?? pendingLabel}
             </dd>
           </div>
         )}
 
-        {safeParseFloat(couponCart.tax_total) > 0 && (
+        {/* 礼品卡 —— 同理，支付手段不计入“节省” */}
+        {hasGiftCardIntent && (
           <div className="flex justify-between text-sm">
-            <dt className="text-gray-700">{t("estimatedTaxes")}</dt>
-            <dd className="text-gray-900">{couponCart.display_tax_total}</dd>
+            <dt className="text-gray-700">
+              {tc("giftCard")}
+              {cart.gift_card ? (
+                <span className="ml-1 text-gray-500">
+                  ({cart.gift_card.code})
+                </span>
+              ) : null}
+            </dt>
+            <dd
+              className={giftCardDisplay ? "text-green-700" : "text-gray-500"}
+            >
+              {giftCardDisplay ? `-${giftCardDisplay}` : pendingLabel}
+            </dd>
           </div>
         )}
 
-        {couponCart.gift_card &&
-          safeParseFloat(couponCart.gift_card_total) > 0 && (
-            <div className="flex justify-between text-sm">
-              <dt className="text-gray-700">{tc("giftCard")}</dt>
-              <dd className="text-green-700">
-                -{couponCart.display_gift_card_total}
-              </dd>
-            </div>
-          )}
+        {/* 店铺余额 —— 同为支付手段 */}
+        {hasStoreCreditIntent && (
+          <div className="flex justify-between text-sm">
+            <dt className="text-gray-700">{tc("storeCredit")}</dt>
+            <dd
+              className={
+                storeCreditDisplay ? "text-green-700" : "text-gray-500"
+              }
+            >
+              {storeCreditDisplay ? `-${storeCreditDisplay}` : pendingLabel}
+            </dd>
+          </div>
+        )}
 
-        <div className="flex justify-between items-baseline pt-3 border-t border-gray-100">
-          <dt className="text-lg font-medium text-gray-900">{tc("total")}</dt>
-          <dd className="text-lg font-bold text-gray-900">
-            {discountCart?.display_total ?? cart.display_item_total}
+        {/* 运费 —— 值为权威金额或短标签，不再把整句说明当值 */}
+        <div className="flex justify-between text-sm">
+          <dt className="text-gray-700">{tc("shipping")}</dt>
+          <dd className={shippingDisplay ? "text-gray-900" : "text-gray-500"}>
+            {shippingDisplay ?? pendingLabel}
           </dd>
         </div>
+
+        {/* 税费 —— 已知则显示，未知则明示待计算（不虚构 0） */}
+        <div className="flex justify-between text-sm">
+          <dt className="text-gray-700">{t("estimatedTaxes")}</dt>
+          <dd className={taxDisplay ? "text-gray-900" : "text-gray-500"}>
+            {taxDisplay ?? pendingLabel}
+          </dd>
+        </div>
+
+        <div className="flex justify-between items-baseline pt-3 border-t border-gray-100">
+          <dt className="text-lg font-medium text-gray-900">
+            {authoritative ? t("totalDue") : t("estimatedTotal")}
+          </dt>
+          <dd className="text-lg font-bold text-gray-900">
+            {authoritative?.display_amount_due ?? estimatedTotal}
+          </dd>
+        </div>
+
+        {/* 无权威报价时的注记：金额在提交订单时确定并回填此处 */}
+        {!authoritative && (
+          <p className="pt-2 text-xs text-gray-500">
+            {t("feesCalculatedAtSubmit")}
+          </p>
+        )}
       </dl>
 
       {/* TOTAL SAVINGS — green band when any discount applies */}
@@ -659,6 +745,7 @@ export function UnifiedCheckout({
         cart={cart}
         discountCart={discountCart}
         couponHandlers={couponHandlersRef.current}
+        quote={preparedOrder?.quote ?? null}
       />,
     );
     setSummaryMeta({
@@ -669,7 +756,7 @@ export function UnifiedCheckout({
       setSummaryContent(null);
       setSummaryMeta(null);
     };
-  }, [cart, discountCart, setSummaryContent, setSummaryMeta]);
+  }, [cart, discountCart, preparedOrder, setSummaryContent, setSummaryMeta]);
 
   // 国家变更 → 加载州/省（配送地址）
   useEffect(() => {

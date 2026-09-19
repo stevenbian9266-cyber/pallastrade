@@ -164,6 +164,10 @@ export async function readQuote(
       display_delivery_total: text(view.display_delivery_total),
       discount_total: text(view.discount_total),
       display_discount_total: text(view.display_discount_total),
+      // PRD-20260919-checkout-order-summary-fee-read-model FR-007：右栏税费行
+      // 需要权威税费（`CheckoutView` 早已下发，此处只是补齐快照形状）。
+      tax_total: text(view.tax_total),
+      display_tax_total: text(view.display_tax_total),
       amount_due: text(view.amount_due),
       display_amount_due: text(view.display_amount_due),
     };

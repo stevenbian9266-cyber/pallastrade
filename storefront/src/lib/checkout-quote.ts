@@ -16,6 +16,9 @@ export interface CheckoutQuote {
   display_delivery_total: string | null;
   discount_total: string | null;
   display_discount_total: string | null;
+  /** PRD-20260919-checkout-order-summary-fee-read-model FR-007：权威税费。 */
+  tax_total: string | null;
+  display_tax_total: string | null;
   amount_due: string | null;
   display_amount_due: string | null;
 }
@@ -51,6 +54,8 @@ export function normalizeQuote(input: unknown): CheckoutQuote | null {
     display_delivery_total: str(raw.display_delivery_total),
     discount_total: str(raw.discount_total),
     display_discount_total: str(raw.display_discount_total),
+    tax_total: str(raw.tax_total),
+    display_tax_total: str(raw.display_tax_total),
     amount_due: str(raw.amount_due),
     display_amount_due: str(raw.display_amount_due),
   };

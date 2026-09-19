@@ -1,5 +1,5 @@
 import type { ShoppingCart } from "@pallastrade/sdk";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -266,6 +266,41 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     expect(screen.getByTestId("summary-meta-probe").textContent).toBe(
       "2|$19.98",
     );
+  });
+
+  // PRD-20260919-checkout-order-summary-fee-read-model
+  // AC-001 / AC-002 / AC-003 / AC-004：无权威报价时的费用口径。
+  // ① 运费不再是整句占位（值为短标签）；② 抵扣意图行加载即渲染（旧实现刷新后消失）；
+  // ③ 总额标注为预估而非拿小计冒充；④ 明示「金额在提交时确定」。
+  it("labels not-yet-computed fees and keeps applied-intent rows visible", () => {
+    renderCheckout(
+      makeCart({
+        discount_code: "SAVE10",
+        gift_card: { code: "GC-1", display_amount_remaining: "$5.00" },
+      }),
+    );
+
+    const summary = screen.getByTestId("unified-order-summary");
+    expect(within(summary).getByText("estimatedTotal")).toBeTruthy();
+    expect(
+      within(summary).queryByText("shippingCalculatedAtSubmit"),
+    ).toBeNull();
+    expect(
+      within(summary).getAllByText("calculatedAtSubmit").length,
+    ).toBeGreaterThanOrEqual(3);
+    expect(within(summary).getByText(/SAVE10/)).toBeTruthy();
+    expect(within(summary).getByText(/GC-1/)).toBeTruthy();
+    expect(within(summary).getByText("feesCalculatedAtSubmit")).toBeTruthy();
+  });
+
+  // AC-006：无任何抵扣意图 → 不渲染折扣/礼品卡行（不虚构 0 元行）。
+  it("omits discount and gift-card rows without intent", () => {
+    renderCheckout();
+
+    const summary = screen.getByTestId("unified-order-summary");
+    expect(within(summary).getByText("estimatedTotal")).toBeTruthy();
+    expect(within(summary).queryByText("discount")).toBeNull();
+    expect(within(summary).queryByText("giftCard")).toBeNull();
   });
 
   // PRD-20260914-checkout-placeholder-controls-governance AC-001
@@ -1135,6 +1170,13 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     expect(screen.getByTestId("quote-delivery")).toHaveTextContent("$9.00");
     expect(screen.getByTestId("quote-discount")).toHaveTextContent("-$2.00");
     expect(screen.getByTestId("quote-amount-due")).toHaveTextContent("$31.98");
+    // PRD-20260919-checkout-order-summary-fee-read-model AC-005：
+    // 同一份权威报价同步进右栏摘要（与确认区同源同值）。
+    const summary = screen.getByTestId("unified-order-summary");
+    expect(within(summary).getByText("totalDue")).toBeTruthy();
+    expect(within(summary).getByText("$31.98")).toBeTruthy();
+    expect(within(summary).getByText("$9.00")).toBeTruthy();
+    expect(within(summary).queryByText("estimatedTotal")).toBeNull();
     // ② 确认前**绝不**发起 Pay（只发了 prepare）
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
       "/api/checkout/prepare",

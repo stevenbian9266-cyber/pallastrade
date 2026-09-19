@@ -27,6 +27,12 @@ const REQUIRED: Record<string, string[]> = {
     "dismissBanner",
     // PRD-20260913-checkout-billing-mode AC-011
     "billingAddressIncomplete",
+    // PRD-20260919-checkout-order-summary-fee-read-model AC-007：
+    // 右栏费用口径（待计算标签 / 预估总额 / 应付总额 / 底部注记）五语言齐备。
+    "calculatedAtSubmit",
+    "estimatedTotal",
+    "totalDue",
+    "feesCalculatedAtSubmit",
     // PRD-20260914-checkout-quote-confirmation-loop AC-007
     "quoteChangedTitle",
     "quoteChangedBody",
