@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-19 |
 | 来源 | 用户原话：「checkout页面 order summary区块显示：Shipping Calculated at submit；Estimated taxes Calculated at submit 你觉得这合理吗？」→ 讨论收敛为「默认选中第一个配送方式 + 填地址前后由服务端估算运费/税费（AJAX 无刷新）」→「实施」 |
 | 分类 | shipping（关键词命中） |
@@ -158,3 +158,4 @@
 | 2026-09-19 | 0.1 | 初稿（approved）：用户确认「实施」；范围 = 方式列表按 header 国家过滤 + dry-run 只读预览 + 默认选中 + 前台四级读模型 | AI |
 | 2026-09-19 | 1.0 | 实施完成（AC-001~AC-008）：`Address#pricing_only`（不伪造地址）+ 无法配送时的降级契约 + 前端防抖/竞态/微加载 + 四语言新键；验证：`checkout-preview-quote-rspec` 28 例绿、`storefront-test` 绿、`generated:check` 无漂移、GS-195 | AI |
 | 2026-09-19 | 1.1 | dev 实测修正：① 预览不再要求先填邮箱（dry-run 占位邮箱，真实提交仍拦截）；② 不可计价方式行内提示「填地址后显示」（FR-005a，用户确认）；验证：后端 9 例 + 前台 51 例绿 | AI |
+| 2026-09-19 | 1.2 | dev 真机验收（US / DE 两个市场）：US → 预估运费/税/合计（$0.00 / $0.00 / $29.99）+ 配送方式默认选中；DE（zone 未覆盖）→ 方式行显示「填地址后显示」且仍默认选中；地址编辑触发 3 次防抖预览请求；CI 全绿（Storefront/Platform/Backend/Deploy）；状态 → done | AI |
