@@ -44,7 +44,12 @@ export async function OrderDetail({
           </h1>
           <p className="text-sm text-gray-500 mt-1">
             {t("placedOn", {
-              date: formatDateTime(order.completed_at, locale),
+              // FR-004：待支付订单没有 `completed_at` —— 用下单时间（`submitted_at`）
+              // 也远好过向用户展示一个「-」。
+              date: formatDateTime(
+                order.completed_at ?? order.submitted_at,
+                locale,
+              ),
             })}
           </p>
         </div>

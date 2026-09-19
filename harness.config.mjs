@@ -177,11 +177,14 @@ export default {
         description: 'Admin page caching specs (no-store headers + back-forward-cache reload guard)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/page_caching_spec.rb'],
       },
-      // 账单详情透传（PRD-20260919-checkout-billing-details-passthrough，第 4 项二期，2026-09-19）：
-      // PI / Checkout Session 载荷带 `billing_details`（来自 order.bill_address，地址不完整则**整体不发**）。
+      // 账单详情透传（PRD-20260919-checkout-billing-details-passthrough，第 4 项二期，2026-09-19）
+      // + 参数层级回归修复（PRD-20260919-checkout-express-always-visible-and-pi-params，2026-09-19）：
+      // 合法载体 = PM 级 `billing_details`（客户端确认）/ Checkout Session 的 `payment_intent_data`；
+      // PaymentIntent **顶层** 一律不得出现 `billing_details`（Stripe 只读 → 400 parameter_unknown），
+      // gateway 白名单断言在发请求前拦下只读/未知键。
       'billing-details-rspec': {
-        description: 'Stripe billing_details payload specs (PaymentIntent + CheckoutSession presenter, incomplete address omitted)',
-        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec pallastrade_gems/pallastrade_stripe/spec/presenters'],
+        description: 'Stripe billing_details payload specs (CheckoutSession payment_intent_data carrier + PaymentIntent top-level whitelist guard + gateway payload assertion)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec pallastrade_gems/pallastrade_stripe/spec/presenters pallastrade_gems/pallastrade_stripe/spec/models/gateway/payment_intent_payload_spec.rb'],
       },
       // 结算页只读预览报价（PRD-20260919-shipping-checkout-quote-preview，2026-09-19）：
       // 预览金额 = 同一条 `Carts::Submit` dry-run 管线（回滚，零建单/零事件/零支付会话）；

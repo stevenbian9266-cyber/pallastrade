@@ -502,6 +502,116 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     );
   });
 
+  // PRD-20260919-checkout-express-always-visible-and-pi-params AC-003（FR-002）：
+  // 卡确认失败（被拒 / 参数错 / 未完成）→ **留在页内**：页内错误可见、
+  // 不发 PATCH complete、不跳结果页（旧行为忽略返回值无条件跳转 → 用户被丢到空态页）。
+  it("keeps the buyer in the page when the card confirmation fails (AC-003)", async () => {
+    const user = userEvent.setup();
+    confirmMock.mockResolvedValueOnce({ error: "Your card was declined." });
+    renderCheckout();
+
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("checkout-error-notice")).toBeInTheDocument(),
+    );
+    expect(screen.getByText("Your card was declined.")).toBeTruthy();
+    expect(confirmMock).toHaveBeenCalledWith("sec_1");
+    // 未完成 → 无 PATCH complete（否则服务端会把会话标记为已终结）
+    expect(
+      fetchMock.mock.calls.filter(
+        ([, init]) => (init as RequestInit)?.method === "PATCH",
+      ),
+    ).toHaveLength(0);
+    // 用户留在结算页（可改卡重试），不被抛到结果页
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  // PRD-20260919-checkout-express-always-visible-and-pi-params AC-004（FR-003）：
+  // 未知服务端 code（如 5xx 透传的 `checkout_failed`）→ 页内提示 + URL 不变；
+  // 只有「钱的事实已确定」的已知 code 才允许改跳转（下一用例锁定）。
+  it("keeps the URL unchanged for an unknown server error code (AC-004)", async () => {
+    const user = userEvent.setup();
+    const defaultImpl = fetchMock.getMockImplementation();
+    fetchMock.mockImplementation(
+      (input: RequestInfo | URL, init?: RequestInit) => {
+        if (
+          input === "/api/checkout/start" &&
+          (init as RequestInit)?.method === "POST"
+        ) {
+          return Promise.resolve({
+            ok: false,
+            status: 502,
+            json: async () => ({
+              error: {
+                code: "checkout_failed",
+                message: "Checkout could not be completed.",
+              },
+              order_id: "or_123",
+            }),
+          });
+        }
+        return defaultImpl?.(input, init);
+      },
+    );
+    renderCheckout();
+
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("checkout-error-notice")).toBeInTheDocument(),
+    );
+    expect(screen.getByText("Checkout could not be completed.")).toBeTruthy();
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(confirmMock).not.toHaveBeenCalled();
+  });
+
+  // AC-004（下半段）：资金/状态事实类 code 仍然跳结果页（禁止重付 / 明示处理中）。
+  it("still routes money-fact codes to the result page (AC-004)", async () => {
+    const user = userEvent.setup();
+    const defaultImpl = fetchMock.getMockImplementation();
+    fetchMock.mockImplementation(
+      (input: RequestInfo | URL, init?: RequestInit) => {
+        if (
+          input === "/api/checkout/start" &&
+          (init as RequestInit)?.method === "POST"
+        ) {
+          return Promise.resolve({
+            ok: false,
+            status: 422,
+            json: async () => ({
+              error: {
+                code: "INVENTORY_RECOVERY_REQUIRED",
+                message: "Payment captured, recovery pending",
+              },
+              order_id: "or_123",
+            }),
+          });
+        }
+        return defaultImpl?.(input, init);
+      },
+    );
+    renderCheckout();
+
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    await waitFor(() =>
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/us/en/payment-result/or_123?notice=recovery",
+      ),
+    );
+  });
+
   // PRD-20260918-payments-d7-payment-section-express AC-006（cart 通道）：
   // 购物车单页结账读 `cart.payment_methods[].entries` → **一入口一行**；
   // 钱包入口以 express 形态出现（不再需要后台关掉卡支付才能看到）。
@@ -917,13 +1027,19 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     expect(replaceMock).not.toHaveBeenCalled();
   });
 
-  it("keeps the result-page fallback for unknown codes with an order id (AC-009)", async () => {
+  // PRD-20260919-checkout-express-always-visible-and-pi-params FR-003 / AC-004
+  // （取代 PRD-20260913-checkout-txn-error-routing AC-009 的「未知 code 盲跳结果页」口径）：
+  // 未知 code（如 5xx 透传的 `checkout_failed`）→ 页内提示 + 留在结算页（可重试）：
+  // 结果页对「未完成」只能展示空态，跳过去反而让用户以为订单/购物车丢了。
+  it("keeps the buyer in the page for unknown codes with an order id (AC-004)", async () => {
     await payWithErrorBody({
       error: { code: "checkout_failed", message: "Unexpected failure" },
       order_id: "or_123",
     });
 
-    expect(replaceMock).toHaveBeenCalledWith("/us/en/payment-result/or_123");
+    expect(screen.getByTestId("checkout-error-notice")).toBeInTheDocument();
+    expect(screen.getByText("Unexpected failure")).toBeTruthy();
+    expect(replaceMock).not.toHaveBeenCalled();
   });
 
   // ── PRD v1.1（Checkout页面.md）新增对齐测试 ─────────────────────────

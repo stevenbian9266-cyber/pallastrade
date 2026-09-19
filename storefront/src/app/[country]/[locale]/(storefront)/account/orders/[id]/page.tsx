@@ -24,7 +24,11 @@ export default async function OrderDetailPage({
   const basePath = `/${country}/${locale}`;
   const order = await getOrder(id);
 
-  if (!order || order.completed_at === null) {
+  // PRD-20260919-checkout-express-always-visible-and-pi-params FR-004 / AC-005：
+  // 「未支付」不是「不存在」。旧条件把 `completed_at === null`（待支付订单 —— 列表里
+  // 明明有、点进去却 404）当成找不到；只有**真取不到订单**才是 not found。
+  // 未支付订单照常渲染详情（含 `OrderDetail` 内的 Pay Now 补付入口）。
+  if (!order) {
     return (
       <div className="text-center py-12">
         <h2 className="text-xl font-medium text-gray-900 mb-2">

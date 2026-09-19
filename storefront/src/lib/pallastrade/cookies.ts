@@ -122,6 +122,17 @@ export async function getCheckoutOptions(orderId: string): Promise<{
   return { guestToken: await getCartToken(), token };
 }
 
+/**
+ * PRD-20260919-checkout-express-always-visible-and-pi-params FR-006 / AC-009：
+ * Prepare 建单后浏览器可能仍停留在旧 `cart_` URL（尚未支付就刷新/重渲染）。
+ * 此时旧购物车已转换、cookie 已换成后继空车 —— 但 `_pallastrade_checkout_order`
+ * 记着真实订单（`or_...`）。页面据此把用户送回**订单支付页**，而不是空购物车页。
+ */
+export async function getPendingCheckoutOrderId(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get(DEFAULT_CHECKOUT_ORDER_COOKIE)?.value ?? null;
+}
+
 // --- Access Token (JWT) ---
 
 export async function getAccessToken(): Promise<string | undefined> {

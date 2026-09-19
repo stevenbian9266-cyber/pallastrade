@@ -1,5 +1,5 @@
 import type { Cart } from "@pallastrade/sdk";
-import { act, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   PaymentEntry,
@@ -10,8 +10,12 @@ import { TopExpressPay } from "@/components/checkout/TopExpressPay";
 /**
  * PRD-20260919-payments-checkout-top-express-pay-locale：
  * 顶部快捷支付区（容器层）——渲染条件、入口集合（服务端投影、零筛选）、
- * 设备不可用整区隐藏、凭据透传。子组件（钱包元素）行为见
+ * 凭据透传。子组件（钱包元素）行为见
  * `ExpressCheckoutButton.test.tsx` 的 "(top express area)" 段。
+ *
+ * PRD-20260919-checkout-express-always-visible-and-pi-params（AC-006）：
+ * 口径由「设备不可用 → 整区隐藏」改为「**常显**」——只要服务端有 express 入口，
+ * 区域与降级说明（notice 模式：原因文案 + 重试）就始终在页上。
  */
 
 const tFn = (key: string) => key;
@@ -86,7 +90,8 @@ describe("TopExpressPay (PRD-20260919-payments-checkout-top-express-pay-locale)"
     expect(screen.getByTestId("top-express-payment")).toBeTruthy();
     expect(capturedProps.entryKinds).toEqual(["apple_pay", "google_pay"]);
     expect(capturedProps.maxColumns).toBe(2);
-    expect(capturedProps.degradedDisplay).toBe("toast");
+    // AC-006：notice 模式（设备不可用时区内降级，而不是整块消失）
+    expect(capturedProps.degradedDisplay).toBe("notice");
     expect(capturedProps.clientConfig).toEqual({
       publishable: { publishable_key: "pk_test_1" },
     });
@@ -113,19 +118,23 @@ describe("TopExpressPay (PRD-20260919-payments-checkout-top-express-pay-locale)"
     expect(capturedProps.entryKinds).toEqual(["google_pay"]);
   });
 
-  // PRD-20260919-payments-checkout-top-express-pay-locale AC-008：
-  // 设备能力确定性不可用 → 整区（含标题/分隔线）隐藏，不留空盒、不给噪音提示。
-  it("hides the whole area when the device reports no wallet", async () => {
+  // PRD-20260919-checkout-express-always-visible-and-pi-params AC-006：
+  // 服务端有入口即渲染（旧口径「设备不可用 → 整区隐藏」已废除）；
+  // 降级细节（原因文案 / 重试按钮）由子组件在 notice 模式下呈现。
+  it("keeps the area mounted instead of hiding it (AC-006)", () => {
     renderArea([stripeMethod([entry("apple_pay", "express", 1)])]);
+
     expect(screen.getByTestId("top-express-payment")).toBeTruthy();
+    expect(capturedProps.degradedDisplay).toBe("notice");
+    expect(screen.getByTestId("express-checkout-element")).toBeTruthy();
+  });
 
-    await act(async () => {
-      (capturedProps.onAvailabilityChange as (r: unknown) => void)({
-        state: "unavailable",
-        reason: "device",
-      });
-    });
+  // AC-006（结构口径）：容器不再订阅设备能力 —— 隐藏决策完全交还子组件，
+  // 避免「设备探测结果」再次变成整区消失的充分条件。
+  it("no longer subscribes to device availability (AC-006)", () => {
+    renderArea([stripeMethod([entry("google_pay", "express", 1)])]);
 
-    expect(screen.queryByTestId("top-express-payment")).toBeNull();
+    expect(capturedProps.onAvailabilityChange).toBeUndefined();
+    expect(screen.getByTestId("top-express-payment")).toBeTruthy();
   });
 });

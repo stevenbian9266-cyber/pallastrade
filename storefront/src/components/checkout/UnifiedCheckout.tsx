@@ -450,6 +450,9 @@ const STOCK_ERROR_TITLES: Record<string, string> = {
   "inventory-changed": "stockChangedTitle",
   "reservation-expired": "reservationExpiredTitle",
   "reservation-retrying": "reservationRetryingTitle",
+  // PRD-20260919-checkout-express-always-visible-and-pi-params FR-002/FR-003：
+  // 支付确认失败 / 未知服务端 code —— 统一页内提示（复用既有 `paymentError` 文案，零新 i18n 键）。
+  "payment-failed": "paymentError",
 };
 
 /**
@@ -601,14 +604,22 @@ export function UnifiedCheckout({
   >("idle");
   const cardFormRef = useRef<CardPaymentFormHandle | null>(null);
   const orderIdRef = useRef<string | null>(null);
-  // PRD-20260913-checkout-txn-error-routing：页内错误提示（库存类 / 未就绪）。
+  /**
+   * PRD-20260919-checkout-express-always-visible-and-pi-params FR-002：
+   * 本轮点击里**已建立**的支付会话 id。异常处理据此区分两种情况：
+   * - 已建会话（确认阶段抛错）→ 支付结果未知（可能已扣款）→ 结果页是唯一权威；
+   * - 未建会话（网络/解析失败）→ 留在页内报错可重试，绝不改跳转。
+   */
+  const startedSessionIdRef = useRef<string | null>(null);
+  // PRD-20260913-checkout-txn-error-routing：页内错误提示（库存类 / 未就绪 / 支付失败）。
   const [payError, setPayError] = useState<{
     kind:
       | "insufficient-stock"
       | "inventory-changed"
       | "reservation-expired"
       | "reservation-retrying"
-      | "not-ready";
+      | "not-ready"
+      | "payment-failed";
     message: string;
   } | null>(null);
   /**
@@ -1090,6 +1101,8 @@ export function UnifiedCheckout({
     const confirmedQuote = target.quote;
 
     setPayError(null);
+    // 新一轮点击：会话 id 从零开始（异常处理据此判定「支付结果是否未知」）。
+    startedSessionIdRef.current = null;
     setPayProcessing(true);
     setProcessingStage("submitting");
     try {
@@ -1199,8 +1212,11 @@ export function UnifiedCheckout({
           setPayError({ kind: "not-ready", message });
           return;
         }
-        // FR-007/AC-009：未知 code 且有 order_id → 保留现状跳结果页（防回归）
-        router.replace(`${basePath}/payment-result/${targetOrderId}`);
+        // FR-003 / AC-004（PRD-20260919-checkout-express-always-visible-and-pi-params）：
+        // 未知 code（含 `checkout_failed` 等 5xx 透传）→ **页内提示**，不再盲跳结果页。
+        // 结果页对「未能完成」只能展示空态/找不到订单，反而让用户失去重试路径；
+        // 只有「钱的事实已确定」的已知 code（上方 recovery / not_payable / 库存类）才改跳转。
+        setPayError({ kind: "payment-failed", message });
         return;
       }
 
@@ -1217,9 +1233,21 @@ export function UnifiedCheckout({
         }
 
         setProcessingStage("confirming");
-        await cardFormRef.current?.confirmPayment(
+        // FR-002 / AC-003：把已建立的会话 id 记下（异常时判定「结果未知」）。
+        startedSessionIdRef.current = session.id;
+        const confirmResult = await cardFormRef.current?.confirmPayment(
           decodeURIComponent(clientSecret),
         );
+
+        // PRD-20260919-checkout-express-always-visible-and-pi-params FR-002 / AC-003：
+        // 确认未成功（卡被拒 / 参数错 / 未完成）→ **绝不** PATCH complete、**绝不** 跳结果页。
+        // 旧行为忽略了 confirmPayment 的返回值，无条件 PATCH + 跳转：结果页对未完成会话
+        // 只能展示空态（用户感知为「订单没了 / 空购物车」），且丢失重试路径。
+        // 会话服务端仍可用（幂等重用同一操作键），用户改卡后可直接重试。
+        if (confirmResult?.error) {
+          setPayError({ kind: "payment-failed", message: confirmResult.error });
+          return;
+        }
 
         // Complete on both success and provider rejection so the server records
         // the authoritative terminal session state for the result page.
@@ -1241,13 +1269,20 @@ export function UnifiedCheckout({
       router.replace(`${basePath}/payment-result/${targetOrderId}`);
     } catch (error) {
       const targetOrderId = orderIdRef.current;
-      if (targetOrderId) {
-        router.replace(`${basePath}/payment-result/${targetOrderId}`);
-      } else {
-        toast.error(
-          error instanceof Error ? error.message : t("checkoutError"),
+      const startedSessionId = startedSessionIdRef.current;
+      // 会话已建（异常发生在确认阶段）→ 支付结果未知（可能已扣款）：结果页是唯一权威。
+      if (targetOrderId && startedSessionId) {
+        router.replace(
+          `${basePath}/payment-result/${targetOrderId}?session=${startedSessionId}`,
         );
+        return;
       }
+      // FR-002 / AC-003：尚未建会话（网络错误 / 响应解析失败等）→ **留在页内** 报错可重试。
+      // 旧行为在此处直接跳结果页（订单已存在时）—— 用户被丢到空态页，且看不到失败原因。
+      const message =
+        error instanceof Error ? error.message : t("checkoutError");
+      setPayError({ kind: "payment-failed", message });
+      toast.error(message);
     } finally {
       setPayProcessing(false);
       setProcessingStage("idle");

@@ -26,11 +26,15 @@ module PallasTradeStripe
       payload = payload.deep_merge(basic_payload)
       payload = payload.merge(capture_method: PallasTradeStripe::Gateway::PaymentIntents::MANUAL_CAPTURE_METHOD) if manual_capture?
 
-      # PALLAS-CUSTOM (2026-09-19, PRD-20260919-checkout-billing-details-passthrough):
-      # 账单详情独立于配送地址 —— 即使没有配送地址也要把已有账单地址送到 Stripe。
-      billing = billing_details_payload
-      payload = payload.merge(billing) if billing
-
+      # PALLAS-CUSTOM (2026-09-19, PRD-20260919-checkout-express-always-visible-and-pi-params 回归修复):
+      # ⛔ 这里曾合并顶层 `billing_details` —— Stripe 侧 PaymentIntent 的该字段是**只读**的
+      # （仅 retrieve 返回，创建/更新会 400 `parameter_unknown: billing_details`，
+      # 于是所有卡/钱包支付在「建会话」阶段就失败）。
+      # 账单详情的三条合法通路（全部保留，本方法不再输出该键）：
+      #   ① 客户端确认时 PM 级 `payment_method.billing_details`（CardPaymentForm / 钱包）；
+      #   ② Checkout Session 模式的 `payment_intent_data.billing_details`（CheckoutSessionPresenter）；
+      #   ③ 支付完成后由 `charge.billing_details` 回读快照。
+      # 回归守卫见 spec/presenters/payment_intent_presenter_spec.rb（白名单断言）。
       return payload unless ship_address
 
       # we don't validate address1, but it's required by Stripe
@@ -44,6 +48,8 @@ module PallasTradeStripe
 
     # PALLAS-CUSTOM (2026-09-19, PRD-20260919-checkout-billing-details-passthrough)：
     # 与 CheckoutSessionPresenter 同源（共享 `BillingDetailsPresenter`）；不可用 → nil。
+    # ⚠️ 仅供**其它合法载体**（如 `payment_method_data` / `payment_intent_data`）复用，
+    # 绝不可再并入 PaymentIntent 顶层参数。
     def billing_details_payload
       @billing_details_payload ||= begin
         details = PallasTradeStripe::BillingDetailsPresenter.new(order: order).call

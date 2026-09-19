@@ -2,27 +2,28 @@
 
 import type { Cart } from "@pallastrade/sdk";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { ExpressCheckoutButton } from "@/components/checkout/ExpressCheckoutButton";
 import {
   type PaymentMethodWithEntries,
   paymentEntriesFor,
 } from "@/components/checkout/PaymentSection";
-import {
-  isExpressWalletKind,
-  type WalletAvailability,
-} from "@/lib/checkout/wallet-availability";
+import { isExpressWalletKind } from "@/lib/checkout/wallet-availability";
 
 /**
  * PRD-20260919-payments-checkout-top-express-pay-locale（2026-09-19）——
  * 结账页**顶部快捷支付区**（FR-001）：把服务端投影中全部可渲染的 express 入口
  * 直接以钱包按钮呈现（横向自适应、点击即付），位于 H1 之下、第 1 节之前。
  *
+ * PRD-20260919-checkout-express-always-visible-and-pi-params（2026-09-19）——
+ * **常显口径**（FR-005）：只要服务端下发了 express 入口，本区就**始终渲染**；
+ * 设备能力不足时不再整区消失，而是原地降级为「说明 + 重试」（子组件 notice 模式）。
+ *
  * 红线与口径：
  * - 入口集合只来自服务端 `payment_methods[].entries`（零前台筛选）；
  * - 不可承载的 kind 不进入顶部区（仍保留在第 5 节列表，不隐藏）；
- * - `device` / `unsupported` / `unconfigured` → 整区静默隐藏（零噪音）；
- * - 加载失败/超时 → 子组件（toast 模式）弹 3s toast 后隐藏（FR-007）。
+ * - 设备不可用 / 超时 / 未配置 → 区域保留 + 原因文案 + 重试（零噪音不等于零信息）；
+ * - 仅当服务端**没有**任何 express 入口时才整区不渲染。
  */
 export interface TopExpressPayProps {
   cart: Cart;
@@ -40,9 +41,6 @@ export function TopExpressPay({
   onComplete,
 }: TopExpressPayProps) {
   const t = useTranslations("expressCheckout");
-  const [availability, setAvailability] = useState<WalletAvailability>({
-    state: "unknown",
-  });
 
   // 服务端 express 入口中 Stripe 元素可承载的 kind（apple_pay / google_pay / link）。
   const kinds = useMemo(() => {
@@ -73,9 +71,8 @@ export function TopExpressPay({
     return owner?.client_config ?? null;
   }, [methods]);
 
+  // 服务端无任何可承载的 express 入口 → 本区无内容可言（为零噪音而不渲染）。
   if (kinds.length === 0) return null;
-  // 设备能力确定性不可用 → 整区（含标题/分隔线）隐藏，不占位、不打扰。
-  if (availability.state === "unavailable") return null;
 
   return (
     <section
@@ -90,9 +87,9 @@ export function TopExpressPay({
           maxColumns={2}
           showDivider
           entryKinds={kinds}
-          degradedDisplay="toast"
+          // FR-005：notice 模式 —— 设备不可用时在区内给出原因与重试，而不是整块消失。
+          degradedDisplay="notice"
           clientConfig={clientConfig}
-          onAvailabilityChange={setAvailability}
           onComplete={onComplete}
         />
       </div>

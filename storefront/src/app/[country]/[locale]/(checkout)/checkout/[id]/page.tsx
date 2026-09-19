@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { OrderPaymentContent } from "@/components/checkout/OrderPaymentContent";
 import { UnifiedCheckout } from "@/components/checkout/UnifiedCheckout";
+import { recoveryRouteForConvertedCart } from "@/lib/checkout/recovery";
 import { getCheckoutOrder } from "@/lib/data/checkout";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
 import { getCountry } from "@/lib/data/countries";
@@ -11,6 +12,7 @@ import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
 import { getOrderCheckout } from "@/lib/data/order-checkout";
 import { getOrderForCheckout } from "@/lib/data/order-payment";
 import { getShippingMethods } from "@/lib/data/shopping-cart";
+import { getPendingCheckoutOrderId } from "@/lib/pallastrade";
 
 interface CheckoutPageProps {
   params: Promise<{
@@ -45,8 +47,17 @@ async function CheckoutDataLoader({ params, searchParams }: CheckoutPageProps) {
       checkAuth(),
     ]);
     if (!cartData || cartData.id !== cartId) {
-      // 购物车不存在/已转换 → 回购物车页
-      redirect(`/${urlCountry}/${locale}/cart`);
+      // PRD-20260919-checkout-express-always-visible-and-pi-params FR-006 / AC-009：
+      // 旧购物车已转换（Prepare 已建单、cookie 已切到后继空车）→ 之前的「回购物车页」
+      // 会把用户丢到**空购物车**。恢复目标由 `recoveryRouteForConvertedCart` 统一决定：
+      // `_pallastrade_checkout_order` 记着真实订单 → 去订单支付页继续付款；否则回购物车页。
+      redirect(
+        recoveryRouteForConvertedCart({
+          country: urlCountry,
+          locale,
+          pendingOrderId: await getPendingCheckoutOrderId(),
+        }),
+      );
     }
     const countriesData = market
       ? await getMarketCountries(market.id).catch(() => ({

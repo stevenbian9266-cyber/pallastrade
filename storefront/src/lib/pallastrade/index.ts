@@ -21,6 +21,7 @@ export {
   getCartOptions,
   getCartToken,
   getCheckoutOptions,
+  getPendingCheckoutOrderId,
   getRefreshToken,
   requireCartId,
   setAccessToken,
