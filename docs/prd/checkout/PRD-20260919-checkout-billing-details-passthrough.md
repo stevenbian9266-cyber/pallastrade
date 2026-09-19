@@ -63,6 +63,10 @@
 
 - AC-001 ← FR-001：`bill_address` 完整 → PI 载荷含 `billing_details.address`（逐字段 `line1/line2/city/state/postal_code/country`）；`bill_address` 为 nil 或 `address1` 空 → 载荷**无** `billing_details` 键（不是空对象）。
 - AC-002 ← FR-002：elements 模式载荷的 `payment_intent_data.billing_details` 与 PI 模式同值（同一构造器）。
+  > ⚠️ **2026-09-19 修正**：本条已被 `PRD-20260919-checkout-express-always-visible-and-pi-params` 推翻 ——
+  > dev 真机证明 `payment_intent_data.billing_details` 同样被 Stripe 拒绝（`parameter_unknown: payment_intent_data[billing_details]`）。
+  > 账单详情的唯一合法载体是**客户端 PM 级** `billing_details`（+ 支付后 `charge.billing_details` 回读）；
+  > 本 PRD 中「服务端上行 billing_details」的两处载体（PI 顶层 / CS `payment_intent_data`）均已移除并加白名单守卫。
 - AC-003 ← FR-003：结算页「同配送」→ `confirmCardPayment` 收到 `billing_details.address` = 配送地址；「自定义」→ 等于页面所填；姓名空 → 载荷不含 `name`；未传 prop 的入口 → 不传 `billing_details`。
 - AC-004 ← FR-004：钱包地址完整 → `billing_mode: "custom"` + 钱包地址 + `payment_method_data.billing_details` 透传；缺 `postal_code` → `billing_mode: "same_as_shipping"` 且 **不发** `billing_address`。
 - AC-005 ← FR-004(c)：`or_` 订单页钱包同样透传 `billingDetails`（此前完全忽略）。

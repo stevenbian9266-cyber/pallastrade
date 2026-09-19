@@ -7,10 +7,10 @@ require "spec_helper"
 # （仅 retrieve 返回），创建/更新时传入会 400 `parameter_unknown: billing_details`。
 # 2026-09-19 dev 事故：该键被合进创建参数 → 全部卡/钱包支付在建会话阶段失败。
 #
-# 账单详情的三条合法通路（`call` 的载荷一律不得出现该键）：
+# 账单详情的合法通路（`call` 的载荷一律不得出现该键）：
 #   ① 客户端确认时 PM 级 `payment_method.billing_details`（卡表单 / 钱包）；
-#   ② Checkout Session 的 `payment_intent_data.billing_details`（CheckoutSessionPresenter）；
-#   ③ 支付完成后由 `charge.billing_details` 回读快照。
+#   ② 支付完成后由 `charge.billing_details` 回读快照。
+# ⚠️ Checkout Session 的 `payment_intent_data.billing_details` 同样非法（见 checkout_session_presenter_spec）。
 RSpec.describe PallasTradeStripe::PaymentIntentPresenter, type: :model do
   subject(:presenter) do
     described_class.new(

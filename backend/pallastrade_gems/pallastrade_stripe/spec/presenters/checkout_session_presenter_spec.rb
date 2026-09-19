@@ -91,9 +91,11 @@ RSpec.describe PallasTradeStripe::CheckoutSessionPresenter, type: :model do
       expect(shipping[:address][:city]).to eq("New York")
     end
 
-    # PRD-20260919-checkout-billing-details-passthrough AC-002：
-    # Checkout Session 模式与 PI 模式**同源**（同一 BillingDetailsPresenter）。
-    it "adds billing_details to payment_intent_data from the order's billing address" do
+    # PRD-20260919-checkout-express-always-visible-and-pi-params AC-002（2026-09-19 真机回归修正）：
+    # `payment_intent_data` **不接受** `billing_details`（Stripe 只读字段）——
+    # dev 真机报 `parameter_unknown: payment_intent_data[billing_details]`。
+    # 账单详情只能由客户端确认时经 PM 级 `payment_method.billing_details` 下发。
+    it "never sends billing_details inside payment_intent_data" do
       order.bill_address = build(
         :address,
         firstname: "Jane",
@@ -103,16 +105,20 @@ RSpec.describe PallasTradeStripe::CheckoutSessionPresenter, type: :model do
         zipcode: "EC1A 1BB"
       )
 
-      billing = presenter.call[:payment_intent_data][:billing_details]
-
-      expect(billing[:name]).to eq("Jane Doe")
-      expect(billing[:address][:line1]).to eq("1 Billing St")
-      expect(billing[:address][:postal_code]).to eq("EC1A 1BB")
-      expect(billing[:address][:country]).to be_present
+      expect(presenter.call[:payment_intent_data]).not_to have_key(:billing_details)
     end
 
-    it "omits billing_details when the order has no billing address" do
-      order.bill_address = nil
+    it "keeps payment_intent_data within the Stripe-legal key set" do
+      order.bill_address = build(:address, address1: "1 Billing St", city: "Billingville", zipcode: "EC1A 1BB")
+      keys = presenter.call[:payment_intent_data].keys.map(&:to_sym)
+
+      expect(keys - PallasTradeStripe::Gateway::CHECKOUT_SESSION_PAYMENT_INTENT_DATA_KEYS).to eq([])
+      expect(keys).not_to include(:billing_details)
+    end
+
+    it "never sends billing_details even without a shipping address" do
+      order.bill_address = build(:address, address1: "1 Billing St", city: "Billingville", zipcode: "EC1A 1BB")
+      order.ship_address = nil
 
       expect(presenter.call[:payment_intent_data]).not_to have_key(:billing_details)
     end

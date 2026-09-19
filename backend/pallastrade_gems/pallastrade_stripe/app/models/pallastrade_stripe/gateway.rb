@@ -585,6 +585,48 @@ module PallasTradeStripe
 
     private
 
+    # PALLAS-CUSTOM (2026-09-19, PRD-20260919-checkout-express-always-visible-and-pi-params 真机回归):
+    # Checkout Session（ui_mode: elements）顶层载荷白名单。必填事实：
+    # `payment_intent_data.billing_details` 不是 Stripe 参数（payment_intent_data 不接受
+    # 任何只读字段），dev 真机报 `parameter_unknown: payment_intent_data[billing_details]`。
+    CHECKOUT_SESSION_TOP_LEVEL_KEYS = %i[
+      after_expiration allow_promotion_codes automatic_tax billing_address_collection cancel_url
+      client_reference_id consent_collection currency custom_fields custom_text customer
+      customer_creation customer_email customer_update discounts excluded_payment_method_types
+      expires_at integration_identifier invoice_creation line_items locale metadata mode
+      payment_intent_data payment_method_collection payment_method_configuration
+      payment_method_options payment_method_types phone_number_collection recoveries
+      redirect_on_completion return_url saved_payment_method_options setup_intent_data
+      shipping_address_collection shipping_options submit_type subscription_data success_url
+      tax_id_collection ui_mode wallet_options
+    ].freeze
+
+    # `payment_intent_data` 内允许下行的字段（Stripe 允许的 PI 创建子集；billing_details 不在内）。
+    CHECKOUT_SESSION_PAYMENT_INTENT_DATA_KEYS = %i[
+      application_fee_amount capture_method description metadata on_behalf_of receipt_email
+      setup_future_usage shipping statement_descriptor statement_descriptor_suffix
+      transfer_data transfer_group payment_method_options payment_method_types
+    ].freeze
+
+    def assert_legal_checkout_session_payload!(payload)
+      unknown = payload.keys.map(&:to_sym) - CHECKOUT_SESSION_TOP_LEVEL_KEYS
+      if unknown.any?
+        raise ArgumentError, "Stripe Checkout Session payload contains unsupported keys: #{unknown.join(', ')}"
+      end
+
+      intent_data = payload[:payment_intent_data] || payload['payment_intent_data']
+      return payload if intent_data.blank?
+
+      illegal = intent_data.keys.map(&:to_sym) - CHECKOUT_SESSION_PAYMENT_INTENT_DATA_KEYS
+      if illegal.any?
+        raise ArgumentError,
+              "Stripe Checkout Session payment_intent_data contains unsupported keys: #{illegal.join(', ')} " \
+              '(billing_details is read-only and must go through a PaymentMethod)'
+      end
+
+      payload
+    end
+
     # DSP-P7-8：写契约共用的 provider 争议引用（缺失即拒绝 —— 不猜引用，不新建远端对象）。
     def dispute_reference_for!(dispute)
       reference = dispute.provider_dispute_reference

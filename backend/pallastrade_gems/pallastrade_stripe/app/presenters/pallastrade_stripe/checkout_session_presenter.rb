@@ -83,11 +83,11 @@ module PallasTradeStripe
       if three_d_secure?
         data[:payment_method_options] = { card: { request_three_d_secure: THREE_D_SECURE_REQUEST } }
       end
-      # PALLAS-CUSTOM (2026-09-19, PRD-20260919-checkout-billing-details-passthrough):
-      # billing_details 与 PI 模式同源（同一 BillingDetailsPresenter）；
-      # 地址不完整 → 不落到 payment_intent_data（与 PI 模式口径一致）。
-      billing_details = PallasTradeStripe::BillingDetailsPresenter.new(order: order).call
-      data[:billing_details] = billing_details if billing_details
+      # PALLAS-CUSTOM (2026-09-19, PRD-20260919-checkout-express-always-visible-and-pi-params 回归修复·真机验证):
+      # ⛔ 这里曾合并 `billing_details` —— Stripe 同样拒绝 `payment_intent_data[billing_details]`
+      # （dev 真机 400 `parameter_unknown: payment_intent_data[billing_details]`，2026-09-19）。
+      # 账单详情**没有**服务端上行参数：只能由客户端确认时经 PM 级
+      # `payment_method.billing_details` 下发，支付完成后由 `charge.billing_details` 回读。
       data
     end
 

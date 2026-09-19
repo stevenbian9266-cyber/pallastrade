@@ -40,6 +40,10 @@ module PallasTradeStripe
         ).call
 
         idempotency_key = external_data[:idempotency_key] || external_data['idempotency_key']
+        # 纵深防线（PRD-20260919-checkout-express-always-visible-and-pi-params 真机回归）：
+        # Checkout Session 同样不接受 `payment_intent_data[billing_details]` 与其它只读键，
+        # 非法键在发请求前本地拒发（dev 真机已现 400 parameter_unknown）。
+        assert_legal_checkout_session_payload!(session_payload)
         stripe_session = send_request(idempotency_key: idempotency_key) do |opts|
           Stripe::Checkout::Session.create(session_payload, opts)
         end

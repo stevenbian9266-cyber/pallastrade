@@ -104,15 +104,14 @@ For an existing Order, start sessions through `PallasTrade::PaymentSessions::Sta
 
 ⛔ **铁律（PRD-20260919-checkout-express-always-visible-and-pi-params 回归修复，2026-09-19）**：`PaymentIntent.billing_details` 在 Stripe 侧是**只读**字段（仅 `retrieve` 返回）。把它放进 `Stripe::PaymentIntent.create/update` 的参数会 400 `parameter_unknown: billing_details` —— 2026-09-19 dev 事故：卡与钱包支付**全部**在建会话阶段失败。
 
-账单详情只有三条合法通路：
+账单详情只有两条合法通路（**服务端上行参数一律不认这个字段**）：
 
 | # | 通路 | 载体 |
 |---|---|---|
 | ① | 客户端确认时 PM 级 | `confirmCardPayment(secret, { payment_method: { card, billing_details } })` / `confirmPayment({ confirmParams: { payment_method_data: { billing_details } } })` |
-| ② | Checkout Session 模式 | `payment_intent_data.billing_details`（创建会话时） |
-| ③ | 支付完成后回读 | `charge.billing_details` → 订单快照（只读，不下发） |
+| ② | 支付完成后回读 | `charge.billing_details` → 订单快照（只读，不下发） |
 
-`PallasTradeStripe::BillingDetailsPresenter` 仍是**唯一构造点**（来源 `order.bill_address`），`PaymentIntentPresenter#billing_details_payload` 仅可供**合法载体**复用，**不得**并回 PI 顶层；`Gateway::PaymentIntents` 还带白名单断言（`PAYMENT_INTENT_TOP_LEVEL_KEYS` / `PAYMENT_INTENT_READ_ONLY_KEYS`），非法键在本地 `ArgumentError` 拒发（宁可本地炸，不可线上全线支付失败）。`order.bill_address` 缺失或 `address1` 为空 → **整体不发该键**（不发空对象、不发半空地址，避免 AVS 误判）。前台只做「补空位」：卡支付把页面选定的账单地址放进 `confirmCardPayment` 的 `payment_method.billing_details`；钱包把 `event.billingDetails` 放进 `confirmPayment` 的 `confirmParams.payment_method_data.billing_details`（**Elements/钱包已收集值优先**，Stripe 语义：合并、Element 覆盖）。钱包地址不完整（缺 `line1`/`city`/`postal_code`/`country`）→ 前台降级 `billing_mode: "same_as_shipping"`，**不再**把半空地址发给 `Carts::Update`（否则 `IncompleteBillingAddress` 会让顾客无法支付）。
+⚠️ **两个 400 陷阱（各自一次线上/ dev 事故）**：`Stripe::PaymentIntent.create` 的**顶层** `billing_details` → `parameter_unknown: billing_details`；Checkout Session 的 `payment_intent_data.billing_details` → `parameter_unknown: payment_intent_data[billing_details]`（2026-09-19 真机验证发现，`ui_mode: elements`）。`PallasTradeStripe::BillingDetailsPresenter` 仍是**唯一构造点**（来源 `order.bill_address`），但**只供客户端 PM 级透传与回读比对复用**，不得并回任何服务端载荷；`Gateway::PaymentIntents` 与 `Gateway`（Checkout Session）各带白名单断言（`PAYMENT_INTENT_TOP_LEVEL_KEYS` / `PAYMENT_INTENT_READ_ONLY_KEYS`、`CHECKOUT_SESSION_TOP_LEVEL_KEYS` / `CHECKOUT_SESSION_PAYMENT_INTENT_DATA_KEYS`），非法键在本地 `ArgumentError` 拒发（宁可本地炸，不可线上全线支付失败）。`order.bill_address` 缺失或 `address1` 为空 → **整体不发该键**（不发空对象、不发半空地址，避免 AVS 误判）。前台只做「补空位」：卡支付把页面选定的账单地址放进 `confirmCardPayment` 的 `payment_method.billing_details`；钱包把 `event.billingDetails` 放进 `confirmPayment` 的 `confirmParams.payment_method_data.billing_details`（**Elements/钱包已收集值优先**，Stripe 语义：合并、Element 覆盖）。钱包地址不完整（缺 `line1`/`city`/`postal_code`/`country`）→ 前台降级 `billing_mode: "same_as_shipping"`，**不再**把半空地址发给 `Carts::Update`（否则 `IncompleteBillingAddress` 会让顾客无法支付）。
 
 **失败处理口径（同 PRD FR-002/FR-003）**：客户端必须消费 `confirmPayment()` 的返回值 —— 失败 → 页内报错 + **不 PATCH 完成** + **不跳转**（服务端操作键保证重试安全）；只有「钱的事实已确定」的服务端 code（`INVENTORY_RECOVERY_REQUIRED` / `transaction_not_payable` / 库存类）才跳结果页，未知 code 一律页内提示。验证入口：`harness verify billing-details-rspec`（含 gateway 白名单 spec `spec/models/gateway/payment_intent_payload_spec.rb`）。
 

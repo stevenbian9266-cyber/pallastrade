@@ -183,8 +183,8 @@ export default {
       // PaymentIntent **顶层** 一律不得出现 `billing_details`（Stripe 只读 → 400 parameter_unknown），
       // gateway 白名单断言在发请求前拦下只读/未知键。
       'billing-details-rspec': {
-        description: 'Stripe billing_details payload specs (CheckoutSession payment_intent_data carrier + PaymentIntent top-level whitelist guard + gateway payload assertion)',
-        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec pallastrade_gems/pallastrade_stripe/spec/presenters pallastrade_gems/pallastrade_stripe/spec/models/gateway/payment_intent_payload_spec.rb'],
+        description: 'Stripe billing_details payload specs (no billing_details on PaymentIntent top level NOR Checkout Session payment_intent_data + gateway whitelist guards)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec pallastrade_gems/pallastrade_stripe/spec/presenters pallastrade_gems/pallastrade_stripe/spec/models/gateway/payment_intent_payload_spec.rb pallastrade_gems/pallastrade_stripe/spec/models/gateway/checkout_session_payload_spec.rb'],
       },
       // 结算页只读预览报价（PRD-20260919-shipping-checkout-quote-preview，2026-09-19）：
       // 预览金额 = 同一条 `Carts::Submit` dry-run 管线（回滚，零建单/零事件/零支付会话）；

@@ -29,6 +29,14 @@
 3. **空购物车**：回到结算页时 cart 已 `converted` → `checkout/[id]/page.tsx` 执行 `redirect('/{country}/{locale}/cart')` → 空购物车。
 4. **订单列表有、详情 404**：详情页把所有 `completed_at === null` 的订单当作 not found（列表页不过滤）→ “Order not found”。
 5. **快捷支付不常显**：`TopExpressPay` 在设备能力不可用（桌面浏览器 `availablePaymentMethods` 为空 / 看门狗 timeout）时**整区 `return null`**。
+6. **第二个非法参数（dev 真机验证阶段发现）**：同一类错误在 **Checkout Session** 路径也存在 ——
+   ```
+   error_code=parameter_unknown
+   param="payment_intent_data[billing_details]"
+   message="Received unknown parameter: payment_intent_data[billing_details]"
+   idempotency_key="pallastrade-order-293-method-4-default-amount-129.99-attempt-1"
+   ```
+   （默认（非 `payment_mode=payment_intent`）的 Stripe 入口走 Checkout Session `ui_mode: elements`，因此**默认卡支付路径同样全量失败**。）
 
 ### 1.2 根因
 
@@ -40,6 +48,9 @@
 - **B（前端失败语义）**：`handlePayNow` 调用 `confirmPayment()` 后**不检查返回值**，无论成败都 PATCH complete + 跳结果页。
 - **C（订单可见性）**：`account/orders/[id]/page.tsx` 用 `completed_at === null` 判 not found，与列表页口径不一致。
 - **D（快捷支付显示策略）**：`TopExpressPay` 把“设备不可用”等同于“不展示”，而用户预期是**常显**（按钮置灰 + 说明）。
+- **E（第二个参数层级错位，Checkout Session）**：`CheckoutSessionPresenter#payment_intent_data` 同样合并了 `billing_details`；
+  Stripe 的 `payment_intent_data` 不接受任何只读字段（真机 400 `parameter_unknown: payment_intent_data[billing_details]`）。
+  ⇒ 账单详情**没有任何服务端上行载体**，唯一合法载体是**客户端 PM 级** `billing_details`（+ 支付后 `charge.billing_details` 回读）。
 
 ### 1.3 目标
 
@@ -65,10 +76,11 @@
 
 ## 3. 功能需求（FR）
 
-- **FR-001（Stripe 参数层级，P0）**：`PaymentIntentPresenter` 输出的 PI 载荷**不得包含顶层 `billing_details`**；
-  账单信息改由三路来源：① 客户端 confirm 时的 PM 级 `billing_details`（卡：`confirmCardPayment.payment_method.billing_details`；
-  钱包：`confirmPayment.confirm_params.payment_method_data.billing_details`）；② 服务端完成/回调时用 `charge.billing_details` 回写订单（已有）；
-  ③ Checkout Session 模式保留 `payment_intent_data.billing_details`（合法且不变）。
+- **FR-001（Stripe 参数层级，P0）**：`PaymentIntentPresenter` 输出的 PI 载荷**不得包含顶层 `billing_details`**，
+  `CheckoutSessionPresenter` 的 `payment_intent_data` **同样不得包含 `billing_details`**（真机证据见 §1.1-6）；
+  账单信息只有两条合法通路：① 客户端 confirm 时的 PM 级 `billing_details`（卡：`confirmCardPayment.payment_method.billing_details`；
+  钱包：`confirmPayment.confirm_params.payment_method_data.billing_details`）；② 支付完成后用 `charge.billing_details` 回读快照。
+  两处 gateway（`PaymentIntents` 与 Checkout Session）各补白名单断言，在发请求前本地拒发非法键。
   `update_payment_intent` 已 `.slice(...)` 丢弃该键——补断言固定住。
 - **FR-002（失败不跳转，P0）**：`UnifiedCheckout.handlePayNow` 必须检查 `confirmPayment()` 的返回：
   失败 → 页内错误 + **不 PATCH complete、不 router.replace 结果页**；成功才走结果页。
@@ -95,7 +107,7 @@
 ## 5. 验收标准（AC，与测试一一映射）
 
 - **AC-001 ← FR-001**：`PaymentIntentPresenter` 输出不含 `billing_details` 键；`Gateway::PaymentIntents#create_payment_intent` 传给 `Stripe::PaymentIntent.create` 的载荷通过白名单（不含 `billing_details`）；`update` 路径也不含。
-- **AC-002 ← FR-001**：Checkout Session 路径仍带 `payment_intent_data.billing_details`（不回退）。
+- **AC-002 ← FR-001**：Checkout Session 的 `payment_intent_data` **不含** `billing_details`（真机 400 回归守卫）；`Gateway#create_payment_session` 的 CS 载荷通过白名单（`CHECKOUT_SESSION_TOP_LEVEL_KEYS` / `CHECKOUT_SESSION_PAYMENT_INTENT_DATA_KEYS`）。
 - **AC-003 ← FR-002**：组件测试：`confirmPayment` 返回 `{error}` → 不调用 `router.replace`、不发 PATCH complete；成功 → 跳结果页。
 - **AC-004 ← FR-003**：未知 code → 页内错误展示且 URL 不变；`INVENTORY_RECOVERY_REQUIRED` 仍跳结果页。
 - **AC-005 ← FR-004**：未支付订单详情页渲染（含重付入口）；订单取不到才 not found。
@@ -134,7 +146,7 @@
 
 | AC | 测试 |
 |---|---|
-| AC-001/AC-002 | `pallastrade_stripe/spec/presenters/payment_intent_presenter_spec.rb` + `spec/models/gateway/payment_intent_payload_spec.rb`（新增：白名单）→ `harness verify billing-details-rspec` |
+| AC-001/AC-002 | `pallastrade_stripe/spec/presenters/payment_intent_presenter_spec.rb`、`spec/models/gateway/payment_intent_payload_spec.rb`、`spec/presenters/checkout_session_presenter_spec.rb`、`spec/models/gateway/checkout_session_payload_spec.rb`（新增：两处白名单）→ `harness verify billing-details-rspec` |
 | AC-003/AC-004 | `storefront/src/components/checkout/__tests__/UnifiedCheckout.test.tsx`（confirm 失败不跳转 / 未知 code 不跳） |
 | AC-005 | `storefront/src/app/[country]/[locale]/(storefront)/account/orders/[id]/__tests__/page.test.tsx`（页面层：未支付也渲染、取不到才 not found）+ `storefront/src/components/account/__tests__/OrderDetail.test.tsx`（详情真实渲染：Pay Now + `completed_at ?? submitted_at`） |
 | AC-006 | `storefront/src/components/checkout/__tests__/TopExpressPay.test.tsx`（不可用 → 仍渲染 + 降级） |
@@ -159,3 +171,4 @@
 |---|---|---|---|
 | 2026-09-19 | 0.1 | 初稿 + 根因定位（dev 日志/订单实况证据）；用户「实施」确认 | AI |
 | 2026-09-19 | 0.2 | 实施期补充 FR-006/AC-009（转换购物车恢复路由 —— 实施中定位到「空购物车页」的服务器端根因）；AC-005 二层测试口径；知识同步勾选 | AI |
+| 2026-09-19 | 0.3 | **dev 真机验证发现第二个非法参数**：Checkout Session 的 `payment_intent_data[billing_details]` 同样 400 ⇒ FR-001/AC-002 口径修正（服务端无任何合法载体，只留客户端 PM 级 + 回读）；新增 CS 载荷白名单断言与 spec；知识文档（payments/storefront Skill、AGENTS §6）同步修正 | AI |
