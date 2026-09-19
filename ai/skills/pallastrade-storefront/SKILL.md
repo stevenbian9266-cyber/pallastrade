@@ -687,7 +687,9 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
   - 页面传 `country={urlCountry}`；方法列表按 header 国家过滤：`getShippingMethods(country)`
     （数据层把 `{ country }` 作为 SDK `shippingMethods.list` 的**第一个**参数）。
 - **不可计价的方式**照实解释而非隐藏：预览返回的 `methods[].reason`（`address_required` /
-  `currency_mismatch`）驱动「填地址后显示」提示；补全地址后同一方式自动变为带 `cost`。
+  `currency_mismatch`）——`address_required` 时该方式行内渲染 `checkout.methodNeedsAddress`
+  （「填地址后显示」提示 + `data-testid="shipping-reason-<methodId>"`），**不再拿静态估价标签冒充金额**；
+  补全地址 / 换到 zone 覆盖的国家后同一方式自动变为带 `cost`（金额随预览刷新）。
 - 覆盖测试：`components/checkout/__tests__/UnifiedCheckout.test.tsx` 的 `(preview)` 段
   （预估金额 + 采纳服务端默认选中 / 防抖与乱序丢弃 / 失败回落）、
   `app/api/checkout/preview/__tests__/route.test.ts`（403 跨源 / 400 缺 cart_id / 502 降级）、

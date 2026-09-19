@@ -59,6 +59,7 @@
 - **FR-003（方式集合与默认）**：预览返回的方法集合 = 「按 header 国家过滤后的展示集合」（`Shipping::Estimate.scoped_methods`），每项带 `cost`（可计价）或 `cost: null + reason: "address_required"`（缺州/邮编等）；`selected_method_id` = 管道默认（费率成本升序第一）或用户显式传入且仍可用的方式。
 - **FR-004（前台接线与默认选中）**：`UnifiedCheckout` 首屏请求预览，**直接采用** `selected_method_id` 作为选中方式；右栏读模型升级为四级：**权威（prepare 后）→ 预览 → legacy → 短标签**；费用行展示 `Estimated shipping` / `Estimated taxes`。
 - **FR-005（变更重取与竞态）**：地址字段/配送方式变更后 **400ms 防抖**重取；请求带 `requestId`，过期响应丢弃；请求期间保留旧数字 + 微加载态；`address_required` 的方式在被计价后自动进入可选集合。
+- **FR-005a（不可计价的照实提示）**：预览返回 `reason: "address_required"` 的方式，在方式行内渲染「填地址后显示」提示（`checkout.methodNeedsAddress`，5 语言），**不再用静态估价标签冒充金额**，也不把方式藏掉；换到 zone 覆盖的国家/补全地址后同一方式自动变为带 `cost`。（用户 2026-09-19 明确确认实施）
 - **FR-006（契约与 SDK）**：Store API 新增 `POST /api/v3/store/carts/:id/preview_quote`（cart token 授权，与其它 cart 端点一致）；SDK 增加 `carts.previewQuote(...)`；BFF 新增 `POST /api/checkout/preview`（同源校验，与 prepare/start 同模式）；同步 `backend/public/api-docs/store.yaml` 与 SDK 类型（`harness generated:check`）。
 
 ## 4. 验收标准（AC）
@@ -107,6 +108,7 @@
 | AC-002 | 新增 `harness verify checkout-preview-quote-rspec`：preview 与 prepare 同参数金额一致（同源断言） |
 | AC-003 | 同 verifier：dry-run 前后计数断言（Order/Event/Job/PaymentSession 0 增、cart 仍 active、礼品卡余额不变） |
 | AC-004/AC-005 | verifier（`selected_method_id` = 最便宜；`address_required` → 带 cost）+ 前台组件测试（默认选中、Estimated 文案、reason 渲染） |
+| AC-005（行内提示） | 前台组件测试：`methods[].reason === 'address_required'` 时行内显示 `methodNeedsAddress`（`data-testid="shipping-reason-<id>"`）且不再显示静态估价标签；i18n 键守护覆盖 5 语言 |
 | AC-006 | 前台测试：防抖（fake timers）、乱序响应丢弃（`requestId`）、失败回落 `calculatedAtSubmit` |
 | AC-007 | `harness generated:check` + BFF 单测（403 非同源 / 200 形状） |
 | AC-008 | 既有回归：`storefront-test` + 两段语义/钱包/账单/i18n 相关 spec |
@@ -155,3 +157,4 @@
 |---|---|---|---|
 | 2026-09-19 | 0.1 | 初稿（approved）：用户确认「实施」；范围 = 方式列表按 header 国家过滤 + dry-run 只读预览 + 默认选中 + 前台四级读模型 | AI |
 | 2026-09-19 | 1.0 | 实施完成（AC-001~AC-008）：`Address#pricing_only`（不伪造地址）+ 无法配送时的降级契约 + 前端防抖/竞态/微加载 + 四语言新键；验证：`checkout-preview-quote-rspec` 28 例绿、`storefront-test` 绿、`generated:check` 无漂移、GS-195 | AI |
+| 2026-09-19 | 1.1 | dev 实测修正：① 预览不再要求先填邮箱（dry-run 占位邮箱，真实提交仍拦截）；② 不可计价方式行内提示「填地址后显示」（FR-005a，用户确认）；验证：后端 9 例 + 前台 51 例绿 | AI |

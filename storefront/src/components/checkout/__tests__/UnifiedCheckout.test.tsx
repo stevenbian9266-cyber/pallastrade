@@ -1709,4 +1709,46 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     );
     expect(within(summary).queryByText("$0.00")).toBeNull();
   });
+
+  // PRD-20260919-shipping-checkout-quote-preview AC-005：
+  // 预览说某个方式当前算不出费率（缺州/邮编、或该国家不在 zone 内）→ 行内照实写
+  // 「填地址后显示」，而不是拿静态估价冒充、也不把方式藏掉。
+  it("shows the address-needed hint for methods the preview cannot price", async () => {
+    previewMock.mockImplementation(async () => ({
+      ok: true,
+      json: async () => ({
+        cart_id: "cart_1",
+        currency: "USD",
+        delivery_total: null,
+        display_delivery_total: null,
+        tax_total: null,
+        display_tax_total: null,
+        amount_due: null,
+        display_amount_due: null,
+        selected_method_id: "dm_1",
+        methods: [
+          {
+            id: "dm_1",
+            name: "Standard",
+            cost: null,
+            display_cost: null,
+            reason: "address_required",
+            selected: false,
+          },
+        ],
+        estimated: true,
+        address_complete: false,
+      }),
+    }));
+
+    renderCheckout(makeCart(), "DE");
+
+    await waitFor(() =>
+      expect(screen.getByTestId("shipping-reason-dm_1").textContent).toBe(
+        "methodNeedsAddress",
+      ),
+    );
+    // 静态估价标签不再冒充金额（方式行只在可计价时才显示 display_estimated_price）
+    expect(screen.queryByText("$5.00")).toBeNull();
+  });
 });

@@ -366,6 +366,7 @@
     "quoteRowShipping": "Dostawa",
     "quoteRowPromotion": "Promocja",
     "quoteRowAmountDue": "Do zapłaty",
+    "methodNeedsAddress": "Pojawi się po podaniu adresu",
     "estimatedShipping": "Szacowana dostawa",
     "estimatedTaxes": "Szacowane podatki",
     "previewUpdating": "Aktualizowanie…",

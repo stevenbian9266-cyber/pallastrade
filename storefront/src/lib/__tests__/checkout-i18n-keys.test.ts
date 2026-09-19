@@ -40,6 +40,9 @@ const REQUIRED: Record<string, string[]> = {
     // 预估运费行标签 + 预览刷新中的微加载提示（五语言齐备，缺键即用户可见缺陷）。
     "estimatedShipping",
     "previewUpdating",
+    // PRD-20260919-shipping-checkout-quote-preview AC-005：
+    // 预览说某方式当前算不出费率时的「填地址后显示」提示。
+    "methodNeedsAddress",
     // PRD-20260914-checkout-quote-confirmation-loop AC-007
     "quoteChangedTitle",
     "quoteChangedBody",

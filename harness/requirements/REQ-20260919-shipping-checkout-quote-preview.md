@@ -56,6 +56,14 @@
 4. 填写/修改地址后 **AJAX 重取**（防抖 + 竞态保护），无地址时以 header 国家作临时地址；
 5. 缺州/邮编而**无法计价**的方式显式返回 `address_required`，不可判定时保留诚实降级。
 
+## 后续增补（同一 PRD，2026-09-19 实施后修正）
+
+1. **预览不要求先填邮箱**（dev 实测 422：`Email is required to place an order`）——dry-run 跳过该前置校验，
+   用 `PREVIEW_EMAIL` 占位邮箱建**被回滚**的临时单；真实提交仍拦住无邮箱的游客单（spec 双向断言）。
+2. **不可计价方式的行内照实提示**（用户 2026-09-19 明确确认）：预览返回 `reason: address_required` 的方式，
+   在方式行内渲染 `checkout.methodNeedsAddress`（「填地址后显示」，5 语言，`data-testid="shipping-reason-<id>"`），
+   **不再拿静态估价标签冒充金额**；补全地址 / 换到 zone 覆盖的国家后同一方式自动变为带 `cost`。
+
 ## 影响范围（`harness affected` 输出）
 
 - core：`carts/submit.rb`（+dry_run）、新增 `carts/preview_quote.rb`

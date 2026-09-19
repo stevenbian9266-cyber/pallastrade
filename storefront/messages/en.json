@@ -366,6 +366,7 @@
     "quoteRowShipping": "Shipping",
     "quoteRowPromotion": "Promotion",
     "quoteRowAmountDue": "Amount due",
+    "methodNeedsAddress": "Shown once you enter your address",
     "estimatedShipping": "Estimated shipping",
     "estimatedTaxes": "Estimated taxes",
     "previewUpdating": "Updating…",

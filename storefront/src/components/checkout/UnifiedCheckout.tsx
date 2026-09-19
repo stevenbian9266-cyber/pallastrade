@@ -1457,28 +1457,48 @@ export function UnifiedCheckout({
               className="mb-4"
             />
             <div className="flex flex-col gap-3">
-              {shippingMethods.map((method) => (
-                <label
-                  key={method.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-indigo-300"
-                >
-                  <input
-                    type="radio"
-                    name="shipping-method"
-                    checked={shippingMethodId === method.id}
-                    onChange={() => setShippingMethodId(method.id ?? "")}
-                    className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{method.name}</p>
-                    {method.display_estimated_price && (
-                      <p className="text-sm text-gray-500">
-                        {method.display_estimated_price}
-                      </p>
-                    )}
-                  </div>
-                </label>
-              ))}
+              {shippingMethods.map((method) => {
+                // PRD-20260919-shipping-checkout-quote-preview FR-003/FR-005：
+                // 预览说这个方式**当前算不出费率**（缺州/邮编，或该国家不在 zone 内）
+                // → 照实写「填写地址后显示」，既不用静态估价冒充，也不把这个方式藏掉。
+                const previewRow = preview?.methods?.find(
+                  (row) => row.id === method.id,
+                );
+                const needsAddress =
+                  previewRow?.cost == null &&
+                  previewRow?.reason === "address_required";
+                return (
+                  <label
+                    key={method.id}
+                    className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-indigo-300"
+                  >
+                    <input
+                      type="radio"
+                      name="shipping-method"
+                      checked={shippingMethodId === method.id}
+                      onChange={() => setShippingMethodId(method.id ?? "")}
+                      className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{method.name}</p>
+                      {needsAddress ? (
+                        <p
+                          className="text-sm text-gray-500"
+                          data-testid={`shipping-reason-${method.id}`}
+                        >
+                          {t("methodNeedsAddress")}
+                        </p>
+                      ) : (
+                        method.display_estimated_price && (
+                          <p className="text-sm text-gray-500">
+                            {method.display_estimated_price}
+                          </p>
+                        )
+                      )}
+                    </div>
+                  </label>
+                );
+              })}
             </div>
             <p className="text-xs text-gray-500 mt-2">
               {t("shippingRestrictionNote")}
