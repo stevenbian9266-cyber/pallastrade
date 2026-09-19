@@ -725,6 +725,7 @@
     "backToStore": "Volver a la tienda",
     "secureCheckout": "Pago seguro",
     "showOrderSummary": "Mostrar resumen del pedido",
+    "showOrderSummaryWithMeta": "Mostrar resumen del pedido · {count, plural, one {# artículo} other {# artículos}} · {amount}",
     "hideOrderSummary": "Ocultar resumen del pedido",
     "allRightsReserved": "© {year} {storeName}. Todos los derechos reservados."
   },

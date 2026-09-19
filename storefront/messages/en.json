@@ -725,6 +725,7 @@
     "backToStore": "Back to store",
     "secureCheckout": "Secure Checkout",
     "showOrderSummary": "Show order summary",
+    "showOrderSummaryWithMeta": "Show order summary · {count, plural, one {# item} other {# items}} · {amount}",
     "hideOrderSummary": "Hide order summary",
     "allRightsReserved": "© {year} {storeName}. All rights reserved."
   },

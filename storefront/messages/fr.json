@@ -725,6 +725,7 @@
     "backToStore": "Retour a la boutique",
     "secureCheckout": "Paiement sécurisé",
     "showOrderSummary": "Afficher le recapitulatif de la commande",
+    "showOrderSummaryWithMeta": "Afficher le recapitulatif de la commande · {count, plural, one {# article} other {# articles}} · {amount}",
     "hideOrderSummary": "Masquer le recapitulatif de la commande",
     "allRightsReserved": "© {year} {storeName}. Tous droits reserves."
   },

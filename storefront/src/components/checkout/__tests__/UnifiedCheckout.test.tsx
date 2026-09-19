@@ -4,7 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UnifiedCheckout } from "@/components/checkout/UnifiedCheckout";
-import { CheckoutProvider, CheckoutSummary } from "@/contexts/CheckoutContext";
+import {
+  CheckoutProvider,
+  CheckoutSummary,
+  useCheckout,
+} from "@/contexts/CheckoutContext";
 
 const pushMock = vi.fn();
 const replaceMock = vi.fn();
@@ -144,6 +148,7 @@ function makeCart(overrides: Partial<ShoppingCart> = {}): ShoppingCart {
       },
     ],
     display_item_total: "$19.98",
+    item_count: 2,
     ...overrides,
   } as unknown as ShoppingCart;
 }
@@ -172,6 +177,21 @@ async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("unified-state_abbr"), "LDN");
 }
 
+/**
+ * PRD-20260919-checkout-remove-items-block-mobile-summary-meta AC-003：
+ * 读取 `CheckoutContext` 发布的摘要元数据（移动端折叠按钮的数据源）。
+ */
+function SummaryMetaProbe() {
+  const { summaryMeta } = useCheckout();
+  return (
+    <div data-testid="summary-meta-probe">
+      {summaryMeta
+        ? `${summaryMeta.itemCount}|${summaryMeta.displayTotal}`
+        : "none"}
+    </div>
+  );
+}
+
 function renderCheckout(cart: ShoppingCart = makeCart()) {
   return render(
     <CheckoutProvider>
@@ -182,6 +202,7 @@ function renderCheckout(cart: ShoppingCart = makeCart()) {
         isAuthenticated={false}
       />
       <CheckoutSummary />
+      <SummaryMetaProbe />
     </CheckoutProvider>,
   );
 }
@@ -236,6 +257,17 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     confirmMock.mockResolvedValue({});
   });
 
+  // PRD-20260919-checkout-remove-items-block-mobile-summary-meta AC-003：
+  // 结账页向 `CheckoutContext` 发布折叠态元数据（件数 + 金额），
+  // 供移动端 order summary 折叠按钮渲染「N items · $X」。
+  it("publishes summary meta for the mobile order-summary toggle", () => {
+    renderCheckout();
+
+    expect(screen.getByTestId("summary-meta-probe").textContent).toBe(
+      "2|$19.98",
+    );
+  });
+
   // PRD-20260914-checkout-placeholder-controls-governance AC-001
   it("renders numbered sections, marketing opt-in and order summary; hides backend-less placeholders", () => {
     renderCheckout();
@@ -243,15 +275,15 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     expect(screen.getByText("orderConfirmation")).toBeTruthy();
     expect(screen.getByText("contactInformation")).toBeTruthy();
     expect(screen.getByText("shippingAddress")).toBeTruthy();
-    expect(screen.getByText("items")).toBeTruthy();
     expect(screen.getByText("shippingMethod")).toBeTruthy();
     expect(screen.getByText("paymentMethod")).toBeTruthy();
     expect(screen.getByText("orderSummary")).toBeTruthy();
     expect(screen.getByTestId("unified-order-summary")).toBeInTheDocument();
-    // 商品名出现在左侧商品区块与右侧订单摘要各一次
-    expect(
-      screen.getAllByText("Awesome Product").length,
-    ).toBeGreaterThanOrEqual(1);
+    // PRD-20260919-checkout-remove-items-block-mobile-summary-meta AC-001：
+    // 左栏重复的 Items 区块已删除（页面上不再有 items 标题）。
+    expect(screen.queryByText("items")).toBeNull();
+    // AC-002：商品明细只保留在右栏订单摘要一处（删除前为左栏 + 右栏两处）。
+    expect(screen.getAllByText("Awesome Product")).toHaveLength(1);
     expect(screen.getByText("Standard")).toBeTruthy();
     expect(screen.getByText("Card")).toBeTruthy();
     // Marketing 已接线 → 保留可见（governance FR-001）

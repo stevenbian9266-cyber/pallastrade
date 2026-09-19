@@ -4918,6 +4918,36 @@
         "dualTouchpointPreserved": 10,
         "platformLimitDocumented": 5
       }
+    },
+    {
+      "id": "GS-189",
+      "name": "Drop the duplicated item list from the checkout main column and keep the collapsed mobile summary informative",
+      "description": "The unified checkout renders the same cart items twice: an Items section in the left main column and the order summary published to the right sidebar through `CheckoutContext#setSummaryContent`. Deleting the left block alone would leave mobile shoppers with nothing on the first screen, because below `lg` the sidebar summary is collapsed behind a 'Show order summary' toggle that carries no item count and no amount. The ask: exactly one item list (the sidebar), and a collapsed toggle that reads `Show order summary · 3 items · $129.99`.",
+      "mustDo": [
+        "Keep exactly one item list on the checkout page: delete the left-column Items section from the main column and let the sidebar order summary stay the single place where line items are rendered",
+        "Publish the collapsed metadata from the checkout page itself (`setSummaryMeta({ itemCount: cart.item_count, displayTotal: cart.display_item_total })`) in the same effect that publishes the summary, and clear both in the effect cleanup",
+        "Read both values from the server projection (`ShoppingCart.item_count` / `display_item_total`, existing contract fields) and use the display string for rendering only - never parse or re-sum amounts on the client",
+        "Compose the collapsed toggle label as the existing show-summary text plus count plus amount, while the expanded state keeps the plain hide-summary label",
+        "Fall back gracefully: metadata absent or amount null -> plain label with no `undefined` or dangling separator; summary content cleared (order-placed / payment-result) -> the toggle renders nothing at all",
+        "Ship the label in all five locales with correct ICU plural forms (Polish needs one/few/many/other) and register it in the i18n key guard so a missing key fails the build instead of rendering the raw key",
+        "Prove it with tests: the item name appears exactly once in the checkout DOM, the page publishes the metadata, and the toggle covers metadata-present, expanded, fallback and cleared branches"
+      ],
+      "mustNotDo": [
+        "Delete the item list without replacing what mobile loses: removing the left column is only acceptable together with the count and amount on the collapsed toggle",
+        "Compute the count or the total in the browser (summing quantities or item amounts) - the server already publishes authoritative values and the money contract forbids client-side arithmetic on money",
+        "Render a placeholder, a zero or an empty amount slot when the display value is missing - fall back to the plain label instead",
+        "Require every summary publisher to supply metadata: the order-pay page publishes its own summary and must keep working with the plain label",
+        "Treat this as the fee read-model fix: shipping placeholders and missing fee rows are a separate PRD and must not be silently changed here",
+        "Disturb what sits around the removed block (the express quick-pay area and the quote-diff banner keep their order in the main column)"
+      ],
+      "scoring": {
+        "singleItemListRendered": 20,
+        "serverValuesForMetadata": 20,
+        "collapsedLabelContract": 15,
+        "gracefulFallback": 15,
+        "fiveLocaleIcuPlurals": 15,
+        "testsCoverAllBranches": 15
+      }
     }
   ]
 }

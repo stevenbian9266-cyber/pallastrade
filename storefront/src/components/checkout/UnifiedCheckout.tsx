@@ -369,7 +369,7 @@ export function UnifiedCheckout({
   const router = useRouter();
   const pathname = usePathname();
   const basePath = extractBasePath(pathname);
-  const { setSummaryContent } = useCheckout();
+  const { setSummaryContent, setSummaryMeta } = useCheckout();
 
   const paymentMethods: PaymentMethodWithEntries[] = cart.payment_methods ?? [];
   // D7（PRD-20260918-payments-d7-payment-section-express）：cart 页同样按**入口**
@@ -651,6 +651,9 @@ export function UnifiedCheckout({
   // The checkout route group owns the real desktop sticky sidebar. Publish the
   // summary there instead of nesting another three-column grid inside its main
   // content column.
+  // PRD-20260919-checkout-remove-items-block-mobile-summary-meta FR-002/FR-003：
+  // 同时发布折叠态元数据（件数 + 金额）—— 移动端摘要默认收起，删掉左栏商品
+  // 区块后靠它在按钮上保留「N 件 · 金额」。两值均取服务端权威字段。
   useLayoutEffect(() => {
     setSummaryContent(
       <UnifiedOrderSummary
@@ -659,8 +662,15 @@ export function UnifiedCheckout({
         couponHandlers={couponHandlersRef.current}
       />,
     );
-    return () => setSummaryContent(null);
-  }, [cart, discountCart, setSummaryContent]);
+    setSummaryMeta({
+      itemCount: cart.item_count,
+      displayTotal: cart.display_item_total,
+    });
+    return () => {
+      setSummaryContent(null);
+      setSummaryMeta(null);
+    };
+  }, [cart, discountCart, setSummaryContent, setSummaryMeta]);
 
   // 国家变更 → 加载州/省（配送地址）
   useEffect(() => {
@@ -1226,35 +1236,6 @@ export function UnifiedCheckout({
             smsOptIn={smsOptIn}
             onSmsOptInChange={setSmsOptIn}
           />
-        </section>
-
-        {/* 商品信息 */}
-        <section className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">{t("items")}</h2>
-          <div className="space-y-4 divide-y divide-gray-100">
-            {cart.items.map((item) => (
-              <div key={item.id} className="flex gap-4 pt-4 first:pt-0">
-                <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                  <ProductImage
-                    src={item.thumbnail_url}
-                    alt={item.name}
-                    fill
-                    className="object-cover"
-                    sizes="64px"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {item.name}
-                  </p>
-                  <p className="text-sm text-gray-500">× {item.quantity}</p>
-                </div>
-                <p className="text-sm font-semibold text-gray-900">
-                  {item.display_amount}
-                </p>
-              </div>
-            ))}
-          </div>
         </section>
 
         {/* 3 Shipping method */}

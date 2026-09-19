@@ -80,15 +80,33 @@ function CheckoutFooter() {
   );
 }
 
-function MobileSummaryToggle() {
+/**
+ * PRD-20260919-checkout-remove-items-block-mobile-summary-meta FR-002：
+ * 移动端摘要折叠按钮 —— 收起时展示「件数 + 金额」（例：`Show order summary ·
+ * 3 items · $129.99`），因为 `lg` 以下摘要默认收起，而商品明细已只保留在
+ * 摘要里。展开态保持原「Hide order summary」文案。
+ *
+ * FR-004 回退：未发布元数据（如 `or_` 订单页只发布摘要内容）或金额为空 →
+ * 纯文案；摘要内容为空（`order-placed` / `payment-result`）→ 整个按钮不渲染。
+ *
+ * 导出仅供单测使用（页面渲染始终经 `CheckoutLayoutContent` 引用）。
+ */
+export function MobileSummaryToggle() {
   const [isOpen, setIsOpen] = useState(false);
   const t = useTranslations("checkoutLayout");
-  const { summaryContent } = useCheckout();
+  const { summaryContent, summaryMeta } = useCheckout();
 
   // Hide the toggle entirely when there's no summary to show (e.g. the
   // order-placed page clears summaryContent because the page already
   // displays the order details inline).
   if (summaryContent === null) return null;
+
+  const collapsedLabel = summaryMeta?.displayTotal
+    ? t("showOrderSummaryWithMeta", {
+        count: summaryMeta.itemCount,
+        amount: summaryMeta.displayTotal,
+      })
+    : t("showOrderSummary");
 
   return (
     <div className="lg:hidden border-b border-gray-200 bg-gray-50">
@@ -101,7 +119,7 @@ function MobileSummaryToggle() {
       >
         <span className="flex items-center gap-2 text-sm font-medium text-gray-900">
           <ShoppingBag className="w-5 h-5 text-gray-600" />
-          {isOpen ? t("hideOrderSummary") : t("showOrderSummary")}
+          {isOpen ? t("hideOrderSummary") : collapsedLabel}
         </span>
         <ChevronDown
           className={`w-5 h-5 text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}

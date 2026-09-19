@@ -10,9 +10,24 @@ import {
 
 const PENDING = Symbol("pending");
 
+/**
+ * PRD-20260919-checkout-remove-items-block-mobile-summary-meta FR-003：
+ * 订单摘要的**折叠态元数据**（移动端 `MobileSummaryToggle` 在收起时展示
+ * 「N 件 · 金额」，避免删掉左栏商品区块后首屏看不到购物车概况）。
+ *
+ * 两个字段都取服务端权威值：件数 = `ShoppingCart.item_count`，
+ * 金额 = `ShoppingCart.display_item_total`（**仅用于渲染**，不参与任何计算）。
+ */
+export interface CheckoutSummaryMeta {
+  itemCount: number;
+  displayTotal: string | null;
+}
+
 interface CheckoutContextValue {
   summaryContent: ReactNode | typeof PENDING;
   setSummaryContent: (content: ReactNode) => void;
+  summaryMeta: CheckoutSummaryMeta | null;
+  setSummaryMeta: (meta: CheckoutSummaryMeta | null) => void;
 }
 
 const CheckoutContext = createContext<CheckoutContextValue | undefined>(
@@ -23,10 +38,13 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
   const [summaryContent, setSummaryContent] = useState<
     ReactNode | typeof PENDING
   >(PENDING);
+  const [summaryMeta, setSummaryMeta] = useState<CheckoutSummaryMeta | null>(
+    null,
+  );
 
   const value = useMemo<CheckoutContextValue>(
-    () => ({ summaryContent, setSummaryContent }),
-    [summaryContent],
+    () => ({ summaryContent, setSummaryContent, summaryMeta, setSummaryMeta }),
+    [summaryContent, summaryMeta],
   );
 
   return (

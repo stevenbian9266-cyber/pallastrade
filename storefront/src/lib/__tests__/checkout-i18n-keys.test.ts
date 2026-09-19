@@ -138,6 +138,9 @@ const REQUIRED: Record<string, string[]> = {
     "sortHighest",
     "sortLowest",
   ],
+  // PRD-20260919-checkout-remove-items-block-mobile-summary-meta AC-007：
+  // 移动端摘要折叠按钮的「件数 + 金额」文案（ICU 复数）五语言齐备。
+  checkoutLayout: ["showOrderSummaryWithMeta"],
 };
 
 describe("Checkout error i18n keys (PRD-20260913-checkout-txn-error-routing AC-010)", () => {

@@ -725,6 +725,7 @@
     "backToStore": "Zurück zum Shop",
     "secureCheckout": "Sicherer Checkout",
     "showOrderSummary": "Bestellübersicht anzeigen",
+    "showOrderSummaryWithMeta": "Bestellübersicht anzeigen · {count, plural, one {# Artikel} other {# Artikel}} · {amount}",
     "hideOrderSummary": "Bestellübersicht ausblenden",
     "allRightsReserved": "© {year} {storeName}. Alle Rechte vorbehalten."
   },
