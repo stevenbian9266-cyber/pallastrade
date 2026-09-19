@@ -483,14 +483,10 @@ var StoreClient = class {
      * and rolls back — it never creates an order or writes to the cart.
      * @param cartId - Cart prefixed ID
      */
-    previewQuote: (cartId, params, options) => this.request(
-      "POST",
-      `/carts/${cartId}/preview_quote`,
-      {
-        ...options,
-        body: params ?? {}
-      }
-    ),
+    previewQuote: (cartId, params, options) => this.request("POST", `/carts/${cartId}/preview_quote`, {
+      ...options,
+      body: params ?? {}
+    }),
     /**
      * Nested resource: Line items
      */

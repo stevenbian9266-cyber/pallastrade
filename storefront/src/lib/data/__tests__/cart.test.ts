@@ -47,7 +47,7 @@ import {
   removeCartItem,
   updateCartItem,
 } from "@/lib/data/cart";
-import { getShoppingCart, getShippingMethods } from "@/lib/data/shopping-cart";
+import { getShippingMethods, getShoppingCart } from "@/lib/data/shopping-cart";
 
 // Minimal cart fixture for tests
 const mockCart = {

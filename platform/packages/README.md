@@ -154,6 +154,12 @@ callers). Review lists now accept `sort=most_helpful` on top of the F-4 ordering
 content-hashed type chunk (`index-<hash>.d.ts`/`.d.cts`), so rebuild and commit the whole `dist/` with `git add -A -f` — otherwise
 `index.d.ts` ends up referencing a sibling that was never committed.
 
+⚠️ **格式化源码后要重建 `dist/`**：biome 只作用于 `src/`，但**源码换行/签名形状变化会被打包进
+bundle**（`index.js` / `index.cjs` 及 sourcemap）——改完 `src/` 先跑
+`pnpm --filter @pallastrade/sdk build`，再用 `git add -A -f platform/packages/sdk/dist` 带上
+（dist 被 gitignore，普通 `git add` 会被静默跳过）。2026-09-19 的 Storefront/Platform CI 红
+（预览报价那次）就是「源码改了、dist 没随」的同类漂移。
+
 Read-only checkout quote preview (PRD-20260919-shipping-checkout-quote-preview, 2026-09-19):
 `carts.previewQuote(cartId, { country?, shipping_method_id?, shipping_address? })` returns
 `CartPreviewQuoteResult` — `{ delivery_total, tax_total, discount_total, amount_due, …, selected_method_id, methods[], estimated, provisional_country, address_complete }`

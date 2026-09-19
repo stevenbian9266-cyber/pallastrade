@@ -271,12 +271,10 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
         address_complete: false,
       }),
     }));
-    vi.stubGlobal(
-      "fetch",
-      (input: RequestInfo | URL, init?: RequestInit) =>
-        input === "/api/checkout/preview"
-          ? previewMock(input, init)
-          : fetchMock(input, init),
+    vi.stubGlobal("fetch", (input: RequestInfo | URL, init?: RequestInit) =>
+      input === "/api/checkout/preview"
+        ? previewMock(input, init)
+        : fetchMock(input, init),
     );
     confirmMock.mockReset();
     fetchMock.mockImplementation(
@@ -1705,7 +1703,9 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
 
     const summary = screen.getByTestId("unified-order-summary");
     await waitFor(() =>
-      expect(within(summary).getAllByText("calculatedAtSubmit").length).toBeGreaterThanOrEqual(2),
+      expect(
+        within(summary).getAllByText("calculatedAtSubmit").length,
+      ).toBeGreaterThanOrEqual(2),
     );
     expect(within(summary).queryByText("$0.00")).toBeNull();
   });

@@ -697,6 +697,9 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 `fetch` 全局被打桩为「预览 → `previewMock`，其余 → `fetchMock`」——否则新增的只读请求会打乱
 既有「结账链路调用次数」断言（`toHaveBeenCalledTimes`）。
 
+⚠️ **CI lint 覆盖测试文件**：`pnpm check`（biome）扫的是整个 `src/`，**含 `__tests__`**——
+新增/改动测试后必须本地跑一次（导入顺序、行宽折行都会让 Storefront CI 变红；2026-09-19 实际发生）。
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - P0 (2026-09-03): Express(Apple/Google Pay) 金额/行项目改由服务端 Cart#express_payment 权威提供（expressAmount/expressLineItems；legacy buildLineItems 仅 fallback）；Legacy cart 支付=Compatibility Only。

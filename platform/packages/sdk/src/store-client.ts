@@ -12,9 +12,9 @@ import type {
   Address,
   AuthTokens,
   Cart,
-  CartSubmitResult,
   CartPreviewQuoteParams,
   CartPreviewQuoteResult,
+  CartSubmitResult,
   Category,
   CategoryListParams,
   CheckoutUpdateParams,
@@ -495,14 +495,10 @@ export class StoreClient {
       params?: CartPreviewQuoteParams,
       options?: RequestOptions,
     ): Promise<CartPreviewQuoteResult> =>
-      this.request<CartPreviewQuoteResult>(
-        'POST',
-        `/carts/${cartId}/preview_quote`,
-        {
-          ...options,
-          body: params ?? {},
-        },
-      ),
+      this.request<CartPreviewQuoteResult>('POST', `/carts/${cartId}/preview_quote`, {
+        ...options,
+        body: params ?? {},
+      }),
 
     /**
      * Nested resource: Line items
@@ -761,10 +757,7 @@ export class StoreClient {
      * List front-end shipping methods (name/description with rate label).
      * 目录 F-2：可选 `country` 按 zone 过滤（服务端命中不了则回退全集）。
      */
-    list: (
-      params?: { country?: string },
-      options?: RequestOptions,
-    ): Promise<DeliveryMethod[]> =>
+    list: (params?: { country?: string }, options?: RequestOptions): Promise<DeliveryMethod[]> =>
       this.request<DeliveryMethod[]>('GET', '/shipping_methods', {
         ...options,
         params,
