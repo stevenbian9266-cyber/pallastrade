@@ -5006,6 +5006,36 @@
         "authoritativeQuoteSharedIntoSummary": 20,
         "noFabricatedFees": 10
       }
+    },
+    {
+      "id": "GS-192",
+      "name": "Make the cardholder name optional and stop showing a bare billing form with no context",
+      "description": "The checkout card form refuses to submit without a name on the card, even though the gateway treats the cardholder name as optional and the submit path already omits it when blank - so shoppers who do not want to type it are stuck behind a validation wall. The billing block itself lives inside the card-only container with no heading at all: unchecking 'Same as shipping address' reveals a naked address form that reuses the shipping address label, so the shopper cannot tell what they are filling in, and wallet payers are offered a checkbox that can never take effect. The ask: drop the required-name rule, lift the billing block out for every payment method with a real heading, and echo the billing decision back in the confirmation step.",
+      "mustDo": [
+        "Remove the cardholder-name requirement from the submit validation and keep the payload honest: when the field is blank, omit the billing-details name instead of sending an empty string",
+        "Delete the now-unreachable 'please enter the name on the card' key from every locale and keep the required-key guard table in sync, so the five files keep an identical key set",
+        "Move the billing block out of the card-only container so it renders for every selectable payment method, with an explicit billing-address heading instead of an unlabelled form",
+        "Keep the same-as-shipping checkbox for methods where the shopper really supplies the address, and replace it with a short statement of where the billing details come from when a wallet handles the payment",
+        "Echo the billing decision in the confirmation step: same-as-shipping shows the shared label, a custom address shows a joined summary of the fields that were actually filled, and an incomplete one says so instead of rendering blank",
+        "Assert the address rules on both sides: the block renders for card and wallet selections, the wallet variant offers no dead control, and the confirmation echo covers the shared and custom branches",
+        "Leave the second stage out of scope and record it: persisting the full billing address to the gateway and adopting wallet-provided details is a follow-up, not this change"
+      ],
+      "mustNotDo": [
+        "Make the name optional by dropping the check only on the server, or by sending an empty name with the payment method - the gateway payload must omit the field rather than transmit a blank value",
+        "Leave the billing block inside the card form, so manual and other gateways still get no address context",
+        "Show the same-as-shipping checkbox for a wallet payment the shopper never gets to change - a control that can never take effect is worse than no control",
+        "Reuse the shipping address label for the billing block, or print the raw address object in the confirmation step instead of a readable summary",
+        "Interpret this as permission to skip billing-address completeness checks when the shopper chooses a custom address",
+        "Scatter per-method duplicated billing markup around the page - one shared block keeps the context consistent"
+      ],
+      "scoring": {
+        "nameFullyOptional": 20,
+        "deadKeyAndGuardCleaned": 15,
+        "billingBlockUniversalWithHeading": 20,
+        "walletHintReplacesDeadControl": 15,
+        "confirmEchoCoversBothBranches": 20,
+        "phaseTwoExplicitlyOutOfScope": 10
+      }
     }
   ]
 }

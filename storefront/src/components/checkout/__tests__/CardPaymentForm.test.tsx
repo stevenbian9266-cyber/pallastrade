@@ -96,21 +96,17 @@ describe("CardPaymentForm (PRD-20260831-payments-stripe-自绘卡支付表单 AC
       ),
     );
 
-    // 填卡号 + 有效期 + CVC 但缺持卡人姓名 → 仍失败（PRD 3.6 持卡人必填）
+    // 填卡号 + 有效期 + CVC 即可通过——持卡人姓名**选填**
+    // （PRD-20260919-checkout-payment-billing-and-card-form-polish AC-001）
     await user.type(
       screen.getByTestId("card-number-input"),
       "4242424242424242",
     );
     await user.type(screen.getByTestId("card-expiry-input"), "12/30");
     await user.type(screen.getByTestId("card-cvc-input"), "123");
-    expect(handle?.validate()).toBe(false);
-    await waitFor(() =>
-      expect(screen.getByTestId("card-error").textContent).toBe(
-        "cardholderRequired",
-      ),
-    );
+    expect(handle?.validate()).toBe(true);
 
-    // 补上持卡人姓名 → 校验通过
+    // 补上持卡人姓名仍应通过（有值时才提交，见下例）
     await user.type(screen.getByTestId("cardholder-name"), "Ada Lovelace");
     expect(handle?.validate()).toBe(true);
   });

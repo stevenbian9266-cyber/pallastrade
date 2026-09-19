@@ -854,6 +854,17 @@ export function UnifiedCheckout({
       billAddress.postal_code &&
       billAddress.country_iso,
   );
+  // PRD-20260919-checkout-payment-billing-and-card-form-polish FR-004：确认区
+  // 账单地址回显（字段拼接，避免依赖语序/模板句子）。
+  const billingAddressSummary = [
+    billAddress.address1,
+    billAddress.city,
+    billAddress.postal_code,
+    billAddress.country_iso,
+  ]
+    .map((value) => (value ?? "").trim())
+    .filter((value) => value.length > 0)
+    .join(", ");
   // 注意：email 不参与 canSubmit——PRD 3.2 要求点击 Pay now 时邮箱为空要
   // 弹提示（而非直接 disabled），由 handlePayNow 前置校验处理。
   const canSubmit =
@@ -1449,8 +1460,36 @@ export function UnifiedCheckout({
                     onReady={handleCardReady}
                     clientConfig={selectedMethod?.client_config ?? null}
                   />
-                  {/* PRD 3.6：Use shipping address as billing address（默认勾选） */}
-                  <div className="mt-4">
+                </div>
+              ) : selectedIsWallet ? null : isSessionBased ? (
+                // 其他会话类支付方式（PayPal/Adyen 等）：同页支付或跳转由网关决定
+                <p className="text-sm text-gray-500">{t("processing")}</p>
+              ) : (
+                // 非会话类（Check/Store Credit）：线下收款说明
+                <div className="rounded-sm border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                  {t("manualPaymentInfo")}
+                </div>
+              )}
+
+              {/* PRD-20260919-checkout-payment-billing-and-card-form-polish FR-002/FR-003：
+                  账单区块带语境标题（Billing address + Same as shipping address），
+                  并对**所有支付方式**可见；钱包改为说明来源（不给无效控件）。 */}
+              <div
+                className="mt-4 rounded-lg border border-gray-200 p-4"
+                data-testid="billing-block"
+              >
+                <h3 className="text-sm font-bold text-gray-900 mb-3">
+                  {t("billingAddress")}
+                </h3>
+                {selectedIsWallet ? (
+                  <p
+                    className="text-sm text-gray-500"
+                    data-testid="billing-wallet-hint"
+                  >
+                    {t("billingFromWallet")}
+                  </p>
+                ) : (
+                  <>
                     <label
                       className="flex items-center gap-2.5 cursor-pointer"
                       data-testid="billing-use-shipping"
@@ -1467,9 +1506,6 @@ export function UnifiedCheckout({
                     </label>
                     {!useShippingForBilling && (
                       <div className="mt-4">
-                        <h3 className="text-sm font-bold text-gray-900 mb-3">
-                          {t("billingAddress")}
-                        </h3>
                         <AddressFormFields
                           address={billAddress}
                           countries={countries}
@@ -1480,17 +1516,9 @@ export function UnifiedCheckout({
                         />
                       </div>
                     )}
-                  </div>
-                </div>
-              ) : selectedIsWallet ? null : isSessionBased ? (
-                // 其他会话类支付方式（PayPal/Adyen 等）：同页支付或跳转由网关决定
-                <p className="text-sm text-gray-500">{t("processing")}</p>
-              ) : (
-                // 非会话类（Check/Store Credit）：线下收款说明
-                <div className="rounded-sm border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-                  {t("manualPaymentInfo")}
-                </div>
-              )}
+                  </>
+                )}
+              </div>
             </div>
           ) : null}
 
@@ -1503,6 +1531,19 @@ export function UnifiedCheckout({
                 {t("quoteConfirmTitle")}
               </h3>
               <dl className="mt-2 space-y-1 text-sm">
+                {/* PRD-20260919-checkout-payment-billing-and-card-form-polish AC-004：
+                    账单地址回显（同配送 / 自定义摘要）。 */}
+                <div className="flex justify-between gap-4">
+                  <dt className="text-gray-500">{t("billingAddress")}</dt>
+                  <dd
+                    className="text-right text-gray-900"
+                    data-testid="quote-billing"
+                  >
+                    {useShippingForBilling
+                      ? t("sameAsShipping")
+                      : billingAddressSummary || t("billingAddressIncomplete")}
+                  </dd>
+                </div>
                 <div className="flex justify-between">
                   <dt className="text-gray-500">{t("quoteDelivery")}</dt>
                   <dd className="text-gray-900" data-testid="quote-delivery">

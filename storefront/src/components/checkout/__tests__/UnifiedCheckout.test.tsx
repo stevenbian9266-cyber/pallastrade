@@ -941,19 +941,89 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("toggles billing address form via same-as-shipping checkbox (PRD 3.6)", async () => {
+  // PRD-20260919-checkout-payment-billing-and-card-form-polish AC-002 / AC-003：
+  // 账单区块对所有支付方式可见 + 带语境标题（旧行为：只在卡支付盒子内 + 无标题，
+  // 未勾选时用户只看到一个裸表单 → 不知道这是什么）。
+  it("shows the billing block with a heading and toggles the form via same-as-shipping (FR-002/FR-003)", async () => {
     const user = userEvent.setup();
     renderCheckout();
 
-    // 默认勾选 "Same as shipping address"，不显示账单地址表单
-    const billingCheckbox = screen.getByTestId("billing-use-shipping");
-    expect(billingCheckbox).toBeInTheDocument();
-    expect(screen.queryByText("billingAddress")).not.toBeInTheDocument();
+    // 默认勾选 "Same as shipping address"，只显示标题 + 勾选项，不展开表单
+    const block = screen.getByTestId("billing-block");
+    expect(block).toBeInTheDocument();
+    expect(within(block).getByText("billingAddress")).toBeTruthy();
+    const billingCheckbox = within(block).getByTestId("billing-use-shipping");
+    // data-testid 挂在 <label> 上（点击目标），勾选状态读真正的控件（radix Checkbox → role=checkbox）
+    expect(within(block).getByRole("checkbox")).toBeChecked();
+    expect(screen.queryByLabelText("bill-first_name")).toBeNull();
 
-    // 取消勾选 → 展开账单地址表单
+    // 取消勾选 → 展开账单地址表单（标题不再重复出现，控件可访问）
     await user.click(billingCheckbox);
-    expect(screen.getByText("billingAddress")).toBeInTheDocument();
     expect(screen.getByLabelText("bill-first_name")).toBeInTheDocument();
+    expect(screen.getByLabelText("bill-address1")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("billing-block")).getAllByText("billingAddress")
+        .length,
+    ).toBeGreaterThan(0);
+  });
+
+  // PRD-20260919-checkout-payment-billing-and-card-form-polish AC-002：
+  // 钱包（express）支付不由用户提供账单地址 → 区块只说明来源，
+  // 不给一个永远无效的 "Same as shipping address" 勾选框。
+  it("replaces the billing checkbox with a wallet hint when a wallet entry is selected (FR-002)", async () => {
+    const user = userEvent.setup();
+    stripeConfiguredState.value = true;
+    const cart = makeCart({
+      currency: "usd",
+      payment_methods: [
+        {
+          id: "pm_stripe",
+          name: "Stripe",
+          type: "stripe",
+          session_required: true,
+          entries: [
+            {
+              option_id: "pm_stripe:card",
+              method_key: "card",
+              display_name: "Card",
+              frontend_kind: "inline",
+              group: "card",
+              position: 1,
+            },
+            {
+              option_id: "pm_stripe:apple_pay",
+              method_key: "apple_pay",
+              display_name: "Apple Pay",
+              frontend_kind: "express",
+              group: "wallet",
+              position: 2,
+            },
+          ],
+        },
+      ],
+    } as never);
+    renderCheckout(cart);
+
+    // 卡支付选中时仍是勾选框
+    expect(screen.getByTestId("billing-use-shipping")).toBeInTheDocument();
+    expect(screen.queryByTestId("billing-wallet-hint")).toBeNull();
+
+    await user.click(screen.getByText("Apple Pay"));
+    // 动态 import + 全量套件并行时，钱包片段默认 1s 预算会随机爆掉 → 给足预算。
+    await screen.findByTestId(
+      "express-checkout-element",
+      {},
+      { timeout: 10000 },
+    );
+
+    expect(screen.getByTestId("billing-wallet-hint")).toHaveTextContent(
+      "billingFromWallet",
+    );
+    expect(screen.queryByTestId("billing-use-shipping")).toBeNull();
+    // 标题仍在（语境不依赖支付方式）
+    expect(
+      within(screen.getByTestId("billing-block")).getByText("billingAddress"),
+    ).toBeTruthy();
   });
 
   // PRD-20260913-checkout-billing-mode AC-009：购物车已带独立账单地址 → 默认未勾选
@@ -1170,6 +1240,11 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     expect(screen.getByTestId("quote-delivery")).toHaveTextContent("$9.00");
     expect(screen.getByTestId("quote-discount")).toHaveTextContent("-$2.00");
     expect(screen.getByTestId("quote-amount-due")).toHaveTextContent("$31.98");
+    // PRD-20260919-checkout-payment-billing-and-card-form-polish AC-004：
+    // 默认「同配送」→ 确认区回显与区块控件同源（而不是静默空白）。
+    expect(screen.getByTestId("quote-billing")).toHaveTextContent(
+      "sameAsShipping",
+    );
     // PRD-20260919-checkout-order-summary-fee-read-model AC-005：
     // 同一份权威报价同步进右栏摘要（与确认区同源同值）。
     const summary = screen.getByTestId("unified-order-summary");
@@ -1205,6 +1280,59 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
       fetchMock.mock.calls.filter(([url]) => url === "/api/checkout/prepare")
         .length,
     ).toBe(1);
+  });
+
+  // PRD-20260919-checkout-payment-billing-and-card-form-polish AC-004：
+  // 取消「同配送」+ 填写账单地址 → 确认区回显拼接摘要（而不是写死文案）；
+  // 字段不全时显式提示，不让用户带着一个看不出内容的订单去付款。
+  it("echoes the custom billing address summary in the confirm area (AC-004)", async () => {
+    const user = userEvent.setup();
+    const defaultImpl = fetchMock.getMockImplementation();
+    fetchMock.mockImplementation(
+      (input: RequestInfo | URL, init?: RequestInit) => {
+        if (input === "/api/checkout/prepare") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              order_id: "or_123",
+              order: { id: "or_123" },
+              quote: {
+                checkout_version: 3,
+                price_version: "pv_3",
+                delivery_total: "9.0",
+                display_delivery_total: "$9.00",
+                amount_due: "31.98",
+                display_amount_due: "$31.98",
+              },
+            }),
+          });
+        }
+        return defaultImpl?.(input, init);
+      },
+    );
+
+    renderCheckout();
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+
+    // ① 取消同配送 → 填写完整账单地址（服务端/前台都拦截不完整地址）
+    await user.click(screen.getByTestId("billing-use-shipping"));
+    await user.type(screen.getByLabelText("bill-first_name"), "Grace");
+    await user.type(screen.getByLabelText("bill-last_name"), "Hopper");
+    await user.type(screen.getByLabelText("bill-address1"), "1 Billing St");
+    await user.type(screen.getByLabelText("bill-city"), "Billingville");
+    await user.type(screen.getByLabelText("bill-postal_code"), "EC1A 1BB");
+    await user.type(screen.getByLabelText("bill-country_iso"), "GB");
+    await user.type(screen.getByLabelText("bill-state_abbr"), "LDN");
+
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    // ② 确认区回显拼接摘要（按 address1 / city / postal_code / country 顺序，
+    //    空字段不参与拼接，不依赖语序）
+    expect(await screen.findByTestId("quote-billing")).toHaveTextContent(
+      "1 Billing St, Billingville, EC1A 1BB, GB",
+    );
   });
 
   // PRD-20260915-checkout-单页两段语义 AC-005：

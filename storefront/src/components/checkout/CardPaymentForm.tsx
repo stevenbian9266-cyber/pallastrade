@@ -112,14 +112,12 @@ const CardPaymentFormInner = forwardRef<
       setError(t("invalidCardDetails"));
       return false;
     }
-    // PRD 3.6：持卡人姓名为空 → 提示必填
-    if (!cardholderName.trim()) {
-      setError(t("cardholderRequired"));
-      return false;
-    }
+    // PRD-20260919-checkout-payment-billing-and-card-form-polish FR-001：
+    // 持卡人姓名**选填**（输入框占位文案本就写着 optional，而 Stripe 的
+    // `billing_details.name` 也是可选字段）；非空时才随卡数据提交。
     setError(null);
     return true;
-  }, [stripe, elements, cardholderName, t]);
+  }, [stripe, elements, t]);
 
   const confirmPayment = useCallback(
     async (clientSecret: string): Promise<{ error?: string }> => {
