@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | verifying |
+| 状态 | done |
 | 创建日期 | 2026-09-19 |
 | 来源 | 优化：① checkout 支付区 Name on card 应为选填（当前校验必填）；② Billing 文案感知差 + 作用域与闭环一期 |
 | 分类 | checkout |
@@ -97,3 +97,4 @@
 |---|---|
 | 2026-09-19 | 初稿（approved）：用户指定实施第 3 项 + 第 4 项一期 |
 | 2026-09-19 | 实施完成（verifying）：姓名校验放宽（空值省略 `billing_details`）；`cardholderRequired` 五语言键删除；账单区块`billing-block`（标题 + 同配送勾选）对全部支付方式可见，钱包改 `billing-wallet-hint` 说明；确认区 `quote-billing` 回显同配送/自定义摘要；测试：CardPaymentForm（姓名可空 + 非空传递）、UnifiedCheckout（标题/切换/钱包分支/两种回显）、i18n 键守护；`prd verify` 全 AC 覆盖，`storefront-test` 通过 |
+| 2026-09-19 | **dev 验证通过（done）**：提交 `d889e960` → 镜像 `sha256:a2d5185a…` 已上线（`/opt/pallastrade/.pull-deploy-state-dev` 校验 `d889e960… / sha256:a2d5185a…`，健康检查 + nginx smoke 全绿）。浏览器验证（`/de/de/checkout/cart_ARKs1igzRC`）：① 账单区块可见且文案为「Rechnungsadresse｜Wie Lieferadresse」，默认 `aria-checked=true`；② 取消勾选 → `aria-checked=false` 且展开 `bill-first_name/address1/city/state` 表单（标题保留），重新勾选恢复 `true`；③ 卡表单姓名框 `required=false`、占位「Name auf der Karte (optional)」，旧必填文案页面中已不可见；④ 卡选中时无 `billing-wallet-hint`（分支正确）；旧键 `cardholderRequired` 在部署产物中零命中 |

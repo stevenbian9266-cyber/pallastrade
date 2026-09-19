@@ -239,4 +239,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260919-checkout-remove-items-block-mobile-summary-meta | checkout | 2026-09-19 | （实施时回填） |
 | done | PRD-20260919-checkout-remove-shipping-change-placeholder-banner | checkout | 2026-09-19 | （实施时回填） |
 | done | PRD-20260919-checkout-order-summary-fee-read-model | checkout | 2026-09-19 | （实施时回填） |
-| verifying | PRD-20260919-checkout-payment-billing-and-card-form-polish | checkout | 2026-09-19 | （实施时回填） |
+| done | PRD-20260919-checkout-payment-billing-and-card-form-polish | checkout | 2026-09-19 | （实施时回填） |
