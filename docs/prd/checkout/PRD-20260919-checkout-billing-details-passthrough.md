@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | verifying |
+| 状态 | done |
 | 创建日期 | 2026-09-19 |
 | 来源 | 优化：checkout 账单地址二期 —— Stripe `billing_details` 透传 + 钱包 `billingDetails` 采纳与降级 |
 | 分类 | checkout（关键词命中） |
@@ -127,4 +127,4 @@
 |---|---|---|---|
 | 2026-09-19 | 0.1 | 初稿（draft）：跨层搜索完成，等待用户确认后进入 gate | AI |
 | 2026-09-19 | 0.2 | **approved**：用户原话「实施第 4 项二期」→ 本期范围 = FR-001~FR-005（Stripe `billing_details` 透传 + 钱包 `billingDetails` 采纳与降级）；钱包账单地址不完整 → **降级 `same_as_shipping`**；服务端 `bill_address` 不完整 → **整体不发 `billing_details`** | AI |
-| 2026-09-19 | 0.3 | **verifying（实施完成）**：新增 `PallasTradeStripe::BillingDetailsPresenter`（唯一构造点，PI 顶‏级 + Checkout Session `payment_intent_data.billing_details` 同源，不完整则整体不发）；前台新增 `src/lib/utils/stripe-billing.ts`（`isCompleteBillingAddress` / `billingDetailsFromFormData` / `billingDetailsFromWallet`）；`UnifiedCheckout` 按页面选择投影 → `CardPaymentForm#billingDetails` → `confirmCardPayment` PM 级；钱包两入口采纳 `event.billingDetails` → `confirmParams.payment_method_data.billing_details` 且地址不完整降级 `same_as_shipping`；验证：`billing-details-rspec` + `storefront-test` 均通过 | AI |
+| 2026-09-19 | 0.3 | **verifying（实施完成）**：新增 `PallasTradeStripe::BillingDetailsPresenter`（唯一构造点，PI 顶‏级 + Checkout Session `payment_intent_data.billing_details` 同源，不完整则整体不发）；前台新增 `src/lib/utils/stripe-billing.ts`（`isCompleteBillingAddress` / `billingDetailsFromFormData` / `billingDetailsFromWallet`）；`UnifiedCheckout` 按页面选择投影 → `CardPaymentForm#billingDetails` → `confirmCardPayment` PM 级；钱包两入口采纳 `event.billingDetails` → `confirmParams.payment_method_data.billing_details` 且地址不完整降级 `same_as_shipping`；验证：`billing-details-rspec` + `storefront-test` 均通过 | AI || 2026-09-19 | 0.4 | **done（dev 验证通过）**：提交 `139be201` → dev 部署（`/opt/pallastrade/.pull-deploy-state-dev` = `139be201… / sha256:4a29ff23…`，容器与状态文件一致；health + nginx smoke 全绿）。① **FR-001/002 服务端（rails runner on dev，真实订单）**：`billing_details` = `{name, email, address{city,country,line1,postal_code,state}}`（无空字段）；无 `bill_address` → `nil`；合成不完整地址（`address1` 空）→ `nil`；PI 载荷同时含 `billing_details` 与 `shipping`；CS `payment_intent_data.billing_details` 与 PI 载荷 **SAME_SOURCE=true**，无账单地址时该键不存在。② **FR-003 前台（浏览器，`/de/de/checkout/cart_gbMHJdmfrX`）**：结算页正常渲染（仅一条第三方 hCaptcha 图片请求被取消，无页面错误），卡表单 `Name auf der Karte` 占位 `(optional)` 且 `required=false`，账单区块「Rechnungsadresse｜Wie Lieferadresse」默认勾选。③ 部署产物 grep：`billingDetailsFromWallet` / `isCompleteBillingAddress` 均存在于 `/app/.next` chunks。④ CI：Storefront / Deploy / AI / Monorepo Contract success。 | AI |

@@ -240,5 +240,5 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260919-checkout-remove-shipping-change-placeholder-banner | checkout | 2026-09-19 | （实施时回填） |
 | done | PRD-20260919-checkout-order-summary-fee-read-model | checkout | 2026-09-19 | （实施时回填） |
 | done | PRD-20260919-checkout-payment-billing-and-card-form-polish | checkout | 2026-09-19 | （实施时回填） |
-| verifying | PRD-20260919-checkout-billing-details-passthrough | checkout | 2026-09-19 | （实施时回填） |
+| done | PRD-20260919-checkout-billing-details-passthrough | checkout | 2026-09-19 | （实施时回填） |
 | approved | PRD-20260919-payments-后台支付风控阈值策略表-可编辑单元格组件-纯文本-数字-选择下拉-点击即编辑 | payments | 2026-09-19 | （实施时回填） |
