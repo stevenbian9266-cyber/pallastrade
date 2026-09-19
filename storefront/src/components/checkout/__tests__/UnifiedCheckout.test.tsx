@@ -866,11 +866,16 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
   });
 
   // PRD-20260914-checkout-placeholder-controls-governance AC-001
-  it("hides the SMS opt-in placeholder and keeps the shipping options-changed warning (PRD 3.4)", () => {
+  // PRD-20260919-checkout-remove-shipping-change-placeholder-banner AC-001/AC-002：
+  // 恒显的「配送选项已变化」占位提示已删除（后端从无该信号）；
+  // 真实运费漂移由顶部 `checkout-quote-diff` 横幅表达（见本文件其它用例）。
+  it("hides the SMS opt-in placeholder and no longer renders the shipping options-changed placeholder", () => {
     renderCheckout();
 
     expect(screen.queryByTestId("sms-opt-in")).toBeNull();
-    expect(screen.getByTestId("shipping-options-changed")).toBeInTheDocument();
+    expect(screen.queryByTestId("shipping-options-changed")).toBeNull();
+    expect(screen.getByText("shippingMethod")).toBeTruthy();
+    expect(screen.getByText("Standard")).toBeTruthy();
   });
 
   it("validates email on blur (PRD 3.2)", async () => {

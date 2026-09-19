@@ -237,3 +237,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260918-payments-d7-payment-section-express | payments | 2026-09-18 | （实施时回填） |
 | verifying | PRD-20260919-payments-checkout-top-express-pay-locale | payments | 2026-09-19 | （实施时回填） |
 | approved | PRD-20260919-checkout-remove-items-block-mobile-summary-meta | checkout | 2026-09-19 | （实施时回填） |
+| approved | PRD-20260919-checkout-remove-shipping-change-placeholder-banner | checkout | 2026-09-19 | （实施时回填） |

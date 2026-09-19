@@ -9,7 +9,6 @@ import type {
 } from "@pallastrade/sdk";
 import {
   BadgeCheck,
-  CircleAlert,
   CreditCard,
   Headset,
   Loader2,
@@ -1246,19 +1245,6 @@ export function UnifiedCheckout({
               title={t("shippingMethod")}
               className="mb-4"
             />
-            {/* PRD 3.4：配送选项变化黄色警告框（占位，后端推送变更信号后驱动） */}
-            <div
-              className="flex items-start gap-2.5 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 mb-4"
-              data-testid="shipping-options-changed"
-            >
-              <CircleAlert
-                className="h-4 w-4 text-amber-500 shrink-0 mt-0.5"
-                aria-hidden="true"
-              />
-              <span className="text-[13px] text-amber-800">
-                {t("shippingOptionsChanged")}
-              </span>
-            </div>
             <div className="flex flex-col gap-3">
               {shippingMethods.map((method) => (
                 <label

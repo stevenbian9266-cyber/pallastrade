@@ -4948,6 +4948,33 @@
         "fiveLocaleIcuPlurals": 15,
         "testsCoverAllBranches": 15
       }
+    },
+    {
+      "id": "GS-190",
+      "name": "Delete a permanent 'something changed' warning that no signal ever drove - and keep the one surface that is real",
+      "description": "The checkout shipping-method section carries an amber banner reading 'The shipping options have changed for your order. Review your selection.' on every single visit. Its own source comment admits it is a placeholder waiting for a backend signal - and no such signal exists anywhere in the repo: the server only reports drift through the quote-changed error, which the page already renders as a diff banner at the top (with a shipping row showing the before/after cost). The ask: drop the placeholder, clean up its now-dead locale keys, and leave the real drift surface untouched.",
+      "mustDo": [
+        "Confirm the signal really does not exist before deleting the UI (search the API/core layers for the event the comment promised; a placeholder waiting on a signal nobody sends is always-on noise)",
+        "Delete the whole banner block including its test id, icon and copy, and remove the now-unused icon import so the formatter/linter stays green",
+        "Remove the orphan locale key from every locale, so the five locale files keep an identical key set",
+        "Keep the real surface intact and assert it: the top quote-diff banner (drift response from the server) stays the single place where a changed shipping cost is shown, with its before/after rows",
+        "Reverse the old test instead of deleting it: the section must render its title and method rows while the removed placeholder must be absent, and the price-drift banner case must stay green",
+        "Leave the rest of the section (step title, method radios, restriction note) untouched"
+      ],
+      "mustNotDo": [
+        "Keep the banner because 'someday a backend signal will drive it' - shipping a warning that is true zero percent of the time trains shoppers to ignore the one that is true",
+        "Replace the hardcoded banner with a client-side heuristic that guesses whether rates changed; without a server signal that is a fabricated claim",
+        "Delete the drift banner too 'since the shipping banner is gone' - that one is driven by a real server response and is the only legitimate surface",
+        "Leave the dead locale key behind in some locales (an orphan key drifts and later gets reused with a stale meaning)",
+        "Touch the fee read-model while here: the summary's shipping placeholder and missing fee rows are a separate decision"
+      ],
+      "scoring": {
+        "signalAbsenceVerified": 25,
+        "placeholderFullyRemoved": 20,
+        "localeKeysCleaned": 15,
+        "realSurfacePreserved": 25,
+        "testsReversedNotDeleted": 15
+      }
     }
   ]
 }

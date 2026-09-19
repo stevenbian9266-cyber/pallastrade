@@ -501,7 +501,6 @@
     "saveInfoSave": "Enregistrer",
     "saveInfoNotNow": "Plus tard",
     "saveInfoSaved": "Informations enregistrées pour un paiement plus rapide la prochaine fois.",
-    "shippingOptionsChanged": "Les options de livraison de votre commande ont changé. Vérifiez votre sélection.",
     "shippingRestrictionNote": "Certains produits de cette commande ne prennent en charge que la « Livraison standard ».",
     "totalSavings": "ÉCONOMIES TOTALES : {amount}",
     "whyBuyFromUs": "Pourquoi acheter chez nous",
