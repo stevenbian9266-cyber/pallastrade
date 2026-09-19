@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-19 |
 | 来源 | 优化：checkout 页面 shipping method 区块常显「The shipping options have changed for your order. Review your selection.」——按现有交易链路，只有后端改了物流信息才该出现该提示 |
 | 分类 | checkout |
@@ -91,3 +91,4 @@
 | 日期 | 变更 |
 |---|---|
 | 2026-09-19 | 初稿（approved）：用户选定方案 A；实现 + 验证中 |
+| 2026-09-19 | 状态 → `done`：提交 `75476898` 部署至 dev（镜像 `66c947d1`），实测第 3 节（Versandmethode）标题下**直接**是物流方式单选与限制说明——恒显黄框已消失；顶部 `checkout-quote-diff` 报价漂移横幅逻辑未动（单测回归通过） |

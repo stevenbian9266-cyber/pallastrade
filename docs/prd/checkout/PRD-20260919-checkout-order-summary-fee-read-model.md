@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-19 |
 | 来源 | 优化：checkout 页面右侧 order summary 的 Shipping 显示异常且缺少其它费用项，需结合当前交易架构给出升级方案 |
 | 分类 | checkout |
@@ -104,3 +104,4 @@
 | 日期 | 变更 |
 |---|---|
 | 2026-09-19 | 初稿（approved）：用户选方案 A → 复核后 A1 不可行，落实 A2；A1 设计要点另文 |
+| 2026-09-19 | 状态 → `done`：提交 `863a6039` 部署至 dev（镜像 `8ee6bf79`，容器 16:03 重启），实测右栏（DE）为 `Zwischensumme $129.99` / `Versand Wird bei der Bestellung berechnet` / `Geschätzte Steuern Wird bei der Bestellung berechnet` / `Geschätzte Summe $129.99` + 底部注记「Versand und Steuern werden bei der Bestellung berechnet …」——运费不再是整句占位、费用项补齐、总额语义正确 |

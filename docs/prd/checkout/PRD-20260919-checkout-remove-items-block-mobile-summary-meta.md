@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved |
+| 状态 | done |
 | 创建日期 | 2026-09-19 |
 | 来源 | 优化：checkout 页面左侧主区去掉 items 区块（用户同时采纳建议：移动端折叠按钮文案 `Show order summary · 3 items · $129.99`） |
 | 分类 | checkout |
@@ -105,3 +105,4 @@
 |---|---|
 | 2026-09-19 | 初稿（draft）：用户已确认方案与文案（`Show order summary · 3 items · $129.99`） |
 | 2026-09-19 | 状态 → `approved`（用户采纳）；实现完成：`CheckoutSummaryMeta` 发布通道 + 左栏 Items 删除 + 折叠按钮文案；验证：`storefront-test` 全绿、`pnpm check`(biome) exit 0、`pnpm typecheck` exit 0、`check:locales` 同步；知识同步门 7/7 已评估（4 更新 / 3 无需变更） |
+| 2026-09-19 | 状态 → `done`：提交 `d0595674` 部署至 dev（镜像 `412f0682`），实测 ① 桌面：H1 → Express checkout → 1 Contact → 2 Shipping Address → 3 Shipping Method（Items 区块已消失）、右栏摘要商品行完好；② 移动端 EN：`Show order summary · 1 item · $129.99`；③ 移动端 DE：`Bestellübersicht anzeigen · 1 Artikel · $129.99`；④ 未 hydration 前回退纯文案（无占位/undefined） |
