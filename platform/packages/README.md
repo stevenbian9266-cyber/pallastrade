@@ -154,6 +154,20 @@ callers). Review lists now accept `sort=most_helpful` on top of the F-4 ordering
 content-hashed type chunk (`index-<hash>.d.ts`/`.d.cts`), so rebuild and commit the whole `dist/` with `git add -A -f` — otherwise
 `index.d.ts` ends up referencing a sibling that was never committed.
 
+Read-only checkout quote preview (PRD-20260919-shipping-checkout-quote-preview, 2026-09-19):
+`carts.previewQuote(cartId, { country?, shipping_method_id?, shipping_address? })` returns
+`CartPreviewQuoteResult` — `{ delivery_total, tax_total, discount_total, amount_due, …, selected_method_id, methods[], estimated, provisional_country, address_complete }`
+with every amount **nullable** (`null` = not computable yet, never `0`) and one row per displayable
+shipping method carrying `cost`/`display_cost`/`reason` (`address_required` when the visitor still
+owes the store a state, `currency_mismatch` when the method's calculator cannot bill this currency).
+The endpoint is read-only: it runs the same submit pipeline in dry-run and rolls back (no order, no
+payment session, no cart transition), so a client must never treat the numbers as a quote to charge.
+`shippingMethods.list(params, options)` gained an optional `{ country }` **first** argument (query
+parameter, same zone filter as the storefront's PDP block) — call sites that previously passed
+`options` first must be updated. Both changes are hand-written in `sdk/src/store-client.ts` /
+`sdk/src/types/index.ts`; touching `store-client.ts` renames the content-hashed type chunk, so rebuild
+and commit the whole `dist/` with `git add -A -f`.
+
 ### `@pallastrade/sdk-core` — Shared internals
 
 Private package. Provides `createRequestFn()`, `PallasTradeError`, retry logic, and Ransack query-param transformation (`transformListParams()`). Consumed by the SDK; not intended for direct use.

@@ -12,6 +12,7 @@ const mockClient = {
       delete: vi.fn(),
     },
   },
+  shippingMethods: { list: vi.fn() },
 };
 
 vi.mock("@/lib/pallastrade", () => ({
@@ -46,7 +47,7 @@ import {
   removeCartItem,
   updateCartItem,
 } from "@/lib/data/cart";
-import { getShoppingCart } from "@/lib/data/shopping-cart";
+import { getShoppingCart, getShippingMethods } from "@/lib/data/shopping-cart";
 
 // Minimal cart fixture for tests
 const mockCart = {
@@ -266,6 +267,32 @@ describe("cart server actions", () => {
       const result = await associateCartWithUser();
 
       expect(result).toEqual({ success: true });
+    });
+  });
+
+  // PRD-20260919-shipping-checkout-quote-preview AC-001：
+  // 结算页方法列表按 header 国家过滤（沿用既有 `?country=` 语义）。
+  describe("getShippingMethods", () => {
+    it("forwards the visitor country as a query parameter", async () => {
+      mockClient.shippingMethods.list.mockResolvedValue([]);
+
+      await getShippingMethods("US");
+
+      expect(mockClient.shippingMethods.list).toHaveBeenCalledWith(
+        { country: "US" },
+        { guestToken: "order-token-123", token: undefined },
+      );
+    });
+
+    it("omits the parameter when no country is known", async () => {
+      mockClient.shippingMethods.list.mockResolvedValue([]);
+
+      await getShippingMethods();
+
+      expect(mockClient.shippingMethods.list).toHaveBeenCalledWith(undefined, {
+        guestToken: "order-token-123",
+        token: undefined,
+      });
     });
   });
 });

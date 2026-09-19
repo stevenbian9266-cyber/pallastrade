@@ -154,11 +154,16 @@ export async function updateShoppingCartDetails(
 
 /**
  * 列出订单确认页可选配送方式（前端展示，含费率标签）。
+ * PRD-20260919-shipping-checkout-quote-preview FR-001：可选 `country` 按 zone 过滤
+ * （命中不了则服务端回退全集——绝不因未建模国家而声称“不配送”）。
  */
-export async function getShippingMethods() {
+export async function getShippingMethods(country?: string | null) {
   return withFallback(async () => {
     const options = await getCartOptions();
-    return getClient().shippingMethods.list(options);
+    return getClient().shippingMethods.list(
+      country ? { country } : undefined,
+      options,
+    );
   }, []);
 }
 

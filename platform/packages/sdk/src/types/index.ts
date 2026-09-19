@@ -480,6 +480,53 @@ export type CartSubmitResult = OrderType & {
   successor_cart: ShoppingCart | null
 }
 
+/**
+ * PRD-20260919-shipping-checkout-quote-preview：结算页**只读预览报价**。
+ * 金额来自与提交同源的管线（dry-run），仅为估算；订单建单后的权威金额为准。
+ */
+export interface CartPreviewQuoteParams {
+  /** header 国家（ISO），无地址时用作国家级临时地址 */
+  country?: string
+  /** 前台已选配送方式（未落库也可） */
+  shipping_method_id?: string
+  /** 表单态地址（可不落库）：country_iso/state_abbr/city/postal_code/address1... */
+  shipping_address?: Record<string, string | null | undefined>
+}
+
+/** 单个配送方式的预览结果；缺 `cost` 时带 `reason` 解释为何暂不可计价。 */
+export interface CartPreviewQuoteMethod {
+  id: string
+  raw_id?: number
+  name: string
+  cost: string | null
+  display_cost: string | null
+  reason: 'address_required' | 'currency_mismatch' | null
+  selected: boolean
+}
+export interface CartPreviewQuoteResult {
+  cart_id: string
+  currency: string
+  delivery_total: string | null
+  display_delivery_total: string | null
+  tax_total: string | null
+  display_tax_total: string | null
+  discount_total: string | null
+  display_discount_total: string | null
+  gift_card_total: string | null
+  display_gift_card_total: string | null
+  store_credit_total: string | null
+  display_store_credit_total: string | null
+  amount_due: string | null
+  display_amount_due: string | null
+  total: string | null
+  display_total: string | null
+  selected_method_id: string | null
+  methods: CartPreviewQuoteMethod[]
+  estimated: boolean
+  provisional_country: string | null
+  address_complete: boolean
+}
+
 // Cart operations
 export interface CreateCartParams {
   /** Arbitrary key-value metadata (stored, not returned in responses) */

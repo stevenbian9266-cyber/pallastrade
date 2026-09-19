@@ -41,7 +41,7 @@ async function CheckoutDataLoader({ params, searchParams }: CheckoutPageProps) {
     const [cartData, market, shippingMethods, authStatus] = await Promise.all([
       getCheckoutOrder(cartId),
       resolveMarket(urlCountry).catch(() => null),
-      getShippingMethods(),
+      getShippingMethods(urlCountry),
       checkAuth(),
     ]);
     if (!cartData || cartData.id !== cartId) {
@@ -64,6 +64,7 @@ async function CheckoutDataLoader({ params, searchParams }: CheckoutPageProps) {
         shippingMethods={shippingMethods}
         countries={countriesData.data}
         isAuthenticated={authStatus}
+        country={urlCountry}
       />
     );
   }

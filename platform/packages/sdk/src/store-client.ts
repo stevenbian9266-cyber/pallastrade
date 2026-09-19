@@ -13,6 +13,8 @@ import type {
   AuthTokens,
   Cart,
   CartSubmitResult,
+  CartPreviewQuoteParams,
+  CartPreviewQuoteResult,
   Category,
   CategoryListParams,
   CheckoutUpdateParams,
@@ -482,6 +484,27 @@ export class StoreClient {
       this.request<CartSubmitResult>('POST', `/carts/${cartId}/submit`, options),
 
     /**
+     * PRD-20260919-shipping-checkout-quote-preview: read-only quote preview for
+     * the checkout page (default shipping method + estimated delivery/tax before
+     * an order exists). Runs the same pricing pipeline as `submit` in dry-run mode
+     * and rolls back — it never creates an order or writes to the cart.
+     * @param cartId - Cart prefixed ID
+     */
+    previewQuote: (
+      cartId: string,
+      params?: CartPreviewQuoteParams,
+      options?: RequestOptions,
+    ): Promise<CartPreviewQuoteResult> =>
+      this.request<CartPreviewQuoteResult>(
+        'POST',
+        `/carts/${cartId}/preview_quote`,
+        {
+          ...options,
+          body: params ?? {},
+        },
+      ),
+
+    /**
      * Nested resource: Line items
      */
     items: {
@@ -736,9 +759,16 @@ export class StoreClient {
   readonly shippingMethods = {
     /**
      * List front-end shipping methods (name/description with rate label).
+     * 目录 F-2：可选 `country` 按 zone 过滤（服务端命中不了则回退全集）。
      */
-    list: (options?: RequestOptions): Promise<DeliveryMethod[]> =>
-      this.request<DeliveryMethod[]>('GET', '/shipping_methods', options),
+    list: (
+      params?: { country?: string },
+      options?: RequestOptions,
+    ): Promise<DeliveryMethod[]> =>
+      this.request<DeliveryMethod[]>('GET', '/shipping_methods', {
+        ...options,
+        params,
+      }),
   }
 
   // ============================================

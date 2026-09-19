@@ -21,8 +21,17 @@ module PallasTrade
     class Submit
       prepend PallasTrade::ServiceModule::Base
 
-      def call(cart:)
+      # PALLAS-CUSTOM (2026-09-19, PRD-20260919-shipping-checkout-quote-preview):
+      # `dry_run: true` = **只读预览报价**：走完全相同的一条金额管线（行价 → 税 → 运费 → 抵扣），
+      # 但在事务内捕获纯数据快照后 `ActiveRecord::Rollback`，绝不推进任何状态：
+      #   - 不 `cart.convert!`（购物车仍 active）
+      #   - 不建 successor cart
+      #   - **不发布 `order.submitted`**（该发布在事务外，回滚撤不掉，必须显式跳过）
+      # `preview_address` / `preview_shipping_method_id` 用于「地址还没落库」的场景
+      # （前台表单态）：在内存里覆盖订单快照地址与选中配送方式，不写购物车。
+      def call(cart:, dry_run: false, preview_address: nil, preview_shipping_method_id: nil)
         created = false
+        preview = nil
         order = cart.with_lock do
           cart.reload
 
@@ -46,8 +55,17 @@ module PallasTrade
             return failure(item, "#{item.variant.name} is not available in #{cart.currency}") if item.unit_price.nil?
           end
 
-          order = build_order!(cart, selected_items)
+          order = build_order!(
+            cart, selected_items,
+            preview_address: preview_address,
+            preview_shipping_method_id: preview_shipping_method_id
+          )
           return failure(order, order.errors.full_messages.to_sentence) if order.errors.any?
+
+          if dry_run
+            preview = preview_payload(order, cart)
+            raise ActiveRecord::Rollback
+          end
 
           successor_cart = create_or_restore_successor_cart!(cart)
           if successor_cart.present?
@@ -62,6 +80,13 @@ module PallasTrade
 
         # Publish only after the Cart/Order transaction committed. Event consumers
         # are side effects and must never hide a successfully persisted order.
+        # dry-run（预览）不落库、不推进状态 → 绝不发布事件。
+        if dry_run
+          return success(preview) if preview.present?
+
+          return failure(cart, 'Preview could not be computed')
+        end
+
         publish_submitted_event(order) if created
         success(order)
       rescue ActiveRecord::RecordInvalid => e
@@ -70,7 +95,7 @@ module PallasTrade
 
       private
 
-      def build_order!(cart, selected_items)
+      def build_order!(cart, selected_items, preview_address: nil, preview_shipping_method_id: nil)
         order = cart.store.orders.new(
           user: cart.user,
           email: cart.email.presence || cart.user&.email,
@@ -103,9 +128,16 @@ module PallasTrade
         billing_source = cart.billing_address || cart.shipping_address
         order.bill_address = billing_source.dup if billing_source.present?
 
+        # PALLAS-CUSTOM (2026-09-19, PRD-20260919-shipping-checkout-quote-preview):
+        # 预览模式下用「表单态地址」（可能是国家级临时地址）覆盖快照，**不写购物车**。
+        if preview_address.present?
+          order.ship_address = preview_address
+          order.bill_address = preview_address if order.bill_address.blank?
+        end
+
         order.save!
 
-        build_fulfillment!(order, cart)
+        build_fulfillment!(order, cart, preview_shipping_method_id: preview_shipping_method_id)
         return order if order.errors.any? || !order.persisted?
 
         order.update_line_item_prices!
@@ -220,23 +252,26 @@ module PallasTrade
 
       # 复用既有履约管线：分配库存单元 → 生成 shipments + 运费 → 选中与购物车一致的
       # shipping method → 落运费金额。
-      def build_fulfillment!(order, cart)
+      def build_fulfillment!(order, cart, preview_shipping_method_id: nil)
         order.create_proposed_shipments
         # ensure_available_shipping_rates 是状态机私有回调（before_transition），
         # 标准流程不走 next 状态机，因此 send 显式调用。
         order.send(:ensure_available_shipping_rates)
         return if order.errors.any?
 
-        select_shipping_rates!(order, cart)
+        select_shipping_rates!(order, cart, preview_shipping_method_id: preview_shipping_method_id)
         order.set_shipments_cost
       end
 
-      def select_shipping_rates!(order, cart)
+      def select_shipping_rates!(order, cart, preview_shipping_method_id: nil)
+        # PALLAS-CUSTOM (2026-09-19, PRD-20260919-shipping-checkout-quote-preview):
+        # 预览可显式指定配送方式（前台还没落库的选择）；其次用购物车上的选择，最后取管道默认（最便宜）。
+        desired_method_id = preview_shipping_method_id.presence || cart.shipping_method_id
         order.shipments.each do |shipment|
-          rate = if cart.shipping_method_id.present?
-                   shipment.shipping_rates.find { |r| r.shipping_method_id == cart.shipping_method_id }
+          rate = if desired_method_id.present?
+                   shipment.shipping_rates.find { |r| r.shipping_method_id.to_s == desired_method_id.to_s }
                  else
-                   shipment.shipping_rates.first
+                   shipment.shipping_rates.detect(&:selected) || shipment.shipping_rates.first
                  end
 
           shipment.selected_shipping_rate_id = rate.id if rate
@@ -274,6 +309,41 @@ module PallasTrade
 
         unselected_items.each { |item| item.update!(cart: successor) }
         successor
+      end
+
+      # PALLAS-CUSTOM (2026-09-19, PRD-20260919-shipping-checkout-quote-preview):
+      # 预览快照：在事务内把金额与方法费率拍成**纯数据**（回滚后 AR 属性会被
+      # Rails 还原，不能依赖对象状态）；display_* 一律用 Order 自身的展示方法，
+      # 与 order_serializer（prepare 的权威报价）同源。
+      def preview_payload(order, cart)
+        {
+          'cart_id' => cart.prefixed_id,
+          'currency' => order.currency,
+          'delivery_total' => order.delivery_total.to_s,
+          'display_delivery_total' => order.display_delivery_total.to_s,
+          'tax_total' => order.tax_total.to_s,
+          'display_tax_total' => order.display_tax_total.to_s,
+          'discount_total' => order.discount_total.to_s,
+          'display_discount_total' => order.display_discount_total.to_s,
+          'gift_card_total' => order.gift_card_total.to_s,
+          'display_gift_card_total' => order.display_gift_card_total.to_s,
+          'store_credit_total' => order.total_applied_store_credit.to_s,
+          'display_store_credit_total' => order.display_total_applied_store_credit.to_s,
+          'amount_due' => order.combined_amount_due.to_s,
+          'display_amount_due' => order.display_combined_amount_due.to_s,
+          'total' => order.combined_total.to_s,
+          'display_total' => order.display_combined_total.to_s,
+          'selected_method_id' => order.shipments.filter_map { |s| s.selected_shipping_rate&.shipping_method_id }.first,
+          'delivery_rates' => order.shipments.flat_map do |shipment|
+            shipment.shipping_rates.map do |rate|
+              {
+                'shipping_method_id' => rate.shipping_method_id,
+                'cost' => rate.cost.to_s,
+                'selected' => rate.id == shipment.selected_shipping_rate_id
+              }
+            end
+          end
+        }
       end
 
       def publish_submitted_event(order)

@@ -107,10 +107,36 @@ module PallasTrade
             end
           end
 
+          # POST /api/v3/store/carts/:id/preview_quote
+          # PRD-20260919-shipping-checkout-quote-preview：**只读预览报价**。
+          # 走 `Carts::Submit` 的 dry-run（同一金额管线）并回滚，返回运费/税费/应付
+          # 的估算 + 可选配送方式集合（含缺地址而暂不可计价的项）。**不建单、不写库、不发事件**。
+          # 参数：`country`（header 国家，无地址时的临时地址）、`shipping_method_id`、
+          #       `shipping_address`（表单态地址，可不落库）。
+          def preview_quote
+            find_shopping_cart
+
+            result = PallasTrade::Carts::PreviewQuote.call(
+              cart: @shopping_cart,
+              shipping_method_id: preview_params[:shipping_method_id],
+              shipping_address: preview_params[:shipping_address],
+              country: preview_params[:country]
+            )
+
+            if result.success?
+              render json: result.value
+            else
+              render_service_error(
+                result.error.to_s.presence || 'Could not compute preview',
+                code: ERROR_CODES[:validation_error]
+              )
+            end
+          end
+
           protected
 
-          def model_class
-            PallasTrade::Cart
+          def preview_params
+            params.permit(:country, :shipping_method_id, shipping_address: {})
           end
 
           def serializer_class

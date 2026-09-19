@@ -477,6 +477,21 @@ var StoreClient = class {
      */
     submit: (cartId, options) => this.request("POST", `/carts/${cartId}/submit`, options),
     /**
+     * PRD-20260919-shipping-checkout-quote-preview: read-only quote preview for
+     * the checkout page (default shipping method + estimated delivery/tax before
+     * an order exists). Runs the same pricing pipeline as `submit` in dry-run mode
+     * and rolls back — it never creates an order or writes to the cart.
+     * @param cartId - Cart prefixed ID
+     */
+    previewQuote: (cartId, params, options) => this.request(
+      "POST",
+      `/carts/${cartId}/preview_quote`,
+      {
+        ...options,
+        body: params ?? {}
+      }
+    ),
+    /**
      * Nested resource: Line items
      */
     items: {
@@ -668,8 +683,12 @@ var StoreClient = class {
   shippingMethods = {
     /**
      * List front-end shipping methods (name/description with rate label).
+     * 目录 F-2：可选 `country` 按 zone 过滤（服务端命中不了则回退全集）。
      */
-    list: (options) => this.request("GET", "/shipping_methods", options)
+    list: (params, options) => this.request("GET", "/shipping_methods", {
+      ...options,
+      params
+    })
   };
   // ============================================
   // Shipping estimate (F-2, 2026-09-16) — PDP shipping block

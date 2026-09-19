@@ -39,6 +39,14 @@ module PallasTrade
 
     scope :not_quick_checkout, -> { where(quick_checkout: false) }
 
+    # PALLAS-CUSTOM (2026-09-19, PRD-20260919-shipping-checkout-quote-preview):
+    # 「只读定价」临时地址。结算页预览时地址往往尚未填全（可能只有 header 国家），
+    # 该对象不是客户资料、也不落库（预览事务随后 `ActiveRecord::Rollback`），
+    # 唯一用途是给金额管线做 zone/税区 匹配。因此只保留 `country` 必填，
+    # 跳过姓名/街道/城市/邮编/州的**完备性**校验 —— 绝不为了过校验而伪造州/城市，
+    # 否则州级 zone 会被错误命中（把“填地址后失效的方式”提前算成可用）。
+    attr_accessor :pricing_only
+
     belongs_to :country, class_name: 'PallasTrade::Country'
     belongs_to :state, class_name: 'PallasTrade::State', optional: true
     # we need a safe operator here as Address is added to metafield_enabled_resources in Engine
@@ -59,12 +67,13 @@ module PallasTrade
     with_options presence: true do
       validates :firstname, :lastname, if: :require_name?
       validates :address1, if: :require_street?
-      validates :city, :country
+      validates :city, unless: :pricing_only
+      validates :country
       validates :zipcode, if: :require_zipcode?
       validates :phone, if: :require_phone?
     end
 
-    validate :state_validate, :postal_code_validate
+    validate :state_validate, :postal_code_validate, unless: :pricing_only
     validate :address_validators, on: [:create, :update]
 
     validates :label, uniqueness: { conditions: -> { where(deleted_at: nil) },
@@ -196,11 +205,13 @@ module PallasTrade
     end
 
     def require_zipcode?
+      return false if pricing_only
+
       !quick_checkout && (country ? country.zipcode_required? : true)
     end
 
     def require_name?
-      !quick_checkout
+      !quick_checkout && !pricing_only
     end
 
     def require_company?
@@ -208,7 +219,7 @@ module PallasTrade
     end
 
     def require_street?
-      !quick_checkout
+      !quick_checkout && !pricing_only
     end
 
     def show_company_address_field?

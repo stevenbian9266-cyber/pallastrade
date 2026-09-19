@@ -161,6 +161,12 @@ export default {
         description: 'Backend RSpec suite (PallasTrade core/api/app)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec'],
       },
+      // 支付风控看板（D3）：策略表「可编辑单元格」组件契约
+      // （PRD-20260919-payments-后台支付风控阈值策略表-可编辑单元格组件）
+      'admin-payment-risk-rspec': {
+        description: 'Admin payment risk dashboard specs (D3 view + editable threshold policy grid contract)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/d3_payment_risk_spec.rb'],
+      },
       // 管理后台会话（登出跳转回归）：admin/user_sessions_spec
       'admin-sessions-rspec': {
         description: 'Admin session specs (sign-in guard + sign-out redirect back to the admin sign-in page)',
@@ -176,6 +182,15 @@ export default {
       'billing-details-rspec': {
         description: 'Stripe billing_details payload specs (PaymentIntent + CheckoutSession presenter, incomplete address omitted)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec pallastrade_gems/pallastrade_stripe/spec/presenters'],
+      },
+      // 结算页只读预览报价（PRD-20260919-shipping-checkout-quote-preview，2026-09-19）：
+      // 预览金额 = 同一条 `Carts::Submit` dry-run 管线（回滚，零建单/零事件/零支付会话）；
+      // 无地址时用 header 国家做**pricing_only** 临时地址（不伪造州/城市）；
+      // 州级 zone 方式缺州返回 address_required，不可计价时金额一律 nil（绝不编 0）；
+      // 默认选中 = 管道最便宜口径；端点契约（cart token 授权 200 / 422）。
+      'checkout-preview-quote-rspec': {
+        description: 'Checkout read-only quote preview specs (dry-run parity + zero side effects, pricing-only address, address_required reasons, server-side default method, Store API endpoint contract)',
+        command: ['docker', 'exec', '-e', 'DISABLE_SIMPLECOV_MINIMUM=1', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && bundle exec rspec spec/services/pallastrade/carts/preview_quote_spec.rb spec/requests/api/v3/store/carts_controller_spec.rb'],
       },
       // AI 供应商适配器与模型目录（PRD-20260918-api-deepseek-structured-output）：
       // DeepSeek 结构化输出改用 json_object（不再发不受支持的 json_schema）+ 恢复被丢弃的

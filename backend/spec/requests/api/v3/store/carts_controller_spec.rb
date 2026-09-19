@@ -284,4 +284,66 @@ RSpec.describe 'Store Carts API (standard flow)', type: :request do
       expect(PallasTrade::Order.find_by_prefix_id!(order_id).payment_sessions.count).to eq(1)
     end
   end
+
+  # PRD-20260919-shipping-checkout-quote-preview AC-002/AC-003/AC-007：
+  # 结算页只读预览端点（cart token 授权）——给金额估算与方法集合，零建单。
+  describe 'POST /api/v3/store/carts/:id/preview_quote' do
+    let(:token_headers) { headers.merge('x-pallastrade-token' => cart.token) }
+
+    before do
+      cart.update!(email: 'buyer@example.com')
+      cart.cart_items.create!(variant: variant, quantity: 2, selected: true)
+    end
+
+    it 'returns estimated amounts and the method list without creating an order' do
+      post "/api/v3/store/carts/#{cart.prefixed_id}/preview_quote",
+           params: { country: 'US' },
+           headers: token_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response[:estimated]).to be true
+      expect(json_response[:currency]).to eq('USD')
+      expect(json_response[:delivery_total]).to be_present
+      expect(json_response[:tax_total]).to be_present
+      expect(json_response[:display_amount_due]).to be_present
+      expect(json_response[:methods]).to be_an(Array)
+      expect(json_response[:methods].first).to include(:id, :name, :cost, :reason, :selected)
+      expect(json_response[:selected_method_id]).to be_present
+      # 零副作用：没有建单，购物车仍 active
+      expect(PallasTrade::Order.where(cart_id: cart.id).count).to eq(0)
+      expect(cart.reload.status).to eq('active')
+    end
+
+    it 'honours a form-state address that was never persisted on the cart' do
+      post "/api/v3/store/carts/#{cart.prefixed_id}/preview_quote",
+           params: {
+             shipping_address: {
+               country_iso: 'US',
+               state_abbr: 'CA',
+               city: 'Los Angeles',
+               postal_code: '90001',
+               address1: '1 Main St',
+               first_name: 'Ada',
+               last_name: 'Lovelace'
+             }
+           },
+           headers: token_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response[:address_complete]).to be true
+      expect(json_response[:provisional_country]).to eq('US')
+      expect(cart.reload.shipping_address).to be_nil
+    end
+
+    it 'returns 422 with a validation error when there is nothing to price' do
+      cart.cart_items.destroy_all
+
+      post "/api/v3/store/carts/#{cart.prefixed_id}/preview_quote",
+           params: { country: 'US' },
+           headers: token_headers
+
+      expect(response).to have_http_status(422)
+      expect(json_response[:error]).to be_present
+    end
+  end
 end

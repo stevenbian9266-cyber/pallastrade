@@ -62,6 +62,9 @@ PallasTrade::Core::Engine.add_routes do
           member do
             patch :associate
             post :submit
+            # PRD-20260919-shipping-checkout-quote-preview：只读预览报价
+            # （dry-run 同源管线 → 运费/税费估算，不建单、不写库）。
+            post :preview_quote
           end
           resources :items, only: [:create, :update, :destroy], controller: 'carts/items'
           resources :discount_codes, only: [:create, :destroy], controller: 'carts/discount_codes'

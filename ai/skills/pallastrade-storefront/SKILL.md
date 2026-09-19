@@ -667,6 +667,36 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
   `ExpressCheckoutButton.test.tsx` 的 `(top express area)` 段（多入口配置/2 列/locale/option_kind/toast 降级）、
   `lib/__tests__/stripe-locale.test.ts`；改动后跑 `storefront-test`。
 
+## 结算页预估运费/税费（只读预览报价，2026-09-19；PRD-20260919-shipping-checkout-quote-preview）
+
+结算页首屏不再写「提交时计算」：右栏显示**预估金额**，并默认选中一个配送方式。
+
+- **数据来源**：`POST /api/checkout/preview`（BFF，同源校验，SDK `carts.previewQuote`）——
+  服务端 dry-run 同源管线，**只读**（不建单）。BFF 失败 → 502，前端回落，**绝不阻断结算**。
+- **`UnifiedCheckout` 行为**（`storefront/src/components/checkout/UnifiedCheckout.tsx`）：
+  - `preview` / `previewPending` 两个状态 + `previewRequestIdRef`；Effect 依赖
+    `[cart.id, country, address, shippingMethodId]`，**400ms 防抖**后请求；
+    每请求带自增 `requestId`，**过期响应丢弃**（乱序不覆盖较新结果）；请求期间保留旧数字 + 微加载提示（`previewUpdating`）。
+  - 请求体：`{ cart_id, country: country || address.country_iso, shipping_method_id?, shipping_address? }`
+    （地址字段全空则不发 `shipping_address`）。
+  - **默认选中由服务端决定**：`selected_method_id` 回填 `shippingMethodId`，但**只在用户尚未选择时**
+    （`setShippingMethodId(current => current || data.selected_method_id)`），用户手动选择永不被覆盖。
+  - **读模型四级**：权威（prepare 后的订单报价）→ **preview** → legacy 计算值 → 短标签 `calculatedAtSubmit`；
+    金额为 `null` 一律回落短标签（**不显示 0**）。运费行标签在「无权威报价且金额来自预览」时
+    切成 `checkout.estimatedShipping`（税费行原本就是 `estimatedTaxes`）。
+  - 页面传 `country={urlCountry}`；方法列表按 header 国家过滤：`getShippingMethods(country)`
+    （数据层把 `{ country }` 作为 SDK `shippingMethods.list` 的**第一个**参数）。
+- **不可计价的方式**照实解释而非隐藏：预览返回的 `methods[].reason`（`address_required` /
+  `currency_mismatch`）驱动「填地址后显示」提示；补全地址后同一方式自动变为带 `cost`。
+- 覆盖测试：`components/checkout/__tests__/UnifiedCheckout.test.tsx` 的 `(preview)` 段
+  （预估金额 + 采纳服务端默认选中 / 防抖与乱序丢弃 / 失败回落）、
+  `app/api/checkout/preview/__tests__/route.test.ts`（403 跨源 / 400 缺 cart_id / 502 降级）、
+  `lib/data/__tests__/cart.test.ts` 的 `getShippingMethods` 段；改动后跑 `storefront-test`。
+
+⚠️ **测试脚手架约定**：预览请求在组件测试里走**独立 mock**（`previewMock`），
+`fetch` 全局被打桩为「预览 → `previewMock`，其余 → `fetchMock`」——否则新增的只读请求会打乱
+既有「结账链路调用次数」断言（`toHaveBeenCalledTimes`）。
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - P0 (2026-09-03): Express(Apple/Google Pay) 金额/行项目改由服务端 Cart#express_payment 权威提供（expressAmount/expressLineItems；legacy buildLineItems 仅 fallback）；Legacy cart 支付=Compatibility Only。

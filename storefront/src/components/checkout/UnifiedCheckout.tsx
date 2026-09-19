@@ -2,6 +2,7 @@
 
 import type {
   Cart,
+  CartPreviewQuoteResult,
   Country,
   DeliveryMethod,
   ShoppingCart,
@@ -90,6 +91,8 @@ interface UnifiedCheckoutProps {
   shippingMethods: DeliveryMethod[];
   countries: Country[];
   isAuthenticated: boolean;
+  /** PRD-20260919-shipping-checkout-quote-preview：header 国家（路由段），无地址时的临时地址来源 */
+  country?: string | null;
 }
 
 interface CouponHandlers {
@@ -131,6 +134,8 @@ function UnifiedOrderSummary({
   discountCart,
   couponHandlers,
   quote,
+  preview,
+  previewPending,
 }: {
   cart: ShoppingCart;
   discountCart: Cart | null;
@@ -140,6 +145,17 @@ function UnifiedOrderSummary({
    * 的 Order 权威报价（与主列确认区同源同值）。无报价时不传 → 走「提交订单时计算」。
    */
   quote?: CheckoutQuote | null;
+  /**
+   * PRD-20260919-shipping-checkout-quote-preview（FR-004）：只读预览报价
+   * （dry-run 同源管线，无地址时用 header 国家估算）。
+   * 优先级在权威报价之下；失败/不可判定时为 `null` → 诚实回落。
+   */
+  preview?: CartPreviewQuoteResult | null;
+  /**
+   * PRD-20260919-shipping-checkout-quote-preview FR-005：预览请求进行中
+   * （保留旧数字 + 微加载提示，绝不闪空、不闪 0）。
+   */
+  previewPending?: boolean;
 }) {
   const t = useTranslations("checkout");
   const tc = useTranslations("common");
@@ -164,27 +180,39 @@ function UnifiedOrderSummary({
   const hasStoreCreditIntent = Boolean(cart.store_credit);
   const discountDisplay =
     authoritative?.display_discount_total ??
+    preview?.display_discount_total ??
     (safeParseFloat(couponCart.discount_total) !== 0
       ? couponCart.display_discount_total
       : null);
-  const shippingDisplay = authoritative?.display_delivery_total ?? null;
+  const shippingDisplay =
+    authoritative?.display_delivery_total ??
+    preview?.display_delivery_total ??
+    null;
   const taxDisplay =
     authoritative?.display_tax_total ??
+    preview?.display_tax_total ??
     (safeParseFloat(couponCart.tax_total) > 0
       ? couponCart.display_tax_total
       : null);
   const giftCardDisplay =
-    safeParseFloat(couponCart.gift_card_total) > 0
+    preview?.display_gift_card_total ??
+    (safeParseFloat(couponCart.gift_card_total) > 0
       ? couponCart.display_gift_card_total
-      : null;
+      : null);
   const storeCreditDisplay =
-    safeParseFloat(couponCart.store_credit_total) > 0
+    preview?.display_store_credit_total ??
+    (safeParseFloat(couponCart.store_credit_total) > 0
       ? couponCart.display_store_credit_total
-      : null;
+      : null);
   const pendingLabel = t("calculatedAtSubmit");
-  // 预估总额：权威 amount_due → legacy 计算值（含已应用折扣；`buildCouponCart`
-  // 在无 legacy 值时回落为小计）→ 小计。绝不用未折扣小计冒充“含折扣总额”。
+  // 预估口径：无权威报价、且金额来自预览时，行标签写「Estimated shipping / taxes」。
+  const estimatedShippingLabel =
+    !authoritative && preview ? t("estimatedShipping") : tc("shipping");
+  // 预估总额：权威 amount_due → 预览 amount_due → legacy 计算值（含已应用折扣；
+  // `buildCouponCart` 在无 legacy 值时回落为小计）→ 小计。
   const estimatedTotal = couponCart.display_total ?? cart.display_item_total;
+  const previewTotal =
+    authoritative?.display_amount_due ?? preview?.display_amount_due ?? null;
 
   const trustBenefits = [
     { icon: RefreshCcw, label: t("benefitMoneyBack") },
@@ -304,9 +332,9 @@ function UnifiedOrderSummary({
           </div>
         )}
 
-        {/* 运费 —— 值为权威金额或短标签，不再把整句说明当值 */}
+        {/* 运费 —— 值为权威/预估金额或短标签，不再把整句说明当值 */}
         <div className="flex justify-between text-sm">
-          <dt className="text-gray-700">{tc("shipping")}</dt>
+          <dt className="text-gray-700">{estimatedShippingLabel}</dt>
           <dd className={shippingDisplay ? "text-gray-900" : "text-gray-500"}>
             {shippingDisplay ?? pendingLabel}
           </dd>
@@ -325,11 +353,16 @@ function UnifiedOrderSummary({
             {authoritative ? t("totalDue") : t("estimatedTotal")}
           </dt>
           <dd className="text-lg font-bold text-gray-900">
-            {authoritative?.display_amount_due ?? estimatedTotal}
+            {previewTotal ?? estimatedTotal}
+            {previewPending ? (
+              <span className="ml-2 text-xs font-normal text-gray-500">
+                {t("previewUpdating")}
+              </span>
+            ) : null}
           </dd>
         </div>
 
-        {/* 无权威报价时的注记：金额在提交订单时确定并回填此处 */}
+        {/* 无权威报价时的注记：金额为预估，提交订单时以权威报价为准并回填此处 */}
         {!authoritative && (
           <p className="pt-2 text-xs text-gray-500">
             {t("feesCalculatedAtSubmit")}
@@ -449,6 +482,7 @@ export function UnifiedCheckout({
   shippingMethods,
   countries,
   isAuthenticated,
+  country,
 }: UnifiedCheckoutProps) {
   const t = useTranslations("checkout");
   const tcoupon = useTranslations("coupon");
@@ -607,6 +641,15 @@ export function UnifiedCheckout({
     quote: CheckoutQuote | null;
   } | null>(null);
 
+  /**
+   * PRD-20260919-shipping-checkout-quote-preview：只读预览报价。
+   * 首屏（无地址 → header 国家）与地址/配送方式变更时重取，驱动右栏金额与默认选中。
+   * 失败/不可判定 → null，右栏回落既有「提交订单时计算」标注。
+   */
+  const [preview, setPreview] = useState<CartPreviewQuoteResult | null>(null);
+  const [previewPending, setPreviewPending] = useState(false);
+  const previewRequestIdRef = useRef(0);
+
   const selectedOption =
     paymentOptions.find((o) => o.entry.option_id === selectedOptionId) ??
     paymentOptions[0];
@@ -747,6 +790,8 @@ export function UnifiedCheckout({
         discountCart={discountCart}
         couponHandlers={couponHandlersRef.current}
         quote={preparedOrder?.quote ?? null}
+        preview={preview}
+        previewPending={previewPending}
       />,
     );
     setSummaryMeta({
@@ -757,7 +802,15 @@ export function UnifiedCheckout({
       setSummaryContent(null);
       setSummaryMeta(null);
     };
-  }, [cart, discountCart, preparedOrder, setSummaryContent, setSummaryMeta]);
+  }, [
+    cart,
+    discountCart,
+    preparedOrder,
+    setSummaryContent,
+    setSummaryMeta,
+    preview,
+    previewPending,
+  ]);
 
   // 国家变更 → 加载州/省（配送地址）
   useEffect(() => {
@@ -881,6 +934,56 @@ export function UnifiedCheckout({
       billingDetailsFromFormData(useShippingForBilling ? address : billAddress),
     [useShippingForBilling, address, billAddress],
   );
+
+  // PRD-20260919-shipping-checkout-quote-preview FR-004/FR-005：
+  // 首屏与地址/配送方式变更 → 400ms 防抖请求只读预览（dry-run 同源管线）；
+  // `requestId` 丢弃过期响应；失败/不可判定 → 置空（右栏回落诚实降级）。
+  useEffect(() => {
+    const cartId = cart.id;
+    if (!cartId) return;
+    const requestId = previewRequestIdRef.current + 1;
+    previewRequestIdRef.current = requestId;
+    setPreviewPending(true);
+    const timer = setTimeout(async () => {
+      try {
+        const hasAddress = Boolean(address.country_iso);
+        const response = await fetch("/api/checkout/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cart_id: cartId,
+            country: country || address.country_iso || undefined,
+            shipping_method_id: shippingMethodId || undefined,
+            shipping_address: hasAddress
+              ? formDataToAddress(address)
+              : undefined,
+          }),
+        });
+        if (previewRequestIdRef.current !== requestId) return;
+        if (!response.ok) {
+          setPreviewPending(false);
+          setPreview(null);
+          return;
+        }
+        const data = (await response.json()) as CartPreviewQuoteResult;
+        if (previewRequestIdRef.current !== requestId) return;
+        setPreviewPending(false);
+        setPreview(data);
+        // 默认选中由**服务端**决定（管道口径：成本最低的方式）
+        if (data.selected_method_id) {
+          setShippingMethodId(
+            (current) => current || data.selected_method_id || "",
+          );
+        }
+      } catch {
+        if (previewRequestIdRef.current === requestId) {
+          setPreview(null);
+          setPreviewPending(false);
+        }
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [cart.id, country, address, shippingMethodId]);
 
   const handleCardReady = useCallback((handle: CardPaymentFormHandle) => {
     cardFormRef.current = handle;

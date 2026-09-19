@@ -44,6 +44,12 @@ vi.mock("@/lib/data/countries", () => ({
 }));
 
 const fetchMock = vi.fn();
+/**
+ * PRD-20260919-shipping-checkout-quote-preview AC-006：预览走**独立** mock。
+ * 既让既有「结账链路调用次数」断言不受新增只读请求影响，
+ * 也让预览的防抖/乱序/失败降级可以逐用例精确编排。
+ */
+const previewMock = vi.fn();
 
 vi.mock("@/lib/utils/stripe", () => ({
   getStripePromise: () => Promise.resolve(null),
@@ -209,7 +215,10 @@ function SummaryMetaProbe() {
   );
 }
 
-function renderCheckout(cart: ShoppingCart = makeCart()) {
+function renderCheckout(
+  cart: ShoppingCart = makeCart(),
+  country: string | null = null,
+) {
   return render(
     <CheckoutProvider>
       <UnifiedCheckout
@@ -217,6 +226,7 @@ function renderCheckout(cart: ShoppingCart = makeCart()) {
         shippingMethods={shippingMethods}
         countries={[]}
         isAuthenticated={false}
+        country={country}
       />
       <CheckoutSummary />
       <SummaryMetaProbe />
@@ -234,12 +244,40 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     pushMock.mockReset();
     replaceMock.mockReset();
     fetchMock.mockReset();
+    previewMock.mockReset();
     stripeConfiguredState.value = false;
     capturedExpressProps = {};
     // PRD-20260914-checkout-quote-confirmation-loop：报价快照存 sessionStorage，
     // 用例间必须隔离，否则快照会泄漏到其它用例的载荷断言。
     sessionStorage.clear();
-    vi.stubGlobal("fetch", fetchMock);
+    // PRD-20260919-shipping-checkout-quote-preview：预览默认「金额不可用」
+    // （全部 null）—— 保持「提交时计算」的既有口径；需要预估金额的用例自行覆写。
+    previewMock.mockImplementation(async () => ({
+      ok: true,
+      json: async () => ({
+        cart_id: "cart_1",
+        currency: "USD",
+        delivery_total: null,
+        display_delivery_total: null,
+        tax_total: null,
+        display_tax_total: null,
+        discount_total: null,
+        display_discount_total: null,
+        amount_due: null,
+        display_amount_due: null,
+        selected_method_id: null,
+        methods: [],
+        estimated: true,
+        address_complete: false,
+      }),
+    }));
+    vi.stubGlobal(
+      "fetch",
+      (input: RequestInfo | URL, init?: RequestInit) =>
+        input === "/api/checkout/preview"
+          ? previewMock(input, init)
+          : fetchMock(input, init),
+    );
     confirmMock.mockReset();
     fetchMock.mockImplementation(
       async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1554,5 +1592,121 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(screen.queryByTestId("total-savings")).toBeNull();
+  });
+
+  // PRD-20260919-shipping-checkout-quote-preview AC-004 / AC-006：
+  // 首屏只读预览 → 右栏显示**预估金额**（不再写「提交时计算」），且默认选中
+  // 由**服务端**决定（`selected_method_id` = 管道最便宜口径）。
+  it("shows estimated fees from the server preview and adopts the server default method", async () => {
+    previewMock.mockImplementation(async () => ({
+      ok: true,
+      json: async () => ({
+        cart_id: "cart_1",
+        currency: "USD",
+        delivery_total: "5.0",
+        display_delivery_total: "$5.00",
+        tax_total: "1.6",
+        display_tax_total: "$1.60",
+        discount_total: null,
+        display_discount_total: null,
+        amount_due: "26.58",
+        display_amount_due: "$26.58",
+        selected_method_id: "dm_1",
+        methods: [
+          {
+            id: "dm_1",
+            name: "Standard",
+            cost: "5.0",
+            display_cost: "$5.00",
+            reason: null,
+            selected: true,
+          },
+        ],
+        estimated: true,
+        provisional_country: "US",
+        address_complete: false,
+      }),
+    }));
+
+    renderCheckout(makeCart(), "US");
+
+    const summary = screen.getByTestId("unified-order-summary");
+    // 金额落地（预估口径标签 + 金额本身）
+    await waitFor(() =>
+      expect(within(summary).getByText("estimatedShipping")).toBeTruthy(),
+    );
+    expect(within(summary).getByText("$5.00")).toBeTruthy();
+    expect(within(summary).getByText("$1.60")).toBeTruthy();
+    expect(within(summary).getByText("$26.58")).toBeTruthy();
+    // 服务端默认选中被采纳（表单不再空选）
+    await waitFor(() =>
+      expect(screen.getByRole("radio", { name: /Standard/ })).toBeChecked(),
+    );
+  });
+
+  // AC-006：地址/方式变更 → 改后重取（防抖）；乱序响应不覆盖较新结果。
+  it("debounces preview refreshes and discards stale responses", async () => {
+    let previewCalls = 0;
+    const resolvers: Array<(payload: unknown) => void> = [];
+    previewMock.mockImplementation(
+      async () =>
+        // 第一次响应故意挂起（模拟慢请求）→ 由后续更快响应先落地
+        new Promise((resolve) => {
+          previewCalls += 1;
+          resolvers.push((payload: unknown) =>
+            resolve({ ok: true, json: async () => payload }),
+          );
+        }),
+    );
+
+    const user = userEvent.setup();
+    renderCheckout(makeCart(), "US");
+    await waitFor(() => expect(previewCalls).toBeGreaterThanOrEqual(1));
+
+    // 连续输入 6 个字符（远快于 400ms 防抖窗口）→ 不应产生 6 次请求
+    await user.type(screen.getByLabelText("unified-country_iso"), "US1234");
+    await waitFor(() => expect(previewCalls).toBeGreaterThan(1), {
+      timeout: 3000,
+    });
+    expect(previewCalls).toBeLessThanOrEqual(3);
+
+    // 乱序落地：先让**较旧**的请求成功（应被丢弃），再让较新的成功
+    const first = resolvers[0];
+    const last = resolvers[resolvers.length - 1];
+    last({
+      display_delivery_total: "$9.99",
+      display_amount_due: "$29.97",
+      methods: [],
+      selected_method_id: null,
+    });
+    first({
+      display_delivery_total: "$1.11",
+      display_amount_due: "$21.09",
+      methods: [],
+      selected_method_id: null,
+    });
+
+    const summary = screen.getByTestId("unified-order-summary");
+    await waitFor(() =>
+      expect(within(summary).getByText("$9.99")).toBeTruthy(),
+    );
+    expect(within(summary).queryByText("$1.11")).toBeNull();
+  });
+
+  // AC-006：预览接口失败 → 诚实回落（保留「提交时计算」，绝不显示 0/旧值冒充）。
+  it("falls back to the pending label when the preview request fails", async () => {
+    previewMock.mockImplementation(async () => ({
+      ok: false,
+      status: 502,
+      json: async () => ({}),
+    }));
+
+    renderCheckout(makeCart(), "US");
+
+    const summary = screen.getByTestId("unified-order-summary");
+    await waitFor(() =>
+      expect(within(summary).getAllByText("calculatedAtSubmit").length).toBeGreaterThanOrEqual(2),
+    );
+    expect(within(summary).queryByText("$0.00")).toBeNull();
   });
 });

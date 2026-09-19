@@ -777,6 +777,43 @@ store 侧支付方式 payload 的 **additive** 字段（不新增端点、不改
 不可用入口 → **建会话前** `422 payment_option_not_available`（orders/transactions；`details.reason` 说明原因），**零 session 行**。
 `store.yaml` 三个端点均补了 `option_kind` 说明；SDK 手写类型 `CreateOrderTransactionParams` / `CreatePaymentSessionParams` 同步该字段。
 
+## 结算页只读预览报价 `POST /api/v3/store/carts/:id/preview_quote`（2026-09-19；PRD-20260919-shipping-checkout-quote-preview）
+
+结算页在**建单之前**就要显示运费/税费估算，且默认选中一个配送方式。为此新增一个**只读**端点
+（cart token 授权，与其它 cart 端点一致）：
+
+**请求**（全部可选，缺省 = 用车上的地址/方式）：
+
+| 字段 | 说明 |
+|---|---|
+| `country` | header 国家（ISO）。无地址时用它构造**定价专用临时地址**；有地址时作为兜底 |
+| `shipping_method_id` | 前台已选方式（未落库也可）；仍可用时预览按它计价并回传为 `selected_method_id` |
+| `shipping_address` | 表单态地址（`country_iso` / `state_abbr` / `city` / `postal_code` / `address1`…），**不落库** |
+
+**响应**：金额字段与 prepare 的订单报价同名同口径，但**全部可空**——
+
+- `delivery_total` / `display_delivery_total`、`tax_total` / `display_tax_total`、
+  `discount_total` / `display_discount_total`、`gift_card_total` / `display_gift_card_total`、
+  `store_credit_total` / `display_store_credit_total`、`amount_due` / `display_amount_due`、
+  `total` / `display_total`、`currency`
+- `methods[]`：**展示集合**（= `Shipping::Estimate.scoped_methods(store, country)`，与前台列表同源）逐项给
+  `id` / `raw_id` / `name` / `cost` / `display_cost` / `reason` / `selected`；不可计价者 `cost: null`
+  且带 `reason`（`address_required` = 缺州/邮编；`currency_mismatch` = 该方式的计算器不收本币）
+- `selected_method_id`：**服务端决定的默认**（管道口径 = 费率成本升序第一；显式传入且仍可用则用它）
+- `estimated: true`、`provisional_country`、`address_complete`
+- 降级：当**当前地址下没有任何可配送费率**（订单 warnings 含 `delivery_unavailable`）时返回 200 +
+  金额全 `null` + `unavailable_reason`，**不是错误**——前台据此回落「提交时计算」并逐方式显示原因
+
+**零副作用是契约**：内部走 `Carts::Submit` 的 dry-run（同一事务内建单 → 计价 → `ActiveRecord::Rollback`），
+不建 Order、不发 `order.submitted`、不转换购物车、不建支付会话/交易、不写购物车地址、不动礼品卡余额。
+**绝不**把 preview 当报价去向网关扣款——权威金额始终来自 prepare 之后的订单报价。
+
+**错误**：`422 validation_error`（购物车不存在/无已选商品/礼品卡不可用等真正失败）。
+
+SDK：`carts.previewQuote(cartId, params)` → `CartPreviewQuoteResult`；`shippingMethods.list(params, options)`
+的第一个参数变成 `{ country }`（查询参数，zone 过滤，命中不了回退全集）。`store.yaml` 契约与
+`platform/docs/api-reference/store.yaml` 同步，`harness generated:check` 守护。
+
 ## Changelog (P0 Payment, 2026-09-03)
 
 - D8 适用范围 (2026-09-15, PRD-20260915-payments-d8): admin `options[]` 增 `rule_set`/`scope_summary`（typelizer → SDK 生成类型）；store 侧新增失败码 `payment_option_not_available`（两个 payment_sessions 创建端点 422 示例）；无端点增删。
