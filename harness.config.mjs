@@ -171,6 +171,12 @@ export default {
         description: 'Admin page caching specs (no-store headers + back-forward-cache reload guard)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/page_caching_spec.rb'],
       },
+      // 账单详情透传（PRD-20260919-checkout-billing-details-passthrough，第 4 项二期，2026-09-19）：
+      // PI / Checkout Session 载荷带 `billing_details`（来自 order.bill_address，地址不完整则**整体不发**）。
+      'billing-details-rspec': {
+        description: 'Stripe billing_details payload specs (PaymentIntent + CheckoutSession presenter, incomplete address omitted)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec pallastrade_gems/pallastrade_stripe/spec/presenters'],
+      },
       // AI 供应商适配器与模型目录（PRD-20260918-api-deepseek-structured-output）：
       // DeepSeek 结构化输出改用 json_object（不再发不受支持的 json_schema）+ 恢复被丢弃的
       // system_instructions + test_connection 由响应派生 status 且 5xx/网络失败返回结构化失败；

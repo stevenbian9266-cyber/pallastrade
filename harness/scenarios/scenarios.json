@@ -5036,6 +5036,37 @@
         "confirmEchoCoversBothBranches": 20,
         "phaseTwoExplicitlyOutOfScope": 10
       }
-    }
+    },
+    {
+      "id": "GS-193",
+      "name": "Carry the shopper's billing details to the gateway - and degrade instead of failing when a wallet's address is incomplete",
+      "description": "The checkout collects a billing address (same-as-shipping by default, custom on request) but none of it reaches the payment gateway: the server-side provider presenters send only a shipping block, the card form confirms the payment with nothing but the cardholder name, and the wallet buttons read the wallet's billing details for the order snapshot yet never pass them as payment-method data. Worse, the wallet path always tells the cart that the billing address is custom, so a wallet that omits a postal code or a state trips the cart's completeness validation and the shopper simply cannot pay. The ask: one authoritative server-side builder that emits the billing block when - and only when - the order holds a complete billing address, a card path that mirrors the page's own choice, and a wallet path that adopts the wallet's details and falls back to same-as-shipping instead of blocking the purchase.",
+      "mustDo": [
+        "Build the payload in exactly one place and reuse it for every session shape: the payment-intent payload and the checkout session's nested payment-intent data must be identical, so the two session modes can never drift",
+        "Source the billing block from the order's own billing snapshot (falling back to the shipping copy the order already made) and emit it only when the address fields that matter are present: a missing or partial address means the key is absent, never an empty object",
+        "Wrap the call in the same resilience the shipping block already has: a serialisation failure must not take the whole payment session down",
+        "Mirror the page's billing choice on the card path: same-as-shipping sends the shipping address, custom sends what the shopper typed, and the cardholder name is still omitted when blank",
+        "Adopt the wallet's billing details explicitly as the payment method's billing details, letting the values the wallet already collected win and only filling the gaps",
+        "Decide the cart's billing mode from the wallet address's completeness: complete means custom with the wallet address, incomplete means same-as-shipping with no billing address at all, so the purchase can always complete",
+        "Keep both wallet surfaces identical (the inline/top/cart-drawer button and the order page's wallet row), and pin the payload shape with tests on each",
+        "Prove it on both sides: presenter specs for the server payload present versus absent, plus front-end tests for the card projection and both wallet surfaces"
+      ],
+      "mustNotDo": [
+        "Send an empty or partially filled billing block just in case: address verification treats blanks as data and the gateway will reject or mis-score an otherwise good card",
+        "Duplicate the payload construction per session mode - one builder, or the modes drift and only one of them gets fixed later",
+        "Invent a billing address the shopper never gave (no synthesis from locale, IP or partial wallet data)",
+        "Let a wallet's incomplete address reach the cart's completeness validation: degrade to same-as-shipping instead of turning the purchase into a failure the shopper cannot fix",
+        "Send billing details from surfaces that do not own them - the order page has no billing inputs, so it leaves the field to the server-side default",
+        "Change the cart-level billing-mode contract, add a new API parameter, or log, print or render any of the collected billing details"
+      ],
+      "scoring": {
+        "singleServerBuilderShared": 20,
+        "omitWhenIncomplete": 20,
+        "cardMirrorsPageChoice": 15,
+        "walletAdoptionAndFallback": 20,
+        "bothWalletSurfacesCovered": 15,
+        "noFabricationOrPiiLeak": 10
+      }
+    },
   ]
 }

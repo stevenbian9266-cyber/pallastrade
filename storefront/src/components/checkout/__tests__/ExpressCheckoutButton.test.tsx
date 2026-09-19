@@ -121,6 +121,15 @@ async function confirm() {
   return e;
 }
 
+async function confirmWith(
+  e: ReturnType<typeof event>,
+): Promise<ReturnType<typeof event>> {
+  await act(async () => {
+    await (capturedElementProps.onConfirm as (ev: unknown) => Promise<void>)(e);
+  });
+  return e;
+}
+
 describe("ExpressCheckoutButton (canonical wallet)", () => {
   beforeEach(() => {
     fetchMock.mockReset();
@@ -193,6 +202,113 @@ describe("ExpressCheckoutButton (canonical wallet)", () => {
       "http://localhost:3000/us/en/payment-result/or_9?session=ps_9",
     );
     expect(e.paymentFailed).not.toHaveBeenCalled();
+  });
+
+  // PRD-20260919-checkout-billing-details-passthrough AC-004：
+  // 钱包账单地址完整 → billing_mode=custom + 钱包地址；并把钱包返回的账单详情
+  // 作为**支付方式级** billing_details 随 confirmPayment 提交（此前只进订单快照）。
+  it("adopts the wallet billing details on the order snapshot and the payment method (FR-004)", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          order: { id: "or_9" },
+          transaction: { id: "txn_9", state: "payment_pending" },
+          session: { id: "ps_9", external_data: { client_secret: "cs_9" } },
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse(200, { order: { id: "or_9" } }));
+    confirmPaymentMock.mockResolvedValue({ error: undefined });
+
+    render(
+      <ExpressCheckoutButton
+        cart={cart}
+        basePath="/us/en"
+        onComplete={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(capturedElementProps.onConfirm).toBeDefined());
+
+    await confirm();
+
+    const startBody = JSON.parse(
+      String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body),
+    );
+    expect(startBody.checkout.billing_mode).toBe("custom");
+    expect(startBody.checkout.billing_address).toMatchObject({
+      address1: "1 Analytical Way",
+      city: "London",
+      postal_code: "E1 6AN",
+      country_iso: "GB",
+    });
+
+    const confirmArgs = confirmPaymentMock.mock.calls[0][0] as {
+      confirmParams: {
+        payment_method_data?: {
+          billing_details?: Record<string, unknown>;
+        };
+      };
+    };
+    expect(
+      confirmArgs.confirmParams.payment_method_data?.billing_details,
+    ).toMatchObject({
+      name: "Ada Lovelace",
+      email: "ada@example.com",
+      phone: "+15550001111",
+      address: {
+        line1: "1 Analytical Way",
+        city: "London",
+        postal_code: "E1 6AN",
+        country: "GB",
+        state: "London",
+      },
+    });
+  });
+
+  // PRD-20260919-checkout-billing-details-passthrough AC-004：
+  // 钱包账单地址不完整（Google Pay 部分地区无邮编）→ **降级 same_as_shipping**，
+  // 不再发半空地址撞上 Carts::Update 的 IncompleteBillingAddress 把支付卡死。
+  it("degrades to same_as_shipping when the wallet billing address is incomplete (FR-004)", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          order: { id: "or_9" },
+          transaction: { id: "txn_9", state: "payment_pending" },
+          session: { id: "ps_9", external_data: { client_secret: "cs_9" } },
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse(200, { order: { id: "or_9" } }));
+    confirmPaymentMock.mockResolvedValue({ error: undefined });
+
+    render(
+      <ExpressCheckoutButton
+        cart={cart}
+        basePath="/us/en"
+        onComplete={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(capturedElementProps.onConfirm).toBeDefined());
+
+    const partial = event();
+    partial.billingDetails.address = {
+      ...partial.billingDetails.address,
+      postal_code: null as unknown as string,
+    };
+    const e = await confirmWith(partial);
+
+    const startBody = JSON.parse(
+      String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body),
+    );
+    expect(startBody.checkout.billing_mode).toBe("same_as_shipping");
+    expect(startBody.checkout).not.toHaveProperty("billing_address");
+
+    const confirmArgs = confirmPaymentMock.mock.calls[0][0] as {
+      confirmParams: { payment_method_data?: unknown };
+    };
+    expect(confirmArgs.confirmParams.payment_method_data).toBeUndefined();
+
+    // 支付仍可继续（不被拦截）
+    expect(e.paymentFailed).not.toHaveBeenCalled();
+    expect(pushMock).toHaveBeenCalled();
   });
 
   // PRD-20260915-checkout-checkout-收尾收敛-b4-express-钱包-canonicalize-legacy-会话-transacti AC-005

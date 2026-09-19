@@ -63,9 +63,25 @@ vi.mock("@/components/ui/input", () => ({
 
 let handle: CardPaymentFormHandle | null = null;
 
-function renderForm() {
-  return render(<CardPaymentForm onReady={(h) => (handle = h)} />);
+function renderForm(
+  billingDetails?: Parameters<typeof CardPaymentForm>[0]["billingDetails"],
+) {
+  return render(
+    <CardPaymentForm
+      onReady={(h) => (handle = h)}
+      billingDetails={billingDetails}
+    />,
+  );
 }
+
+const stripeAddress = {
+  address: {
+    line1: "1 Billing St",
+    city: "Billingville",
+    postal_code: "EC1A 1BB",
+    country: "GB",
+  },
+};
 
 describe("CardPaymentForm (PRD-20260831-payments-stripe-自绘卡支付表单 AC-005)", () => {
   beforeEach(() => {
@@ -132,6 +148,84 @@ describe("CardPaymentForm (PRD-20260831-payments-stripe-自绘卡支付表单 AC
         card: cardElementMock,
         billing_details: { name: "Ada Lovelace" },
       },
+    });
+  });
+
+  // PRD-20260919-checkout-billing-details-passthrough AC-003：
+  // 结算页选定的账单地址随卡提交到 PaymentMethod（同配送/自定义已在页面侧投影）。
+  it("attaches the projected billing address to the confirmed payment method (FR-003)", async () => {
+    const user = userEvent.setup();
+    renderForm(stripeAddress);
+
+    await user.type(
+      screen.getByTestId("card-number-input"),
+      "4242424242424242",
+    );
+    await user.type(screen.getByTestId("card-expiry-input"), "12/30");
+    await user.type(screen.getByTestId("card-cvc-input"), "123");
+
+    await handle?.confirmPayment("pi_test_secret_123");
+
+    expect(confirmCardPaymentMock).toHaveBeenCalledWith("pi_test_secret_123", {
+      payment_method: {
+        card: cardElementMock,
+        billing_details: {
+          address: {
+            line1: "1 Billing St",
+            city: "Billingville",
+            postal_code: "EC1A 1BB",
+            country: "GB",
+          },
+        },
+      },
+    });
+  });
+
+  it("combines the optional cardholder name with the billing address", async () => {
+    const user = userEvent.setup();
+    renderForm(stripeAddress);
+
+    await user.type(
+      screen.getByTestId("card-number-input"),
+      "4242424242424242",
+    );
+    await user.type(screen.getByTestId("card-expiry-input"), "12/30");
+    await user.type(screen.getByTestId("card-cvc-input"), "123");
+    await user.type(screen.getByTestId("cardholder-name"), "Ada Lovelace");
+
+    await handle?.confirmPayment("pi_test_secret_123");
+
+    expect(confirmCardPaymentMock).toHaveBeenCalledWith("pi_test_secret_123", {
+      payment_method: {
+        card: cardElementMock,
+        billing_details: {
+          name: "Ada Lovelace",
+          address: {
+            line1: "1 Billing St",
+            city: "Billingville",
+            postal_code: "EC1A 1BB",
+            country: "GB",
+          },
+        },
+      },
+    });
+  });
+
+  it("does not send billing_details when neither name nor address is available", async () => {
+    const user = userEvent.setup();
+    renderForm();
+
+    await user.type(
+      screen.getByTestId("card-number-input"),
+      "4242424242424242",
+    );
+    await user.type(screen.getByTestId("card-expiry-input"), "12/30");
+    await user.type(screen.getByTestId("card-cvc-input"), "123");
+
+    await handle?.confirmPayment("pi_test_secret_123");
+
+    expect(confirmCardPaymentMock).toHaveBeenCalledWith("pi_test_secret_123", {
+      payment_method: { card: cardElementMock },
     });
   });
 

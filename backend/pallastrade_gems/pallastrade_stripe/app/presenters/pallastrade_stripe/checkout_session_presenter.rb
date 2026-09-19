@@ -83,6 +83,11 @@ module PallasTradeStripe
       if three_d_secure?
         data[:payment_method_options] = { card: { request_three_d_secure: THREE_D_SECURE_REQUEST } }
       end
+      # PALLAS-CUSTOM (2026-09-19, PRD-20260919-checkout-billing-details-passthrough):
+      # billing_details 与 PI 模式同源（同一 BillingDetailsPresenter）；
+      # 地址不完整 → 不落到 payment_intent_data（与 PI 模式口径一致）。
+      billing_details = PallasTradeStripe::BillingDetailsPresenter.new(order: order).call
+      data[:billing_details] = billing_details if billing_details
       data
     end
 

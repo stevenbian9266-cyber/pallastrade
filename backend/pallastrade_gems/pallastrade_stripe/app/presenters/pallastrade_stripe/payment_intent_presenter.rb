@@ -26,6 +26,11 @@ module PallasTradeStripe
       payload = payload.deep_merge(basic_payload)
       payload = payload.merge(capture_method: PallasTradeStripe::Gateway::PaymentIntents::MANUAL_CAPTURE_METHOD) if manual_capture?
 
+      # PALLAS-CUSTOM (2026-09-19, PRD-20260919-checkout-billing-details-passthrough):
+      # 账单详情独立于配送地址 —— 即使没有配送地址也要把已有账单地址送到 Stripe。
+      billing = billing_details_payload
+      payload = payload.merge(billing) if billing
+
       return payload unless ship_address
 
       # we don't validate address1, but it's required by Stripe
@@ -35,6 +40,15 @@ module PallasTradeStripe
       end
 
       payload.merge(ship_address_payload)
+    end
+
+    # PALLAS-CUSTOM (2026-09-19, PRD-20260919-checkout-billing-details-passthrough)：
+    # 与 CheckoutSessionPresenter 同源（共享 `BillingDetailsPresenter`）；不可用 → nil。
+    def billing_details_payload
+      @billing_details_payload ||= begin
+        details = PallasTradeStripe::BillingDetailsPresenter.new(order: order).call
+        details ? { billing_details: details } : nil
+      end
     end
 
     def ship_address_payload

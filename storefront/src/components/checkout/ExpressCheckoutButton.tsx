@@ -52,6 +52,10 @@ import {
   type PaymentClientConfig,
   stripeLocaleFor,
 } from "@/lib/utils/stripe";
+import {
+  billingDetailsFromWallet,
+  isCompleteBillingAddress,
+} from "@/lib/utils/stripe-billing";
 
 export interface ExpressCheckoutButtonProps {
   cart: Cart;
@@ -352,9 +356,13 @@ function ExpressCheckoutInner({
         const billingName = parseName(billing?.name || shipping?.name || "");
 
         const shipAddr = shipping?.address || billing?.address;
-        const billAddr = billing?.address || shipping?.address;
+        // PRD-20260919-checkout-billing-details-passthrough FR-004：
+        // 钱包账单地址只认**钱包自己的值**（不再用配送地址冒充）；完整性决定 billing_mode。
+        const walletBilling = billing?.address ?? null;
+        const walletBillingComplete = isCompleteBillingAddress(walletBilling);
+        const walletBillingDetails = billingDetailsFromWallet(billing);
 
-        if (!shipAddr || !billAddr) {
+        if (!shipAddr) {
           fail("invalid_shipping_address", "Missing address");
           return;
         }
@@ -402,12 +410,18 @@ function ExpressCheckoutInner({
               shipAddr,
               phone,
             ),
-            billing_address: buildPallasTradeAddress(
-              billingName,
-              billAddr,
-              phone,
-            ),
-            billing_mode: "custom",
+            // FR-004：钱包账单地址完整 → custom（采纳钱包值）；不完整 → same_as_shipping
+            // （降级：不再把半空地址发给 Carts::Update 触发 IncompleteBillingAddress）。
+            ...(walletBillingComplete && walletBilling
+              ? {
+                  billing_mode: "custom" as const,
+                  billing_address: buildPallasTradeAddress(
+                    billingName,
+                    walletBilling,
+                    phone,
+                  ),
+                }
+              : { billing_mode: "same_as_shipping" as const }),
           },
         });
 
@@ -445,7 +459,17 @@ function ExpressCheckoutInner({
         const { error: confirmError } = await stripe.confirmPayment({
           elements,
           clientSecret,
-          confirmParams: { return_url: returnUrl },
+          confirmParams: {
+            return_url: returnUrl,
+            // FR-004(a)：显式采纳钱包返回的账单详情（Elements 已收集值优先，仅补空位）。
+            ...(walletBillingDetails
+              ? {
+                  payment_method_data: {
+                    billing_details: walletBillingDetails,
+                  },
+                }
+              : {}),
+          },
           redirect: "if_required",
         });
 

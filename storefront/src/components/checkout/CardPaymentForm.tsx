@@ -24,6 +24,7 @@ import {
   type PaymentClientConfig,
   stripeLocaleFor,
 } from "@/lib/utils/stripe";
+import type { StripeBillingDetails } from "@/lib/utils/stripe-billing";
 
 export interface CardPaymentFormHandle {
   /** 校验卡字段并用 Elements 卡号字段 confirmCardPayment(pi_secret)。 */
@@ -40,6 +41,35 @@ interface CardPaymentFormProps {
    * .available_payment_methods[].client_config）；缺省时回落 `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`。
    */
   clientConfig?: PaymentClientConfig | null;
+  /**
+   * PRD-20260919-checkout-billing-details-passthrough FR-003：结算页选定的账单地址
+   * （同配送 → 配送地址；自定义 → 所填账单地址）。不传（订单页 / 收银台无账单输入）
+   * → 不随卡提交，交由服务端 PI 级 `billing_details` 兜底。
+   */
+  billingDetails?: StripeBillingDetails | null;
+}
+
+function cleaned(value: string | null | undefined): string | undefined {
+  const trimmed = (value ?? "").trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+/**
+ * 卡支付 `billing_details`：姓名（输入框，非空才发 —— 一期口径）
+ * + 页面选定的账单地址（FR-003；缺省则不传，交由服务端 PI 级兜底）。
+ */
+export function buildCardBillingDetails(
+  name: string,
+  address?: StripeBillingDetails | null,
+): { name?: string; address?: StripeBillingDetails["address"] } | null {
+  const trimmed = cleaned(name);
+  const details: {
+    name?: string;
+    address?: StripeBillingDetails["address"];
+  } = {};
+  if (trimmed) details.name = trimmed;
+  if (address?.address) details.address = address.address;
+  return Object.keys(details).length > 0 ? details : null;
 }
 
 /**
@@ -80,7 +110,7 @@ const cardElementOptions = {
 export const CardPaymentForm = forwardRef<
   CardPaymentFormHandle,
   CardPaymentFormProps
->(function CardPaymentForm({ onReady, clientConfig }, ref) {
+>(function CardPaymentForm({ onReady, clientConfig, billingDetails }, ref) {
   const locale = useLocale();
   // PRD-20260919-payments-checkout-top-express-pay-locale FR-006：
   // Stripe 渲染面（卡字段校验/错误文案）跟随站点语种。
@@ -89,7 +119,11 @@ export const CardPaymentForm = forwardRef<
       stripe={getStripePromise(clientConfig)}
       options={{ locale: stripeLocaleFor(locale) }}
     >
-      <CardPaymentFormInner onReady={onReady} ref={ref} />
+      <CardPaymentFormInner
+        onReady={onReady}
+        billingDetails={billingDetails}
+        ref={ref}
+      />
     </Elements>
   );
 });
@@ -97,7 +131,7 @@ export const CardPaymentForm = forwardRef<
 const CardPaymentFormInner = forwardRef<
   CardPaymentFormHandle,
   CardPaymentFormProps
->(function CardPaymentFormInner({ onReady }, ref) {
+>(function CardPaymentFormInner({ onReady, billingDetails }, ref) {
   const t = useTranslations("checkout");
   const stripe = useStripe();
   const elements = useElements();
@@ -139,12 +173,13 @@ const CardPaymentFormInner = forwardRef<
         }
 
         // 确认 PaymentIntent（pi_..._secret）；卡数据由 Elements 加密直传 Stripe
+        const billing = buildCardBillingDetails(cardholderName, billingDetails);
         const result = await stripe.confirmCardPayment(clientSecret, {
           payment_method: {
             card: cardElement,
-            ...(cardholderName.trim()
-              ? { billing_details: { name: cardholderName.trim() } }
-              : {}),
+            // PRD-20260919-checkout-billing-details-passthrough FR-003：
+            // 姓名（非空才发，一期口径）+ 页面选定的账单地址（不完整 → 不传）。
+            ...(billing ? { billing_details: billing } : {}),
           },
         });
 
@@ -158,7 +193,7 @@ const CardPaymentFormInner = forwardRef<
         setSubmitting(false);
       }
     },
-    [stripe, elements, cardholderName, t, validate],
+    [stripe, elements, cardholderName, billingDetails, t, validate],
   );
 
   useImperativeHandle(ref, () => ({ confirmPayment, validate }), [

@@ -35,6 +35,7 @@ import {
   type PaymentClientConfig,
   stripeLocaleFor,
 } from "@/lib/utils/stripe";
+import { billingDetailsFromWallet } from "@/lib/utils/stripe-billing";
 
 /**
  * PALLAS-CUSTOM: D7（PRD-20260918-payments-d7-payment-section-express）—— FR-004 / AC-007
@@ -107,16 +108,25 @@ function WalletInner({
   );
 
   const handleConfirm = useCallback(
-    async (_event: StripeExpressCheckoutElementConfirmEvent) => {
+    async (event: StripeExpressCheckoutElementConfirmEvent) => {
       if (!stripe || !elements || processingRef.current || !clientSecret)
         return;
       setProcessing(true);
       try {
+        // PRD-20260919-checkout-billing-details-passthrough FR-004(c)：
+        // 订单页钱包此前**完全忽略** `billingDetails` → 这里显式采纳为支付方式级
+        // 账单详情（Elements 已收集值优先）；订单账单快照不在本页改写。
+        const billingDetails = billingDetailsFromWallet(event.billingDetails);
         const result = await stripe.confirmPayment({
           elements,
           clientSecret,
           confirmParams: {
             return_url: `${basePath}/payment-result/${orderId}`,
+            ...(billingDetails
+              ? {
+                  payment_method_data: { billing_details: billingDetails },
+                }
+              : {}),
           },
         });
 

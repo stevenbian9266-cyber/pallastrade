@@ -172,6 +172,78 @@ describe("WalletPaymentButtons (D7)", () => {
     );
   });
 
+  // PRD-20260919-checkout-billing-details-passthrough AC-005：
+  // 订单页钱包此前**完全忽略** `event.billingDetails` —— 现在必须显式采纳为
+  // 支付方式级 billing_details（订单快照不在本页改写）。
+  it("adopts the wallet billing details on the payment method (FR-004c)", async () => {
+    const user = userEvent.setup();
+    renderWallet();
+
+    await user.click(screen.getByTestId("wallet-pay-button"));
+    await screen.findByTestId("express-checkout-element");
+
+    await act(async () => {
+      await (
+        capturedElementProps.onConfirm as (event: unknown) => Promise<void>
+      )({
+        billingDetails: {
+          name: "Ada Lovelace",
+          email: "ada@example.com",
+          phone: "+15550001111",
+          address: {
+            line1: "1 Analytical Way",
+            city: "London",
+            postal_code: "E1 6AN",
+            country: "GB",
+            state: "London",
+          },
+        },
+      });
+    });
+
+    const confirmArgs = confirmPaymentMock.mock.calls[0][0] as {
+      confirmParams: {
+        payment_method_data?: { billing_details?: Record<string, unknown> };
+      };
+    };
+    expect(
+      confirmArgs.confirmParams.payment_method_data?.billing_details,
+    ).toMatchObject({
+      name: "Ada Lovelace",
+      email: "ada@example.com",
+      address: {
+        line1: "1 Analytical Way",
+        city: "London",
+        postal_code: "E1 6AN",
+        country: "GB",
+      },
+    });
+  });
+
+  // AC-005 反向：钱包未返回账单详情/不完整 → 不传该参数（不伪造）
+  it("omits payment_method_data when the wallet returns no usable billing details (FR-004c)", async () => {
+    const user = userEvent.setup();
+    renderWallet();
+
+    await user.click(screen.getByTestId("wallet-pay-button"));
+    await screen.findByTestId("express-checkout-element");
+
+    await act(async () => {
+      await (
+        capturedElementProps.onConfirm as (event: unknown) => Promise<void>
+      )({
+        billingDetails: {
+          address: { line1: "1 Analytical Way", city: "London" },
+        },
+      });
+    });
+
+    const confirmArgs = confirmPaymentMock.mock.calls[0][0] as {
+      confirmParams: { payment_method_data?: unknown };
+    };
+    expect(confirmArgs.confirmParams.payment_method_data).toBeUndefined();
+  });
+
   // PRD-20260918-payments-d7-payment-section-express AC-008：入口不可用（服务端拒绝）→ 通知父级刷新列表 + 提示重选，不挂载钱包按钮
   it("notifies the parent and skips the wallet element when the option kind is rejected (D7 AC-008)", async () => {
     const user = userEvent.setup();

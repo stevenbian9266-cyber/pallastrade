@@ -73,6 +73,7 @@ import {
 } from "@/lib/utils/address";
 import { safeParseFloat } from "@/lib/utils/format";
 import { extractBasePath } from "@/lib/utils/path";
+import { billingDetailsFromFormData } from "@/lib/utils/stripe-billing";
 
 // D7（PRD-20260918-payments-d7-payment-section-express）：钱包按钮（cart 绑定）按需加载
 // —— 仅在选中 `express` 入口时渲染（与 CartDrawer 同一引入方式，不新增第二条流程）。
@@ -872,6 +873,15 @@ export function UnifiedCheckout({
     shippingMethodId.length > 0 &&
     paymentMethodId.length > 0;
 
+  // PRD-20260919-checkout-billing-details-passthrough FR-003：卡支付随卡提交的
+  // 账单地址 —— 与页面选择**同源**（同配送 → 配送地址；自定义 → 所填账单地址），
+  // 不完整 → null（不传，交由服务端 PI 级 billing_details 兜底）。
+  const cardBillingDetails = useMemo(
+    () =>
+      billingDetailsFromFormData(useShippingForBilling ? address : billAddress),
+    [useShippingForBilling, address, billAddress],
+  );
+
   const handleCardReady = useCallback((handle: CardPaymentFormHandle) => {
     cardFormRef.current = handle;
   }, []);
@@ -1459,6 +1469,7 @@ export function UnifiedCheckout({
                   <CardPaymentForm
                     onReady={handleCardReady}
                     clientConfig={selectedMethod?.client_config ?? null}
+                    billingDetails={cardBillingDetails}
                   />
                 </div>
               ) : selectedIsWallet ? null : isSessionBased ? (

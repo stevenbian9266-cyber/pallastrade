@@ -100,6 +100,10 @@ For most stores, you don't interact with PaymentSession directly — the gateway
 
 For an existing Order, start sessions through `PallasTrade::PaymentSessions::Start` (the Store Order payment-session controller already delegates to it). It validates the authoritative amount and store payment method, reuses a matching `pending`/`processing` session, and creates a new attempt only after the previous attempt is terminal. Provider network I/O runs **outside** the Order lock transaction; a second lock reconciles concurrent provider responses to one active local winner. Stripe receives a stable operation-level idempotency key for both Checkout Session and PaymentIntent creation. Do not replace this with a long database transaction around provider I/O or a cache-only request lock.
 
+### Stripe billing_details（PRD-20260919-checkout-billing-details-passthrough，2026-09-19）
+
+两条会话模式的载荷现在都带账单详情：`PallasTradeStripe::BillingDetailsPresenter`（**唯一构造点**，来源 `order.bill_address`）→ PI 模式顶层 `billing_details`、Checkout Session 模式的 `payment_intent_data.billing_details`（同源，禁止两处复制实现）。`order.bill_address` 缺失或 `address1` 为空 → **整体不发该键**（不发空对象、不发半空地址，避免 AVS 误判）。前台只做「补空位」：卡支付把页面选定的账单地址放进 `confirmCardPayment` 的 `payment_method.billing_details`；钱包把 `event.billingDetails` 放进 `confirmPayment` 的 `confirmParams.payment_method_data.billing_details`（**Elements/钱包已收集值优先**，Stripe 语义：合并、Element 覆盖）。钱包地址不完整（缺 `line1`/`city`/`postal_code`/`country`）→ 前台降级 `billing_mode: "same_as_shipping"`，**不再**把半空地址发给 `Carts::Update`（否则 `IncompleteBillingAddress` 会让顾客无法支付）。
+
 ### Stripe PaymentIntent mode (5.6, PRD-20260831-payments)
 
 `pallastrade_stripe` supports two session modes behind `external_data`:

@@ -91,6 +91,32 @@ RSpec.describe PallasTradeStripe::CheckoutSessionPresenter, type: :model do
       expect(shipping[:address][:city]).to eq("New York")
     end
 
+    # PRD-20260919-checkout-billing-details-passthrough AC-002：
+    # Checkout Session 模式与 PI 模式**同源**（同一 BillingDetailsPresenter）。
+    it "adds billing_details to payment_intent_data from the order's billing address" do
+      order.bill_address = build(
+        :address,
+        firstname: "Jane",
+        lastname: "Doe",
+        address1: "1 Billing St",
+        city: "Billingville",
+        zipcode: "EC1A 1BB"
+      )
+
+      billing = presenter.call[:payment_intent_data][:billing_details]
+
+      expect(billing[:name]).to eq("Jane Doe")
+      expect(billing[:address][:line1]).to eq("1 Billing St")
+      expect(billing[:address][:postal_code]).to eq("EC1A 1BB")
+      expect(billing[:address][:country]).to be_present
+    end
+
+    it "omits billing_details when the order has no billing address" do
+      order.bill_address = nil
+
+      expect(presenter.call[:payment_intent_data]).not_to have_key(:billing_details)
+    end
+
     it "omits return_url when absent" do
       payload = described_class.new(amount_in_cents: 100, order: order).call
       expect(payload).not_to have_key(:return_url)

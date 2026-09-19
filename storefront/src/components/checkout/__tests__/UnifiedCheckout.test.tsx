@@ -66,17 +66,34 @@ const validateMock = vi.fn().mockReturnValue(true);
 vi.mock("@/components/checkout/CardPaymentForm", () => ({
   CardPaymentForm: ({
     onReady,
+    billingDetails,
   }: {
     onReady: (h: {
       confirmPayment: (secret: string) => Promise<{ error?: string }>;
       validate: () => boolean;
     }) => void;
+    /** PRD-20260919-checkout-billing-details-passthrough AC-003：页面投影的账单地址 */
+    billingDetails?: { address?: Record<string, string> } | null;
   }) => {
     onReady({
       confirmPayment: (secret: string) => confirmMock(secret),
       validate: () => validateMock(),
     });
-    return <div data-testid="card-payment-form" />;
+    return (
+      <>
+        <div data-testid="card-payment-form" />
+        <div data-testid="card-billing-probe">
+          {billingDetails?.address
+            ? [
+                billingDetails.address.line1,
+                billingDetails.address.city,
+                billingDetails.address.postal_code,
+                billingDetails.address.country,
+              ].join("|")
+            : "none"}
+        </div>
+      </>
+    );
   },
 }));
 
@@ -911,6 +928,34 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     expect(screen.queryByTestId("shipping-options-changed")).toBeNull();
     expect(screen.getByText("shippingMethod")).toBeTruthy();
     expect(screen.getByText("Standard")).toBeTruthy();
+  });
+
+  // PRD-20260919-checkout-billing-details-passthrough AC-003：
+  // 页面把「同配送 / 自定义」的账单地址投影给卡表单（与确认区回显同源），
+  // 卡支付随卡把该地址送到 Stripe PaymentMethod。
+  it("projects the selected billing address into the card form (FR-003)", async () => {
+    const user = userEvent.setup();
+    renderCheckout();
+
+    // ① 默认「同配送」→ 投影 = 配送地址
+    await fillRequiredFields(user);
+    expect(screen.getByTestId("card-billing-probe").textContent).toBe(
+      "12 Analytical Way|London|SW1A 1AA|GB",
+    );
+
+    // ② 取消勾选并填写自定义账单地址 → 投影切换为该地址
+    await user.click(screen.getByTestId("billing-use-shipping"));
+    await user.type(screen.getByLabelText("bill-first_name"), "Grace");
+    await user.type(screen.getByLabelText("bill-last_name"), "Hopper");
+    await user.type(screen.getByLabelText("bill-address1"), "1 Billing St");
+    await user.type(screen.getByLabelText("bill-city"), "Billingville");
+    await user.type(screen.getByLabelText("bill-postal_code"), "EC1A 1BB");
+    await user.type(screen.getByLabelText("bill-country_iso"), "GB");
+    await user.type(screen.getByLabelText("bill-state_abbr"), "LDN");
+
+    expect(screen.getByTestId("card-billing-probe").textContent).toBe(
+      "1 Billing St|Billingville|EC1A 1BB|GB",
+    );
   });
 
   it("validates email on blur (PRD 3.2)", async () => {
