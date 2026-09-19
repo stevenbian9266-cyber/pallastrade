@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | approved（用户「实施」确认） |
+| 状态 | done |
 | 创建日期 | 2026-09-19 |
 | 来源 | 用户原话：「优化：1、checkout页面实现快捷支付常显 2、点击confirm pay按钮，会报错：Received unknown parameter: billing_details，多次点击页面会跳转，显示空购物车页面？，order列表中有订单，但是点击订单详情提示：Order not found … 订单编号：#R729701382」→ 要求先定位根因再实施 |
 | 分类 | checkout |
@@ -114,6 +114,19 @@
 - **AC-006 ← FR-005**：`TopExpressPay` 在 `unavailable(device)` / `unconfigured` 时仍渲染区域与降级控件；无入口时不渲染。
 - **AC-009 ← FR-006**：转换后的 `cart_` 页重渲染 → 落到 `checkout/or_...`（订单支付页）；无 cookie 时才回 `/cart`。
 - **AC-007（真机回归）**：dev 下单 → PI 创建成功 + 会话建立 + 支付完成（订单 `payment_state=paid`）。
+  - **ed 实测（2026-09-19，d10ea0f6 上线后）**：
+    ```
+    store=shop method=Stripe (4)
+    --- start session: order R729701382 (or_X35bb5HTmV) ---  # 事故订单（幂等键曾被 400 占用）
+      SESSION_OK id=300 status=pending external_id=cs_test_a1Qu30fuLYOSYHtnJkARxui36S2ZQeCrF3r7wJnpEaYdzHcwxGlTOmnhpY
+    --- start session: order R885808370 (or_5emQZnCRf8) ---
+      SESSION_OK id=301 status=pending external_id=cs_test_a1ug45sUzldt3GyOy0PD4BDzoLyh0FPVIsCqc39QuB6C7zcxszAIIoqcc0
+    parameter_unknown in log: 0
+    ```
+    结论：① 两处非法参数均已消除（Checkout Session 与 PaymentIntent 两条路径）；
+    ② 曾报 `parameter_unknown` 的幂等键**能正常复用**（Stripe 不缓存 400 验证失败的幂等记录）——无需等待 24h 或换键；
+    ③ 卡主确认（`confirmPayment`）仍需真实设备交互，已由 storefront 组件测试卡死失败/成功两分支；
+    ④ 真实扣款验证不在本 PRD 范围（dev 使用 Stripe 测试凭据，`cs_test_*`）。
 - **AC-008（回归）**：`harness verify billing-details-rspec` + `storefront-test` 全绿；`generated:check` 无漂移。
 
 ## 6. 跨层搜索记录（6 层，gate 强制）
@@ -172,3 +185,4 @@
 | 2026-09-19 | 0.1 | 初稿 + 根因定位（dev 日志/订单实况证据）；用户「实施」确认 | AI |
 | 2026-09-19 | 0.2 | 实施期补充 FR-006/AC-009（转换购物车恢复路由 —— 实施中定位到「空购物车页」的服务器端根因）；AC-005 二层测试口径；知识同步勾选 | AI |
 | 2026-09-19 | 0.3 | **dev 真机验证发现第二个非法参数**：Checkout Session 的 `payment_intent_data[billing_details]` 同样 400 ⇒ FR-001/AC-002 口径修正（服务端无任何合法载体，只留客户端 PM 级 + 回读）；新增 CS 载荷白名单断言与 spec；知识文档（payments/storefront Skill、AGENTS §6）同步修正 | AI |
+| 2026-09-19 | 1.0 | **收口（done）**：dev 真机复测通过（订单 293 与新订单均 `SESSION_OK`，`cs_test_*`；日志零 `parameter_unknown`；幂等键可复用）—— AC-001/002/003/004/005/006/007/008/009 全部完成；CI 全绿（ae0835f5 / d10ea0f6） | AI |
