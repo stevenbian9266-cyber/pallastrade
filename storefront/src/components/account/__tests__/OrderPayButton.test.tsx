@@ -1,16 +1,7 @@
 import type { Order } from "@pallastrade/sdk";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { OrderPayButton } from "@/components/account/OrderPayButton";
-
-const modalProps = vi.fn();
-vi.mock("@/components/checkout/PaymentCheckoutModal", () => ({
-  PaymentCheckoutModal: (props: Record<string, unknown>) => {
-    modalProps(props);
-    return props.open ? <div data-testid="checkout-modal" /> : null;
-  },
-}));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -29,47 +20,53 @@ function order(overrides: Partial<Order> = {}): Order {
   } as Order;
 }
 
-describe("OrderPayButton (PRD-20260830-checkout AC-007)", () => {
-  beforeEach(() => {
-    modalProps.mockReset();
-  });
-
-  it("shows Pay Now for a payable order and opens the checkout modal", async () => {
-    const user = userEvent.setup();
+// PRD-20260919-checkout-结算页待支付订单再次支付重验-失效行剔除-优惠复核-订单金额变化提示-收银台弹窗退役 AC-010
+// 补付入口**跳订单支付页**（收银台弹窗已退役）；可支付判定改金额权威。
+describe("OrderPayButton (PRD-20260919-checkout AC-010)", () => {
+  it("links to the order payment page for a payable order", () => {
     render(<OrderPayButton order={order()} basePath="/us/en" />);
 
-    const button = screen.getByRole("button", { name: "payNow" });
-    expect(button).toBeInTheDocument();
-
-    await user.click(button);
-    expect(screen.getByTestId("checkout-modal")).toBeInTheDocument();
-    const props = modalProps.mock.calls.at(-1)?.[0];
-    expect(props.orders[0].id).toBe("order_1");
+    const link = screen.getByTestId("order-pay-link");
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href", "/us/en/checkout/order_1");
   });
 
-  it("does not render for paid / child / zero-due orders", () => {
+  it("renders even when payment_status is null (amount is the authority)", () => {
+    render(
+      <OrderPayButton
+        order={order({ payment_status: null as unknown as string })}
+        basePath="/us/en"
+      />,
+    );
+
+    expect(screen.getByTestId("order-pay-link")).toBeInTheDocument();
+  });
+
+  it("does not render for paid / child / zero-due / completed orders", () => {
     const { rerender } = render(
       <OrderPayButton
         order={order({ payment_status: "paid" })}
         basePath="/us/en"
       />,
     );
-    expect(
-      screen.queryByRole("button", { name: "payNow" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("order-pay-link")).not.toBeInTheDocument();
 
     rerender(
       <OrderPayButton order={order({ is_child: true })} basePath="/us/en" />,
     );
-    expect(
-      screen.queryByRole("button", { name: "payNow" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("order-pay-link")).not.toBeInTheDocument();
 
     rerender(
       <OrderPayButton order={order({ amount_due: "0" })} basePath="/us/en" />,
     );
-    expect(
-      screen.queryByRole("button", { name: "payNow" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("order-pay-link")).not.toBeInTheDocument();
+
+    rerender(
+      <OrderPayButton
+        order={order({ completed_at: "2026-09-19T00:00:00Z" })}
+        basePath="/us/en"
+      />,
+    );
+    expect(screen.queryByTestId("order-pay-link")).not.toBeInTheDocument();
   });
 });

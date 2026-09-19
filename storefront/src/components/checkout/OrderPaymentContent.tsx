@@ -1,6 +1,12 @@
 "use client";
 
-import type { CheckoutView, Country, Order, State } from "@pallastrade/sdk";
+import type {
+  CheckoutView,
+  Country,
+  Order,
+  State,
+  StoreOrdersPaymentPreflight,
+} from "@pallastrade/sdk";
 import { X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -54,12 +60,41 @@ import { safeParseFloat } from "@/lib/utils/format";
 import { extractBasePath } from "@/lib/utils/path";
 import { extractSessionClientSecret } from "@/lib/utils/stripe";
 
+/** PRD-20260919-checkout：失效原因（服务端枚举）→ 文案键。 */
+const INVALID_REASON_KEYS: Record<string, string> = {
+  archived: "invalidReasonArchived",
+  deleted: "invalidReasonDeleted",
+  discontinued: "invalidReasonDiscontinued",
+  out_of_stock: "invalidReasonOutOfStock",
+  missing_variant: "invalidReasonUnavailable",
+};
+
+function invalidReasonKey(reason: string): string {
+  return INVALID_REASON_KEYS[reason] ?? "invalidReasonUnavailable";
+}
+
+/** PRD-20260919-checkout：重验硬阻断 code → 文案键。 */
+const BLOCKER_REASON_KEYS: Record<string, string> = {
+  checkout_not_ready: "blockerCheckoutNotReady",
+  delivery_unavailable: "blockerDeliveryUnavailable",
+  no_payable_items: "blockerNoPayableItems",
+  no_payable_amount: "blockerNoPayableAmount",
+  order_not_payable: "blockerOrderNotPayable",
+  refresh_failed: "blockerRefreshFailed",
+};
+
+function blockerReasonKey(code: string): string {
+  return BLOCKER_REASON_KEYS[code] ?? "blockerUnknown";
+}
+
 interface OrderPaymentContentProps {
   order: Order;
   /** CHK-P1-4: server CheckoutView projection (optional — fall back to Order snapshot). */
   view?: CheckoutView | null;
   /** CHK-P1-4B: countries for the inline address editor (optional). */
   countries?: Country[];
+  /** PRD-20260919-checkout：补付重验（dry-run 预检）——失效商品 / 金额变化 / 硬阻断。 */
+  preflight?: StoreOrdersPaymentPreflight | null;
 }
 
 /**
@@ -179,6 +214,7 @@ export function OrderPaymentContent({
   order,
   view,
   countries,
+  preflight,
 }: OrderPaymentContentProps) {
   const t = useTranslations("checkout");
   const router = useRouter();
@@ -313,7 +349,7 @@ export function OrderPaymentContent({
   }, [order.id]);
 
   // CHK-P1-4: 只读投影优先，Order 快照回退（view 缺失防端点抖动）。
-  const read: CheckoutReadModel = useMemo(
+  const baseRead: CheckoutReadModel = useMemo(
     () =>
       effectiveView
         ? {
@@ -354,9 +390,46 @@ export function OrderPaymentContent({
     [effectiveView, order],
   );
 
+  // PRD-20260919-checkout FR-011：页面直接回显**重验后**金额
+  //（重验会剔除失效商品 / 重算运费税费与优惠）——不强加二次确认，但必须提示变化。
+  const read: CheckoutReadModel = useMemo(
+    () =>
+      preflight?.total_after != null &&
+      preflight.total_before !== preflight.total_after
+        ? {
+            ...baseRead,
+            display_total:
+              preflight.display_total_after ?? baseRead.display_total,
+          }
+        : baseRead,
+    [baseRead, preflight],
+  );
+
   // Server Readiness: view 缺失时不做前端猜测（回退放行——后端 Start Gate 兜底）。
   const checkoutReady = effectiveView?.ready ?? true;
   const missingRequirements = effectiveView?.missing_requirements ?? [];
+
+  // PRD-20260919-checkout FR-011：补付重验提示 —— 页面**直接回显**重验后金额
+  // （不做二次确认），但必须说明「变了什么、为什么」（失效商品/价格/优惠/阻断）。
+  const invalidItems = preflight?.invalid_items ?? [];
+  const revalidationBlockers = preflight?.blockers ?? [];
+  const hasRevalidationBlockers = revalidationBlockers.length > 0;
+  const amountChanged =
+    !!preflight &&
+    preflight.amount_due_before != null &&
+    preflight.amount_due_after != null &&
+    preflight.amount_due_before !== preflight.amount_due_after;
+  const removedPromotions = (preflight?.changes ?? []).filter(
+    (change) => change.kind === "promotion_removed",
+  );
+  const removedPromotionNames = removedPromotions
+    .map((change) => change.name ?? change.code ?? "")
+    .filter((name) => name.length > 0);
+
+  // 页面**当前展示**的应付金额（重验后金额优先；换配送方式等页内编辑后以服务端最新 view 为准）——
+  // 它随支付请求下发，服务端复算不一致则 409（不静默换金额，也不会因页面陈旧而反复冲突）。
+  const displayedAmountDue =
+    effectiveView?.amount_due ?? preflight?.amount_due_after ?? order.amount_due;
 
   // CHK-P1-4B: 物流 rate 列表（来自 CheckoutView fulfillments）——无 shipments/digital 为空。
   const deliveryRates = useMemo(
@@ -457,7 +530,12 @@ export function OrderPaymentContent({
           "payment_intent",
           // D7：入口（method kind）随请求下发 —— 服务端 `PaymentSessions::Start`
           // 用同一入口集合同源复算可用性（不可用 → 422，不建会话）。
-          { optionKind: selectedEntry?.method_key },
+          // PRD-20260919-checkout：同时下发页面展示的应付金额（重验后）——
+          // 服务端复算不一致 → 409 quote_changed（绝不静默按不同金额扣款）。
+          {
+            optionKind: selectedEntry?.method_key,
+            expectedAmountDue: displayedAmountDue ?? undefined,
+          },
         );
         if (!result.success) {
           await handleSessionCreateError(result);
@@ -505,7 +583,10 @@ export function OrderPaymentContent({
           selectedMethod.id,
           undefined,
           undefined,
-          { optionKind: selectedEntry?.method_key },
+          {
+            optionKind: selectedEntry?.method_key,
+            expectedAmountDue: displayedAmountDue ?? undefined,
+          },
         );
         if (!result.success) {
           await handleSessionCreateError(result);
@@ -618,6 +699,87 @@ export function OrderPaymentContent({
           </button>
         </div>
       )}
+
+      {/* PRD-20260919-checkout AC-008/AC-009：补付重验提示 ——
+          金额变化（旧→新）+ 失效商品 + 优惠调整 + 硬阻断原因。 */}
+      {preflight &&
+        (amountChanged ||
+          invalidItems.length > 0 ||
+          removedPromotions.length > 0 ||
+          hasRevalidationBlockers) && (
+          <div
+            role="status"
+            data-testid="order-amount-updated-notice"
+            className={`mb-6 rounded-xl border px-4 py-3 ${
+              hasRevalidationBlockers
+                ? "border-red-200 bg-red-50"
+                : "border-amber-200 bg-amber-50"
+            }`}
+          >
+            {amountChanged && (
+              <p
+                data-testid="order-amount-updated-title"
+                className={
+                  hasRevalidationBlockers
+                    ? "text-sm font-medium text-red-800"
+                    : "text-sm font-medium text-amber-800"
+                }
+              >
+                {t("orderAmountUpdated", {
+                  before: preflight?.display_amount_due_before ?? "",
+                  after: preflight?.display_amount_due_after ?? "",
+                })}
+              </p>
+            )}
+
+            {invalidItems.length > 0 && (
+              <div className="mt-2" data-testid="invalid-items-notice">
+                <p className="text-sm font-medium text-amber-900">
+                  {t("invalidItemsTitle")}
+                </p>
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-amber-800">
+                  {invalidItems.map((item) => (
+                    <li key={item.line_item_id}>
+                      {t("invalidItemRow", {
+                        name: item.name,
+                        reason: t(invalidReasonKey(item.reason)),
+                      })}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-1 text-sm text-amber-800">
+                  {t("payableItemsHint")}
+                </p>
+              </div>
+            )}
+
+            {removedPromotions.length > 0 && (
+              <p
+                data-testid="promotion-adjusted-notice"
+                className="mt-2 text-sm text-amber-800"
+              >
+                {t("promotionAdjusted", {
+                  name: removedPromotionNames.join(", "),
+                })}
+              </p>
+            )}
+
+            {hasRevalidationBlockers && (
+              <div className="mt-2" data-testid="revalidation-blocked-notice">
+                <p className="text-sm font-medium text-red-800">
+                  {t("revalidateBlockedTitle")}
+                </p>
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-red-700">
+                  {revalidationBlockers.map((blocker) => (
+                    <li key={blocker.code}>
+                      {t(blockerReasonKey(blocker.code))}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
       <div className="space-y-8">
         {/* 收货信息——CHK-P1-4: 以 CheckoutView 投影为准（回退 order 快照）
@@ -856,6 +1018,7 @@ export function OrderPaymentContent({
                 disabled={
                   !selectedMethod ||
                   !checkoutReady ||
+                  hasRevalidationBlockers ||
                   processing ||
                   read.capabilities?.can_pay === false
                 }
@@ -908,6 +1071,7 @@ export function OrderPaymentContent({
             disabled={
               !selectedMethod ||
               !checkoutReady ||
+              hasRevalidationBlockers ||
               processing ||
               walletProcessing ||
               read.capabilities?.can_pay === false

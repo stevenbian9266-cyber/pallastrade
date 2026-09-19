@@ -92,6 +92,8 @@ PallasTrade::Core::Engine.add_routes do
           end
           # TXN-P2-2（2026-09-04）：启动 durable CommerceTransaction（单订单）。
           resources :transactions, only: [:create], controller: 'orders/transactions'
+          # PRD-20260919-checkout（2026-09-19）：补付重验只读预检（dry-run，零副作用）。
+          resource :payment_preflight, only: [:show], controller: 'orders/payment_preflight'
         end
 
         # TXN-P2-2（2026-09-04）：交易 Resume 读模型（owner 作用域）。

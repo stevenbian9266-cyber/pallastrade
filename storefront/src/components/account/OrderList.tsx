@@ -2,6 +2,7 @@ import type { Order } from "@pallastrade/sdk";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
+import { isOrderPayable } from "@/lib/account/order-payable";
 import {
   formatDate,
   getFulfillmentStatusColor,
@@ -74,7 +75,12 @@ export async function OrderList({ orders, basePath, locale }: OrderListProps) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="text-sm text-gray-500">
-                    {formatDate(order.completed_at, "-", locale)}
+                    {/* PRD-20260919-checkout FR-013：未支付订单 completed_at 为空 → 回落到提交时间 */}
+                    {formatDate(
+                      order.completed_at ?? order.submitted_at,
+                      "-",
+                      locale,
+                    )}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -97,11 +103,24 @@ export async function OrderList({ orders, basePath, locale }: OrderListProps) {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <Button variant="link" size="sm" asChild>
-                    <Link href={`${basePath}/account/orders/${order.id}`}>
-                      {t("view")}
-                    </Link>
-                  </Button>
+                  <div className="flex items-center justify-end gap-2">
+                    {/* PRD-20260919-checkout FR-012：待支付订单直接跳订单支付页补付 */}
+                    {isOrderPayable(order) && (
+                      <Button size="sm" asChild>
+                        <Link
+                          href={`${basePath}/checkout/${order.id}`}
+                          data-testid="order-row-pay"
+                        >
+                          {t("payNow")}
+                        </Link>
+                      </Button>
+                    )}
+                    <Button variant="link" size="sm" asChild>
+                      <Link href={`${basePath}/account/orders/${order.id}`}>
+                        {t("view")}
+                      </Link>
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}

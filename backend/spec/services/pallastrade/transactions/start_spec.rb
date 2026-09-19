@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 # PRD-20260904-api-txn-p2-2 AC-201/202/203/204/205
+# PRD-20260919-checkout-结算页待支付订单再次支付重验-失效行剔除-优惠复核-订单金额变化提示-收银台弹窗退役 AC-002 / AC-012
+# （AC-002：重验后金额与前台显示不一致 → 409 quote_changed；AC-012：直接调用 Transactions::Start 同样被重验拦住）
 require 'rails_helper'
 
 RSpec.describe PallasTrade::Transactions::Start, type: :service do
@@ -90,7 +92,8 @@ RSpec.describe PallasTrade::Transactions::Start, type: :service do
 
   describe 'quote consent (AC-204)' do
     let(:address) { create(:address) }
-    # quote-active 标准订单：readiness 齐备（email/address/shipments selected rate）+ 过期
+    # 报价窗口内的标准订单：readiness 齐备（email/address/shipments selected rate）；
+    # PRD-20260919-checkout：窗口内 = 锁价（不按目录价重定价），因此金额不会被重验改写。
     let(:quote_order) do
       o = create(
         :order_with_line_items,
@@ -106,14 +109,14 @@ RSpec.describe PallasTrade::Transactions::Start, type: :service do
       end
       o.update_columns(
         state: 'pending', status: 'placed', submitted_at: Time.current,
-        checkout_expires_at: 5.minutes.ago, checkout_version: 1, price_version: 'pv-1',
+        checkout_expires_at: 5.minutes.from_now, checkout_version: 1, price_version: 'pv-1',
         payment_state: 'balance_due'
       )
       o.line_items.reload
       o
     end
 
-    it 'transparent refresh continues when commercial facts are unchanged' do
+    it 'continues when the quote is still within its window (no repricing)' do
       result = described_class.call(order: quote_order, payment_method: payment_method)
       expect(result).to be_success
       expect(result.value[:transaction].amount.to_f).to be > 0
@@ -144,7 +147,9 @@ RSpec.describe PallasTrade::Transactions::Start, type: :service do
       result = described_class.call(order: o, payment_method: payment_method)
       expect(result).to be_failure
       expect(result.error.value[:code]).to eq('quote_changed')
-      expect(result.error.value[:latest][:amount_due].to_f).to be >= 20
+      # PRD-20260919-checkout：报价窗口过期 → 按**当前目录价**重定价（旧冻结价 20 被目录价 19.99 取代），
+      # 金额仍高于人为压低的 stale total(10)，商业事实变化因此必须显式确认。
+      expect(result.error.value[:latest][:amount_due].to_f).to be >= 19.99
       expect(o.reload.payment_sessions.count).to eq(0)
       expect(PallasTrade::CommerceTransaction.where(store: store).count).to eq(0)
     end

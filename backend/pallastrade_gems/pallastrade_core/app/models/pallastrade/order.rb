@@ -679,6 +679,13 @@ module PallasTrade
 
     # 聚合发货状态：own shipments + children 状态，套用 OrderUpdater#update_shipment_state 规则
     def combined_shipment_state
+      # PALLAS-CUSTOM: PRD-20260919-checkout FR-013 —— 读侧兜底：历史待支付订单
+      # （提交时未落投影）shipment_state 为空 → 按 OrderUpdater 同规则只读派生。
+      if shipment_state.blank? && !parent_order?
+        derived = derived_pending_shipment_state
+        return derived if derived.present?
+      end
+
       return shipment_state unless parent_order?
 
       states = shipments.states.dup
@@ -701,6 +708,13 @@ module PallasTrade
 
     # 聚合支付状态：基于 combined_outstanding_balance，套用 OrderUpdater#update_payment_state 规则
     def combined_payment_state
+      # PALLAS-CUSTOM: PRD-20260919-checkout FR-013 —— 读侧兜底：历史待支付订单
+      # （提交时未落投影）payment_state 为空 → 按 OrderUpdater 同规则只读派生。
+      if payment_state.blank? && !parent_order?
+        derived = derived_pending_payment_state
+        return derived if derived.present?
+      end
+
       return payment_state unless parent_order?
 
       if canceled? && combined_payment_total == 0
@@ -720,6 +734,34 @@ module PallasTrade
       return split.captured_amount - split.refunded_amount if split
 
       payment_total
+    end
+
+    # PALLAS-CUSTOM: PRD-20260919-checkout FR-013 —— 状态投影的**只读**派生。
+    # 与 `OrderUpdater#update_payment_state` / `#update_shipment_state` 同规则，
+    # 仅用于「提交时未落投影」的历史订单展示（不写库、不推进状态）。
+    def derived_pending_payment_state
+      return nil if completed?
+      return 'void' if canceled? && payment_total.to_f.zero?
+      return 'failed' if payments.present? && payments.valid.empty?
+      return 'balance_due' if outstanding_balance > 0
+      return 'credit_owed' if outstanding_balance < 0
+
+      'paid'
+    end
+
+    def derived_pending_shipment_state
+      return nil if completed? || shipments.empty?
+      return 'backorder' if backordered?
+
+      states = shipments.map(&:state).uniq
+      if states.size > 1
+        return 'partial' if states.include?('shipped')
+        return 'pending' if states.include?('pending')
+
+        'ready'
+      else
+        states.first
+      end
     end
 
     # Associates the specified user with the order.

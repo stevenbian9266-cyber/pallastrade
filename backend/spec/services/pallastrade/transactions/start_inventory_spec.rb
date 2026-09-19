@@ -3,6 +3,8 @@
 require 'rails_helper'
 
 # INV-P3-2 (PRD-20260905-shipping-...) 真实链路集成：
+# PRD-20260919-checkout-结算页待支付订单再次支付重验-失效行剔除-优惠复核-订单金额变化提示-收银台弹窗退役 AC-012
+# （绕过前台直接调用服务：仍走同一重验/库存门，会话不建、资金无副作用）
 # Transactions::Start → Snapshot V2（inventory demand evidence）→ ReserveInventory
 # → PaymentSessions::Start（AC-3001/3002/3007/3008）。
 RSpec.describe PallasTrade::Transactions::Start, type: :service do
@@ -21,7 +23,9 @@ RSpec.describe PallasTrade::Transactions::Start, type: :service do
     end
     o.update_columns(
       state: 'pending', status: 'placed', submitted_at: Time.current,
-      payment_state: 'balance_due', checkout_expires_at: nil
+      payment_state: 'balance_due',
+      # PRD-20260919-checkout：窗口内 = 锁价；否则重验会按目录价重定价（与冻结行价 10 不同）。
+      checkout_expires_at: 5.minutes.from_now
     )
     o.line_items.reload
     o

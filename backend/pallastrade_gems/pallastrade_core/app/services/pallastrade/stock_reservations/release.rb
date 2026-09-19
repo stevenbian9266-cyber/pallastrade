@@ -15,9 +15,11 @@ module PallasTrade
 
       # @param order [PallasTrade::Order]
       # @param transaction [PallasTrade::CommerceTransaction, nil] 按 transaction 归属释放（可选）
+      # @param line_item [PallasTrade::LineItem, nil] 只释放该订单行的预留
+      #   （PALLAS-CUSTOM: PRD-20260919-checkout 补付重验剔除失效行）
       # @param reason [String, nil] release_reason（审计）
       # @param allow_paid [Boolean] 明确授权下允许对 PAID 订单释放（默认 false）
-      def call(order: nil, transaction: nil, reason: nil, allow_paid: false)
+      def call(order: nil, transaction: nil, line_item: nil, reason: nil, allow_paid: false)
         paid = affected_orders(order: order, transaction: transaction).any? { |o| paid_order?(o) }
         if paid && !allow_paid
           return failure(order || transaction, {
@@ -30,6 +32,7 @@ module PallasTrade
 
         scope = PallasTrade::StockReservation.reserved
         scope = scope.where(order_id: order.id) if order
+        scope = scope.where(line_item_id: line_item.id) if line_item
         scope = scope.where(commerce_transaction_id: transaction.id) if transaction
         return success(order || transaction) if scope.nil? || scope.empty?
 

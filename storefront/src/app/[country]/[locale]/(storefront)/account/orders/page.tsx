@@ -2,7 +2,6 @@ import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
-import { OrderCombinedPay } from "@/components/account/OrderCombinedPay";
 import { OrderList } from "@/components/account/OrderList";
 import { Button } from "@/components/ui/button";
 import { getOrders } from "@/lib/data/orders";
@@ -45,10 +44,7 @@ export default async function OrdersPage({ params }: OrdersPageProps) {
           </Button>
         </div>
       ) : (
-        <>
-          <OrderCombinedPay orders={orders} basePath={basePath} />
-          <OrderList orders={orders} basePath={basePath} locale={locale} />
-        </>
+        <OrderList orders={orders} basePath={basePath} locale={locale} />
       )}
     </div>
   );

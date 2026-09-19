@@ -26,7 +26,10 @@ module PallasTrade
                 option_kind: permitted_params[:option_kind],
                 expected: {
                   checkout_version: permitted_params[:expected_checkout_version],
-                  price_version: permitted_params[:expected_price_version]
+                  price_version: permitted_params[:expected_price_version],
+                  # PRD-20260919-checkout：前台显示金额（重验后应付）—— 与服务端
+                  # 复算不一致 → quote_changed（绝不静默按不同金额扣款）。
+                  amount_due: permitted_params[:expected_amount_due]
                 }.compact
               )
 
@@ -47,7 +50,7 @@ module PallasTrade
             def permitted_params
               params.permit(
                 :payment_method_id, :purpose, :option_kind,
-                :expected_checkout_version, :expected_price_version,
+                :expected_checkout_version, :expected_price_version, :expected_amount_due,
                 external_data: {}
               )
             end

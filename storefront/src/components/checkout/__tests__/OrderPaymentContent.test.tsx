@@ -244,6 +244,7 @@ function renderOrderPayment(
   targetOrder: Order = order,
   view?: CheckoutView | null,
   targetCountries?: Country[],
+  preflight?: Record<string, unknown> | null,
 ) {
   return render(
     <CheckoutProvider>
@@ -251,11 +252,121 @@ function renderOrderPayment(
         order={targetOrder}
         view={view}
         countries={targetCountries}
+        preflight={
+          (preflight ?? null) as unknown as import("@pallastrade/sdk").StoreOrdersPaymentPreflight | null
+        }
       />
       <CheckoutSummary />
     </CheckoutProvider>,
   );
 }
+
+// PRD-20260919-checkout-结算页待支付订单再次支付重验-失效行剔除-优惠复核-订单金额变化提示-收银台弹窗退役 AC-008 / AC-009
+describe("OrderPaymentContent preflight (PRD-20260919-checkout)", () => {
+  const basePreflight = {
+    id: "or_1",
+    payable: true,
+    order_id: "or_1",
+    number: "R123456",
+    blockers: [] as Array<Record<string, unknown>>,
+    changes: [] as Array<Record<string, unknown>>,
+    invalid_items: [] as Array<Record<string, unknown>>,
+    quote: {
+      checkout_version: 3,
+      price_version: "abc",
+      expires_at: null,
+      amount_due: "90.00",
+      display_amount_due: "$90.00",
+      total: "90.00",
+      display_total: "$90.00",
+    },
+    amount_due_before: "100.00",
+    amount_due_after: "90.00",
+    display_amount_due_before: "$100.00",
+    display_amount_due_after: "$90.00",
+    total_before: "100.00",
+    total_after: "90.00",
+    display_total_before: "$100.00",
+    display_total_after: "$90.00",
+    window: { valid: true, expires_at: null, window_minutes: 30, reissued: false },
+  };
+
+  it("AC-008: 金额变化时直接回显新金额并显示提示（无二次确认动作）", () => {
+    renderOrderPayment(order, checkoutView, countries, basePreflight);
+
+    const notice = screen.getByTestId("order-amount-updated-notice");
+    expect(notice).toBeInTheDocument();
+    // i18n mock 返回 key：金额变化标题 key 可见
+    expect(
+      within(notice).getByTestId("order-amount-updated-title"),
+    ).toBeInTheDocument();
+    // 摘要直接显示重验后金额（不强加确认步骤，Pay 仍可直接点）
+    expect(screen.getByTestId("pay-now-button")).toBeEnabled();
+  });
+
+  it("AC-008: 失效商品被列出（只对有效商品扣款）", () => {
+    renderOrderPayment(order, checkoutView, countries, {
+      ...basePreflight,
+      invalid_items: [
+        {
+          line_item_id: "li_gone",
+          variant_id: "var_gone",
+          name: "Rotary Shaver 5000",
+          sku: "RS-5000",
+          quantity: 1,
+          amount: "100.00",
+          reason: "archived",
+        },
+      ],
+      changes: [
+        { kind: "item_removed", subject: "item_removed", name: "Rotary Shaver 5000" },
+      ],
+    });
+
+    const invalidNotice = screen.getByTestId("invalid-items-notice");
+    expect(invalidNotice).toBeInTheDocument();
+    // i18n mock 只回 key（不插值）→ 断言列表条目数与 key 文案
+    expect(within(invalidNotice).getAllByRole("listitem")).toHaveLength(1);
+    expect(
+      within(invalidNotice).getByText("invalidItemRow"),
+    ).toBeInTheDocument();
+    expect(
+      within(invalidNotice).getByText("payableItemsHint"),
+    ).toBeInTheDocument();
+  });
+
+  it("AC-009: 硬阻断（配送不可达）→ Pay 禁用 + 原因可见", () => {
+    renderOrderPayment(order, checkoutView, countries, {
+      ...basePreflight,
+      payable: false,
+      blockers: [
+        {
+          code: "delivery_unavailable",
+          message: "Some items cannot be shipped to the current destination",
+          missing_requirements: [],
+          items: [],
+        },
+      ],
+    });
+
+    expect(screen.getByTestId("revalidation-blocked-notice")).toBeInTheDocument();
+    expect(screen.getByTestId("pay-now-button")).toBeDisabled();
+  });
+
+  it("无变化时不渲染提示块", () => {
+    renderOrderPayment(order, checkoutView, countries, {
+      ...basePreflight,
+      amount_due_before: "90.00",
+      display_amount_due_before: "$90.00",
+      total_before: "90.00",
+      display_total_before: "$90.00",
+    });
+
+    expect(
+      screen.queryByTestId("order-amount-updated-notice"),
+    ).not.toBeInTheDocument();
+  });
+});
 
 describe("OrderPaymentContent", () => {
   beforeEach(() => {

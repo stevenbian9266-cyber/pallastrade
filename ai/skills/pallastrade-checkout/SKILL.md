@@ -15,6 +15,18 @@ Checkout is how an independent active `PallasTrade::Cart` becomes a submitted `P
 - Account single/multi-order cashier flows never submit a Cart or create an Order. They pay the existing `or_` / `pcom_` target.
 - Success, failure, cancellation and unknown/pending all render at `/payment-result/[targetId]`; query parameters identify a session but never decide success. Retry uses the same Order.
 
+### 补付重验（OrderCheckout::Revalidate，PRD-20260919-checkout，2026-09-19）
+
+待支付订单「再次支付」前必须做一次**商业事实重验**；这是补付的唯一权威编排，页面与写路径共用：
+
+- **服务**：`PallasTrade::OrderCheckout::Revalidate.call(order:, dry_run: true)` —— ① 失效行判定（与购物车剔行共用 `Catalog::LineItemAvailability`）②（写）`LineItems::Destroy` 剔除 + 行级释放预留 ③ 窗口失效/缺失 → `update_line_item_prices!` 重定价（窗口内锁价）④ 优惠复核（`Promotion#eligible?` 不满足 → `Promotions::RemoveApplication`：摘关联/删调整行/释放核销/移除赠品行）⑤ 抵扣再平衡（礼品卡/店铺余额按新应付重新套用）⑥ `OrderCheckout::Refresh`（重算 + 版本自增 + 续窗，仅在「窗口失效或确有变化」时）⑦ 报告（`blockers` / `changes` / `invalid_items` / `quote` / before-after 金额）。
+- **零副作用契约**：`dry_run: true`（页面预检）在 `order.with_lock` 事务内跑完整写路径后 `ActiveRecord::Rollback`，并用 `PallasTrade::Events.disable` 关闭事件（行删除/重算会经 shipment/inventory 重建触发 `inventory.*`，事件是回滚撤不掉的副作用）；行级预留释放在 dry-run 不执行。
+- **报价窗口**：`Carts::Submit` 建单即签发 `checkout_expires_at = now + Policies.quote_window`（30min，ENV 可覆写）；窗口内 = 锁价，过期/缺失 = 陈旧 → 重定价 + 续窗。`Transactions::Start#quote_gate_active?` 不再要求窗口存在（`standard_flow? && !completed?` 即重验），因此**历史无窗口订单也会被重验**。
+- **诚实扣款**：`Transactions::Start` 在重验后比对「前台显示金额」`expected[:amount_due]`（or_ 页由 preflight 结果下发 `expected_amount_due`）→ 不一致返回 409 `quote_changed`（`latest.changes[]` 带明细），绝不静默换金额。
+- **只读预检端点**：`GET /api/v3/store/orders/:order_id/payment_preflight`（`OrderResolvable` 授权）返回同一份报告；or_ 页直连消费（`orders.paymentPreflight.get` + BFF `GET /api/checkout/preflight`）。
+- **状态投影（缺口修复）**：`OrderUpdater` 只在 `completed?` 时写 `payment_state/shipment_state` —— 提交时现由 `Carts::Submit#project_states!` 显式补落，读侧 `Order#combined_payment_state/combined_shipment_state` 对历史空值做**只读派生**（同规则镜像），并据此修复「列表两列为空 + 补付入口不出现」。
+- **前台退役**：`PaymentCheckoutModal` 收银台弹窗与多选合并支付 UI 已移除；账户列表/详情补付一律跳订单支付页（`/{country}/{locale}/checkout/{or_id}`，与转换购物车恢复同一落点）。
+
 ## Order splitting (P2, 能力层服务)
 
 > P2（2026-08-26）新增**统一拆单引擎**（默认不接入任何流程，P5 自动拆单 / P6 手动拆单负责接入）。

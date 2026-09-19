@@ -205,3 +205,7 @@ pnpm format       # Biome format-write
 ```
 
 Per-package commands are documented in each package's `README.md`. Changesets for versioning go in the package's `.changeset/` directory.
+
+## SDK surface changes (2026-09-19)
+
+- @pallastrade/sdk gains orders.paymentPreflight.get(orderId, options) - a read-only re-validation report for a submitted-but-unpaid order (unavailable items, amount changes, blockers, revalidated quote). The order payment page consumes it before re-payment; the write path (orders.transactions.create) reuses the same server service, so the amount shown equals the amount charged.

@@ -10,7 +10,10 @@ import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
 import { getOrderCheckout } from "@/lib/data/order-checkout";
-import { getOrderForCheckout } from "@/lib/data/order-payment";
+import {
+  getOrderForCheckout,
+  getOrderPaymentPreflight,
+} from "@/lib/data/order-payment";
 import { getShippingMethods } from "@/lib/data/shopping-cart";
 import { getPendingCheckoutOrderId } from "@/lib/pallastrade";
 
@@ -87,10 +90,13 @@ async function CheckoutDataLoader({ params, searchParams }: CheckoutPageProps) {
   // CHK-P1-4B：同时解析市场国家列表供 or_ 页内联地址编辑。
   const cartData = await getCheckoutOrder(cartId);
   if (cartData?.id.startsWith("or_")) {
-    const [order, view, market] = await Promise.all([
+    const [order, view, market, preflight] = await Promise.all([
       getOrderForCheckout(cartId),
       getOrderCheckout(cartId),
       resolveMarket(urlCountry).catch(() => null),
+      // PRD-20260919-checkout：补付重验只读预检（服务端 dry-run，零副作用）。
+      // 失败返回 null → 页面回落既有 CheckoutView / Order 快照（不阻塞补付）。
+      getOrderPaymentPreflight(cartId).catch(() => null),
     ]);
     const countriesData = market
       ? await getMarketCountries(market.id).catch(() => ({
@@ -103,6 +109,7 @@ async function CheckoutDataLoader({ params, searchParams }: CheckoutPageProps) {
           order={order}
           view={view}
           countries={countriesData.data}
+          preflight={preflight}
         />
       );
     }

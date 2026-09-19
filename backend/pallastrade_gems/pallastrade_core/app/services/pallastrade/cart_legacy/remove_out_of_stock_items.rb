@@ -26,35 +26,31 @@ module PallasTrade
 
       private
 
+      # 判废谓词与订单补付重验共用 `Catalog::LineItemAvailability`（单一权威，防口径漂移）。
       def valid_status?(line_item)
-        product = line_item.product
-        if !product.active? || product.deleted? || product.discontinued? || line_item.variant.discontinued?
-          message = PallasTrade.t('cart_line_item.discontinued', li_name: line_item.name)
-          @messages << message
-          @warnings << {
-            code: 'line_item_removed',
-            message: message,
-            line_item_id: line_item.prefixed_id,
-            variant_id: line_item.variant.prefixed_id
-          }
-          return false
-        end
-        true
+        reason = PallasTrade::Catalog::LineItemAvailability.unavailable_reason(line_item)
+        return true if reason.nil? || PallasTrade::Catalog::LineItemAvailability.stock_reason?(reason)
+
+        record_removal(line_item, PallasTrade.t('cart_line_item.discontinued', li_name: line_item.name))
+        false
       end
 
       def stock_available?(line_item)
-        if line_item.insufficient_stock?
-          message = PallasTrade.t('cart_line_item.out_of_stock', li_name: line_item.name)
-          @messages << message
-          @warnings << {
-            code: 'line_item_removed',
-            message: message,
-            line_item_id: line_item.prefixed_id,
-            variant_id: line_item.variant.prefixed_id
-          }
-          return false
-        end
-        true
+        reason = PallasTrade::Catalog::LineItemAvailability.unavailable_reason(line_item)
+        return true if reason.nil? || !PallasTrade::Catalog::LineItemAvailability.stock_reason?(reason)
+
+        record_removal(line_item, PallasTrade.t('cart_line_item.out_of_stock', li_name: line_item.name))
+        false
+      end
+
+      def record_removal(line_item, message)
+        @messages << message
+        @warnings << {
+          code: 'line_item_removed',
+          message: message,
+          line_item_id: line_item.prefixed_id,
+          variant_id: line_item.variant&.prefixed_id
+        }
       end
 
       def cart_remove_line_item_service

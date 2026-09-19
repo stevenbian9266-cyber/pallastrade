@@ -61,14 +61,15 @@ module PallasTrade
 
         promotion = order.promotions.with_coupon_code(coupon_code)
         if promotion.present?
-          # Order promotion has to be destroyed before line item removing
-          order.promotions.delete(promotion)
+          # PALLAS-CUSTOM: PRD-20260919-checkout —— 「摘除促销」收敛到
+          # PallasTrade::Promotions::RemoveApplication（与订单补付重验共用一份：
+          # 摘关联 + 删调整行 + 释放核销 + 移除赠品行 + 重算）。
+          # 券特有的一次性多码脱离 / 单码 touch 仍在此处理。
+          detach_coupon_code_if_no_redemption(promotion)
 
-          release_redemption_or_detach_code(promotion)
-
-          remove_promotion_adjustments(promotion)
-          remove_promotion_line_items(promotion)
-          order.update_with_updater!
+          PallasTrade::Promotions::RemoveApplication.call(
+            order: order, promotion: promotion, reason: 'coupon_removed'
+          )
 
           set_success_code :adjustments_deleted
         else
@@ -115,34 +116,17 @@ module PallasTrade
 
       private
 
-      def remove_promotion_adjustments(promotion)
-        promotion_actions_ids = promotion.actions.pluck(:id)
-        order.all_adjustments.where(source_id: promotion_actions_ids,
-                                    source_type: 'PallasTrade::PromotionAction').destroy_all
-      end
+      # PRD-20260910-promotions-promo-batch3a (D5) + PRD-20260919-checkout：
+      # 摘除逻辑（删调整行 / 释放核销 / 移除赠品行 / 重算）已收敛到
+      # `Promotions::RemoveApplication`；这里只保留「券特有」的一次性多码脱离 /
+      # 单码 touch（有 active 核销时由 RemoveApplication 负责释放）。
+      def detach_coupon_code_if_no_redemption(promotion)
+        return if PallasTrade::PromotionRedemption.active.exists?(promotion_id: promotion.id, order_id: order.id)
 
-      # PRD-20260910-promotions-promo-batch3a (D5): 移除券时若已有 active 核销则
-      # 走释放路径（回退一次性码 + 记录 release_reason）；购物车阶段（无核销）
-      # 保持旧行为：多码脱离订单 / 单码 touch。
-      def release_redemption_or_detach_code(promotion)
-        redemption = PallasTrade::PromotionRedemption.active.find_by(promotion_id: promotion.id, order_id: order.id)
-        if redemption
-          PallasTrade::Promotions::Redemption::Release.call(redemption, reason: 'coupon_removed')
-        elsif promotion.multi_codes?
+        if promotion.multi_codes?
           promotion.coupon_codes.find_by(order: order)&.remove_from_order
         else
           promotion.touch
-        end
-      end
-
-      def remove_promotion_line_items(promotion)
-        create_line_item_actions_ids = promotion.actions.where(type: 'PallasTrade::Promotion::Actions::CreateLineItems').pluck(:id)
-
-        PallasTrade::PromotionActionLineItem.where(promotion_action: create_line_item_actions_ids).find_each do |item|
-          line_item = order.find_line_item_by_variant(item.variant)
-          next if line_item.blank?
-
-          PallasTrade.cart_remove_item_service.call(order: order, variant: item.variant, quantity: item.quantity)
         end
       end
 

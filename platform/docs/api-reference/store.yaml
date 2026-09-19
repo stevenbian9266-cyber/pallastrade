@@ -6415,6 +6415,47 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v3/store/orders/{order_id}/payment_preflight":
+    get:
+      summary: Revalidate a pending order before re-payment (dry-run, PRD-20260919-checkout)
+      tags:
+      - Orders
+      security:
+      - api_key: []
+      description: |-
+        Read-only pre-payment revalidation for a submitted-but-unpaid order:
+        unavailable line items, price/shipping/tax/discount changes, blockers
+        (delivery unreachable / checkout not ready / no payable items) and the
+        revalidated quote (amount_due + versions + window). Zero side effects —
+        nothing is persisted, no events are published and no payment session is
+        created (dry-run executes inside a rolled-back transaction). The write
+        path (Transactions::Start) reuses the same service, so the amount shown
+        here equals the amount charged.
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Revalidation report
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/StoreOrdersPaymentPreflight"
+        "404":
+          description: Order not found or not accessible
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        "422":
+          description: Revalidation could not be computed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
   "/api/v3/store/orders/{order_id}/payment_sessions":
     post:
       summary: Create order payment session (standard flow, P1)
@@ -15359,3 +15400,68 @@ components:
       - code
       - kind
       - removable
+    StoreOrdersPaymentPreflight:
+      type: object
+      properties:
+        id:
+          type: string
+        payable:
+          type: boolean
+        order_id:
+          type: string
+        number:
+          type: string
+          nullable: true
+        blockers:
+          type: object
+        changes:
+          type: object
+        invalid_items:
+          type: object
+        quote:
+          type: object
+        amount_due_before:
+          type: string
+          nullable: true
+        amount_due_after:
+          type: string
+          nullable: true
+        display_amount_due_before:
+          type: string
+          nullable: true
+        display_amount_due_after:
+          type: string
+          nullable: true
+        total_before:
+          type: string
+          nullable: true
+        total_after:
+          type: string
+          nullable: true
+        display_total_before:
+          type: string
+          nullable: true
+        display_total_after:
+          type: string
+          nullable: true
+        window:
+          type: object
+      required:
+      - id
+      - payable
+      - order_id
+      - number
+      - blockers
+      - changes
+      - invalid_items
+      - quote
+      - amount_due_before
+      - amount_due_after
+      - display_amount_due_before
+      - display_amount_due_after
+      - total_before
+      - total_after
+      - display_total_before
+      - display_total_after
+      - window
+      x-typelizer: true

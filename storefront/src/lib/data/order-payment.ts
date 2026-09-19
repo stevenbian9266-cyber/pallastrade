@@ -4,6 +4,7 @@ import type {
   Order,
   OrderTransactionStart,
   PaymentSession,
+  StoreOrdersPaymentPreflight,
 } from "@pallastrade/sdk";
 import { PallasTradeError } from "@pallastrade/sdk";
 import { redirect } from "next/navigation";
@@ -49,7 +50,9 @@ export async function createOrderPaymentSession(
   // 前台按**入口**（method kind）选择支付方式（一入口一行）；把入口随请求下发，
   // 服务端 `PaymentSessions::Start` 用同一入口集合同源复算可用性（不可用 → 422
   // `payment_option_not_available`，不建会话）。缺省 = provider 默认入口（零回归）。
-  startOptions?: { optionKind?: string },
+  // PRD-20260919-checkout：`expectedAmountDue` = 页面展示的应付金额（补付重验后），
+  // 服务端复算不一致 → 409 quote_changed（绝不静默换金额扣款）。
+  startOptions?: { optionKind?: string; expectedAmountDue?: string },
 ): Promise<CreateOrderPaymentSessionResult> {
   try {
     const options = await getCheckoutOptions(orderId);
@@ -59,6 +62,9 @@ export async function createOrderPaymentSession(
         payment_method_id: paymentMethodId,
         ...(startOptions?.optionKind
           ? { option_kind: startOptions.optionKind }
+          : {}),
+        ...(startOptions?.expectedAmountDue
+          ? { expected_amount_due: startOptions.expectedAmountDue }
           : {}),
         ...(externalData || mode
           ? {
@@ -99,8 +105,20 @@ export async function createOrderPaymentSession(
   }
 }
 
-/** 完成订单支付会话（客户端确认支付后）。 */
-export async function completeOrderPaymentSession(
+/** PRD-20260919-checkout：补付重验只读预检（服务端 dry-run，零副作用）。
+ *  返回重验后应付金额 / 失效商品 / 金额变化 / 硬阻断原因；失败返回 null（不阻塞支付页）。 */
+export async function getOrderPaymentPreflight(
+  orderId: string,
+): Promise<StoreOrdersPaymentPreflight | null> {
+  try {
+    const options = await getCheckoutOptions(orderId);
+    return await getClient().orders.paymentPreflight.get(orderId, options);
+  } catch {
+    return null;
+  }
+}
+
+/** 完成订单支付会话（客户端确认支付后）。 */export async function completeOrderPaymentSession(
   orderId: string,
   sessionId: string,
   params?: { session_result?: string; external_data?: Record<string, unknown> },

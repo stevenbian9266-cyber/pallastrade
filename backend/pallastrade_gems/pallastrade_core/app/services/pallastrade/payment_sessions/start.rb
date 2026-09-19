@@ -108,6 +108,9 @@ module PallasTrade
       # CHK-P1-3: quote 作用域 Payment Start Gate。
       # gate 仅作用于「标准流、未完成、且已签发 quote（checkout_expires_at present）」
       # 的订单；无 quote 订单 / legacy cart / completed 账户补付 → 直通（行为不变）。
+      # PRD-20260919-checkout：保持该契约作为**防御层**（新流程订单建单即签发窗口，
+      # 因此实际都会走 gate）；补付重验（失效行剔除/优惠复核/抵扣再平衡）的**唯一权威**
+      # 在 `Transactions::Start` → `OrderCheckout::Revalidate`，此处不重复执行。
       #
       # 过期 → 自动 OrderCheckout::Refresh（重算+续期）后继续（金额以新权威为准，
       # 客户端经 quote_refreshed/amount 感知）；就绪缺失 → checkout_not_ready 拒绝建会话。

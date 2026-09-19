@@ -169,7 +169,33 @@ module PallasTrade
         order.update_with_updater!
         order.save!
 
+        # PALLAS-CUSTOM: PRD-20260919-checkout FR-001/FR-013 ——
+        # ① 签发报价窗口（补付重验的 quote 门据此判定「锁价 / 需重验」）；
+        # ② 落状态投影（OrderUpdater 只在 completed? 时写 payment_state/shipment_state，
+        #    否则待支付订单列表两列为空、前台也无法判定可补付）。
+        issue_quote_window!(order)
+        project_states!(order)
+
         order
+      end
+
+      # 报价窗口：checkout_expires_at = now + quote_window（后续由
+      # OrderCheckout::{Recalculate,Refresh} 续期；dry-run 整笔回滚，不留痕迹）。
+      def issue_quote_window!(order)
+        return if order.checkout_expires_at.present?
+
+        order.update_columns(
+          checkout_expires_at: Time.current + PallasTrade::OrderCheckout::Policies.quote_window
+        )
+      end
+
+      # 状态投影：复用 OrderUpdater 的权威规则（不复制状态判定），
+      # 让「已提交未支付」订单在列表/详情上也有 payment_state/shipment_state。
+      def project_states!(order)
+        updater = order.updater
+        updater.update_payment_state
+        updater.update_shipment_state
+        updater.persist_totals
       end
 
       # FR-004：把购物车上的礼品卡码交给权威套用路径（order.apply_gift_card）。

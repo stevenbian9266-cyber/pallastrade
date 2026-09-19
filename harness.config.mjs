@@ -186,6 +186,14 @@ export default {
         description: 'Stripe billing_details payload specs (no billing_details on PaymentIntent top level NOR Checkout Session payment_intent_data + gateway whitelist guards)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec pallastrade_gems/pallastrade_stripe/spec/presenters pallastrade_gems/pallastrade_stripe/spec/models/gateway/payment_intent_payload_spec.rb pallastrade_gems/pallastrade_stripe/spec/models/gateway/checkout_session_payload_spec.rb'],
       },
+      // 补付重验（PRD-20260919-checkout-结算页待支付订单再次支付重验…，2026-09-19）：
+      // 待支付订单再次支付前的商业事实重验 —— dry-run 零副作用（不落库/不发事件）、
+      // 失效行剔除（写路径）、报价窗口签发/续期、全面失效 → no_payable_items；
+      // 与写路径同源（Transactions::Start → OrderCheckout::Revalidate）。
+      'order-repay-rspec': {
+        description: 'Order re-payment revalidation specs (dry-run zero side effects, invalid line item pruning, quote window issue/renew, no_payable_items blocker, Transactions::Start wiring)',
+        command: ['docker', 'exec', '-e', 'DISABLE_SIMPLECOV_MINIMUM=1', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && bundle exec rspec spec/services/pallastrade/order_checkout/revalidate_spec.rb spec/services/pallastrade/order_checkout spec/services/pallastrade/transactions'],
+      },
       // 结算页只读预览报价（PRD-20260919-shipping-checkout-quote-preview，2026-09-19）：
       // 预览金额 = 同一条 `Carts::Submit` dry-run 管线（回滚，零建单/零事件/零支付会话）；
       // 无地址时用 header 国家做**pricing_only** 临时地址（不伪造州/城市）；
@@ -535,12 +543,12 @@ export default {
       // CHK-P1-4B（PRD-20260903-checkout-chk-p1-1 §12）：Storefront mutation 消费（checkout.update + 编辑 UI + 409）
       'chk-p1-4b-storefront': {
         description: 'CHK-P1-4B storefront mutation/409 UI tests (OrderPaymentContent + checkout regression)',
-        command: ['node', 'storefront/node_modules/vitest/vitest.mjs', 'run', '--root', 'storefront', 'src/components/checkout/__tests__/OrderPaymentContent.test.tsx', 'src/components/checkout/__tests__/PaymentCheckoutModal.test.tsx', 'src/components/checkout/__tests__/UnifiedCheckout.test.tsx'],
+        command: ['node', 'storefront/node_modules/vitest/vitest.mjs', 'run', '--root', 'storefront', 'src/components/checkout/__tests__/OrderPaymentContent.test.tsx', 'src/components/checkout/__tests__/UnifiedCheckout.test.tsx'],
       },
       // CHK-P1-4C（PRD-20260903-checkout-chk-p1-1 §12）：孤儿页移除 + 死代码清理回归
       'chk-p1-4c-storefront': {
         description: 'CHK-P1-4C storefront cleanup regression (modal/payment-result/account tests)',
-        command: ['node', 'storefront/node_modules/vitest/vitest.mjs', 'run', '--root', 'storefront', 'src/components/checkout/__tests__/PaymentCheckoutModal.test.tsx', 'src/app/[country]/[locale]/(checkout)/payment-result/[id]/__tests__/page.test.tsx', 'src/components/account/__tests__/OrderCombinedPay.test.tsx', 'src/components/account/__tests__/OrderPayButton.test.tsx'],
+        command: ['node', 'storefront/node_modules/vitest/vitest.mjs', 'run', '--root', 'storefront', 'src/app/[country]/[locale]/(checkout)/payment-result/[id]/__tests__/page.test.tsx', 'src/components/account/__tests__/OrderPayButton.test.tsx', 'src/components/account/__tests__/OrderDetail.test.tsx'],
       },
       // CHK-P1-4C4（PRD-20260903-checkout-chk-p1-1 §12）：legacy 一页式退役回归（checkout 组件 + data + confirm-payment）
       'chk-p1-4c4-storefront': {

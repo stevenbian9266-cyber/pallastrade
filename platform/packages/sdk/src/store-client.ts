@@ -60,6 +60,7 @@ import type {
   ReviewListResponse,
   ShippingEstimate,
   StoreCredit,
+  StoreOrdersPaymentPreflight,
   TransactionResume,
   UpdateCartParams,
   UpdateLineItemParams,
@@ -805,6 +806,21 @@ export class StoreClient {
         ...options,
         params: getParams(params),
       }),
+
+    /**
+     * PRD-20260919-checkout (2026-09-19): 补付重验（payment preflight）
+     * —— 待支付订单再次支付前的**只读**商业事实重验：失效商品 / 金额变化 /
+     * 硬阻断原因 / 重验后报价（amount_due + 版本 + 窗口）。
+     * 零副作用（服务端 dry-run 事务内执行后回滚）；写路径（transactions.create）
+     * 复用同一实现 → 「页面显示金额 == 实际扣款金额」。
+     */
+    paymentPreflight: {
+      get: (
+        orderId: string,
+        options?: RequestOptions,
+      ): Promise<StoreOrdersPaymentPreflight> =>
+        this.request<StoreOrdersPaymentPreflight>('GET', `/orders/${orderId}/payment_preflight`, options),
+    },
 
     /**
      * TXN-P2-6 (2026-09-05): durable CommerceTransaction start (transaction-first).

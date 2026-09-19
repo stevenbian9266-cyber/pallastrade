@@ -66,6 +66,9 @@ export type {
 // CommerceTransactionSerializer via typelizer; alias keeps SDK naming unprefixed).
 export type { default as CommerceTransaction } from './generated/StoreCommerceTransaction'
 
+// PRD-20260919-checkout: 补付重验（payment preflight）报告（typelizer 生成）。
+export type { default as StoreOrdersPaymentPreflight } from './generated/StoreOrdersPaymentPreflight'
+
 // F-1 (PRD-20260916-catalog-batch-f1-reviews): rating distribution rides on the
 // standard v3 pagination meta, so `list` returns the envelope (not a bare array).
 export interface ReviewListMeta extends PaginationMeta {
@@ -163,6 +166,9 @@ export interface CreateOrderTransactionParams {
   option_kind?: string
   expected_checkout_version?: number
   expected_price_version?: string
+  // PRD-20260919-checkout：前台展示的应付金额（重验后）。服务端重验后与之
+  // 不一致 → 409 quote_changed（带 changes[]），不静默换金额扣款。
+  expected_amount_due?: string
 }
 
 /** GET /transactions/:id resume read model */
