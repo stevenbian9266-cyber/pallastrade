@@ -6,11 +6,16 @@ on:
     branches: [dev]
     paths:
       - 'backend/**'
+      # 知识同步 spec（permission_registry / promotion_legacy_cleanup / promotions
+      # definition_registry）会 JSON.parse `harness/scenarios/scenarios.json`：
+      # 该文件坏掉时它们必红（2026-09-19 Backend CI 实例）——所以触发路径必须覆盖它。
+      - 'harness/scenarios/**'
       - '.github/workflows/backend-ci.yml'
   pull_request:
     branches: [dev]
     paths:
       - 'backend/**'
+      - 'harness/scenarios/**'
       - '.github/workflows/backend-ci.yml'
   workflow_dispatch:
 
