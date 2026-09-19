@@ -16,7 +16,7 @@ module PallasTrade
     class PreviewQuote
       prepend PallasTrade::ServiceModule::Base
 
-      # @param cart [PallasTrade::ShoppingCart]
+      # @param cart [PallasTrade::Cart]
       # @param shipping_method_id [String, Integer, nil] 前台已选（未落库也可）
       # @param shipping_address [Hash, nil] 表单态地址（iso/state_abbr/city/zipcode...）
       # @param country [String, nil] header 国家（无地址时的临时地址来源）

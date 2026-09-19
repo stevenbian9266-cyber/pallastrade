@@ -189,5 +189,22 @@ RSpec.describe PallasTrade::Carts::PreviewQuote, type: :service do
       expect(preview['selected_method_id']).to be_nil
       expect(preview['delivery_total']).to be_nil
     end
+
+    # 结算页首屏发生在客户填邮箱之前 → 预览不能因为「缺邮箱」而失败；
+    # 但真实提交（非 dry-run）仍然拦住无邮箱的游客单（占位邮箱只存在于被回滚的临时单上）。
+    it 'previews a guest cart without an email while a real submit still refuses it' do
+      create_country_zone_method(cost: 4.0)
+      cart.update!(email: nil)
+      add_item
+
+      preview = preview_for(country: 'US')
+
+      expect(preview['delivery_total']).to be_present
+      expect(PallasTrade::Order.where(cart_id: cart.id).count).to eq(0)
+
+      submit = PallasTrade::Carts::Submit.call(cart: cart)
+      expect(submit).not_to be_success
+      expect(submit.error.to_s).to eq('Email is required to place an order')
+    end
   end
 end

@@ -22,6 +22,11 @@ module PallasTrade
       prepend PallasTrade::ServiceModule::Base
 
       # PALLAS-CUSTOM (2026-09-19, PRD-20260919-shipping-checkout-quote-preview):
+      # dry-run 专用的占位邮箱 —— 预览发生在客户填邮箱之前，而邮箱与金额无关。
+      # 该值只存在于被回滚的临时 Order 上，绝不落库、绝不外发。
+      PREVIEW_EMAIL = 'preview@pallastrade.invalid'
+
+      # PALLAS-CUSTOM (2026-09-19, PRD-20260919-shipping-checkout-quote-preview):
       # `dry_run: true` = **只读预览报价**：走完全相同的一条金额管线（行价 → 税 → 运费 → 抵扣），
       # 但在事务内捕获纯数据快照后 `ActiveRecord::Rollback`，绝不推进任何状态：
       #   - 不 `cart.convert!`（购物车仍 active）
@@ -45,8 +50,10 @@ module PallasTrade
             return failure(cart, 'Cart is not active')
           end
 
-          # 游客下单必须提供邮箱（Order 对 email 有必填校验）；登录用户取 user.email
-          return failure(cart, 'Email is required to place an order') if cart.user.nil? && cart.email.blank?
+          # 游客下单必须提供邮箱（Order 对 email 有必填校验）；登录用户取 user.email。
+          # PALLAS-CUSTOM (2026-09-19, PRD-…-quote-preview)：结算页预览发生在用户填邮箱**之前**，
+          # 而邮箱与金额无关 → dry-run 不拦，改用占位邮箱过 Order 校验（整笔事务回滚，不留任何行）。
+          return failure(cart, 'Email is required to place an order') if !dry_run && cart.user.nil? && cart.email.blank?
 
           selected_items = cart.cart_items.selected.includes(:variant).to_a
           return failure(cart, PallasTrade.t(:there_are_no_items_for_this_order)) if selected_items.empty?
@@ -58,7 +65,8 @@ module PallasTrade
           order = build_order!(
             cart, selected_items,
             preview_address: preview_address,
-            preview_shipping_method_id: preview_shipping_method_id
+            preview_shipping_method_id: preview_shipping_method_id,
+            dry_run: dry_run
           )
           return failure(order, order.errors.full_messages.to_sentence) if order.errors.any?
 
@@ -95,10 +103,10 @@ module PallasTrade
 
       private
 
-      def build_order!(cart, selected_items, preview_address: nil, preview_shipping_method_id: nil)
+      def build_order!(cart, selected_items, preview_address: nil, preview_shipping_method_id: nil, dry_run: false)
         order = cart.store.orders.new(
           user: cart.user,
-          email: cart.email.presence || cart.user&.email,
+          email: cart.email.presence || cart.user&.email || (PREVIEW_EMAIL if dry_run),
           currency: cart.currency,
           locale: cart.locale,
           cart: cart,
