@@ -93,6 +93,138 @@
 
 ## 3. 正向履约（Forward Fulfillment）
 
+### 3.0 下单编排总则：Place Order → Payment（一次点击，两段）
+
+**现状（重要）**：**两段语义今天已经实现**，不是待建能力 —— 出处 PRD-20260915-checkout-单页两段语义 FR-003。
+
+| 段 | 端点 | 代码位置 | 今天做什么 |
+|---|---|---|---|
+| **第一段** | `POST /api/checkout/prepare` | `UnifiedCheckout.tsx` 的 `prepareOrder()` | `carts.update`（保存）+ `carts.submit`（**建单**）→ 返回 Order 权威报价 |
+| **第二段** | `POST /api/checkout/start` | 同文件 `handlePayNow()` | 携 `order_id` **只启交易**（`orders.transactions.create`），**不再 update/submit** |
+
+顺序也**已经在代码里强制**：
+
+```ts
+const prepared = await prepareOrder();
+if (!prepared) return;   // 建单失败直接 return —— 永远走不到付款
+```
+
+**真实缺口（本次要补的四件事）**：
+
+| # | 缺口 | 现状 | 目标 |
+|---|---|---|---|
+| 1 | **正名** | 这一段叫 `prepare`（“准备”），但它在做的是**下单** | 改名 `place-order`，名副其实 |
+| 2 | **边界** | `prepare` 一肩挑「保存表单」+「建单」 | 端点内**明示两步**；契约把**建单结果**放在显眼位（`order_id` + `quote`） |
+| 3 | **可读性** | `prepareOrder()` 这个名字让读者以为是“预检” | 改名 `placeOrder()`，返回值即**下单结果** |
+| 4 | **文档** | PRD / skill / 注释散落 `prepare` 语义 | 术语统一到 **Place Order**，与「支付」明确分段 |
+
+> 换句话说：**本次是给一段已存在、且顺序已正确的编排「正名 + 显式化」，不是新造流程。** 顾客可见行为**零变化**。
+
+```mermaid
+flowchart LR
+  A["顾客点击<br/>付款按钮"] --> B["① Place Order<br/>（保存 + 建单）"]
+  B --> C{"成功？"}
+  C -->|否| D["零扣款 + 页内提示<br/>停在结账页"]
+  C -->|是| E["② Payment<br/>（建会话 + 收款）"]
+  E --> F["支付结果"]
+```
+
+#### 3.0.1 Place Order 是什么
+
+**Place Order = `PallasTrade::Carts::Submit`**
+（`backend/pallastrade_gems/pallastrade_core/app/services/pallastrade/carts/submit.rb`）
+
+它是**已存在**的服务 —— 本方案**不新造**下单逻辑，只给它一个**显式的编排位置**与**端点名**。
+
+它做的事（按顺序）：
+
+| 步 | 动作 | 说明 |
+|---|---|---|
+| 1 | 校验 | 购物车 active / ≥1 勾选项 / 变体有价 / 有货 / 游客必须有 email |
+| 2 | 快照 | 行项目 + 地址 + 配送，全部**冻结**成 Order 字段 |
+| 3 | 权威算价 | 走 Order 管道（Pricing + TaxRate + OrderUpdater）重算 —— **顾客被扣款的唯一金额来源** |
+| 4 | 建单 | `cart.convert!` → Order `state=pending`、`submitted_at` 落时间 |
+| 5 | 发事件 | `order.submitted`（**提交后**发布，订阅者不可阻断结算） |
+| 6 | 后继车 | 建一张新空购物车（`successor_cart`） |
+
+**它不做的事**（边界，很重要）：
+
+| 不做 | 说明 |
+|---|---|
+| ❌ 不建 `PaymentSession` | 支付会话是第 ② 段的事 |
+| ❌ 不启 `PaymentTransaction` | 同上 |
+| ❌ 不锁库存 | 除非 `stock_reservation_strategy = 'order'`；**当前默认就是 `'order'`**（`backend/config/initializers/pallastrade.rb:44`），所以本地会在下单瞬间锁 |
+| ❌ 不扣款 | **零资金副作用** |
+
+#### 3.0.2 为什么必须先 Place Order 再 Payment（顺序不可倒）
+
+> **顾客确认的金额，必须是被扣款的金额。**
+
+- **先支付再建单** → 钱已划走订单才生成；一旦建单失败（缺货 / 无价 / 地址非法），钱已在 Stripe 手里，只能走退款 → 顾客体验 + 资金成本双输，且违反 **P1-2 硬约束**「未见到 Order 权威金额之前不得扣款」。
+- **建单成功但支付失败** → 订单已在（`pending` + `submitted_at`），这正是正常的「未支付订单」态 —— 有明确出口（重试 / 补付 §3.6 / 取消 §4.2），**不是故障**。
+
+结论：**Place Order 先行是安全方向**。
+
+| 结果 | 订单 | 资金 | 可恢复性 |
+|---|---|---|---|
+| 建单失败 | **不存在**（零痕迹） | 零 | 顾客改数据重试即可 |
+| 建单成功 + 支付失败 | 存在（`pending`） | 零 | 补付 / 取消，出口明确 |
+| 建单成功 + 支付成功 | 存在（`paid`） | 已收 | 正常履约 |
+
+#### 3.0.3 幂等性（三道保障）
+
+`Carts::Submit` 天然幂等：
+
+| 保障 | 机制 |
+|---|---|
+| 行锁 | 对 cart 行加锁，并发提交只有一个赢 |
+| converted replay | 已转换的购物车再提交 → **返回同一张 Order**（不重复建单） |
+| 金额守卫 | 第 ② 段复用第 ① 段返回的 Order，不重建 |
+
+因此「顾客狂点按钮 / 网络重试 / 双标签页」都**不会**产生两张订单。
+
+#### 3.0.4 契约变化（只在 BFF 层）
+
+| 端点 | 方法 | 职责 | 变化 |
+|---|---|---|---|
+| `/api/checkout/preview` | POST | 只读预览报价（dry_run，零副作用） | 不变 |
+| `/api/checkout/place-order` | POST | **① 建单**：`carts.update`（保存）+ `carts.submit` → Order 权威金额 + `order_id` | **由 `prepare` 更名**（行为等价，语义正名） |
+| `/api/checkout/start` | POST | **② 起支付**：`orders.transactions.create` → `client_secret` | **不变**（已支持 `order_id` 形态） |
+| `/api/checkout/prepare` | POST | 旧名（兼容） | **保留为薄别名**（转发到 `place-order`），给未升级客户端一个过渡期，见 §11-6 |
+| `/api/checkout/start`（形态 2） | POST | 兼容：`cart_` 一次请求完成 update + submit + Pay | **不变**（钱包入口专用，见下方说明） |
+
+> **Store API 层零改动** —— `POST /api/v3/store/carts/:id/submit` 今天就在，语义、幂等、错误码都不用动。本次只动 **BFF 端点名 + 前台函数名 + 文档**。
+
+**形态 2 为什么保留**：钱包（Apple Pay / Google Pay）面板**自身即金额确认界面**，其 express 流程必须先有会话才能拉起面板，因此保留「一次请求合并」语义。这与 P1-2 硬约束不冲突 —— 约束是「未见到 Order 权威金额不得扣款」，而钱包面板展示的**就是**该 Order 的金额。
+
+#### 3.0.5 前台按钮语义：顾客仍只点一次
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as 顾客
+  participant SF as Storefront
+  participant BFF as BFF
+  U->>SF: 点击「确认并支付」
+  SF->>SF: 置 loading（禁用按钮，防重复提交）
+  SF->>BFF: ① POST /api/checkout/place-order
+  alt 建单失败
+    BFF-->>SF: 4xx + 结构化 code
+    SF->>SF: 解除 loading + 页内提示（零跳转 / 零扣款）
+  else 建单成功
+    BFF-->>SF: order_id + 权威金额
+    SF->>BFF: ② POST /api/checkout/start（order_id + 入口）
+    BFF-->>SF: client_secret
+    SF->>SF: stripe.confirmPayment
+  end
+```
+
+**按钮文案不变**（仍是「确认并支付」/「Pay Now」）—— 顾客感知**仍是一次操作**；两段编排是**实现细节**，不暴露给顾客。
+
+**这已经是今天的真实行为**（`UnifiedCheckout.tsx`）：`handlePayNow` 内部先 `await prepareOrder()`，拿到 Order 才继续 `POST /api/checkout/start`；`prepareOrder` 返回 `null`（建单失败）时**同一次点击内直接 return**，不进支付。本次只改**名字**与**文档**，不改这段控制流。
+
+---
+
 ### 3.1 全景流程图
 
 ```mermaid
@@ -107,9 +239,12 @@ flowchart TB
   G -->|Stripe 钱包| H2["Apple Pay / Google Pay<br/>express 按钮"]
   G -->|Check| H3["线下支票<br/>下单后待人工确认"]
   G -->|StoreCredit| H4["余额抵扣<br/>（不足则差额走 Stripe）"]
-  H1 & H2 --> I["一次点击：Prepare → 金额未变则直达 Pay"]
+  H1 & H2 --> I["一次点击 = 两段编排<br/>① Place Order（建单）<br/>② Payment（收款）"]
   H4 --> I
-  I --> J["Stripe 收款<br/>PaymentIntent / Checkout Session"]
+  I --> I1{"① 建单成功？"}
+  I1 -->|否| I2["零扣款 + 零订单<br/>停在结账页页内提示"]
+  I2 -.-> D
+  I1 -->|是| J["② Stripe 收款<br/>PaymentIntent / Checkout Session"]
   J --> K{"支付结果"}
   K -->|成功| L["/order-placed/[id] 下单成功"]
   K -->|需要 3DS| M["跳转银行挑战"] --> J
@@ -143,18 +278,34 @@ sequenceDiagram
   API-->>BFF: 预览金额
   Note over BFF,API: 预览 = 同参数 prepare 金额**逐字段一致**
 
-  U->>SF: 选「卡支付」
-  SF->>BFF: POST /api/checkout/prepare
-  BFF->>API: 创建/更新订单（幂等提交）
-  API->>CORE: PaymentSessions::Start（入口级门禁）
-  CORE->>CORE: Availability::Resolver 过滤入口<br/>（环境隔离 / 3DS / 启用过滤）
+  U->>SF: 选「卡支付」+ 点「确认并支付」
+  Note over SF: —— 第 ① 段：Place Order（建单）——
+  SF->>BFF: POST /api/checkout/place-order
+  BFF->>API: PUT carts/:id（地址/配送/邮箱）+ POST carts/:id/submit
+  API->>CORE: Carts::Submit（行锁 → 校验 → 快照 → 权威算价）
+  alt 校验失败（缺货 / 无价 / 缺邮箱）
+    CORE-->>API: 结构化错误
+    API-->>BFF: 4xx
+    BFF-->>SF: 错误码
+    Note over SF: 停在结账页：零扣款、零跳转、零订单
+  else 通过
+    CORE->>CORE: cart.convert! → Order(state=pending, submitted_at)
+    CORE->>CORE: 发布 order.submitted（锁汇 / 风控订阅）
+    CORE-->>API: Order 权威金额 + successor cart
+    API-->>BFF: order_id + 金额
+    BFF-->>SF: Cookie cart_ → or_
+  end
+  Note over SF: —— 第 ② 段：Payment（收款）——
+  SF->>BFF: POST /api/checkout/start（order_id + 支付入口）
+  BFF->>API: PaymentSessions::Start（入口级门禁）
+  API->>CORE: Availability::Resolver 过滤入口<br/>（环境隔离 / 3DS / 启用过滤）
   CORE->>ST: 建 PaymentIntent（或 Checkout Session）
   ST-->>CORE: client_secret
   CORE-->>API: 会话 + client_secret
-  API-->>BFF: 报价 + 会话
-  BFF-->>SF: 金额未变 → 一次点击直达 Pay
+  API-->>BFF: client_secret
+  BFF-->>SF: client_secret
 
-  U->>SF: 点 Pay
+  U->>SF: （按钮仍只点一次，无第二次交互）
   SF->>ST: stripe.confirmPayment（客户端确认）
   opt 需要认证
     ST-->>U: 3DS 挑战（银行页）
@@ -273,7 +424,9 @@ sequenceDiagram
 
 | 分支 | 触发 | 行为 |
 |---|---|---|
-| 金额变化 | 预览与 prepare 不一致 | 显示「旧 → 新」变化块，要求顾客确认（不自动扣款） |
+| **① 建单失败** | 缺货 / 变体无价 / 游客缺邮箱 / 地址非法 | **停在结账页页内提示**：零扣款、零跳转、**订单不存在**；修正后可重试 |
+| **① 建单成功但 ② 起会话失败** | 入口被关 / 环境不匹配 / Stripe 拒绝 | 订单**已在**（`pending`）→ 页内提示 + 可重试；`availability` 类错误回落到入口刷新 |
+| 金额变化 | 预览与 place-order 不一致 | 显示「旧 → 新」变化块，要求顾客确认（不自动扣款）。**此时订单已存在**（建单成功），只是**暂缓付款**；顾客再点不重新提交购物车（复用 `preparedOrder`） |
 | 3DS 挑战 | 风控要求认证 | 跳银行页；失败 → 支付结果页失败态 |
 | 支付失败 | 卡被拒 / 网络 | **零跳转、零 PATCH**，页内提示 + 可重试 |
 | 支付超时 | 会话过期 | 订单仍 awaiting_payment → 可补付（§3.6） |
@@ -477,7 +630,7 @@ sequenceDiagram
 │   │   └─ 钱包按钮（Apple Pay / Google Pay …… 服务端下发哪些就有哪些）
 │   ├─ 「or」分隔线                （位置恒定，不因加载态跳变）
 │   └─ CardPaymentForm            （卡表单）
-│       └─ [Pay Now / 确认并支付]  （金额未变 = 一次点击直达）
+│       └─ [Pay Now / 确认并支付]  （**一次点击 = 两段编排**：① place-order → ② start → confirm）
 ├─ QuoteChangeBlock               （**仅当金额确实变化**：旧 → 新 + 确认块）
 └─ PaymentResultInline            （失败态：页内提示，零跳转）
 ```
@@ -492,6 +645,8 @@ sequenceDiagram
 | 密钥 | 只收服务端下发的 publishable；**无 env 回落** | D10 |
 | 金额变化 | 只在**确实变化**时让顾客确认；无基准不阻断 | P1-a |
 | 失败 | 确认失败 → 零 PATCH / 零跳转，页内提示 | 结账失败体验 |
+| **下单顺序** | **必须先 place-order 再 start**：未建单不得建支付会话；未拿到 Order 权威金额不得扣款 | P1-2 / §3.0.2 |
+| **按钮交互** | 顾客**只点一次**；两段编排对顾客不可见；点击后立即禁用按钮防重复提交 | §3.0.5 |
 
 ### 5.4 收敛对前台的净影响
 
@@ -720,6 +875,9 @@ flowchart LR
 | **5** | 删第三方厂商 | Adyen/PayPal + 镜像 + Gemfile + Bogus 出注册表 | 全量 check |
 | **6** | 后台收敛 | Stripe 页最终形态；列表只剩 3 条；Check/StoreCredit 极简页 | `admin-payment-methods-rspec`、`admin-theme-rspec`、`admin-i18n-rspec` |
 | **7** | 知识同步 | AGENTS.md / skills / scenarios / PRD 回写 | `doc-impact`、`sync-check` |
+| **8** | **Place Order 正名与显式化**（**可独立先行，不依赖切片 1–6**） | BFF `prepare` → `place-order`（旧名留薄别名）；`prepareOrder` → `placeOrder`；契约把「建单结果」放显眼位；术语统一 | `storefront-test`；`checkout-preview-quote-rspec` 回归 |
+
+> 切片 8 是**纯前向增强**（不删任何东西），因此**可以最先做或最后做**，与 1–7 的删除工作互不阻塞。
 
 ---
 
@@ -745,5 +903,55 @@ flowchart LR
 | **3** | `rule_set` 是**契约变更**（动 OpenAPI + SDK + 前台类型）—— 接受这个代价吗？ | ✅ 接受则切片 4 单独提交 |
 | **4** | `Gateway::Bogus`：**类保留、出注册表**（后台不再可选）—— 还是**连类一起删**（会牵动大量测试造数）？ | 建议前者 |
 | **5** | dev 库里 `Credit Card`（Bogus）与 `chk` 两条**记录**清掉 —— 同意吗？ | ✅ 同意（名字最易混淆） |
+| **6** | Place Order 正名：**BFF `prepare` → `place-order`**，`prepare` 保留为薄别名，前台函数 `prepareOrder` → `placeOrder`—— 同意吗？ | ✅ 同意（**Store API 与支付链零改动**；两段语义今天已实现，本次是**正名 + 显式化**） |
+| **7** | 顾客视角仍是**一次点击**（按钮文案与交互不变）—— 同意吗？ | ✅ 同意（两段编排是**实现细节**，不暴露给顾客） |
+| **8** | 建单失败 → **停在结账页页内提示**（零跳转、零扣款、订单不存在）—— 同意吗？ | ✅ 同意（与「支付失败零跳转」口径一致） |
+| **9** | 是否给「建单成功」**新增 `order.placed` 事件**？ | ❌ **建议不加** —— `order.submitted` 已是同一时刻的语义等价事件，再加 = 重复事实源 |
 
-> 确认 1–5 后，从切片 0 + 1 开始。
+> 确认 1–9 后，从切片 0 + 1 开始（切片 8 可任意插队）。
+
+---
+
+## 12. 切片 8 展开：Place Order 的交付与验收
+
+### 12.1 交付清单（逐文件）
+
+| 文件 | 动作 | 内容 |
+|---|---|---|
+| `storefront/src/app/api/checkout/place-order/route.ts` | **新增** | 由 `prepare/route.ts` 内容搬移；头注释改为「第一段：Place Order」；响应把 `order_id` + `quote` 放在显眼位 |
+| `storefront/src/app/api/checkout/prepare/route.ts` | **改薄** | 保留为别名，转发到 `place-order` 的处理函数（或 re-export），做过渡期兼容 |
+| `storefront/src/components/checkout/UnifiedCheckout.tsx` | **改名** | `prepareOrder` → `placeOrder`；端点引用 → `place-order`；注释术语统一 |
+| `storefront/src/lib/checkout/server.ts` | **改名** | `CheckoutPrepareBody` → `CheckoutPlaceOrderBody`（保留旧名 type alias） |
+| `docs/design/payment-convergence-stripe-only.md` | 已改 | §3.0（本文件） |
+| `docs/prd/**` | **回写** | PRD-20260915 术语对齐（`prepare` → `place-order`） |
+| `ai/skills/pallastrade-checkout/SKILL.md` | **更新** | 记录两段语义的正式命名与边界 |
+| `harness/scenarios/scenarios.json` | 更新 | 若新增 eval 场景则登记 |
+
+### 12.2 不改的东西（明确边界）
+
+| 不改 | 理由 |
+|---|---|
+| `backend/**` 任何文件 | Store API `carts/:id/submit` 已满足全部需求 |
+| `platform/packages/**` | SDK 类型无变化（BFF 是内部契约） |
+| 数据库 / migration | **零 schema 变化** |
+| 支付链（`PaymentSessions::Start` / Stripe / webhook） | 第 ② 段完全不动 |
+| 顾客可见 UI 文案与交互 | 一次性点击不变 |
+
+### 12.3 验收清单
+
+| # | 验收点 | 验证方式 |
+|---|---|---|
+| 1 | 建单失败 → **零扣款、零订单、零跳转** | E2E：制造缺货商品 → 点击付款 → 断言页内提示 + DB 无新 Order + 无 Stripe 请求 |
+| 2 | 建单成功 + 支付失败 → 订单存在（`pending`）、可补付 | E2E：用测试卡触发拒绝 → 断言订单在 + `/account/orders/[id]` 可补付 |
+| 3 | 金额未变 → **一次点击走完两段** | E2E：点一次 → 断言先 `place-order` 再 `start`，无第二次交互 |
+| 4 | 金额变化 → 停在确认块，且**订单已建、不重复提交** | E2E：改库存触发变价 → 确认块出现 → 再点 → 断言只有 1 张 Order |
+| 5 | 幂等：并发 / 重试不产生第二张订单 | 集成：同一 cart 连续两次 `place-order` → 同一 `order_id` |
+| 6 | 钱包形态 2 不回归 | E2E：Apple Pay 面板仍可拉起 |
+| 7 | 旧端点 `prepare` 仍可用 | 契约：直接调 `prepare` 返回与 `place-order` 等价 |
+
+### 12.4 风险
+
+| 风险 | 缓解 |
+|---|---|
+| 改名导致漏改引用（BFF 路径是字符串字面量） | 全仓 `rg "checkout/prepare"` 一次清；保留薄别名兜底 |
+| 别名长期残留 | 设定明确删除时点（切片 7 知识同步时），并在 §8 保留清单登记 |
