@@ -259,8 +259,8 @@ export default {
       // PAY-CORE P3-A（PRD-20260920-checkout 支付核心统一 · 方式级路由决策）
       // 硬门（配置/三态/账户/Resolver 同源）+ 排序（市场覆写 > 全局优先序 > position > id）+ 确定性与不猜
       'payment-routing-rspec': {
-        description: 'Payment method routing decision specs (hard gates + priority ordering + determinism + no-guessing)',
-        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/payments/routing/decide_spec.rb'],
+        description: 'Payment method routing specs (decision hard gates + priority ordering + determinism + policy write + order-free preview)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/payments/routing/decide_spec.rb spec/services/pallastrade/payments/routing/policy_write_spec.rb'],
       },
       // D8 支付适用范围引擎（PRD-20260915-payments-d8）：入口/支付商按 market/country/zone/currency
       // PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-009

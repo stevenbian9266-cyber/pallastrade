@@ -88,6 +88,102 @@ module PallasTrade
           value = source[key.to_sym] if value.nil? && key.respond_to?(:to_sym)
           value
         end
+
+        # ------------------------------------------------------------------ 写入（P3-B）
+
+        # 策略写入原语（业务方案 §2.4）：白名单化写入 `store.private_metadata['payment_routing']`。
+        #
+        # 白名单（越界值进 `rejected` 并忽略，**不 raise**）：
+        #   mode     ∈ MODES（未实现模式不算合法写入值 —— 要先归一成 off 才能落库）
+        #   priority 的目标厂商 ∈ 本店 provider（prefixed_id）
+        #   markets  的市场键 ∈ 本店 market
+        #
+        # 语义：同值重复写入 → `unchanged` = true（**不写库、不审计**）；只写 store metadata，
+        # 不触碰 Payment / PaymentSession / 账本（零资金副作用）。
+        # @return [Hash] { 'ok', 'unchanged', 'policy', 'rejected' }
+        def write!(store, mode: nil, priority: nil, markets: nil, actor: nil, now: Time.current)
+          allowed = allowed_targets(store)
+          rejected = {}
+
+          submitted_mode = mode.to_s.downcase
+          if submitted_mode.present? && !MODES.include?(submitted_mode)
+            rejected['mode'] = [submitted_mode]
+            submitted_mode = nil
+          end
+
+          current = for_store(store)
+          candidate = normalize(
+            'mode' => submitted_mode.presence || current['mode'],
+            'priority' => filter_priority(priority, allowed['providers'], rejected),
+            'markets' => filter_markets(markets, allowed['markets'], allowed['providers'], rejected)
+          )
+
+          comparable = ->(policy) { policy.slice('mode', 'priority', 'markets') }
+          return result(store, candidate, rejected, unchanged: true) if comparable.call(candidate) == comparable.call(current)
+
+          persist!(store, candidate, actor: actor, now: now)
+          result(store, candidate, rejected, unchanged: false)
+        end
+
+        # 可选目标（后台表单与白名单同源）。
+        def allowed_targets(store)
+          {
+            'providers' => Array(store.respond_to?(:payment_methods) ? store.payment_methods : [])
+                            .map { |payment_method| payment_method.prefixed_id },
+            'markets' => Array(store.respond_to?(:markets) ? store.markets : []).map { |market| market.id.to_s }
+          }
+        end
+
+        def persist!(store, policy, actor: nil, now: Time.current)
+          metadata = (store.private_metadata || {}).deep_dup
+          metadata[KEY] = {
+            'mode' => policy['mode'],
+            'priority' => policy['priority'],
+            'markets' => policy['markets'],
+            'updated_at' => now.utc.iso8601,
+            'updated_by' => actor.presence
+          }.compact
+
+          store.update_columns(private_metadata: metadata)
+          true
+        end
+
+        def result(store, policy, rejected, unchanged:)
+          store.reload if unchanged == false
+
+          {
+            'ok' => true,
+            'unchanged' => unchanged,
+            'policy' => for_store(store),
+            'rejected' => rejected.compact
+          }
+        end
+
+        def filter_priority(raw, provider_ids, rejected)
+          return nil unless raw.respond_to?(:each_pair)
+
+          raw.each_pair.with_object({}) do |(key, value), accumulator|
+            sequence = normalize_sequence(value)
+            keep, drop = sequence.partition { |id| provider_ids.include?(id) }
+            rejected['priority'] ||= {}
+            rejected['priority'][key.to_s] = drop if drop.any?
+            accumulator[key.to_s] = keep if keep.any?
+          end
+        end
+
+        def filter_markets(raw, market_ids, provider_ids, rejected)
+          return nil unless raw.respond_to?(:each_pair)
+
+          raw.each_pair.with_object({}) do |(key, value), accumulator|
+            unless market_ids.include?(key.to_s)
+              (rejected['markets'] ||= []) << key.to_s
+              next
+            end
+
+            nested = filter_priority(value, provider_ids, rejected)
+            accumulator[key.to_s] = nested if nested.present?
+          end
+        end
       end
     end
   end

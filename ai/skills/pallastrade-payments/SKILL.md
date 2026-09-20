@@ -229,6 +229,17 @@ For an existing Order, start sessions through `PallasTrade::PaymentSessions::Sta
 | 铁律 | **纯读**（零写入/零网络/零资金副作用）；候选为空 → `no_candidate`（**不回落默认厂商**）；同输入同策略 → 同结果 |
 | 未做（P3-B） | 策略写入后台页与 Preview、决策落库留痕（PaymentSession）、成本/健康维度、跨厂商 fallback 切换 |
 
+**策略写入与预览（PAY-CORE P3-B, 2026-09-20）**
+
+| 项 | 口径 |
+|---|---|
+| 写入 | `Routing::Policy.write!(store, mode:, priority:, markets:, actor:)` —— 白名单（`mode ∈ off|shadow|priority_only`、priority 目标 ∈ 本店 provider、markets 键 ∈ 本店市场）；越界值进 `rejected` 忽略；同值幂等（不写库不审计）；只写 `store.private_metadata['payment_routing']` |
+| 预览 | `Routing::Summary.for_store(store, market_id: nil)` → `{ mode, applied, order_gates: 'skipped', methods: { <kind> => { status: 'preview', chosen, candidates, rejected } } }` |
+| 预览与决策的差异（重要） | 预览复用 `Decide` 的候选装配与排序，但**跳过订单级闸门**（D8 范围规则 / D11 熔断 / D15c 认证）→ 必须读 `order_gates` 字段，**不得**把预览当作「可付」结论；订单级结论一律走 `Decide.call(order:, …)` |
+| 诚实性 | 预览不捏造方式（集合来自 provider 声明与实际配置）；无候选 → 该方式不出现在结果里；被停用/账户未开通的厂商以 `rejected` reason 出现 |
+
+验证入口：`harness verify payment-routing-rspec`（决策 11 例 + 策略写入/预览 9 例）。
+
 验证入口：`harness verify payment-routing-rspec`（硬门 / 优先序 / 确定性与不猜，11 例）。
 
 ## Adding a payment gateway

@@ -5250,7 +5250,9 @@
         "Report the basis of the choice (priority override versus position) and keep the full candidate list with ranks plus a rejection list that names the reason for every provider that lost",
         "Keep the decision read-only - no writes, no provider calls, no payment, session or ledger side effects - and answer no_candidate with no chosen provider when nothing survives, rather than falling back to a default provider",
         "Keep the mode honest: only off, shadow and priority-only are supported, and a mode that would rank by cost is normalized to off and flagged as unsupported instead of pretending to apply a cost model",
-        "Return the same decision for the same order, method and policy, and record the policy version and the inputs snapshot with the decision"
+        "Return the same decision for the same order, method and policy, and record the policy version and the inputs snapshot with the decision",
+        "Make the policy writable through a whitelisting primitive that rejects an unimplemented mode, a provider that does not belong to the store, and a market key that is not the store's, keeps an identical write a no-op without touching the store record's timestamp, and changes no money records",
+        "Provide a preview that reuses the decision's candidate assembly and ranking but explicitly declares that order-scoped gates were skipped, so nobody reads it as 'this will definitely be payable', listed per method with the rejected providers and their reasons and never inventing a method"
       ],
       "mustNotDo": [
         "Rank before gating, or let a disabled, suspended or account-unopened provider remain a candidate",
