@@ -1,0 +1,29 @@
+<%# PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-011）—— 显示设置卡（抽出共用）。
+    从 `_form.html.erb` 抽出，供通用版面与 Stripe 专用版面共用。
+
+    `show_environment`（默认 true）：是否在本卡渲染「环境」选择。
+    Stripe 专用版面传 `false` —— 它把「环境」并入页首「连接」卡（这组凭证是测试还是线上，
+    与凭证同处置更自洽；字段名仍是 `payment_method[environment]`，控制器 `merge_environment_into`
+    的读取口径不变）。
+
+    参数：f（表单构建器）、show_environment（可选，默认 true） %>
+<% show_environment = local_assigns.fetch(:show_environment, true) %>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t(:display_settings) %></h5>
+  </div>
+  <div class="card-body">
+    <%= f.pallastrade_text_field :name, help: PallasTrade.t('admin.payment_methods.name_help') %>
+
+    <%= f.pallastrade_select :display_on, display_on_options, { label: PallasTrade.t(:display) } %>
+    <% if show_environment %>
+      <%# PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 环境（test / live）：
+          切到 test 即不进前台（业务方案 §68.1）；保存即生效，不重启不重建镜像。 %>
+      <%= f.pallastrade_select :environment, environment_options, { label: PallasTrade.t('admin.payment_methods.environment'), help: PallasTrade.t('admin.payment_methods.environment_help') } %>
+    <% end %>
+    <%= f.pallastrade_select :auto_capture, [["#{PallasTrade.t(:use_app_default)} (#{PallasTrade::Config[:auto_capture]})", ''], [PallasTrade.t(:say_yes).to_s, true], [PallasTrade.t(:say_no).to_s, false]], { label: PallasTrade.t(:auto_capture) } %>
+
+    <%= f.pallastrade_check_box :active %>
+  </div>
+</div>

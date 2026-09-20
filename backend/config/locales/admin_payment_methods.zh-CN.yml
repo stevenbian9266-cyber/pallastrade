@@ -57,19 +57,8 @@ zh-CN:
           account_saved: 账户配置已保存。
           account_unchanged: 无变化 —— 账户配置与提交内容一致。
           account_rejected: "已忽略（不在允许范围）：%{summary}"
-          routing_title: 支付路由
-          routing_help: 店铺级路由策略的预览。此处**不做**订单级判定（市场规则 / 熔断 / 认证），只能看「谁排在前面」，不代表顾客一定能支付成功。
-          routing_empty: 该支付商尚未参与任何支付方式。
-          routing_mine: "本店承接该方式 —— 第 %{position} 位，依据 %{basis}"
-          routing_other: "由 %{provider} 承接 —— 本店排第 %{position}/%{total} 位（依据 %{basis}）"
-          routing_not_selected: "非候选：%{reason}"
-          routing_modes:
-            "off": 路由未启用
-            shadow: 影子模式
-            priority_only: 仅按优先序
-          routing_basis:
-            priority_override: 配置优先序
-            position: 入口排序
+          # PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-013）—— routing_* 键已随 P3-C
+          # 后台展示面一并移除；路由引擎保留（Payments::Routing::*）。
           dimensions:
             methods: 支付方式
             currencies: 币种
@@ -114,6 +103,9 @@ zh-CN:
         payment_options_help: 每个启用的方式都是结账页的一个入口；停用后前台立即隐藏，展示顺序按「排序」渲染。
         payment_options_not_optionized: 该支付商尚未选项化 —— 前台仍按单一默认入口展示。勾选至少一个方式并保存后，前台改按本列表展示。
         payment_options_optionized: 前台已按本列表展示（%{total} 个启用入口）。
+        # PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-011）—— Stripe 专用版面「连接」卡
+        stripe_connection_title: Stripe 连接
+        stripe_connection_help: 填写 API 密钥、选择环境，然后跑一次连接检查。测试环境的凭据不会到达前台。
         test_connection: 测试连接
         test_connection_error: 无法执行连接检查
         test_connection_failed: "连接检查失败（%{code}）：%{message}"

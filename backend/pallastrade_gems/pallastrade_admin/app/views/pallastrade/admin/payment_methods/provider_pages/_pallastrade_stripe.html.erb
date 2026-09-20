@@ -1,0 +1,60 @@
+<%# PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-010/FR-011）—— Stripe 厂商详情页**专用版面**。
+    由 `edit.html.erb` 按 `PaymentMethod#provider_page_partial_name` 分派（Stripe → 'pallastrade_stripe'）。
+
+    与通用版面的差异（定向优化，其他 provider 不受影响）：
+      ① **首卡 = 「连接」**：凭证 + 环境 + [测试连接] 与最近一次结果同卡 —— 「先连接、再配置」；
+         通用版面把 [测试连接] 挂在「支付方式」卡头、结果在卡尾（离凭证太远）。
+      ② 不渲染厂商配置诊断卡于页首：`edit.html.erb` 对专用版面把它移到**主表单之后**（见该文件注释）。
+      ③ 不渲染配置指南（FR-012：Stripe 的指南 partial 实为 0 字节死重，已删除）。
+
+    ⚠️ 本 partial 渲染在主表单**内部**（凭证/显示设置/方式页签/凭据卡都随主表单一起提交）。
+       次级表单（账户配置 / 软置灰）仍在主表单之外 —— **不得挪回**，否则嵌套 <form> 会丢失提交归属（S0 根因）。 %>
+<%
+  last_check = @payment_method.metadata&.[]('last_test_connection')
+%>
+
+<div class="card mb-6" data-testid="stripe-connection">
+  <div class="card-header">
+    <h5 class="card-title"><%= PallasTrade.t('admin.payment_methods.stripe_connection_title') %></h5>
+  </div>
+  <div class="card-body">
+    <p class="form-text mb-3"><%= PallasTrade.t('admin.payment_methods.stripe_connection_help') %></p>
+
+    <%= render 'pallastrade/admin/payment_methods/provider_settings', f: f %>
+
+    <%# 环境与凭证同处置：这组 key 是测试还是线上（test 不进前台，业务方案 §68.1）。
+        字段名仍为 payment_method[environment]，控制器 merge_environment_into 读取口径不变。 %>
+    <%= f.pallastrade_select :environment, environment_options, { label: PallasTrade.t('admin.payment_methods.environment'), help: PallasTrade.t('admin.payment_methods.environment_help') } %>
+
+    <div class="mt-3">
+      <%# 只读探测 + 结果写 metadata['last_test_connection'] + 审计。
+          按钮走 Turbo 栈约定（后台无 rails-ujs；且**不得**用嵌套 <form>）。 %>
+      <%= link_to PallasTrade.t('admin.payment_methods.test_connection'),
+                  PallasTrade.test_connection_admin_payment_method_path(@payment_method),
+                  class: 'btn btn-secondary btn-sm',
+                  data: { turbo_method: :post, turbo_frame: '_top', testid: 'stripe-test-connection' } %>
+    </div>
+
+    <% if last_check.present? %>
+      <p class="text-gray-600 mt-2" data-testid="stripe-test-connection-result">
+        <%= PallasTrade.t('admin.payment_methods.last_test_connection') %>:
+        <span class="badge <%= last_check['ok'] ? 'badge-success' : 'badge-danger' %>">
+          <%= last_check['ok'] ? PallasTrade.t(:say_yes) : PallasTrade.t(:say_no) %>
+        </span>
+        <%= "#{last_check['code']} · #{last_check['checked_at']}" %>
+        <% if last_check['message'].present? %>
+          <br /><%= last_check['message'] %>
+        <% end %>
+      </p>
+    <% end %>
+  </div>
+</div>
+
+<%# 显示设置：环境已并入上方「连接」卡 → 此处不再重复渲染 %>
+<%= render 'pallastrade/admin/payment_methods/display_settings', f: f, show_environment: false %>
+
+<%# 「支付方式」页签（能力目录表）——S2 将改为按「Stripe 账户事实 ∩ 本地能力」的四象限渲染 %>
+<%= render 'pallastrade/admin/payment_methods/options' %>
+
+<%# 凭据健康（轮换/到期/reveal）+ Webhook 卡 %>
+<%= render 'pallastrade/admin/payment_methods/credentials' %>

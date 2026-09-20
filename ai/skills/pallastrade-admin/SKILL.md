@@ -450,6 +450,26 @@ end
 - **回归**：`harness verify admin-payment-methods-rspec`（页签渲染/保存归一 + Test connection + 脱敏 +
   optionized 门控/Start 同源校验）。
 
+## 厂商详情页分派与 Stripe 定向版面（S1, 2026-09-20，PRD-20260915-admin §1.1 / FR-010..014）
+
+后台支付方式编辑页现在是**可分派**的：provider 声明 `PaymentMethod#provider_page_partial_name`（基类 `nil`）时，
+`edit.html.erb` 渲染 `payment_methods/provider_pages/<name>`（专用版面），否则沿用通用版面。
+
+| 项 | 口径 |
+|---|---|
+| 钩子 | `PaymentMethod#provider_page_partial_name`（core，默认 `nil`）；`PallasTradeStripe::Gateway` → `'pallastrade_stripe'` |
+| 范式 | 与 `configuration_guide_partial_name` / `custom_form_fields_partial_name` / `description_partial_name` 同族；先例 `payments/new.html.erb` 的 `source_forms/#{method_type}`。**纯渲染侧**，不参与 availability / routing / start 任何求值 |
+| 共用块 | `_provider_settings.html.erb`（凭证 + 掩码 + custom form fields，**仅卡体**）与 `_display_settings.html.erb`（`show_environment:` 默认 true）从 `_form.html.erb` 抽出，两版面共用 |
+| Stripe 版面 | `provider_pages/_pallastrade_stripe.html.erb`：**首卡 =「连接」**（凭证 + 环境 + `[测试连接]` + 最近结果，同一卡）→ 显示设置（不含环境）→ 支付方式页签 → 凭据卡 |
+| 诊断卡位置 | 专用版面下由 `edit.html.erb` 移到**主表单之后**（让连接卡成为内容列第一张卡）；通用版面维持在主表单之前 |
+| 按钮归属 | 专用版面下 `_options` 卡**不再**渲染 `[测试连接]` 与结果（`show_test_connection = provider_page_partial_name.blank?`）—— 通用版面零回归 |
+| 已删除 | Stripe 的 `configuration_guide_partial_name` 与其实占 **0 字节**的 partial（FR-012）；P3-C 后台「支付路由」预览区块 + `PaymentsHelper#provider_routing_preview` + `routing_*` i18n 键（FR-013，**路由引擎保留**） |
+| 熔断卡 | 默认折叠（`stimulus-reveal-controller` + `card-header--collapsible` + `collapsible-content is-collapsed`，同 `dashboard/_setup_tasks` / `orders/_line_items`）；锚点 `#payment_method_breaker` 与动作不变 |
+| 回归 | `harness verify admin-payment-methods-rspec` / `payment-providers-rspec` / `d11-circuit-breaker-rspec` / `payment-routing-rspec` / `admin-theme-rspec` / `admin-i18n-rspec`；新增断言读 `data-testid="stripe-connection"` / `"stripe-test-connection"` / `"stripe-test-connection-result"` / `"payment-options"` / `"options-test-connection"` |
+
+> ⚠️ **不要**把专用版面的分派做成「按 `method_type` 猜 partial 名 + `lookup_context.exists?`」—— 隐式、
+> 重命名时会静默回落；用显式返回 `nil` 的声明式方法。新增 provider 专用版面只需在自家 gem 声明钩子 + 放 partial。
+
 ## 支付凭据与环境：provider 详情页（D9 切片2, 2026-09-15，PRD-20260915-payments-d9）
 
 - **环境控件**：显示设置卡增 `f.pallastrade_select :environment, environment_options`（helper 在 `PaymentsHelper#environment_options`）；控制器 `merge_environment_into` 从 **`params`** 读取（`environment` 不在 permit 名单内），白名单外的值忽略，切 `test` 时强制 `storefront_visible = false`。
@@ -460,7 +480,8 @@ end
 
 ## 支付熔断与健康：provider 详情页（D11 切片1, 2026-09-16，PRD-20260916-payments-d11-circuit-breaker-health）
 
-- **「熔断与健康」卡**（`_breaker.html.erb`，**S0（2026-09-20）起由 `edit.html.erb` 在 `form_for` 之后 render（主表单之外）**；锚点 `#payment_method_breaker`）：
+- **「熔断与健康」卡**（`_breaker.html.erb`，**S0（2026-09-20）起由 `edit.html.erb` 在 `form_for` 之后 render（主表单之外）**；
+  **S1 起默认折叠**（可折叠外层：`reveal` + `collapsible-content is-collapsed`）；锚点 `#payment_method_breaker`）：
   上表 = 24h provider 级指标（尝试/失败/失败率/平均时长/主要错误）；下表 = 逐入口状态（正常/已软置灰 + 恢复时间）+ 动作。
   指标**只调** `Payments::Health::Metrics`（`PaymentsHelper#breaker_health_metrics`），页面不重算口径。
 - **手动动作**（member route）：`POST /admin/payment_methods/:id/soft_disable`（**必填 reason**，缺原因 → `flash[:error]` 且不改状态）

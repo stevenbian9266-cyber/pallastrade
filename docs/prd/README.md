@@ -185,7 +185,7 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 2. 用户确认 → approved
 3. `harness gate` → 生成 REQ → 实施 → 测试
 4. 验证 → done → 知识同步门（更新本索引）
-| done | PRD-20260915-admin-管理后台支付配置选项化-支付商-支付方式-前台入口 | admin | 2026-09-15 | N/A |
+| implementing | PRD-20260915-admin-管理后台支付配置选项化-支付商-支付方式-前台入口 | admin | 2026-09-15 | N/A |
 | done | PRD-20260915-catalog-pdp-state-correctness | catalog | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-admin-bulk-operations-2 | admin | 2026-09-15 | （实施时回填） |
 | done | PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 | payments | 2026-09-15 | （实施时回填） |

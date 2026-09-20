@@ -91,7 +91,10 @@ RSpec.describe 'Admin payment provider diagnostics', type: :request do
     expect(doc.at_css("[data-testid='provider-diagnostics-state']").text.strip).to eq('Suspended')
   end
 
-  describe 'P3-C 路由预览' do
+  # PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-013）—— P3-C 后台「支付路由」预览区块**已下架**。
+  # 原 4 例渲染断言改写为**反向断言**：无论是否选项化 / 是否被停用，诊断卡内都不再出现路由预览区块，
+  # 且对应 i18n 键已一并移除。路由**引擎**未改动（见 `harness verify payment-routing-rspec`）。
+  describe 'S1：路由预览已下架（FR-013）' do
     def optionized!(payment_method, kind: 'card', position: 1)
       payment_method.update_columns(private_metadata: {
                                       'optionized' => true,
@@ -100,56 +103,35 @@ RSpec.describe 'Admin payment provider diagnostics', type: :request do
       payment_method.reload
     end
 
-    it 'renders the preview block with the mode badge and the skipped-order-gates note' do
+    it 'does not render the routing preview block for an optionized provider' do
       gateway = create(:stripe_gateway, store: store)
       optionized!(gateway)
 
-      doc = render_edit(gateway)
+      render_edit(gateway)
 
-      card = doc.at_css("[data-testid='provider-routing-preview']")
-      expect(card).to be_present
-      expect(card.at_css("[data-testid='provider-routing-mode']").text.strip).to eq('Routing off')
-      expect(card.at_css("[data-testid='provider-routing-gates-note']").text).to include('Order-scoped gates')
+      expect(response.body).not_to include('provider-routing-preview')
+      expect(response.body).not_to include('provider-routing-mode')
+      expect(response.body).not_to include('provider-routing-gates-note')
     end
 
-    it 'shows a row per participating method and reports this provider as the carrier' do
-      gateway = create(:stripe_gateway, store: store)
-      optionized!(gateway)
-
-      doc = render_edit(gateway)
-      row = doc.at_css("[data-testid='provider-routing-row-card']")
-
-      expect(row).to be_present
-      expect(row.text).to include('Carries this method')
-      expect(row.text).to include('position 1')
-    end
-
-    it 'reports the reason when this provider is not a candidate' do
+    it 'does not render it for a disabled provider either' do
       gateway = create(:stripe_gateway, store: store)
       optionized!(gateway)
       PallasTrade::Payments::Providers::State.disable!(gateway)
 
-      doc = render_edit(gateway)
-      row = doc.at_css("[data-testid='provider-routing-row-card']")
+      render_edit(gateway.reload)
 
-      expect(row.text).to include('provider_disabled')
-      expect(row.text).not_to include('Carries this method')
+      expect(response.body).not_to include('provider-routing-preview')
     end
 
-    it 'lists the winning provider when another provider ranks first' do
-      gateway = create(:stripe_gateway, store: store)
-      optionized!(gateway, position: 2)
-      other = create(:stripe_gateway, store: store, name: 'Stripe B')
-      other.update_columns(private_metadata: {
-                             'optionized' => true,
-                             'options' => [{ 'kind' => 'card', 'active' => true, 'position' => 1 }]
-                           })
+    it 'no longer ships the routing preview i18n keys' do
+      keys = %w[routing_title routing_help routing_empty routing_mine routing_other
+                routing_not_selected routing_modes routing_basis]
 
-      doc = render_edit(gateway.reload)
-      row = doc.at_css("[data-testid='provider-routing-row-card']")
-
-      expect(row.text).to include('Stripe B')
-      expect(row.text).to include('position 2')
+      keys.each do |key|
+        expect(I18n.exists?("pallastrade.admin.payment_methods.provider_diagnostics.#{key}")).to be(false),
+                                                                                                  "#{key} 应随 FR-013 一并移除"
+      end
     end
   end
 end

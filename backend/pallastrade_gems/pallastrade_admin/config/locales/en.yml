@@ -1144,19 +1144,9 @@ en:
           account_saved: Account configuration saved.
           account_unchanged: No change — the account configuration already matches.
           account_rejected: "Ignored (not allowed): %{summary}"
-          routing_title: Payment routing
-          routing_help: Preview of the store-level routing policy. Order-scoped gates (market rules, circuit breaker, authentication) are NOT evaluated here - use it to see who ranks first, not to conclude that a payment will succeed.
-          routing_empty: This provider does not take part in any payment method yet.
-          routing_mine: "Carries this method - position %{position}, ranking by %{basis}"
-          routing_other: "Taken by %{provider} - we are at position %{position} of %{total} (ranking by %{basis})"
-          routing_not_selected: "Not a candidate: %{reason}"
-          routing_modes:
-            "off": Routing off
-            shadow: Shadow mode
-            priority_only: Priority-only
-          routing_basis:
-            priority_override: configured priority
-            position: option position
+          # PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-013）—— `routing_*` 键已随 P3-C
+          # 后台展示面一并移除；**路由引擎保留**（Payments::Routing::*）。如日后要再暴露
+          # 后台入口，应挂在「路由策略」自己的页面上，而不是厂商详情页。
           dimensions:
             methods: Methods
             currencies: Currencies
@@ -1223,6 +1213,9 @@ en:
         payment_options_help: Each enabled option becomes an entry offered at checkout. Disable an option to hide it from the storefront immediately; the checkout list follows the position order.
         payment_options_not_optionized: This provider is not optionized yet — checkout keeps offering a single default entry. Enable at least one option and save to switch to this list.
         payment_options_optionized: "Checkout now uses this option list (%{total} enabled)."
+        # PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-011）—— Stripe 专用版面「连接」卡
+        stripe_connection_title: Stripe connection
+        stripe_connection_help: Save the API keys, choose the environment and run a connection check. Credentials that are test-environment never reach the storefront.
         test_connection: Test connection
         test_connection_error: Could not run the connection test
         test_connection_failed: "Connection check failed (%{code}): %{message}"

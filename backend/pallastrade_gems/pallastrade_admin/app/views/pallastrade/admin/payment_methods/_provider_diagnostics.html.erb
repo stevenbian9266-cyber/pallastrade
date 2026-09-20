@@ -63,45 +63,9 @@
                          data: { testid: 'provider-account-save' } %>
     <% end %>
 
-    <%# PALLAS-CUSTOM: PAY-CORE-P3C（PRD-20260920-checkout 切片 P3-C）—— 路由预览（只读）：
-        每个参与的方式由谁承接 / 我在第几位 / 为何未选中；订单级闸门未参与，已显式标注。 %>
-    <% routing = provider_routing_preview(@object) %>
-    <% if routing %>
-      <hr class="my-3">
-      <div data-testid="provider-routing-preview">
-        <h6 class="mb-2">
-          <%= PallasTrade.t('admin.payment_methods.provider_diagnostics.routing_title') %>
-          <span class="badge badge-light border ms-1" data-testid="provider-routing-mode"><%= routing[:mode_label] %></span>
-        </h6>
-        <p class="form-text" data-testid="provider-routing-gates-note">
-          <%= PallasTrade.t('admin.payment_methods.provider_diagnostics.routing_help') %>
-        </p>
-        <% if routing[:rows].empty? %>
-          <p class="text-sm mb-0" data-testid="provider-routing-empty">
-            <%= PallasTrade.t('admin.payment_methods.provider_diagnostics.routing_empty') %>
-          </p>
-        <% else %>
-          <ul class="list-unstyled mb-0">
-            <% routing[:rows].each do |row| %>
-              <li class="mb-1 text-sm" data-testid="provider-routing-row-<%= row[:method_key] %>">
-                <span class="badge badge-light border"><%= row[:method_key] %></span>
-                <% if row[:mine] %>
-                  <%= PallasTrade.t('admin.payment_methods.provider_diagnostics.routing_mine',
-                                    position: row[:rank], basis: provider_diagnostic_text("routing_basis.#{row[:basis]}")) %>
-                <% elsif row[:winner_name].present? %>
-                  <%= PallasTrade.t('admin.payment_methods.provider_diagnostics.routing_other',
-                                    provider: row[:winner_name], position: row[:rank].to_i,
-                                    total: routing[:rows].size,
-                                    basis: provider_diagnostic_text("routing_basis.#{row[:basis]}")) %>
-                <% else %>
-                  <%= PallasTrade.t('admin.payment_methods.provider_diagnostics.routing_not_selected',
-                                    reason: row[:reason].to_s) %>
-                <% end %>
-              </li>
-            <% end %>
-          </ul>
-        <% end %>
-      </div>
-    <% end %>
+    <%# PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-013）—— 移除 P3-C「支付路由」预览区块。
+        理由：「多厂商之间谁承接」不属于「单厂商配置」页，且其结论只在订单上下文才有意义
+        （预览本身 order_gates: 'skipped'）。**路由引擎保留**（`Payments::Routing::{Decide,Policy,Summary}`
+        与 `payment-routing-rspec` 均未改动）—— 移除的只是后台展示面。 %>
   </div>
 </div>

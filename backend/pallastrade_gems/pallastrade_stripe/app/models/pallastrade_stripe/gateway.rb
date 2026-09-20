@@ -573,6 +573,14 @@ module PallasTradeStripe
       'pallastrade_stripe'
     end
 
+    # PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-010）—— Stripe 专用详情页版面。
+    # 页首为「连接」区（凭证 + 环境 + [测试连接] 与最近结果），而非通用版面的诊断卡优先。
+    # 注：此前的 `configuration_guide_partial_name`（指向 0 字节 partial）已随 FR-012 删除 ——
+    # 不再声明 → 通用/专用版面均不渲染配置指南。
+    def provider_page_partial_name
+      'pallastrade_stripe'
+    end
+
     def gateway_dashboard_payment_url(payment)
       return if payment.transaction_id.blank?
 

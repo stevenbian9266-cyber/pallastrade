@@ -682,6 +682,19 @@ module PallasTrade
       PallasTrade::Payments::Providers::Validate.summary(self)
     end
 
+    # PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-010）—— 厂商详情页**声明式分派钩子**。
+    #
+    # 返回 partial 名时，后台编辑页渲染 `payment_methods/provider_pages/<name>`（厂商专用版面）；
+    # 返回 nil（默认）= 沿用通用版面。本仓既有同范式钩子：`configuration_guide_partial_name` /
+    # `custom_form_fields_partial_name` / `description_partial_name`；先例见
+    # `payments/new.html.erb` 的 `source_forms/#{method_type}` 分派。
+    #
+    # 纯**渲染侧**：不参与 availability / routing / start 任何求值，无行为副作用。
+    # @return [String, nil]
+    def provider_page_partial_name
+      nil
+    end
+
     # PALLAS-CUSTOM: D8（PRD-20260915-payments-d8 切片1）—— 入口「适用范围」读取（业务方案 §66.2）。
     # @return [Hash, nil] 归一后的 rule_set；nil = 不限（无规则 / 非法配置一律视同不限）
     def payment_option_rule_set(kind)

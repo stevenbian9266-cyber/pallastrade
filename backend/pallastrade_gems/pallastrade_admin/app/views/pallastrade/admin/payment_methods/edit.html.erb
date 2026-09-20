@@ -5,21 +5,43 @@
 
 <div class="grid grid-cols-12 gap-6">
   <div class="col-span-12 lg:col-span-6 lg:col-start-4">
+    <%# PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-010）—— 厂商页面分派：
+        provider 声明 `provider_page_partial_name` 时渲染专用版面（`provider_pages/<name>`），
+        否则沿用通用版面（Adyen / PayPal / Check / StoreCredit 零回归）。
+        同范式先例：`configuration_guide_partial_name` / `custom_form_fields_partial_name`，
+        以及 `payments/new.html.erb` 的 `source_forms/#{method_type}`。 %>
+    <% provider_page = @payment_method.provider_page_partial_name.presence %>
+
     <%# PALLAS-CUSTOM: S0（2026-09-20）—— 厂商诊断卡**必须渲染在主表单之外**：
         卡内「账户配置」是它自己的 `form_with`（POST update_provider_account），
-        若落在 `form_for` 内部即构成嵌套 <form>（HTML 非法）——HTML5 解析器会丢弃内层
+        若落在 `form_for` 内部即构成嵌套 <form>（HTML 非法）—— HTML5 解析器会丢弃内层
         `<form>` 起始标签，使提交归属到主表单（实战表现：点「保存账户配置」把主表单保存一次、
-        账户配置静默丢失）。位置保持在内容列顶部（与既有视觉一致）。 %>
-    <%= render 'pallastrade/admin/payment_methods/provider_diagnostics' %>
+        账户配置静默丢失）。
+        S1 补充：专用版面（Stripe）把它移到**主表单之后**，让「连接」卡成为内容列第一张卡
+        （FR-011「先连接、再配置」）；通用版面维持它在主表单之前的既有位置。 %>
+    <% unless provider_page %>
+      <%= render 'pallastrade/admin/payment_methods/provider_diagnostics' %>
+    <% end %>
 
     <%= form_for @payment_method, as: :payment_method, url: PallasTrade.admin_payment_method_path(@payment_method), html: { id: "edit_payment_method_#{@payment_method.id}" } do |f| %>
       <%= render partial: 'pallastrade/admin/shared/error_messages', locals: { target: @payment_method } %>
-      <%= render 'form', f: f %>
-      <%# PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片3）—— 「支付方式」页签（随主表单提交） %>
-      <%= render 'options' %>
-      <%# PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 凭据健康（轮换/到期/reveal）+ Webhook 卡 %>
-      <%= render 'credentials' %>
+      <% if provider_page %>
+        <%# 专用版面自带：连接卡 / 显示设置 / 支付方式页签 / 凭据卡 %>
+        <%= render "pallastrade/admin/payment_methods/provider_pages/#{provider_page}", f: f %>
+      <% else %>
+        <%# 通用版面（既有行为，逐字不变） %>
+        <%= render 'form', f: f %>
+        <%# PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片3）—— 「支付方式」页签（随主表单提交） %>
+        <%= render 'options' %>
+        <%# PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 凭据健康（轮换/到期/reveal）+ Webhook 卡 %>
+        <%= render 'credentials' %>
+      <% end %>
       <%= render 'pallastrade/admin/shared/edit_resource_links', f: f %>
+    <% end %>
+
+    <% if provider_page %>
+      <%# 专用版面：诊断卡落在此处（厂商事实摘要，主表单之后） %>
+      <%= render 'pallastrade/admin/payment_methods/provider_diagnostics' %>
     <% end %>
 
     <%# PALLAS-CUSTOM: S0（2026-09-20）—— 熔断卡**必须渲染在主表单之外**，同理：卡内「软置灰」

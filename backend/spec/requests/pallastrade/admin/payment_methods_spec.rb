@@ -454,4 +454,87 @@ RSpec.describe 'Admin payment methods option configuration', type: :request do
       expect(option['scope_summary']).to include(market.name)
     end
   end
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-010..FR-014）—— Stripe 厂商详情页定向优化。
+  #   AC-009 ← FR-010：Stripe 渲染专用版面；其他 provider 仍渲染通用版面
+  #   AC-010 ← FR-011：Stripe 首卡 =「连接」（凭证 + 环境 + [测试连接] + 最近结果）；
+  #                    通用版面的按钮仍留在「支付方式」卡内
+  #   AC-011 ← FR-012：Stripe 不再渲染配置指南（其 0 字节 partial 已删除）
+  #   AC-013 ← FR-014：熔断卡外层可折叠，锚点与软置灰动作不变
+  describe 'S1 Stripe 厂商详情页（FR-010..014）' do
+    def render_edit_page(payment_method)
+      sign_in_as_superuser
+      get "/admin/payment_methods/#{payment_method.prefixed_id}/edit"
+      expect(response).to have_http_status(:ok)
+      Nokogiri::HTML5(response.body)
+    end
+
+    it 'renders the Stripe-specific page with the connection card first (AC-009/010)' do
+      doc = render_edit_page(stripe_gateway)
+
+      connection = doc.at_css("[data-testid='stripe-connection']")
+      expect(connection).to be_present
+
+      # 凭证 + 环境 + [测试连接] 同在「连接」卡（FR-011 的核心诉求：先连接、再配置）
+      expect(connection.css("input[name='payment_method[preferred_publishable_key]']")).to be_present
+      expect(connection.css("input[name='payment_method[preferred_secret_key]']")).to be_present
+      expect(connection.css("select[name='payment_method[environment]']")).to be_present
+      expect(connection.at_css("[data-testid='stripe-test-connection']")).to be_present
+
+      # 连接卡是内容列第一张卡（诊断卡被移到主表单之后）
+      ordered = doc.css("[data-testid='stripe-connection'], [data-testid='provider-diagnostics']")
+      expect(ordered.first['data-testid']).to eq('stripe-connection')
+    end
+
+    it 'shows the last connection check result inside the connection card (AC-010)' do
+      gateway = stripe_gateway
+      gateway.update_columns(
+        private_metadata: (gateway.private_metadata || {}).merge(
+          'last_test_connection' => { 'ok' => true, 'code' => 'credentials_present',
+                                      'message' => 'Credentials are present',
+                                      'checked_at' => '2026-09-20T10:00:00Z' }
+        )
+      )
+
+      doc = render_edit_page(gateway.reload)
+      result = doc.at_css("[data-testid='stripe-test-connection-result']")
+
+      expect(result).to be_present
+      expect(result.text).to include('credentials_present')
+      # 专用版面下，「支付方式」卡不再重复承载按钮
+      expect(doc.at_css("[data-testid='options-test-connection']")).to be_nil
+    end
+
+    it 'no longer renders the deleted Stripe configuration guide (AC-011)' do
+      doc = render_edit_page(stripe_gateway)
+
+      expect(doc.text).not_to include('translation missing')
+      expect(File.exist?(
+               Rails.root.join('pallastrade_gems/pallastrade_stripe/app/views/pallastrade/admin/payment_methods/' \
+                               'configuration_guides/_pallastrade_stripe.html.erb')
+             )).to be(false)
+    end
+
+    it 'folds the breaker card while keeping its anchor and actions (AC-013)' do
+      doc = render_edit_page(stripe_gateway)
+      card = doc.at_css('#payment_method_breaker')
+
+      expect(card).to be_present
+      expect(card['data-controller']).to eq('reveal')
+      expect(card.at_css('[data-reveal-target="item"]')['class']).to include('is-collapsed')
+      expect(card.at_css("[data-testid='breaker-soft-disable-save']")).to be_present
+    end
+
+    it 'keeps a non-Stripe provider on the generic page (AC-009/010 zero regression)' do
+      check_gateway = create(:check_payment_method, store: store, active: true, display_on: 'both', name: 'Check')
+      doc = render_edit_page(check_gateway)
+
+      expect(doc.at_css("[data-testid='stripe-connection']")).to be_nil
+      # 通用版面：按钮仍在「支付方式」卡；诊断卡仍在主表单之前
+      expect(doc.at_css("[data-testid='payment-options'] [data-testid='options-test-connection']")).to be_present
+      ordered = doc.css("[data-testid='payment-options'], [data-testid='provider-diagnostics']")
+      expect(ordered.first['data-testid']).to eq('provider-diagnostics')
+    end
+  end
 end

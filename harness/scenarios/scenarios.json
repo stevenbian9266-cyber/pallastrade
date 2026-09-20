@@ -5330,6 +5330,36 @@
         "rootCauseDocumented": 15,
         "writePathsUntouched": 10
       }
+    },
+    {
+      "id": "GS-202",
+      "name": "Re-tailor one provider's admin page without touching the others - declare a dispatch hook, then delete what is dead",
+      "description": "On the admin payment-method edit page an operator configuring Stripe lands on a generic page whose first screen is a provider diagnostics card with a hand-filled account form, while the actual first step - saving the API keys and running a connection check - sits in the middle of the page and its button and last result are far apart in another card. Two blocks on that page carry no value for this provider at all: an empty configuration guide partial (a zero-byte file) and a read-only payment-routing preview that answers a cross-provider question rather than a single-provider one. The ask: give Stripe its own page layout - connection first, then methods - delete the dead blocks, and leave every other provider's page byte-for-byte identical.",
+      "mustDo": [
+        "Add an explicit declarative dispatch hook that returns nil by default and a partial name for the provider that needs its own layout, mirroring the existing provider-declared partial-name hooks in the same form, instead of guessing a partial from the provider type and probing whether it exists",
+        "Keep the change purely presentational: the hook must not take part in availability, routing, or session-start evaluation, and the dispatch branch must leave the generic layout rendering the exact same partials and fields as before",
+        "Move the credentials block, the environment selector, the connection-check action and its last result into one card at the top of the provider's page, reusing the extracted shared partials instead of duplicating their markup",
+        "Keep the connection-check action on the framework's documented convention for this admin (no nested forms, no rails-ujs-only helpers) so it cannot reintroduce the ownership defect that nested forms cause",
+        "When a block is dead weight, delete it end to end - the view block, its helper, its translation keys in every locale, and the spec assertions that guarded it - replacing the old positive assertions with assertions that the block is gone",
+        "Keep the engine behind a deleted display surface: the routing decision and preview services and their own verifier stay untouched, and the removal is recorded as a UI-surface decision so a future reader does not think the capability was dropped",
+        "Fold the operations-only card by default using the admin's existing collapsible card pattern and keep its anchor and its actions intact",
+        "Prove the non-provider path did not move by asserting, on a different provider, that the dedicated card is absent, the connection control still lives in its original card, and the card order is unchanged"
+      ],
+      "mustNotDo": [
+        "Give every provider the new layout, or special-case by editing a shared partial in a way that changes what other providers render",
+        "Introduce a new route, migration, or API contract change for a page that only needed re-ordering and deletion",
+        "Delete a display surface together with its engine, or leave orphaned translation keys behind",
+        "Copy the credentials markup into the new layout, so the two copies can drift",
+        "Leave the deleted block's positive spec assertions in place, or rely on the legacy HTML parser where the assertion is about how a browser would behave"
+      ],
+      "scoring": {
+        "declarativeHookNotGuessing": 20,
+        "genericLayoutUntouchedAndProven": 20,
+        "connectionCardCohesion": 15,
+        "deadWeightDeletedEndToEnd": 20,
+        "engineKeptWhenSurfaceRemoved": 15,
+        "collapsibleReusesExistingPattern": 10
+      }
     }
   ]
 }

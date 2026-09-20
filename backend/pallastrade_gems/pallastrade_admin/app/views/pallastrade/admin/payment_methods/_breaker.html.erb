@@ -1,14 +1,26 @@
 <%# PALLAS-CUSTOM: D11 切片1（PRD-20260916-payments-d11）—— 熔断与健康卡（业务方案 §67.3）： %>
 <%#   * 上：24h 健康指标（provider 级口径：尝试/失败/失败率/平均时长/主要错误） %>
 <%#   * 下：逐入口状态（正常/已软置灰）+ 手动软置灰（必填原因 + 审计）/ 解除 %>
+<%# PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-014）—— 本卡改为**默认折叠**（运维傅底，
+    不是常规配置动作；折叠降低噪声）。沿用后台既有折叠范式：`stimulus-reveal-controller`
+    （`data-controller="reveal"` + `data-action="click->reveal#toggle"` + `card-header--collapsible`
+    + `collapsible-content is-collapsed`），与 `dashboard/_setup_tasks` / `orders/_line_items` 一致。
+    锚点 `#payment_method_breaker`、指标表与软置灰/解除动作均不变。 %>
 <% metrics = breaker_health_metrics(@payment_method) %>
 <% rows = breaker_health_rows(@payment_method) %>
 
-<div class="card mb-6" id="payment_method_breaker">
-  <div class="card-header">
-    <h5 class="card-title"><%= PallasTrade.t('admin.payment_methods.breaker_health') %></h5>
+<div class="card mb-6" id="payment_method_breaker"
+     data-controller="reveal" data-reveal-hidden-class="is-collapsed">
+  <div class="card-header card-header--collapsible flex justify-between items-center cursor-pointer border-0 bg-transparent"
+       data-action="click->reveal#toggle">
+    <h5 class="card-title mb-0"><%= PallasTrade.t('admin.payment_methods.breaker_health') %></h5>
+    <span class="btn btn-light btn-sm inline-flex items-center">
+      <%= PallasTrade.t(:show_details) %>
+      <%= icon('selector', class: 'mr-0 ml-1 transition-transform duration-200') %>
+    </span>
   </div>
-  <div class="card-body">
+  <div data-reveal-target="item" class="collapsible-content is-collapsed">
+    <div class="card-body">
     <p class="form-text mb-3"><%= PallasTrade.t('admin.payment_methods.breaker_help') %></p>
 
     <table class="table mb-4">
@@ -88,5 +100,6 @@
     <% else %>
       <p class="form-text mb-0"><%= PallasTrade.t('admin.payment_methods.breaker_none') %></p>
     <% end %>
+    </div>
   </div>
 </div>

@@ -237,7 +237,7 @@ For an existing Order, start sessions through `PallasTrade::PaymentSessions::Sta
 | 预览 | `Routing::Summary.for_store(store, market_id: nil)` → `{ mode, applied, order_gates: 'skipped', methods: { <kind> => { status: 'preview', chosen, candidates, rejected } } }` |
 | 预览与决策的差异（重要） | 预览复用 `Decide` 的候选装配与排序，但**跳过订单级闸门**（D8 范围规则 / D11 熔断 / D15c 认证）→ 必须读 `order_gates` 字段，**不得**把预览当作「可付」结论；订单级结论一律走 `Decide.call(order:, …)` |
 | 诚实性 | 预览不捏造方式（集合来自 provider 声明与实际配置）；无候选 → 该方式不出现在结果里；被停用/账户未开通的厂商以 `rejected` reason 出现 |
-| 后台预览（P3-C） | 支付方式编辑页卡片内 `[data-testid="provider-routing-preview"]`：模式徽标（`routing_modes.*`）+ 每个参与方式一行（承运厂商 / 本店位次与依据 / 未选原因）；文案必须写明**未做订单级判定**（不得被当成「可付」） |
+| 后台预览（P3-C） | ~~支付方式编辑页卡片内 `[data-testid="provider-routing-preview"]`~~ —— **该后台展示面已在 S1（2026-09-20，PRD-20260915-admin §1.1 / FR-013）下架**：跨厂商路由不属于「单厂商配置」页，且其结论只在订单上下文成立（`order_gates: 'skipped'`）。**引擎全部保留**（`Routing::{Decide,Policy,Summary}` 与 `payment-routing-rspec` 未动）；如需再暴露后台入口，应挂在「路由策略」自己的页面上。 |
 
 验证入口：`harness verify payment-routing-rspec`（决策 11 例 + 策略写入/预览 9 例）。
 

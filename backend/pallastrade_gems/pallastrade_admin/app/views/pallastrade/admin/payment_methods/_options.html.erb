@@ -5,14 +5,20 @@
 <% option_rows = payment_option_rows(@payment_method) %>
 <% scope_sources = payment_option_scope_sources(@payment_method) %>
 <% last_check = @payment_method.metadata&.[]('last_test_connection') %>
+<%# PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-011）—— 专用版面（provider 声明
+    `provider_page_partial_name`，如 Stripe）把 [测试连接] 与结果移到页首「连接」卡；
+    本卡仅在**通用版面**下继续承载按钮与结果（非 Stripe provider 零回归）。 %>
+<% show_test_connection = @payment_method.provider_page_partial_name.blank? %>
 
-<div class="card mb-6">
+<div class="card mb-6" data-testid="payment-options">
   <div class="card-header flex items-center justify-between">
     <h5 class="card-title mb-0"><%= PallasTrade.t('admin.payment_methods.payment_options') %></h5>
-    <%= link_to PallasTrade.t('admin.payment_methods.test_connection'),
-                PallasTrade.test_connection_admin_payment_method_path(@payment_method),
-                class: 'btn btn-secondary btn-sm',
-                data: { turbo_method: :post, turbo_frame: '_top' } %>
+    <% if show_test_connection %>
+      <%= link_to PallasTrade.t('admin.payment_methods.test_connection'),
+                  PallasTrade.test_connection_admin_payment_method_path(@payment_method),
+                  class: 'btn btn-secondary btn-sm',
+                  data: { turbo_method: :post, turbo_frame: '_top', testid: 'options-test-connection' } %>
+    <% end %>
   </div>
   <div class="card-body">
     <p class="text-gray-600 mb-4"><%= PallasTrade.t('admin.payment_methods.payment_options_help') %></p>
@@ -98,7 +104,7 @@
       </table>
     </div>
 
-    <% if last_check.present? %>
+    <% if show_test_connection && last_check.present? %>
       <p class="text-gray-600 mt-2">
         <%= PallasTrade.t('admin.payment_methods.last_test_connection') %>:
         <span class="badge <%= last_check['ok'] ? 'badge-success' : 'badge-danger' %>">
