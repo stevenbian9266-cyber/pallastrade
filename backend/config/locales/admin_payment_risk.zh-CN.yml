@@ -41,6 +41,15 @@ zh-CN:
         policy_title: 阈值策略
         policy_hint: 指标不启用则不参与档位判定；只有两个阈值都填了才会给出档位。
         policy_window_days: 观察窗口（天）
+        policy_metric: 指标
+        policy_enabled_on: 启用
+        policy_enabled_off: 停用
+        policy_empty_value: 未设置
+        policy_edit_hint: 点击任一单元格即可修改；Enter 提交并下移，Tab 提交，Esc 取消。
+        policy_dirty_hint: 有未保存的修改（记得点「保存策略」）
+        policy_cell_label: 编辑 %{metric} 的%{field}
+        policy_invalid_range: "请输入 %{min} – %{max} 之间的整数"
+        policy_invalid_greater_than: 严重阈值必须大于预警阈值
         policy_enabled: 启用
         policy_warning: 预警
         policy_critical: 严重
