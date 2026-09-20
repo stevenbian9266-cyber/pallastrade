@@ -144,15 +144,18 @@ module PallasTrade
 
         # ------------------------------------------------------------------ 工具
 
-        # 已启用入口（`active != false`）的 kind；未选项化 provider 视为其隐式默认入口。
+        # 已启用入口（`active != false`）的 kind。
+        # ⚠️ **仅选项化 provider 有可比对的「配置」**：未选项化 provider 的唯一隐式入口 kind
+        # 就是网关 `api_type`（如 `stripe`），它不属于「支付方式」语义 —— 拿它去对能力目录
+        # 会永远报 `kind_not_declared`（假阳性）。因此未选项化 → 返回空集（无可比对项）。
         def enabled_option_kinds(payment_method)
-          options = if payment_method.optionized?
-                      Array(payment_method.payment_options).select { |option| option['active'] != false }
-                    else
-                      Array(payment_method.effective_payment_options)
-                    end
+          return [] unless payment_method.optionized?
 
-          options.map { |option| option['kind'].to_s.strip.downcase }.reject(&:blank?).uniq
+          Array(payment_method.payment_options)
+            .select { |option| option['active'] != false }
+            .map { |option| option['kind'].to_s.strip.downcase }
+            .reject(&:blank?)
+            .uniq
         end
 
         def issue(severity, code, params: {})

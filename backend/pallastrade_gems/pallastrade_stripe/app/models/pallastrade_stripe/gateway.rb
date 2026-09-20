@@ -63,6 +63,20 @@ module PallasTradeStripe
     # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915-admin 切片3）—— 能力目录（业务方案 §63.3）：
     # Stripe 可配置的前台入口 = 卡支付 + 两个钱包（express）。商家在后台逐项启停 / 命名 / 排序；
     # 未选项化（metadata["optionized"] 缺失）时前台仍按单一默认入口渲染 —— 零感迁移。
+    # PALLAS-CUSTOM: PAY-CORE-P0B（PRD-20260920-checkout 切片 P0-B）—— 厂商静态能力声明。
+    # 只声明**稳定事实**（不随账户而变化）：会话模式 / 幂等 / 退款 / 争议 / 结算。
+    # ⚠️ 刻意**不声明** `methods` —— 入口集合回落 `payment_option_catalog`（不猜未实现的入口）；
+    # 币种与国家属**账户侧事实**（`metadata['account']`，由运营在后台维护），厂商侧不写死。
+    def self.provider_capability
+      {
+        'session_based' => true,
+        'idempotency' => 'supported',
+        'refund' => 'supported',
+        'dispute' => 'supported',
+        'settlement' => 'supported'
+      }
+    end
+
     def payment_option_catalog
       [
         # D15 切片3（PRD-20260917-checkout-d15-切片3）：`three_d_secure` = 该入口能否被**强制**认证。

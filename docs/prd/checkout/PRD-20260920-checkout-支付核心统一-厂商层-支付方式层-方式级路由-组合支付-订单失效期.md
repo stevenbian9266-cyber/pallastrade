@@ -170,8 +170,16 @@
 
 - `ai/skills/pallastrade-prd/SKILL.md`：本切片未改变 PRD 流程、模板或命令 → 无需更新
 - `.github/copilot-instructions.md`：未新增强制规则/命令、未改 R0–R9 语义 → 无需更新
-- `ai/skills/pallastrade-admin/SKILL.md`：本次仅在既有 `payment_methods` 编辑页新增一个只读 partial（无新页面、无新导航、无新 Stimulus 控制器、无样式 token 变化）→ 无需更新
-- `ai/skills/pallastrade-checkout/SKILL.md` / `pallastrade-api-v3` / `pallastrade-storefront` / `pallastrade-i18n`：本切片零契约变化、零前台改动 → 无需更新
+- `ai/skills/pallastrade-admin/SKILL.md`：本次仅在既有 `payment_methods` 编辑页内新增区块与一个 member 动作（无新页面、无新导航、无新 Stimulus 控制器、无样式 token 变化）→ 无需更新
+- `ai/skills/pallastrade-checkout/SKILL.md` / `pallastrade-api-v3` / `pallastrade-storefront` / `pallastrade-i18n`：零契约变化、零前台改动 → 无需更新
+
+**P0-B 已处理（2026-09-20）**
+
+- [x] `ai/skills/pallastrade-payments/SKILL.md`：厂商层章节补「账户配置可编辑（P0-B）」表（写入原语 / 白名单 / 越界回显 / 空选择语义 / 幂等 / 后台入口 / 表单 / `traits` 透传 / 两处诚实性修正）
+- [x] `AGENTS.md §6`：`payment-providers-rspec` 行扩写（账户写路径 / 权限 / 审计 / traits）
+- [x] `harness/scenarios/scenarios.json`：GS-198 mustDo 增补 2 条（账户侧可编辑且越界回显、声明语义诚实性）
+- [x] `harness.config.mjs`：验证器扩为 6 枚规格（54 例）
+- [x] 后台 i18n 双语（账户表单 9 个新键，en ↔ zh-CN 相等）
 
 **后续切片待办**
 
@@ -188,3 +196,4 @@
 |---|---|---|---|
 | 2026-09-20 | 0.1 | 初稿：基于 v10 总体方案拆出 FR-001..FR-030 与 AC-001..AC-025，映射 P0–P6 七切片 | AI |
 | 2026-09-20 | 0.2 | 用户确认「实施吧」→ 状态转 implementing。P0 拆为 **P0-A（厂商层地基）** 与 P0-B（后台配置写路径 + 组合策略 + 付款期限）。P0-A 已交付：`payments/providers/{config,state,validate}.rb` + `PaymentMethod#provider_{capability,account_config,effective_scope,state,diagnostics}` + 后台只读诊断卡（`[data-testid="provider-diagnostics"]`），验证器 `payment-providers-rspec`（37 例）。**本切片不改写路径**（静默归一保持现状），强制拒绝属 P0-B | AI |
+| 2026-09-20 | 0.3 | **P0-B 交付（账户配置可运营）**：`Providers::Account.write!` 白名单写入 + 后台 `POST /admin/payment_methods/:id/update_provider_account`（带权限/审计/越界回显/幂等）+ 诊断卡内账户表单；Stripe 落地 `provider_capability` 声明（未解释键透传 `traits`）；两处诚实性修正（未选项化 provider 的隐式入口不参与能力比对；声明省略 `methods` 回落目录）。验证器扩为 6 枚规格 **54 例**，并回归 `admin-payment-methods-rspec` / `d8-availability-rspec` / `admin-i18n-rspec` 全绿 | AI |

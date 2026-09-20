@@ -51,6 +51,16 @@ zh-CN:
           effective_currencies: 生效币种
           effective_countries: 生效国家
           markets: 已配置市场
+          account_form_title: 商家账户
+          account_form_help: 登记该 PSP 账户已开通的支付方式 / 币种 / 国家；某一项留空 = 该维度未声明（不收窄）。
+          account_save: 保存账户配置
+          account_saved: 账户配置已保存。
+          account_unchanged: 无变化 —— 账户配置与提交内容一致。
+          account_rejected: "已忽略（不在允许范围）：%{summary}"
+          dimensions:
+            methods: 支付方式
+            currencies: 币种
+            countries: 国家
           states:
             enabled: 已启用
             disabled: 已停用

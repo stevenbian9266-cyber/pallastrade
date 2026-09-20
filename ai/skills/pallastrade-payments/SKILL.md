@@ -188,17 +188,31 @@ For an existing Order, start sessions through `PallasTrade::PaymentSessions::Sta
 | 三态 | `PaymentMethod#provider_state` | `enabled`（人工启用且无熔断）/ `disabled`（人工停用，**粘性**）/ `suspended`（熔断）。优先级 **disabled > suspended > enabled**；部分入口熔断仍算 `enabled`（逐入口过滤交给 `Availability::Resolver`） |
 | 诊断 | `PaymentMethod#provider_diagnostics` | `{ ok, state, issues, counts }`；`Providers::Validate` 输出 `severity + code + params`（文案由视图 i18n 渲染） |
 
-服务层：`PallasTrade::Payments::Providers::{Config, State, Validate}`（`pallastrade_core/app/services/pallastrade/payments/providers/`）。
+服务层：`PallasTrade::Payments::Providers::{Config, State, Validate, Account}`（`pallastrade_core/app/services/pallastrade/payments/providers/`）。
+
+**账户配置可编辑（PAY-CORE P0-B, 2026-09-20）**
+
+| 项 | 口径 |
+|---|---|
+| 写入原语 | `PallasTrade::Payments::Providers::Account.write!(pm, methods:, currencies:, countries:, actor:)` → `metadata['account']` |
+| 白名单 | `methods ∈ 能力声明`（声明优先 / 目录推导）；`currencies ∈ 店铺支持币种`；`countries ∈ 店铺市场国家` —— 与 `Account.allowed_values` **同源**（表单选项也用它） |
+| 越界值 | 进 `rejected` 并**回显给运营**（不静默丢数据，也不抛错） |
+| 空选择 | = **未声明（nil，不收窄）** —— 避免「全不勾 = 前台全隐藏」的误操作 |
+| 幂等 | 同值重复提交 → `unchanged` = true，**不写库、不审计** |
+| 后台入口 | `POST /admin/payment_methods/:id/update_provider_account`（`authorize! :update` → 服务 → `Audit.record('payment_method_provider_account_updated'，只记计数)` → flash → 302 回编辑页） |
+| 表单 | 诊断卡内 `[data-testid="provider-account-form"]`（三个多选 + 保存） |
+| 声明透传 | provider 声明里框架未解释的键（`idempotency` / `refund` / `dispute` / `settlement`…）原样进 `provider_capability['traits']`（P3 路由/成本将消费） |
+| 已知修正 | 未选项化 provider 的隐式入口 kind = 网关 `api_type`，**不参与**能力比对（否则永远假阳性 `kind_not_declared`）；声明省略 `methods` → 回落能力目录 |
 
 **铁律**
 
 - **零资金副作用**：`Providers::*` 只读（零网络）+ 只写 `metadata` / `active`（`update_columns`，与 D9/D11 同范式），不触碰 `Payment` / `PaymentSession` / 账本。
 - **人工停用粘性**：`State.disable!` 之后 `State.resume!` **不会**恢复 —— 恢复只有 `State.enable!`（人工动作）。`resume!` 仅清熔断。
 - **不猜**：账户/能力未声明 → 对应维度不收窄，并产出 `account_not_configured`（info）而不是"全部可用"。
-- 本切片**不改写路径**：后台表单归一仍静默丢弃非法值（D1/D8 行为不变）；错配由只读诊断卡暴露。**强制拒绝**属 P0-B。
-- 诊断卡：`payment_methods` 编辑页 `[data-testid="provider-diagnostics"]`（三态徽标 + 6 行结论 + 诊断项）。
+- 本切片**不改写路径**：后台「支付方式」页签归一仍静默丢弃非法值（D1/D8 行为不变）；错配由只读诊断卡暴露。入口级**强制拒绝**仍属后续切片。
+- 诊断卡：`payment_methods` 编辑页 `[data-testid="provider-diagnostics"]`（三态徽标 + 6 行结论 + 诊断项）；**诊断本身只读**，唯一的写入口是卡内的账户配置表单（P0-B）。
 
-验证入口：`harness verify payment-providers-rspec`（config / state / validate 服务规格 + 后台诊断卡请求规格）。
+验证入口：`harness verify payment-providers-rspec`（config / state / validate / account 服务规格 + 后台诊断卡 + 账户配置请求规格）。
 
 ## Adding a payment gateway
 

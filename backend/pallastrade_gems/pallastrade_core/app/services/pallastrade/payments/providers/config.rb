@@ -27,6 +27,12 @@ module PallasTrade
         MAX_LIST = 200
         SCOPE_DIMENSIONS = %w[market country currency zone].freeze
 
+        # 能力声明的「已解释」键；其余声明键（幂等 / 退款 / 争议 / 结算 / 3DS…）原样透传到
+        # `traits` —— 避免声明被静默丢弃（P3 路由与成本将消费这些事实）。
+        KNOWN_CAPABILITY_KEYS = %w[
+          methods currencies countries amount amount_min amount_max session_based
+        ].freeze
+
         module_function
 
         # 厂商能力声明（静态：provider gem 声明"这家厂商支持什么"）。
@@ -36,7 +42,10 @@ module PallasTrade
         #                  'amount_min', 'amount_max', 'session_based' }
         def capability(payment_method)
           declared = declared_capability(payment_method)
-          return normalize_capability(declared, 'declared') if declared.is_a?(Hash)
+          if declared.is_a?(Hash)
+            return normalize_capability(declared, 'declared',
+                                        fallback_methods: derived_capability(payment_method)['methods'])
+          end
 
           normalize_capability(derived_capability(payment_method), 'derived')
         end
@@ -132,9 +141,12 @@ module PallasTrade
           }
         end
 
-        def normalize_capability(raw, source)
+        # P0-B：provider 声明可以只写“稳定事实”（会话模式 / 幂等 / 退款能力…）而**省略 methods** ——
+        # 此时入口集合回落能力目录推导（否则会把既有启用入口误报 `kind_not_declared`）。
+        def normalize_capability(raw, source, fallback_methods: [])
           amount = fetch(raw, 'amount')
           methods = normalize_methods(fetch(raw, 'methods'))
+          methods = normalize_methods(fallback_methods) if methods.empty?
 
           {
             'source' => source,
@@ -144,8 +156,19 @@ module PallasTrade
             'countries' => normalize_code_list(fetch(raw, 'countries')),
             'amount_min' => normalize_amount(fetch(raw, 'amount_min') || fetch(amount, 'min')),
             'amount_max' => normalize_amount(fetch(raw, 'amount_max') || fetch(amount, 'max')),
-            'session_based' => normalize_boolean(fetch(raw, 'session_based')) || session_based?(raw)
+            'session_based' => normalize_boolean(fetch(raw, 'session_based')) || session_based?(raw),
+            'traits' => declared_traits(raw)
           }
+        end
+
+        # 声明中未被框架解释的键（不删不改，原样透传；非 Hash → 空）。
+        def declared_traits(raw)
+          return {} unless raw.respond_to?(:each_pair)
+
+          raw.each_pair.with_object({}) do |(key, value), accumulator|
+            name = key.to_s
+            accumulator[name] = value unless KNOWN_CAPABILITY_KEYS.include?(name)
+          end
         end
 
         def normalize_methods(raw)

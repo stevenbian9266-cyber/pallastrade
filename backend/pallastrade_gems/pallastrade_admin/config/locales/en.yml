@@ -1138,6 +1138,16 @@ en:
           effective_currencies: Effective currencies
           effective_countries: Effective countries
           markets: Configured markets
+          account_form_title: Merchant account
+          account_form_help: Record which methods, currencies and countries this PSP account has opened. Leave a list empty to skip that dimension (no narrowing).
+          account_save: Save account configuration
+          account_saved: Account configuration saved.
+          account_unchanged: No change — the account configuration already matches.
+          account_rejected: "Ignored (not allowed): %{summary}"
+          dimensions:
+            methods: Methods
+            currencies: Currencies
+            countries: Countries
           states:
             enabled: Enabled
             disabled: Disabled

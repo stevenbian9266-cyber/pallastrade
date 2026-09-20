@@ -259,12 +259,14 @@ PallasTrade::Core::Engine.add_routes do
     # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片3）—— provider 凭证体检（Test connection）
     # PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 凭据明文查看（reveal，owner 权限 + 审计）
     # PALLAS-CUSTOM: D11（PRD-20260916-payments-d11 切片1）—— 手动软置灰 / 解除（熔断兜底，入口级 + 审计）
+    # PALLAS-CUSTOM: PAY-CORE-P0B（PRD-20260920-checkout 切片 P0-B）—— 厂商账户配置写入口
     resources :payment_methods, except: :show do
       member do
         post :test_connection
         post :reveal_credential
         post :soft_disable
         post :soft_enable
+        post :update_provider_account
       end
     end
     resources :shipping_methods, except: :show

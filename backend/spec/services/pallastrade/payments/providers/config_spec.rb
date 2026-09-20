@@ -17,15 +17,29 @@ RSpec.describe PallasTrade::Payments::Providers::Config do
   end
 
   describe 'AC-1 能力声明' do
-    it 'falls back to the provider catalog and marks the source as derived' do
+    it 'reads the provider declaration and falls back to the catalog for the method list' do
+      capability = gateway.provider_capability
+
+      expect(capability['source']).to eq('declared')
+      expect(capability['method_keys']).to match_array(%w[card apple_pay google_pay])
+      expect(capability['session_based']).to be(true)
+      # 声明里框架未解释的事实原样透传（不静默丢弃）
+      expect(capability['traits']['idempotency']).to eq('supported')
+      expect(capability['traits']['dispute']).to eq('supported')
+      # 未声明的维度一律 nil（不猜），不回落成"全部可用"
+      expect(capability['currencies']).to be_nil
+      expect(capability['countries']).to be_nil
+    end
+
+    it 'marks the source as derived when the provider declares no capability' do
+      allow(gateway).to receive(:provider_capability_declaration).and_return(nil)
+
       capability = gateway.provider_capability
 
       expect(capability['source']).to eq('derived')
       expect(capability['method_keys']).to match_array(%w[card apple_pay google_pay])
-      # 未声明的维度一律 nil（不猜），不回落成"全部可用"
-      expect(capability['currencies']).to be_nil
-      expect(capability['countries']).to be_nil
       expect(capability['session_based']).to be(true)
+      expect(capability['currencies']).to be_nil
     end
 
     it 'takes precedence of an explicit provider_capability declaration' do

@@ -46,6 +46,33 @@ module PallasTrade
         end
       end
 
+      # POST /admin/payment_methods/:id/update_provider_account
+      # PALLAS-CUSTOM: PAY-CORE-P0B（PRD-20260920-checkout 切片 P0-B）—— 账户配置写入口：
+      # 登记「本商家账户已开通的支付方式 / 币种 / 国家」，供「能力 ∩ 账户 ∩ 市场」收窄使用。
+      # 越界值被忽略并回显（不静默丢数据）；同值重复提交幂等（不写库、不审计）。
+      # 铁律：零资金副作用 —— 只写 metadata['account'] + 审计。
+      def update_provider_account
+        authorize! :update, @object
+
+        outcome = PallasTrade::Payments::Providers::Account.write!(
+          @object,
+          methods: params.dig(:provider_account, :methods),
+          currencies: params.dig(:provider_account, :currencies),
+          countries: params.dig(:provider_account, :countries),
+          actor: audit_actor_label
+        )
+
+        if outcome['unchanged']
+          flash[:notice] = PallasTrade.t('admin.payment_methods.provider_diagnostics.account_unchanged')
+        else
+          audit_provider_account_update(outcome)
+          flash[:success] = PallasTrade.t('admin.payment_methods.provider_diagnostics.account_saved')
+        end
+        flash[:warning] = provider_account_rejection_message(outcome) if outcome['rejected'].any?
+
+        redirect_to PallasTrade.edit_admin_payment_method_path(@object), status: :see_other
+      end
+
       # POST /admin/payment_methods/:id/soft_disable
       # PALLAS-CUSTOM: D11 切片1（PRD-20260916-payments-d11）—— 手动软置灰（熔断兜底，业务方案 §67.3）：
       # 「摘掉一个入口」是运营动作 —— 入口级（选项化）软置灰，**必须填原因**（审计留痕），
@@ -313,6 +340,37 @@ module PallasTrade
         else
           user || 'admin'
         end
+      end
+
+      # PALLAS-CUSTOM: PAY-CORE-P0B —— 账户配置写入口的辅助：actor 短标签 / 审计 / 越界回显文案。
+      def audit_actor_label
+        actor = audit_actor
+        return actor.to_s unless actor.respond_to?(:[])
+
+        (actor[:label].presence || actor[:id]).to_s
+      end
+
+      # 审计只记「哪些维度变了、各多少条」与「被拒条数」（保持最小化，不记具体取值）。
+      def audit_provider_account_update(outcome)
+        PallasTrade::Audit.record(
+          action: 'payment_method_provider_account_updated',
+          actor: audit_actor,
+          resource: @object,
+          metadata: {
+            methods: Array(outcome['normalized']['methods']).size,
+            currencies: Array(outcome['normalized']['currencies']).size,
+            countries: Array(outcome['normalized']['countries']).size,
+            rejected: outcome['rejected'].transform_values { |values| Array(values).size }
+          }
+        )
+      end
+
+      def provider_account_rejection_message(outcome)
+        summary = outcome['rejected'].map do |dimension, values|
+          "#{PallasTrade.t("admin.payment_methods.provider_diagnostics.dimensions.#{dimension}")}: #{Array(values).join(', ')}"
+        end.join(' · ')
+
+        PallasTrade.t('admin.payment_methods.provider_diagnostics.account_rejected', summary: summary)
       end
     end
   end

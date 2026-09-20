@@ -108,6 +108,23 @@ module PallasTrade
         }
       end
 
+      # PALLAS-CUSTOM: PAY-CORE-P0B（PRD-20260920-checkout 切片 P0-B）—— 账户配置表单数据：
+      # 可选值 = 能力声明 ∩ 店铺口径（`Providers::Account.allowed_values`，与白名单同源）；
+      # 选中值 = 当前 `metadata['account']`。
+      def provider_account_form(payment_method)
+        allowed = PallasTrade::Payments::Providers::Account.allowed_values(payment_method)
+        account = payment_method.provider_account_config
+
+        {
+          allowed: allowed,
+          selected: {
+            'methods' => Array(account['methods']),
+            'currencies' => Array(account['currencies']),
+            'countries' => Array(account['countries'])
+          }
+        }
+      end
+
       def provider_diagnostic_row(testid, label, value)
         { testid: testid, label: label, value: value }
       end
