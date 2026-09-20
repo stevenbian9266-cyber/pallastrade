@@ -239,21 +239,27 @@
     {
       "id": "GS-013",
       "name": "PRD-driven workflow from a one-line requirement",
-      "description": "AI should expand a one-line requirement into a categorized PRD, get user confirmation, then implement under harness gate with AC-to-test mapping and knowledge sync",
+      "description": "AI should expand a one-line requirement into a categorized PRD that is RICHER THAN THE TEMPLATE (14 sections, §0–§13, no placeholders, length floor enforced; see docs/prd/_TEMPLATE.md \"写作要求\"), get user confirmation, then implement under harness gate with AC-to-test mapping and knowledge sync",
       "mustDo": [
         "Create PRD at docs/prd/{category}/PRD-{YYYYMMDD}-{category}-{slug}.md using docs/prd/_TEMPLATE.md",
         "Auto-detect category via harness/policies/prd-categories.json and update docs/prd/README.md index",
         "Dedupe first: search existing PRDs + all 6 layers before creating",
         "Wait for explicit user confirmation (approved) before implementation",
         "Map every AC to a test tagged '# PRD-xxx AC-x'",
-        "Run harness gate (with create-prd-doc + read-skill-prd checks) and clear it before writing code"
+        "Run harness gate (with create-prd-doc + read-skill-prd checks) and clear it before writing code",
+        "Fill ALL 14 template sections (§0 摘要 / §1 背景与目标【现象+证据 · 根因 · 目标与成功指标 · 非目标】/ §2 场景表【含边界与异常】/ §3 FR / §4 NFR / §5 AC【带测试落点】/ §6 跨层搜索【含防重复判定与 AP-SEARCH 自检】/ §7 技术影响【变更面 · 契约影响 · 依赖前置】/ §8 测试计划【AC↔测试映射】/ §9 文档同步清单 / §10 风险与回滚 / §11 决策记录 / §12 开放问题 / §13 变更记录)",
+        "Meet the template length floor: new feature >= 150 lines, iteration >= 120, bugfix >= 80",
+        "Give every AC an executable acceptance condition AND an explicit test file location (or a concrete manual-evidence form)"
       ],
       "mustNotDo": [
         "Skip PRD creation and go straight to code",
         "Create a duplicate PRD without searching first",
         "Implement before user confirmation",
         "Leave ACs without test coverage",
-        "Skip the knowledge sync gate (harness sync-check) before closing verify-test"
+        "Skip the knowledge sync gate (harness sync-check) before closing verify-test",
+        "Leave placeholders (`<...>` / 待补充 / TBD) in any template section",
+        "Use \"manual check\" as an AC without a concrete evidence form",
+        "Ship a PRD shorter than the template length floor"
       ],
       "scoring": {
         "prdCreated": 25,
@@ -4793,7 +4799,7 @@
       "description": "The buyer's contract is simple: tap Apple Pay and you get Apple Pay, tap Google Pay and you get Google Pay. Two defects broke it. First, the express element enabled every wallet at once, so a tap on one row rendered whichever wallets the device happened to support. Second, availability was a two-state boolean: a wallet the device genuinely lacks, and a wallet whose element never reported (slow mobile network, blocked or aborted provider iframe) collapsed into the same 'not available on this device' row - and once marked, the row could never recover, so a mobile shopper lost the wallet permanently after a single timeout. A related trap sat one layer up: the per-entry slot rendered an unconditional bordered wrapper, so every loading or empty state showed as a blank box, and a legacy fallback paragraph printed 'Processing...' under a wallet entry as if it were a redirect flow.",
       "mustDo": [
         "Render exactly the tapped wallet: enable the selected wallet and switch the others off, while keeping the no-context surface (cart drawer) showing every available wallet",
-    "Consult the provider's own browser matrix before choosing auto vs always: a wallet that only initializes with 'always' (Apple Pay on non-Safari desktop, Google Pay on Firefox/Safari/iOS) silently never loads under 'auto', which looks exactly like a broken integration",
+        "Consult the provider's own browser matrix before choosing auto vs always: a wallet that only initializes with 'always' (Apple Pay on non-Safari desktop, Google Pay on Firefox/Safari/iOS) silently never loads under 'auto', which looks exactly like a broken integration",
         "Model availability as three states - unknown, available, unavailable - and never treat 'not reported yet' as 'not usable'",
         "Read the provider's ready-event semantics literally: once the element reports, an undefined availability payload means no wallet can show in this environment - a definitive verdict to degrade on immediately, not an unknown to keep spinning on",
         "Separate the reasons a wallet cannot be used (provider says no, load timed out, entry kind unsupported, no provider key) and word each one honestly",
@@ -5130,7 +5136,7 @@
         "contractI18nAndVerifier": 10
       }
     },
-{
+    {
       "id": "GS-196",
       "name": "Recover a payment outage in place - legal provider parameters, no redirect on failure, and an order that stays reachable",
       "description": "A live regression: every card and wallet payment fails with the provider error 'Received unknown parameter: billing_details', because that field was merged into the PaymentIntent creation payload even though the provider treats it as read-only. The front end makes it worse: it ignores the confirmation result, completes the session and redirects regardless, routes unknown server error codes straight to a result page that can only render an empty state, reports an unpaid order as 'not found' on its detail page, hides the express-pay area completely on devices without wallets, and turns a revisited checkout URL of an already-converted cart into an empty cart page. The ask: fix the parameter at each construction point, prove legality with whitelists, and make every failure path leave the shopper on a page they can act from.",
@@ -5162,7 +5168,7 @@
         "convertedCartRecovery": 10
       }
     },
-{
+    {
       "id": "GS-197",
       "name": "Charge a re-opened unpaid order honestly - revalidate commercial facts, drop dead items, and retire the cashier modal",
       "description": "A submitted-but-unpaid order is paid days later. The stored quote never got an expiry window, so every re-validation gate silently short-circuits: the price stays the frozen one, delisted products keep their line, an unreachable shipping destination is never re-checked, and a coupon discount stays applied although the remaining items no longer qualify. The account page cannot even reach a pay button - payment_state was never projected, so the list shows empty status columns and the payable predicate never matches - and paying is only offered through a cashier modal. The ask: make 'pay again' re-validate like a first checkout, tell the shopper what changed without forcing a second confirmation step, charge only for what is still valid, and retire the modal in favour of the order payment page.",
