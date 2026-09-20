@@ -76,7 +76,8 @@
                                        'aria-label' => PallasTrade.t('admin.payment_methods.breaker_reason') %>
                     <%= submit_tag PallasTrade.t('admin.payment_methods.breaker_disable_action'),
                                    class: 'btn btn-sm btn-outline-danger text-nowrap',
-                                   data: { turbo_confirm: PallasTrade.t('admin.payment_methods.breaker_confirm') } %>
+                                   data: { turbo_confirm: PallasTrade.t('admin.payment_methods.breaker_confirm'),
+                                           testid: 'breaker-soft-disable-save' } %>
                   <% end %>
                 <% end %>
               </td>

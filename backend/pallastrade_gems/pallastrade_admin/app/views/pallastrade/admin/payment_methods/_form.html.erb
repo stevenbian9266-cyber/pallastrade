@@ -3,10 +3,9 @@
 <% end %>
 
 <%# PALLAS-CUSTOM: PAY-CORE-P0A（PRD-20260920-checkout 切片 P0-A）—— 厂商配置诊断（只读）。
-    新记录未持久化（无 store/metadata）→ 不渲染。 %>
-<% if @object.persisted? %>
-  <%= render 'pallastrade/admin/payment_methods/provider_diagnostics' %>
-<% end %>
+    S0（2026-09-20）起**由 `edit.html.erb` 在主表单之外渲染**（卡内「账户配置」是独立 POST 表单，
+    落在主表单内部会构成嵌套 <form> → 提交归属错乱）。此处不再重复渲染。
+    新记录未持久化（无 store/metadata）时本来也不显示。 %>
 
 <% if !preference_fields(@object, f).empty? || @object.respond_to?(:custom_form_fields_partial_name) %>
   <div class="card mb-6">

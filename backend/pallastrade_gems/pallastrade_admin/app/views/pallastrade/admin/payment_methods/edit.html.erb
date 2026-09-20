@@ -3,18 +3,29 @@
   <%= @payment_method.name %>
 <% end %>
 
-<%= form_for @payment_method, as: :payment_method, url: PallasTrade.admin_payment_method_path(@payment_method), html: { id: "edit_payment_method_#{@payment_method.id}" } do |f| %>
-  <div class="grid grid-cols-12 gap-6">
-    <div class="col-span-12 lg:col-span-6 lg:col-start-4">
+<div class="grid grid-cols-12 gap-6">
+  <div class="col-span-12 lg:col-span-6 lg:col-start-4">
+    <%# PALLAS-CUSTOM: S0（2026-09-20）—— 厂商诊断卡**必须渲染在主表单之外**：
+        卡内「账户配置」是它自己的 `form_with`（POST update_provider_account），
+        若落在 `form_for` 内部即构成嵌套 <form>（HTML 非法）——HTML5 解析器会丢弃内层
+        `<form>` 起始标签，使提交归属到主表单（实战表现：点「保存账户配置」把主表单保存一次、
+        账户配置静默丢失）。位置保持在内容列顶部（与既有视觉一致）。 %>
+    <%= render 'pallastrade/admin/payment_methods/provider_diagnostics' %>
+
+    <%= form_for @payment_method, as: :payment_method, url: PallasTrade.admin_payment_method_path(@payment_method), html: { id: "edit_payment_method_#{@payment_method.id}" } do |f| %>
       <%= render partial: 'pallastrade/admin/shared/error_messages', locals: { target: @payment_method } %>
       <%= render 'form', f: f %>
       <%# PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片3）—— 「支付方式」页签（随主表单提交） %>
       <%= render 'options' %>
       <%# PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 凭据健康（轮换/到期/reveal）+ Webhook 卡 %>
       <%= render 'credentials' %>
-      <%# PALLAS-CUSTOM: D11（PRD-20260916-payments-d11 切片1）—— 熔断与健康（软置灰/解除 + 24h 指标） %>
-      <%= render 'breaker' %>
       <%= render 'pallastrade/admin/shared/edit_resource_links', f: f %>
-    </div>
+    <% end %>
+
+    <%# PALLAS-CUSTOM: S0（2026-09-20）—— 熔断卡**必须渲染在主表单之外**，同理：卡内「软置灰」
+        是它自己的 `form_with`（POST soft_disable）。它原先排在账户配置表单之后，只因浏览器解析到
+        第一个内层 `</form>` 时已把外层 form 移出开放元素栈，才侥幸建出独立表单 —— 一旦只修账户
+        配置，这里会立刻退化成「提交落到主表单」。两者必须一起移出（见 REQ-20260920-s0）。 %>
+    <%= render 'pallastrade/admin/payment_methods/breaker' %>
   </div>
-<% end %>
+</div>

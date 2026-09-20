@@ -423,6 +423,15 @@ end
 `PaymentMethod#payment_option_catalog`（provider 声明，Stripe = card/apple_pay/google_pay）∪ 已配置
 `metadata['options']`（目录外条目保留，避免保存丢数据）。
 
+> ⚠️ **S0（2026-09-20）—— 次级表单必须渲染在主表单之外**：编辑页的 `_provider_diagnostics`
+> （账户配置 `form_with` → `update_provider_account`）与 `_breaker`（软置灰 `form_with` → `soft_disable`）
+> 各自带独立 POST 表单，现由 `edit.html.erb` 分别在 `form_for` **之前/之后** render（诊断卡仍在内容列顶部；
+> 熔断卡在主表单之后）。**不要把它们挪回 `form_for` 内部**：嵌套 `<form>` 会被 HTML5 解析器丢弃起始标签，
+> 提交归属到外层主表单（实战：点「保存账户配置」把主表单保存一次、账户配置静默丢失）；且内层 `</form>`
+> 会把外层 form 移出开放元素栈，使**排在它后面的** `<form>` 反而能建出来（这正是 `_breaker` 长期侥幸可用
+> 的原因）—— 两者必须一起在表单之外。回归：`payment-providers-rspec` 内的 S0 结构断言
+> （`Nokogiri::HTML5` 解析 + “提交控件的最近祖先 form 必须是它自己”）。
+
 - **写入口**：`Admin::PaymentMethodsController#permitted_resource_params` 归一表单参数
   `payment_method[payment_options][<kind>][active|display_name|position]` → `metadata['options']`。
   **勾选任一入口才置 `optionized=true`**；未选项化 provider 保持原语义（前台回落默认入口，零回归）；
@@ -451,7 +460,7 @@ end
 
 ## 支付熔断与健康：provider 详情页（D11 切片1, 2026-09-16，PRD-20260916-payments-d11-circuit-breaker-health）
 
-- **「熔断与健康」卡**（`_breaker.html.erb`，`edit.html.erb` 在 `_credentials` 之后 render；锚点 `#payment_method_breaker`）：
+- **「熔断与健康」卡**（`_breaker.html.erb`，**S0（2026-09-20）起由 `edit.html.erb` 在 `form_for` 之后 render（主表单之外）**；锚点 `#payment_method_breaker`）：
   上表 = 24h provider 级指标（尝试/失败/失败率/平均时长/主要错误）；下表 = 逐入口状态（正常/已软置灰 + 恢复时间）+ 动作。
   指标**只调** `Payments::Health::Metrics`（`PaymentsHelper#breaker_health_metrics`），页面不重算口径。
 - **手动动作**（member route）：`POST /admin/payment_methods/:id/soft_disable`（**必填 reason**，缺原因 → `flash[:error]` 且不改状态）
@@ -880,6 +889,37 @@ Products → **Catalog Operations**（`/admin/catalog_operations`）把 D-1 已�
 | Zeitwerk 坑 | admin 引擎注册了 `inflect.acronym 'AI'` → `ai_assist_helper.rb` 必须定义 `AIAssistHelper`（写成 `AiAssistHelper` 会启动即炸） |
 
 回归验证：`harness verify ai-copilot-rspec`。
+
+## 表格「可编辑单元格」组件（迷你 Excel，2026-09-19；PRD-20260919-payments-后台支付风控阈值策略表-可编辑单元格组件）
+
+后台表格里的「展示值 → 点击 → 编辑」单元格统一走这套组件（**不要**再写常驻 `number_field` 堆叠）：
+
+| 角色 | 文件 |
+|---|---|
+| Stimulus 控制器 | `app/javascript/pallastrade/admin/controllers/editable_table_controller.js`（在 `application.js` 注册为 `editable-table`） |
+| 单元格 partial | `app/views/pallastrade/admin/shared/_editable_cell.html.erb` |
+| 首个接入页 | `app/views/pallastrade/admin/payment_risk/index.html.erb`（阈值策略表） |
+
+**用法**：容器（`form_with` / `table`）加 `data-controller="editable-table"`，每格
+`render 'pallastrade/admin/shared/editable_cell', type:, name:, value:, ...`：
+
+- `type: :text | :number | :select`（下拉用 `options: [[label, value], ...]`）
+- `editable: false` → 只读展示格（如 i18n 指标名）
+- `min:` / `max:`（数字边界，前端即时校验）、`gt_field:`（如「严重 > 预警」）、`empty_label:`（空值占位）、
+  `invalid_range:` / `invalid_greater_than:`（i18n 提示，必传）、`label:`（aria-label）、`testid:`（自动化锚点）
+
+**关键约束**
+
+- **服务端契约零变更**：单元格内保留原 `<input|select name="...">`（非编辑态加 `hidden`，**仍随表单提交**）；
+  组件只做展示值同步，不参与序列化 → 无 JS 时降级为只读（字段仍提交当前值）。
+- **校验双保险**：前端只做即时反馈（`min`/`max`/比较约束 + 原生 validity 气泡），服务端校验仍是唯一权威。
+- **交互**：点击 / Enter / Space 进编辑；Enter 提交并下移、Tab 提交、失焦提交、Esc 取消；
+  同一时刻只有一格编辑中；提交后打 `data-editable-table-dirty="true"` 并显示表单级「未保存」提示
+  （`data-editable-table-target="dirtyHint"`）。
+- **样式**：只用既有 Tailwind 工具类（`form-input` / `form-select` / `cursor-pointer` / `hidden` / `font-semibold`）；
+  不写内联 style、不写硬编码色（AP-001/AP-006）。
+- ⚠️ 改 `app/javascript/**` 后**必须重启本地容器**，否则资源管线热缓存会继续下发旧 JS（验证结论会失真）。
+- 回归：`harness verify admin-payment-risk-rspec`（渲染契约 + wiring 守卫）。
 
 ### AI Translate Missing —— 翻译抽屉的缺失字段补全（2026-09-15，PRD-20260915-catalog-batch-e2-ai-translate-missing）
 

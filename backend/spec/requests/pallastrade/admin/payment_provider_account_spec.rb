@@ -101,4 +101,66 @@ RSpec.describe 'Admin payment provider account configuration', type: :request do
       expect(gateway.reload.private_metadata).to eq(before_metadata)
     end
   end
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # S0（2026-09-20）—— 后台支付方式编辑页**不得出现嵌套 `<form>`**。
+  #
+  # 背景：`edit.html.erb` 的主表单是 `form_for`，而 `_provider_diagnostics`（账户配置）与
+  # `_breaker`（软置灰）各自带一个 `form_with` → 内层 `<form>` 落在主表单**内部**（HTML 非法）。
+  # HTML5 解析器（浏览器与 `Nokogiri::HTML5` 同一套算法）对此有两条互相牵连的行为：
+  #   ① 内层 `<form>` 起始标签被**丢弃** → 其提交控件归属到「最近的外层表单」
+  #      （实测：点「保存账户配置」提交到主表单 action → 账户配置静默丢失，主表单反被保存一次）；
+  #   ② 遇到内层 `</form>` 时把**外层** form 从「开放元素栈」上移除 → 其后出现的 `<form>`
+  #      起始标签反而能被正常创建（这正是 `_breaker` 排在第二个才侥幸可用的原因）。
+  # 因此两者**必须一起修**：只修其一，另一个立刻退化成 ①。
+  #
+  # 断言口径 = **浏览器实际会怎么提交**：次级提交控件的「最近祖先 `<form>`」（表单所有者）必须
+  # 存在，且 action 指向该功能自己的 member 路由；同时主表单子树内不得再出现任何 `<form>`。
+  describe 'S0 表单结构：次级表单不得嵌套在主表单内' do
+    # 浏览器提交时的表单所有者 = 最近的祖先 <form>（本页无 form 属性引用）
+    def owning_form(node)
+      node&.ancestors('form')&.first
+    end
+
+    it 'renders the account form outside the main form and lets its submit own it' do
+      sign_in_as_superuser
+      get "/admin/payment_methods/#{gateway.prefixed_id}/edit"
+
+      # 必须用 HTML5 解析（与浏览器同算法）；Nokogiri::HTML 的容错规则不同，会掩盖本缺陷
+      doc = Nokogiri::HTML5(response.body)
+      save = doc.at_css("[data-testid='provider-account-save']")
+      expect(save).to be_present
+
+      form = owning_form(save)
+      expect(form).to be_present, '账户配置的提交控件不属于任何表单（内层 <form> 被解析器丢弃）'
+      expect(form['action']).to end_with("/admin/payment_methods/#{gateway.prefixed_id}/update_provider_account"),
+                                 "账户配置的提交会落到 #{form['action'].inspect}（应为其自己的 member 路由）"
+    end
+
+    it 'renders the breaker form outside the main form and lets its submit own it' do
+      sign_in_as_superuser
+      get "/admin/payment_methods/#{gateway.prefixed_id}/edit"
+
+      doc = Nokogiri::HTML5(response.body)
+      save = doc.at_css("[data-testid='breaker-soft-disable-save']")
+      expect(save).to be_present
+
+      form = owning_form(save)
+      expect(form).to be_present, '软置灰的提交控件不属于任何表单（内层 <form> 被解析器丢弃）'
+      expect(form['action']).to end_with("/admin/payment_methods/#{gateway.prefixed_id}/soft_disable"),
+                                 "软置灰的提交会落到 #{form['action'].inspect}（应为其自己的 member 路由）"
+    end
+
+    it 'keeps the main edit form free of nested forms' do
+      sign_in_as_superuser
+      get "/admin/payment_methods/#{gateway.prefixed_id}/edit"
+
+      doc = Nokogiri::HTML5(response.body)
+      main = doc.at_css("form#edit_payment_method_#{gateway.id}")
+      expect(main).to be_present
+
+      expect(main.css('form')).to be_empty,
+                                 '主表单内出现嵌套 <form>：内层会被解析器丢弃/挤掉外层，导致提交归属错乱'
+    end
+  end
 end
