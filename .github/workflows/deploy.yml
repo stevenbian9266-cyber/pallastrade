@@ -48,6 +48,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # PRD-20260919-checkout（2026-09-20，Deploy 红光复盘）：
+      # storefront 的类型解析走本地包 `@pallastrade/sdk` 的 `dist/`，而
+      # `platform/packages/sdk/.gitignore` 忽略 `dist/` —— 干净 checkout 里残留的是
+      # 历史 tracked 产物。不重建就会出现「Storefront CI（先显式 build SDK）与 Platform CI 全绿，
+      # 唯 Deploy 在 Docker builder 内 `Running TypeScript` 报
+      # `Type error: Property 'paymentPreflight' does not exist`」。
+      # 因此在 docker build 之前先在 runner 上重建本地包 dist（Dockerfile 会把它拷进 node_modules）。
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build local SDK packages (storefront type resolution reads dist/)
+        shell: bash
+        working-directory: platform
+        run: |
+          set -euo pipefail
+          pnpm config set registry https://registry.npmmirror.com
+          pnpm install --frozen-lockfile
+          pnpm --filter @pallastrade/sdk build
+
       # Build the storefront image on the runner — the 2C/3.5G server OOMs running
       # `next build`, so we build here and push to ghcr.io for the server to pull.
       - name: Build storefront image (runner)

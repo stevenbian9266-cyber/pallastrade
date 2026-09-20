@@ -212,8 +212,8 @@ Per-package commands are documented in each package's `README.md`. Changesets fo
 
 ### Local development note (2026-09-20)
 
-Consumers resolve this package from `dist/`, and `dist/` is intentionally **not** kept in sync by hand:
+`dist/` is a **build artifact and is gitignored** (`platform/packages/sdk/.gitignore`), while consumers - including the storefront Docker image - resolve this package from `dist/`:
 
-- after editing `src/`, run `pnpm --filter @pallastrade/sdk build` before type-checking or running the storefront locally - otherwise a freshly added export (for example `orders.paymentPreflight`) is reported as missing (`TS2339`) and type-only usages may be flagged as unused imports;
-- do not commit rebuilt `dist/` output; CI rebuilds packages before type-checking consumers;
+- the **Deploy workflow rebuilds local packages** (`pnpm --filter @pallastrade/sdk build`) before `docker build`, because `storefront/Dockerfile` only copies the checked-out `dist/` and never runs the SDK build itself. Without that step, a surface change fails **only** in Deploy, inside Docker, with `Type error: Property '<new export>' does not exist` (for example `paymentPreflight` on `orders`) - Platform CI and Storefront CI (which builds the SDK explicitly) stay green, which makes the failure look unrelated;
+- run `pnpm --filter @pallastrade/sdk build` locally before type-checking the storefront - a stale `dist/` otherwise reports `TS2339` and can make a type-only import look unused to `noUnusedImports`;
 - `biome check src tests` is part of Platform CI, so an unformatted edit in `src/` fails the workflow even when the types are fine.
