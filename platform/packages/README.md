@@ -209,3 +209,11 @@ Per-package commands are documented in each package's `README.md`. Changesets fo
 ## SDK surface changes (2026-09-19)
 
 - @pallastrade/sdk gains orders.paymentPreflight.get(orderId, options) - a read-only re-validation report for a submitted-but-unpaid order (unavailable items, amount changes, blockers, revalidated quote). The order payment page consumes it before re-payment; the write path (orders.transactions.create) reuses the same server service, so the amount shown equals the amount charged.
+
+### Local development note (2026-09-20)
+
+Consumers resolve this package from `dist/`, and `dist/` is intentionally **not** kept in sync by hand:
+
+- after editing `src/`, run `pnpm --filter @pallastrade/sdk build` before type-checking or running the storefront locally - otherwise a freshly added export (for example `orders.paymentPreflight`) is reported as missing (`TS2339`) and type-only usages may be flagged as unused imports;
+- do not commit rebuilt `dist/` output; CI rebuilds packages before type-checking consumers;
+- `biome check src tests` is part of Platform CI, so an unformatted edit in `src/` fails the workflow even when the types are fine.
