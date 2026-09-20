@@ -8,10 +8,14 @@ RSpec.describe 'Order transactions (Store API, TXN-P2-2)', type: :request do
 
   let(:payment_method) { create(:bogus_payment_method, name: 'Card', store: store) }
 
+  # PRD-20260919-checkout：标准流待支付单在起交易前会走 `OrderCheckout::Revalidate`
+  # （报价窗口由 `Carts::Submit` 在建单时签发）。夹具补签「未过期窗口」= 生产 checkout 路径，
+  # 窗口内锁价 → 重验零变化 → 既有 201 契约保持。
   def pending_standard_order(owner: user)
     order = create(:order_with_line_items, store: store, user: owner, shipment_cost: 0)
     order.update_columns(state: 'pending', status: 'placed', submitted_at: Time.current,
-                         payment_state: nil, completed_at: nil)
+                         payment_state: nil, completed_at: nil,
+                         checkout_expires_at: Time.current + 5.minutes)
     order.reload
   end
 

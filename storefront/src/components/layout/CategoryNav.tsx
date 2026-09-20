@@ -46,7 +46,9 @@ export function CategoryNav({ rootCategories, basePath }: CategoryNavProps) {
     if (openId === null) return;
     const onPointerDown = (event: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(event.target as Node)) {
-        close();
+        // 内联置空（而非调用未记忆化的 `close`）：effect 依赖保持为 `[openId]`
+        setHoveredId(null);
+        setClickedId(null);
       }
     };
     document.addEventListener("mousedown", onPointerDown);

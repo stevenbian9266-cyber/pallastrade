@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |---|---|
-| 状态 | implementing |
+| 状态 | done |
 | 创建日期 | 2026-09-19 |
 | 来源 | 优化：结算页待支付订单再次支付重验（失效行剔除/优惠复核/订单金额变化提示）+ 收银台弹窗退役 |
 | 分类 | checkout（自动判定） |
@@ -184,3 +184,4 @@
 | 2026-09-19 | 0.1 | 初稿（根因 A/B/C/D + FR-001..016 + AC-001..014 + 6 层搜索 + 测试计划） | AI |
 | 2026-09-19 | 1.0 | 用户两轮拍板（跳订单支付页并退役弹窗 / 不做二次确认但提示金额变化 / 失效只付有效部分并复核优惠 / 存量按建议）+ 用户「实施」→ 状态 → approved | AI |
 | 2026-09-19 | 1.1 | 实施：Revalidate/RemoveApplication/LineItemAvailability 新服务 + Start 接线（expected_amount_due / 门扩面）+ Submit 签窗与状态投影 + preflight 端点与契约/SDK/BFF + 支付页提示（5 语言）+ 弹窗与合并支付 UI 退役；`order-repay-rspec` 注册；门扩面收敛为 Transactions::Start 侧（防御层保持窗口语义）；状态 → implementing | AI |
+| 2026-09-20 | 1.2 | CI 红光复盘与修复（首轮推送实际抓到本 PRD 的三类回归）：① **门扩面的请求面回归**（`transactions` / `d7` 请求规格 6 例）：门扩面后「无窗口的历史标准流待支付单」会被重定价 → 未声明 `expected_amount_due` 的客户端得 409 `quote_changed`；夹具改为**签发未过期报价窗口**（= `Carts::Submit` 的生产行为，窗口内锁价 → 重验零变化），既有 201/409/422 契约与意图全部保持；② **验证器覆盖面缺口**：`order-repay-rspec` 此前只跑 services 面，请求面（orders 通道 + 入口门禁）不在门禁内 → 本次把 3 个请求规格纳入同一验证器（GS-197 增对应 mustDo/mustNotDo），AGENTS.md §6 同步；③ **前台与 SDK 的 biome 红线**：`order-payment.ts` / `preflight/route.ts` / `OrderPaymentContent.tsx` / `order-payable.ts` / `store-client.ts` 格式 + 未用导入 + 副作用依赖表（`TurnstileWidget` 多余依赖 `retryKey`、`CategoryNav` 外点关闭 effect 引用未记忆化 `close`）全部修复（storefront Skill 记第四次/第五次红灯教训）；状态 → done | AI |

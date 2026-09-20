@@ -3,7 +3,6 @@
 import type {
   Order,
   OrderTransactionStart,
-  PaymentSession,
   StoreOrdersPaymentPreflight,
 } from "@pallastrade/sdk";
 import { PallasTradeError } from "@pallastrade/sdk";
@@ -118,7 +117,7 @@ export async function getOrderPaymentPreflight(
   }
 }
 
-/** 完成订单支付会话（客户端确认支付后）。 */export async function completeOrderPaymentSession(
+/** 完成订单支付会话（客户端确认支付后）。 */ export async function completeOrderPaymentSession(
   orderId: string,
   sessionId: string,
   params?: { session_result?: string; external_data?: Record<string, unknown> },

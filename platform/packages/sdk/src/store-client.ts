@@ -815,11 +815,12 @@ export class StoreClient {
      * 复用同一实现 → 「页面显示金额 == 实际扣款金额」。
      */
     paymentPreflight: {
-      get: (
-        orderId: string,
-        options?: RequestOptions,
-      ): Promise<StoreOrdersPaymentPreflight> =>
-        this.request<StoreOrdersPaymentPreflight>('GET', `/orders/${orderId}/payment_preflight`, options),
+      get: (orderId: string, options?: RequestOptions): Promise<StoreOrdersPaymentPreflight> =>
+        this.request<StoreOrdersPaymentPreflight>(
+          'GET',
+          `/orders/${orderId}/payment_preflight`,
+          options,
+        ),
     },
 
     /**

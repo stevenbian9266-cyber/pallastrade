@@ -253,7 +253,9 @@ function renderOrderPayment(
         view={view}
         countries={targetCountries}
         preflight={
-          (preflight ?? null) as unknown as import("@pallastrade/sdk").StoreOrdersPaymentPreflight | null
+          (preflight ?? null) as unknown as
+            | import("@pallastrade/sdk").StoreOrdersPaymentPreflight
+            | null
         }
       />
       <CheckoutSummary />
@@ -288,7 +290,12 @@ describe("OrderPaymentContent preflight (PRD-20260919-checkout)", () => {
     total_after: "90.00",
     display_total_before: "$100.00",
     display_total_after: "$90.00",
-    window: { valid: true, expires_at: null, window_minutes: 30, reissued: false },
+    window: {
+      valid: true,
+      expires_at: null,
+      window_minutes: 30,
+      reissued: false,
+    },
   };
 
   it("AC-008: 金额变化时直接回显新金额并显示提示（无二次确认动作）", () => {
@@ -319,7 +326,11 @@ describe("OrderPaymentContent preflight (PRD-20260919-checkout)", () => {
         },
       ],
       changes: [
-        { kind: "item_removed", subject: "item_removed", name: "Rotary Shaver 5000" },
+        {
+          kind: "item_removed",
+          subject: "item_removed",
+          name: "Rotary Shaver 5000",
+        },
       ],
     });
 
@@ -349,7 +360,9 @@ describe("OrderPaymentContent preflight (PRD-20260919-checkout)", () => {
       ],
     });
 
-    expect(screen.getByTestId("revalidation-blocked-notice")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("revalidation-blocked-notice"),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("pay-now-button")).toBeDisabled();
   });
 

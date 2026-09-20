@@ -8,7 +8,7 @@ import {
   ThumbsUp,
   X,
 } from "lucide-react";
-import { useParams, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";

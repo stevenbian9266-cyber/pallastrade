@@ -35,9 +35,13 @@ RSpec.describe 'D7 payment option kind (Store API)', type: :request do
   # 声明且已配置的入口（钱包）
   let(:declared_kind) { 'apple_pay' }
 
+  # PRD-20260919-checkout：orders 通道起交易前会走 `OrderCheckout::Revalidate`（标准流门禁）。
+  # 夹具补签未过期报价窗口（= `Carts::Submit` 的生产行为）→ 窗口内锁价、重验零变化，
+  # 本切片关注的入口门禁（201 / 422 payment_option_not_available）保持原样。
   def pending_standard_order
     order = create(:order_with_line_items, store: store, user: user, shipment_cost: 0, line_items_price: 100)
-    order.update_columns(state: 'pending', payment_state: nil, completed_at: nil)
+    order.update_columns(state: 'pending', payment_state: nil, completed_at: nil,
+                         checkout_expires_at: Time.current + 5.minutes)
     order.reload
   end
 

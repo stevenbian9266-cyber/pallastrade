@@ -9,8 +9,11 @@ RSpec.describe 'Store transactions resume (TXN-P2-2)', type: :request do
   let(:payment_method) { create(:bogus_payment_method, name: 'Card', store: store) }
   let(:order) do
     o = create(:order_with_line_items, store: store, user: user, shipment_cost: 0)
+    # PRD-20260919-checkout：标准流待支付单起交易前会走 `OrderCheckout::Revalidate`，
+    # 夹具补签未过期报价窗口（= `Carts::Submit` 的生产行为）→ 重验零变化，既有契约不变。
     o.update_columns(state: 'pending', status: 'placed', submitted_at: Time.current,
-                     payment_state: nil, completed_at: nil)
+                     payment_state: nil, completed_at: nil,
+                     checkout_expires_at: Time.current + 5.minutes)
     o.reload
   end
 
@@ -36,7 +39,8 @@ RSpec.describe 'Store transactions resume (TXN-P2-2)', type: :request do
       other = create(:user)
       other_order = create(:order_with_line_items, store: store, user: other, shipment_cost: 0)
       other_order.update_columns(state: 'pending', status: 'placed', submitted_at: Time.current,
-                                 payment_state: nil, completed_at: nil)
+                                 payment_state: nil, completed_at: nil,
+                                 checkout_expires_at: Time.current + 5.minutes)
       result = PallasTrade::Transactions::Start.call(
         order: other_order, payment_method: payment_method, purpose: 'purchase'
       )

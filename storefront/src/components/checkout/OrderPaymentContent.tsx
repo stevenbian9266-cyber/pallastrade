@@ -429,7 +429,9 @@ export function OrderPaymentContent({
   // 页面**当前展示**的应付金额（重验后金额优先；换配送方式等页内编辑后以服务端最新 view 为准）——
   // 它随支付请求下发，服务端复算不一致则 409（不静默换金额，也不会因页面陈旧而反复冲突）。
   const displayedAmountDue =
-    effectiveView?.amount_due ?? preflight?.amount_due_after ?? order.amount_due;
+    effectiveView?.amount_due ??
+    preflight?.amount_due_after ??
+    order.amount_due;
 
   // CHK-P1-4B: 物流 rate 列表（来自 CheckoutView fulfillments）——无 shipments/digital 为空。
   const deliveryRates = useMemo(

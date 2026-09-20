@@ -5179,7 +5179,7 @@
         "Show the new amount directly on the order payment page with an explicit change notice (amount before to after, removed items, adjusted promotions, blockers) in every supported locale, and pass the displayed amount along with the payment request",
         "Project payment_state and shipment_state at submit time, derive them read-only for rows written before this change, and make the payable predicate depend on the amount rather than the status column",
         "Retire the cashier modal and its multi-select entry: row and detail pay actions navigate to the order payment page, and one payable helper is shared by list and detail",
-        "Register a verifier for the re-validation specs and mirror the behaviour into the checkout and storefront skills"
+        "Register a verifier for the re-validation specs that also runs the orders-channel request specs (transaction start, entry gate), so the API surface is covered by the same gate, and mirror the behaviour into the checkout and storefront skills"
       ],
       "mustNotDo": [
         "Write anything on page load, or let the dry run leave rows behind, publish inventory events or create a payment session",
@@ -5188,7 +5188,8 @@
         "Leave a promotion applied because re-evaluating rule eligibility is inconvenient, or release an active redemption without removing its adjustments",
         "Keep the old gate condition that only validates orders which already carry a quote window, or exempt historical unpaid orders from re-validation",
         "Answer the missing payment status with a front-end fallback only, or keep requiring balance_due so unpaid orders never show a pay action",
-        "Keep the modal alive next to the new page, or re-create a second payable predicate in each account component"
+        "Keep the modal alive next to the new page, or re-create a second payable predicate in each account component",
+        "Register a verifier that only covers the service layer while the API channel is exercised by request specs - the request surface must fail through the same verifier"
       ],
       "scoring": {
         "singleRevalidationSourceSharedByReadAndWrite": 20,

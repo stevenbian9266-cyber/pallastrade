@@ -74,6 +74,8 @@ export function TurnstileWidget({
 
   // Watchdog: if the script never becomes available within the timeout,
   // surface the visible error state (with retry) instead of staying blank.
+  // 依赖只需 `status`：重试入口渲染于 error 态，`handleRetry` 必然把 status 置回
+  // loading（→ 本 effect 重新武装计时器），故 `retryKey` 不是本 effect 的依赖。
   useEffect(() => {
     if (status === "ready") return;
     const timer = setTimeout(() => {
@@ -82,7 +84,7 @@ export function TurnstileWidget({
       }
     }, LOAD_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [status, retryKey]);
+  }, [status]);
 
   const handleRetry = () => {
     setStatus("loading");

@@ -190,9 +190,11 @@ export default {
       // 待支付订单再次支付前的商业事实重验 —— dry-run 零副作用（不落库/不发事件）、
       // 失效行剔除（写路径）、报价窗口签发/续期、全面失效 → no_payable_items；
       // 与写路径同源（Transactions::Start → OrderCheckout::Revalidate）。
+      // 2026-09-20 补：CI 红光复盘 —— services 面绿而 **requests 面** 未覆盖，
+      // orders 通道（transactions/d7 入口门禁）回归被 CI 首次跑出；请求规格一并纳入门禁。
       'order-repay-rspec': {
-        description: 'Order re-payment revalidation specs (dry-run zero side effects, invalid line item pruning, quote window issue/renew, no_payable_items blocker, Transactions::Start wiring)',
-        command: ['docker', 'exec', '-e', 'DISABLE_SIMPLECOV_MINIMUM=1', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && bundle exec rspec spec/services/pallastrade/order_checkout/revalidate_spec.rb spec/services/pallastrade/order_checkout spec/services/pallastrade/transactions'],
+        description: 'Order re-payment revalidation specs (dry-run zero side effects, invalid line item pruning, quote window issue/renew, no_payable_items blocker, Transactions::Start wiring, orders-channel request contracts)',
+        command: ['docker', 'exec', '-e', 'DISABLE_SIMPLECOV_MINIMUM=1', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && bundle exec rspec spec/services/pallastrade/order_checkout/revalidate_spec.rb spec/services/pallastrade/order_checkout spec/services/pallastrade/transactions spec/requests/api/v3/store/orders/transactions_controller_spec.rb spec/requests/api/v3/store/transactions_controller_spec.rb spec/requests/api/v3/store/d7_payment_option_kind_spec.rb'],
       },
       // 结算页只读预览报价（PRD-20260919-shipping-checkout-quote-preview，2026-09-19）：
       // 预览金额 = 同一条 `Carts::Submit` dry-run 管线（回滚，零建单/零事件/零支付会话）；
