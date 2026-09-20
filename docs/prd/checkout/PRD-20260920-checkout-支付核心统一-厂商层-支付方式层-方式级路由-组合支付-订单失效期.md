@@ -148,7 +148,8 @@
 | 切片 | verifier | 覆盖 |
 |---|---|---|
 | P0 | `payment-providers-rspec`（新，已注册） | 三态/能力/范围校验/账户同步差异 |
-| P1 | `storefront-test` + `payment-core-rspec`（新） | 三形态渲染/读模型同源/一次点击 |
+| P1-a（已交付） | `storefront-test`（既有，不新增 id） | 一次点击直达（金额未变不拦人）/ 仅金额变化才确认（含 409 后携带新版本、输入变化作废预报价）/ 首帧骨架原位替换（CLS 口径）/ payload-only 的 `js.stripe.com` 预热 / `billing_details` 载体回归 |
+| P1-b（未交付） | `storefront-test` + `payment-core-rspec`（新） | 三形态渲染/读模型同源 |
 | P2 | `payment-core-rspec` | 在线资格 + 降级 + Start 复判 |
 | P3 | `payment-routing-rspec`（新） | 硬门/排序/确定性/影子/不猜 |
 | P4 | `payment-lifecycle-rspec`（新） | 付款期限/提醒/过期保护/三场景与差额 |
@@ -190,11 +191,26 @@
 - [x] `harness/requirements/REQ-20260920-payment-core-p3a.md`
 - 已评估无需更新：`pallastrade-api-v3` / `pallastrade-storefront` / `pallastrade-admin`（本切片零契约、零前台、零页面变化）
 
+**P1-a 已处理（2026-09-20）**
+
+- [x] `ai/skills/pallastrade-storefront/SKILL.md`：新增「一次点击直达 + 支付区瞬时骨架（P1-a）」章节（比对基准 / 变化块与确认块 / 输入变化作废 / 409 携带新版本 / 骨架与分隔线恒定 / payload-only 预热）；旧「两段语义」段降级为**历史**（保留 `preparedOrder` 记忆语义说明）
+- [x] `harness/scenarios/scenarios.json`：新增 GS-200（一次点击 + 变化才确认 + 原位骨架 + payload-only 预热；含 mustNotDo 与评分）
+- [x] `harness/requirements/REQ-20260920-payment-core-p1a.md`（Step 0 六层搜索 + Skill 表 + AC 映射）
+- [x] 本 PRD：§8 测试计划拆 P1-a/P1-b 行；§10 追加 0.7
+
+**已评估，无需更新（P1-a）**
+
+- `ai/skills/pallastrade-payments/SKILL.md`：`billing_details` 载体口径（仅客户端 PM 级、服务端载荷不认）**零变化**；本切片把该口径的回归写成 storefront 测试（AC-8），不改服务端上行参数 → 无需更新
+- `ai/skills/pallastrade-api-v3/SKILL.md` + `backend/public/api-docs/{store,admin}.yaml` + `platform/docs/api-reference/` + SDK 类型：本切片**零契约变化**（首屏 payload 已有 `client_config` / `entries`；统一读模型与 SDK 重生成属 P1-b）→ 无需更新
+- `ai/skills/pallastrade-admin/SKILL.md`：后台零改动 → 无需更新
+- `.github/copilot-instructions.md` / `AGENTS.md`：未新增强制规则、命令或验证器（复用 `storefront-test`）→ 无需更新
+- `harness.config.mjs`：不注册新验证器 id（复用既有前端验证器）→ 无需更新
+
 **后续切片待办**
 
-- [ ] `ai/skills/pallastrade-checkout/SKILL.md`：三条链路与读模型契约（P1）
+- [ ] `ai/skills/pallastrade-checkout/SKILL.md`：三条链路与读模型契约（P1-b）
 - [ ] `ai/skills/pallastrade-admin/SKILL.md`：后台菜单（Settings → Payments）与新增页面（P0-B/P3）
-- [ ] `ai/skills/pallastrade-storefront/SKILL.md`：三形态渲染/骨架/一次点击（P1）
+- [x] `ai/skills/pallastrade-storefront/SKILL.md`：骨架/一次点击（P1-a，2026-09-20）；三形态渲染仍待 P1-b
 - [ ] `ai/skills/pallastrade-api-v3/SKILL.md` + `backend/public/api-docs/{store,admin}.yaml` + `platform/docs/api-reference/` + SDK 类型（接口变更时，P1/P3）
 - [ ] `docs/design/payment-core.md`：设计归档（v10 方案全文）
 
@@ -209,3 +225,4 @@
 | 2026-09-20 | 0.4 | **P3-A 交付（方式级路由决策核心）**：`payments/routing/{policy,decide}.rb` —— 硬门复用 `Availability::Resolver`（与前台同一求值点）+ 排序（市场覆写 > 全局优先序 > position > id）；决策对象含 `basis` / `candidates[rank]` / `rejected[reason]` / `inputs` 快照 / `policy_version`；仅支持 `off`/`shadow`/`priority_only`，未实现模式归一 `off` 并标 `unsupported_mode`（不猜成本）；候选为空 → `no_candidate`（不回落默认厂商）。新验证器 `payment-routing-rspec`（11 例）。策略写入后台页与 Preview、落库留痕留待 P3-B | AI |
 | 2026-09-20 | 0.5 | **P3-B 交付（策略可写 + 可预览）**：`Routing::Policy.write!`（白名单：已实现模式 / 本店 provider / 本店市场键；越界值回显；同值幂等不写库；零资金副作用）+ `Routing::Summary.for_store`（复用 `Decide` 候选装配与排序，**显式标注** `order_gates: 'skipped'`，预览不得当作"可付"结论）。`payment-routing-rspec` 扩为 20 例（决策 11 + 策略/预览 9）。后台策略页 + 落库留痕属 P3-C | AI |
 | 2026-09-20 | 0.6 | **P3-C 交付（后台路由预览可见）**：厂商配置卡内新增只读「支付路由」区块（`[data-testid="provider-routing-preview"]`）—— 模式徽标 + 逐方式一行（承运厂商 / 本店位次与依据 / 未选原因），文案显式声明**未做订单级判定**；helper `provider_routing_preview` 复用 `Routing::Summary`（零写入零网络）。i18n 双语 10 键（含 YAML `"off"` 加引号避开 1.1 布尔陷阱）；诊断卡请求规格新增 4 例 | AI |
+| 2026-09-20 | 0.7 | **P1-a 交付（前台一次点击 + 支付区瞬时骨架，FR-011 / FR-012）**：`UnifiedCheckout` 去掉强制两步确认 —— Prepare 后若金额与顾客**已看到的**金额（只读预览报价优先 → 报价快照）一致，同一次点击直达 Pay；仅金额**确实变化**才渲染变化块（旧 → 新）+ 确认块并要求重新点击（沿用既有 `quote_changed` 语义：不偷偷换价、不自动扣款）。`lib/checkout-quote.ts` 新增 `QuoteComparable` / `comparableFromPreview` / `quoteChangeRows`（复用 `diffQuotes` 口径）；顺带修两处既有缺陷：409 后 `preparedOrder` 不更新导致「确认」永远旧版本、Prepare 后改地址仍显示旧权威金额（现即时作废预报价与变化块）。FR-011：`WalletButtonSkeleton`（固定高度、列数 = `maxColumns`、`wallet-skeleton-slot[data-state]`）首帧占位 + 元素常挂载（就绪只切透明度，原位替换）；分隔线位置恒定；钱包动态片段带骨架 loading；`StripeResourceHints`（preconnect + dns-prefetch + preload `https://js.stripe.com/v3/`）仅在首屏 payload 下发 publishable 凭据且有 Stripe 方式时渲染（`payloadStripePublishableKey`，无 env 回落）。验证：`storefront-test`（新用例：一次点击 / 变化才确认 / 409 带新版本 / 输入变化作废 / 预热 / 骨架与列数 / 纯函数比对口径；`tsc --noEmit` + `biome check .` 全绿）；GS-200 | AI |

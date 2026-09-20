@@ -44,7 +44,9 @@ import {
   paymentEntriesFor,
 } from "@/components/checkout/PaymentSection";
 import { SaveInfoSection } from "@/components/checkout/SaveInfoSection";
+import { StripeResourceHints } from "@/components/checkout/StripeResourceHints";
 import { TopExpressPay } from "@/components/checkout/TopExpressPay";
+import { WalletButtonSkeleton } from "@/components/checkout/WalletButtonSkeleton";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -57,10 +59,12 @@ import {
 } from "@/lib/checkout/wallet-availability";
 import {
   type CheckoutQuote,
+  comparableFromPreview,
   diffQuotes,
   expectedVersions,
   normalizeQuote,
   type QuoteDiffRow,
+  quoteChangeRows,
   readQuoteSnapshot,
   writeQuoteSnapshot,
 } from "@/lib/checkout-quote";
@@ -74,6 +78,7 @@ import {
 } from "@/lib/utils/address";
 import { safeParseFloat } from "@/lib/utils/format";
 import { extractBasePath } from "@/lib/utils/path";
+import { payloadStripePublishableKey } from "@/lib/utils/stripe";
 import { billingDetailsFromFormData } from "@/lib/utils/stripe-billing";
 
 // D7（PRD-20260918-payments-d7-payment-section-express）：钱包按钮（cart 绑定）按需加载
@@ -83,7 +88,12 @@ const ExpressCheckoutButton = dynamic(
     import("@/components/checkout/ExpressCheckoutButton").then((m) => ({
       default: m.ExpressCheckoutButton,
     })),
-  { ssr: false },
+  {
+    ssr: false,
+    // FR-011（P1-a）：钱包片段到达前先占住**固定高度**（首帧骨架），
+    // 不让按钮区在加载完成后把下方内容推下去（CLS < 0.02）。
+    loading: () => <WalletButtonSkeleton />,
+  },
 );
 
 interface UnifiedCheckoutProps {
@@ -502,6 +512,20 @@ export function UnifiedCheckout({
       paymentMethods.flatMap((method) =>
         paymentEntriesFor(method).map((entry) => ({ entry, method })),
       ),
+    [paymentMethods],
+  );
+  /**
+   * P1-a FR-011：本页确有 Stripe 支付方式时的**首屏 payload** 凭据 ——
+   * 仅它存在时才预连接/预加载 `js.stripe.com`（与 `PaymentMethods::ClientConfig`
+   * 同源；没有凭据 = 本页不会加载 Stripe.js，不白付连接与流量成本）。
+   */
+  const stripeResourceClientConfig = useMemo(
+    () =>
+      paymentMethods.find(
+        (method) =>
+          method.type === "stripe" &&
+          payloadStripePublishableKey(method.client_config) !== null,
+      )?.client_config ?? null,
     [paymentMethods],
   );
   const [email, setEmail] = useState(cart.email ?? "");
@@ -996,6 +1020,19 @@ export function UnifiedCheckout({
     return () => clearTimeout(timer);
   }, [cart.id, country, address, shippingMethodId]);
 
+  /**
+   * P1-a（FR-012 诚实性）：Prepare 之后顾客又改了地址 / 配送方式 / 账单模式 ——
+   * 之前那份权威报价已不代表当前输入（且改动要到下一次 Prepare 才写进订单）。
+   * 立即作废它与已展示的变化块：下次点击重新 Prepare（幂等提交，同一订单），
+   * 摘要回落到新的只读预览 —— 绝不拿旧价冒充当前价。
+   */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 仅作「输入变化」触发器，不读这些值
+  useEffect(() => {
+    setPreparedOrder(null);
+    setQuoteDiff(null);
+    stockRetryRef.current = false;
+  }, [address, shippingMethodId, useShippingForBilling, billAddress]);
+
   const handleCardReady = useCallback((handle: CardPaymentFormHandle) => {
     cardFormRef.current = handle;
   }, []);
@@ -1084,17 +1121,26 @@ export function UnifiedCheckout({
     }
     if (isSessionBased && isStripe && !cardFormRef.current?.validate()) return;
 
-    // 两段语义（§0.1-1/2）：首次点击先 Prepare 拿 Order 权威报价；
-    // 有权威金额 → 展示页内确认区，等用户确认再 Pay；
-    // 无权威金额（服务端降级/读取失败）→ 直接 Pay，金额由支付控件自身展示。
+    // FR-012（P1-a）：**一次点击直达** —— 首次点击先 Prepare（建单 + Order 权威报价），
+    // 若金额与顾客**已看到**的金额一致，就在同一次点击里继续发起支付（不再强制两步确认）；
+    // 只有金额真的变了才停下来要确认（下方 quoteChangeRows 分支）。
     let target = preparedOrder;
     if (!target) {
+      // 比对基准必须在 Prepare **之前**取：Prepare 会写报价快照（写后就无从判断「变化」了）。
+      // 口径：只读预览报价（右栏读模型同源）优先 → 上次报价快照；两者皆无 = 无可比对基准。
+      const displayedQuote =
+        comparableFromPreview(preview) ?? readQuoteSnapshot(cart.id);
       const prepared = await prepareOrder();
       if (!prepared) return;
       // 订单已建：必须记住它，否则重试（如预留过期自动重试）会重新提交购物车。
       setPreparedOrder(prepared);
-      // 有权威金额 → 等用户确认后再 Pay；无权威金额（降级）→ 直接 Pay。
-      if (prepared.quote) return;
+      // 仅当金额**确实发生变化**时才要求确认：展示变化块（旧 → 新）+ 确认块，
+      // 顾客重新点击后携带新版本 —— 绝不偷偷换价、绝不自动扣款。
+      const rows = quoteChangeRows(displayedQuote, prepared.quote);
+      if (rows.some((row) => row.changed)) {
+        setQuoteDiff({ rows, hasQuote: prepared.quote !== null });
+        return;
+      }
       target = prepared;
     }
     const orderId = target.id;
@@ -1168,6 +1214,11 @@ export function UnifiedCheckout({
           });
           // 用服务端最新报价覆盖快照：用户重新点击时即携带新版本
           writeQuoteSnapshot(cart.id, result.quote);
+          // P1-a：同时把已建订单的报价换成最新版本 —— 否则「确认并支付」永远
+          // 带着旧版本发请求（每次都 409），确认环节会变成死循环。
+          if (latest) {
+            setPreparedOrder({ id: targetOrderId, quote: latest });
+          }
           setPayError(null);
           return;
         }
@@ -1294,6 +1345,9 @@ export function UnifiedCheckout({
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
+      {/* P1-a FR-011：js.stripe.com 预连接/预加载（React 19 提升进 <head>；
+          只在首屏 payload 确实下发了 publishable 凭据时渲染）。 */}
+      <StripeResourceHints clientConfig={stripeResourceClientConfig} />
       <h1 className="text-3xl font-bold text-gray-900 mb-8">
         {t("orderConfirmation")}
       </h1>
@@ -1691,7 +1745,9 @@ export function UnifiedCheckout({
             </div>
           ) : null}
 
-          {preparedOrder?.quote ? (
+          {/* P1-a（FR-012）：确认块**只在金额发生变化时**出现（配合上面的
+              `checkout-quote-diff` 变化块）—— 常规路径一次点击直达，不再强制两步。 */}
+          {preparedOrder?.quote && quoteDiff ? (
             <div
               data-testid="order-quote-confirm"
               className="mt-6 rounded-sm border border-gray-200 bg-gray-50 px-4 py-3"
@@ -1755,7 +1811,7 @@ export function UnifiedCheckout({
                     ? t("processing")
                     : t("submitting")}
                 </>
-              ) : preparedOrder?.quote ? (
+              ) : quoteDiff ? (
                 t("confirmAndPay")
               ) : (
                 t("payNow")

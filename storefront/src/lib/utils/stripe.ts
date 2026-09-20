@@ -70,16 +70,31 @@ export function stripeLocaleFor(
 }
 
 /**
+ * 仅解析**首屏 payload**（`payment_methods[].client_config`）里的 publishable key，
+ * **不做环境变量回落**。
+ *
+ * 用途：预连接 / 预加载这类「必须发生在服务端渲染时」的预热决策 —— 只有服务端
+ * 明确下发了凭据，本页才真的会加载 Stripe.js（不猜、不白付连接与流量成本）。
+ * 运行时初始化仍走 `resolveStripePublishableKey`（payload 优先 + env 回落，D10 双读）。
+ */
+export function payloadStripePublishableKey(
+  clientConfig?: PaymentClientConfig | null,
+): string | null {
+  const fromApi = clientConfig?.publishable?.publishable_key;
+  return typeof fromApi === "string" && fromApi.trim() !== ""
+    ? fromApi.trim()
+    : null;
+}
+
+/**
  * 解析 Stripe publishable key：API 下发值优先 → 回落 `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`。
  * @returns 非空字符串；两处都缺时返回 null。
  */
 export function resolveStripePublishableKey(
   clientConfig?: PaymentClientConfig | null,
 ): string | null {
-  const fromApi = clientConfig?.publishable?.publishable_key;
-  if (typeof fromApi === "string" && fromApi.trim() !== "") {
-    return fromApi.trim();
-  }
+  const fromApi = payloadStripePublishableKey(clientConfig);
+  if (fromApi) return fromApi;
 
   const fromEnv = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
   return typeof fromEnv === "string" && fromEnv.trim() !== ""

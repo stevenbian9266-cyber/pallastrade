@@ -55,6 +55,12 @@ vi.mock("@/lib/utils/stripe", () => ({
   getStripePromise: () => Promise.resolve(null),
   isStripeConfigured: () => stripeConfiguredState.value,
   resolveStripePublishableKey: () => null,
+  // P1-a FR-011：预连接/预加载只认**首屏 payload** 凭据（无 env 回落）
+  payloadStripePublishableKey: (
+    config?: {
+      publishable?: Record<string, string> | null;
+    } | null,
+  ) => config?.publishable?.publishable_key?.trim() || null,
   stripeLocaleFor: (locale: string) => locale,
   normalizeClientSecret: (s: string) => s,
   extractSessionClientSecret: (
@@ -1296,6 +1302,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
   // （AC-006 在此以“服务端信封含 quote”的契约形式被消费：差异行即来自响应里的 quote）。
   it("keeps the user in page and shows the three-row diff on a 409 conflict", async () => {
     const user = userEvent.setup();
+    /** P1-a AC-4：第一次 start 409，确认后第二次携带新版本放行。 */
+    let startCalls = 0;
     sessionStorage.setItem(
       "pallastrade:quote:cart_1",
       JSON.stringify({
@@ -1311,20 +1319,34 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     );
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       if (String(input) === "/api/checkout/start") {
+        startCalls += 1;
+        // 第一次冲突（服务端报价已漂移到 v2）；确认后第二次放行（P1-a AC-4）
+        if (startCalls === 1) {
+          return {
+            ok: false,
+            json: async () => ({
+              error: { code: "quote_changed", message: "quote changed" },
+              order_id: "or_123",
+              quote: {
+                checkout_version: 2,
+                price_version: "pv_new",
+                delivery_total: "9.0",
+                display_delivery_total: "$9.00",
+                discount_total: "1.0",
+                display_discount_total: "-$1.00",
+                amount_due: "28.98",
+                display_amount_due: "$28.98",
+              },
+            }),
+          };
+        }
         return {
-          ok: false,
+          ok: true,
           json: async () => ({
-            error: { code: "quote_changed", message: "quote changed" },
-            order_id: "or_123",
-            quote: {
-              checkout_version: 2,
-              price_version: "pv_new",
-              delivery_total: "9.0",
-              display_delivery_total: "$9.00",
-              discount_total: "1.0",
-              display_discount_total: "-$1.00",
-              amount_due: "28.98",
-              display_amount_due: "$28.98",
+            order: { id: "or_123" },
+            session: {
+              id: "ps_1",
+              external_data: { client_secret: "sec_1" },
             },
           }),
         };
@@ -1357,6 +1379,28 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     // 零跳转（不再去 or_ 页）+ 零自动重试；两段语义 = prepare + start 各一次
     expect(replaceMock).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    // P1-a（FR-012）AC-4：顾客确认后再次点击 → 携带**服务端最新**版本发 Pay
+    // （旧实现只更新快照、`preparedOrder.quote` 仍是旧版本 → 每次确认都再 409）。
+    await user.click(screen.getByRole("button", { name: "confirmAndPay" }));
+    await waitFor(() =>
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/us/en/payment-result/or_123?session=ps_1",
+      ),
+    );
+    const startBodies = fetchMock.mock.calls
+      .filter(
+        ([url, init]) =>
+          url === "/api/checkout/start" &&
+          (init as RequestInit)?.method === "POST",
+      )
+      .map(([, init]) => JSON.parse(String((init as RequestInit).body)));
+    expect(startBodies).toHaveLength(2);
+    expect(startBodies[1]).toMatchObject({
+      order_id: "or_123",
+      expected_checkout_version: 2,
+      expected_price_version: "pv_new",
+    });
   });
 
   // PRD-20260914-checkout-quote-confirmation-loop AC-005：冲突但响应无 quote → 降级为页内提示
@@ -1395,10 +1439,149 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  // PRD-20260915-checkout-单页两段语义 AC-002/AC-004：
-  // Prepare 返回 Order 权威报价 → 页内确认区展示最终金额；确认前绝不发起 Pay。
-  it("shows the authoritative final amount and waits for confirmation before paying (AC-002)", async () => {
+  // P1-a（FR-011）AC-7：首屏 payload 带 publishable 凭据 → 预连接/预加载 js.stripe.com
+  // （React 19 提升进 head）；凭据缺失时一个 link 都不发（见 StripeResourceHints.test）。
+  it("preconnects and preloads Stripe.js from the first-screen payload (P1-a AC-7)", () => {
+    renderCheckout(
+      makeCart({
+        payment_methods: [
+          {
+            id: "pm_card",
+            name: "Card",
+            type: "stripe",
+            session_required: true,
+            kind: "card",
+            method_key: "card",
+            display_name: "Card",
+            frontend_kind: "inline",
+            client_config: {
+              provider: "stripe",
+              environment: "test",
+              publishable: { publishable_key: "pk_test_payload" },
+            },
+          },
+        ] as unknown as ShoppingCart["payment_methods"],
+      }),
+    );
+
+    expect(
+      document.querySelector(
+        'link[rel="preconnect"][href="https://js.stripe.com"]',
+      ),
+    ).not.toBeNull();
+    expect(
+      document.querySelector(
+        'link[rel="preload"][as="script"][href="https://js.stripe.com/v3/"]',
+      ),
+    ).not.toBeNull();
+  });
+
+  // P1-a（PRD-20260920-checkout-支付核心统一 FR-012）AC-1：
+  // **一次点击直达** —— Prepare 的权威金额与顾客在右栏预览看到的金额**一致**时，
+  // 同一次点击里继续发起 Pay（不再出现「点击 → 展开小计 → 二次确认」）；
+  // 合计与明细常显：右栏摘要即刻切到权威金额（`totalDue`）。
+  it("pays in a single click when the authoritative amount matches the preview (P1-a AC-1)", async () => {
     const user = userEvent.setup();
+    // 预览报价 = 顾客已看到的金额（与 prepare 同参数逐字段一致：raw 字符串形态相同）
+    previewMock.mockImplementation(async () => ({
+      ok: true,
+      json: async () => ({
+        cart_id: "cart_1",
+        currency: "USD",
+        delivery_total: "9.0",
+        display_delivery_total: "$9.00",
+        tax_total: "0.0",
+        display_tax_total: "$0.00",
+        discount_total: "0.0",
+        display_discount_total: "$0.00",
+        amount_due: "28.98",
+        display_amount_due: "$28.98",
+        selected_method_id: "dm_1",
+        methods: [],
+        estimated: true,
+        provisional_country: "US",
+        address_complete: false,
+      }),
+    }));
+    const defaultImpl = fetchMock.getMockImplementation();
+    fetchMock.mockImplementation(
+      (input: RequestInfo | URL, init?: RequestInit) => {
+        if (input === "/api/checkout/prepare") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              order_id: "or_123",
+              order: { id: "or_123" },
+              quote: {
+                checkout_version: 3,
+                price_version: "pv_3",
+                delivery_total: "9.0",
+                display_delivery_total: "$9.00",
+                discount_total: "0.0",
+                display_discount_total: "$0.00",
+                tax_total: "0.0",
+                display_tax_total: "$0.00",
+                amount_due: "28.98",
+                display_amount_due: "$28.98",
+              },
+            }),
+          });
+        }
+        return defaultImpl?.(input, init);
+      },
+    );
+
+    renderCheckout();
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+
+    // 右栏常显预估金额（= 下次点击的比对基准）
+    const summary = screen.getByTestId("unified-order-summary");
+    await waitFor(() =>
+      expect(within(summary).getByText("$28.98")).toBeTruthy(),
+    );
+
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+
+    // 同一次点击：Prepare → Start → 卡确认 → 结果页（零确认区、零变化块）
+    await waitFor(() =>
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/us/en/payment-result/or_123?session=ps_1",
+      ),
+    );
+    expect(confirmMock).toHaveBeenCalledWith("sec_1");
+    expect(screen.queryByTestId("order-quote-confirm")).toBeNull();
+    expect(screen.queryByTestId("checkout-quote-diff")).toBeNull();
+    // 权威金额与预览同值：右栏切到权威口径（合计常显，不再靠二次确认展开）
+    expect(within(summary).getByText("totalDue")).toBeTruthy();
+    expect(within(summary).getByText("$9.00")).toBeTruthy();
+  });
+
+  // P1-a（FR-012）AC-2：**仅当金额真的变化**才停下来 —— 显示变化块（旧 → 新）
+  // + 确认块（含账单回显），顾客重新点击后携带**新版本**发起 Pay（零自动扣款）。
+  it("requires confirmation only when the amount really changed (P1-a AC-2)", async () => {
+    const user = userEvent.setup();
+    // 顾客已看到 $24.98（预览），Prepare 权威报价 $31.98 → 必须让顾客看到变化再确认
+    previewMock.mockImplementation(async () => ({
+      ok: true,
+      json: async () => ({
+        cart_id: "cart_1",
+        currency: "USD",
+        delivery_total: "5.0",
+        display_delivery_total: "$5.00",
+        tax_total: "0.0",
+        display_tax_total: "$0.00",
+        discount_total: "0.0",
+        display_discount_total: "$0.00",
+        amount_due: "24.98",
+        display_amount_due: "$24.98",
+        selected_method_id: null,
+        methods: [],
+        estimated: true,
+        address_complete: false,
+      }),
+    }));
     const defaultImpl = fetchMock.getMockImplementation();
     fetchMock.mockImplementation(
       (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1415,6 +1598,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
                 display_delivery_total: "$9.00",
                 discount_total: "-2.0",
                 display_discount_total: "-$2.00",
+                tax_total: "0.0",
+                display_tax_total: "$0.00",
                 amount_due: "31.98",
                 display_amount_due: "$31.98",
               },
@@ -1429,34 +1614,46 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     await fillRequiredFields(user);
     await user.type(screen.getByLabelText("email"), "ada@example.com");
     await user.click(screen.getByRole("radio", { name: /Standard/ }));
+    const summary = screen.getByTestId("unified-order-summary");
+    await waitFor(() =>
+      expect(within(summary).getByText("$24.98")).toBeTruthy(),
+    );
+
+    // 取消「同配送」+ 填写完整账单地址（确认块的账单回显与表单同源）
+    await user.click(screen.getByTestId("billing-use-shipping"));
+    await user.type(screen.getByLabelText("bill-first_name"), "Grace");
+    await user.type(screen.getByLabelText("bill-last_name"), "Hopper");
+    await user.type(screen.getByLabelText("bill-address1"), "1 Billing St");
+    await user.type(screen.getByLabelText("bill-city"), "Billingville");
+    await user.type(screen.getByLabelText("bill-postal_code"), "EC1A 1BB");
+    await user.type(screen.getByLabelText("bill-country_iso"), "GB");
+    await user.type(screen.getByLabelText("bill-state_abbr"), "LDN");
+
     await user.click(screen.getByRole("button", { name: "payNow" }));
 
-    // ① 确认区展示 Order 权威金额（运费 / 折扣 / 应付，全部 display_* 仅渲染）
-    const confirm = await screen.findByTestId("order-quote-confirm");
-    expect(confirm).toBeInTheDocument();
-    expect(screen.getByTestId("quote-delivery")).toHaveTextContent("$9.00");
-    expect(screen.getByTestId("quote-discount")).toHaveTextContent("-$2.00");
-    expect(screen.getByTestId("quote-amount-due")).toHaveTextContent("$31.98");
-    // PRD-20260919-checkout-payment-billing-and-card-form-polish AC-004：
-    // 默认「同配送」→ 确认区回显与区块控件同源（而不是静默空白）。
-    expect(screen.getByTestId("quote-billing")).toHaveTextContent(
-      "sameAsShipping",
+    // ① 变化块（旧 → 新）+ 确认块出现；**未**发起 Pay（绝不自动扣款）
+    expect(
+      await screen.findByTestId("checkout-quote-diff"),
+    ).toBeInTheDocument();
+    const shippingRow = screen.getByTestId("quote-diff-shipping");
+    expect(shippingRow).toHaveTextContent("$5.00");
+    expect(shippingRow).toHaveTextContent("$9.00");
+    expect(screen.getByTestId("quote-diff-amountDue")).toHaveAttribute(
+      "data-changed",
+      "true",
     );
-    // PRD-20260919-checkout-order-summary-fee-read-model AC-005：
-    // 同一份权威报价同步进右栏摘要（与确认区同源同值）。
-    const summary = screen.getByTestId("unified-order-summary");
-    expect(within(summary).getByText("totalDue")).toBeTruthy();
-    expect(within(summary).getByText("$31.98")).toBeTruthy();
-    expect(within(summary).getByText("$9.00")).toBeTruthy();
-    expect(within(summary).queryByText("estimatedTotal")).toBeNull();
-    // ② 确认前**绝不**发起 Pay（只发了 prepare）
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-      "/api/checkout/prepare",
-    ]);
-    expect(confirmMock).not.toHaveBeenCalled();
+    expect(screen.getByTestId("order-quote-confirm")).toBeInTheDocument();
+    expect(screen.getByTestId("quote-delivery")).toHaveTextContent("$9.00");
+    expect(screen.getByTestId("quote-amount-due")).toHaveTextContent("$31.98");
+    expect(screen.getByTestId("quote-billing")).toHaveTextContent(
+      "1 Billing St, Billingville, EC1A 1BB, GB",
+    );
+    expect(
+      fetchMock.mock.calls.filter(([url]) => url === "/api/checkout/start"),
+    ).toHaveLength(0);
     expect(replaceMock).not.toHaveBeenCalled();
 
-    // ③ 确认后走 Pay：只对已建订单启动交易，并携带已确认的报价版本
+    // ③ 顾客确认 → 携带**新版本**发起 Pay；不再重复提交购物车
     await user.click(screen.getByRole("button", { name: "confirmAndPay" }));
     await waitFor(() =>
       expect(replaceMock).toHaveBeenCalledWith(
@@ -1472,18 +1669,34 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
       expected_checkout_version: 3,
       expected_price_version: "pv_3",
     });
-    // 确认后不再重复提交购物车（防重复建单）
     expect(
-      fetchMock.mock.calls.filter(([url]) => url === "/api/checkout/prepare")
-        .length,
-    ).toBe(1);
+      fetchMock.mock.calls.filter(([url]) => url === "/api/checkout/prepare"),
+    ).toHaveLength(1);
   });
 
-  // PRD-20260919-checkout-payment-billing-and-card-form-polish AC-004：
-  // 取消「同配送」+ 填写账单地址 → 确认区回显拼接摘要（而不是写死文案）；
-  // 字段不全时显式提示，不让用户带着一个看不出内容的订单去付款。
-  it("echoes the custom billing address summary in the confirm area (AC-004)", async () => {
+  // P1-a（FR-012）AC-5：Prepare 之后又改了地址/配送方式/账单模式 →
+  // 作废旧权威报价与变化块（下次点击重新 Prepare），绝不拿旧价冒充当前价。
+  it("drops the prepared order and the change block when the buyer edits the inputs (P1-a AC-5)", async () => {
     const user = userEvent.setup();
+    previewMock.mockImplementation(async () => ({
+      ok: true,
+      json: async () => ({
+        cart_id: "cart_1",
+        currency: "USD",
+        delivery_total: "5.0",
+        display_delivery_total: "$5.00",
+        tax_total: "0.0",
+        display_tax_total: "$0.00",
+        discount_total: "0.0",
+        display_discount_total: "$0.00",
+        amount_due: "24.98",
+        display_amount_due: "$24.98",
+        selected_method_id: null,
+        methods: [],
+        estimated: true,
+        address_complete: false,
+      }),
+    }));
     const defaultImpl = fetchMock.getMockImplementation();
     fetchMock.mockImplementation(
       (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1498,6 +1711,8 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
                 price_version: "pv_3",
                 delivery_total: "9.0",
                 display_delivery_total: "$9.00",
+                discount_total: "0.0",
+                display_discount_total: "$0.00",
                 amount_due: "31.98",
                 display_amount_due: "$31.98",
               },
@@ -1512,23 +1727,30 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     await fillRequiredFields(user);
     await user.type(screen.getByLabelText("email"), "ada@example.com");
     await user.click(screen.getByRole("radio", { name: /Standard/ }));
-
-    // ① 取消同配送 → 填写完整账单地址（服务端/前台都拦截不完整地址）
-    await user.click(screen.getByTestId("billing-use-shipping"));
-    await user.type(screen.getByLabelText("bill-first_name"), "Grace");
-    await user.type(screen.getByLabelText("bill-last_name"), "Hopper");
-    await user.type(screen.getByLabelText("bill-address1"), "1 Billing St");
-    await user.type(screen.getByLabelText("bill-city"), "Billingville");
-    await user.type(screen.getByLabelText("bill-postal_code"), "EC1A 1BB");
-    await user.type(screen.getByLabelText("bill-country_iso"), "GB");
-    await user.type(screen.getByLabelText("bill-state_abbr"), "LDN");
+    const summary = screen.getByTestId("unified-order-summary");
+    await waitFor(() =>
+      expect(within(summary).getByText("$24.98")).toBeTruthy(),
+    );
 
     await user.click(screen.getByRole("button", { name: "payNow" }));
+    expect(
+      await screen.findByTestId("checkout-quote-diff"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("order-quote-confirm")).toBeInTheDocument();
 
-    // ② 确认区回显拼接摘要（按 address1 / city / postal_code / country 顺序，
-    //    空字段不参与拼接，不依赖语序）
-    expect(await screen.findByTestId("quote-billing")).toHaveTextContent(
-      "1 Billing St, Billingville, EC1A 1BB, GB",
+    // 用户改了城市 → 旧权威报价与变化块一起作废（摘要回落新的预览）
+    await user.type(screen.getByLabelText("unified-city"), "X");
+    await waitFor(() =>
+      expect(screen.queryByTestId("checkout-quote-diff")).toBeNull(),
+    );
+    expect(screen.queryByTestId("order-quote-confirm")).toBeNull();
+
+    // 再点 → 重新 Prepare（同一订单幂等提交），而不是拿旧版本去 Pay
+    await user.click(screen.getByRole("button", { name: "payNow" }));
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([url]) => url === "/api/checkout/prepare"),
+      ).toHaveLength(2),
     );
   });
 

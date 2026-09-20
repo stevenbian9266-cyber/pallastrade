@@ -34,6 +34,64 @@ export interface QuoteDiffRow {
   changed: boolean;
 }
 
+/**
+ * P1-a（PRD-20260920-checkout 支付核心统一 FR-012）—— 参与差异比对的**报架子集**。
+ *
+ * `CheckoutQuote`（Order 权威报价）与只读预览报价（`CartPreviewQuoteResult`）
+ * 都能投影成它，因此「顾客已看到的金额」与「Order 权威报价」可以用**同一套差异
+ * 计算**比对（不新增第二套口径）。
+ */
+export interface QuoteComparable {
+  delivery_total: string | null;
+  display_delivery_total: string | null;
+  discount_total: string | null;
+  display_discount_total: string | null;
+  amount_due: string | null;
+  display_amount_due: string | null;
+}
+
+/**
+ * FR-012：把**只读预览报价**投影为比对子集。
+ *
+ * 没有 `amount_due`（预览不可判定 / 服务端未返回金额）→ `null`：
+ * **不比对**（顾客从未看到可比金额，不得凭空造出「金额变化」而多要一次确认）。
+ */
+export function comparableFromPreview(
+  preview:
+    | {
+        delivery_total?: string | null;
+        display_delivery_total?: string | null;
+        discount_total?: string | null;
+        display_discount_total?: string | null;
+        amount_due?: string | null;
+        display_amount_due?: string | null;
+      }
+    | null
+    | undefined,
+): QuoteComparable | null {
+  if (!preview?.amount_due) return null;
+  return {
+    delivery_total: preview.delivery_total ?? null,
+    display_delivery_total: preview.display_delivery_total ?? null,
+    discount_total: preview.discount_total ?? null,
+    display_discount_total: preview.display_discount_total ?? null,
+    amount_due: preview.amount_due,
+    display_amount_due: preview.display_amount_due ?? null,
+  };
+}
+
+/**
+ * FR-012：**仅当金额发生变化**时才要求确认 —— 无比对基准（无预览也无快照）或
+ * 权威报价缺失（服务端降级）时返回空数组 = 不拦人（一次点击直达）。
+ */
+export function quoteChangeRows(
+  before: QuoteComparable | null | undefined,
+  after: CheckoutQuote | null,
+): QuoteDiffRow[] {
+  if (!before || !after) return [];
+  return diffQuotes(before, after);
+}
+
 const STORAGE_PREFIX = "pallastrade:quote:";
 
 function str(value: unknown): string | null {
@@ -126,7 +184,7 @@ function row(
 
 /** 三行差异（Shipping / Promotion / Amount due）；无旧快照时全部标记为 changed。 */
 export function diffQuotes(
-  before: CheckoutQuote | null,
+  before: CheckoutQuote | QuoteComparable | null,
   after: CheckoutQuote | null,
 ): QuoteDiffRow[] {
   if (!after) return [];

@@ -5271,6 +5271,40 @@
         "readOnlyNoCandidateHonesty": 10,
         "deterministicAndModeHonesty": 5
       }
+    },
+    {
+      "id": "GS-200",
+      "name": "One-click checkout payment with an instant payment-area skeleton - confirm only when the amount actually changed",
+      "description": "A shopper on the cart checkout page has to click Pay, wait for a subtotal panel to expand, and click a second time to confirm before any money moves; meanwhile the express-wallet area shows a bare spinner until the wallet SDK answers (up to ten seconds) and only then grows, pushing the rest of the page down, and Stripe.js is downloaded from scratch on the first wallet interaction. The ask: make a normal payment take one click, keep the totals and the breakdown always visible, stop the shopper only when the amount they saw actually changed, and let the payment area render a fixed-height placeholder immediately while the wallet elements and Stripe.js get warmed up in the background.",
+      "mustDo": [
+        "Keep 'prepare the order, then pay' as the internal sequence, but do both in the same click: the buyer only sees one Pay Now action when the authoritative amount matches what was already on screen",
+        "Compare the authoritative order quote against the amount the buyer actually saw - the read-only preview quote first, then the last quote snapshot - and only pause when a row really moved, never inventing a difference when there is no baseline to compare against",
+        "When the amount changed, show the change block (shipping / promotion / amount due, before then after) plus the final-amount block, switch the button to the confirm label, and carry the freshly confirmed quote versions on the next click; never charge automatically and never silently swap the price",
+        "Reuse the existing difference semantics (raw fields decide change, display fields only render) instead of writing a second comparison, and add the pure helpers to the shared quote module",
+        "Invalidate the prepared order and any visible change block as soon as the buyer edits the address, shipping method or billing mode, so the summary can never show a stale authoritative amount, and let the next click re-prepare (idempotent submit on the same order)",
+        "On a quote conflict, replace the prepared order's quote with the latest one from the response so the confirm click carries the new versions instead of hitting the same conflict forever",
+        "Render a fixed-height skeleton for the express wallet slot on the first frame, keep the wallet element mounted underneath so the SDK can still initialise, and swap to the real buttons in place by opacity only (same row height, same column count) so nothing below the area moves",
+        "Keep the divider's position constant instead of adding it only once the wallet is ready, and give the lazily loaded wallet chunk the same skeleton as its loading fallback",
+        "Warm up js.stripe.com from the first-screen payload only: preconnect, dns-prefetch and a script preload of the exact URL loadStripe injects, rendered only when the server shipped publishable credentials with a Stripe payment method, and with no credential fallback of its own",
+        "Leave the billing-details routing untouched: the collected wallet or card values keep priority, billing_details stays a client-side payment-method payload, and nothing new is added to the server request body"
+      ],
+      "mustNotDo": [
+        "Require a second confirmation click when the amount did not change, or hide the totals and breakdown behind a click",
+        "Pause the payment or swap the price when there is no authoritative quote to compare against, or treat a degraded preview (null amounts) as a change",
+        "Compare preview and order amounts by parsing display strings, or introduce a second quote-difference implementation",
+        "Keep showing a prepared order's amounts after the buyer edited the address, shipping method or billing mode",
+        "Prefetch Stripe.js on pages that cannot pay, guess a publishable key from the environment for the preload, preload a URL that loadStripe would not reuse, or attach crossOrigin to the preconnect",
+        "Move billing_details into any server-side payload, or add a skeleton that changes which wallet entries the server offered"
+      ],
+      "scoring": {
+        "oneClickWhenAmountUnchanged": 20,
+        "changeOnlyWhenBaselineDiffers": 20,
+        "confirmPathCarriesFreshVersions": 15,
+        "stalePreparedOrderInvalidation": 10,
+        "instantSkeletonInPlace": 15,
+        "payloadOnlyStripeWarmup": 10,
+        "billingDetailsAndEntrySetUntouched": 10
+      }
     }
   ]
 }

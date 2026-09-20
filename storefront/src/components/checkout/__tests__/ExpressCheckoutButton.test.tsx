@@ -1,5 +1,5 @@
 import type { Cart } from "@pallastrade/sdk";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ExpressCheckoutButton } from "@/components/checkout/ExpressCheckoutButton";
 
@@ -666,4 +666,75 @@ describe("ExpressCheckoutButton (top express area)", () => {
     expect(screen.queryByTestId("wallet-unavailable-notice")).toBeNull();
     expect(screen.queryByTestId("express-checkout-element")).toBeNull();
   }, 20000);
+});
+
+// P1-a（PRD-20260920-checkout 支付核心统一 FR-011，2026-09-20）：
+// 快捷支付区**首帧骨架** —— 固定高度占位（列数 = `maxColumns`）、元素就绪后**原位**替换
+// （同一槽位只切透明度，不推动下方内容，CLS < 0.02）；钱包元素全程挂载（Stripe 初始化所需）；
+// 分隔线位置恒定（不再等就绪才出现）。
+describe("ExpressCheckoutButton (P1-a instant skeleton)", () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+    pushMock.mockReset();
+    confirmPaymentMock.mockReset();
+    elementsSubmitMock.mockClear();
+    toastMock.mockReset();
+    capturedElementProps = {};
+    capturedElementsProps = {};
+  });
+
+  it("renders the fixed-height skeleton on the first frame and swaps it in place (FR-011)", async () => {
+    render(
+      <ExpressCheckoutButton
+        cart={cart}
+        basePath="/us/en"
+        entryKinds={["apple_pay", "google_pay"]}
+        degradedDisplay="toast"
+        maxColumns={2}
+        onComplete={vi.fn()}
+      />,
+    );
+
+    // 首帧：骨架在位（两列 = maxColumns，固定高度 48px），元素已挂载（否则 Stripe 无法初始化）
+    const slot = screen.getByTestId("wallet-skeleton-slot");
+    expect(slot).toHaveAttribute("data-state", "unknown");
+    expect(within(slot).getAllByTestId("wallet-skeleton-bar")).toHaveLength(2);
+    expect(screen.getByTestId("express-checkout-element")).toBeInTheDocument();
+    // 分隔线位置恒定：unknown 态就占好位（就绪时不再把下方内容推下去）
+    expect(screen.getByTestId("wallet-divider")).toHaveAttribute(
+      "data-state",
+      "unknown",
+    );
+
+    await waitFor(() => expect(capturedElementProps.onReady).toBeDefined());
+    await act(async () => {
+      (capturedElementProps.onReady as (event: unknown) => void)({
+        availablePaymentMethods: { applePay: true },
+      });
+    });
+
+    // 就绪：**同一槽位**切换状态（元素从未重挂载 → 无二次初始化、无跳动）
+    expect(screen.getByTestId("wallet-skeleton-slot")).toHaveAttribute(
+      "data-state",
+      "available",
+    );
+    expect(screen.getByTestId("wallet-divider")).toHaveAttribute(
+      "data-state",
+      "available",
+    );
+    expect(screen.getByTestId("express-checkout-element")).toBeInTheDocument();
+  });
+
+  it("uses a single skeleton row for the single-column slot (FR-011)", () => {
+    render(
+      <ExpressCheckoutButton
+        cart={cart}
+        basePath="/us/en"
+        entryKind="apple_pay"
+        onComplete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getAllByTestId("wallet-skeleton-bar")).toHaveLength(1);
+  });
 });

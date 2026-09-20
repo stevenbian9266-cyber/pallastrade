@@ -29,6 +29,7 @@ import {
   PaymentSection,
   paymentEntriesFor,
 } from "@/components/checkout/PaymentSection";
+import { StripeResourceHints } from "@/components/checkout/StripeResourceHints";
 import { WalletPaymentButtons } from "@/components/checkout/WalletPaymentButtons";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
@@ -58,7 +59,10 @@ import {
 } from "@/lib/utils/address";
 import { safeParseFloat } from "@/lib/utils/format";
 import { extractBasePath } from "@/lib/utils/path";
-import { extractSessionClientSecret } from "@/lib/utils/stripe";
+import {
+  extractSessionClientSecret,
+  payloadStripePublishableKey,
+} from "@/lib/utils/stripe";
 
 /** PRD-20260919-checkout：失效原因（服务端枚举）→ 文案键。 */
 const INVALID_REASON_KEYS: Record<string, string> = {
@@ -241,6 +245,19 @@ export function OrderPaymentContent({
         order.payment_methods ??
         []) as PaymentMethodWithEntries[],
     [effectiveView, order.payment_methods],
+  );
+  /**
+   * P1-a FR-011：本页确有 Stripe 支付方式时的**首屏 payload** 凭据 ——
+   * 仅它存在时才预连接/预加载 `js.stripe.com`（无凭据 = 本页不会加载 Stripe.js）。
+   */
+  const stripeResourceClientConfig = useMemo(
+    () =>
+      paymentMethods.find(
+        (method) =>
+          method.type === "stripe" &&
+          payloadStripePublishableKey(method.client_config) !== null,
+      )?.client_config ?? null,
+    [paymentMethods],
   );
 
   // 入口展开（顺序 = 服务端 `position`）
@@ -681,6 +698,9 @@ export function OrderPaymentContent({
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* P1-a FR-011：js.stripe.com 预连接/预加载（React 19 提升进 <head>）；
+          本次钱包入口点开时不再等 Stripe.js 从零下载。 */}
+      <StripeResourceHints clientConfig={stripeResourceClientConfig} />
       <h1 className="text-3xl font-bold text-gray-900 mb-8">{t("payment")}</h1>
 
       {/* PRD-20260913-checkout-txn-error-routing AC-007：报价变化横幅 */}

@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { WalletButtonSkeleton } from "@/components/checkout/WalletButtonSkeleton";
 import {
   completeExpressCheckout,
   expressClientSecret,
@@ -573,18 +574,23 @@ function ExpressCheckoutInner({
 
         {/* Buttons area — min-h keeps space, content fades out when processing */}
         <div className="relative min-h-12">
-          {/* Spinner — overlays the button area, fades out when ready */}
+          {/* FR-011 首帧骨架（P1-a）：固定高度、**原位**替换 —— 与真实钱包按钮同槽同高
+              （容器 min-h-12），元素就绪只切透明度，不推动下方内容（CLS < 0.02）。
+              元素本身**始终挂载**（Stripe 初始化所需），这里只叠加占位。 */}
           <div
-            className={`absolute inset-0 flex flex-col items-center justify-center gap-2 transition-opacity duration-300 ${
+            data-testid="wallet-skeleton-slot"
+            data-state={availability.state}
+            className={`absolute inset-0 flex items-center transition-opacity duration-300 ${
               availability.state === "unknown" && !processing
                 ? "opacity-100"
                 : "opacity-0 pointer-events-none"
             }`}
           >
-            <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-            <span className="text-xs text-gray-500">
-              {tCheckout("walletLoading")}
-            </span>
+            <div className="w-full">
+              <WalletButtonSkeleton columns={maxColumns} />
+            </div>
+            {/* 加载语义对辅助技术仍可读（视觉由骨架表达） */}
+            <span className="sr-only">{tCheckout("walletLoading")}</span>
           </div>
 
           {/* Buttons — always mounted so Stripe can init, fade in when ready */}
@@ -623,8 +629,18 @@ function ExpressCheckoutInner({
               onShippingRateChange={handleShippingRateChange}
             />
             {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-            {availability.state === "available" && showDivider && (
-              <div className="relative mt-4">
+            {/* FR-011：分隔线的**位置恒定**（unknown 时只隐藏不卸载）——
+                否则按钮就绪的瞬间整段内容会向下跳一次。 */}
+            {showDivider && (
+              <div
+                data-testid="wallet-divider"
+                data-state={availability.state}
+                className={`relative mt-4 transition-opacity duration-300 ${
+                  availability.state === "available" && !processing
+                    ? "opacity-100"
+                    : "opacity-0"
+                }`}
+              >
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-200" />
                 </div>

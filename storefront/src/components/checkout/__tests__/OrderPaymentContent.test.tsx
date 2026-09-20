@@ -66,6 +66,12 @@ vi.mock("@/lib/utils/stripe", () => ({
   getStripePromise: () => Promise.resolve(null),
   isStripeConfigured: () => stripeConfiguredState.value,
   resolveStripePublishableKey: () => null,
+  // P1-a FR-011：预连接/预加载只认**首屏 payload** 凭据（无 env 回落）
+  payloadStripePublishableKey: (
+    config?: {
+      publishable?: Record<string, string> | null;
+    } | null,
+  ) => config?.publishable?.publishable_key?.trim() || null,
   stripeLocaleFor: (locale: string) => locale,
   normalizeClientSecret: (s: string) => s,
   extractSessionClientSecret: (
