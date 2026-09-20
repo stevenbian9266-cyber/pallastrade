@@ -125,6 +125,43 @@ module PallasTrade
         }
       end
 
+      # PALLAS-CUSTOM: PAY-CORE-P3C（PRD-20260920-checkout 切片 P3-C）——「路由预览」区块数据：
+      # 把 `Routing::Summary`（无订单上下文）投影到本厂商：每个参与的方式由谁承接、我排第几、为何未选中。
+      # ⚠️ 只读：零写入/零网络/零资金副作用；订单级闸门（D8/D11/D15c）**未参与**，页面文案必须说清。
+      # @return [Hash, nil] store 缺失时 nil（视图不渲染）
+      def provider_routing_preview(payment_method)
+        store = payment_method.respond_to?(:store) ? payment_method.store : nil
+        return nil if store.nil?
+
+        summary = PallasTrade::Payments::Routing::Summary.for_store(store)
+        provider_id = payment_method.prefixed_id
+
+        rows = summary['methods'].filter_map do |method_key, entry|
+          candidate = Array(entry['candidates']).find { |item| item['provider_id'] == provider_id }
+          rejection = Array(entry['rejected']).find { |item| item['provider_id'] == provider_id }
+          next if candidate.nil? && rejection.nil?
+
+          {
+            method_key: method_key,
+            display_name: payment_method.option_display_name(method_key),
+            winner_name: entry['chosen']&.[]('provider_name'),
+            winner_id: entry['chosen']&.[]('provider_id'),
+            mine: entry['chosen']&.[]('provider_id') == provider_id,
+            rank: candidate&.[]('rank'),
+            basis: candidate&.[]('basis'),
+            reason: rejection&.[]('reason')
+          }
+        end
+
+        {
+          mode: summary['mode'],
+          mode_label: provider_diagnostic_text("routing_modes.#{summary['mode']}"),
+          applied: summary['applied'],
+          order_gates: summary['order_gates'],
+          rows: rows
+        }
+      end
+
       def provider_diagnostic_row(testid, label, value)
         { testid: testid, label: label, value: value }
       end

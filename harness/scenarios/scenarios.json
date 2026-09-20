@@ -5252,7 +5252,8 @@
         "Keep the mode honest: only off, shadow and priority-only are supported, and a mode that would rank by cost is normalized to off and flagged as unsupported instead of pretending to apply a cost model",
         "Return the same decision for the same order, method and policy, and record the policy version and the inputs snapshot with the decision",
         "Make the policy writable through a whitelisting primitive that rejects an unimplemented mode, a provider that does not belong to the store, and a market key that is not the store's, keeps an identical write a no-op without touching the store record's timestamp, and changes no money records",
-        "Provide a preview that reuses the decision's candidate assembly and ranking but explicitly declares that order-scoped gates were skipped, so nobody reads it as 'this will definitely be payable', listed per method with the rejected providers and their reasons and never inventing a method"
+        "Provide a preview that reuses the decision's candidate assembly and ranking but explicitly declares that order-scoped gates were skipped, so nobody reads it as 'this will definitely be payable', listed per method with the rejected providers and their reasons and never inventing a method",
+        "Surface that preview in the provider's own admin card so an operator can see, for every method the provider takes part in, who carries it, which position this provider holds and by which basis, or the exact reason it is not a candidate - with copy that repeats that order-scoped gates were not evaluated"
       ],
       "mustNotDo": [
         "Rank before gating, or let a disabled, suspended or account-unopened provider remain a candidate",

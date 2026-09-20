@@ -1144,6 +1144,19 @@ en:
           account_saved: Account configuration saved.
           account_unchanged: No change — the account configuration already matches.
           account_rejected: "Ignored (not allowed): %{summary}"
+          routing_title: Payment routing
+          routing_help: Preview of the store-level routing policy. Order-scoped gates (market rules, circuit breaker, authentication) are NOT evaluated here - use it to see who ranks first, not to conclude that a payment will succeed.
+          routing_empty: This provider does not take part in any payment method yet.
+          routing_mine: "Carries this method - position %{position}, ranking by %{basis}"
+          routing_other: "Taken by %{provider} - we are at position %{position} of %{total} (ranking by %{basis})"
+          routing_not_selected: "Not a candidate: %{reason}"
+          routing_modes:
+            "off": Routing off
+            shadow: Shadow mode
+            priority_only: Priority-only
+          routing_basis:
+            priority_override: configured priority
+            position: option position
           dimensions:
             methods: Methods
             currencies: Currencies

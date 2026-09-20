@@ -90,4 +90,66 @@ RSpec.describe 'Admin payment provider diagnostics', type: :request do
 
     expect(doc.at_css("[data-testid='provider-diagnostics-state']").text.strip).to eq('Suspended')
   end
+
+  describe 'P3-C 路由预览' do
+    def optionized!(payment_method, kind: 'card', position: 1)
+      payment_method.update_columns(private_metadata: {
+                                      'optionized' => true,
+                                      'options' => [{ 'kind' => kind, 'active' => true, 'position' => position }]
+                                    })
+      payment_method.reload
+    end
+
+    it 'renders the preview block with the mode badge and the skipped-order-gates note' do
+      gateway = create(:stripe_gateway, store: store)
+      optionized!(gateway)
+
+      doc = render_edit(gateway)
+
+      card = doc.at_css("[data-testid='provider-routing-preview']")
+      expect(card).to be_present
+      expect(card.at_css("[data-testid='provider-routing-mode']").text.strip).to eq('Routing off')
+      expect(card.at_css("[data-testid='provider-routing-gates-note']").text).to include('Order-scoped gates')
+    end
+
+    it 'shows a row per participating method and reports this provider as the carrier' do
+      gateway = create(:stripe_gateway, store: store)
+      optionized!(gateway)
+
+      doc = render_edit(gateway)
+      row = doc.at_css("[data-testid='provider-routing-row-card']")
+
+      expect(row).to be_present
+      expect(row.text).to include('Carries this method')
+      expect(row.text).to include('position 1')
+    end
+
+    it 'reports the reason when this provider is not a candidate' do
+      gateway = create(:stripe_gateway, store: store)
+      optionized!(gateway)
+      PallasTrade::Payments::Providers::State.disable!(gateway)
+
+      doc = render_edit(gateway)
+      row = doc.at_css("[data-testid='provider-routing-row-card']")
+
+      expect(row.text).to include('provider_disabled')
+      expect(row.text).not_to include('Carries this method')
+    end
+
+    it 'lists the winning provider when another provider ranks first' do
+      gateway = create(:stripe_gateway, store: store)
+      optionized!(gateway, position: 2)
+      other = create(:stripe_gateway, store: store, name: 'Stripe B')
+      other.update_columns(private_metadata: {
+                             'optionized' => true,
+                             'options' => [{ 'kind' => 'card', 'active' => true, 'position' => 1 }]
+                           })
+
+      doc = render_edit(gateway.reload)
+      row = doc.at_css("[data-testid='provider-routing-row-card']")
+
+      expect(row.text).to include('Stripe B')
+      expect(row.text).to include('position 2')
+    end
+  end
 end
