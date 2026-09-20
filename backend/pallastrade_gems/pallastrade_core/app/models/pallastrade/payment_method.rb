@@ -636,6 +636,52 @@ module PallasTrade
       ]
     end
 
+    # PALLAS-CUSTOM: PAY-CORE-P0A（PRD-20260920-checkout 支付核心统一 · 切片 P0-A）——
+    # 「厂商层」读取口径（业务方案 §2.1/§2.2/§2.3）：能力声明 / 账户配置 / 三态。
+    # 本仓**不新建厂商表**：厂商 = 本条 `PaymentMethod` 记录；账户配置存 `metadata['account']`。
+    # 三家预接厂商（Stripe / Adyen / PayPal）可各自在网关类定义类方法 `provider_capability`
+    # 声明静态能力（国家 / 币种 / 金额区间 / 会话模式）；未声明则由能力目录 + `session_required?` 推导。
+
+    # 厂商静态能力声明（provider 类方法 `provider_capability` 的读取口；未声明 → nil）。
+    # @return [Hash, nil]
+    def provider_capability_declaration
+      klass = self.class
+      return nil unless klass.respond_to?(:provider_capability)
+
+      declaration = klass.provider_capability
+      declaration.is_a?(Hash) ? declaration : nil
+    end
+
+    # 归一后的能力声明（provider 未声明 → 从 `payment_option_catalog` 推导，`source` 标注来源）。
+    # @return [Hash]
+    def provider_capability
+      PallasTrade::Payments::Providers::Config.capability(self)
+    end
+
+    # 归一后的账户配置（`metadata['account']`；缺失 → 各维度 nil = 未声明，**不猜**）。
+    # @return [Hash]
+    def provider_account_config
+      PallasTrade::Payments::Providers::Config.account_config(self)
+    end
+
+    # 「能力 ∩ 账户」收窄后的生效清单（含 `narrowed` / `basis`，供后台可解释展示）。
+    # @return [Hash]
+    def provider_effective_scope
+      PallasTrade::Payments::Providers::Config.effective(self)
+    end
+
+    # 厂商三态（唯一读取口径）：enabled / disabled / suspended。
+    # @return [String]
+    def provider_state
+      PallasTrade::Payments::Providers::State.state(self)
+    end
+
+    # 厂商配置诊断（只读）：{ 'ok', 'state', 'issues', 'counts' }。
+    # @return [Hash]
+    def provider_diagnostics
+      PallasTrade::Payments::Providers::Validate.summary(self)
+    end
+
     # PALLAS-CUSTOM: D8（PRD-20260915-payments-d8 切片1）—— 入口「适用范围」读取（业务方案 §66.2）。
     # @return [Hash, nil] 归一后的 rule_set；nil = 不限（无规则 / 非法配置一律视同不限）
     def payment_option_rule_set(kind)

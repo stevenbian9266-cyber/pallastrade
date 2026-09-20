@@ -5179,7 +5179,8 @@
         "Show the new amount directly on the order payment page with an explicit change notice (amount before to after, removed items, adjusted promotions, blockers) in every supported locale, and pass the displayed amount along with the payment request",
         "Project payment_state and shipment_state at submit time, derive them read-only for rows written before this change, and make the payable predicate depend on the amount rather than the status column",
         "Retire the cashier modal and its multi-select entry: row and detail pay actions navigate to the order payment page, and one payable helper is shared by list and detail",
-        "Register a verifier for the re-validation specs that also runs the orders-channel request specs (transaction start, entry gate), so the API surface is covered by the same gate, and mirror the behaviour into the checkout and storefront skills"
+        "Register a verifier for the re-validation specs that also runs the orders-channel request specs (transaction start, entry gate), so the API surface is covered by the same gate, and mirror the behaviour into the checkout and storefront skills",
+        "Rebuild the local SDK package inside the deploy workflow before building the storefront image - the image type-checks against the package dist, so a new SDK export must be built there instead of being committed as an artifact"
       ],
       "mustNotDo": [
         "Write anything on page load, or let the dry run leave rows behind, publish inventory events or create a payment session",
@@ -5199,6 +5200,40 @@
         "amountParityWithQuoteChangedGuard": 15,
         "unpaidOrderProjectionAndPayEntryPoints": 10,
         "modalRetirementAndI18n": 10
+      }
+    },
+    {
+      "id": "GS-198",
+      "name": "Make the provider layer honest - declare capability, record the merchant account, narrow the three sets, and explain every mismatch",
+      "description": "A store runs several payment providers. The admin only stores 'which storefront options are enabled', so the operator cannot tell the difference between 'the provider supports this method', 'our merchant account has it opened' and 'we restricted it to these markets'. The save path silently drops anything it does not recognise, so a mistyped option kind or an out-of-scope currency looks saved while the storefront quietly never offers it; there is no place to record what the PSP account actually has enabled, and provider state is split between a boolean and a circuit breaker with no single answer to 'can this provider take money right now, and why not'. The ask: add a provider layer that declares static capability, records the account side (manual or synced), narrows capability against account and market, and surfaces every mismatch as a readable diagnosis without changing the write path yet.",
+      "mustDo": [
+        "Treat an existing configured provider record as the provider itself instead of inventing a parallel provider table, and keep the account side in the same metadata store the other payment features already use (no migration)",
+        "Read static capability from a provider-declared class-level declaration when present, and only fall back to the method catalog plus session requirement, marking which source answered",
+        "Normalize the account block defensively: unknown keys and malformed lists are ignored rather than raising, kind lists are downcased and de-duplicated, ISO codes upper-cased, timestamps parsed, and a bogus source falls back to manual",
+        "Model 'not declared' as nil (do not narrow that dimension) instead of an empty list, so an unconfigured account can never be read as 'everything is enabled'",
+        "Expose the narrowing as capability intersected with account per dimension, and report the basis (capability only, account only, both, or undeclared) next to the value",
+        "Derive one three-state answer per provider (enabled, disabled, suspended) with the precedence manual disable over breaker over enabled, keep manual disable sticky so clearing a breaker never re-enables a provider a human switched off, and allow auto-recovery only for a timed breaker",
+        "Return diagnostics as structured severity plus code plus params, covering an enabled option the provider never declared, an enabled option the account has not opened, currencies and countries outside the narrowed sets, an amount range beyond the declared limits, a disabled provider that still has enabled options, an optionized provider with nothing enabled, and a partially suspended provider",
+        "Keep the diagnosis strictly read-only - no configuration writes, no provider calls, no payment, session or ledger side effects - and render it on the existing payment method edit page as a read-only card with the provider state badge, the capability and account sources, the narrowed lists, the configured markets and the issue list",
+        "Leave the write path and the existing silent normalization untouched, and say so explicitly, so the new layer adds explainability without changing behaviour or breaking the shipped option-configuration specs",
+        "Register a verifier that runs the provider-layer service specs together with the admin diagnostics request spec, and document the provider layer (sources, narrowing, three-state, stickiness, zero side effects) in the payments skill"
+      ],
+      "mustNotDo": [
+        "Create a second provider model beside the configured payment method record, or store provider capability and account data in a new table when metadata is the established pattern",
+        "Guess capability from the method catalog when the provider declares it, or read a missing account block as 'all methods, currencies and countries are available'",
+        "Raise on malformed metadata in a read path, or narrow a dimension whose other side is undeclared and silently report the result as an intersection",
+        "Let clearing a breaker re-enable a provider that was manually disabled, or answer the state question from the boolean alone while an open breaker is ignored",
+        "Write configuration, call the provider or touch payment, session or ledger rows from the diagnostics path",
+        "Change the save path to reject configuration in this slice, or hide mismatches in a log line instead of surfacing them in the admin UI"
+      ],
+      "scoring": {
+        "providerReusesConfiguredRecord": 10,
+        "capabilityDeclarationWithSource": 15,
+        "accountConfigNoGuessing": 20,
+        "narrowingWithBasis": 15,
+        "threeStatePrecedenceAndStickiness": 20,
+        "structuredDiagnostics": 10,
+        "readOnlyZeroSideEffects": 10
       }
     }
   ]

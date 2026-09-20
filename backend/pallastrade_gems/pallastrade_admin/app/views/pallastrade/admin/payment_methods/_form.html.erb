@@ -2,6 +2,12 @@
   <%= render "pallastrade/admin/payment_methods/configuration_guides/#{@object.configuration_guide_partial_name}", f: f %>
 <% end %>
 
+<%# PALLAS-CUSTOM: PAY-CORE-P0A（PRD-20260920-checkout 切片 P0-A）—— 厂商配置诊断（只读）。
+    新记录未持久化（无 store/metadata）→ 不渲染。 %>
+<% if @object.persisted? %>
+  <%= render 'pallastrade/admin/payment_methods/provider_diagnostics' %>
+<% end %>
+
 <% if !preference_fields(@object, f).empty? || @object.respond_to?(:custom_form_fields_partial_name) %>
   <div class="card mb-6">
     <div class="card-header">

@@ -245,3 +245,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | approved | PRD-20260919-payments-后台支付风控阈值策略表-可编辑单元格组件-纯文本-数字-选择下拉-点击即编辑 | payments | 2026-09-19 | （实施时回填） |
 | done | PRD-20260919-shipping-checkout-quote-preview | shipping | 2026-09-19 | 结算页只读预览报价（dry-run 同源管线 + 默认选中 + 四级读模型） |
 | done | PRD-20260919-checkout-结算页待支付订单再次支付重验-失效行剔除-优惠复核-订单金额变化提示-收银台弹窗退役 | checkout | 2026-09-19 | 补付前同源重验（价格/可售/可达/优惠/抵扣）+ 失效行剔除只付有效部分 + 金额变化提示 + 收银台弹窗退役 |
+| implementing | PRD-20260920-checkout-支付核心统一-厂商层-支付方式层-方式级路由-组合支付-订单失效期 | checkout | 2026-09-20 | （实施时回填） |

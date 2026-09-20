@@ -14,7 +14,9 @@ module PallasTrade
       end
 
       def available_payment_methods
-        @available_payment_methods ||= PallasTrade::PaymentMethod.providers.map { |provider| provider.name.constantize.new }.delete_if { |payment_method| !payment_method.show_in_admin? || current_store.payment_methods.pluck(:type).include?(payment_method.type) }.sort_by(&:name)
+        @available_payment_methods ||= PallasTrade::PaymentMethod.providers.map do |provider|
+          provider.name.constantize.new
+        end.delete_if { |payment_method| !payment_method.show_in_admin? || current_store.payment_methods.pluck(:type).include?(payment_method.type) }.sort_by(&:name)
       end
 
       # PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915-admin 切片3）—— 后台「支付方式」页签数据行：
@@ -35,10 +37,10 @@ module PallasTrade
             kind: kind,
             active: option ? option['active'] != false : kind == legacy_kind,
             display_name: option&.[]('display_name').presence || entry['display_name'].presence || kind,
-            position: option&.[]('position').to_i.nonzero? || index + 1,
+            position: option&.[]('position').to_i.nonzero? || (index + 1),
             frontend_kind: option&.[]('frontend_kind').presence ||
-                           entry['frontend_kind'].presence ||
-                           payment_method.default_option_frontend_kind,
+              entry['frontend_kind'].presence ||
+              payment_method.default_option_frontend_kind,
             # D15 切片3：入口能否被强制认证（目录声明；缺失 = 不支持 —— 不猜）
             three_d_secure: entry&.[]('three_d_secure').to_s.downcase == 'supported',
             # PALLAS-CUSTOM: D8（PRD-20260915-payments-d8 切片2）—— 适用范围（include 侧 4 维度）
@@ -46,6 +48,97 @@ module PallasTrade
             scope_summary: payment_method.payment_option_scope_summary(kind)
           }
         end
+      end
+
+      # PALLAS-CUSTOM: PAY-CORE-P0A（PRD-20260920-checkout 支付核心统一 · 切片 P0-A）——
+      # 厂商配置诊断卡数据：三态 / 能力来源 / 账户来源 / 「能力 ∩ 账户 ∩ 市场」收窄结论 / 诊断项。
+      # ⚠️ 只读：`Providers::Validate` 零写入、零网络、零资金副作用，**不参与保存路径**（写路径保持现状）。
+      # @return [Hash] { state:, state_label:, ok:, rows: [{ testid:, label:, value: }], issues: [{ severity:, message: }] }
+      def provider_diagnostics(payment_method)
+        summary = payment_method.provider_diagnostics
+        capability = payment_method.provider_capability
+        account = payment_method.provider_account_config
+        effective = payment_method.provider_effective_scope
+        scope = PallasTrade::Payments::Providers::Config.configured_scope(payment_method)
+
+        none_label = provider_diagnostic_text('none')
+        undeclared_label = provider_diagnostic_text('undeclared')
+
+        {
+          state: summary['state'],
+          state_label: provider_diagnostic_text("states.#{summary['state']}"),
+          ok: summary['ok'],
+          rows: [
+            provider_diagnostic_row(
+              'capability',
+              provider_diagnostic_text('capability_source'),
+              "#{provider_diagnostic_text("sources.#{capability['source']}")} · #{provider_diagnostic_list(capability['method_keys'], none_label)}"
+            ),
+            provider_diagnostic_row(
+              'account',
+              provider_diagnostic_text('account_source'),
+              "#{provider_diagnostic_text("account_sources.#{account['source']}")} · " \
+              "#{provider_diagnostic_list(account['methods'], undeclared_label)}" \
+              "#{" · #{account['synced_at'].strftime('%Y-%m-%d %H:%M')}" if account['synced_at']}"
+            ),
+            provider_diagnostic_row(
+              'methods',
+              provider_diagnostic_text('effective_methods'),
+              provider_diagnostic_effective(effective['methods'], undeclared_label)
+            ),
+            provider_diagnostic_row(
+              'currencies',
+              provider_diagnostic_text('effective_currencies'),
+              provider_diagnostic_effective(effective['currencies'], undeclared_label)
+            ),
+            provider_diagnostic_row(
+              'countries',
+              provider_diagnostic_text('effective_countries'),
+              provider_diagnostic_effective(effective['countries'], undeclared_label)
+            ),
+            provider_diagnostic_row(
+              'markets',
+              provider_diagnostic_text('markets'),
+              provider_diagnostic_list(scope['market'].map { |id| provider_diagnostic_market_label(payment_method, id) }, none_label)
+            )
+          ],
+          issues: summary['issues'].map do |issue|
+            { severity: issue['severity'], message: provider_diagnostic_issue_message(issue) }
+          end
+        }
+      end
+
+      def provider_diagnostic_row(testid, label, value)
+        { testid: testid, label: label, value: value }
+      end
+
+      def provider_diagnostic_text(key, **)
+        PallasTrade.t("admin.payment_methods.provider_diagnostics.#{key}", **)
+      end
+
+      def provider_diagnostic_list(values, empty_label)
+        list = Array(values).map(&:to_s).reject(&:blank?)
+        list.empty? ? empty_label : list.join(', ')
+      end
+
+      # 生效清单：nil = 未声明（不猜）；`[]` = 明确没有；否则列出取值 + 收窄依据。
+      def provider_diagnostic_effective(narrowed, undeclared_label)
+        values = narrowed['values']
+        return undeclared_label if values.nil?
+
+        "#{provider_diagnostic_list(values, provider_diagnostic_text('none'))} · " \
+          "#{provider_diagnostic_text("basis.#{narrowed['basis'].tr('+', '_')}")}"
+      end
+
+      def provider_diagnostic_market_label(payment_method, market_id)
+        payment_method.default_option_scope_labels.call('market', market_id).to_s
+      rescue StandardError
+        market_id.to_s
+      end
+
+      def provider_diagnostic_issue_message(issue)
+        params = (issue['params'] || {}).symbolize_keys
+        provider_diagnostic_text("issues.#{issue['code']}", **params, default: issue['code'])
       end
 
       # PALLAS-CUSTOM: D8（切片2）—— 范围编辑器数据源：市场 / 国家（市场国家集合）/ Zone /

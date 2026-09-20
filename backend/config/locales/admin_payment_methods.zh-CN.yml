@@ -38,6 +38,48 @@ zh-CN:
         credential_value: 值
         credential_not_set: 未设置
         credential_none: 该支付商未声明凭据。
+        # PALLAS-CUSTOM: PAY-CORE-P0A（PRD-20260920-checkout 支付核心统一 · 切片 P0-A）—— 厂商层诊断卡（只读）
+        provider_diagnostics:
+          title: 厂商配置
+          help: 只读核对「厂商能力 ∩ 账户配置 ∩ 市场范围」，不会修改任何配置。
+          consistent: 配置一致 —— 未发现错配。
+          none: 无
+          undeclared: 未声明
+          capability_source: 厂商能力
+          account_source: 账户配置
+          effective_methods: 生效支付方式
+          effective_currencies: 生效币种
+          effective_countries: 生效国家
+          markets: 已配置市场
+          states:
+            enabled: 已启用
+            disabled: 已停用
+            suspended: 熔断中
+          sources:
+            declared: 厂商声明
+            derived: 由能力目录推导
+          account_sources:
+            manual: 手工录入
+            synced: 来自厂商同步
+          basis:
+            capability: 仅能力
+            account: 仅账户
+            capability_account: 能力 ∩ 账户
+            undeclared: 未声明
+          severities:
+            error: 错误
+            warning: 警告
+            info: 提示
+          issues:
+            kind_not_declared: "以下启用入口厂商并未声明：%{kinds}"
+            kind_not_in_account: "以下启用入口在本账户未开通：%{kinds}"
+            account_not_configured: 未配置账户信息 —— 未做账户级收窄（不猜）。
+            currency_not_available: "币种超出可用集合（%{basis}）：%{value}"
+            country_not_available: "国家超出可用集合（%{basis}）：%{value}"
+            amount_range_out_of_capability: "入口 %{kind} 的金额区间超出厂商上限"
+            disabled_with_active_options: "厂商已停用，但仍有 %{count} 个入口处于启用状态 —— 前台不会展示"
+            no_active_options: 没有任何启用入口 —— 该支付商在前台隐藏。
+            partially_suspended: "已熔断入口：%{kinds}"
         credential_alert: "%{key} 凭据告警：%{level}（剩余 %{days} 天）"
         reveal_credential: 查看明文
         reveal_credential_confirm: 查看明文只在本次回显，且会写入审计日志。继续？

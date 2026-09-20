@@ -174,6 +174,32 @@ For an existing Order, start sessions through `PallasTrade::PaymentSessions::Sta
 - **Store API（P5）**：`POST /api/v3/store/payment_combinations`（创建：order_ids + payment_method_id → 组合 + session）与 `GET /api/v3/store/payment_combinations/:id`（收银台详情）；`payment_sessions#complete` 对挂组合的 session 走 `PaymentCombinations::Complete`。SDK `paymentCombinations.create/get` + Storefront 收银台（`(checkout)/combined-payment/[id]`）+ 账户订单多选（`OrderCombinedPay`）。
 - **配套数据/模型变更**：`payment_splits.payment_id` 改可空（支付前建 split）；`Payment#order` 改 optional（组合支付 `order_id=nil`，`update_order`/`invalidate_old_payments`/`currency` 已有 nil 守卫）；`PaymentCombination#payments` 关联；`OrderUpdater#update_payment_total` 有 `PaymentSplit` 时取 `captured - refunded`；checkout 状态机在订单有已捕获 split 时放行（无需本地 payment）。
 
+## 厂商层（PAY-CORE P0-A, 2026-09-20）
+
+> PRD-20260920-checkout 支付核心统一（切片 P0-A）。**厂商（provider）在本仓不是新表** —— 一条
+> `PallasTrade::PaymentMethod` 记录（STI `type` = 网关类）就是一个厂商；入口集合 = `metadata['options']`；
+> 配置沿用 `metadata`（与 D8/D9/D11/D16 同范式，**零迁移**）。
+
+| 概念 | 唯一口径 | 说明 |
+|---|---|---|
+| 能力声明（静态） | `PaymentMethod#provider_capability` | provider 类定义类方法 `provider_capability`（Hash）时以声明为准（`source: declared`）；未声明 → 由 `payment_option_catalog` + `session_required?` 推导（`source: derived`） |
+| 账户配置（商家账户开通了什么） | `PaymentMethod#provider_account_config` | `metadata['account'] = { source: manual\|synced, synced_at, methods, currencies, countries }`；**缺失 → 各维度 nil = 未声明（不猜）**，绝不回落"全部已开通" |
+| 收窄（能力 ∩ 账户） | `PaymentMethod#provider_effective_scope` | 逐维度 `narrow`：任一侧未声明 → 不收窄该维度，并标注 `basis`（capability / account / capability+account / undeclared） |
+| 三态 | `PaymentMethod#provider_state` | `enabled`（人工启用且无熔断）/ `disabled`（人工停用，**粘性**）/ `suspended`（熔断）。优先级 **disabled > suspended > enabled**；部分入口熔断仍算 `enabled`（逐入口过滤交给 `Availability::Resolver`） |
+| 诊断 | `PaymentMethod#provider_diagnostics` | `{ ok, state, issues, counts }`；`Providers::Validate` 输出 `severity + code + params`（文案由视图 i18n 渲染） |
+
+服务层：`PallasTrade::Payments::Providers::{Config, State, Validate}`（`pallastrade_core/app/services/pallastrade/payments/providers/`）。
+
+**铁律**
+
+- **零资金副作用**：`Providers::*` 只读（零网络）+ 只写 `metadata` / `active`（`update_columns`，与 D9/D11 同范式），不触碰 `Payment` / `PaymentSession` / 账本。
+- **人工停用粘性**：`State.disable!` 之后 `State.resume!` **不会**恢复 —— 恢复只有 `State.enable!`（人工动作）。`resume!` 仅清熔断。
+- **不猜**：账户/能力未声明 → 对应维度不收窄，并产出 `account_not_configured`（info）而不是"全部可用"。
+- 本切片**不改写路径**：后台表单归一仍静默丢弃非法值（D1/D8 行为不变）；错配由只读诊断卡暴露。**强制拒绝**属 P0-B。
+- 诊断卡：`payment_methods` 编辑页 `[data-testid="provider-diagnostics"]`（三态徽标 + 6 行结论 + 诊断项）。
+
+验证入口：`harness verify payment-providers-rspec`（config / state / validate 服务规格 + 后台诊断卡请求规格）。
+
 ## Adding a payment gateway
 
 Stripe, Adyen and PayPal ship preinstalled in pallastrade-starter projects (the backend `create-pallastrade-app` scaffolds) — nothing to install; enable and configure them in the admin under Settings → Payment methods. For any other gateway gem:

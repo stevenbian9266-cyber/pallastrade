@@ -1,0 +1,38 @@
+<%# PALLAS-CUSTOM: PAY-CORE-P0A（PRD-20260920-checkout 支付核心统一 · 切片 P0-A）——
+    厂商配置诊断卡（**只读**）：三态 / 能力来源 / 账户来源 / 「能力 ∩ 账户 ∩ 市场」收窄结论 / 诊断项。
+    数据来自 `PaymentMethod#provider_diagnostics` + `Providers::{Config,Validate}`（零写入、零网络）。 %>
+<% diagnostics = provider_diagnostics(@object) %>
+<div class="card mb-6" data-testid="provider-diagnostics">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0"><%= PallasTrade.t('admin.payment_methods.provider_diagnostics.title') %></h5>
+    <span class="badge <%= diagnostics[:state] == 'enabled' ? 'badge-success' : 'badge-danger' %>"
+          data-testid="provider-diagnostics-state"><%= diagnostics[:state_label] %></span>
+  </div>
+  <div class="card-body">
+    <p class="form-text mb-3"><%= PallasTrade.t('admin.payment_methods.provider_diagnostics.help') %></p>
+
+    <dl class="row mb-3" data-testid="provider-diagnostics-rows">
+      <% diagnostics[:rows].each do |row| %>
+        <dt class="col-sm-4 text-sm" data-testid="provider-diagnostics-<%= row[:testid] %>-label"><%= row[:label] %></dt>
+        <dd class="col-sm-8 text-sm" data-testid="provider-diagnostics-<%= row[:testid] %>"><%= row[:value] %></dd>
+      <% end %>
+    </dl>
+
+    <% if diagnostics[:issues].any? %>
+      <ul class="list-unstyled mb-0" data-testid="provider-diagnostics-issues">
+        <% diagnostics[:issues].each do |issue| %>
+          <li class="mb-1 text-sm" data-severity="<%= issue[:severity] %>">
+            <span class="badge <%= issue[:severity] == 'error' ? 'badge-danger' : 'badge-light border' %>">
+              <%= PallasTrade.t("admin.payment_methods.provider_diagnostics.severities.#{issue[:severity]}") %>
+            </span>
+            <span data-testid="provider-diagnostics-issue-<%= issue[:severity] %>"><%= issue[:message] %></span>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="text-sm mb-0" data-testid="provider-diagnostics-consistent">
+        <%= PallasTrade.t('admin.payment_methods.provider_diagnostics.consistent') %>
+      </p>
+    <% end %>
+  </div>
+</div>

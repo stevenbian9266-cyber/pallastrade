@@ -780,6 +780,15 @@ en:
         policy_title: Threshold policy
         policy_hint: Leave a metric disabled to keep it out of the dashboard verdicts. A metric only gets a verdict once both thresholds are set.
         policy_window_days: Window (days)
+        policy_metric: Metric
+        policy_enabled_on: Enabled
+        policy_enabled_off: Disabled
+        policy_empty_value: Not set
+        policy_edit_hint: Click any cell to edit. Enter commits and moves down, Tab commits, Esc cancels.
+        policy_dirty_hint: You have unsaved changes (remember to save the policy)
+        policy_cell_label: "Edit %{metric} %{field}"
+        policy_invalid_range: "Enter an integer between %{min} and %{max}"
+        policy_invalid_greater_than: The critical threshold must be greater than the warning threshold
         policy_enabled: Enabled
         policy_warning: Warning
         policy_critical: Critical
@@ -1116,6 +1125,48 @@ en:
         payment_option_three_d_secure_no: No
         payment_option_three_d_secure_help: When the risk rules require authentication, only options that can force 3DS stay available; the rest are hidden automatically.
         payment_option_three_d_secure_unsupported: Unsupported
+        # PALLAS-CUSTOM: PAY-CORE-P0A（PRD-20260920-checkout 支付核心统一 · 切片 P0-A）—— 厂商层诊断卡（只读）
+        provider_diagnostics:
+          title: Provider configuration
+          help: Read-only check of provider capability ∩ account configuration ∩ market scope. It never changes the configuration.
+          consistent: Configuration is consistent — no mismatch detected.
+          none: none
+          undeclared: not declared
+          capability_source: Provider capability
+          account_source: Account configuration
+          effective_methods: Effective methods
+          effective_currencies: Effective currencies
+          effective_countries: Effective countries
+          markets: Configured markets
+          states:
+            enabled: Enabled
+            disabled: Disabled
+            suspended: Suspended
+          sources:
+            declared: declared by provider
+            derived: derived from catalog
+          account_sources:
+            manual: manual
+            synced: synced from provider
+          basis:
+            capability: capability only
+            account: account only
+            capability_account: capability ∩ account
+            undeclared: not declared
+          severities:
+            error: Error
+            warning: Warning
+            info: Info
+          issues:
+            kind_not_declared: "Enabled options the provider does not declare: %{kinds}"
+            kind_not_in_account: "Enabled options not opened on this account: %{kinds}"
+            account_not_configured: Account configuration is missing — no account-level narrowing applied.
+            currency_not_available: "Currencies outside the available set (%{basis}): %{value}"
+            country_not_available: "Countries outside the available set (%{basis}): %{value}"
+            amount_range_out_of_capability: "The amount range on option %{kind} exceeds the provider limits"
+            disabled_with_active_options: "The provider is disabled while %{count} option(s) are still enabled — the storefront will not show them"
+            no_active_options: No option is enabled — this provider is hidden on the storefront.
+            partially_suspended: "Suspended options: %{kinds}"
         scope_country: Countries
         scope_currency: Currencies
         scope_help: Leave empty to keep the option available everywhere. Markets and zones are limited to this store.
