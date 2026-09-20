@@ -3,7 +3,8 @@
 > 需求来源：运营原话 ——「支付厂商只保留 stripe，其它一概不留，代码已经实现的我也要移除，现在结构越来越复杂了」。
 > 设计原则：**一条记录 = 一个收款渠道**。取消「厂商 vs 入口」双层结构与「多家厂商竞争一个支付方式」的全部求值；把入口从「需要被求值的对象」降级为「Stripe 账户事实 + 一个开关」。
 > 关联 PRD：`PRD-20260915-admin-管理后台支付配置选项化…`（本页既有 PRD，收敛后需回写）、`PRD-20260920-checkout-支付核心统一…`（拟作废的抽象来源）
-> 文档状态：**待评审**（未开工；第 11 节 3 项待确认）
+> 文档状态：**待评审**（未开工；第 11 节 12 项待确认）
+> 增量：第 12 节 = 切片 8 展开（Place Order）；第 13 节 = 订单可见性缺陷（2026-09-21 新发现）
 
 ---
 
@@ -29,6 +30,8 @@
 ```
 
 **四个删除动作**：① 厂商层抽象（P0-A/P0-B）② 方式级路由（P3）③ 适用范围四维（D8）④ 熔断（D11）—— 其中 ①③④ 有生产消费点，②**零生产消费点**（最干净）。
+
+**⚠️ 另有一项独立缺陷（第 13 节）**：顾客点支付后订单**确实会被建立**，但**前后台都存在可见性缺口** —— 顾客在 `/account/orders` 看不到（游客订单的 `user_id` 为 NULL，而该列表按 `user_id` 作用域），运营在 `/admin/orders` 也看不到（列表 scope 只取 `completed_at` 非空）。两者都容易让人误判为「订单没建」。
 
 ---
 
@@ -170,6 +173,8 @@ flowchart LR
 | 建单失败 | **不存在**（零痕迹） | 零 | 顾客改数据重试即可 |
 | 建单成功 + 支付失败 | 存在（`pending`） | 零 | 补付 / 取消，出口明确 |
 | 建单成功 + 支付成功 | 存在（`paid`） | 已收 | 正常履约 |
+
+> ⚠️ **建了 ≠ 看得见**：Place Order 成功只是第一步。当前前后台都存在订单可见性缺口（见 **§13**）—— 顾客支付失败后页内**没有任何指向该订单的入口**，`/account/orders` 也看不到；运营在 `/admin/orders` 同样看不到未 finalize 订单。**「订单已创建」必须配套「能被找到」，否则等于没建。**
 
 #### 3.0.3 幂等性（三道保障）
 
@@ -614,6 +619,8 @@ sequenceDiagram
 | `/account/credit-cards` | storefront | 已存卡 | Stripe 客户档 |
 | `/account/gift-cards` | storefront | 礼品卡 / 余额 | StoreCredit 余额展示 |
 
+> ⚠️ **`/account/orders` 有已知缺口**（见 **§13**）：`getOrders` → `customer.orders.list` 按 `user_id` 作用域 + 页面由 `account/layout.tsx` 要求登录 → **游客订单永不出现在此列表**。游客订单的**单点**访问靠 HttpOnly checkout cookie（`setCheckoutCookies`），但**当前没有任何列表入口**。
+
 **BFF**：`/api/checkout/{prepare,preview,start,coupon,preflight,newsletter}` + `/api/webhooks/pallastrade`
 
 ### 5.2 结账页组成（组件树）
@@ -680,6 +687,13 @@ sequenceDiagram
 | 风控 / 名单 / 规则 | `/admin/payment_risk` `/admin/risk_lists` `/admin/risk_rules` | 无关（D15） |
 
 > **要点**：收敛**只动「支付方式的配置面」**，资金域的运营页一概不动。
+
+**订单（`/admin/orders`）** —— 收敛**不影响**，但**本身有独立缺陷**（见 §13 V3）：
+
+| 页面 | 路由 | 现状 | 待修 |
+|---|---|---|---|
+| 订单列表 | `/admin/orders` | `scope` 用 `base_scope.complete` → **未 finalize 订单全部不可见**（7 pending + 3 paid） | **V-FIX-A**：显示未完成订单（§13.4） |
+| 订单详情 | `/admin/orders/:id` | 正常（`show` 不走 index 分支） | — |
 
 ### 6.2 `/admin/payment_methods` 列表页
 
@@ -876,8 +890,9 @@ flowchart LR
 | **6** | 后台收敛 | Stripe 页最终形态；列表只剩 3 条；Check/StoreCredit 极简页 | `admin-payment-methods-rspec`、`admin-theme-rspec`、`admin-i18n-rspec` |
 | **7** | 知识同步 | AGENTS.md / skills / scenarios / PRD 回写 | `doc-impact`、`sync-check` |
 | **8** | **Place Order 正名与显式化**（**可独立先行，不依赖切片 1–6**） | BFF `prepare` → `place-order`（旧名留薄别名）；`prepareOrder` → `placeOrder`；契约把「建单结果」放显眼位；术语统一 | `storefront-test`；`checkout-preview-quote-rspec` 回归 |
+| **9** | **订单可见性补齐**（**可独立先行，不依赖 1–8**） | 后台列表 scope（V-FIX-A）；支付失败页内入口（V-FIX-B）；游客订单入口方向待定（V-FIX-C，见 §13.4） | 后台 orders 相关 spec；`storefront-test` |
 
-> 切片 8 是**纯前向增强**（不删任何东西），因此**可以最先做或最后做**，与 1–7 的删除工作互不阻塞。
+> 切片 8 / 9 都是**纯前向增强**（不删任何东西），因此**可以最先做或最后做**，与 1–7 的删除工作互不阻塞。
 
 ---
 
@@ -907,8 +922,11 @@ flowchart LR
 | **7** | 顾客视角仍是**一次点击**（按钮文案与交互不变）—— 同意吗？ | ✅ 同意（两段编排是**实现细节**，不暴露给顾客） |
 | **8** | 建单失败 → **停在结账页页内提示**（零跳转、零扣款、订单不存在）—— 同意吗？ | ✅ 同意（与「支付失败零跳转」口径一致） |
 | **9** | 是否给「建单成功」**新增 `order.placed` 事件**？ | ❌ **建议不加** —— `order.submitted` 已是同一时刻的语义等价事件，再加 = 重复事实源 |
+| **10** | 后台订单列表**显示未完成订单**（含 `pending` 与未 finalize 的 `paid`）—— 你已确认；默认全显还是加状态筛选？ | 建议**默认全显 + 状态筛选**（运营需要主动看到「点了支付没付成」的顾客） |
+| **11** | 支付失败时就地补「订单已创建 + 查看订单 / 继续支付」入口 —— **零后端改动**，order token 已在 HttpOnly cookie 里（`setCheckoutCookies`）—— 同意吗？ | ✅ 建议同意（直击「看不到」的痛感） |
+| **12** | 游客订单**列表**方向：**C1** 只给「最近一笔」入口（cookie 单值），还是 **C2** 引入 email 回溯关联？ | 建议 **C1 先做**；C2 与既有设计相悖（skill 明确无 number+email claim flow），需单独评审 |
 
-> 确认 1–9 后，从切片 0 + 1 开始（切片 8 可任意插队）。
+> 确认 1–12 后，从切片 0 + 1 开始（切片 8 / 9 可任意插队）。
 
 ---
 
@@ -955,3 +973,138 @@ flowchart LR
 |---|---|
 | 改名导致漏改引用（BFF 路径是字符串字面量） | 全仓 `rg "checkout/prepare"` 一次清；保留薄别名兜底 |
 | 别名长期残留 | 设定明确删除时点（切片 7 知识同步时），并在 §8 保留清单登记 |
+
+---
+
+## 13. 订单可见性缺陷（2026-09-21 新发现）
+
+> 触发问题：「按照我的诉求，点击支付按钮无论支付是否成功，订单都会被创建，现在似乎没有实现」。
+> 结论：**订单确实被创建了**（三重证据见 13.1）；「看不到」是**三处独立的可见性缺口**，与建单无关。
+
+### 13.1 先确认：订单确实被创建
+
+| 证据 | 内容 |
+|---|---|
+| **代码** | `handlePayNow` → `await prepareOrder()`（= BFF `prepare` = `carts.update` + **`carts.submit` 建单** + 切 `cart_`→`or_` cookie）→ `if (!prepared) return;` → 才 `start` |
+| **测试** | `UnifiedCheckout.test.tsx` 断言 `prepare` 被调用、`start` 携 `order_id: "or_123"`；被拒卡用例断言 `confirmMock("sec_1")` 被调用（说明**建单 + 起会话都成功**才走到卡确认），且断言不发 PATCH、不跳转 |
+| **数据库** | 本地库 7 张 `pending` 订单，全部 `submitted_at` 非空 |
+
+**支付失败不删订单**：失败分支只 `setPayError(...)` + `return`。
+
+### 13.2 三处可见性缺口
+
+| # | 缺口 | 位置 | 表现 |
+|---|---|---|---|
+| **V1** | **游客订单进不了「我的订单」** | `store/customer/orders_controller.rb` | `prepend_before_action :require_authentication!` + `where(user_id: current_user.id)` → `user_id = NULL` 的游客订单**永远不匹配**；且 `/account/orders` 由客户端 `account/layout.tsx` 门控，未登录直接跳登录页 |
+| **V2** | **注册 / 登录后不回溯关联** | `lib/data/customer.ts#finalizeAuth` | 只 `carts.associate` 关联**当前购物车**；**不关联已建好的游客订单**。设计上亦如此（skill 原文：*"registering later does not auto-link past guest orders"*；唯一自动关联点是 legacy state machine 的 `after_transition to: :complete, do: :create_user_record`，且要求 `signup_for_an_account?`） |
+| **V3** | **后台列表隐藏所有未 finalize 订单** | `admin/orders_controller.rb#scope` | `action_name == "index"` → `base_scope.complete`（`= where.not(completed_at: nil)`）；`completed_at` 只在 `finalize!` 后写入 → **pending 与「已支付未 finalize」订单全部不可见** |
+
+#### 13.2.1 数据库实证（本地 dev）
+
+| 可见性 | state | 数量 |
+|---|---|---|
+| 可见 | paid | 8 |
+| **不可见** | **pending** | **7** |
+| **不可见** | **paid（未 finalize）** | **3** |
+| 可见 | complete | 3 |
+| **不可见** | cart（草稿） | 6 |
+| **不可见** | canceled | 1 |
+
+| state | 游客（`user_id` NULL） | 已提交 | 数量 |
+|---|---|---|---|
+| paid | ✅ | ✅ | 7 |
+| **pending** | **✅** | **✅** | **6** |
+| paid | ❌ | ✅ | 4 |
+
+→ 本地**所有** `pending` 订单都是游客订单 → 在「我的订单」里 **100% 不可见**。
+
+#### 13.2.2 不对称（设计上的关键裂缝）
+
+| 端点 | 游客可见？ | 机制 |
+|---|---|---|
+| `GET /api/v3/store/orders/:id`（**单订单**） | ✅ **可见** | 经 `OrderResolvable`，**含 `state=pending`**；凭 `X-PallasTrade-Token` 授权 |
+| `GET /customers/me/orders`（**列表**） | ❌ **不可见** | JWT + `user_id` 作用域 |
+
+→ **同一个订单，单点能看、列表看不到。** 而前台已经把 order token 存在 HttpOnly cookie 里：
+
+```ts
+// storefront/src/lib/pallastrade/cookies.ts
+// Keep the converted Cart token in a separate HttpOnly cookie so guest users can
+// still complete and view the Order without exposing the token to browser code.
+export async function setCheckoutCookies(orderId: string, token: string)
+```
+
+→ **能力已经具备，缺的是界面入口。** 注意 cookie 是**单值**（只记最后一个订单）。
+
+### 13.3 时序图 K：一次失败的支付，各方看到什么
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as 顾客（游客）
+  participant SF as Storefront
+  participant BFF as BFF
+  participant API as Store API
+  participant ST as Stripe
+  participant AD as 运营（/admin/orders）
+
+  U->>SF: 点「确认并支付」
+  SF->>BFF: ① POST prepare
+  BFF->>API: carts.update + carts.submit
+  API-->>BFF: order_id = or_xxx（user_id = NULL）
+  BFF->>SF: Set-Cookie（HttpOnly：order id + **order token**）
+  SF->>BFF: ② POST start
+  BFF->>ST: 建 PaymentIntent
+  SF->>ST: confirmPayment → **被拒**
+
+  Note over SF: setPayError(payment-failed)<br/>**无任何指向 or_xxx 的入口**
+  U->>SF: 去「我的订单」
+  SF-->>U: 跳登录页（account/layout 门控）
+  U->>SF: 登录后重看
+  SF->>API: GET /customers/me/orders
+  API-->>SF: 空（订单 user_id 仍为 NULL）
+  Note over U,SF: ❌ 顾客结论：「订单没创建」—— **但订单一直在**
+
+  AD->>API: /admin/orders
+  API-->>AD: 空（scope = completed_at 非空）
+  Note over AD: ❌ 运营结论同上
+```
+
+### 13.4 修复方案
+
+| # | 修复 | 位置 | 说明 | 风险 |
+|---|---|---|---|---|
+| **V-FIX-A** | 后台订单列表显示未完成订单 | `admin/orders_controller.rb#scope` | 列表默认含 `pending` / 未 finalize；配状态筛选 | 低（订单噪音，可选默认筛选） |
+| **V-FIX-B** | 支付失败时**就地**告诉顾客「订单已创建」并给入口 | `UnifiedCheckout.tsx` | `payment-failed` 分支补：「订单 `or_xxx` 已创建」+「查看订单 / 继续支付」按钮 —— **order token 已在 HttpOnly cookie 里，直接可用** | 低，**收益最大** |
+| **V-FIX-C** | 游客订单列表入口 | 待定 | 二选一 ↓ | 中 |
+
+**V-FIX-C 的两个方向：**
+
+| 方向 | 做法 | 评价 |
+|---|---|---|
+| **C1 按 checkout token 提供「最近一笔」入口** | cookie 是**单值**（只记住最后一个订单）→ 只能提供「最近一笔」，做不成列表 | 小改动，但要诚实标注「只能看最近一笔」 |
+| **C2 引入 email 回溯关联**（登录/注册时把同 email 且 `user_id` 为空的已提交订单关联到该用户） | 能做列表；但**与既有设计相反**（skill 明确 "There is no number+email claim flow"），且存在 email 撞号把他人订单并入的风险 | **需显式决策**，不默认采纳 |
+
+> **建议**：先做 **V-FIX-A + V-FIX-B**（低风险、直击痛点），V-FIX-C 单独立项评审。
+
+### 13.5 验收清单
+
+| # | 验收点 | 验证方式 |
+|---|---|---|
+| 1 | 支付失败 → 页内出现「订单已创建」+ 可点入口，**零跳转** | E2E：拒付测试卡 → 断言文案含订单号 + 入口可点 |
+| 2 | 游客凭入口能打开订单详情 | E2E：不登录 → 点入口 → 订单详情渲染成功（凭 HttpOnly token） |
+| 3 | 后台列表能看到 `pending` 订单 | 集成：建一张 `pending` 订单 → 断言出现在 `/admin/orders` |
+| 4 | 后台列表能看到已支付未 finalize 订单 | 同上，`state=paid` / `completed_at` 为 NULL |
+| 5 | 订单噪音可控 | 后台默认视图可按状态收敛（若采用筛选方案） |
+
+### 13.6 与收敛切片的关系
+
+| 关系 | 说明 |
+|---|---|
+| **独立于 1–7** | 订单可见性与「删厂商层 / 路由 / 熔断 / 范围」无交集 |
+| **依赖 §3.0 的语义** | 先明确「点支付 = 先建单」，才谈「建完要看得见」 |
+| **与 §6 后台页面架构相交** | V-FIX-A 会改 `/admin/orders` 列表口径，需同步更新 §6.1 页面清单 |
+
+### 13.7 待确认
+
+见 §11 条目 **10–12**。
