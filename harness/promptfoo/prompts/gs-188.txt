@@ -5,7 +5,7 @@ The unified checkout page lists Apple Pay / Google Pay as entry rows in the paym
 ## MUST do
 - Place the express area between the page title and the first form section, built only from the server's `payment_methods[].entries` projection (`frontend_kind === "express"`) - the client renders what the server allows and never filters by kind
 - Build the wallet widget from ALL renderable express entries at once (`expressPaymentMethodsForKinds`: entries in the set get `always`, the rest `never`; `link` only accepts `auto`/`never`), with `maxColumns: 2` so the buttons stay horizontal and width-adaptive instead of stacking
-- Keep express kinds the Stripe element cannot render (paypal, shop_pay, ...) out of the top area but still in the bottom entry list - relocation, not hiding
+- Keep express kinds the Stripe element cannot render (shop_pay, link, ...) out of the top area but still in the bottom entry list - relocation, not hiding
 - Preserve the existing entry rows and the selected-entry wallet slot in the payment section: both touchpoints coexist (the relocation is additive)
 - Pass the storefront locale to every Stripe Elements instance (`stripeLocaleFor`: en/de/es/fr/pl map to the same code, anything else falls back to `auto`), covering the wallet element, the card form and the order-pay page
 - State the platform limit in the docs and PRD: the Apple Pay button and sheet are localised by the Apple device, so the site locale cannot be guaranteed to change them

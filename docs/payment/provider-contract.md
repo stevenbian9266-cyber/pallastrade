@@ -26,7 +26,7 @@
 | Provider | 状态 | Gateway 类 | 事件 |
 |---|---|---|---|
 | Stripe | **当前唯一活跃** | `PallasTradeStripe::Gateway` | Checkout Session / PaymentIntent（`cs_`/`pi_` 双模式） |
-| Adyen / PayPal Checkout | 未来（session 类已占位：`PallasTrade::PaymentSessions::Adyen/PayPalCheckout`，非本期接入） | `PallasTradeAdyen::Gateway` 等 | — |
+| ~~Adyen / PayPal Checkout~~ | **已于 2026-09-21 收敛移除**（gem、镜像、Gemfile 条目、集成文档一并删除） | — | — |
 
 新 Provider 接入时**必须**实现上表全部合同方法并补齐 `parse_webhook_event` → Event Store（P0-2 可靠性外壳对 provider 无耦合）。
 

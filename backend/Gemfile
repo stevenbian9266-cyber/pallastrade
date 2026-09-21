@@ -34,8 +34,6 @@ gem 'pallastrade_emails',   path: "#{pallastrade_gems_path}/pallastrade_emails"
 
 # Extensions (local path gems)
 gem 'pallastrade_stripe', path: "#{pallastrade_gems_path}/pallastrade_stripe"
-gem 'pallastrade_adyen', path: "#{pallastrade_gems_path}/pallastrade_adyen"
-gem 'pallastrade_paypal_checkout', path: "#{pallastrade_gems_path}/pallastrade_paypal_checkout"
 gem 'pallastrade_ai', path: "#{pallastrade_gems_path}/pallastrade_ai"
 
 # Rails & Infrastructure

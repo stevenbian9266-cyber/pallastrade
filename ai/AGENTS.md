@@ -12,7 +12,7 @@ If you're running in **any other tool**: read this file, then dive into the rele
 
 PallasTrade Commerce is an open-source, self-hosted commerce platform built on Ruby on Rails. The thing people choose it for is the ability to customize and extend it without forking. Architecture in three layers:
 
-1. **Backend (Ruby gems)** — `pallastrade_core` (models, services, business logic), `pallastrade_api` (Store + Admin REST APIs under `/api/v3/`), `pallastrade_admin` (Rails admin UI), optional payment/integration gems (`pallastrade_stripe`, `pallastrade_adyen`, `pallastrade_paypal_checkout`, `pallastrade_i18n`).
+1. **Backend (Ruby gems)** — `pallastrade_core` (models, services, business logic), `pallastrade_api` (Store + Admin REST APIs under `/api/v3/`), `pallastrade_admin` (Rails admin UI), optional payment/integration gems (`pallastrade_stripe`, , `pallastrade_i18n`).
 2. **Frontend SDKs (TypeScript)** — `@pallastrade/sdk` (Store API client), `@pallastrade/admin-sdk` (Admin API client).
 3. **Admin UI** — `pallastrade_admin` (the Rails/Turbo admin).
 

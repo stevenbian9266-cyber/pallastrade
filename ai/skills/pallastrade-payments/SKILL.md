@@ -71,8 +71,6 @@ Most production stores don't create PaymentMethods in code — they're created v
 | `PallasTrade::PaymentMethod::StoreCredit` | pallastrade_core — pays from `PallasTrade::StoreCredit` balance |
 | `PallasTrade::PaymentMethod::Check` | pallastrade_core — back-office "manual" payment |
 | `PallasTradeStripe::Gateway` | pallastrade_stripe gem |
-| `PallasTradeAdyen::Gateway` | pallastrade_adyen gem |
-| `PallasTradePaypalCheckout::Gateway` | pallastrade_paypal_checkout gem |
 
 Custom payment methods subclass `PallasTrade::PaymentMethod`, register via `PallasTrade.payment_methods << MyGateway`, and implement the Payment Session interface (`payment_session_class`, `create_payment_session`, `update_payment_session`, `complete_payment_session`, `parse_webhook_event`) — see docs/developer/how-to/custom-payment-method. Legacy card gateways subclass `PallasTrade::Gateway`, which delegates `authorize`/`purchase`/`capture`/`void`/`credit` to an ActiveMerchant-style provider. Most stores use an existing extension instead of writing custom.
 
@@ -96,7 +94,7 @@ PaymentSession.complete! → Payment created → storefront (or webhook handler)
 
 The session has events: `payment_session.processing`, `payment_session.completed`, `payment_session.failed`, `payment_session.canceled`, `payment_session.expired`. Sessions carry an optional `expires_at` set by the gateway extension from the provider's own session expiry; expired sessions drop out of the `active`/`not_expired` scopes (and can be transitioned via the `expire` event, firing `payment_session.expired`), so abandoned sessions don't leave dangling payments.
 
-For most stores, you don't interact with PaymentSession directly — the gateway extension (pallastrade_stripe, pallastrade_adyen) handles creation and completion. You just subscribe to the events if you need to react.
+For most stores, you don't interact with PaymentSession directly — the gateway extension (pallastrade_stripe) handles creation and completion. You just subscribe to the events if you need to react.
 
 For an existing Order, start sessions through `PallasTrade::PaymentSessions::Start` (the Store Order payment-session controller already delegates to it). It validates the authoritative amount and store payment method, reuses a matching `pending`/`processing` session, and creates a new attempt only after the previous attempt is terminal. Provider network I/O runs **outside** the Order lock transaction; a second lock reconciles concurrent provider responses to one active local winner. Stripe receives a stable operation-level idempotency key for both Checkout Session and PaymentIntent creation. Do not replace this with a long database transaction around provider I/O or a cache-only request lock.
 

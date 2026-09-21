@@ -46,8 +46,6 @@ When you scaffold via `npx create-pallastrade-app`, the resulting Gemfile alread
 | Gem | What it provides |
 |---|---|
 | `pallastrade_stripe` | Stripe checkout — payment methods, sessions, webhooks |
-| `pallastrade_adyen` | Adyen — drop-in component, methods, webhooks |
-| `pallastrade_paypal_checkout` | PayPal Smart Buttons checkout |
 | `pallastrade_i18n` | Translations for the admin UI across many locales |
 
 These are commercially-significant integrations. If you remove one from your Gemfile, also strip its admin Settings → Payment methods entry. If you add one to an existing project that wasn't created with `create-pallastrade-app`, follow the standard three-step install above.

@@ -38,6 +38,15 @@ module PallasTrade
       PallasTrade.payment_methods
     end
 
+    # PALLAS-CUSTOM: 收敛切片 5（2026-09-21）—— 后台「新增支付方式」的**可选**清单。
+    # ⚠️ 与 providers（type 白名单，供 STI 校验与测试造数）**职责不同**：
+    #   PallasTrade::Gateway::Bogus 类保留（历史数据 + 大量 spec 造数依赖 create(:bogus_payment_method)），
+    #   故仍在 providers 中；但它**不应再出现在后台下拉里**（避免误建 Bogus 记录）。
+    # @return [Array<Class>]
+    def self.selectable_providers
+      providers - [PallasTrade::Gateway::Bogus]
+    end
+
     def provider_class
       raise ::NotImplementedError, 'You must implement provider_class method for this gateway.'
     end
@@ -511,7 +520,7 @@ module PallasTrade
       end
     end
 
-    # 默认 kind：优先用网关的 `api_type`（stripe / adyen / paypal…），否则从类名推导。
+    # 默认 kind：优先用网关的 `api_type`（stripe），否则从类名推导。
     def default_option_kind
       return api_type.to_s if respond_to?(:api_type) && api_type.present?
 

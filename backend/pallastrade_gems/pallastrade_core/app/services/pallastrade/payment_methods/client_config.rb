@@ -12,7 +12,7 @@
 #     不抛错、不落明文）；
 #   - 零 provider 网络调用、零额外查询（全部取自已加载的 `PaymentMethod`）。
 #
-# 短时令牌（Adyen session / PayPal client token）属后续批次：本期 `session_token`
+# 短时令牌（如 Stripe 的 publishable 投影）属后续批次：本期 `session_token`
 # 恒为 nil，契约先留位；provider 侧签发后覆写 `session_token_for` 即可（不破坏契约）。
 module PallasTrade
   module PaymentMethods

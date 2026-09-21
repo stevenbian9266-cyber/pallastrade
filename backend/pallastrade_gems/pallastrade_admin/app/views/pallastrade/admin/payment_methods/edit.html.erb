@@ -7,7 +7,7 @@
   <div class="col-span-12 lg:col-span-6 lg:col-start-4">
     <%# PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-010）—— 厂商页面分派：
         provider 声明 `provider_page_partial_name` 时渲染专用版面（`provider_pages/<name>`），
-        否则沿用通用版面（Adyen / PayPal / Check / StoreCredit 零回归）。
+        否则沿用通用版面（Check / StoreCredit 零回归）。
         同范式先例：`configuration_guide_partial_name` / `custom_form_fields_partial_name`，
         以及 `payments/new.html.erb` 的 `source_forms/#{method_type}`。 %>
     <% provider_page = @payment_method.provider_page_partial_name.presence %>

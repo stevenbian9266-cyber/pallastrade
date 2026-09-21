@@ -151,7 +151,7 @@ module PallasTrade
       #   PallasTrade::PaymentMethod::Check       → "Check"
       #   PallasTrade::Gateway::Bogus             → "Bogus"
       #   PallasTradeStripe::Gateway              → "Stripe"
-      #   PallasTradeAdyen::Gateway               → "Adyen"
+      #   PallasTradeStripe::Gateway               → "Adyen"
       #
       # The "Gateway" branch handles the gem convention where each
       # provider gem ships a top-level `Gateway` class (so demodulize

@@ -363,7 +363,7 @@ The Store API exposes payment sessions for the checkout flow — a single, provi
 4. Customer completes — provider posts back to the PallasTrade backend, which fires `payment_session.completed` events.
 5. Storefront calls `pallastrade.carts.paymentSessions.complete(cartId, sessionId, { session_result: 'success' }, options)` once the customer confirms, then `pallastrade.carts.complete(cartId, options)` to get the Order — or relies on the provider webhook, in which case the backend completes the cart → order transition automatically.
 
-The `pallastrade_stripe` / `pallastrade_adyen` / `pallastrade_paypal_checkout` gems ship reference checkout flows. Don't roll your own unless you're integrating a new provider.
+The `pallastrade_stripe` gems ship reference checkout flows. Don't roll your own unless you're integrating a new provider.
 
 #### Standard e-commerce flow (P1 2026-08-30, PRD-20260829-checkout + PRD-20260830-checkout 下单链路统一化)
 

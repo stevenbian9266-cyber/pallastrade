@@ -20,7 +20,7 @@
 | 术语 | 含义 | 对应代码 |
 |---|---|---|
 | **Gateway Configuration** | 一个可配置的支付方式实例（密钥/开关/展示位） | `PallasTrade::PaymentMethod`（STI，含 `PallasTrade::PaymentMethod::Check` 等） |
-| **Gateway / Provider adapter** | 对接 PSP 的抽象实现 | `PallasTrade::Gateway`（如 Stripe = `PallasTradeStripe::Gateway`）；远期 `PallasTradeAdyen::Gateway` |
+| **Gateway / Provider adapter** | 对接 PSP 的抽象实现 | `PallasTrade::Gateway`（如 Stripe = `PallasTradeStripe::Gateway`）（收敛后仅 Stripe 一家，2026-09-21）|
 | **TenderType**（架构文档） | 收单载体 | CARD / APPLE_PAY / GOOGLE_PAY —— **不映射为 Rails Model** |
 | **PaymentProvider**（未来） | PSP 标识 | STRIPE / ADYEN —— **本期不建 ProviderRegistry/Router** |
 | **Standard / Canonical Flow** | Order 域支付（P1+） | `/api/v3/store/orders/:id/payment_sessions` → `PaymentSessions::Start`（P0-7 声明为 canonical） |

@@ -251,7 +251,6 @@ In development this is disabled so localhost webhooks work. **Never run developm
 
 PallasTrade never stores raw PANs. Payment data flows through tokenization at the gateway:
 - **Stripe** (via `pallastrade_stripe`) — card data goes browser→Stripe directly via Stripe Elements / Checkout. PallasTrade only sees a payment-method token.
-- **Adyen** (via `pallastrade_adyen`) — same pattern; the drop-in component returns a tokenized reference.
 - **`PallasTrade::CreditCard`** stores last4, brand, exp month/year — never the full PAN, never the CVC.
 
 PCI scope reduction relies on this. **Don't add fields to `pallastrade_credit_cards` that hold raw card data.** If you find yourself wanting to, it's a sign you're building the wrong integration pattern — gateway tokenization is the right answer.

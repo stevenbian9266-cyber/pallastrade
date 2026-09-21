@@ -101,7 +101,9 @@ module PallasTrade
       def allowed_payment_types
         # We need to map to strings, otherwise some weird things happen with STI
         # where Rails can't find the ancestor class when we try to save the payment method.
-        PallasTrade.payment_methods.map(&:to_s)
+        # PALLAS-CUSTOM: 收敛切片 5（2026-09-21）—— 用 selectable_providers（而非 providers）：
+        # Gateway::Bogus 类保留供校验/造数，但**不再出现在后台新增下拉**中。
+        PallasTrade::PaymentMethod.selectable_providers.map(&:to_s)
       end
 
       def permitted_resource_params

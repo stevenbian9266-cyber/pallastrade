@@ -1,3 +1,0 @@
-bump:
-  file: "lib/pallastrade_adyen/version.rb"
-

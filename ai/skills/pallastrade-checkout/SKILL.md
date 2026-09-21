@@ -239,7 +239,7 @@ The classic PallasTrade payment flow created a Payment record + processed it inl
 Order (cart)
   ↓
 PaymentSession  ← provider-specific session data
-  ↓             (created by pallastrade_stripe / pallastrade_adyen / pallastrade_paypal_checkout)
+  ↓             (created by pallastrade_stripe)
 Customer redirects to provider
   ↓
 Customer returns OR provider webhook fires

@@ -14,8 +14,8 @@ module PallasTrade
     validates :type, presence: true, inclusion: { in: :valid_providers_list }
 
     # Payment provider gems conventionally ship a top-level `Gateway`
-    # class — `PallasTradeStripe::Gateway`, `PallasTradeAdyen::Gateway`,
-    # `PallasTradePaypalCheckout::Gateway`. The default demodulized
+    # class — `PallasTradeStripe::Gateway`,
+    # `PallasTradeStripe::Gateway`. The default demodulized
     # `api_type` collapses every provider to `"gateway"`, which
     # collides in the registry and produces duplicate keys in admin
     # UIs. For gateway subclasses, use the outer module instead (with
@@ -23,8 +23,8 @@ module PallasTrade
     # convention in `PreferenceSchema#subclass_label`:
     #
     #   PallasTradeStripe::Gateway          → "stripe"
-    #   PallasTradeAdyen::Gateway           → "adyen"
-    #   PallasTradePaypalCheckout::Gateway  → "paypal_checkout"
+    #   PallasTradeStripe::Gateway          → "stripe"
+    #   PallasTradeStripe::Gateway          → "stripe"
     #   MyShop::Gateway               → "my_shop"
     #
     # Subclasses nested under a Gateway module (e.g.

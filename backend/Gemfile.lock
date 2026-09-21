@@ -20,14 +20,6 @@ PATH
       turbo-rails
 
 PATH
-  remote: pallastrade_gems/pallastrade_adyen
-  specs:
-    pallastrade_adyen (0.11.0)
-      adyen-ruby-api-library (>= 10.3, < 12.0)
-      pallastrade (>= 5.3.0)
-      pallastrade_admin (>= 5.3.0)
-
-PATH
   remote: pallastrade_gems/pallastrade_ai
   specs:
     pallastrade_ai (1.0.0)
@@ -95,14 +87,6 @@ PATH
   specs:
     pallastrade_emails (5.6.0.rc1)
       pallastrade (>= 5.6.0.rc1)
-
-PATH
-  remote: pallastrade_gems/pallastrade_paypal_checkout
-  specs:
-    pallastrade_paypal_checkout (0.7.1)
-      pallastrade (>= 5.4.0)
-      pallastrade_admin (>= 5.4.0)
-      paypal-server-sdk (~> 1.1)
 
 PATH
   remote: pallastrade_gems/pallastrade_stripe
@@ -214,25 +198,7 @@ GEM
       activesupport (>= 6.1)
     addressable (2.9.0)
       public_suffix (>= 2.0.2, < 8.0)
-    adyen-ruby-api-library (11.3.0)
-      faraday
     alba (3.10.0)
-    apimatic_core (0.3.21)
-      apimatic_core_interfaces (~> 0.2.0)
-      certifi (~> 2018.1, >= 2018.01.18)
-      faraday-multipart (~> 1.0)
-      nokogiri (~> 1.13, >= 1.13.10)
-    apimatic_core_interfaces (0.2.3)
-    apimatic_faraday_client_adapter (0.1.6)
-      apimatic_core_interfaces (~> 0.2.0)
-      certifi (~> 2018.1, >= 2018.01.18)
-      faraday (~> 2.0, >= 2.0.1)
-      faraday-follow_redirects (~> 0.2)
-      faraday-gzip (>= 1, < 4)
-      faraday-http-cache (~> 2.2)
-      faraday-multipart (~> 1.0)
-      faraday-net_http_persistent (~> 2.0)
-      faraday-retry (~> 2.0)
     ar_lazy_preload (2.1.2)
     ast (2.4.3)
     awesome_nested_set (3.9.0)
@@ -286,7 +252,6 @@ GEM
       launchy
     carmen (1.1.3)
       activesupport (>= 3.0.0)
-    certifi (2018.01.18)
     chartkick (5.2.1)
     childprocess (5.1.0)
       logger (~> 1.5)
@@ -328,20 +293,8 @@ GEM
       faraday-net_http (>= 2.0, < 3.5)
       json
       logger
-    faraday-follow_redirects (0.5.0)
-      faraday (>= 1, < 3)
-    faraday-gzip (3.1.0)
-      faraday (>= 2.0, < 3)
-      zlib (~> 3.0)
-    faraday-http-cache (2.7.0)
-      faraday (>= 0.8)
-    faraday-multipart (1.2.0)
-      multipart-post (~> 2.0)
     faraday-net_http (3.4.4)
       net-http (~> 0.5)
-    faraday-net_http_persistent (2.3.1)
-      faraday (~> 2.5)
-      net-http-persistent (>= 4.0.4, < 5)
     faraday-retry (2.4.0)
       faraday (~> 2.0)
     ffaker (2.25.0)
@@ -446,13 +399,10 @@ GEM
     msgpack (1.8.3)
     multi_xml (0.9.1)
       bigdecimal (>= 3.1, < 5)
-    multipart-post (2.4.1)
     name_of_person (1.1.3)
       activesupport (>= 5.2.0)
     net-http (0.9.1)
       uri (>= 0.11.1)
-    net-http-persistent (4.0.8)
-      connection_pool (>= 2.2.4, < 4)
     net-imap (0.6.4.1)
       date
       net-protocol
@@ -480,10 +430,6 @@ GEM
     parser (3.3.12.0)
       ast (~> 2.4.1)
       racc
-    paypal-server-sdk (1.1.0)
-      apimatic_core (~> 0.3.11)
-      apimatic_core_interfaces (~> 0.2.1)
-      apimatic_faraday_client_adapter (~> 0.1.4)
     pg (1.6.3-x86_64-linux)
     phonelib (0.10.22)
     pp (0.6.4)
@@ -719,7 +665,6 @@ GEM
       nokogiri (~> 1.8)
     yaml (0.4.0)
     zeitwerk (2.8.2)
-    zlib (3.2.3)
 
 PLATFORMS
   x86_64-linux-gnu
@@ -744,12 +689,10 @@ DEPENDENCIES
   meilisearch (>= 0.28)
   pallastrade!
   pallastrade_admin!
-  pallastrade_adyen!
   pallastrade_ai!
   pallastrade_api!
   pallastrade_core!
   pallastrade_emails!
-  pallastrade_paypal_checkout!
   pallastrade_stripe!
   pg (~> 1.1)
   propshaft
@@ -793,11 +736,7 @@ CHECKSUMS
   acts-as-taggable-on (13.0.0) sha256=dca776c6ddebc458d175b57554ad692488e283f27047117e01ed871f1cba6135
   acts_as_list (1.2.6) sha256=8345380900b7bee620c07ad00991ccee59af3d8c9e8574f426e321da2865fdc8
   addressable (2.9.0) sha256=7fdf6ac3660f7f4e867a0838be3f6cf722ace541dd97767fa42bc6cfa980c7af
-  adyen-ruby-api-library (11.3.0) sha256=efa686a4c3282a06af71e33b058245432dee236d3a131456ef02e771291a341e
   alba (3.10.0) sha256=52769d2328da35c4f1bbcfe96b3931b9c8595667307a902573868b1cf6d65d79
-  apimatic_core (0.3.21) sha256=b4d43a43ddbb4f52c5e51b8dc596721ff9e352a2448fb2aa8c658dd556a30cb3
-  apimatic_core_interfaces (0.2.3) sha256=01a1cf150c95d674386cfe9958b16ace346c8060d9cfe6fe939b3342d91f4e22
-  apimatic_faraday_client_adapter (0.1.6) sha256=9bc1aad6cf6ae7ad0ec4a8c0878026369fd0bf06301cbf1c547c6b14037a28cd
   ar_lazy_preload (2.1.2) sha256=43bb0140ada85c1d605d4430db4d9af40e8e3c5e0aed774eeaefaa95256677c2
   ast (2.4.3) sha256=954615157c1d6a382bc27d690d973195e79db7f55e9765ac7c481c60bdb4d383
   awesome_nested_set (3.9.0) sha256=3ce99e816550f97f4de118e621630070aacf24928b920fe4a68846578a8daaed
@@ -821,7 +760,6 @@ CHECKSUMS
   capybara (3.40.0) sha256=42dba720578ea1ca65fd7a41d163dd368502c191804558f6e0f71b391054aeef
   capybara-screenshot (1.0.27) sha256=afa1896cc23df77be1774e8d3b3ce3953bf060aeaa04ff87607b5daf689174f2
   carmen (1.1.3) sha256=970dbcb6a1743f0c7d765ebf4f0e5b59e99c4f96460baaa22e7306d5a2952e68
-  certifi (2018.01.18) sha256=d5aff04a27045255a4829823496a974dc1cc2c04a777675b3056b0c0952ce9e3
   chartkick (5.2.1) sha256=2848d7de87189f30f28d077eb0bbdebc8a1f0f6f81de1ded95008fe564369949
   childprocess (5.1.0) sha256=9a8d484be2fd4096a0e90a0cd3e449a05bc3aa33f8ac9e4d6dcef6ac1455b6ec
   concurrent-ruby (1.3.8) sha256=b2f1be836e968ccc78ccfce277ea79c72a88633f22306782c16ff23fb415d1e1
@@ -843,12 +781,7 @@ CHECKSUMS
   factory_bot (6.6.0) sha256=1fc1b3b5620ec980a6a27aec1b6ec8c250ca82962e970e8a40f93e8d388d4b89
   factory_bot_rails (6.5.1) sha256=d3cc4851eae4dea8a665ec4a4516895045e710554d2b5ac9e68b94d351bc6d68
   faraday (2.14.3) sha256=1882247e6766615c8220b4392bf1d27f6ebb63d8e28267587cef1fb0bf37f278
-  faraday-follow_redirects (0.5.0) sha256=5cde93c894b30943a5d2b93c2fe9284216a6b756f7af406a1e55f211d97d10ad
-  faraday-gzip (3.1.0) sha256=320783690be169f9b7ddde11598b77156951343753f66a9ab98b1f6694433ff8
-  faraday-http-cache (2.7.0) sha256=cd7ac4bbe6c08592ea7af6655f98b2f76c4db0bad31bf40340df5aad719f0d89
-  faraday-multipart (1.2.0) sha256=7d89a949693714176f612323ca13746a2ded204031a6ba528adee788694ef757
   faraday-net_http (3.4.4) sha256=0e78af151747ed1b00f33e25973b4bc220d7f16c00c39676817c8b12331eb588
-  faraday-net_http_persistent (2.3.1) sha256=23ffba37d6a27807a10f033d01918ec958aa73fa6ff0fccfbcd5ce2d2e68fca3
   faraday-retry (2.4.0) sha256=7b79c48fb7e56526faf247b12d94a680071ff40c9fda7cf1ec1549439ad11ebe
   ffaker (2.25.0) sha256=e485c5adf8195aac55662875b7f515469bca46d77b60d0e7d08db6861bcbec40
   ffi (1.17.4-x86_64-linux-gnu) sha256=9d3db14c2eae074b382fa9c083fe95aec6e0a1451da249eab096c34002bc752d
@@ -894,10 +827,8 @@ CHECKSUMS
   money (6.19.0) sha256=ec936fa1e42f2783719241ed9fd52725d0efa628f928feea1eb5c37d5de7daf3
   msgpack (1.8.3) sha256=8bda4a6428d3244e50d6bd55854d354edbada88a4e1f4f5731a39a0f86bee6a1
   multi_xml (0.9.1) sha256=7ce766b59c17241ed62976caeae1fae9b2431b263398c35396239a68c4a64e57
-  multipart-post (2.4.1) sha256=9872d03a8e552020ca096adadbf5e3cb1cd1cdd6acd3c161136b8a5737cdb4a8
   name_of_person (1.1.3) sha256=e12291250987ef79c413314f698f15d53e7a602c42231de99c276ef9585bc18c
   net-http (0.9.1) sha256=25ba0b67c63e89df626ed8fac771d0ad24ad151a858af2cc8e6a716ca4336996
-  net-http-persistent (4.0.8) sha256=ef3de8319d691537b329053fae3a33195f8b070bbbfae8bf1a58c796081960e6
   net-imap (0.6.4.1) sha256=29f0360d75a7efd3539f16ac1957dea5c0a51ddeceb348db4553c3120914ea0d
   net-pop (0.1.2) sha256=848b4e982013c15b2f0382792268763b748cce91c9e91e36b0f27ed26420dff3
   net-protocol (0.2.2) sha256=aa73e0cba6a125369de9837b8d8ef82a61849360eba0521900e2c3713aa162a8
@@ -910,17 +841,14 @@ CHECKSUMS
   pagy (43.6.1) sha256=59fb6a58ea956480094a167b43a86796638ceb3a3917a25ae67973b584ace2eb
   pallastrade (5.6.0.rc1)
   pallastrade_admin (5.6.0.rc1)
-  pallastrade_adyen (0.11.0)
   pallastrade_ai (1.0.0)
   pallastrade_api (5.6.0.rc1)
   pallastrade_core (5.6.0.rc1)
   pallastrade_emails (5.6.0.rc1)
-  pallastrade_paypal_checkout (0.7.1)
   pallastrade_stripe (1.7.1)
   parallel (2.1.0) sha256=b35258865c2e31134c5ecb708beaaf6772adf9d5efae28e93e99260877b09356
   paranoia (3.1.0) sha256=36574a46e8df663d0da7d9008e987b72a6a9eccee13c058b7094acc810e39f52
   parser (3.3.12.0) sha256=21a6d7f755d5a24dfbdc6e6b772e4e879a52e7631a88bc5a3a134606052c9828
-  paypal-server-sdk (1.1.0) sha256=3daf5de6e4bd84047512d821b31b715d4667e5be09da64c3bde7e9eab682d8b2
   pg (1.6.3-x86_64-linux) sha256=5d9e188c8f7a0295d162b7b88a768d8452a899977d44f3274d1946d67920ae8d
   phonelib (0.10.22) sha256=072183c6b85408f43e5d0ab116ed1b2707f0a324e6efe1f3d866ff900f104daf
   pp (0.6.4) sha256=dfcb0fce700c41456265922884f9fe195d7fbb0674a3578e6c0f69588e82b570
@@ -1015,7 +943,6 @@ CHECKSUMS
   xpath (3.2.0) sha256=6dfda79d91bb3b949b947ecc5919f042ef2f399b904013eb3ef6d20dd3a4082e
   yaml (0.4.0) sha256=240e69d1e6ce3584d6085978719a0faa6218ae426e034d8f9b02fb54d3471942
   zeitwerk (2.8.2) sha256=7212a61311083c604184b1ea2574b9aa05cd14f855a0841c06985cabe9181d12
-  zlib (3.2.3) sha256=5bd316698b32f31a64ab910a8b6c282442ca1626a81bbd6a1674e8522e319c20
 
 RUBY VERSION
   ruby 4.0.1
