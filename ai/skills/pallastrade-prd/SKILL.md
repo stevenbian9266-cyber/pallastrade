@@ -29,7 +29,11 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 2. 6 层跨层搜索（backend/app、core、api、admin、storefront、platform）确认无已实现能力
 3. 命中相似 PRD → `harness prd update` 回写原 PRD（走优化迭代流程），不新建
 
-### 2.2 分类判定
+#> ⚠️ **PRD 分类关键词须与在售厂商保持同步**：`harness/policies/prd-categories.json` 中 `payments` 分类的 `keywords`
+> 只应列**当前在售**的支付厂商与领域词。厂商下架时同步删除其关键词（例：2026-09-21 收敛移除 Adyen/PayPal 后，
+> 该分类关键词中的 `adyen` 一并移除），避免把新 PRD 误分类到已不存在的集成上。
+
+## 2.2 分类判定
 
 > **关键词表随领域词汇演进扩充**：`harness/policies/prd-categories.json` 是唯一权威。
 > 2026-09-17 为 `payments` 补入「交易 / 排障 / manual_review / 捕获 / 释放 / capture / void / 授权 / payment session」——

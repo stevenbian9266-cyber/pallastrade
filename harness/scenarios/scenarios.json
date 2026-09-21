@@ -5494,6 +5494,56 @@
         "appStillBootable": 20,
         "docsAndScenariosRetired": 10
       }
+    },
+    {
+      "id": "GS-208",
+      "name": "A config list serving two masters must be split, not emptied",
+      "description": "A single registry can quietly carry two responsibilities — here `config.pallastrade.payment_methods` was both the STI type whitelist and the admin \"add payment method\" dropdown. Removing an entry to hide it from the dropdown also removed it from validation, breaking every factory that builds that type. The fix is to split the roles, not to empty the list.",
+      "mustDo": [
+        "Before removing an entry from a config list, grep for every reader — a list used by validation, factories and a UI dropdown cannot be trimmed for the UI's sake alone",
+        "When a list carries two responsibilities, split them: keep the original as the permissive source of truth and add a narrower, purpose-named accessor for the restrictive consumer",
+        "Name the narrower accessor for what it actually gates (e.g. `selectable_providers`) and document why the excluded entry stays in the broader list",
+        "Prove the split with a runtime read of both accessors (counts and memberships) before claiming success",
+        "Run the neighbouring factories and specs after the split — the whole point is that data-building paths keep working"
+      ],
+      "mustNotDo": [
+        "Remove an entry from a shared config list purely to hide it from one UI surface",
+        "Assume \"the class still exists\" is enough to keep factories and validation working",
+        "Hardcode the excluded class name inside a controller when a named model accessor can express the intent",
+        "Change dev data destructively to match a design doc when the rows are referenced by financial records — deactivate instead, and record the deviation"
+      ],
+      "scoring": {
+        "allReadersFound": 25,
+        "rolesSplit": 25,
+        "accessorNamed": 20,
+        "splitProvenAtRuntime": 15,
+        "neighbouringSpecsGreen": 15
+      }
+    },
+    {
+      "id": "GS-209",
+      "name": "A switch-only settlement method deserves a switch-only page",
+      "description": "Check and Store Credit are on/off settlement methods: they have no storefront entries, no connection, no credentials and no webhook. Rendering them through the same generic page as a gateway exposes four empty cards and invites the operator to look for settings that will never exist. The edit page should branch on whether the record is actually a gateway.",
+      "mustDo": [
+        "Branch the edit layout on the record's real capability — here `is_a?(PallasTrade::Gateway)` — not on the presence of empty fields",
+        "Keep exactly the cards a switch-only method can actually use (name / visibility / enabled) and drop the rest",
+        "Pin both branches in request specs: a gateway keeps its entry + credential cards, a switch-only method renders none of them",
+        "When removing a read-only informational column, say explicitly in the skill which capability it described and confirm that the capability itself is still shipped",
+        "Re-check i18n parity after dropping keys from one side — removing keys that only existed on one side is a fix, not a regression"
+      ],
+      "mustNotDo": [
+        "Render a gateway's cards for records that can never populate them",
+        "Delete the underlying capability when only its display column was in scope",
+        "Leave the removed column's locale keys behind on one side of an en/zh-CN pair",
+        "Assert only the new branch — the untouched branch needs a spec too, or the split can silently break it"
+      ],
+      "scoring": {
+        "branchesOnRealCapability": 25,
+        "bothBranchesPinned": 25,
+        "capabilityVsDisplaySeparated": 20,
+        "i18nParityRechecked": 15,
+        "skillRecorded": 15
+      }
     }
   ]
 }

@@ -328,15 +328,28 @@ RSpec.describe 'Admin payment methods option configuration', type: :request do
              )).to be(false)
     end
 
-    it 'keeps a non-Stripe provider on the generic page (AC-009/010 zero regression)' do
-      check_gateway = create(:check_payment_method, store: store, active: true, display_on: 'both', name: 'Check')
-      doc = render_edit_page(check_gateway)
+    it 'keeps a non-Stripe gateway on the generic page (AC-009/010 zero regression)' do
+      other_gateway = create(:bogus_payment_method, store: store, active: true, display_on: 'both', name: 'Other')
+      doc = render_edit_page(other_gateway)
 
       expect(doc.at_css("[data-testid='stripe-connection']")).to be_nil
-      # 通用版面：按钮仍在「支付方式」卡
+      # 通用版面：非 Stripe 的 **Gateway** 仍渲染「支付方式」卡与凭据卡
+      expect(doc.at_css("[data-testid='payment-options']")).to be_present
       expect(doc.at_css("[data-testid='payment-options'] [data-testid='options-test-connection']")).to be_present
       # 收敛切片 2+3（2026-09-21）：原 `_provider_diagnostics` 诊断卡整体删除 —— 断言其**不再出现**
       expect(doc.at_css("[data-testid='provider-diagnostics']")).to be_nil
+    end
+
+    it 'renders Check / StoreCredit as a minimal page — display settings only (AC-014 / §6.4)' do
+      check = create(:check_payment_method, store: store, active: true, display_on: 'both', name: 'Check')
+      doc = render_edit_page(check)
+
+      # 收敛切片 6（2026-09-21）：开关型结算方式无入口、无连接/凭据/Webhook
+      expect(doc.at_css("[data-testid='payment-options']")).to be_nil
+      expect(doc.at_css("[data-testid='stripe-connection']")).to be_nil
+      expect(doc.at_css("[data-testid='provider-diagnostics']")).to be_nil
+      # 显示设置仍在（名称 / 可见性 / 启用）
+      expect(doc.at_css('#payment_method_name')).to be_present
     end
   end
 end

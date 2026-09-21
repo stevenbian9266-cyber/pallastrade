@@ -42,7 +42,6 @@ module PallasTrade
               entry['frontend_kind'].presence ||
               payment_method.default_option_frontend_kind,
             # D15 切片3：入口能否被强制认证（目录声明；缺失 = 不支持 —— 不猜）
-            three_d_secure: entry&.[]('three_d_secure').to_s.downcase == 'supported',
             # PALLAS-CUSTOM: D8（PRD-20260915-payments-d8 切片2）—— 适用范围（include 侧 4 维度）
           }
         end

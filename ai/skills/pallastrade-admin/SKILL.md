@@ -418,6 +418,13 @@ end
 
 ## 支付方式选项化：Provider 详情「支付方式」页签（D1 切片3, 2026-09-15，PRD-20260915-admin）
 
+> ⚠️ **收敛切片 6（2026-09-21）—— 本页签的最终形态**：
+> - **删除「3DS 能力列」**（表头 + 单元格 + `PaymentsHelper` 的 `three_d_secure` row 键 + 两侧 i18n 键）。
+>   注意：**D15c 3DS 策略与下发本身保留** —— 删掉的只是这一列**只读展示**。
+> - **Check / StoreCredit 改用极简页**：`edit.html.erb` 以 `@payment_method.is_a?(PallasTrade::Gateway)` 判定，
+>   非 Gateway（开关型结算方式）**不渲染**「支付方式」卡与「凭据」卡，只保留显示设置（名称 / 可见性 / 启用）。
+>   回归：`spec/requests/pallastrade/admin/payment_methods_spec.rb` 的「renders Check / StoreCredit as a minimal page」用例。
+
 商家按 method（前台入口）配置一个支付商：`views/.../payment_methods/_options.html.erb` 挂在
 `edit.html.erb` 的**主表单内**（随保存一起提交，勿再嵌套 `<form>`）；数据源 =
 `PaymentMethod#payment_option_catalog`（provider 声明，Stripe = card/apple_pay/google_pay）∪ 已配置
@@ -1131,7 +1138,7 @@ For Turbo Streams (server-pushed UI updates), the same patterns apply as any Rai
 - **字段**：模式 `always` / `risk_based`（默认）/ `off` + 低金额阈值 + 国家白名单（ISO-2，逗号或数组）+ 入口白名单（kind）。
 - **校验与落库**：写完只经 `Payments::ThreeDSecure::Policy.storable`（**写路径**：非法 mode / 负阈值 / 非法国家码 → `errors`，**不落库不静默**）；读路径 `normalize` 永不抛错（运营写坏键不能让结账 500）。落 `store.private_metadata['three_d_secure_policy']`，**零迁移**；保存写审计 `store_three_d_secure_policy_updated`。
 - **零影响**：未提交该键 → `private_metadata` 其它键**原样保留**；未配置门店 = 默认 `risk_based`（与今天行为一致）。
-- **入口能力列**：支付方式（Provider 详情「支付方式」页签）入口表新增**只读**「可强制认证」列（来自 provider `payment_option_catalog[i]['three_d_secure']`，未声明 = 不支持）；不读不写规则集，无新权限资源（沿用 `can :manage, PallasTrade::Store`）。
+- **入口能力列**：支付方式（Provider 详情「支付方式」页签）入口表新增**只读**「可强制认证」列 —— **该列已于 2026-09-21 收敛切片 6 删除**（3DS 策略与下发保留，仅移除这列展示）（来自 provider `payment_option_catalog[i]['three_d_secure']`，未声明 = 不支持）；不读不写规则集，无新权限资源（沿用 `can :manage, PallasTrade::Store`）。
 - **规则动作文案**：`/admin/risk_rules` 的动作词汇与试算展示含 `force_3ds`（i18n en + zh-CN **键集相等**，与 D15 切片2 同表）。
 
 ## 风控规则工作台 `/admin/risk_rules`（D15 切片2, 2026-09-17；PRD-20260917-payments-d15b-risk-rules）

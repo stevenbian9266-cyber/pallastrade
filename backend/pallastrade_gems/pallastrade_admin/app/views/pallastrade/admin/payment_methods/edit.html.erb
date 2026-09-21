@@ -31,9 +31,13 @@
         <%# 通用版面（既有行为，逐字不变） %>
         <%= render 'form', f: f %>
         <%# PALLAS-CUSTOM: PAY-OPT-1（PRD-20260915 切片3）—— 「支付方式」页签（随主表单提交） %>
-        <%= render 'options' %>
-        <%# PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 凭据健康（轮换/到期/reveal）+ Webhook 卡 %>
-        <%= render 'credentials' %>
+        <%# PALLAS-CUSTOM: 收敛切片 6（2026-09-21）—— Check / StoreCredit 是「开关型结算方式」：
+            无入口、无连接/凭据/Webhook，页面只保留显示设置（§6.4）。 %>
+        <% if @payment_method.is_a?(PallasTrade::Gateway) %>
+          <%= render 'options' %>
+          <%# PALLAS-CUSTOM: D9（PRD-20260915-payments-d9 切片2）—— 凭据健康（轮换/到期/reveal）+ Webhook 卡 %>
+          <%= render 'credentials' %>
+        <% end %>
       <% end %>
       <%= render 'pallastrade/admin/shared/edit_resource_links', f: f %>
     <% end %>
