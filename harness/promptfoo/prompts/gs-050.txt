@@ -1,0 +1,25 @@
+# Eval Scenario GS-050: P4-1 资金事实解析：Payment.completed ≠ captured（FinancialFacts::ResolvePayment/ResolveRefund）
+
+FIN-P4-1（PRD-20260905-payments-fin-p4-1）：Payment/Refund 经 PallasTrade::FinancialFacts::ResolvePayment/ResolveRefund 解析为标准只读 FinancialFact——manual authorize(pending)→AUTHORIZED_ONLY、completed+capture_event 或组合 succeeded→CASH_CAPTURED、completed 无 evidence→AMBIGUOUS、StoreCredit/Check 不伪装 PSP cash、1 txn 支持 N payment facts、multiple/partial refunds 每笔独立 fact；禁 PSP reference 推断 CommerceTransaction（commerce_transaction_id 命名纪律）；全量新增 financial_facts spec + P0-P3 回归 0 failures
+
+## MUST do
+- FinancialFact 解析经统一 Resolver（instrument classify → ownership → amount/currency → capture evidence），禁止复制裸 payment.completed? 判定
+- manual-capture 至少一条测试真实经过 Payment#capture!/confirm! 模型方法路径
+- 组合支付只产生 1 个 cash fact（splits 是 allocation，非第二笔 cash）
+- 证据不足/冲突 → AMBIGUOUS/UNSUPPORTED，不猜；StoreCredit→STORE_CREDIT_APPLIED、Check→OFFLINE_PAYMENT_RECORDED
+- pallastrade-payments / pallastrade-data-model / pallastrade-testing skill changelog 已同步（FIN-P4-1）
+
+## MUST NOT do
+- 把 Payment.state（completed/pending）直接当 PSP CASH_CAPTURED 判定
+- 用 response_code/pi_/cs_ 推断 CommerceTransaction ownership
+- Resolver 创建/更新 Payment/Refund/Transaction 或调用 capture/refund/credit（只读边界）
+- StoreCredit/offline/legacy 无 captured predicate 却输出 CONFIRMED CASH_CAPTURED
+- 在 P4-1 建 financial_journal_entries 表或 posting（FIN-P4-2 范围）
+
+## Scoring
+- manualAuthorizeVsCaptured: 25
+- evidencePolicyAmbiguous: 20
+- storeCreditOfflineNotPspCash: 15
+- ownershipNoPspRefInference: 15
+- readOnlyBoundary: 15
+- regressionGreen: 10

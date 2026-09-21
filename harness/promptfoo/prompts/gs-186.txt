@@ -1,0 +1,36 @@
+# Eval Scenario GS-186: Collapse a sidebar section to exactly one level - and give money work its own top-level menu
+
+Two nav-IA asks landed together. First, the admin sidebar's Settings block could not be folded away: 'Settings' is only a section heading (a `section_label` root item), so everything under it is a *sibling* - and every item that has a submenu renders as a bare `<li>` plus a sibling `<ul class="nav-submenu">` and `<ul class="nav-submenu-dropdown">`. Collapsing just the `<li>`s leaves those menus visible. The first cut of the fix toggled `hidden` across *every* sibling, which un-hid the hover dropdown container (`.dropdown-container` is `position:absolute` with a shadow) - the user saw a floating menu panel the moment the section expanded - and it expanded all three levels at once. Second, `Orders` had swollen to 19 children because sixteen money/payment/risk consoles (transactions, payouts, reconciliation, refund approvals, fee policies, FX, disputes, risk rules, …) lived under it, mixing order operations with treasury work.
+
+## MUST do
+- Ship the section collapsed by default (server renders the item `<li>`s with `hidden`, plus `aria-expanded="false"` and `data-nav-section-collapsed="true"` so the chevron is right on the first paint) - do not wait for JS to fold it and never flash the expanded state
+- Force the section open when the current page lives inside it (server: any item `active?`; client: a `.nav-link.active` inside the scope) so the page the user is on is never hidden by a stale memory
+- Toggle visibility on the section's second-level `<li>`s only; for a third-level `ul.nav-submenu` hide it on collapse while remembering it (`data-nav-section-restore`) and restore *only* those on expand
+- Never un-hide `ul.nav-submenu-dropdown`: that container is the absolutely-positioned hover flyout for icon-only mode and must stay `hidden` in every section state
+- Make a second-level entry navigate to its landing page and expand its own third level - independent per entry, no accordion - and give the section no caret icons of its own (only the section heading owns the chevron)
+- Render the section heading as a real disclosure control: a `<button>` with `aria-expanded`, a chevron and a semantic-token colour - not a styled `<span>`
+- Keep the change inside the nav config/rendering layer plus the existing sidebar controller, and keep it scoped to the collapsible section - main-area menus keep their current behaviour
+- When moving items to the new top-level menu, keep their keys, `if:` conditions and active lambdas untouched: menu-permission keys, breadcrumb derivation and i18n labels all ride on the keys
+- Make the parent visible exactly when it has something to show (any child permission grants it) so nobody gets an empty group
+- Order the new menu by the money lifecycle (transaction → payment → refund → dispute → reconciliation/settlement → FX/cost → risk) and give the top level a `landing` pointing at its first child
+- Add the label to both locales (gem en + host zh-CN) - an English-only key renders silently as `translation missing` in a Chinese admin
+
+## MUST NOT do
+- Toggle `hidden` indiscriminately across every sibling of the section heading: that un-hides the dropdown flyout container and force-opens the third level - the reported 'floating menu panel' bug
+- Leave the section expanded by default, or leave it collapsed while the active page sits inside it
+- Tag items one by one and hide only the `<li>`s - the submenu `<ul>` siblings stay on screen and the group looks half-collapsed
+- Add caret icons to the section's own entries (the heading is the only affordance) or hand-write the new parent level into controllers (breadcrumbs derive from the nav tree)
+- Rewrite item keys/URLs while moving them - menu permissions, breadcrumbs and locale keys silently break
+- Ship a parent menu that renders empty (all children filtered out) or a money page that still claims `Orders > …`
+- Forget the zh-CN side of the new label, or hardcode palette colours for the new control
+- Call the interaction done from server-rendered markup alone, and do not trust a computed-style reading taken in a throttled/hidden tab (frozen transitions read as a wrong rotation) - verify in a real browser after restarting the app so the asset pipeline serves the edited controller
+
+## Scoring
+- collapsedByDefaultServerRendered: 20
+- noFlyoutAndSecondLevelOnly: 20
+- activePageForcedOpenAndThirdLevelOnDemand: 15
+- keyStabilityKeepsPermissionsAndCrumbs: 15
+- parentVisibleIffChildrenVisible: 10
+- lifecycleOrderAndLanding: 10
+- bilingualAndSemanticTokens: 5
+- realBrowserVerification: 5

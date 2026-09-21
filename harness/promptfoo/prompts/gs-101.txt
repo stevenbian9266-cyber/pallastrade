@@ -1,0 +1,19 @@
+# Eval Scenario GS-101: Admin pages are not restorable after sign out
+
+Logging out of the Rails admin must not leave a signed-in page reachable via the browser Back button: admin responses carry Cache-Control: private, no-store and the layout forces a reload when the browser restores the page from its back-forward cache (bugfix 2026-09-13, TASK-20260913050550)
+
+## MUST do
+- Send Cache-Control: private, no-store from the admin base controller (the same directive the API layer already uses) so a Back navigation has to revalidate the session with the server
+- Force a single reload from a pageshow handler when the page is restored from the back-forward cache, letting the server redirect signed-out users to the sign-in page
+- Pin the behaviour with request specs asserting the no-store header and the layout's back-forward-cache guard
+
+## MUST NOT do
+- Rely on Turbo snapshots or browser caches to expire themselves, or add caching rules page by page
+- Break legitimate Turbo navigations, downloads or the sign-out redirect while adding the cache headers
+- Leave a signed-in admin page reachable after sign out, or ship the fix without a regression spec
+
+## Scoring
+- noStoreOnAdminPages: 35
+- bfcacheReloadGuard: 35
+- regressionSpecs: 20
+- noNavigationRegressions: 10

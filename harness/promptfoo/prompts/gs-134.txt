@@ -1,0 +1,26 @@
+# Eval Scenario GS-134: Product history timeline reuses audit logs instead of a new history table
+
+PRD-20260915-catalog-batch-d1-product-history (§12 step 2 of the catalog upgrade plan): the admin product edit page shows a timeline of field changes, batch operations and price changes. Writes go through PallasTrade::ProductHistory::Recorder on top of pallastrade_audit_logs (zero migrations), reads through PallasTrade::ProductHistory::Timeline, and the panel is injected via the product form sidebar partials without overriding the gem form.
+
+## MUST do
+- Persist history in pallastrade_audit_logs (resource_type 'PallasTrade::Product') instead of adding a product_history table, and keep the tracked attribute set explicit (name/slug/status/description/meta_title/meta_description/available_on/discontinue_on)
+- Snapshot the product before the update and record after success, skipping the entry when nothing changed and no nested-section context exists, so no-op saves do not pollute the timeline
+- Record batch operations (bulk price/inventory/channel/status) as one entry per affected product with metadata['source']='bulk' plus updated_count/skipped_count, and normalise the actor to {type,id,label} with a 'system' fallback
+- Annotate nested form sections (variants/media/categories) in metadata['sections'] instead of pretending they are columns, and render them as a section summary
+- Merge audit entries with PriceHistory in Timeline.call (descending occurred_at, capped by limit) and derive a price entry's previous amount from the next older row of the same price record, carrying variant_sku/variant_id in metadata
+- Inject the panel through the product form sidebar partials with admin.product_history.* translations, so the gem product form stays untouched
+- Scope the timeline to the product passed in (never a global audit scan), and make PUT/PATCH updates and batch actions both write through the recorder
+
+## MUST NOT do
+- Add a new history table or migration when the audit log already stores before/after snapshots
+- Write an entry for a save that changed nothing, or record every tracked attribute on update instead of just the diff
+- Leave the actor unlabelled or store a raw actor object — the panel shows a human label or 'system'
+- Copy the gem product form into the host app to add the panel (AP-008) instead of using the partial injection point
+- Hand-roll a second price-change reader that disagrees with PriceHistory, or show a price change without the previous amount
+
+## Scoring
+- dataReuseIntegrity: 30
+- changeAccuracy: 25
+- batchAttribution: 20
+- timelineMerge: 15
+- adminIntegration: 10

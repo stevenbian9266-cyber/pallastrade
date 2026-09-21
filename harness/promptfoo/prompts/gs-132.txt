@@ -1,0 +1,27 @@
+# Eval Scenario GS-132: PDP turns into a discovery node without inventing backend surface
+
+PRD-20260915-catalog-batch-c1-discovery (Batch C-1 of the catalog upgrade plan): the product page gains three discovery rails — rule-based related products (same categories, buyable, never the product on screen), a browser-local recently-viewed rail and a browser-local wishlist with its own page and header entry. No recommendation algorithm, no server-side domain model: the catalog filters already shipped by the Store API carry related, while the two personal rails live entirely in localStorage and degrade silently when storage is unavailable.
+
+## MUST do
+- Derive related products from the existing list endpoint (`in_categories` + `in_stock`, over-fetching one row) and drop the product on screen before trimming to the limit, so the rail never shows a duplicate or an out-of-stock item
+- Hide the related rail entirely (heading included) when the product has no categories or nothing matches, and keep it on the cached list fetch so it shares the `products` cache tag
+- Keep recently viewed browser-local: newest first, one entry per product (a repeat visit moves to the front), capped at 12, and never suggesting the product being viewed
+- Keep the wishlist V1 browser-local too: toggle on the product page, count badge in the header, `/wishlist` page with removal and an empty state that leads back to the catalog — no server model, no new endpoint
+- Keep the product-page wishlist toggle a lightweight secondary action (`outline` + `sm`) on the availability row, so quantity + Add to Cart + Buy Now always own the primary action row instead of being squeezed by a full-width `lg` button
+- Push the list arithmetic into pure modules (related-products / recently-viewed / wishlist) and route every storage access through one try/catch helper, so private mode or a full quota degrades to "not persisted" instead of breaking the page
+- Read browser state only after mount (first paint renders nothing / zero) and sync rails through same-page events plus cross-tab `storage` events, keeping hydration deterministic
+- Ship every new string in the five message files and register the keys in the i18n guard test, reusing ProductCard's analytics rather than adding new tracking code
+
+## MUST NOT do
+- Introduce a recommendation algorithm, a tags-based fallback or a similarity service in V1 — the plan explicitly defers that until real exposure/click data exists
+- Create a server-side wishlist/recently-viewed model, migration or API endpoint, or a new SDK method
+- Read localStorage during render (hydration mismatch, empty-state flash) or let a corrupt payload throw instead of degrading to an empty list
+- Show the rail for out-of-stock matches, show the current product in its own rails, or render an empty section with a heading
+- Hardcode colours or bypass the design tokens/Tailwind conventions when building the rails, or add a user-facing string without the five-language guard entry
+
+## Scoring
+- ruleBasedRelated: 30
+- localFirstRails: 25
+- hydrationAndStorageSafety: 20
+- emptyAndEdgeStates: 15
+- i18nAndReuse: 10

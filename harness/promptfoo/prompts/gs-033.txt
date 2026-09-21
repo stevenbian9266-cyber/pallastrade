@@ -1,0 +1,26 @@
+# Eval Scenario GS-033: Admin breadcrumb auto-derivation from sidebar nav config (P3 nav architecture)
+
+Since the P3 nav architecture refactor (2026-08-16), main-area (sidebar) admin breadcrumbs are auto-derived: BreadcrumbConcern#derive_breadcrumbs_from_navigation resolves the current request.path against the sidebar nav registry (Navigation#find_breadcrumb_chain — deepest URL match wins, then ancestor chain) and emits icon + parent + child crumbs. Hand-written module concerns (ProductsBreadcrumbConcern/OrderBreadcrumbConcern/PromotionsBreadcrumbConcern/EmailsBreadcrumbConcern/PostsBreadcrumbConcern) were deleted. Object pages (products/promotions/posts/email_templates show+edit) append the object crumb via a controller before_action. The settings area is NOT auto-derived (settings nav items are section-level; those crumbs stay 'Settings > page' until P4).
+
+## MUST do
+- Derive main-area breadcrumbs from the sidebar nav config via Navigation#find_breadcrumb_chain(request.path, self) — deepest URL match first, then ancestor chain root→matched
+- Match URLs safely (Item#match_path? exact or prefix, safe_resolve_url rescues proc errors) so a nav proc can never break a page
+- Set @breadcrumb_icon from the matched top-level item's icon; skip derivation when settings_area?
+- For object pages append the object crumb in the controller (before_action add_breadcrumb_for_product / add_breadcrumb_for_promotion etc.), never in the nav config
+- New main-area module pages only need a nav registration (label/url/icon/position) — breadcrumb + icon appear automatically with zero controller code
+- Cover derivation with navigation_consistency_spec AC-003 assertions (module→sub-page breadcrumb on /admin/emails, /admin/checkouts, /admin/gift_cards, /admin/product_translations, object page)
+
+## MUST NOT do
+- Reintroduce hand-written per-module breadcrumb concerns for the main area
+- Add module crumbs inside action methods (auto-derived); only object/special-context crumbs are controller-owned
+- Let a nav url proc raise during path matching (use safe_resolve_url)
+- Auto-derive settings-area crumbs from the section-level settings nav (would produce 'Developers > API Keys' style wrong labels — deferred to P4)
+- Push while doc-impact reports docs-required
+
+## Scoring
+- autoDeriveEngine: 25
+- objectCrumbHook: 20
+- settingsAreaSkip: 15
+- regressionSpec: 20
+- skillSynced: 10
+- docImpactPass: 10

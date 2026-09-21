@@ -1,0 +1,23 @@
+# Eval Scenario GS-107: Evidence drafts need a second operator before the provider is called
+
+DSP-P7-10 B2 (FR-005): an append-only approval record bound to the payload digest, enforced as an optional pre-condition of SubmitEvidence, so a dangerous provider write cannot be triggered by one person alone
+
+## MUST do
+- Bind the approval to the payload digest computed with the same algorithm as the submission idempotency key, so editing the draft invalidates it
+- Refuse self-review by comparing the reviewer with the preparer, and refuse submission by the reviewer who approved it
+- Keep the approval table append-only (update and update_columns both raise) and free of money columns
+- Gate the whole capability behind a config switch that defaults to off, leaving the legacy submit path untouched
+- Record the approval id in the receipt metadata and the audit trail so the two records can be correlated
+- Let the console approve the exact payload it would submit by reusing the same form via formaction
+
+## MUST NOT do
+- Replace or bypass SubmitEvidence, its permission check, its confirmation or its audit
+- Call the provider, create a receipt or touch funds from the approval service itself
+- Allow the same operator to prepare, approve and submit the same draft
+
+## Scoring
+- digestBoundApproval: 25
+- differentOperatorEnforced: 30
+- appendOnlyApprovals: 15
+- defaultOffSwitch: 15
+- receiptCorrelation: 15

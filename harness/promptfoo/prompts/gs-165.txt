@@ -1,0 +1,23 @@
+# Eval Scenario GS-165: A ratio is only as honest as its denominator
+
+The catalog health worklist reported counts: 23 products missing SEO. A count without a denominator cannot drive a decision — in a 25-product store that is a catastrophe, in a 5000-product store it is noise. Adding the two ratios the plan asks for looks trivial, and that is the trap: the two issues are counted in different units, so a single shared denominator produces a wrong ratio that reads exactly like a right one, and an empty store produces a confident zero.
+
+## MUST do
+- Derive both numerators from the same counting authority the worklist uses, so a ratio can never contradict the list it summarises
+- Use a denominator per ratio, matching the unit each count is actually taken in, and say so where the count is defined
+- Return nothing rather than a number when the denominator is zero or the thing being measured does not exist
+- Show the numerator and denominator alongside the percentage so the merchant can check the arithmetic
+- Prove in a test that the two denominators differ, not merely that each ratio is in range
+
+## MUST NOT do
+- Share one denominator between ratios that count different things
+- Render 0% for an unmeasurable store — it reads as 'already done'
+- Treat 'no other locales configured' as complete translation coverage
+- Re-implement the issue rules to make the ratio convenient
+
+## Scoring
+- denominatorIntegrity: 30
+- singleSourceOfTruth: 25
+- absenceHonesty: 25
+- verifiability: 10
+- regressionSafety: 10

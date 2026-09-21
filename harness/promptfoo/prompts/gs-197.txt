@@ -1,0 +1,38 @@
+# Eval Scenario GS-197: Charge a re-opened unpaid order honestly - revalidate commercial facts, drop dead items, and retire the cashier modal
+
+A submitted-but-unpaid order is paid days later. The stored quote never got an expiry window, so every re-validation gate silently short-circuits: the price stays the frozen one, delisted products keep their line, an unreachable shipping destination is never re-checked, and a coupon discount stays applied although the remaining items no longer qualify. The account page cannot even reach a pay button - payment_state was never projected, so the list shows empty status columns and the payable predicate never matches - and paying is only offered through a cashier modal. The ask: make 'pay again' re-validate like a first checkout, tell the shopper what changed without forcing a second confirmation step, charge only for what is still valid, and retire the modal in favour of the order payment page.
+
+## MUST do
+- Orchestrate one re-validation service that both the read-only preflight endpoint and the payment start path consume, so the amount shown on the page is the amount charged
+- Run the preflight as a dry run: perform the full write path inside a locked transaction, roll it back, and suppress event publishing, so opening the page never mutates the order, leaks inventory events or creates sessions
+- Detect unavailable line items with the same predicate the cart uses, report a stable reason code per item, and prune them on the write path with their stock reservations released per line
+- Re-price from the current catalogue only when the quote window is missing or expired, and keep prices locked while a valid window exists
+- Re-check every applied promotion after pruning and remove the ones that no longer qualify through the shared removal primitive (link, adjustments, redemption, gift lines), reporting the removal as a change entry
+- Re-apply gift card and store credit against the new payable amount so pruning neither swallows the credit nor over-charges it
+- Block payment only on real blockers (order not payable, checkout not ready, destination unreachable, nothing payable left) and return them as structured codes the page can render
+- Issue the quote window at order creation, and let the re-validation gate cover standard-flow unpaid orders without a window, so orders created before this change are validated too
+- Compare the amount the page displayed with the server recomputation at payment time and answer 409 quote_changed with the change list instead of charging a different amount
+- Show the new amount directly on the order payment page with an explicit change notice (amount before to after, removed items, adjusted promotions, blockers) in every supported locale, and pass the displayed amount along with the payment request
+- Project payment_state and shipment_state at submit time, derive them read-only for rows written before this change, and make the payable predicate depend on the amount rather than the status column
+- Retire the cashier modal and its multi-select entry: row and detail pay actions navigate to the order payment page, and one payable helper is shared by list and detail
+- Register a verifier for the re-validation specs that also runs the orders-channel request specs (transaction start, entry gate), so the API surface is covered by the same gate, and mirror the behaviour into the checkout and storefront skills
+- Rebuild the local SDK package inside the deploy workflow before building the storefront image - the image type-checks against the package dist, so a new SDK export must be built there instead of being committed as an artifact
+
+## MUST NOT do
+- Write anything on page load, or let the dry run leave rows behind, publish inventory events or create a payment session
+- Charge the stored amount while showing a different one, or silently swap the amount at payment time instead of answering with a quote-changed conflict that carries the details
+- Keep pruning out of the money path and merely hide invalid items in the UI, or keep a pruned item inside the order totals
+- Leave a promotion applied because re-evaluating rule eligibility is inconvenient, or release an active redemption without removing its adjustments
+- Keep the old gate condition that only validates orders which already carry a quote window, or exempt historical unpaid orders from re-validation
+- Answer the missing payment status with a front-end fallback only, or keep requiring balance_due so unpaid orders never show a pay action
+- Keep the modal alive next to the new page, or re-create a second payable predicate in each account component
+- Register a verifier that only covers the service layer while the API channel is exercised by request specs - the request surface must fail through the same verifier
+
+## Scoring
+- singleRevalidationSourceSharedByReadAndWrite: 20
+- dryRunZeroSideEffects: 15
+- invalidItemPruningWithReservationRelease: 15
+- promotionAndCreditRebalance: 15
+- amountParityWithQuoteChangedGuard: 15
+- unpaidOrderProjectionAndPayEntryPoints: 10
+- modalRetirementAndI18n: 10

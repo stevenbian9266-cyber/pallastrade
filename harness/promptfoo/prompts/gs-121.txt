@@ -1,0 +1,22 @@
+# Eval Scenario GS-121: Cart-stage credits are intent only — the cart page shows what was asked for, not money moved
+
+PRD-20260914-checkout B2: the canonical cart page gains a discounts/credits module (coupon, gift card, store credit) and a three-row summary, all fed by the server ShoppingCart intent snapshot; nothing is redeemed until carts.submit, and store credit stays login-gated and mutually exclusive with gift cards
+
+## MUST do
+- Drive the cart summary rows from the server ShoppingCart snapshot (discount_code / gift_card / store_credit) and render an amount only from display_* while judging emptiness from the raw value
+- Call the credit mutations (carts.discountCodes / giftCards / storeCredits) from server actions and refresh from the returned snapshot — never recompute money in the browser
+- Keep store-credit gated by the customer session (disabled control plus a login link that issues no request) and blocked while a gift card is applied, mirroring the server's mutual-exclusion rule
+- Surface the server error code (PallasTradeError.code) into translated copy, and label the discount row as calculated at checkout because cart-stage codes carry no amount yet
+- Pin the contract with serializer assertions (intent fields typed and null when unused) plus component, data-layer and i18n-guard tests
+
+## MUST NOT do
+- Reimplement discount, gift-card or store-credit arithmetic on the cart page, or fold credits into the cart total (totals stay item_total until submit)
+- Fire a doomed request from a guest or allow gift card plus store credit to be applied together just because the UI could
+- Leave the credit intent fields untyped (unknown) in the generated/hand-written types so the storefront has to assert its way into them
+
+## Scoring
+- serverIntentSnapshot: 30
+- serverActionBoundary: 25
+- loginAndExclusionGates: 20
+- errorCodeMapping: 15
+- contractAndTests: 10

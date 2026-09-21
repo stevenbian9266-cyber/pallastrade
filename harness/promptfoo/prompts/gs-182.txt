@@ -1,0 +1,26 @@
+# Eval Scenario GS-182: A backend-only push must not rebuild the storefront image
+
+The Deploy workflow used to build and push the storefront image on every push to dev. Build output tracks source mtimes, so even a byte-identical storefront produced a NEW manifest digest; the server's pull-deploy.sh therefore spent up to its 900s budget downloading cross-border before it could even start the code deploy, delaying unrelated backend changes by up to 15 minutes (every 5-minute cron tick in between was skipped by the lock). Note the trap: the slow pull is REAL download work, not an idle hang - once the image converges the same `docker pull` returns in 1-2s in every stdio context. The durable fix is a content trigger on the image build inputs, plus a machine-checked invariant that the trigger set covers every COPY source of the Dockerfile, so the optimization can never silently stop building storefront changes.
+
+## MUST do
+- Diagnose before optimizing: prove whether the slow step is doing work (compare an interactive pull once the image is current) instead of assuming a hang, and say which of the two it is
+- Limit the image build to its real inputs - the Dockerfile's COPY sources (storefront plus the platform packages it copies) and the workflow file itself
+- Keep a manual escape hatch (workflow_dispatch) for forced rebuilds, and keep the branch scope intact
+- Machine-check the invariant: a repo-level guard must fail when the Dockerfile gains a COPY source that the trigger set does not cover
+- Make the guard self-proving: assert that an unrelated path is NOT covered, so a broken matcher cannot pass by matching everything
+- State the operational consequence in the docs a deployer reads: what triggers a rebuild, how to force one, and how to tell whether a given push will rebuild
+
+## MUST NOT do
+- Ship the trigger set without a guard - a missed input silently freezes the storefront image and nobody notices until a user-facing fix fails to appear
+- Use a hand-maintained 'changed folders' heuristic in the deploy script that duplicates what the workflow trigger already expresses
+- Reduce the pull timeout as the fix while the image is still rebuilt needlessly on every push
+- Describe the recurring 900s as wasted/idle time without checking whether layers were actually transferred
+- Drop workflow_dispatch or broaden the workflow to other branches to 'make it easier to test'
+
+## Scoring
+- rootCauseAccuracy: 25
+- triggerCorrectness: 20
+- machineCheckedInvariant: 20
+- manualEscapeHatch: 15
+- docsDiscoverability: 10
+- noIdleDiagnosis: 10

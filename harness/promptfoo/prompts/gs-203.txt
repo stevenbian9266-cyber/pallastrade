@@ -1,0 +1,24 @@
+# Eval Scenario GS-203: A created-but-invisible order: surface it instead of letting the buyer conclude it was never created
+
+When a buyer says "I clicked pay but there is no order", first establish that the order WAS created (prepare = carts.submit runs BEFORE payment), then fix VISIBILITY on both sides: buyer-side inline recovery entry + login-free token route, and admin-side list scope aligned with the storefront. Never "fix" it by backfilling user_id.
+
+## MUST do
+- Establish that the order already exists (code path + test + DB evidence) before changing anything — the click creates the order before any payment attempt
+- Surface the already-created order in the payment-failed inline notice: order number + a link to the result page + a same-page retry, while keeping zero navigation and zero PATCH
+- Offer a login-free recovery route that authorizes ONLY via the server-written HttpOnly checkout cookie (reuse the existing pending-checkout-order helper), with an `or_` prefix guard
+- Align the admin orders list read scope with the storefront customer predicate: submitted ∪ completed — excluding `state=cart` drafts so unsubmitted rows do not flood the operations list
+- Treat guest orders missing from /account/orders as existing design (the order token is the credential) and label it as a known limitation
+
+## MUST NOT do
+- Let the buyer conclude the order was never created (it was created before payment; the failure is discoverability, not creation)
+- Accept an externally supplied order id on the recovery route — that turns it into an order-number enumeration endpoint
+- Distinguish the empty state from "that order does not exist" (leaks existence to an unauthenticated caller)
+- Introduce email-based backfill/claim of past guest orders (contradicts the existing "no number+email claim flow" design)
+- Replace `base_scope.complete` with "everything" (that pulls in cart-state drafts) or reintroduce `.complete` later instead of narrowing through a filter
+
+## Scoring
+- rootCauseEstablished: 20
+- buyerSideEntry: 20
+- tokenOnlyAuthorization: 25
+- adminScopeAligned: 20
+- knownLimitationStated: 15

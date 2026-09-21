@@ -1,0 +1,25 @@
+# Eval Scenario GS-031: Admin submenu breadcrumb + page_title unification
+
+When building/customizing a top-level admin menu with submenu items, AI must create a dedicated breadcrumb concern (like ProductsBreadcrumbConcern/EmailsBreadcrumbConcern), add class-level breadcrumbs per sub-page, and render the page header via content_for :page_title — never only content_for(:title), which drops the header and page_actions
+
+## MUST do
+- Create a breadcrumb concern per submenu module (add_breadcrumb_icon + parent add_breadcrumb at class level)
+- Include the concern and add a sub-page crumb (class-level add_breadcrumb) in every sub-page controller
+- Add content_for :page_title to every list/show/form view (page header), alongside content_for(:title) for the browser tab
+- Keep page_actions inside the page_title flow so action buttons render
+- Update ai/skills/pallastrade-admin/SKILL.md when the rendered admin UI/behavior changes (GS-015)
+- Run harness doc-impact --base origin/main before pushing
+
+## MUST NOT do
+- Hand-add add_breadcrumb inside action methods instead of a shared concern
+- Leave sub-pages without a breadcrumb trail or with an inconsistent one
+- Set only content_for(:title) and skip content_for :page_title (drops page header + page_actions)
+- Use lambda URLs in nav registration when a symbol route helper exists (url: :admin_xxx_path)
+- Push while doc-impact reports docs-required
+
+## Scoring
+- breadcrumbConcern: 30
+- pageTitle: 25
+- pageActionsVisible: 15
+- skillSynced: 15
+- docImpactPass: 15

@@ -1,0 +1,24 @@
+# Eval Scenario GS-136: Frontend payment keys are delivered by the API instead of being baked into the build
+
+PRD-20260915-payments-d10-client-config (D10 of the payments batch plan, §68.4/§76.1): the server now ships `client_config` on every payment-method payload (checkout `payment.available_payment_methods[]` plus the store `PaymentMethodSerializer` used by cart/order), exposing only publishable-level credentials, so switching payment provider or test/live environment is a back-office change instead of a redeploy + image rebuild; the storefront reads the API value first and keeps a temporary fallback to NEXT_PUBLIC_* while everything turns green.
+
+## MUST do
+- Assemble client_config in exactly one place (PallasTrade::PaymentMethods::ClientConfig) as { provider, environment, publishable, session_token } and reuse it from both the checkout serializer and the store PaymentMethodSerializer
+- Derive publishable keys from the provider's declared public_preference_keys (symbols — preferences are stored with symbol keys) and reuse the D9 credential levels so secret/internal values can never be projected
+- Resolve env: references at read time (missing ENV omits the key instead of raising or leaking the reference string), and keep the contract additive so older clients keep rendering
+- Let the Stripe gateway declare [:publishable_key] as public while secret_key stays a :password preference, and keep the 'no secrets through public preferences' regression assertion green
+- Regenerate the contract with scripts/ci/contracts.sh (OpenAPI + SDK/zod types) and keep generated:check at zero drift, including the checkout typelize fields that had drifted from the payload
+- Make the storefront dual-read: resolveStripePublishableKey(client_config) → NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY → null, cache loadStripe per key, and thread client_config from the selected payment method into CardPaymentForm / StripePaymentForm / ExpressCheckoutButton
+
+## MUST NOT do
+- Ship secret or internal credentials to the browser, or invent a second credential-projection path next to the D9 level/Gateways declarations
+- Store the resolved plaintext back into preferences, or read publishable keys with string keys (they silently resolve to nil)
+- Keep a module-level stripePromise singleton, or hard-fail the card form when client_config is absent (the fallback must keep the old behaviour)
+- Edit generated SDK/OpenAPI outputs by hand instead of regenerating them from the serializers
+
+## Scoring
+- singleSourceOfTruth: 30
+- credentialSafety: 25
+- dualReadMigration: 20
+- contractRegeneration: 15
+- testCoverage: 10

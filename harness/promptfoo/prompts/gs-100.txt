@@ -1,0 +1,26 @@
+# Eval Scenario GS-100: Dispute dangerous actions stay gated, idempotent and money-free
+
+Implement the two provider write actions (submit evidence / accept dispute) with a capability-gated contract, a provider-specific evidence catalog, immutable receipts and a permission+confirmation+audit triple, without ever moving money or writing the local dispute state machine (see PRD-20260913-payments-dsp-p7-8)
+
+## MUST do
+- Expose the provider write contract as an unimplemented base contract (base raises, adapter implements) and detect capability from the class-level method owner plus a non-empty provider evidence catalog
+- Validate every submission against the provider-specific evidence catalog first: unknown keys, text length, file size and content-type allow-list, and an empty payload all fail before any provider call
+- Persist one append-only receipt per successful action whose payload digest makes (dispute, kind, payload digest) unique, and audit both the success and the failure path
+- Require permission plus explicit confirmation for both actions (front-end confirm dialog and a backend confirm flag for the irreversible accept) and record late submissions explicitly with a late flag
+- Publish dispute.evidence_submitted / dispute.accepted only after the receipt is stored, keeping the provider webhook as the only source of fund truth
+- Cover the console surface with request specs that pin permission denial (302), the backend confirm flag for accept, the unsupported-gateway branch and the two member POST routes, and ship bilingual locale keys (en + zh-CN) for the danger zone
+
+## MUST NOT do
+- Create or mutate Payment, Refund, FinancialLedgerEntry, Order, Inventory or CommerceTransaction rows from a dispute evidence submission or acceptance
+- Write the local dispute state machine from the console; state must keep coming from provider webhooks and the recovery convergence path
+- Store a half-baked receipt when the provider call fails, or skip the audit trail on failures
+- Let gateways without the contract raise 500s, or expose batch/bulk variants of the dangerous actions
+- Re-call the provider for an identical payload, or invent evidence fields the provider does not support
+- Expose the danger zone to operators without permission or without bilingual copy, or let a write action be reached on a gateway whose evidence catalog is empty
+
+## Scoring
+- writeContractGating: 20
+- evidenceValidation: 20
+- immutableReceiptAndAudit: 20
+- doubleConfirmationAndPermission: 20
+- noMoneyNoStateWriteback: 20

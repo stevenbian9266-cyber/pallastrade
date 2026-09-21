@@ -274,6 +274,7 @@ Lower number = safer upgrade, cleaner code, easier to test.
 | AI 供应商适配器 / 模型目录（`pallastrade_ai/**/providers/deep_seek.rb`、`catalogs/deep_seek.rb`、`config/initializers/provider_registry.rb`） | + `harness verify ai-provider-rspec`（结构化输出发 `json_object` 而非 DeepSeek 不支持的 `json_schema` + `system_instructions` 必须注入 system 消息 + `test_connection` 的 status 由响应派生、5xx/网络失败返回结构化失败 + 目录与 registry 两处模型 ID 同步） | ≤1 min |
 | AI 输出校验 / 后台 AI 助手接线（`pallastrade_ai` 的 `gateway.rb`、`execute_run_job.rb`、`providers/*.rb`；`pallastrade_admin` 的 `ai_assist_controller.js` 与 5 个助手视图/`ai_assist_helper.rb`） | + `harness verify ai-output-validation-rspec`（声明 output schema 却无结构化输出 → 同步/异步都判失败且报 `ai_output_invalid`、Run 落 `failed` 且不写 artifact + 适配器错误码映射 + 助手容器的 `data-` 接线与文案 JSON 含兜底） | ≤1 min |
 | `deploy/` scripts / repo-level guards (`tests/*.test.mjs`) | + `harness verify repo-guards-test` (前滚检测 + drill crontab 恢复 + PRD 状态同步 + AI 部署模板契约守卫 + AI 助手接线契约守卫 + **部署路径过滤守卫**（Dockerfile COPY 来源 ⊆ deploy.yml paths）) | ≤1 min |
+| PRD 模板（`docs/prd/_TEMPLATE.md`） | + `harness verify repo-guards-test`（17 节结构守卫：章节序列 §0–§16 / UI·UX·数据与埋点子节 / 写作要求 / SKILL·场景库·promptfoo 跨文件一致） | ≤1 min |
 | Admin store form / direct-upload attachments | + `harness verify admin-stores-rspec` (logo/mailer_logo 直传失败提示 + 多店 CRUD) | ≤1 min |
 | Admin 样式 / 设计 token（`pallastrade_admin/app/assets/tailwind/**`、`pallastrade_admin.css`、后台 layout） | + `harness verify admin-theme-rspec`（品牌色阶/语义 token/密度双档 + 组件零直引 + WCAG AA 对比度契约） | ≤1 min |
 | 支付商选项化（`pallastrade_admin` payment_methods 视图/控制器、core `payment_method(s)` 服务、`pallastrade_stripe` 能力目录） | + `harness verify admin-payment-methods-rspec`（选项化页签/保存归一 + Test connection + 凭证脱敏 + optionized 门控/Start 同源校验回归） | ≤1 min |
@@ -366,7 +367,7 @@ Before clearing `verify-test`, provide objective evidence:
 
 **CI command**: `harness doc-impact --base origin/dev` checks your PR against this table. If any required doc update is missing, the PR is blocked with status `docs-required`.
 
-**Knowledge sync gate**: for PRD-driven tasks, before closing `verify-test`, run `harness sync-check --id PRD-xxx` — it lists every knowledge asset (Skill / README / Agent files / style & technical standards / anti-patterns / scenarios) the change may require updating. Resolve each (update, or record "已评估，无需更新" in PRD §9/§10), then confirm with `harness sync-check --ack`.
+**Knowledge sync gate**: for PRD-driven tasks, before closing `verify-test`, run `harness sync-check --id PRD-xxx` — it lists every knowledge asset (Skill / README / Agent files / style & technical standards / anti-patterns / scenarios) the change may require updating. Resolve each (update, or record "已评估，无需更新" in PRD §12（文档同步清单）/ §16（变更记录）), then confirm with `harness sync-check --ack`.
 
 ---
 

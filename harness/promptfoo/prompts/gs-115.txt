@@ -1,0 +1,22 @@
+# Eval Scenario GS-115: Prefixed ids are ownership-checked so one resource's id can never resolve as another's
+
+PRD-20260914-other-prefixedid-ownership-validation (research §9.1 P0-f): the prefixed-id decoder used to discard the prefix and look up the decoded integer directly, so an `or_...` order id could resolve as a product/variant sharing that PK; the prefix is now enforced to be the calling class's own has_prefix_id declaration (RESEARCH-20260913 §9.1 P0-f)
+
+## MUST do
+- Keep the prefix when decoding (decode_with_prefix / prefix_of) and leave the prefix-agnostic decode only for genuinely generic parsing paths
+- Enforce ownership in find_by_prefix_id! / find_by_prefix_id: foreign prefixes raise RecordNotFound (404) or return nil / empty set, never another resource
+- Apply the same ownership check to order param resolution (Order.find_by_param, Orders::FindComplete) while keeping the legacy order-number and numeric-id fallbacks
+- Keep declared prefixes globally unique: the registry spec requires zero duplicate has_prefix_id declarations (the former `ps` collision between PaymentSession and PaymentSource was removed on 2026-09-14 by moving PaymentSource to `src_`)
+- Document that the prefix is the resource type (no `type` field) in the data-model and api-v3 skills
+
+## MUST NOT do
+- Resolve an id whose prefix belongs to another resource and return whatever row shares the integer PK
+- Raise 500 (or leak the other resource) for foreign-prefix filters — filters return an empty set
+- Declare a second model with an existing prefix without renaming it as part of a deliberate, documented breaking change
+
+## Scoring
+- prefixRetainedInDecode: 20
+- ownershipEnforced: 35
+- legacyFallbacksIntact: 20
+- uniquePrefixGuard: 15
+- knowledgeSync: 10

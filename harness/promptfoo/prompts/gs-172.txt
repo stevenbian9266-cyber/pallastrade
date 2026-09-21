@@ -1,0 +1,28 @@
+# Eval Scenario GS-172: A structured-data field you cannot fill honestly is better left out
+
+PRD-20260917-catalog-json-ld-phase2 (business plan 4.3, second phase): the product page already emitted Product / Offer / availability structured data, but nothing told a search engine who sells the item, until when the price holds, what shipping costs and how long it takes, or what the return terms are. This phase adds seller, priceValidUntil (from the price list window that was actually applied), shippingDetails (reusing the shipping estimate the page had already fetched), and a structured hasMerchantReturnPolicy backed by return terms configured on the return policy record itself - without inventing a single value, without a new endpoint and without a second request.
+
+## MUST do
+- Omit a field entirely when its data is missing rather than emitting null, an empty object or a guessed value - a wrong structured-data field is worse than an absent one
+- Derive priceValidUntil from the price list that was actually applied and only while its window is still open, so a fallback to default pricing produces no validity date at all
+- Reuse the shipping estimate and the policy payload the product page already fetches instead of adding a request or an endpoint
+- Withhold shipping details for digital goods and for an unavailable estimate, and never publish a shipping rate you cannot state exactly - free is a fact, a localised display string is not
+- Store the return terms as typed, normalised settings on the return policy record itself, so the merchant edits them beside the text they describe and the storefront receives them on the same response
+- Treat an unrecognised enum, a non-positive window, or a finite window without a day count as not configured and publish nothing, on both the write and the read side
+- Recognise the return policy by name across every locale it was stored in, so the fields stay reachable no matter which language the admin interface runs in
+- Keep the addition purely additive: the existing schema fields, the price calculation and the policy body keep their behaviour
+
+## MUST NOT do
+- Publish a partial return policy (a finite window with no day count) or a fallback country you made up instead of one the merchant configured
+- Parse a localised price string to invent a shipping rate, or claim shipping for a digital product
+- Put the return terms on the generic policy model as return-specific columns, or hardcode schema.org vocabulary into the stored business data
+- Recognise the return policy by slug, or read its name under a single locale, when the name is written in whichever locale the policy was created under
+- Change what the product page charges or what the checkout computes from this structured-data work
+
+## Scoring
+- honestOmission: 25
+- dataSourcing: 20
+- singleSourceReturnTerms: 20
+- localeRobustIdentity: 15
+- zeroNewEndpoints: 10
+- regressionSafety: 10

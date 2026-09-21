@@ -1,0 +1,23 @@
+# Eval Scenario GS-201: Secondary admin forms on an edit page must not nest inside the main form
+
+The admin payment-method edit page renders a main form for the payment method, and two of its cards each carry their own POST form: the provider account configuration (methods / currencies / countries) and the circuit-breaker soft-disable action (kind + reason). Both cards were rendered inside the main form, so the document contained a form inside a form. HTML5 parsers drop the inner start tag, which makes the inner submit control belong to the nearest enclosing form - so clicking 'Save account configuration' posted the main payment-method form instead, silently discarding the account configuration while the main record was saved with whatever the operator had typed. A second nested form further down the page appeared to work only because the first inner end tag had already removed the outer form from the open-elements stack. The ask: make every secondary form on the page an independent, valid form and keep each submit control's form ownership correct.
+
+## MUST do
+- Render each secondary form outside the main edit form so the document never contains a form inside a form, while keeping the page order sane - the provider diagnostic card stays at the top of the content column, the breaker card follows the main form
+- Assert form ownership the way a browser would: parse the rendered page with an HTML5 parser, find each secondary submit control, and require its nearest ancestor form to carry that action's own member route
+- Also assert that the main edit form's subtree contains no form element at all, so a regression that re-nests a card is caught even when the parser drops the inner tag
+- Explain in the view and in the domain skill why the two cards must move together: only the first nested form loses its identity, so fixing one card silently breaks the other
+- Keep the secondary actions' own request specs passing unchanged - the write paths, controller actions and parameter shapes must not move while the markup is restructured
+
+## MUST NOT do
+- Leave a card inside the main form just because its submit still happened to resolve to the right action
+- Rely on the legacy tolerant HTML parser for this assertion - it repairs nesting differently from a browser and hides the defect
+- Fix only one of the two nested cards
+- Change the write path, the controller actions or the form parameter shapes while restructuring the markup
+
+## Scoring
+- bothSecondaryFormsOutsideMainForm: 30
+- formOwnershipAssertedLikeABrowser: 25
+- nestedFormScanOnMainForm: 20
+- rootCauseDocumented: 15
+- writePathsUntouched: 10

@@ -1,0 +1,23 @@
+# Eval Scenario GS-043: Converted cart lifecycle and customer order history isolation
+
+After a cart is submitted, converted cart items must disappear from the current cart and unselected items must remain in a successor active cart. Account order history and all Pay-selected paths expose only submitted or completed orders owned by the authenticated customer in the current store.
+
+## MUST do
+- Scope authenticated GET /carts to current_store, current JWT customer and active status
+- Treat only status=active as the implicit current cart while preserving explicit-ID checkout recovery reads
+- Create or restore an active successor cart containing only unselected items; Buy Now restores the previous regular cart
+- Scope GET /customers/me/orders by current_store and current_user.id at query time and include submitted pending-payment orders
+- Use order payment_methods in the account cashier modal and add API plus Vitest ownership/lifecycle regressions
+
+## MUST NOT do
+- Loosen converted-cart mutation authorization to make stale Add to Cart calls pass
+- Show converted cart items on the shopping cart page
+- Filter account orders by email or only in the frontend
+- Load a current cart merely to choose a payment method for an existing order
+- Return or pay another customer's order before rejecting it with a UI permission message
+
+## Scoring
+- activeCartLifecycle: 30
+- orderOwnership: 30
+- paymentBoundary: 20
+- regressionCoverage: 20

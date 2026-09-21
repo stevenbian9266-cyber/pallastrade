@@ -1,0 +1,30 @@
+# Eval Scenario GS-196: Recover a payment outage in place - legal provider parameters, no redirect on failure, and an order that stays reachable
+
+A live regression: every card and wallet payment fails with the provider error 'Received unknown parameter: billing_details', because that field was merged into the PaymentIntent creation payload even though the provider treats it as read-only. The front end makes it worse: it ignores the confirmation result, completes the session and redirects regardless, routes unknown server error codes straight to a result page that can only render an empty state, reports an unpaid order as 'not found' on its detail page, hides the express-pay area completely on devices without wallets, and turns a revisited checkout URL of an already-converted cart into an empty cart page. The ask: fix the parameter at each construction point, prove legality with whitelists, and make every failure path leave the shopper on a page they can act from.
+
+## MUST do
+- Remove the illegal key at each construction point - the PaymentIntent builder AND the Checkout Session builder, whose payment_intent_data rejects the same field - and record why it is read-only (no server-side carrier accepts it; only a client-side PaymentMethod sets it), keeping the legal-carrier specs green
+- Assert the payload handed to the provider against explicit whitelists inside the gateway - the PaymentIntent top level AND the Checkout Session, including its payment_intent_data sub-keys - so this class of mistake fails locally instead of taking every payment down
+- Read the confirmation result before completing the session: on failure show the message in the page, do not PATCH the session complete and do not navigate, because the server-side operation key already makes a retry safe
+- Route to the result page only for codes that stand for a settled money or state fact (recovery required, not payable, the stock classes) and keep unknown codes in the page with the server message
+- Restrict the exception handler's redirect to the case where a payment session was already established (outcome unknown, therefore the result page is the authority), and stay in the page otherwise
+- Render submitted-but-not-completed orders on the order detail page with the placed date falling back to the submitted timestamp, and show not-found only when the order really cannot be retrieved
+- Keep the express-pay area mounted whenever the server projects express entries, degrading in place with the existing reason copy and retry action instead of removing the section
+- Recover a revisited, already-converted checkout URL to the pending order's payment page by reading the checkout order cookie the server already writes during prepare, and fall back to the cart page only without a pending order
+- Update the front-end tests that pinned the old behaviour (blind redirect, hidden express area) so the new contract is enforced, and mirror the parameter rule into the payment skill
+
+## MUST NOT do
+- Relocate the read-only provider field instead of removing it (nested under another key such as the Checkout Session payment_intent_data, sent on update, or re-sent per attempt): no server-side carrier accepts it, only the client-side PaymentMethod does
+- Silence the failure with a catch-all that returns an empty value, an empty list or a fake success so the page looks healthy while payment is impossible
+- Let a retry create a second order, a second payment session or a duplicate charge - the server-side operation key is what makes retrying safe
+- Push every failure to a result page that can only render an empty state, or hide the reason behind a toast that disappears before it can be read
+- Treat an unpaid order as non-existent, or keep hiding the express area by arguing that wallet buttons would not render on a desktop anyway
+- Drop the cart-page fallback entirely: without a pending order context the cart page is still the honest destination
+
+## Scoring
+- parameterLegalityWithWhitelistGuard: 25
+- noRedirectAndRetrySafeFailurePath: 20
+- moneyFactCodesOnlyRouting: 15
+- reachableUnpaidOrder: 15
+- expressAreaAlwaysMounted: 15
+- convertedCartRecovery: 10

@@ -1,0 +1,21 @@
+# Eval Scenario GS-086: Order promotion snapshot freeze
+
+Historical order discount display must stop drifting with the current promotion definition (see PRD-20260910-promotions-promo-batch4a-orderpromotion-snapshot)
+
+## MUST do
+- Freeze name/kind/code/description/definition_digest/tier amounts/currency/frozen_at onto pallastrade_order_promotions at money-confirmed time (legacy complete, standard-flow pay, commerce_transaction.payment_confirmed)
+- Reuse the batch2 DiscountProjection as the single amount source (item + order + shipping == total)
+- Read snapshot-first in the projection, admin order panel and Order#promo_code, falling back to live definitions for carts and un-backfilled orders
+- Provide an idempotent dry-run-first backfill rake (APPLY=1) and keep the freeze path non-blocking (rescue + log)
+
+## MUST NOT do
+- Overwrite an already frozen snapshot row
+- Freeze carts or unpaid orders
+- Recalculate the promotion engine at refund/display time
+- Let a freeze failure break the order complete/pay transaction or the payment-confirmed subscriber
+
+## Scoring
+- freezePointCoverage: 30
+- snapshotInvariant: 30
+- displayFallback: 20
+- backfillIdempotent: 20

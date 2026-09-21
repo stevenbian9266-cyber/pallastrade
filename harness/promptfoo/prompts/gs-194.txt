@@ -1,0 +1,28 @@
+# Eval Scenario GS-194: Make an admin table's cells click-to-edit (mini spreadsheet) without changing the server contract
+
+An admin page renders a policy table as a wall of always-on controls (a checkbox plus two number fields per row), so operators cannot read the table at a glance and every edit is a hunt through inputs. The ask: cells that show plain text, numbers and select dropdowns and switch to an editor when clicked - a reusable component, not a one-off table. The trap is the submission contract: the page already posts a nested policy payload that the service normalises, audits and reads back with blank-means-unconfigured semantics, and a rewrite that invents new field names, new endpoints or zero-coercion silently breaks that path.
+
+## MUST do
+- Build one reusable component (Stimulus controller + shared cell partial) driven by data attributes for cell type, field name, bounds, comparison rule, empty placeholder and option list
+- Keep the real input/select with its original name inside the cell, hidden outside edit mode, so the form still posts the same nested payload and a JS-less page degrades to read-only rather than to a broken form
+- Let the component only mirror the field value into the displayed text: no serializing, no payload reformatting, and no client check that pretends to replace the server validation
+- Take number bounds from the service constants (per-metric ceilings) instead of repeating magic numbers in the view, and express cross-cell rules (critical > warning) as declarative attributes
+- Cover the rendering contract in request specs (controller hook, per-row cell types, unchanged field names, select option values, min/max, comparison attribute) plus a wiring guard for the controller registration
+- Add the new strings to both locales in the same commit, because a missing translation renders as a raw translation-missing key in the admin and no test fails
+- Document the component in the admin skill and register a focused verifier so the next table reuses it instead of growing another bespoke editor
+
+## MUST NOT do
+- Invent new form field names or a new endpoint for the editable grid - the existing nested payload, its normalisation and its audit row are the contract
+- Replace the always-on inputs with contenteditable cells, or keep the edited value only in JS state, so a failed request silently discards the operator's edit
+- Coerce blank thresholds to 0 (or to required) just because a number input is involved: blank means not configured and must keep its fallback semantics
+- Let the client-side check block the submit path entirely - the server validation stays the only authority
+- Ship the component without markup-contract tests by arguing that Stimulus behaviour cannot be unit-tested in this repo
+- Resurrect the dormant spreadsheet controller that is registered nowhere and referenced by no view as a shortcut for this feature
+
+## Scoring
+- reusableComponentWithDataContract: 20
+- submissionContractPreserved: 25
+- serviceConstantsForBounds: 15
+- requestSpecContractPlusWiringGuard: 20
+- bilingualKeys: 10
+- skillAndVerifierDocumented: 10

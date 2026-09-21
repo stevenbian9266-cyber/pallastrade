@@ -1,0 +1,26 @@
+# Eval Scenario GS-187: A vendor's test-mode debugging overlay must be switched off with the vendor's own option - never by hiding DOM you do not own
+
+With test keys, Stripe.js injects a floating developer-tools launcher (an Easel-UI button in the bottom-right that opens a panel of test-card/error presets) onto the checkout page. The vendor is explicit that customers never see it and ships a 'How to disable' link, but every dev/staging/pre-prod environment runs test keys, so the widget keeps reappearing in demos and recordings, and a mysterious floating control on a payment page reads as a defect or a compliance problem. The tempting fix - a CSS rule against the vendor's class names - is a trap: the widget is rendered by the vendor's own UI framework, its class-name hash changes with every Stripe.js release, and the same framework renders the real payment surface, so a blind `display:none` takes the card form or the wallet sheet down with it.
+
+## MUST do
+- Identify the widget from vendor-side evidence rather than guesswork: the panel's own copy, the iframe title constant, the launcher's aria-label, and the constructor option the vendor documents
+- Turn it off through the vendor's supported constructor option (`loadStripe(key, { developerTools: { assistant: { enabled: false } } })`) - it is declared in the public typings, so no cast is needed
+- Apply the opt-out at every instantiation point in the repo, not just the one the reporter saw (the Next.js singleton and the platform-side Stimulus controller's two branches)
+- Comment the why and the escape hatch at the call site: which widget, why it must be off outside real production, and how to switch it back on locally for debugging
+- Lock it with an automated assertion on the option's exact shape, plus assertions that both key sources (API-supplied and env fallback) and the per-key cache still behave
+- State the non-goal explicitly: no new env var or admin toggle, because a debugging widget must not become a product configuration surface
+
+## MUST NOT do
+- Hide the overlay with CSS or `querySelector` against vendor class names - hashed class names drift per release and the same framework renders the live payment UI
+- Delete or reposition the injected node at runtime, or reach into the vendor's iframe
+- Argue it can stay because 'customers never see it' while dev, staging and pre-prod all run test keys
+- Patch only the surface the reporter pointed at and leave the other instantiation point free to re-inject it
+- Wait for a visual confirmation that only happens in the reporter's own browser: assert the option is passed, and treat the missing overlay as corroboration
+
+## Scoring
+- vendorOptionNotCss: 30
+- allInstantiationPoints: 20
+- whyAndEscapeHatchDocumented: 15
+- optionShapeAsserted: 20
+- noNewConfigSurface: 10
+- staticNoPatchCheck: 5

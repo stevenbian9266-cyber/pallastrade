@@ -1,0 +1,25 @@
+# Eval Scenario GS-051: P4-2 Immutable Financial Journal：不可变资金账本（FinancialLedgerEntry + 幂等 Posting + Reversal）
+
+FIN-P4-2（PRD-20260905-payments-fin-p4-2）：FinancialLedgerEntry（append-only/ImmutableError/idempotency_key UNIQUE/reversal 自引用/state posted|reversed）+ FinancialLedger::Post（输入 = FIN-P4-1 CONFIRMED FinancialFact；幂等重放/并发 RecordNotUnique 兜底/门禁拒绝 AMBIGUOUS 与未激活 entry_type）+ FinancialLedger::Reverse（追加冲销、原 entry→reversed、重复保护 partial UNIQUE）；无业务接线（P4-3）；无 API/UI；全量 backend-rspec 0 failures
+
+## MUST do
+- Journal posting 输入必须是 FIN-P4-1 FinancialFact（CONFIRMED + 激活 entry_type + 可解析 txn），禁止从 payment.state 重新判定
+- amount/currency/source/entry_type/ownership 不可变：update/update_columns → ImmutableError（append-only）
+- 同一 idempotency_key 重复/并发 Post 只产生一条 entry（UNIQUE + RecordNotUnique 兜底）
+- 错误事实用 Reverse 追加冲销（amount 相反 + reversal_of 指向原 entry + 原 entry→reversed），不原地改
+- pallastrade-payments / pallastrade-data-model skill changelog 已同步（FIN-P4-2）
+
+## MUST NOT do
+- update 已创建 Ledger entry 的金额/币种/来源（破坏审计/对账历史）
+- 同一原 entry 产生多条有效 reversal 或对已 reversed entry 再冲销
+- 对 AMBIGUOUS/UNSUPPORTED/无 txn 的 fact 做 posting（不猜、不产生部分记录）
+- 在 P4-2 接 Payment/Refund 事件挂钩（P4-3 范围）或填 PSP fee/net（P4-5）
+- 给 ledger 引入含糊 transaction_id 字段（必须 commerce_transaction_id）
+
+## Scoring
+- appendOnlyImmutable: 25
+- postIdempotency: 20
+- reversalCorrection: 20
+- factOnlyPostingInput: 15
+- gateRefuseAmbiguous: 10
+- regressionGreen: 10

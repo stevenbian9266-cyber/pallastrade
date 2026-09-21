@@ -1,0 +1,22 @@
+# Eval Scenario GS-122: Inventory errors keep their own landing spots and the result page shows fulfilment without trace ids
+
+PRD-20260915-checkout B3: the three stock codes (INSUFFICIENT_STOCK / INVENTORY_CHANGED / RESERVATION_EXPIRED) each need their own copy and action, an expired reservation may auto-retry exactly once, INVENTORY_RECOVERY_REQUIRED must never invite a second payment, and the payment result page must show fulfilment information (including shipment groups) without leaking transaction/reservation/payment-session identifiers
+
+## MUST do
+- Branch on the server error code only (never re-derive stock state in the browser) and give each stock code its own title, explanation and action
+- Auto-retry RESERVATION_EXPIRED at most once, reusing the same order, and fall back to a manual action when the retry fails again
+- Render the fulfilment summary (ship to / delivery / items / paid / promotion savings) from the order payload for every status, using a neutral heading outside the confirmed state
+- Group multiple fulfilments into Shipment sections and degrade silently when a fulfilment references an item the order no longer lists
+- Keep transaction, reservation and payment-session identifiers out of the DOM, even when the URL carries a session parameter
+
+## MUST NOT do
+- Auto-retry INSUFFICIENT_STOCK or INVENTORY_CHANGED (the reservation failed — no new payment session may be created), or loop retries for any code
+- Offer retry/pay actions on the paid-but-recovering (INVENTORY_RECOVERY_REQUIRED / recovery notice) state
+- Let a non-successful state display an "order confirmed" headline, or compute money in the browser instead of using server display_* values
+
+## Scoring
+- codeDrivenStates: 30
+- singleGuard: 25
+- fulfilmentSummary: 20
+- shipmentGrouping: 15
+- noTraceLeak: 10

@@ -1,0 +1,19 @@
+# Eval Scenario GS-099: Admin sign-out returns to the admin sign-in page
+
+Logging out of the Rails admin must land on the admin sign-in page. Devise's default after_sign_out_path_for falls back to root_path ('/'), which this deployment routes to the Next.js storefront, so the admin sessions controller pins the redirect to the sign-in path (bugfix 2026-09-13, TASK-20260913034803)
+
+## MUST do
+- Override after_sign_out_path_for in PallasTrade::Admin::UserSessionsController to the session sign-in path
+- Cover DELETE /admin_user/sign_out with a request spec that asserts the sign-in redirect
+- Mark the gem edit with a PALLAS-CUSTOM comment explaining why the Devise default is wrong in this topology
+
+## MUST NOT do
+- Rely on Devise's default root_path redirect or hardcode a host in the redirect target
+- Send a signed-out admin to '/' (owned by the storefront) or any storefront URL
+- Change admin sign-in behavior or make the login page loop back to itself
+
+## Scoring
+- correctRedirectTarget: 40
+- regressionSpec: 30
+- pallasCustomMarker: 20
+- noStorefrontLeak: 10

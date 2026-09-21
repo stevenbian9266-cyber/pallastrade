@@ -1,0 +1,20 @@
+# Eval Scenario GS-058: Storefront checkout BFF /api routing + error contract
+
+Pay Now must hit storefront BFF /api/checkout/* on Next (not Rails); BFF errors follow { error: { code, message } }; UI toasts only strings
+
+## MUST do
+- Route /api/checkout/* and /api/webhooks/pallastrade/* to Next (nginx default /api → Next, /api/v3 → Rails)
+- BFF error bodies use { error: { code, message } } envelope
+- Normalize error to string via lib/errors.ts before toast/JSX
+- Keep nginx conf versioned in deploy/nginx and sync via sync-and-smoke.sh
+
+## MUST NOT do
+- Add /api/* → Rails catch-all that swallows storefront BFF routes
+- Pass object/unknown directly to toast.error or JSX (React error #31)
+- Hand-edit /etc/nginx server conf (drift)
+
+## Scoring
+- bffRoutesHitNext: 30
+- structuredErrorEnvelope: 30
+- stringOnlyToast: 25
+- versionedNginx: 15

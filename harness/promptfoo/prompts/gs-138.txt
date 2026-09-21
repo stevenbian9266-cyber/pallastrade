@@ -1,0 +1,25 @@
+# Eval Scenario GS-138: Webhook events become an operable queue instead of a SQL session
+
+PRD-20260915-payments-d12-webhook-governance (D12, plan §69): every verified provider webhook already lands as a durable PaymentWebhookEvent, but nothing could see it. D12 turns it into a console under Developers -> Webhook events: filter the stream (provider / action / status / order number / date), open a row for the raw payload and the handler outcome, then replay it through the original chain, quarantine unknown types (kept for the record, never processed), or mark it processed when it was already handled out of band - plus 24h inbound/outbound health and a subscription checklist that flags actions never received.
+
+## MUST do
+- Keep the existing reliability envelope intact: quarantine is a status on the event shell (quarantined_at + quarantine_reason) that blocks replay, and unknown exceptions still have to raise so the job retries
+- Route every action through a small service that writes an Audit entry with the acting admin (replay stays on Payments::ReplayWebhookEvent, quarantine and mark-processed get their own), so who-did-what is answerable
+- Put filtering in one model scope (provider / action / status / received_at window / order number via payment_session -> order) and let the controller only validate parameters
+- Compute health as read-only aggregates over a bounded window (inbound status counts, backlog, failure rate, average processing time; outbound success/failure/backlog) with a single SQL pass per metric
+- Derive the subscription checklist from the provider declaration (PaymentMethod#webhook_event_subscriptions -> #webhook_expected_actions) versus observed actions in the last 30 days, surfacing both missing (never received) and undeclared events
+- Register the console the way this repo already does: custom admin controller over model_class for authorization, breadcrumbs, nav entry plus tabs entry, and an updated navigation consistency spec
+
+## MUST NOT do
+- Let the console perform business writes (no refunds, captures, order or inventory changes) - it only moves the event shell and records the decision
+- Allow replay of a quarantined event, or a second handler run while an event is processing
+- Fold inbound provider events into the outbound WebhookDelivery model, or assume their success semantics are interchangeable
+- Ship a page that 500s when an aggregate fails, or one that loads every payload to compute statistics
+- Call the provider from the checklist or the health cards
+
+## Scoring
+- stateMachineCorrectness: 30
+- actionAuditability: 25
+- filterParity: 20
+- healthAndChecklistSemantics: 15
+- adminIntegration: 10

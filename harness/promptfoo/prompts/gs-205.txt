@@ -1,0 +1,23 @@
+# Eval Scenario GS-205: Renaming an endpoint to match what it actually does, without changing behaviour
+
+When a name lies about the behaviour (a "prepare" endpoint that actually creates the order), fix the NAME, not the flow. Prove the behaviour already exists first, keep the old path as a thin alias pinned to the same function reference, and treat behavioural equivalence as the top constraint.
+
+## MUST do
+- Establish first that the behaviour already exists (code + tests) — a rename is not a rewrite
+- Keep the old path as a thin alias that re-exports the same handler, so the implementation exists exactly once
+- Pin the alias in a test with a reference-identity assertion (the legacy and new POST must be the same function)
+- Keep the full guard chain on both paths (same-origin 403, malformed body 400) and assert each one
+- Rename the front-end function and body type together, keeping a deprecated alias for the old type name
+
+## MUST NOT do
+- Copy the implementation into the alias — two sources of truth will drift
+- Change any control flow while renaming; behavioural equivalence is the top constraint
+- Delete the legacy path immediately (cached client bundles would hard-fail)
+- Add new user-visible copy for a pure rename
+
+## Scoring
+- behaviourProvenFirst: 25
+- implementationExistsOnce: 25
+- guardsPreserved: 20
+- aliasIdentityPinned: 20
+- noUserVisibleChange: 10

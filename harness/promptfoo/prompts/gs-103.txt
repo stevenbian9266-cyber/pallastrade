@@ -1,0 +1,24 @@
+# Eval Scenario GS-103: PRD status stays consistent between the index and the file header
+
+Keep docs/prd/README.md and each PRD's `| 状态 |` row in sync through a zero-dependency checker wired into pre-commit and CI (PRD-20260913-harness-prd-status-consistency-checker)
+
+## MUST do
+- Add scripts/ci/prd-status-sync.mjs with --check / --fix / --json, detecting state-drift, not-indexed, missing-file and unparsable-status-row
+- Treat the PRD file header as the source of truth when fixing, and never create or delete PRD files
+- Keep the status vocabulary a union of the engine list and the repo extensions (merged, obsolete / 废弃)
+- Detect rows that the engine regex `\| 状态 \| ([^|]+) \|` cannot see (padded cells) and normalize them on --fix
+- Wire the check into lefthook pre-commit and a CI job, and cover it with node --test cases
+- Backfill the repository so a fresh --check exits 0 before enabling the gate
+
+## MUST NOT do
+- Silently rewrite a PRD's status from the index without evidence, or move/delete PRD files
+- Normalize the vocabulary-legend row (`draft / reviewing / approved / …`) as if it were a real status
+- Introduce a third-party dependency or require network access for the check
+- Report a drift that the engine itself would not see (the engine-visibility rule must match harness.mjs exactly)
+
+## Scoring
+- detectsAllFourClasses: 30
+- fileIsSourceOfTruth: 20
+- engineParity: 20
+- zeroDepAndFast: 15
+- wiredIntoHooksAndCi: 15

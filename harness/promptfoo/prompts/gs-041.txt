@@ -1,0 +1,22 @@
+# Eval Scenario GS-041: SKILL authority paths stay valid (harness scan should-cleared)
+
+SKILL.md 中反引号引用的权威路径必须真实存在，保持 harness scan 的权威路径检查清零。真实源码路径用完整仓库路径（如 backend/pallastrade_gems/pallastrade_api/app/serializers/）；运行时产物（.pallastrade/credentials.json）、生成器模板结构（lib/pallastrade_simple_sales/engine.rb）、引擎内置基线（rules/base-standards.json）用说明性表述（去反引号/标注 generated/示例），避免被权威路径提取器误判。
+
+## MUST do
+- 引用真实存在的仓库路径（可用 glob 校验，如 backend/pallastrade_gems/pallastrade_api/app/serializers/**/*.rb）
+- 运行时生成/不入库文件（如 .pallastrade/credentials.json）用普通文本表述并注明 not a repo file，不加反引号
+- 生成器模板结构（如 lib/pallastrade_simple_sales/engine.rb）标注 generated/template 说明性关键词
+- 引擎内置文件（如 rules/base-standards.json）说明为引擎随包分发，不用反引号路径
+- 修改 SKILL.md 后运行 npx harness scan + npx harness skill check --freshness 复验权威路径清零
+
+## MUST NOT do
+- 在 SKILL.md 中反引号引用不存在的仓库路径
+- 使用旧式 gem 路径 pallastrade/<gem>/... 而非 backend/pallastrade_gems/pallastrade_<gem>/...
+- 因规避检查而删除有价值的路径信息（保留语义，仅调整表述）
+- 跳过修改后的 harness scan / skill check --freshness 复验
+
+## Scoring
+- realPaths: 30
+- illustrativeWording: 25
+- noLegacyGemPaths: 20
+- reverified: 25

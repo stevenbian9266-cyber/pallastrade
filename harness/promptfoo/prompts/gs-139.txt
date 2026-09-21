@@ -1,0 +1,25 @@
+# Eval Scenario GS-139: AI fills only the missing translations and the merchant still saves
+
+PRD-20260915-catalog-batch-e2-ai-translate-missing (§7.1 Translation row of the catalog upgrade plan): the product translations drawer already edits one locale at a time (Mobility translation tables, name_<locale> inputs, PUT admin_translation_path). E-2 wires a catalog.product_translation capability into that drawer, so the fields still empty in the current locale get drafted from the store default locale, previewed, and written into the form only when the merchant accepts.
+
+## MUST do
+- Decide 'missing' with fallback: false reads — inside a request Mobility falls back to the store default locale, which would make an empty translation look translated
+- Keep the scope to product content fields (name, description, meta_title, meta_description): translating slug changes storefront URLs and belongs to the redirects workflow
+- Translate only the empty fields and never overwrite an existing translation, so a partially translated product keeps its reviewed copy
+- Skip the provider entirely when nothing is missing (stable no_missing_fields reason, no run, no cost) and validate the target locale against the store's supported locales first
+- Map the drawer's normalized suffix (name_zh_cn) back to the locale code the store declares (zh-CN) before reading through Mobility
+- Return the draft for the drawer preview and let the regular drawer form save it: accept writes into the form inputs (syncing the rich-text editor), the endpoint itself writes nothing
+
+## MUST NOT do
+- Overwrite translations that already exist, or translate into a locale the store does not offer
+- Invent a second save path for translations, auto-save the draft, or touch slug, price, stock or publish state
+- Skip the run audit or persist prompt text, provider payloads or credentials
+- Break the shared translation row partials or other translatable resources while wiring the product drawer
+- Make the admin engine hard-depend on the AI engine (no AI installed must render the drawer as before)
+
+## Scoring
+- missingFieldCorrectness: 30
+- humanInTheLoop: 25
+- localeMapping: 20
+- costAndDegradation: 15
+- adminIntegration: 10

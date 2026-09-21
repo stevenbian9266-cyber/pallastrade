@@ -1,0 +1,26 @@
+# Eval Scenario GS-135: Duplicate products surface as candidates instead of silent clones
+
+PRD-20260915-catalog-batch-d2-duplicate-detection (§12 step 3 of the catalog upgrade plan): the catalog has no duplicate protection at all — SKU validation can be disabled and allows blanks, barcode has a column and an index but no validation whatsoever, and product names are unconstrained. PallasTrade::Products::DuplicateCandidates groups the store's products by normalized barcode / SKU / name and the admin worklist shows those groups with a side-by-side comparison. Detection only: merging is a separate project (D-3).
+
+## MUST do
+- Keep the detection semantics in one place (Products::DuplicateCandidates) so the worklist counts and the candidate rows are derived from the same groups — a count can never disagree with the list underneath it
+- Group by LOWER(TRIM(...)) on the variant barcode, the variant SKU and the product name, and only keep groups spanning more than one product (HAVING COUNT(DISTINCT products.id) > 1)
+- Scope every query to the current store, exclude soft-deleted products/variants and archived products, and remember that variants have no store column — the store comes from the product join
+- Drop blank group keys by filtering the grouped keys, never with where.not(col: [nil, '']) — that renders NOT (col = NULL OR col IS NULL), which is NULL and therefore never true for real rows (and is cast unexpectedly on Mobility-translated attributes)
+- Build the aggregate SQL from Arel nodes (NamedFunction / count(distinct:)) instead of interpolated strings, so the page never reintroduces a SQL-injection finding
+- Present a read-only worklist (signal counts, filtered candidate groups, +N more) plus a comparison view with the fields a merchant needs to decide, and wire it into the Products submenu with the product read permission
+- Say plainly in the UI and the docs that these are candidates: detection never merges, renames or archives anything
+
+## MUST NOT do
+- Treat duplicate slugs as a signal — Product::Slugs appends a uuid on conflict, so the duplicates are invisible there
+- Return every candidate row unbounded or group variants of the same product into phantom candidates (a group counts products, not rows)
+- Let another store's SKU/barcode/name leak into a group, or ignore soft-deleted variants
+- Ship a merge/auto-fix action in the same slice — merging has to reconcile variants, reviews, redirects and historical transactions
+- Add a migration or an API contract change for a read-only worklist
+
+## Scoring
+- signalAccuracy: 30
+- scopingAndSoftDeletes: 25
+- countListConsistency: 20
+- safeSqlConstruction: 15
+- adminIntegration: 10

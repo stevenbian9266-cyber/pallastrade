@@ -1,0 +1,23 @@
+# Eval Scenario GS-151: Generated types and their tests ship with the change, and a temp-index commit leaves the shared index honest
+
+Catalog batch F-0 (cleanup of F-1/F-2 leftovers, 2026-09-16): the review image fields and the stock bucket reached the contract and the platform SDK, but the backend-side Typelizer outputs, the two component test files and one PRD status line were never committed — so CI kept running an older type surface and never ran those tests. The same window exposed a second hazard: committing through a temporary index left the real index holding the previous HEAD's tree, which renders in `git status` as a fabricated revert of the whole batch and would be carried into anyone's next pathless `git commit`.
+
+## MUST do
+- After a serializer/contract change, run the generation chain and commit every output it owns (backend typelizer types, backend SDK mirrors, platform copies) so `generated:check` is green on a clean checkout, not only locally
+- Commit a component's test file in the same change as the component, so CI actually executes it instead of silently reporting a smaller suite
+- Verify the shipped type surface really contains the new fields (e.g. image_urls, stock_status) in every mirror rather than assuming the sync step covered it
+- When committing through a temporary index, restore the shared index to the new HEAD afterwards and confirm `git status` shows only intended work-in-progress
+- Re-run the docs/knowledge sync gate before pushing and satisfy it in the same PR: component change to skill, skill change to scenario library, PRD status to index
+
+## MUST NOT do
+- Leave generated artifacts or untracked test files behind for a later batch, or rely on a locally generated file that was never committed
+- Hand-edit a generated type file to make a check pass instead of re-running generation
+- Leave the shared index holding a tree older than HEAD, where any pathless commit becomes an accidental revert of shipped work
+- Close a batch while a knowledge gate is unsatisfied, or claim verification from a test run that CI never performed
+
+## Scoring
+- artifactCompleteness: 30
+- indexHygiene: 25
+- testVisibility: 20
+- knowledgeSync: 15
+- noHandEdits: 10

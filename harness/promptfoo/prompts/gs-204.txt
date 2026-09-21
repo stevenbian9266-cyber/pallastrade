@@ -1,0 +1,18 @@
+# Eval Scenario GS-204: Skill file path references must resolve from the repository root
+
+A SKILL.md path inside backticks is resolved against the repository root by `harness eval ai --check-freshness`. Bare relative refs (`__tests__/Foo.test.tsx`, `sdk/src/types/index.ts`) and literal `...` segments do not resolve, and a retired component keeps failing until its path stops looking live.
+
+## MUST do
+- Write every referenced path so it resolves from the repository root — include the top-level directory (storefront/, backend/, platform/packages/, ai/, harness/, docs/)
+- Run `harness eval ai --check-freshness` after editing any ai/skills/**/SKILL.md and drive it to zero path errors
+- When a component is retired, drop its file extension (or otherwise stop presenting it as a live path) while keeping the retirement note in prose
+
+## MUST NOT do
+- Leave bare relative refs like `__tests__/Foo.test.tsx` or `sdk/src/types/index.ts` that only make sense relative to a sibling directory
+- Write literal ellipsis inside a backticked path (e.g. `app/javascript/.../controller.js`) — it can never resolve
+- Keep citing a deleted component by its full path as though it still existed
+
+## Scoring
+- repoRootRelativePaths: 40
+- freshnessCheckRun: 30
+- retiredRefsMarked: 30

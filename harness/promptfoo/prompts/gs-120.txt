@@ -1,0 +1,22 @@
+# Eval Scenario GS-120: The checkout page reads credits, capability gates and payment methods from the server CheckoutView
+
+PRD-20260914-checkout B1: the or_ pay page must render gift-card/store-credit rows, the payment-method list and edit/pay gating from the server CheckoutView projection instead of inferring them from the Order snapshot; the fields stay read-only and additive so an older payload still renders
+
+## MUST do
+- Render gift card / store credit rows from CheckoutView credits and hide a row when its raw value is missing or zero (display_* only renders, the UI owns the minus sign)
+- Drive edit entries and the Pay button from capabilities (can_edit_address / can_change_shipping / can_pay), keeping server readiness as a separate gate
+- Source the payment-method list from payment.available_payment_methods (the same PaymentMethod#available_for_order? scope PaymentSessions::Start enforces) and keep the order snapshot only as a fallback
+- Keep the projection read-only and additive: no save/updater/state-machine writes in the view, and no new required field that would break an older payload
+- Pin the contract with view/serializer specs (credits, capabilities, billing_mode, payment) plus component tests for the rendered rows and the disabled states
+
+## MUST NOT do
+- Let the component recompute credit eligibility, hide a credit row from a display_* string, or parse display amounts
+- Advertise a payment method the server would reject, or gate Pay in the UI while claiming the server is authoritative
+- Fold gift cards or store credit into the discount total, or touch the write path from a read-only projection
+
+## Scoring
+- creditsFromView: 30
+- capabilityGates: 25
+- serverAuthoritativeMethods: 25
+- readOnlyAdditive: 10
+- testCoverage: 10

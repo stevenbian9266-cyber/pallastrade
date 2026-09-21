@@ -1,0 +1,28 @@
+# Eval Scenario GS-174: A stuck payment that only a human may unstick
+
+PRD-20260917-payments-d2 (business plan §78-D2 / §60.2-3): a transaction stopped for manual review had no way out except editing its state in a console, because the automatic recovery loop is deliberately forbidden for it. The operator now gets exactly two verdicts - approve & capture, or reject & release - each reusing existing capture/finalize/cancel primitives, each refusing when the facts do not support it, and each leaving an audit trail that says who decided what, when, and why.
+
+## MUST do
+- Keep the verdicts human-only: no job, sweeper or subscriber may capture or release on the operator's behalf, and other states keep using automatic recovery
+- Approve & capture: require a pending authorization, capture it through the provider, then reuse the existing finalize path so participants complete and inventory commits
+- Reject & release: never capture, void the pending authorization, release inventory through the existing cancellation primitive and cancel the transaction with zero refunds
+- Refuse rather than guess, without changing state: no pending authorization blocks capture, an already captured payment blocks release
+- Require a reason on both verdicts and record decision, reason, actor and before/after state in the audit trail, including refusals
+- Make a repeated verdict with the same decision a no-op replay that reports already_applied instead of moving money twice
+- Keep the operator's free-text reason out of the cancel-reason enum: map it to the canonical staff reason and keep the text in the note and the audit
+- Leave the existing recovery edges (reopen_review / retry / repair) untouched and prove it with the transaction regressions
+
+## MUST NOT do
+- Let any automated path call the review service, or let a replayed verdict move money twice
+- Capture without a pending authorization, or cancel a transaction whose money was already captured while pretending nothing was paid
+- Create a refund from the release verdict, rewrite historical payment/refund/ledger rows, or leave a voidable authorization alive after releasing
+- Half-apply a verdict (state changed while a step failed) or require the operator to edit the transaction from a console
+- Show verdict buttons for states that are not manual review, or ship the actions without localization and audit rendering
+
+## Scoring
+- humanOnly: 25
+- capturePath: 20
+- releasePath: 20
+- noGuessing: 15
+- auditTrail: 10
+- idempotentReplay: 10

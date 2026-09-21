@@ -1,0 +1,29 @@
+# Eval Scenario GS-152: Social proof only comes from real, revocable, one-per-person votes
+
+Catalog batch F-5 (PRD-20260916-catalog-batch-f5-helpful-vote, §十 of the catalog upgrade plan): a shopper could not tell the storefront that a review helped, so there was no signal to surface the long useful review and no way to order by usefulness. F-5 adds attributed votes (one per customer per review, revocable), a public count, a `most_helpful` ordering, and a merchant-facing column — without ever exposing who voted, without letting anyone vote on their own review, and without letting a vote be spent twice.
+
+## MUST do
+- Put the uniqueness guarantee in the database (unique index on review + voter) and treat the model validation as a friendly error only — a double click or a retried request must never inflate the count
+- Answer voting calls with the authoritative state (count plus whether this caller's vote is recorded) so the caller never has to guess whether the write landed
+- Attribute every vote to a signed-in customer while keeping the public surface aggregate-only: a count plus the caller's own state — never a voter id, name or list
+- Answer `null` (not `false`) when the caller's own state is unknown (anonymous reads), so 'not asked' is not reported as 'decided against'
+- Restrict votes to what the reader can actually see (approved reviews in the caller's store) and refuse self-votes with a stable, documented error code
+- Make the count a counter cache so a list page reads it per row instead of issuing a query per review
+- Extend the existing ordering whitelist (stable tie-break included) rather than adding a second sorting mechanism, and keep the fallback and metadata contract unchanged
+- Ship the client side through the repo's own gates: a vote UI that fails the formatter/linter (`pnpm check`) or a storefront build blocks the release, and touching the SDK client means rebuilding and committing the published `dist` (hash-named type chunks included)
+- Keep the component independent of route context it does not own: prefer deriving the bits it needs from data it already reads (e.g. the pathname) over hooks that every caller — pages and their tests — would have to provide
+
+## MUST NOT do
+- Let the same customer vote twice, or let the UI show a vote the API did not confirm
+- Expose who voted, or turn the vote into an unattributable counter that cannot support abuse review
+- Allow voting on your own review, on a pending/rejected review, or across stores
+- Ship the ordering without a unique tie-break, or compute the aggregate from the current page
+- Move money, stock or moderation state from a vote, or promise ranking guarantees the data cannot support
+- Hand-edit generated artifacts (or leave the SDK `dist` referencing a type chunk that was never committed) to get a check to pass
+
+## Scoring
+- voteIntegrity: 30
+- identityPrivacy: 25
+- contractHonesty: 20
+- visibilityRules: 15
+- listPerformance: 10

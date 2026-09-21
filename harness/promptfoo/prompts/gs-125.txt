@@ -1,0 +1,22 @@
+# Eval Scenario GS-125: Admin theming goes through brand tokens and a density switch, never through component hard-codes
+
+PRD-20260915-admin B6-1: the Rails admin must expose brand colour scales, semantic tokens and a two-step density switch from a single theme file, keep components free of direct Tailwind palette usage on primary semantics, ship a machine-checked token/contrast contract, and let hosts override the look from their own Tailwind entry point
+
+## MUST do
+- Define the full brand primary and accent scales plus the semantic surface/border/text/focus tokens in the admin theme, with the legacy --color-primary alias pointing at the brand step
+- Keep every token emitted in the built CSS (static theme) so host overrides and future component work can rely on them
+- Expose density as variables with a compact default plus a comfortable override selected by a data attribute emitted by every admin layout
+- Route primary buttons, secondary buttons, nav states and focus rings through brand tokens, and document host-level override examples in the host Tailwind entry point
+- Guard the contract with a fast spec/verifier: token presence, zero direct palette usage on primary semantics, layout attribute, and WCAG AA contrast thresholds
+
+## MUST NOT do
+- Hard-code brand hex values inside component CSS or inline styles, or leave the primary semantics on the default Tailwind palette
+- Change business markup, controllers, routes or permissions for a styling batch
+- Ship a token that is silently tree-shaken out of the built stylesheet, or a density default that breaks pages which emit no density attribute
+
+## Scoring
+- brandAndSemanticTokens: 30
+- densitySwitch: 25
+- componentTokenisation: 20
+- contractSpec: 15
+- hostOverridePath: 10

@@ -1,0 +1,26 @@
+# Eval Scenario GS-183: An entry-level payment list must never be filtered or guessed on the client
+
+Buyers could not see Apple Pay / Google Pay next to the card entry: the checkout projection collapsed a provider to a SINGLE effective entry, so the storefront only ever rendered one row per provider and merchants had to disable card payments to reveal the wallets. The fix has to keep availability a server decision - the entry set comes from the same evaluator the session start gate uses (scope rules, circuit breaker, 3DS requirement), while the client only decides HOW to render each entry (inline card form, express wallet button, manual note). Two traps: a client-side filter by frontend_kind silently diverges from the server (an entry visible on the page that the session start refuses), and legacy payloads without the entry array must still render exactly one row instead of an empty payment section.
+
+## MUST do
+- Project one entry per enabled payment option (option_id / method_key / display_name / frontend_kind / group / position) and keep the order equal to the configured position
+- Derive the entry set from the same availability evaluator the session start uses, so a visible entry is always payable
+- Keep the client free of filtering logic: it picks the rendering slot per frontend_kind and nothing else
+- Pass the chosen entry down to session creation (option_kind) so the start gate re-evaluates it and refuses with the existing availability error code without writing a session row
+- Fall back to one row per provider when the projection has no entry array, and derive the rendering kind from the session capability so legacy responses do not lose the card form
+- Cover the surfaces a buyer touches: order pay page, single-page checkout and the reuse of the existing wallet button rather than a second checkout flow
+
+## MUST NOT do
+- Filter or hide entries on the client (the page must never decide availability)
+- Add a second wallet checkout flow or duplicate the canonical error routing / result page
+- Treat a disabled entry as a rendering concern: disabling must remove it server-side only
+- Let a wallet entry fall back to the card form when the provider cannot render it
+- Drop the entry array silently in the contract - it is an additive projection field, and generated types must stay drift-free
+
+## Scoring
+- serverSideAvailability: 25
+- entryProjectionShape: 20
+- optionKindPlumbing: 20
+- legacyFallback: 15
+- walletReuseNotSecondFlow: 10
+- testsPerSurface: 10

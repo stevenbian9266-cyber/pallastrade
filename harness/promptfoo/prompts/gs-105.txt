@@ -1,0 +1,21 @@
+# Eval Scenario GS-105: Pull-deploy decides on the running state, not on a state file
+
+P0 fix for silent stale deployments: a manual rollback or a half-finished build left the state file untouched, so pull-deploy reported no change while dev kept serving an old revision
+
+## MUST do
+- Read the deployed revision stamped inside the backend image (/rails/.deployed-revision) and the running storefront image id
+- Force a deploy whenever the running state differs from origin/dev, keeping the state file as an optimization only
+- Stamp the target revision into the build context before docker compose build so the image can be audited later
+- Report the deploy reason (code change / image change / running state mismatch) in the log line
+- Guard the wiring with a node --test regression suite covering ordering, dockerignore visibility and gitignore
+
+## MUST NOT do
+- Treat the state file as the source of truth, or skip the deploy on the strength of the state file alone
+- Bake the revision into a path that .dockerignore excludes, or commit the stamp file into the repository
+- Silently keep serving an older revision while the state file looks green
+
+## Scoring
+- runningStateIsSourceOfTruth: 35
+- stampBakedAndReadable: 25
+- reasonLogged: 15
+- regressionGuard: 25

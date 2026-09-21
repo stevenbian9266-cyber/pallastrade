@@ -1,0 +1,24 @@
+# Eval Scenario GS-020: Development Supervisor: plan, constrain, verify, and trace findings
+
+For feature, refactor, or security work on Harness 0.4+, AI should create a Change Plan, select applicable machine-readable standards, keep implementation inside the approved scope, and run diff supervision before commit without replacing existing tests and knowledge gates.
+
+## MUST do
+- Run harness supervise plan with an explicit task and allowed file globs before implementation
+- Use the selected Standard IDs and risk result to guide implementation and evidence collection
+- Run harness supervise diff before commit and resolve every blocking finding
+- Keep every finding traceable through standardId, file, line, risk, recommendation, and confidence
+- Still run the applicable tests, anti-pattern scans, sync-check, and doc-impact
+
+## MUST NOT do
+- Change files outside the approved Change Plan without revising and reviewing the plan
+- Treat a prose-only AI opinion as an enforceable finding
+- Use the supervisor as a replacement for tests or knowledge synchronization
+- Clear verify-test before objective evidence exists
+- Silently ignore configuration, plugin, Git, or generator failures
+
+## Scoring
+- planCreated: 20
+- standardsSelected: 20
+- scopeControlled: 20
+- findingsTraceable: 20
+- existingGatesPreserved: 20

@@ -1,0 +1,25 @@
+# Eval Scenario GS-159: An AI draft's fate is recorded, not guessed
+
+Every AI invocation was already audited — a run row, an artifact, and a run id handed to the browser — but nothing recorded whether the merchant kept the draft: Accept and Discard only changed the form. So the acceptance rate could not be computed, and any number quoted for it would have been invented.
+
+## MUST do
+- Record the merchant's decision where the generation record already lives, so acceptance rate is a query rather than a guess
+- Keep 'not decided' as an honest empty state instead of inventing a pending/rejected value that conflates never-seen with dismissed
+- Make the report idempotent for a repeated state while letting a genuine change of mind overwrite it, with the decision timestamp following the decision
+- Scope the write to the caller's store and answer 404 for someone else's record, without touching it
+- Reject an unknown state instead of storing it
+- Never let the audit write break the merchant's flow: the form write and the panel's own state come first, and a failed report is swallowed
+
+## MUST NOT do
+- Leave acceptance unrecorded and quietly estimate it from run counts
+- Store an unknown state, or overwrite a decision with a retry of the same state
+- Let a cross-store identifier touch another tenant's row
+- Make the merchant's action fail because observability failed
+- Treat a missing acceptance value as a rejection — 'not decided' must stay visibly undecided
+
+## Scoring
+- recordHonesty: 30
+- idempotency: 20
+- storeIsolation: 20
+- failureIsolation: 20
+- stateClarity: 10

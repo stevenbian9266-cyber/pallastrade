@@ -1,0 +1,26 @@
+# Eval Scenario GS-131: Catalog Health turns scattered catalog gaps into an actionable worklist
+
+PRD-20260915-admin-catalog-health-v1 (Batch B-2 of the catalog upgrade plan): Products gains a Catalog Health page that reports seven actionable issues (missing media / description / SEO / translations, active + zero stock, unresolved redirects, old drafts) with a drill-down per count — the five product-level issues reuse the very scopes the counts were computed with, so the filtered products list always matches the number that was clicked, and the merchant can continue into the bulk operations built in Batch B-1.
+
+## MUST do
+- Keep one source of truth for the seven issues (PallasTrade::CatalogHealth::Issues) and let both the worklist page and the products-list filter resolve through it, so a count equals the length of the filtered list
+- Count missing media from pallastrade_assets across the product and its variants (master included) — Asset declares no counter cache, so the rows are the truth
+- Compare description/SEO against the effective default-locale value (Mobility translation row first, model column as fallback), and flag SEO when either meta_title or meta_description is missing
+- Treat an active product as zero-stock only when no variant is sellable: track_inventory = false, preorderable, a stock item with count_on_hand > 0 or backorderable — pre-order and backorder SKUs stay out of the report
+- Reuse the existing surfaces for remediation: missing translations links to the Product Translations coverage page (same `name` rule), unresolved redirects links to the URL-changes section of the Redirects page (ProductUrlChange handled: false)
+- Filter the products list by overriding `scope` behind a validated `health_issue` param, render the filter banner through the `products_header_partials` injection point, and register the sidebar entry under Products guarded by can?(:read, PallasTrade::Product)
+- Keep the page read-only and 200 on failure: each counter degrades to 0 with a logged warning instead of taking the worklist down, and sync the navigation consistency spec whenever a Products sub-item is added
+
+## MUST NOT do
+- Compute counts and filters with two different definitions (they drift and the drill-down shows a different number than the badge)
+- Rely on media_count counters or instance-only helpers (has_media?) for the missing-media scope, or count archived products
+- Report pre-order/backorderable or untracked-inventory products as out of stock, or count drafts as sellable
+- Invent a new locale rule for translations instead of the one the Product Translations page already applies
+- Add write paths (no create/update/destroy, no one-click fixes) on the health page, or copy gem views to the host app instead of using the documented injection point
+
+## Scoring
+- singleSourceOfTruth: 30
+- issueSemantics: 25
+- drillDownParity: 20
+- readOnlyAndDegradation: 15
+- navigationAndI18n: 10

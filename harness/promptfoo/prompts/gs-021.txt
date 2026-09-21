@@ -1,0 +1,23 @@
+# Eval Scenario GS-021: Knowledge freshness: do not invent missing source paths
+
+When a Skill or Agent document references source that is absent from the current checkout, AI should distinguish resolver false positives from real knowledge drift, repair the pointer or record the missing-source status, and never fabricate a local implementation path.
+
+## MUST do
+- Verify the referenced path against the current Git tree
+- Treat convention globs and context-relative paths as patterns instead of requiring a literal wildcard filename
+- Update the affected Skill or documentation when the source is genuinely absent
+- Update scenarios.json when a Skill changes
+- Run eval-ai --check-freshness again and record the result
+
+## MUST NOT do
+- Invent a replacement source path without evidence
+- Suppress all freshness failures because one was a resolver false positive
+- Leave a Skill claiming that an absent file exists
+- Skip knowledge synchronization after correcting the path
+
+## Scoring
+- treeVerified: 25
+- falsePositiveDistinguished: 20
+- skillCorrected: 25
+- scenarioSynced: 15
+- freshnessPassed: 15

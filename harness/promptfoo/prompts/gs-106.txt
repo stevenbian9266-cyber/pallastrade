@@ -1,0 +1,22 @@
+# Eval Scenario GS-106: Dispute operations report stays read-only and degrades instead of guessing
+
+DSP-P7-10 B2 (FR-006): a store-scoped, read-only disputes report behind the admin list page — win rate, reason-code breakdown, deadline achievement and handling time, with explicit degradation for mixed currencies and failures
+
+## MUST do
+- Compute every figure with SQL aggregation scoped to the store, keeping the state vocabulary in Dispute::TERMINAL_STATES
+- Return nil (never a fake 0) when a rate has no denominator, so the console can show a dash
+- Mark mixed-currency scopes and set amounts to nil instead of summing incomparable currencies
+- Return a complete degraded envelope with a reason string when the scope or the store is unusable
+- Render the report card through a rescue-wrapped path so the list page always answers 200
+
+## MUST NOT do
+- Write anything while reporting (no audit rows, no events, no provider call, no Dispute touch)
+- Change dispute state or silently fall back to another store's data
+- Hide a failure by reporting zeros that look like real measurements
+
+## Scoring
+- readOnlyZeroWrite: 30
+- noFakeZeroRates: 25
+- mixedCurrencyDegradation: 20
+- storeScoping: 15
+- alwaysRenders200: 10

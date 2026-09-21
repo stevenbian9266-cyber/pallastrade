@@ -1,0 +1,26 @@
+# Eval Scenario GS-161: A trend line knows when it cannot judge
+
+PRD-20260916-catalog-health-trend-snapshot (catalog audit gap G-7): the Catalog Health worklist could say '37 things need attention right now' but never 'is it getting better'. The fix is a daily per-issue count snapshot plus a trend read over it. The trap is not the storage — it is the arithmetic of absence: with one snapshot, or none, there is no change to report.
+
+## MUST do
+- Derive every snapshot number from the same counting authority the worklist already uses, so the trend can never disagree with the page it explains
+- Make the daily row idempotent, so a re-run or a backfill overwrites that day instead of adding a second opinion about it
+- Keep a zero count as a recorded fact rather than a missing row
+- Say 'no trend yet' when fewer than two comparable snapshots exist, instead of rendering a flat zero
+- Compare against the earliest snapshot inside the window rather than the previous day, so intraday noise is not dressed up as a trend
+- Read the window in one pass so the trend's cost does not grow with the number of days
+- Keep the sweep bounded, and let one store's failure leave the other stores' snapshots intact
+
+## MUST NOT do
+- Write a second implementation of the issue rules beside the canonical one
+- Let a re-run create a duplicate row for the same day, or a backfill silently rewrite a different day
+- Present a missing measurement as unchanged
+- Change the worklist's existing counts or drill-down links while adding the column
+- Let the trend column's read grow with the snapshot history
+
+## Scoring
+- singleSourceOfTruth: 30
+- absenceHonesty: 25
+- idempotency: 20
+- aggregationDiscipline: 15
+- sweepSafety: 10

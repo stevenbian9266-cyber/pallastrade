@@ -1,0 +1,27 @@
+# Eval Scenario GS-053: P4-4 Allocation Integrity：PaymentSplit → ORDER_ALLOCATION 不可变入账 + split/allocation 恒等式
+
+FIN-P4-4（PRD-20260906-payments-fin-p4-4）：FinancialFact +payment_split_id/+ORDER_ALLOCATION；FinancialFacts::ResolveAllocation（split→ORDER_ALLOCATION CONFIRMED：order/split/captured/currency + combination.commerce_transaction ownership；无组合/无 txn/captured=0→AMBIGUOUS 不猜）；FinancialLedgerEntry 激活 ORDER_ALLOCATION + Post 回填 payment_split；PostAllocation（显式稳定幂等 key fact:ORDER_ALLOCATION:txn:split，重放/retry 不重复）/PostCombinationAllocations/AllocationIntegrity（Σ active ORDER_ALLOCATION == Σ split.captured）；PaymentCombinationSucceededSubscriber（payment_combination.succeeded after_transition → async 提交后 post）；ORDER_ALLOCATION=归属投影非 cash（AC-4013 类型隔离）；不改 OrderUpdater；无 migration；全量 backend-rspec 0 failures
+
+## MUST do
+- 组合 Settlement succeed → 每 captured>0 split 恰好 1 条 ORDER_ALLOCATION（order_id+payment_split_id+amount=captured）
+- Σ active ORDER_ALLOCATION == Σ split.captured_amount（exact-paid 与 short-payment 均 balanced）
+- ORDER_ALLOCATION 不增加 cash/gross 聚合（entry_type 隔离，AC-4013）
+- payment_combination.succeeded 事件 → subscriber 产生 entries；重复触发幂等（稳定 key 不依赖时刻）
+- 冲销：原 entry→reversed 排除、冲销 entry active 计入；未补记 → balanced?=false 如实暴露
+- 不可 post（无组合/legacy 无 txn/captured=0）→ 不产生 entry（不猜）
+
+## MUST NOT do
+- 把 ORDER_ALLOCATION 当 cash inflow 计入任何聚合（双账 FIN-INV-05）
+- 改 OrderUpdater/PaymentSplit/Settlement/Carts 行为（只读边界：唯一写 = LedgerEntry）
+- 在 FIN-P4-4 填 PSP fee/net（FIN-P4-5）或 legacy splitter split backfill（P4-8）
+- 用 Payment#response_code 等 PSP reference 推断 allocation txn ownership
+- 重复 posting 因 effective_at 变化产生重复 allocation（必须显式稳定 key）
+
+## Scoring
+- allocationNotCashTypedIsolation: 20
+- sumInvariantBalanced: 20
+- stableIdempotencyKey: 15
+- eventWiringAfterCommit: 15
+- reversalActiveSemantics: 10
+- skipNoGuess: 10
+- regressionGreen: 10

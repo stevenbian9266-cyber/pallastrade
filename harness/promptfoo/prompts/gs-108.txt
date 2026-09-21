@@ -1,0 +1,23 @@
+# Eval Scenario GS-108: Dispute deadline alerts remind and escalate without automating anything
+
+DSP-P7-10 B2 (FR-007): a subscriber turns the sweeper's due-soon / overdue events into audit trail, metrics and an operator-facing escalation flag, while the scanner itself stays read-only
+
+## MUST do
+- Keep the sweeper read-only and put notification/escalation in a subscriber that consumes its published events
+- Leave an audit entry and a metric for due-soon alerts without changing any dispute field
+- Escalate an overdue dispute by flagging attention only when no more specific reason is already set
+- Skip terminal disputes and unknown ids quietly, and never let a failure bubble into the sweeper
+- Register the subscriber in the engine list and assert that registration in a spec
+- Support both prefixed and raw ids in the event payload
+
+## MUST NOT do
+- Automate submission, acceptance, refunds, restock or re-billing from a reminder event
+- Overwrite a more specific attention reason, or advance the dispute state machine
+- Send a reminder and leave it untraceable (no audit, no metric)
+
+## Scoring
+- scannerStaysReadOnly: 25
+- dueSoonTraceOnly: 20
+- overdueEscalation: 25
+- noAutomation: 20
+- registrationAsserted: 10

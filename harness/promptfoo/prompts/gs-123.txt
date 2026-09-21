@@ -1,0 +1,22 @@
+# Eval Scenario GS-123: The wallet rides the same checkout chain as the checkout page and leaves no legacy payment session behind
+
+PRD-20260915-checkout B4: the express wallet (Apple/Google Pay) must start and complete payment through the canonical order chain (same-origin BFF → orders.transactions.create / orders.paymentSessions.complete), land on the unified payment result page, and the removed legacy surfaces (cart-domain payment sessions, confirm-payment page, lib/data/payment.ts) must stay removed
+
+## MUST do
+- Start the wallet payment through the same canonical entry the checkout page uses (one BFF call carrying cart, payment method and the merged email/address payload), then confirm the returned provider session
+- Use the unified payment result page for both the provider return_url and the post-confirm navigation
+- Route already-charged / processing failures (INVENTORY_RECOVERY_REQUIRED, transaction_not_payable) to the result page with a notice and surface recoverable errors inside the wallet drawer instead
+- Keep the completion call best-effort: a failed completion must never block navigation, and a missing provider secret must never trigger a confirmation
+- Complete combination/multi-order payments through the order-domain completion endpoint
+
+## MUST NOT do
+- Call cart-domain payment sessions (carts.paymentSessions.create/complete) or reintroduce the deleted confirm-payment page / lib/data/payment.ts adapters
+- Report payment failure for a payment that already succeeded, or invite a second payment on the paid-but-recovering state
+- Send the shopper to a legacy order-placed route for wallet payments, or recompute amounts instead of using the server-provided payment figures
+
+## Scoring
+- singleCanonicalChain: 30
+- unifiedResultLanding: 20
+- errorRouting: 20
+- bestEffortCompletion: 15
+- zeroLegacySession: 15

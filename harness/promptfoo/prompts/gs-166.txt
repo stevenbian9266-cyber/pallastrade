@@ -1,0 +1,31 @@
+# Eval Scenario GS-166: A rule you can roll back is worth more than a rule you can only write
+
+PRD-20260917-payments-d15b-risk-rules (slice 2 of the D15 risk batch, business plan 72.2): the platform already had a code-registered rule engine (Risk.rules + Risk.evaluate, one call site behind a flag), which meant changing a threshold was a deploy and rolling back was a revert commit. This slice moves rule CONTENT into data: a rule set (scope container) plus immutable versions, with publish / canary / rollback on top, evaluated by the same assessment entry point that already grades orders - without touching money, orders, providers or the existing checkout preflight behaviour.
+
+## MUST do
+- Model a version as immutable: an activated version keeps its content forever, and changing a rule means creating a new version rather than editing the old one
+- Make rollback a new step forward, not a rewrite: copy the historical version content into a new version, record which version it came from and why, and leave the history byte-identical
+- Validate rules at the gate: reject unknown condition keys, wrong types, illegal actions, duplicate rule codes and oversized rule sets before anything is stored, so a rule can never silently never-match
+- Keep the condition vocabulary honest: every key reads an order fact you actually have, amount comparisons only inside one currency, and anything you cannot determine (missing subject, no BIN column, no device fingerprint) never guesses as a match
+- Bucket canary traffic per order with a stable hash of the rule set and the order, so an order always sees the same version across requests and days, and record the bucket so the decision can be recomputed
+- Keep the canary reachable: let a draft be published as the canary without becoming the live version, refuse to resurrect an archived version as a canary, and drop a canary setting that no longer points at a published non-live version
+- Judge only rule sets that are active and have an active version, prefer the store rule set over the global one, and report which version was consulted even when nothing matched
+- Merge the rule action with the list action by strictness, never letting a rule relax what the list decided, and let an explicit allowlist still short-circuit everything
+- Keep evaluation read-only: no writes, no provider calls, no order or payment state change, and do not alter what the checkout preflight blocks
+- Make the verification deterministic in a seeded database: fixtures must not depend on the default store's market or currency state, because a seeded store with a market ignores the supported_currencies column
+
+## MUST NOT do
+- Rewrite or delete a published version to "roll back", or let rollback lose the reason it happened
+- Accept a rule whose conditions can never be evaluated, or invent a BIN, device or geo signal you do not have
+- Re-roll the canary bucket per request, per day or per version so rollout percentages drift or a single order flips versions
+- Ship a canary knob nobody can reach because publishing archives every other version, or grade traffic against a canary version that is not published
+- Let a rule downgrade a denylist decision, or let the engine block checkout behind the operator's back
+- Emit an event that carries customer or card data, or treat the event as the source of truth for what is live
+
+## Scoring
+- immutabilityAndRollback: 30
+- validationAtTheGate: 20
+- honestConditions: 20
+- deterministicCanary: 15
+- decisionMerge: 10
+- readOnlyPurity: 5

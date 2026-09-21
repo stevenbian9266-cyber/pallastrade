@@ -248,4 +248,4 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | implementing | PRD-20260920-checkout-支付核心统一-厂商层-支付方式层-方式级路由-组合支付-订单失效期 | checkout | 2026-09-20 | （实施时回填） |
 | approved | PRD-20260920-checkout-订单可见性补齐-后台列表显示未完成订单-支付失败就地入口-游客最近一笔订单入口 | checkout | 2026-09-20 | （实施时回填） |
 | done | PRD-20260921-checkout-place-order-正名与显式化-bff-prepare-place-order-前台-prepareorder-p | checkout | 2026-09-21 | （实施时回填） |
-| draft | PRD-20260921-harness-prd-template-v3 | harness | 2026-09-21 | REQ-20260921-prd-template-v3.md |
+| done | PRD-20260921-harness-prd-template-v3 | harness | 2026-09-21 | REQ-20260921-prd-template-v3.md |

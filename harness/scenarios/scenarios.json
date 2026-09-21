@@ -239,7 +239,7 @@
     {
       "id": "GS-013",
       "name": "PRD-driven workflow from a one-line requirement",
-      "description": "AI should expand a one-line requirement into a categorized PRD that is RICHER THAN THE TEMPLATE (14 sections, §0–§13, no placeholders, length floor enforced; see docs/prd/_TEMPLATE.md \"写作要求\"), get user confirmation, then implement under harness gate with AC-to-test mapping and knowledge sync",
+      "description": "AI should expand a one-line requirement into a categorized PRD that is RICHER THAN THE TEMPLATE (17 sections, §0–§16, no placeholders, length floors 200/150/100 enforced, UI/UX/data sections filled or explicitly exempted; see docs/prd/_TEMPLATE.md \"写作要求\"), get user confirmation, then implement under harness gate with AC-to-test mapping and knowledge sync",
       "mustDo": [
         "Create PRD at docs/prd/{category}/PRD-{YYYYMMDD}-{category}-{slug}.md using docs/prd/_TEMPLATE.md",
         "Auto-detect category via harness/policies/prd-categories.json and update docs/prd/README.md index",
@@ -247,9 +247,12 @@
         "Wait for explicit user confirmation (approved) before implementation",
         "Map every AC to a test tagged '# PRD-xxx AC-x'",
         "Run harness gate (with create-prd-doc + read-skill-prd checks) and clear it before writing code",
-        "Fill ALL 14 template sections (§0 摘要 / §1 背景与目标【现象+证据 · 根因 · 目标与成功指标 · 非目标】/ §2 场景表【含边界与异常】/ §3 FR / §4 NFR / §5 AC【带测试落点】/ §6 跨层搜索【含防重复判定与 AP-SEARCH 自检】/ §7 技术影响【变更面 · 契约影响 · 依赖前置】/ §8 测试计划【AC↔测试映射】/ §9 文档同步清单 / §10 风险与回滚 / §11 决策记录 / §12 开放问题 / §13 变更记录)",
-        "Meet the template length floor: new feature >= 150 lines, iteration >= 120, bugfix >= 80",
-        "Give every AC an executable acceptance condition AND an explicit test file location (or a concrete manual-evidence form)"
+        "Fill ALL 17 template sections (§0 摘要 / §1 背景与目标【现象+证据 · 根因 · 目标与成功指标 · 非目标】/ §2 用户与场景【角色与权限 · 场景表含边界与异常】/ §3 FR【总表 + 3.2 功能详述八要件】/ §4 界面规格（UI）【页面与路由 · 组件与复用 · 状态矩阵 · 设计 token · 文案与 i18n】/ §5 交互与体验（UX）【核心流程 · 反馈机制 · 边界与异常 · 无障碍】/ §6 数据与埋点【指标口径 · 事件清单】/ §7 NFR / §8 AC【带类别与测试落点】/ §9 跨层搜索【含防重复判定与 AP-SEARCH 自检】/ §10 技术影响【变更面 · 契约影响 · 依赖前置】/ §11 测试计划【AC↔测试映射】/ §12 文档同步清单 / §13 风险与回滚【含发布与灰度】/ §14 决策记录 / §15 开放问题 / §16 变更记录)",
+        "Meet the template length floor: new feature >= 200 lines, iteration >= 150, bugfix >= 100",
+        "Give every AC an executable acceptance condition AND an explicit test file location (or a concrete manual-evidence form)",
+        "Fill §4 UI / §5 UX / §6 数据与埋点 with real content — or an explicit 不适用 + reason when the task has no screens / flows / data (never leave them empty)",
+        "Expand every P0 FR in §3.2 with the eight-part spec (触发与入口 / 前置条件 / 主流程 / 分支与边界 / 异常处理 / 后置状态 / 权限 / 验收映射)",
+        "Keep example IDs in HTML comments or AC-xxx form — prd verify scans AC-<number> and ignores comments (no phantom ACs)"
       ],
       "mustNotDo": [
         "Skip PRD creation and go straight to code",
@@ -259,7 +262,10 @@
         "Skip the knowledge sync gate (harness sync-check) before closing verify-test",
         "Leave placeholders (`<...>` / 待补充 / TBD) in any template section",
         "Use \"manual check\" as an AC without a concrete evidence form",
-        "Ship a PRD shorter than the template length floor"
+        "Ship a PRD shorter than the template length floor",
+        "Leave §4/§5/§6 empty when the task touches screens or user flows (write 不适用 + reason instead)",
+        "Fabricate UI/interaction content for backend-only tasks instead of the 不适用 + reason exemption",
+        "Write example AC numbers (e.g. AC-001) into the PRD body — phantom ACs break prd verify"
       ],
       "scoring": {
         "prdCreated": 25,

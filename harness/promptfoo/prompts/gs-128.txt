@@ -1,0 +1,24 @@
+# Eval Scenario GS-128: PDP availability states stay truthful and the SKU is deep-linkable
+
+PRD-20260915-catalog-pdp-state-correctness (Batch A of the catalog upgrade plan): the PDP derives its presentation state from Store API flags only (in_stock > preorder > backorder > out_of_stock) so pre-order / backorder SKUs stay purchasable instead of being rendered as sold out with a back-in-stock form; `?variant=` becomes the shareable SKU deep link (server-seeded initial selection, router.replace on switch, unknown ids fall back); and buildProductJsonLd emits AggregateOffer price ranges plus a metafield-sourced brand.
+
+## MUST do
+- Derive the availability presentation state from existing Store API flags (in_stock/purchasable/preorder/backorderable) via the pure helpers in lib/utils/variant-selection.ts — in stock > pre-order > backorder > sold out, and pre-order/backorder only while the SKU is purchasable
+- Keep pre-order/backorder SKUs purchasable (Add to Cart + Buy Now enabled, no BackInStockNotify) and show the localized ship-by date when preorder_ships_at is present
+- Treat `?variant=` as the canonical deep link: page.tsx reads searchParams.variant into initialVariantId, an unknown/stale id falls back to default_variant → first purchasable → first, and switching SKUs updates the URL with router.replace(..., { scroll: false }) while preserving other query params
+- Report GA4 view_item with the variant the page was opened with (trackViewItem(product, currency, initialVariant)) and keep canonical/OG metadata on the product URL (no per-SKU SEO pages in this batch)
+- Emit AggregateOffer (lowPrice/highPrice/offerCount/priceCurrency + most favourable availability) for multi-SKU products, keep a plain Offer for single SKU, and read brand from a custom field (catalog.brand / brand / *.brand) with the field omitted when absent
+
+## MUST NOT do
+- Render the back-in-stock form for a SKU that can actually be bought (pre-order / backorder), or show the pre-order badge for a SKU whose oversell allowance ran out (that is sold out)
+- Bypass the pure helpers with inline flag juggling in the component, or invent availability/price fields the serializers do not send
+- Push a new history entry on variant switch, drop existing query params (e.g. category_id), or error on an unknown variant id
+- Re-fire view_item on every variant switch, or change PRODUCT_PAGE_EXPAND / add new Store API requests for this feature
+- Ship new user-facing strings without the five message files (de/en/es/fr/pl) and the products i18n guard, or let brand leak into the schema when no custom field exists
+
+## Scoring
+- availabilityTruthfulness: 30
+- deepLinkRoundTrip: 25
+- structuredDataRange: 20
+- purchasableSemantics: 15
+- i18nAndFallbacks: 10

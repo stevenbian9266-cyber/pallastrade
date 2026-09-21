@@ -1,0 +1,30 @@
+# Eval Scenario GS-185: Tapping a wallet entry must show that wallet and nothing else - on desktop and mobile alike
+
+The buyer's contract is simple: tap Apple Pay and you get Apple Pay, tap Google Pay and you get Google Pay. Two defects broke it. First, the express element enabled every wallet at once, so a tap on one row rendered whichever wallets the device happened to support. Second, availability was a two-state boolean: a wallet the device genuinely lacks, and a wallet whose element never reported (slow mobile network, blocked or aborted provider iframe) collapsed into the same 'not available on this device' row - and once marked, the row could never recover, so a mobile shopper lost the wallet permanently after a single timeout. A related trap sat one layer up: the per-entry slot rendered an unconditional bordered wrapper, so every loading or empty state showed as a blank box, and a legacy fallback paragraph printed 'Processing...' under a wallet entry as if it were a redirect flow.
+
+## MUST do
+- Render exactly the tapped wallet: enable the selected wallet and switch the others off, while keeping the no-context surface (cart drawer) showing every available wallet
+- Consult the provider's own browser matrix before choosing auto vs always: a wallet that only initializes with 'always' (Apple Pay on non-Safari desktop, Google Pay on Firefox/Safari/iOS) silently never loads under 'auto', which looks exactly like a broken integration
+- Model availability as three states - unknown, available, unavailable - and never treat 'not reported yet' as 'not usable'
+- Read the provider's ready-event semantics literally: once the element reports, an undefined availability payload means no wallet can show in this environment - a definitive verdict to degrade on immediately, not an unknown to keep spinning on
+- Separate the reasons a wallet cannot be used (provider says no, load timed out, entry kind unsupported, no provider key) and word each one honestly
+- Give the timeout a generous budget and offer a retry, so a slow mobile network degrades to an actionable state instead of a verdict
+- Make the state recoverable: re-tapping an annotated entry re-probes it, and a later availability report clears the annotation
+- Fall back to a usable entry (card first) whenever a wallet cannot be used, and keep the server-provided entry visible but never disabled in a way that blocks retrying
+- Keep both checkout surfaces identical: single-page cart checkout, order pay page, and the mobile sticky pay bar
+
+## MUST NOT do
+- Let one tap render wallets the shopper did not select
+- Present a definitive 'no wallet can show here' report as a slow-load problem, or make the shopper wait out a watchdog before telling them
+- Report 'this device does not support it' for a load timeout or an unsupported entry kind - the wording must match the cause
+- Disable the entry row so the shopper cannot retry, or remove the entry from the list (the server owns the set)
+- Leave a bordered empty slot, a dangling separator, or a 'Processing...' paragraph under a wallet entry
+- Declare the batch done from unit tests alone: verify on the deployed environment and ask about the phone
+
+## Scoring
+- tappedWalletOnly: 25
+- threeStateAvailability: 20
+- reasonSpecificWording: 15
+- recoverableRetry: 20
+- noBlankOrDanglingUi: 10
+- bothSurfacesAndDevices: 10

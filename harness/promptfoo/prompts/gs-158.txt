@@ -1,0 +1,29 @@
+# Eval Scenario GS-158: A locked rate is a fact you can audit, not a number you recompute later
+
+PRD-20260916-payments-d13d-fx-snapshot (slice 4 of the D13 reconciliation batch, business plan §70.4): the platform had no exchange-rate capability at all — when an order was priced in one currency and settled in another, the rate the buyer saw was nowhere recorded, and settlement-rate differences had no home in the reconciliation queue. This slice adds a multi-source rate registry (manual / provider / third-party with priority and an effective window), locks the display rate and the up-charged effective rate per order at submission, and compares that lock against the settlement rate (reported by the provider or derived from the settled amount) — queueing differences by basis point while leaving pricing and money movement alone.
+
+## MUST do
+- Resolve exactly one rate per pair with a documented, deterministic ordering (priority, then store over global, then later effective_from, then higher id) and reuse that same ordering in the resolver and the UI
+- Lock the rate at order submission and keep both the display rate and the up-charged effective rate, so the displayed markup and the settled reality can be told apart afterwards
+- Keep the lock idempotent per order and currency pair, and never rewrite an existing lock when the same order is submitted again
+- Refuse to guess: with no rate configured, write nothing at all rather than a fabricated lock, and report the same-currency case as explicitly unnecessary
+- Derive the settlement rate from the provider report when it is present, otherwise from the settled amount against the paid amount, and mark it undetermined when neither exists — never assume parity
+- Express the difference in basis points and queue it through the existing reconciliation queue under the fx kind, closing it automatically once a corrected settlement brings the rate back inside tolerance
+- Never override a human decision on an fx case, and never open a second case for the same unchanged finding
+- Lock, compare and reconcile without touching order or payment amounts, refunds, ledger postings or inventory, and without calling any rate provider
+
+## MUST NOT do
+- Reprice orders, re-convert money, or make the locked rate an input to pricing — pricing in a market currency belongs to the multi-market plan, the payment side only accounts for the settlement difference
+- Silently substitute a rate, treat a missing currency pair as parity, or leave a snapshot whose rate source cannot be named
+- Call third-party or provider rate APIs from the lock, compare or sweep path
+- Share a lock, rate or case with another store, or scan snapshots outside the requested period
+- Let a sweep or subscriber failure block the order flow, or reopen a case a person already explained, fixed or dismissed
+- Let the read path degrade with volume — batch the loads, bound the scan, and prove the read query count stays flat as snapshots grow
+
+## Scoring
+- neverGuessRate: 25
+- readOnlyPurity: 20
+- auditableLock: 20
+- queueDiscipline: 15
+- scopeAndIsolation: 10
+- operationalSafety: 10

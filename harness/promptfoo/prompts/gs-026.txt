@@ -1,0 +1,21 @@
+# Eval Scenario GS-026: Turnstile unreachable degrade-open (CN hosting)
+
+When Cloudflare Turnstile siteverify is unreachable (CN-hosted servers), AI must return nil (unable to verify) and degrade OPEN with a warning log instead of fail-closed, while still rejecting an explicit Cloudflare rejection.
+
+## MUST do
+- Return nil for network error/timeout/non-2xx/JSON parse failure in Turnstile.verify
+- Return false only for explicit Cloudflare rejection or blank token
+- In the controller map nil to allow + Rails.logger.warn (degrade open)
+- Keep false -> 422 turnstile_verification_failed
+- Update turnstile_spec + customers_spec for the tri-state contract
+
+## MUST NOT do
+- Fail-closed on network unreachability (would permanently block CN registration)
+- Treat an explicit Cloudflare rejection (false) as nil/allow
+- Hand-edit schema or migrate (no data change)
+
+## Scoring
+- triState: 30
+- degradeOpen: 30
+- specCoverage: 25
+- noDataChange: 15

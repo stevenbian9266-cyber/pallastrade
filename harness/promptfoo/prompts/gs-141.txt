@@ -1,0 +1,25 @@
+# Eval Scenario GS-141: A flaky provider is softened without touching money
+
+PRD-20260916-payments-d11-circuit-breaker-health (slice 1 of 搂78-D11 / 搂67.3 of the payment plan): when a payment provider starts failing, the entry should disappear from checkout instead of sending shoppers into a broken flow. D11 slice 1 adds entry-level breaker state in payment method metadata, a provider-level health window, an hourly sweep that soft-disables entries past the failure threshold (and auto-restores expired automatic ones), and a resolver gate shared by the storefront list and payment-session start.
+
+## MUST do
+- Keep soft-disable purely presentational: write only payment method metadata plus an audit entry, never cancel sessions, refund, change orders, stock or ledger rows
+- Store breaker state per entry for optionized providers and provider-wide otherwise, so the manual action can soften exactly one entry
+- Keep manual soft-disables sticky until a human re-enables them, and let automatic ones expire on their own cooldown
+- Use one health-metrics implementation for both the decision and the admin card (attempts, failures, failure rate, average duration, top error codes) over a 24h window
+- Gate availability in the resolver so the storefront list and PaymentSessions::Start agree about whether an entry can be paid with
+- Require a reason on the manual soft-disable action and record it in the audit log
+
+## MUST NOT do
+- Call the provider or any network API to decide health, or block a request path while measuring it
+- Auto-restore a manual soft-disable, or let a retried sweep re-open the same entry inside its cooldown
+- Judge on small samples: below min_samples the entry must stay untouched
+- Duplicate the failure-rate formula in the view or the resolver instead of the shared metrics service
+- Let one provider error abort the whole sweep, or let a softened entry still be started through the API
+
+## Scoring
+- sideEffectSafety: 30
+- stateMachineCorrectness: 25
+- gatingParity: 20
+- metricsSingleSource: 15
+- auditAndOps: 10

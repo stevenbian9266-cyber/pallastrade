@@ -1,0 +1,27 @@
+# Eval Scenario GS-052: P4-3 Payment/Refund Posting：资金事实入账接线（PostPayment/PostRefund + payment.paid/refund.created subscribers）
+
+FIN-P4-3（PRD-20260906-payments-fin-p4-3）：FinancialLedger::PostPayment/PostRefund 编排（ResolvePayment/ResolveRefund → 门禁 Post.postable? → 幂等 FinancialLedger::Post；AMBIGUOUS/UNSUPPORTED/无 txn → skipped success 不猜不部分记录）；PaymentPaidSubscriber(payment.paid after_commit)/RefundCreatedSubscriber(refund.created lifecycle after_commit) 注册 core engine.rb；posting 恒在资金事务提交后（P4 §16 ledger 失败不逆转支付）、幂等可重试、异常 rescue 不阻断资金流；payload py_/re_ prefixed 或 raw id 双模式；combination 1 Payment→1 cash entry（splits 归 P4-4）；无 migration/API；全量 backend-rspec 0 failures
+
+## MUST do
+- payment captured（真实 confirm!/capture!）→ 恰好 1 条 CASH_CAPTURED entry（PostPayment 幂等）
+- store credit/offline completed → STORE_CREDIT_APPLIED/OFFLINE_PAYMENT_RECORDED entry（非 PSP cash）
+- successful refund → 独立 REFUND_SUCCEEDED entry；partial refunds 各自独立（不聚合）
+- payment.paid/refund.created 事件（均 after_commit）→ subscriber 产生 entry；重复触发幂等同一条
+- balance collection 独立 txn → 独立 entry；combination → 1 cash entry（splits 不产生，P4-4）
+- AMBIGUOUS/UNSUPPORTED/无 txn → 不产生 entry（不猜）；posting 失败不影响 Payment/Refund（rescue + 日志）
+
+## MUST NOT do
+- 在 PostPayment/PostRefund 重抄 payment.completed? 判定（posting 输入必须 FIN-P4-1 FinancialFact，FR-4P1-40）
+- 创建/更新 Payment/Refund/Transaction 或改任何 state machine（只读边界）
+- 在 FIN-P4-3 处理 split allocation（ORDER_ALLOCATION 归 FIN-P4-4）或 PSP fee/net（FIN-P4-5）
+- 用 Payment#response_code/pi_/cs_ 推断 CommerceTransaction ownership
+- subscriber 同步阻断资金流或未注册（unregistered subscriber 是 silent no-op）
+
+## Scoring
+- postOrchestrationSkipNotGuess: 20
+- eventWiringAfterCommit: 20
+- postIdempotency: 15
+- instrumentFaithfulPosting: 15
+- refundIndependentEntries: 10
+- readOnlyBoundary: 10
+- regressionGreen: 10

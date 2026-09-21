@@ -1,0 +1,18 @@
+# Eval Scenario GS-112: Money uses raw fields for logic and display strings only for rendering
+
+PRD-20260913-checkout-money-contract: conditional rendering must use the raw amount fields (delivery_total / tax_total / discount_total); display_* strings carry currency symbols and must never be parsed — and TOTAL SAVINGS counts promotion discounts only (RESEARCH-20260913 §9.1 P0-a)
+
+## MUST do
+- Judge row visibility from the raw amount fields (safeParseFloat) and keep display_* strictly for rendering
+- Extend read models / email props with the raw fields needed for the condition instead of stripping currency symbols
+- Keep TOTAL SAVINGS limited to promotion discounts (|discount_total|), leaving gift cards and store credit as separate payment lines
+
+## MUST NOT do
+- parseFloat/Number a display_* string, or strip non-numeric characters out of it to make logic work
+- Merge gift cards or store credit into the savings headline, or recompute totals on the client instead of using API values
+
+## Scoring
+- rawForLogic: 40
+- displayForRender: 25
+- savingsScope: 25
+- noDisplayParsing: 10

@@ -1,0 +1,27 @@
+# Eval Scenario GS-173: A score nobody can recompute is not a score
+
+PRD-20260917-catalog-health-score (business plan 6.1, Catalog Health V2): the worklist could count seven catalog problems and show two coverage ratios, but a merchant still had to read seven numbers and decide for themselves whether to panic. This adds a 0-100 health score on top of the existing counts - not by inventing a new caliber, but by extending the existing coverage ratios to all seven issues, each with a denominator that matches its own unit, and averaging only the dimensions that are actually computable. The number is only worth showing if the merchant can reproduce it from the rows on the same page.
+
+## MUST do
+- Take every molecule from the existing single-source counts, so the score can never disagree with the worklist row it came from
+- Give each dimension the denominator its own unit implies (content issues count products, stock counts active products, drafts count draft products, translations count product-locale slots, redirects count URL changes) instead of sharing one product total
+- Exclude a dimension that cannot be computed - no denominator, or a counter that failed - from the average entirely, rather than scoring it zero or one
+- Keep the weights in one visible constant and equal by default, so the merchant can reproduce the number by hand from the rows on the page
+- Show how many dimensions were counted out of the total, and per dimension why it was left out, distinguishing 'nothing to measure yet' from 'this counter could not run'
+- Refuse to show a number at all when every dimension is uncomputable, and say so instead of inventing one
+- Stay read-only and leave the existing counts, drill-down links and trend column untouched
+
+## MUST NOT do
+- Read a degraded counter's zero as a perfect score and quietly inflate the total
+- Let a dimension without a denominator participate as zero percent or one hundred percent
+- Publish a grade or threshold label the merchant never configured, or hide the weighting behind the number
+- Compute the score in the browser or from a second caliber, so the page and the service can disagree
+- Count anything the worklist would not count, change what the merchant is asked to fix, or write to the database from this path
+
+## Scoring
+- recomputableScore: 25
+- denominatorDiscipline: 20
+- honestExclusion: 20
+- failureSeparation: 15
+- singleSourceMolecules: 10
+- readOnlyPurity: 10

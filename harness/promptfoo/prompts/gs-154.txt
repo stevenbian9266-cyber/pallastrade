@@ -1,0 +1,26 @@
+# Eval Scenario GS-154: Merging duplicates moves references, never rewrites history
+
+Catalog batch D-3 (PRD-20260916-catalog-d3-product-merge, §十二 of the catalog upgrade plan): duplicate detection could find the same product twice but offered no way to put it back together — fixing that by hand meant retyping SKUs, losing reviews and breaking old URLs. D-3 merges one product into another: movable references move, the old URL gets a 301, the merged-away product is archived and soft-deleted with a trace, and the whole thing can be undone — while historical orders keep pointing exactly where they pointed before.
+
+## MUST do
+- Keep the preview strictly read-only and let execution reuse the very same impact calculation, so what the merchant was shown cannot differ from what runs
+- Close the accounting: every moved record is recorded per id in a ledger row, and moved + skipped always equals what the preview counted
+- Skip conflicts instead of overwriting (SKU already on the survivor, customer already reviewed the survivor) and report each skipped item with its reason, leaving the record where it was
+- Never rewrite history: line items, orders, payments and transaction rows must be byte-identical before and after the merge — and after the undo
+- Preserve every skipped or un-migrated record: soft-delete the absorbed product without triggering dependent destruction, and stamp it with a trace of where it went
+- Make the merge reversible from the ledger alone, restoring each recorded item, the previous state and the redirect, and refuse the whole undo when any recorded item is gone or moved elsewhere
+- Keep the operation idempotent and store-scoped: repeating a merge or an undo changes nothing, and a product from another store is never touched
+
+## MUST NOT do
+- Write anything during the preview, or let the preview and the execution disagree about what will move
+- Delete records to make the merge simpler, or silently overwrite a conflicting variant/review
+- Re-point orders, payments or ledger rows at a different product to 'tidy up' history
+- Perform a partial undo, or undo something the ledger did not record
+- Leave the merchant without a reversal path, or require them to reconstruct what happened from logs
+
+## Scoring
+- historyImmutability: 30
+- previewFidelity: 20
+- reversibility: 20
+- conflictHonesty: 20
+- scopeSafety: 10

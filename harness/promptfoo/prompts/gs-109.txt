@@ -1,0 +1,22 @@
+# Eval Scenario GS-109: Evidence receipt state moves forward only and is never guessed
+
+DSP-P7-10 B3 (FR-009): the submitted → acknowledged → rejected receipt state is derived from provider write-backs instead of mutating the append-only receipt, and degrades to unknown when signals conflict
+
+## MUST do
+- Derive the receipt state read-only, keeping DisputeEvidenceSubmission rows immutable
+- Reuse the provider status normalisation map instead of inventing a second vocabulary
+- Treat a provider bounce back to needs_response (recorded as invalid_transition) as the rejection signal
+- Return unknown / no_receipt explicitly when signals are missing or conflicting, and expose the reasons
+- Prove monotonicity: a rejected receipt never reports submitted or acknowledged again
+
+## MUST NOT do
+- Update or repurpose the immutable receipt row to store the new state
+- Claim acknowledged or rejected without an observed provider signal
+- Write rows, publish events or call the provider from the state derivation
+
+## Scoring
+- immutableReceiptKept: 25
+- monotonicForwardOnly: 30
+- noGuessing: 25
+- reasonsExposed: 10
+- zeroWrite: 10

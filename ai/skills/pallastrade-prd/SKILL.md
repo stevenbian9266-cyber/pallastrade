@@ -42,30 +42,33 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 1. 使用模板 `docs/prd/_TEMPLATE.md`
 2. 命名：`PRD-{YYYYMMDD}-{category}-{slug}.md`（slug kebab-case ≤6 词）
 3. 存放：`docs/prd/{category}/PRD-{YYYYMMDD}-{category}-{slug}.md`
-4. 必须自动扩充（不得只复制一句话）。模板已固化为 **14 节（§0–§13）**，**模板是下限不是上限**：
+4. 必须自动扩充（不得只复制一句话）。模板已固化为 **17 节（§0–§16）**，**模板是下限不是上限**：
    - §0 摘要（一句话结论 / 交付物 / 不做的事 / 前置依赖）
    - §1 背景与目标（1.1 现象 + **证据** / 1.2 根因 / 1.3 目标 + **可复测成功指标** / 1.4 非目标）
-   - §2 用户故事 + 场景**表**（**类型列至少各含一次「边界」「异常」**）
-   - §3 **FR**（可验收 + 优先级 + 落点）
-   - §4 **NFR**（性能/安全/兼容/可维护性/可观测性；不适用也要写理由，不得留空）
-   - §5 **AC**（每条 FR ≥1 个 AC；每条 AC 必须有**可执行判定条件 + 测试落点文件**）
-   - §6 跨层搜索（6 层表 + 6.1 防重复判定 + 6.2 AP-SEARCH 自检）
-   - §7 技术影响（7.1 变更面 / 7.2 契约影响 / 7.3 依赖前置 / 7.4 `harness affected`）
-   - §8 测试计划（新增更新 + AC↔测试映射 + 验证器）
-   - §9 文档同步清单（含接口影响预判）
-   - §10 风险与回滚（概率/影响/缓解/回滚）
-   - §11 决策记录（ADR 简版；用户拍板必录原话）
-   - §12 开放问题（开工前 `open` 必须清零或转为 §10 风险）
-   - §13 变更记录
-   **篇幅下限**：新功能 ≥ 150 行 · 优化迭代 ≥ 120 行 · Bug 修复 ≥ 80 行；
-   且 **禁止占位符**（`<...>` / `待补充` / `TBD`）。
+   - §2 用户与场景（2.1 **角色与权限** / 2.2 场景**表** —— **类型列至少各含一次「边界」「异常」**）
+   - §3 **FR**（3.1 总表：可验收 + 优先级 + 落点；3.2 **功能详述**：P0 逐条八要件【触发与入口 / 前置条件 / 主流程 / 分支与边界 / 异常处理 / 后置状态 / 权限 / 验收映射】）
+   - §4 **界面规格（UI）**（页面与路由 / 组件与复用【复用·改造·新增】/ **状态矩阵**【loading·empty·error·success·禁用】/ 设计 token【禁硬编码 AP-001·AP-006】/ 文案与 i18n key；不涉及写「不适用 + 理由」）
+   - §5 **交互与体验（UX）**（核心操作流程 step-by-step / 反馈机制【含**防重复**】/ 边界与异常体验【超时·并发·权限不足；**AP-009** 降级纪律】/ 无障碍与键盘；不涉及写「不适用 + 理由」）
+   - §6 **数据与埋点**（指标口径【可复算、不可判定不猜】/ 事件清单【**禁 PII**】；不涉及写「不适用 + 理由」）
+   - §7 **NFR**（性能/安全/兼容/可维护性/可观测性/隐私；不适用也要写理由，不得留空）
+   - §8 **AC**（每条 FR ≥1 个 AC；每条 AC 必须有**可执行判定条件 + 测试落点文件**；含类别列与手工验收表）
+   - §9 跨层搜索（6 层表 + 9.1 防重复判定 + 9.2 AP-SEARCH 自检）
+   - §10 技术影响（10.1 变更面 / 10.2 契约影响 / 10.3 依赖前置 / 10.4 `harness affected`）
+   - §11 测试计划（新增更新 + AC↔测试映射 + 验证器）
+   - §12 文档同步清单（含接口影响预判）
+   - §13 风险与回滚（13.1 风险表 / 13.2 **发布与灰度** / 13.3 回滚方式）
+   - §14 决策记录（ADR 简版；用户拍板必录原话）
+   - §15 开放问题（开工前 `open` 必须清零或转为 §13 风险；UI/UX 推断项登记于此）
+   - §16 变更记录
+   **篇幅下限**：新功能 ≥ 200 行 · 优化迭代 ≥ 150 行 · Bug 修复 ≥ 100 行；
+   且 **禁止占位符**（`<...>` / `待补充` / `TBD`）；**示例与编号纪律**：示例编号一律写 `AC-xxx` / `FR-xxx` 形式或放 HTML 注释（`prd verify` 忽略注释，抄进正文会产生 phantom AC）。
 5. 状态：`draft`
 6. 更新 `docs/prd/README.md` 索引；**写完后必须校验状态一致**：
    `node scripts/ci/prd-status-sync.mjs --check`（漂移会被 pre-commit 与 CI 拦截；
    `--fix` 会按文件头状态回写索引、并把补空格的 `| 状态 … |` 行归一为引擎可解析格式）
 
 ### 2.4 接口影响预判
-- 若涉及 controller/routes/serializer/API → 在 PRD §9 标记"需更新 store/admin.yaml"
+- 若涉及 controller/routes/serializer/API → 在 PRD §12（文档同步清单）标记"需更新 store/admin.yaml"
 
 ## 3. 阶段 1：用户确认
 
@@ -82,7 +85,7 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 5. 运行 `harness supervise plan --task "<PRD 标题>" --allow <glob...>`，固化 Change Plan、风险、适用规范与证据需求
 6. 实施（按 PRD FR 逐个实现）：
    - 新功能 → 创建测试文件（见 §5）
-   - 优化迭代 → 升级测试 + 更新 PRD §8/§10
+   - 优化迭代 → 升级测试 + 更新 PRD §11/§13
    - 接口变更 → 同步 API 文档（见 §6）
 6. 实施中和提交前运行 `harness supervise diff --base <base> --plan <plan-path>`；PallasTrade `guard` 模式下阻断 error/critical，所有 finding 必须可追溯到 Standard ID 和源码位置
 
@@ -111,7 +114,7 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 - preparation checks 清除后即可进入 implementation；task-bound `verify-test` 禁止手工 clear，必须在知识评估完成后运行 `harness evidence verify --task <TASK-ID> --gate <GATE-ID>`
 - Standard/Critical 任务需满足 review/knowledge 等证据；Critical 任务还必须有 `harness recovery create|verify` 的人工恢复计划
 - 最后运行 `harness task finish --task <TASK-ID>`；PRD 状态 `verifying` → `done`
-- **状态回填不是可选项（2026-09-18 第二次实测）**：PRD 与实施**同批提交**时最容易漂移 —— 立项那一笔就把状态写成 `approved`，代码落地后没人再回来改，于是索引里长期挂着「approved」而功能其实已上线（实例：`PRD-20260916-shipping-catalog-observability-scope`，代码在 `81f3e451` 落地，状态到 9-18 才回填）。收尾时**五处同时核对**：① 状态头 ② §9 同步清单勾选 ③ §13 变更记录 ④ `docs/prd/README.md` 索引 ⑤ REQ 头部引用 —— 任一处落后于代码都算未收口。
+- **状态回填不是可选项（2026-09-18 第二次实测）**：PRD 与实施**同批提交**时最容易漂移 —— 立项那一笔就把状态写成 `approved`，代码落地后没人再回来改，于是索引里长期挂着「approved」而功能其实已上线（实例：`PRD-20260916-shipping-catalog-observability-scope`，代码在 `81f3e451` 落地，状态到 9-18 才回填）。收尾时**五处同时核对**：① 状态头 ② §12 同步清单勾选 ③ §16 变更记录 ④ `docs/prd/README.md` 索引 ⑤ REQ 头部引用 —— 任一处落后于代码都算未收口。
 - **AC 标记必须用完整 PRD-ID**：`harness prd verify` 只认「完整 PRD-ID + AC-x 同一行」；写成批次别称（如 `PRD-20260916-shipping-商品域收口批次`）或只写 `AC-00x` 都**不算覆盖**。收尾跑一次 `harness prd verify --id <PRD-ID>`；有缺失就补标记 —— 既有用例已覆盖时**补一行注释即可**，不要为凑覆盖写虚测试。
 - **复盘沉淀（可选）**：任务结束后可运行 `harness review new|propose|apply`（复盘 → 规则提案 → 写回通用规则库 `rules/base-*.json`），把本次踩坑/经验沉淀为跨项目可复用规则；engine/docs 类提案进入待办清单随版本发布
 
@@ -137,7 +140,7 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 执行：
 1. 运行 `npx harness sync-check`（若已实现）输出待评估清单
 2. 逐项处理：有变更 → 更新；无变更 → 记录"已评估，无需更新"
-3. 结论写入 PRD §9（同步清单）+ §13（变更记录）
+3. 结论写入 PRD §12（同步清单）+ §16（变更记录）
 4. 更新 `docs/prd/README.md` 索引
 5. 运行 `npx harness doc-impact --base origin/main` + `eval-ai --check-freshness`
 
@@ -161,4 +164,5 @@ description: Use when the user gives a one-line requirement (一句话需求) an
 | 2026-09-05 | 同步 `docs/prd/_TEMPLATE.md` 变更说明：P2 收口包（PRD-20260905-other-txn-p2-closure）沿用模板扩展章节结构（元数据表/背景/FR/AC/跨层/测试/同步清单/变更记录）；分类语义微调记录于 PRD 元数据 | AI |
 | 2026-09-18 | §7 增「状态回填五处核对」与「AC 标记必须用完整 PRD-ID」（第二次同类漂移后沉淀）；§10 增对应禁止事项 | AI |
 | 2026-09-21 | 模板细化为 **14 节**（`docs/prd/_TEMPLATE.md` §0–§13）：新增摘要 / 风险与回滚 / 决策记录 / 开放问题；§1 拆出「现象+证据」与「根因」；§2 改为场景表并增**类型列**；§5 AC 增**测试落点列**与手工验收；§6 增防重复判定与 AP-SEARCH 自检；§7 拆契约影响与依赖前置；§8 增 AC↔测试映射与验证器；并加「**写作要求**」强制块（含篇幅下限与禁止占位符）。§2.3 同步扩充为逐节清单；修正 §7「③ §11 变更记录」与 §8「§9/§10」的**章节号漂移**（模板变更记录实为 §13） | AI |
+| 2026-09-21 | 模板升级为 **17 节**（`docs/prd/_TEMPLATE.md` §0–§16）：新增 **§4 界面规格（UI）** / **§5 交互与体验（UX）** / **§6 数据与埋点**；§2 增「角色与权限」；§3 拆出「3.2 功能详述」（八要件）；§13 增「发布与灰度」；原 §4–§13 顺延为 §7–§16；写作要求升级（篇幅下限 200/150/100 + 节级豁免 + 示例注释纪律 + 写码前必备节改 §9/§13/§14）。本节 §2.3/§2.4/§4/§7/§8 的章节号引用同步；新增机器守卫 `tests/prd-template-structure.test.mjs`（注册进 repo-guards-test） | AI |
 

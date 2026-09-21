@@ -1,0 +1,30 @@
+# Eval Scenario GS-195: Show estimated shipping and taxes on the checkout page - computed by the same money pipeline, but never written
+
+The checkout page contradicts itself: each shipping method already advertises a price, yet the order summary's shipping and tax rows say 'Calculated at submit', no method is preselected (so the shopper must click one before Pay now enables), and the country the shopper is browsing in never reaches the method list. The shopper's ask: when the page opens, preselect a method and show estimated shipping and taxes, refresh them over AJAX as the address is typed, and use the browsing country as a provisional address until a real one exists - without ever creating an order just to look at a number. The ask: a read-only quote preview that runs the very same submit pipeline in dry-run mode (build the order, price it, roll back) and returns estimated amounts, the method list with per-method reasons, and the server-chosen default method; the storefront renders it as an estimated read model that degrades honestly to 'calculated at submit' whenever the preview cannot answer.
+
+## MUST do
+- Reuse the one authoritative money pipeline by adding an explicit dry-run mode to the existing submit service (same transaction: build the order, run line prices, tax, shipping and credits, then ActiveRecord::Rollback while capturing a plain hash of the numbers) instead of writing a second shipping/tax calculator
+- Skip every state transition in dry-run explicitly - no cart conversion, no successor cart, no order.submitted publication (that publish lives outside the transaction and cannot be rolled back) - and prove it with specs asserting zero new orders, zero events, zero jobs, zero payment sessions, an untouched cart status and an untouched gift-card balance
+- Model the 'no address yet' case as a pricing-only provisional address built from the browsing country, and let the address model skip completeness validations behind that explicit flag rather than inventing a state or city, because a fabricated state would match state-level zones and advertise a method the shopper cannot actually get
+- Return per-method reasons (address_required vs currency_mismatch) plus the method list itself, so the UI can say 'shown once you enter your address' instead of hiding the method or printing zero
+- Decide the default selected method on the server (pipelines's cheapest-rate rule, honouring an explicitly requested method when it is still priced) and let the storefront adopt that id instead of picking the first entry by name
+- Debounce the preview refetch (400ms) on address/method changes, tag each request and discard out-of-order responses, keep the previous numbers while a refresh is in flight, and fall back to the pending label on failure - never show 0 or a stale value disguised as fresh
+- Keep the read model a four-tier priority (authoritative prepare quote, then preview, then legacy computed values, then an explicit pending label) and switch the shipping row's label to 'Estimated shipping' only when the value really is an estimate
+- Route the browser through a same-origin BFF route and the typed SDK method, keep the Store API endpoint cart-token authorised and documented in store.yaml plus the SDK types, and register a focused verifier covering the service specs and the endpoint request spec
+- Add the new strings to every locale in the same commit and pin them in the i18n key guard, because a missing key renders as the raw key and no test fails
+
+## MUST NOT do
+- Persist anything while previewing: no order row, no payment session, no event, no cart conversion, no address written onto the cart, and no fabricating an address that silently matches zones the shopper is not in
+- Invent a second pricing implementation (calculator calls summed on the client, a JS tax estimate, or a stored cart-level amount) - the preview must stay the same code path as submit or the two will drift
+- Write 0 (or the free-shipping case) when the amount is unknown, or keep the old amount looking fresh: unknown is nil and the UI says so
+- Let a preview failure block checkout, surface a 500 to the shopper, or retry forever when nothing is priceable
+- Snapshot the amounts into external state (sessionStorage/localStorage) so a stale estimate can outlive the address it was computed for, or let the preview change the authoritative quote after prepare
+- Touch the admin, add a new address field, or change shipping-method ordering rules to make the numbers line up
+
+## Scoring
+- samePipelineDryRun: 25
+- zeroWriteProof: 20
+- provisionalAddressWithoutFabrication: 15
+- serverSideDefaultAndReasons: 15
+- clientDebounceRaceAndHonestFallback: 15
+- contractI18nAndVerifier: 10
