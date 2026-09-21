@@ -673,6 +673,8 @@ export function UnifiedCheckout({
    */
   const [preparedOrder, setPreparedOrder] = useState<{
     id: string;
+    /** 面客订单编号（`R…`）—— 支付失败提示里展示给顾客（PRD-20260920-checkout-订单可见性补齐 FR-003） */
+    number?: string;
     quote: CheckoutQuote | null;
   } | null>(null);
 
@@ -1059,6 +1061,7 @@ export function UnifiedCheckout({
    */
   const prepareOrder = async (): Promise<{
     id: string;
+    number?: string;
     quote: CheckoutQuote | null;
   } | null> => {
     setPayError(null);
@@ -1075,7 +1078,7 @@ export function UnifiedCheckout({
       });
       const result = (await response.json()) as {
         order_id?: string;
-        order?: { id?: string };
+        order?: { id?: string; number?: string };
         quote?: unknown;
         error?: unknown;
       };
@@ -1088,7 +1091,11 @@ export function UnifiedCheckout({
 
       orderIdRef.current = orderId;
       writeQuoteSnapshot(cart.id, result.quote);
-      return { id: orderId, quote: normalizeQuote(result.quote) };
+      return {
+        id: orderId,
+        number: result.order?.number,
+        quote: normalizeQuote(result.quote),
+      };
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("checkoutError"));
       return null;
@@ -1450,6 +1457,43 @@ export function UnifiedCheckout({
               >
                 {t("retryInventoryCheck")}
               </Button>
+            </>
+          )}
+          {/* PRD-20260920-checkout-订单可见性补齐 FR-003（AC-005/006/007）：
+              支付失败时订单**已经存在**（第 ① 段 Place Order 建的），但旧实现只显示
+              错误文案、没有任何指向该订单的入口 —— 顾客因此误判「订单没创建」。
+              这里就地给出订单编号与两个出口；**绝不跳转**（保持 PRD-20260919 AC-003 口径）。 */}
+          {payError.kind === "payment-failed" && preparedOrder?.id && (
+            <>
+              <p className="mt-3 text-sm font-semibold text-red-800">
+                {t("orderCreatedTitle")}
+              </p>
+              <p className="mt-1 text-sm text-red-700">
+                {t("orderCreatedHint", {
+                  number: preparedOrder.number ?? preparedOrder.id,
+                })}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button asChild variant="outline" size="sm">
+                  <Link
+                    href={`${basePath}/payment-result/${preparedOrder.id}`}
+                    data-testid="payment-failed-view-order"
+                  >
+                    {t("viewOrder")}
+                  </Link>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  data-testid="payment-failed-continue"
+                  onClick={() => {
+                    void handlePayNow();
+                  }}
+                >
+                  {t("continuePayment")}
+                </Button>
+              </div>
             </>
           )}
         </div>

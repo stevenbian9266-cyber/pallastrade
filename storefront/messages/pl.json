@@ -531,7 +531,11 @@
     "benefitMoneyBack": "Gwarancja zwrotu pieniędzy 30 dni",
     "benefitWarranty": "Bezproblemowa gwarancja",
     "benefitSupport": "Dożywotnie wsparcie klienta",
-    "benefitFreeShipping": "Szybka, darmowa dostawa"
+    "benefitFreeShipping": "Szybka, darmowa dostawa",
+    "orderCreatedTitle": "Twoje zamówienie zostało utworzone",
+    "orderCreatedHint": "Zamówienie {number} zostało zapisane. Płatność nie została jeszcze zakończona — możesz spróbować ponownie tutaj lub zobaczyć zamówienie.",
+    "viewOrder": "Zobacz zamówienie",
+    "continuePayment": "Kontynuuj płatność"
   },
   "address": {
     "firstName": "Imię",
@@ -674,7 +678,10 @@
     "combinedPayHint": "{count} unpaid orders can be paid together",
     "paySelected": "Pay selected",
     "selectOrder": "Select order",
-    "payNow": "Pay Now"
+    "payNow": "Pay Now",
+    "noRecentOrderTitle": "Brak ostatniego zamówienia",
+    "noRecentOrderDescription": "Nie znaleźliśmy ostatniego zamówienia do kontynuowania. Jeśli zakup został już zakończony, sprawdź wiadomość e-mail.",
+    "backToCart": "Powrót do koszyka"
   },
   "orderPlaced": {
     "thanksForOrder": "Dziękujemy za zamówienie, {name}!",

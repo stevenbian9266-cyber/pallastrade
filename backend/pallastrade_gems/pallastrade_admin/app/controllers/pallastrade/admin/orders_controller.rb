@@ -166,11 +166,23 @@ module PallasTrade
         @order.refresh_fulfillment_states!
       end
 
+      # PALLAS-CUSTOM (PRD-20260920-checkout-订单可见性补齐 FR-001)：
+      # 列表口径由「仅已完成」放宽为「**已提交 ∪ 已完成**」，让运营能看到：
+      #   - `pending`（顾客点了支付但未付成 —— 正是最需要主动跟进的单）
+      #   - 已支付但尚未 `finalize!` 的订单（旧口径下连这 3 类都看不到）
+      # 旧口径用 `complete` = `completed_at IS NOT NULL`，而 `completed_at` 只在
+      # `finalize!` 之后才写入（见 PallasTrade::Order 的 scope :complete），
+      # 因此上述订单在 /admin/orders **完全不可见**。
+      #
+      # 刻意**不**改为「全部」：Order 与购物车同表，`state=cart` 草稿（`submitted_at`
+      # 为 NULL）属未提交数据，不应污染运营视图。
+      # 此口径与前台 `Api::V3::Store::Customer::OrdersController#scope` 一致，
+      # 避免前后台再次漂移（硬约束 C-6：不得改回 `.complete`）。
       def scope
         base_scope = current_store.orders.accessible_by(current_ability, :index)
 
         if action_name == 'index'
-          base_scope.complete
+          base_scope.where.not(submitted_at: nil).or(base_scope.complete)
         else
           base_scope
         end.includes(collection_includes)

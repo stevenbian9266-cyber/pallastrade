@@ -537,6 +537,53 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     expect(pushMock).not.toHaveBeenCalled();
   });
 
+  // PRD-20260920-checkout-订单可见性补齐 AC-005 / AC-006 / AC-007：
+  // 支付失败时订单**已经存在**（第 ① 段 Place Order 建的），但旧实现只显示错误文案、
+  // 没有任何指向该订单的入口 → 顾客误判「订单没创建」。页内必须给出订单编号与出口。
+  it("surfaces the already-created order when the card is declined (AC-005/006/007)", async () => {
+    const user = userEvent.setup();
+    confirmMock.mockResolvedValue({ error: "Your card was declined." });
+    renderCheckout();
+
+    await fillRequiredFields(user);
+    await user.type(screen.getByLabelText("email"), "ada@example.com");
+    await user.click(screen.getByRole("radio", { name: /Standard/ }));
+
+    // 连续两次被拒
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await user.click(screen.getByRole("button", { name: "payNow" }));
+      await waitFor(() =>
+        expect(screen.getByTestId("checkout-error-notice")).toBeInTheDocument(),
+      );
+    }
+
+    // AC-005：页内出现「订单已创建」+ 订单编号 + 「查看订单」指向结果页（该页对游客亦可用）
+    expect(screen.getByTestId("payment-failed-view-order")).toHaveAttribute(
+      "href",
+      "/us/en/payment-result/or_123",
+    );
+    expect(
+      screen.getByText('orderCreatedHint:{"number":"or_123"}'),
+    ).toBeTruthy();
+    // 「继续支付」留在同页，不清空已填信息
+    expect(screen.getByTestId("payment-failed-continue")).toBeTruthy();
+
+    // AC-006：**零跳转、零 PATCH**（沿用 PRD-20260919 AC-003 口径，不破）
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(
+      fetchMock.mock.calls.filter(
+        ([, init]) => (init as RequestInit)?.method === "PATCH",
+      ),
+    ).toHaveLength(0);
+
+    // AC-007：两次点击**只建一次单**（第二次复用 preparedOrder，不重复提交购物车）
+    const prepareCalls = fetchMock.mock.calls.filter(
+      ([url]) => url === "/api/checkout/prepare",
+    );
+    expect(prepareCalls).toHaveLength(1);
+  });
+
   // PRD-20260919-checkout-express-always-visible-and-pi-params AC-004（FR-003）：
   // 未知服务端 code（如 5xx 透传的 `checkout_failed`）→ 页内提示 + URL 不变；
   // 只有「钱的事实已确定」的已知 code 才允许改跳转（下一用例锁定）。

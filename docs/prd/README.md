@@ -246,3 +246,5 @@ PRD-{YYYYMMDD}-{category}-{slug}.md
 | done | PRD-20260919-shipping-checkout-quote-preview | shipping | 2026-09-19 | 结算页只读预览报价（dry-run 同源管线 + 默认选中 + 四级读模型） |
 | done | PRD-20260919-checkout-结算页待支付订单再次支付重验-失效行剔除-优惠复核-订单金额变化提示-收银台弹窗退役 | checkout | 2026-09-19 | 补付前同源重验（价格/可售/可达/优惠/抵扣）+ 失效行剔除只付有效部分 + 金额变化提示 + 收银台弹窗退役 |
 | implementing | PRD-20260920-checkout-支付核心统一-厂商层-支付方式层-方式级路由-组合支付-订单失效期 | checkout | 2026-09-20 | （实施时回填） |
+| approved | PRD-20260920-checkout-订单可见性补齐-后台列表显示未完成订单-支付失败就地入口-游客最近一笔订单入口 | checkout | 2026-09-20 | （实施时回填） |
+| draft | PRD-20260920-payments-stripe-账户支付方式同步-从-stripe-读已启用方式-真实连接探针 | payments | 2026-09-20 | （实施时回填） |

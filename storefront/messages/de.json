@@ -531,7 +531,11 @@
     "benefitMoneyBack": "30-Tage-Geld-zurück-Garantie",
     "benefitWarranty": "Unkomplizierte Garantie",
     "benefitSupport": "Lebenslanger Kundensupport",
-    "benefitFreeShipping": "Schneller, kostenloser Versand"
+    "benefitFreeShipping": "Schneller, kostenloser Versand",
+    "orderCreatedTitle": "Deine Bestellung wurde angelegt",
+    "orderCreatedHint": "Bestellung {number} ist gespeichert. Die Zahlung ist noch nicht abgeschlossen — du kannst sie hier wiederholen oder die Bestellung ansehen.",
+    "viewOrder": "Bestellung ansehen",
+    "continuePayment": "Zahlung fortsetzen"
   },
   "address": {
     "firstName": "Vorname",
@@ -674,7 +678,10 @@
     "combinedPayHint": "{count} unpaid orders can be paid together",
     "paySelected": "Pay selected",
     "selectOrder": "Select order",
-    "payNow": "Pay Now"
+    "payNow": "Pay Now",
+    "noRecentOrderTitle": "Keine aktuelle Bestellung",
+    "noRecentOrderDescription": "Wir konnten keine aktuelle Bestellung zum Fortsetzen finden. Wenn du einen Kauf abgeschlossen hast, prüfe bitte deine E-Mails.",
+    "backToCart": "Zurück zum Warenkorb"
   },
   "orderPlaced": {
     "thanksForOrder": "Vielen Dank für Ihre Bestellung, {name}!",

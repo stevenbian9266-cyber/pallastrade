@@ -531,7 +531,11 @@
     "benefitMoneyBack": "30-Day Money-Back Guarantee",
     "benefitWarranty": "Hassle-Free Warranty",
     "benefitSupport": "Lifetime Customer Support",
-    "benefitFreeShipping": "Fast, Free Shipping"
+    "benefitFreeShipping": "Fast, Free Shipping",
+    "orderCreatedTitle": "Your order was created",
+    "orderCreatedHint": "Order {number} is saved. Payment has not been completed yet — you can retry here or view the order.",
+    "viewOrder": "View order",
+    "continuePayment": "Continue payment"
   },
   "address": {
     "firstName": "First name",
@@ -674,7 +678,10 @@
     "shipmentCanceledRefund": "Shipment canceled — a refund has been issued.",
     "shippingMethodUnavailable": "Unavailable",
     "totalColumn": "Total",
-    "payNow": "Pay Now"
+    "payNow": "Pay Now",
+    "noRecentOrderTitle": "No recent order",
+    "noRecentOrderDescription": "We couldn't find a recent order to continue. If you already completed a purchase, check your email for the confirmation.",
+    "backToCart": "Back to cart"
   },
   "orderPlaced": {
     "thanksForOrder": "Thanks for your order, {name}!",
