@@ -1628,24 +1628,15 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
 > 运营需要「摘掉一个入口」时，直接用入口自身的 `active` 开关（条目级）或厂商记录停用。
 > 历史实现见 `harness/requirements/REQ-20260916-d11-circuit-breaker.md`。
 
-## Payment availability scope —— 适用范围引擎（D8 首版, 2026-09-15；PRD-20260915-payments-d8）
+## Payment availability scope —— 适用范围引擎（D8 首版，2026-09-15）—— ★ 已于 2026-09-21 收敛切片 4 整体下线
 
-入口（PaymentOption）级可用范围，栖于入口层 `metadata['options'][i]['rule_set']`（业务方案 §66）：
-
-- **规则集**：`{ match: "all"|"any", include: [cond], exclude: [cond] }`，`cond = { dimension, operator, values }`；
-  **维度上线 4/14**：`market` / `country` / `zone` / `currency`（§66.1 余下 10 个维度待续）。
-  归一在 `PallasTrade::Payments::Availability::RuleSet`（读/写都过一遍）：market/zone 用**原始 ID**、
-  country/currency 用**大写 ISO**；非法维度/算子/空 values 丢失；`exclude` 命中即排除；**无规则 = 全局可用**。
-- **求值**：`Availability::Resolver` 组合「Provider 级 scope（`frontend` / `back_end`）+ 入口级 `rule_set` +
-  目录收窄（provider 声明 `currencies`/国家时）」；`Context` 从订单取四维上下文（country 由国家 + 州成员
-  推导、zone 含 `order.market.tax_zone`），`Evaluator` 返回 `{ allowed:, reasons: [{dimension, operator,
-  values, observed, outcome}] }`（**可解释**，排障可读）。
-- **同源硬约束（§66.5）**：`Order#payment_methods`（前台/后台收集）与 `PaymentSessions::Start`（入口级门禁）
-  **必须**用同一份 `Resolver` 求值——禁止任何一侧自算（『选得上、付不了』的根因防线）。
-- **失败语义**：Start 判不可用 → 422 `payment_option_not_available`（**不建会话**）；前台收到该码 →
-  刷新支付方式列表 + 提示重选（不得拿旧列表重试）。
-- **零回归**：无 `rule_set` 的 provider / 未选项化 provider / 无 market 上下文的店铺 → 行为与 D8 前一致。
-- **回归**：`harness verify d8-availability-rspec`。
+> **已删除**：`Payments::Availability::RuleSet` / `Evaluator`、`PaymentMethod#payment_option_rule_set` / `#payment_option_scope_summary` /
+> `#default_option_scope_labels`、`Availability::Resolver` 的**范围分支**、admin API 的 `options[].rule_set` / `options[].scope_summary` 两个字段。
+>
+> **保留**：`Availability::Resolver` / `Context` 本体 —— 仍承载 **D9 环境隔离**（test 不进前台）、**D15c 3DS 认证闸门**、
+> 能力目录收窄（currencies / countries）与**同源约束**（前台列表与 `PaymentSessions::Start` 同一求值点）。
+> 入口可见性现在只由「provider 启停 + 入口 `active` + 能力目录 + 环境 + 3DS」决定。
+> 历史实现见 `harness/requirements/REQ-20260915-d8-availability.md`。
 
 ## 3DS / SCA —— 认证策略、订单级判定与 provider 下发（D15 切片3, 2026-09-17；PRD-20260917-checkout-d15-切片3）
 

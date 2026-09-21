@@ -1118,7 +1118,6 @@ en:
         payment_option_frontend_kind: Frontend form
         payment_option_method: Payment method
         payment_option_position: Position
-        payment_option_scope: Availability
         # PALLAS-CUSTOM: D15 切片3（PRD-20260917-checkout-d15-切片3）—— 入口认证能力（只读，来自 provider 目录）
         payment_option_three_d_secure: Can force 3DS
         payment_option_three_d_secure_yes: Yes
@@ -1126,11 +1125,6 @@ en:
         payment_option_three_d_secure_help: When the risk rules require authentication, only options that can force 3DS stay available; the rest are hidden automatically.
         payment_option_three_d_secure_unsupported: Unsupported
         # PALLAS-CUSTOM: PAY-CORE-P0A（PRD-20260920-checkout 支付核心统一 · 切片 P0-A）—— 厂商层诊断卡（只读）
-        scope_country: Countries
-        scope_currency: Currencies
-        scope_help: Leave empty to keep the option available everywhere. Markets and zones are limited to this store.
-        scope_market: Markets
-        scope_zone: Zones
         environment: Environment
         environment_help: Test credentials never reach the storefront — switching to test hides this provider at checkout.
         environment_test: Test (sandbox)
@@ -2373,8 +2367,6 @@ en:
       country: Countries
       zone: Zones
       currency: Currencies
-    payment_option_scope_all: All
-    payment_option_scope_exclude: Exclude
     breadcrumbs: Breadcrumbs
     calculated_reimbursements: Calculated Reimbursements
     cancel_order: Cancel order

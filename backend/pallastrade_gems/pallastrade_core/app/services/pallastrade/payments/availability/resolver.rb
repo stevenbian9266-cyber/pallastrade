@@ -10,8 +10,6 @@
 #   Resolver.providers(order:, scope:)                    # 入口级过滤后的 provider 列表
 #   Resolver.evaluate(order:, payment_method:)            # 逐入口判定 + 原因（调试/测试）
 #
-# 语义：无 `rule_set` 的入口 = 不限（零回归）；能力目录收窄（Capability ∩ Policy）由
-# `payment_option_catalog` 的 currencies/countries 可选键承载（本模块 `capability_rejects?`）。
 module PallasTrade
   module Payments
     module Availability
@@ -59,10 +57,7 @@ module PallasTrade
             ctx = context || Context.for_order(order)
 
             payment_method.effective_payment_options.map do |option|
-              rule_set = RuleSet.normalize(option['rule_set'])
-              outcome = Evaluator.evaluate(rule_set, ctx)
-              # D11：熔断（软置灰）作为独立 reason 暴露，便于后台/调试面板解释「为什么这个入口没出现」。
-              reasons = outcome['reasons'].dup
+              reasons = []
               # D15 切片3：认证需求导致的排除也作为独立 reason 暴露（“为什么这个入口没出现”可读）
               if authentication_rejects?(payment_method, option, ctx)
                 reasons << { 'dimension' => 'three_d_secure', 'reason' => 'authentication_required' }
@@ -70,7 +65,7 @@ module PallasTrade
 
               {
                 'kind' => option['kind'],
-                'allowed' => outcome['allowed'] && !capability_rejects?(payment_method, option, ctx) &&
+                'allowed' => !capability_rejects?(payment_method, option, ctx) &&
                              !authentication_rejects?(payment_method, option, ctx),
                 'reasons' => reasons
               }
@@ -85,8 +80,6 @@ module PallasTrade
             # 只有**声明可强制认证**的入口可用（钱包/一键等拿不到强认证的入口直接消失）。
             return false if authentication_rejects?(payment_method, option, context)
 
-            rule_set = RuleSet.normalize(option['rule_set'])
-            return false if rule_set.present? && !Evaluator.allowed?(rule_set, context)
 
             !capability_rejects?(payment_method, option, context)
           end

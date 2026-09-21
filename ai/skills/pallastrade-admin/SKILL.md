@@ -601,20 +601,12 @@ Orders 子项 `dispute_rates`（position 64，`if: -> { can?(:manage, PallasTrad
 - ⚠️ 导航一致性 spec 的子项数组已含 `:dispute_rates`（并行会话已同步）。
 - **回归**：`harness verify d14c-dispute-rates-rspec`。
 
-## 支付适用范围编辑：Provider 详情「支付方式」页签（D8 切片2, 2026-09-15，PRD-20260915-payments-d8）
+## 支付适用范围编辑：Provider 详情「支付方式」页签（D8 切片2）—— ★ 已于 2026-09-21 收敛切片 4 整体下线
 
-同一页签每行新增「适用范围」编辑器 + 摘要列（改 `_options.html.erb`；**不新增页面**）：
-
-- **表单**：`payment_method[payment_options][<kind>][rule_set][<dimension>][]`（4 组多选：market / country /
-  zone / currency）+ 隐藏位 `[rule_set][present]=1`（标记「范围区已提交」——全空选择必须能**清空**规则，
-  否则与「未提交」无法区分）。
-- **归一（控制器 `merged_payment_option_rule_set`）**：prefix ID → 原始 ID（market 限**本店** `store.markets`、
-  zone 全局表）；country 校验 ISO 存在；currency 走**店铺支持币种白名单**（`supported_currencies_list`，
-  有 market 时按 market 币种推导）；非法值**静默丢弃**；无有效条件 → 删除 `rule_set`（= 不限）。
-  **已有 `exclude` 条件原样保留**（v1 不做排除 UI，摘要列可见）。
-- **回填/摘要**：`payment_option_scope_form_values` 把已存原始 ID 转回 prefix ID（前台可读）；
-  摘要用 `PaymentMethod#payment_option_scope_summary(kind)`（维度名走 i18n：`pallastrade.payment_option_dimensions`）。
-- **回归**：`harness verify d8-availability-rspec`（范围编辑/拒绝跨店 market/清空/未提交保留/摘要渲染）。
+> 该页签的 **适用范围（scope）列**、`merged_payment_option_rule_set` / `rule_scope_sources` / `decode_rule_value`、
+> `PaymentsHelper#payment_option_scope_*` 与 `scope_*` / `payment_option_scope_*` i18n 键均已删除。
+> 「支付方式」页签本身保留（`active` / `display_name` / `position` / `frontend_kind` / 3DS 能力列）。
+> 历史实现见 `harness/requirements/REQ-20260915-d8-availability.md`。
 
 ## Customizing admin tables
 

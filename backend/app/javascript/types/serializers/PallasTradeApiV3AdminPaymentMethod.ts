@@ -29,7 +29,7 @@ type PallasTradeApiV3AdminPaymentMethod = {
   preference_schema: Array<{ key: string; type: string; default: unknown }>;
   credential_status: Array<{ key: string; level: string; rotated_at: string | null; expires_on: string | null; days_left: number | null; alert_level: string }>;
   optionized: boolean;
-  options: Array<{ kind: string; name: string; frontend_kind: string; active: boolean; position: number; rule_set: Record<string, unknown> | null; scope_summary: string }>;
+  options: Array<{ kind: string; name: string; frontend_kind: string; active: boolean; position: number }>;
 }
 
 export default PallasTradeApiV3AdminPaymentMethod;

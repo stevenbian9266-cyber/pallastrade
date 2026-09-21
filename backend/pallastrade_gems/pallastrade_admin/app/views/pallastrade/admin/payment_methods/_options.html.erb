@@ -3,7 +3,6 @@
     由 PallasTrade::Admin::PaymentMethodsController 归一写入 metadata['options'] / ['optionized']。
     勾选任一入口并保存后才置 optionized（未选项化 → 前台仍按单一默认入口，零回归）。 %>
 <% option_rows = payment_option_rows(@payment_method) %>
-<% scope_sources = payment_option_scope_sources(@payment_method) %>
 <% last_check = @payment_method.metadata&.[]('last_test_connection') %>
 <%# PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-011）—— 专用版面（provider 声明
     `provider_page_partial_name`，如 Stripe）把 [测试连接] 与结果移到页首「连接」卡；
@@ -46,8 +45,6 @@
               <%= PallasTrade.t('admin.payment_methods.payment_option_three_d_secure') %>
               <i class="ti ti-info-circle" title="<%= PallasTrade.t('admin.payment_methods.payment_option_three_d_secure_help') %>"></i>
             </th>
-            <%# PALLAS-CUSTOM: D8（PRD-20260915-payments-d8 切片2）—— 入口「适用范围」（市场/国家/Zone/币种） %>
-            <th scope="col"><%= PallasTrade.t('admin.payment_methods.payment_option_scope') %></th>
           </tr>
         </thead>
         <tbody>
@@ -81,22 +78,6 @@
                   <%= row[:three_d_secure] ? PallasTrade.t('admin.payment_methods.payment_option_three_d_secure_yes') :
                                              PallasTrade.t('admin.payment_methods.payment_option_three_d_secure_unsupported') %>
                 </span>
-              </td>
-              <td class="whitespace-normal">
-                <div class="text-gray-600 mb-1"><%= row[:scope_summary] %></div>
-                <%# 标记「范围区已渲染并提交」：全空选择也要能清空规则（否则与「未提交」无法区分） %>
-                <%= hidden_field_tag "#{field_name}[rule_set][present]", '1', id: nil %>
-                <div class="grid grid-cols-2 gap-2">
-                  <% %i[market country zone currency].each do |dimension| %>
-                    <label class="block">
-                      <span class="text-gray-600 text-sm"><%= PallasTrade.t("admin.payment_methods.scope_#{dimension}") %></span>
-                      <%= select_tag "#{field_name}[rule_set][#{dimension}][]",
-                                     options_for_select(scope_sources[dimension], row[:scope_form_values][dimension]),
-                                     multiple: true, size: 3, class: 'form-select form-select-sm' %>
-                    </label>
-                  <% end %>
-                </div>
-                <p class="form-text mb-0"><%= PallasTrade.t('admin.payment_methods.scope_help') %></p>
               </td>
             </tr>
           <% end %>

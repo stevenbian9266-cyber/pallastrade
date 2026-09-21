@@ -408,9 +408,7 @@ Order → Address (bill_address, ship_address)
 }
 ```
 
-- **读归一**：`PaymentMethod#payment_option_rule_set(kind)` / `payment_option_scope_summary(kind, labels:)`；
-  规则集归一在 `PallasTrade::Payments::Availability::RuleSet.normalize`（非法维度/算子/空 values 丢弃；
-  include+exclude 皆空 → `nil` = 全局可用）。
+- **读归一**：~~`PaymentMethod#payment_option_rule_set` / `#payment_option_scope_summary`~~ —— **已于 2026-09-21 收敛切片 4 删除**（`Availability::{RuleSet,Evaluator}` 随之移除）。
 - **值域**：`market`/`zone` = **原始整型 ID 字符串**（非 prefix ID；prefix 只存在于后台表单与 API 投影）；
   `country` = 大写 ISO2；`currency` = 大写 ISO 4217。
 - **后台不落库的输入**：capability 之外的维度（如 `amount`）、跨店 market ID、未知国家/币种 —— 写入时丢弃。

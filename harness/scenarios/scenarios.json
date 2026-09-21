@@ -3241,8 +3241,8 @@
     },
     {
       "id": "GS-130",
-      "name": "Payment availability scope evaluated by one shared resolver",
-      "description": "PRD-20260915-payments-d8 (D8 first slice): a payment option (kind) can be scoped by market / country / zone / currency through an entry-level `rule_set` stored in the payment method metadata — the storefront list, the admin back-end list and `PaymentSessions::Start` must all evaluate it through the same `PallasTrade::Payments::Availability::Resolver`, and the admin payment-method tab gains a scope editor plus a human summary.",
+      "name": "[已下线 2026-09-21] Payment availability scope evaluated by one shared resolver",
+      "description": "**适用范围（rule_set / scope_summary）已于 2026-09-21 收敛切片 4 整体删除，本场景不再作为验收依据。**`Availability::Resolver` 本体保留（仍承载 D9 环境隔离 + D15c 3DS 闸门 + 同源约束）。原文保留以便追溯：PRD-20260915-payments-d8 (D8 first slice): a payment option (kind) can be scoped by market / country / zone / currency through an entry-level `rule_set` stored in the payment method metadata — the storefront list, the admin back-end list and `PaymentSessions::Start` must all evaluate it through the same `PallasTrade::Payments::Availability::Resolver`, and the admin payment-method tab gains a scope editor plus a human summary.",
       "mustDo": [
         "Store the rule set as additive JSON: `metadata['options'][i]['rule_set'] = { match: 'all'|'any', include: [ { dimension, operator, values } ], exclude: [...] }` with dimensions market/country/zone/currency and operators in/not_in/eq — normalized on read and write (market/zone raw ids, country/currency uppercase ISO, invalid dimensions/operators/blank values dropped, both sides empty => nil = available everywhere)",
         "Evaluate through `Availability::RuleSet` + `Context` + `Evaluator` + `Resolver`: exclude wins over include, `match: any` needs one include hit, unresolvable observed values never match, and the resolver additionally narrows by provider scope (frontend/back_end) and the provider capability catalog (declared currencies/countries)",

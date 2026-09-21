@@ -660,7 +660,7 @@ function useCreateCart() {
 - D9 (2026-09-15, PRD-20260915-payments-d9): Admin SDK `PaymentMethod` 增 `environment: string` 与
   `credential_status: [{ key, level, rotated_at, expires_on, days_left, alert_level }]`（typelizer 再生成；含 reveal 动作，非 SDK 面）；store 侧无变更。
 - D8 (2026-09-15, PRD-20260915-payments-d8): Admin SDK `PaymentMethod.options[]` 增 `rule_set`
-  （`Record<string, unknown> | null`）与 `scope_summary`（string）；store 侧类型不变（过滤在服务端）。
+  （已于 2026-09-21 收敛切片 4 删除）；store 侧类型不变（过滤在服务端）。
 - P0 (2026-09-03): Cart 类型新增 express_payment（typelizer 再生成；platform SDK src+dist 已同步）。
 - R1 (2026-09-04): 契约管线可运行化——`rake typelizer:generate`（docker, ENABLE_TYPELIZER=1）接入 `scripts/ci/contracts.sh` 与 `harness generated:check`；生成类型一次归一化（Cart/Order/DeliveryMethod 等 backend/packages/{sdk,admin-sdk} 刷新并同步 platform/packages/sdk src + zod 派生）；SDK 生成类型以 serializers 为唯一权威（新端点不再手写）。
 

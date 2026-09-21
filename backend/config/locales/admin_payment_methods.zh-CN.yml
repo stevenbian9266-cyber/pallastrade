@@ -15,12 +15,6 @@ zh-CN:
         payment_option_frontend_kind: 前端形态
         payment_option_method: 支付方式
         payment_option_position: 排序
-        payment_option_scope: 适用范围
-        scope_country: 国家
-        scope_currency: 币种
-        scope_help: 留空 = 不限（所有市场/国家/币种均可用）；市场与 Zone 仅限当前店铺。
-        scope_market: 市场
-        scope_zone: Zone
         payment_options: 前台支付方式（入口）
         environment: 环境
         environment_help: 测试环境凭据不会到达前台 —— 切换到 test 后该支付商在结账页隐藏。
@@ -62,5 +56,3 @@ zh-CN:
       country: 国家
       zone: Zone
       currency: 币种
-    payment_option_scope_all: 全部
-    payment_option_scope_exclude: 排除

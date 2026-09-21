@@ -46,89 +46,7 @@ module PallasTrade
         end
       end
 
-      # POST /admin/payment_methods/:id/update_provider_account
-      # PALLAS-CUSTOM: PAY-CORE-P0B（PRD-20260920-checkout 切片 P0-B）—— 账户配置写入口：
-      # 登记「本商家账户已开通的支付方式 / 币种 / 国家」，供「能力 ∩ 账户 ∩ 市场」收窄使用。
-      # 越界值被忽略并回显（不静默丢数据）；同值重复提交幂等（不写库、不审计）。
-      # 铁律：零资金副作用 —— 只写 metadata['account'] + 审计。
-      def update_provider_account
-        authorize! :update, @object
-
-        outcome = PallasTrade::Payments::Providers::Account.write!(
-          @object,
-          methods: params.dig(:provider_account, :methods),
-          currencies: params.dig(:provider_account, :currencies),
-          countries: params.dig(:provider_account, :countries),
-          actor: audit_actor_label
-        )
-
-        if outcome['unchanged']
-          flash[:notice] = PallasTrade.t('admin.payment_methods.provider_diagnostics.account_unchanged')
-        else
-          audit_provider_account_update(outcome)
-          flash[:success] = PallasTrade.t('admin.payment_methods.provider_diagnostics.account_saved')
-        end
-        flash[:warning] = provider_account_rejection_message(outcome) if outcome['rejected'].any?
-
-        redirect_to PallasTrade.edit_admin_payment_method_path(@object), status: :see_other
-      end
-
-      # POST /admin/payment_methods/:id/soft_disable
-      # PALLAS-CUSTOM: D11 切片1（PRD-20260916-payments-d11）—— 手动软置灰（熔断兜底，业务方案 §67.3）：
-      # 「摘掉一个入口」是运营动作 —— 入口级（选项化）软置灰，**必须填原因**（审计留痕），
-      # 粘性生效至人工解除（`manual: true`，巡检不会自动恢复）。
-      # 铁律：零资金副作用 —— 只改 metadata + 审计；不影响已建会话/已发起的支付。
-      def soft_disable
-        authorize! :update, @object
-
-        reason = params[:reason].to_s.strip
-        if reason.blank?
-          flash[:error] = PallasTrade.t('admin.payment_methods.breaker_reason_required')
-          return redirect_to PallasTrade.edit_admin_payment_method_path(@object), status: :see_other
-        end
-
-        kind = breaker_kind_param
-        @object.soft_disable!(kind: kind, reason: reason, manual: true)
-        audit_breaker_action('payment_option_manually_soft_disabled', kind, reason: reason)
-        flash[:success] = PallasTrade.t('admin.payment_methods.breaker_soft_disabled', name: breaker_display_name(kind))
-
-        redirect_to PallasTrade.edit_admin_payment_method_path(@object), status: :see_other
-      end
-
-      # POST /admin/payment_methods/:id/soft_enable
-      # PALLAS-CUSTOM: D11 切片1 —— 解除软置灰（自动/手动通用）：清除状态 + 审计。
-      def soft_enable
-        authorize! :update, @object
-
-        kind = breaker_kind_param
-        state = @object.breaker_state(kind)
-        @object.soft_enable!(kind)
-        audit_breaker_action('payment_option_manually_soft_enabled', kind, reason: state&.[]('reason'))
-        flash[:success] = PallasTrade.t('admin.payment_methods.breaker_soft_enabled', name: breaker_display_name(kind))
-
-        redirect_to PallasTrade.edit_admin_payment_method_path(@object), status: :see_other
-      end
-
       private
-
-      # D11：入口 kind（选项化 provider 的入口级动作参数）。
-      def breaker_kind_param
-        params[:kind].presence
-      end
-
-      def breaker_display_name(kind)
-        kind.present? ? @object.option_display_name(kind) : @object.name
-      end
-
-      # 熔断是运营动作：审计 actor = 后台用户 + 记录原因（`manual` 语义可回溯）。
-      def audit_breaker_action(action, kind, reason: nil)
-        PallasTrade::Audit.record(
-          action: action,
-          actor: audit_actor,
-          resource: @object,
-          metadata: { kind: kind, reason: reason }.compact
-        )
-      end
 
       # D9（切片2）：reveal 是敏感动作 —— 资源 update 权限 + 默认管理员角色（owner 等价）。
       def authorize_admin!
@@ -252,59 +170,7 @@ module PallasTrade
         }
         option['display_name'] = display_name if display_name.present?
 
-        rule_set = merged_payment_option_rule_set(entry, existing_option)
-        option['rule_set'] = rule_set if rule_set.present?
         option
-      end
-
-      # PALLAS-CUSTOM: D8（PRD-20260915-payments-d8 切片2）—— 后台「适用范围」写入口。
-      #
-      # 表单结构：payment_method[payment_options][<kind>][rule_set][<dimension>][]（多选值）。
-      #   - v1 仅管理 include 条件；已有的 exclude 条件**原样保留**（不做排除 UI，摘要列可见）；
-      #   - prefixed ID（mkt_ / zone_）解码为 raw id，并以**当前 provider 所属店铺**做作用域校验；
-      #   - 国家（ISO2 白名单）/ 币种（当前店铺支持币种）校验；非法值静默丢弃；
-      #   - 无有效条件 → 删除 rule_set（= 不限，零回归）。
-      def merged_payment_option_rule_set(entry, existing_option)
-        existing = existing_option&.[]('rule_set')
-        submitted = entry[:rule_set]
-        return PallasTrade::Payments::Availability::RuleSet.normalize(existing) unless submitted.respond_to?(:[])
-
-        existing_exclude = Array(PallasTrade::Payments::Availability::RuleSet.normalize(existing)&.[]('exclude'))
-        include_conditions = rule_scope_sources.filter_map do |dimension, scope|
-          values = Array(submitted[dimension]).map { |value| value.to_s.strip }.reject(&:blank?).uniq
-          normalized = values.filter_map { |value| decode_rule_value(dimension, value, scope) }
-          next if normalized.empty?
-
-          { 'dimension' => dimension, 'operator' => 'in', 'values' => normalized }
-        end
-
-        PallasTrade::Payments::Availability::RuleSet.normalize(
-          'match' => 'all',
-          'include' => include_conditions,
-          'exclude' => existing_exclude
-        )
-      end
-
-      def rule_scope_sources
-        {
-          'market' => @object.store&.markets,
-          'zone' => PallasTrade::Zone.all,
-          'country' => nil,
-          'currency' => nil
-        }
-      end
-
-      def decode_rule_value(dimension, value, scope)
-        case dimension
-        when 'market', 'zone'
-          scope&.find_by_prefix_id(value)&.id&.to_s
-        when 'country'
-          iso = value.upcase
-          iso if PallasTrade::Country.exists?(iso: iso)
-        when 'currency'
-          currency = value.upcase
-          currency if rule_currency_whitelist.include?(currency)
-        end
       end
 
       # 币种白名单 = 当前店铺支持的币种（避免配出永远不可用的入口）
@@ -350,28 +216,6 @@ module PallasTrade
         (actor[:label].presence || actor[:id]).to_s
       end
 
-      # 审计只记「哪些维度变了、各多少条」与「被拒条数」（保持最小化，不记具体取值）。
-      def audit_provider_account_update(outcome)
-        PallasTrade::Audit.record(
-          action: 'payment_method_provider_account_updated',
-          actor: audit_actor,
-          resource: @object,
-          metadata: {
-            methods: Array(outcome['normalized']['methods']).size,
-            currencies: Array(outcome['normalized']['currencies']).size,
-            countries: Array(outcome['normalized']['countries']).size,
-            rejected: outcome['rejected'].transform_values { |values| Array(values).size }
-          }
-        )
-      end
-
-      def provider_account_rejection_message(outcome)
-        summary = outcome['rejected'].map do |dimension, values|
-          "#{PallasTrade.t("admin.payment_methods.provider_diagnostics.dimensions.#{dimension}")}: #{Array(values).join(', ')}"
-        end.join(' · ')
-
-        PallasTrade.t('admin.payment_methods.provider_diagnostics.account_rejected', summary: summary)
-      end
     end
   end
 end

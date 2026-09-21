@@ -251,17 +251,7 @@ export default {
         description: 'Admin payment-method option-config specs (options tab render/save + test connection + credential masking + optionized/start regression)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/payment_methods_spec.rb spec/services/pallastrade/payment_methods/test_connection_spec.rb spec/models/pallastrade/payment_method_options_spec.rb spec/services/pallastrade/payment_sessions/start_spec.rb'],
       },
-      // PAY-CORE P0-A（PRD-20260920-checkout 支付核心统一 · 厂商层地基）：
-      // 能力声明 / 账户配置 / 「能力 ∩ 账户 ∩ 市场」收窄校验 / 三态 + 后台只读诊断卡
-      // PRD-20260920-checkout-支付核心统一-厂商层-支付方式层-方式级路由-组合支付-订单失效期 AC-001..AC-007
-      // ★ 已于 2026-09-21 收敛切片 2+3 整体下线（厂商层抽象删除，验证器与 spec 一并移除）
-      // D8 支付适用范围引擎（PRD-20260915-payments-d8）：入口/支付商按 market/country/zone/currency
-      // PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-009
-      // 求值 + 前台/后台收集过滤 + Start 入口级校验 + 后台范围编辑与序列化投影
-      'd8-availability-rspec': {
-        description: 'Payment availability engine specs (rule-set normalize/evaluate + order frontend filtering + start option gate + admin scope editing/serializer)',
-        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/payments/availability/resolver_spec.rb spec/models/pallastrade/payment_method_options_spec.rb spec/services/pallastrade/payment_sessions/start_spec.rb spec/requests/pallastrade/admin/payment_methods_spec.rb'],
-      },
+      // D8 支付适用范围引擎（PRD-20260915-payments-d8）：已于 2026-09-21 收敛切片 4 整体下线
       // D9 支付凭据与环境（PRD-20260915-payments-d9）：环境隔离（test 不进前台 + test_mode 标记）+
       // 凭据分级/env 引用 + 轮换到期巡检 + reveal 权限审计 + 后台环境/凭据/Webhook 卡（含 D1/D8 支付回归）
       // PRD-20260915-payments-d9-支付凭据与环境 AC-008
