@@ -247,9 +247,11 @@ export default {
       // 管理后台支付方式选项化（D1 切片3，PRD-20260915-admin）：页签渲染/保存归一 + Test connection +
       // 凭证脱敏；含切片1/2 回归（optionized 门控 + Start 入口级同源校验）
       // PRD-20260915-admin-管理后台支付配置选项化-支付商-支付方式-前台入口 AC-008
+      // 收敛切片 5 回归（2026-09-21）：已下线厂商的历史 STI 行不得拖垮读路径
+      //   （loadable 集合收窄 + sti_class_for 兜底 + RemoveRetiredProviderPaymentMethods 清理）
       'admin-payment-methods-rspec': {
-        description: 'Admin payment-method option-config specs (options tab render/save + test connection + credential masking + optionized/start regression)',
-        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/payment_methods_spec.rb spec/services/pallastrade/payment_methods/test_connection_spec.rb spec/models/pallastrade/payment_method_options_spec.rb spec/services/pallastrade/payment_sessions/start_spec.rb'],
+        description: 'Admin payment-method option-config specs (options tab render/save + test connection + credential masking + optionized/start regression; retired-provider tolerance: PaymentMethod.#{loadable} excludes unresolvable STI rows, sti_class_for falls back to base, admin HTML + admin API lists stay 200 with a stale row present, cleanup migration soft-deletes retired providers and leaves registered ones untouched)',
+        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/requests/pallastrade/admin/payment_methods_spec.rb spec/requests/pallastrade/admin/payment_methods_retired_provider_spec.rb spec/services/pallastrade/payment_methods/test_connection_spec.rb spec/models/pallastrade/payment_method_options_spec.rb spec/services/pallastrade/payment_sessions/start_spec.rb'],
       },
       // D8 支付适用范围引擎（PRD-20260915-payments-d8）：已于 2026-09-21 收敛切片 4 整体下线
       // D9 支付凭据与环境（PRD-20260915-payments-d9）：环境隔离（test 不进前台 + test_mode 标记）+

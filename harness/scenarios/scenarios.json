@@ -5568,6 +5568,33 @@
         "countRecorded": 15,
         "failureModeDiagnosed": 15
       }
+    },
+    {
+      "id": "GS-211",
+      "name": "Removing a provider gem removes the classes, never the rows",
+      "description": "A convergence deleted two payment-provider gems together with their STI classes, but the database rows whose `type` pointed at those classes stayed behind. ActiveRecord raises SubclassNotFound while instantiating such a row and the WHOLE query fails with it — so a single stale row turned the admin payment-methods list into an empty-bodied HTTP 500 that read as a blank page. The delete was complete in code and incomplete in data.",
+      "mustDo": [
+        "When a convergence removes a class that is an STI target, treat the data as part of the removal: ship a cleanup migration in the same change",
+        "Reproduce the production failure locally before fixing: insert one row of the retired type and load the affected page — the crash is a property of the data, not of the code",
+        "Add read-path tolerance as defence in depth: narrow listing queries in SQL to resolvable types so a stale row never reaches instantiation, and override sti_class_for to fall back to the base class (with a logged warning) so non-listing paths cannot 500 either",
+        "Choose the cleanup form from the schema, not from taste: when the table is paranoid and referenced by financial records through a NO ACTION foreign key, soft delete preserves both the audit trail and referential integrity — the row disappears from the application without rewriting history",
+        "Enumerate the retired types explicitly in the migration instead of sweeping everything outside a registry, so a future unregistered type is not deleted by guesswork",
+        "Verify on the real page with a real stale row, then verify the migration end to end (row still present, deleted_at set, gone from default collections)"
+      ],
+      "mustNotDo": [
+        "Assume deleting the gem, the model and its specs also cleans the rows that reference them",
+        "Read a fast empty-bodied 500 as a rendering or asset problem — check whether a query is failing before the view ever runs",
+        "Rewrite historical financial rows (nullifying payment_method_id, repointing types) just to make a listing render",
+        "Hide the problem by only deactivating rows: an inactive row still fails instantiation, because the failure happens while loading, not while filtering",
+        "Declare the migration reversible when the original values it overwrote cannot be reconstructed"
+      ],
+      "scoring": {
+        "dataTreatedAsPartOfRemoval": 25,
+        "failureReproducedLocally": 25,
+        "readPathToleranceAdded": 20,
+        "cleanupFormChosenFromSchema": 15,
+        "verifiedOnRealPageAndData": 15
+      }
     }
   ]
 }

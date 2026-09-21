@@ -1,6 +1,6 @@
 ﻿---
 name: pallastrade-payments
-description: Use when the user is working with PallasTrade's payment system — payment methods, gateways (Stripe, Adyen, PayPal), payment sessions, the payment state machine, refunds, store credits, gift cards. Common phrasings include "add payment gateway", "Stripe integration", "payment failed", "refund order", "store credit", "gift card", "payment state stuck", "configure PaymentMethod", "process payment manually". Provides the payment graph, the state machine, and the integration points.
+description: Use when the user is working with PallasTrade's payment system — payment methods, gateways (Stripe; Adyen/PayPal were retired in the 2026-09 convergence), payment sessions, the payment state machine, refunds, store credits, gift cards. Common phrasings include "add payment gateway", "Stripe integration", "payment failed", "refund order", "store credit", "gift card", "payment state stuck", "configure PaymentMethod", "process payment manually". Provides the payment graph, the state machine, and the integration points.
 ---
 
 # PallasTrade Payments
@@ -10,7 +10,7 @@ description: Use when the user is working with PallasTrade's payment system — 
 Payments in PallasTrade are layered:
 
 ```
-PaymentMethod   — the configured way to pay (Stripe, Adyen, PayPal, store credit, …)
+PaymentMethod   — the configured way to pay (Stripe, store credit, check, …; Adyen/PayPal retired 2026-09)
   ↓
 Payment         — the actual charge against an Order via a PaymentMethod
   ↓
@@ -188,7 +188,20 @@ For an existing Order, start sessions through `PallasTrade::PaymentSessions::Sta
 
 ## Adding a payment gateway
 
-Stripe, Adyen and PayPal ship preinstalled in pallastrade-starter projects (the backend `create-pallastrade-app` scaffolds) — nothing to install; enable and configure them in the admin under Settings → Payment methods. For any other gateway gem:
+**Stripe ships preinstalled** in pallastrade-starter projects (the backend `create-pallastrade-app` scaffolds) — nothing to install; enable and configure it in the admin under Settings → Payment methods.
+
+> **⚠️ 下线任何 STI 厂商时，代码与数据必须同批处理**（2026-09 收敛事故）。
+> Adyen / PayPal 下线时删了 gem 与 STI 类，**却没删库里的行** —— `type` 指向已删类的历史行会让
+> **整条查询**抛 `ActiveRecord::SubclassNotFound`（不是只跳过该行），dev 后台「支付方式」页
+> 因此返回 **HTTP 500 + 空响应体**（读起来就像空白页）。现在有两层防护：
+> - 读路径：`PallasTrade::PaymentMethod.loadable` 在 SQL 层排除不可解析的类型，让列表永远不因脏行而炸；
+>   `PaymentMethod.sti_class_for` 兜底为基类并写 warn 日志（保护非列表路径，如订单页渲染某笔 payment）。
+> - 数据侧：`RemoveRetiredProviderPaymentMethods` 迁移**软删除**已下线厂商的行。本表 paranoid
+>   （`deleted_at`）且被 `pallastrade_payment_sources` 以 **NO ACTION** 外键引用 → 软删才同时满足
+>   「行从应用层消失」「不改写资金记录的历史引用」「可回滚取证」。
+> 注意：**停用（`active=false`）不能替代清理** —— 实例化发生在过滤之前，停用行照样炸。
+
+For any other gateway gem:
 
 ```bash
 pallastrade eject                           # switch to the dev compose: bind-mounts backend/ so Gemfile changes take effect

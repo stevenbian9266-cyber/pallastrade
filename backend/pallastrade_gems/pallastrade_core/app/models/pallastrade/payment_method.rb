@@ -47,6 +47,36 @@ module PallasTrade
       providers - [PallasTrade::Gateway::Bogus]
     end
 
+    # PALLAS-CUSTOM: 收敛切片 5 修复（2026-09-21）—— 读路径容错。
+    # 厂商下线（类被删除）后，库里仍可能存在 `type` 指向已删类的历史行。ActiveRecord 在
+    # 实例化这类行时抛 `ActiveRecord::SubclassNotFound`，**整条查询一起失败** —— 后台
+    # 支付方式列表因此整页 500（dev 实测，空响应体）。
+    # 集合读取一律先按注册表（= `Gateway` 的 `valid_providers_list` 同一份类型白名单）
+    # 收窄，让历史行不再拖垮页面；行本身的处置由清理迁移负责。
+    # @return [Array<String>]
+    def self.loadable_type_names
+      providers.map(&:to_s)
+    end
+
+    # 只加载 `type` 可解析的行：注册表内的类型 + `nil`（基类行，STI 不做常量查找）。
+    # 未注册的历史行在 **SQL 层**被排除，压根不会走到实例化 —— 一行脏数据不再能拖垮整页。
+    # @return [ActiveRecord::Relation]
+    scope :loadable, -> { where(type: loadable_type_names + [nil]) }
+
+    # 兜底：非集合读取路径（如后台订单页渲染某笔 payment 的支付方式、Store API 单条读取）
+    # 仍可能撞上不可解析的历史类型。Rails 默认抛 `SubclassNotFound` 炸掉整个请求，
+    # 这里降级为基类并留痕 —— 与既有范式一致（`api/v3/admin/payment_methods#types`
+    # 用 `safe_constantize` 处理同一问题）。
+    # 行的清理见 `RemoveRetiredProviderPaymentMethods` 迁移。
+    def self.sti_class_for(type_name)
+      super
+    rescue ActiveRecord::SubclassNotFound => e
+      Rails.logger.warn(
+        "[PallasTrade::PaymentMethod] 无法解析的历史 STI 类型 #{type_name.inspect}，已降级为基类处理：#{e.message}"
+      )
+      self
+    end
+
     def provider_class
       raise ::NotImplementedError, 'You must implement provider_class method for this gateway.'
     end

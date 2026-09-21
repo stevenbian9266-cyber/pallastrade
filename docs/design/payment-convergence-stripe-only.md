@@ -949,11 +949,39 @@ flowchart LR
 
 | 遗留 | 说明 | 建议 |
 |---|---|---|
-| `pallastrade_adyen_payment_sessions` 表 | Adyen gem 的历史产物；`schema.rb` 仍有该表，2 个 gem 自带迁移（`20260427130659` / `20260427130660`）按「不得修改历史迁移」保留 | 单开一刀 `drop_table` 迁移清理 |
+| `pallastrade_adyen_payment_sessions` 表 | Adyen gem 的历史产物；`schema.rb` 仍有该表，**3 个** gem 自带迁移（`20260427130659` / `20260427130660` / `20260427130661`）按「不得修改历史迁移」保留 | 单开一刀 `drop_table` 迁移清理 |
 | `prepare` BFF 兼容别名 | 切片 8 保留的薄别名（`/api/checkout/prepare` → `place-order`） | 观察一个发布周期后再删（原 §12 Q-1） |
 | 后台支付方式状态筛选 | 切片 9 FR-002 降级项 | 需先扩展订单表 DSL 暴露 `state` 可筛选字段 |
 | `storefront-test` 验证器的空过滤串 | `harness.config.mjs` 中该验证器含 `src/lib/data/__tests__/shopping-cart.test.ts`、`src/lib/data/__tests__/payment.test.ts` 两个**全库从未存在**的路径（引入自 `f99c4cda`，非本收敛）。vitest 位置参数为「过滤串」而非严格路径，不匹配不报错，故暂无实际影响 | 顺手删除两个过滤串；需先跑一次 `storefront-test` 确认无副作用 |
 | **验证器残留引用已修**（`d11_circuit_breaker_spec.rb`） | 切片 2+3 整体下线 D11 验证器时，只删了验证器块，**漏删** `d15c-three-d-secure-rspec` 命令数组里对已删 spec 的引用 → 该验证器恒 exit 1（rspec 找不到文件）。已删除该路径；扫描确认全配置 52 条命令 / 257 个 spec 引用中**仅此一处**为真残留 | 建议加一条守卫：`harness.config.mjs` 引用的 spec 路径必须存在（可并入 `repo-guards-test`），删除 spec 时由 CI 而非人工兜底 |
+
+### 9.6 切片 5 数据残留ᐧdev 后台空白页事故与修复（2026-09-21）
+
+**现象**：dev 服务器上，登录后台点「Payment」菜单 → **空白页**。实测为 `GET /admin/payment_methods` 返 **HTTP 500 且响应体为空**（`content-length: 0`）；同一账号下 `/admin` `/admin/orders` `/admin/products` 均 200 —— 故障高度局部化。
+
+**根因**：切片 5 删除了 `pallastrade_adyen` / `pallastrade_paypal_checkout` 两个 gem 与它们的 STI 类，**但没删库里的行**。`pallastrade_payment_methods` 中 `type` 指向已删类的历史行，在实例化时抛
+
+```
+ActiveRecord::SubclassNotFound: failed to locate the subclass: 'PallasTradeAdyen::Gateway'
+```
+
+关键是**整条查询一起失败**，不是只跳过该行 —— 故一行脏数据就能让整页 500。
+
+> 为何本地没重现：本地库切片期间已清掉这两类行，故 RSpec 与浏览器都正常 —— **该类故障是数据的属性，不是代码的属性**。
+
+**修复（两层 + 数据清理）**：
+
+| 层 | 位置 | 作用 |
+|---|---|---|
+| 读路径收窄 | `PaymentMethod.loadable` scope | 在 **SQL 层**排除不可解析的类型（`type IN 注册表 OR type IS NULL`），脏行永远走不到实例化。已接线到后台 HTML 与 Admin API 两处 `scope` |
+| STI 兜底 | `PaymentMethod.sti_class_for` 覆写 | 非集合读取路径（订单页渲染某笔 payment 等）降级为基类 + warn 日志，不再炸整个请求 |
+| 数据清理 | `RemoveRetiredProviderPaymentMethods` 迁移 | 显式列举已下线类型，**软删除**（`deleted_at` + `active=false`） |
+
+**为何用软删而不是硬删**：本表 paranoid（`deleted_at`），且 `pallastrade_payment_sources.payment_method_id` 是 **NO ACTION** 外键 → 硬删会失败；且 `pallastrade_payments` / `pallastrade_payment_sessions` 仍引用这些行，硬删会改写资金记录的历史引用（违反「不得改写历史交易」）。软删同时满足「行从应用层消失」「引用完整」「可取证」。
+
+> ⚠️ **停用（`active=false`）不能替代清理** —— 实例化发生在过滤之前，停用行照样把整页炸掉。这是当时 A 方案（仅停用）不足以单独收口的真实原因。
+
+**验证**：本地造一条真实的 `PallasTradeAdyen::Gateway` 行 → 重启容器 → 后台页面正常渲染（标题 `Payment Methods` 可见、无 500、脏行不出现）→ 跑迁移 → 行 `deleted_at` 落值、`PaymentMethod.all` 由 6→5 行。回归 spec：`backend/spec/requests/pallastrade/admin/payment_methods_retired_provider_spec.rb`（8 examples）。
 
 ## 10. 风险与代价
 

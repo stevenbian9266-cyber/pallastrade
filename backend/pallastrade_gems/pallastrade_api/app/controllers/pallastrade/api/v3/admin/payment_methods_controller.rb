@@ -39,6 +39,13 @@ module PallasTrade
             PallasTrade::PaymentMethod
           end
 
+          # PALLAS-CUSTOM: 收敛切片 5 修复（2026-09-21）—— 同后台 HTML 列表：
+          # 列表只加载 `type` 可解析的行，避免历史脏行让整条查询抛 SubclassNotFound。
+          # （`#types` 早已用 `safe_constantize` 防同类问题，此处补齐集合读取路径。）
+          def scope
+            super.loadable
+          end
+
           def serializer_class
             PallasTrade.api.admin_payment_method_serializer
           end

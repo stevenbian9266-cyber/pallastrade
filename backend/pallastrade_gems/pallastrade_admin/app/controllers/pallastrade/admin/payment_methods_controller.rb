@@ -46,6 +46,17 @@ module PallasTrade
         end
       end
 
+      # PALLAS-CUSTOM: 收敛切片 5 修复（2026-09-21）—— 列表只加载 `type` 可解析的行。
+      # 厂商下线（类被删除）后库里可能残留指向已删类的历史行，ActiveRecord 实例化时抛
+      # `ActiveRecord::SubclassNotFound`，**整条查询一起失败** → 后台支付方式列表整页 500
+      # （dev 实测：HTTP 500 + 空响应体 = 用户看到的「空白页」）。
+      # 在 SQL 层收窄后，脏行不参与实例化；行本身的处置见清理迁移。
+      protected
+
+      def scope
+        super.loadable
+      end
+
       private
 
       # D9（切片2）：reveal 是敏感动作 —— 资源 update 权限 + 默认管理员角色（owner 等价）。
