@@ -516,25 +516,15 @@ RSpec.describe 'Admin payment methods option configuration', type: :request do
              )).to be(false)
     end
 
-    it 'folds the breaker card while keeping its anchor and actions (AC-013)' do
-      doc = render_edit_page(stripe_gateway)
-      card = doc.at_css('#payment_method_breaker')
-
-      expect(card).to be_present
-      expect(card['data-controller']).to eq('reveal')
-      expect(card.at_css('[data-reveal-target="item"]')['class']).to include('is-collapsed')
-      expect(card.at_css("[data-testid='breaker-soft-disable-save']")).to be_present
-    end
-
     it 'keeps a non-Stripe provider on the generic page (AC-009/010 zero regression)' do
       check_gateway = create(:check_payment_method, store: store, active: true, display_on: 'both', name: 'Check')
       doc = render_edit_page(check_gateway)
 
       expect(doc.at_css("[data-testid='stripe-connection']")).to be_nil
-      # 通用版面：按钮仍在「支付方式」卡；诊断卡仍在主表单之前
+      # 通用版面：按钮仍在「支付方式」卡
       expect(doc.at_css("[data-testid='payment-options'] [data-testid='options-test-connection']")).to be_present
-      ordered = doc.css("[data-testid='payment-options'], [data-testid='provider-diagnostics']")
-      expect(ordered.first['data-testid']).to eq('provider-diagnostics')
+      # 收敛切片 2+3（2026-09-21）：原 `_provider_diagnostics` 诊断卡整体删除 —— 断言其**不再出现**
+      expect(doc.at_css("[data-testid='provider-diagnostics']")).to be_nil
     end
   end
 end

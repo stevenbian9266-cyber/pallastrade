@@ -264,9 +264,6 @@ PallasTrade::Core::Engine.add_routes do
       member do
         post :test_connection
         post :reveal_credential
-        post :soft_disable
-        post :soft_enable
-        post :update_provider_account
       end
     end
     resources :shipping_methods, except: :show

@@ -101,10 +101,6 @@ PALLAS_CART_SCHEDULE = [
   # （不取消会话/不改支付/订单/库存，零 provider 调用）：小时级判定失败率阈值 → 入口级软置灰；
   # 同时执行自动置灰的到期恢复（手动置灰 `manual: true` 不自动恢复，必须人工解除）。
   {
-    name: 'payment_circuit_breaker_sweep',
-    class: 'PallasTrade::Payments::CircuitBreaker::SweepJob',
-    cron: '15 * * * *',
-    queue: 'default'
   },
   # D14 切片3 (2026-09-16): 拒付率阈值巡检 —— **只读统计 + 只写预警台账/审计，零资金副作用**
   # （不改支付/订单/退款/账本/库存/争议状态，零 provider 调用）：逐店铺算「按卡组织的笔数比 + 金额比」

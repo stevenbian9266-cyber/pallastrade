@@ -3544,8 +3544,8 @@
     },
     {
       "id": "GS-141",
-      "name": "A flaky provider is softened without touching money",
-      "description": "PRD-20260916-payments-d11-circuit-breaker-health (slice 1 of 搂78-D11 / 搂67.3 of the payment plan): when a payment provider starts failing, the entry should disappear from checkout instead of sending shoppers into a broken flow. D11 slice 1 adds entry-level breaker state in payment method metadata, a provider-level health window, an hourly sweep that soft-disables entries past the failure threshold (and auto-restores expired automatic ones), and a resolver gate shared by the storefront list and payment-session start.",
+      "name": "[已下线 2026-09-21] A flaky provider is softened without touching money",
+      "description": "**该能力的实现已于 2026-09-21 支付收敛（切片 1/2+3）整体删除，本场景不再作为验收依据。**原文保留以便追溯：PRD-20260916-payments-d11-circuit-breaker-health (slice 1 of 搂78-D11 / 搂67.3 of the payment plan): when a payment provider starts failing, the entry should disappear from checkout instead of sending shoppers into a broken flow. D11 slice 1 adds entry-level breaker state in payment method metadata, a provider-level health window, an hourly sweep that soft-disables entries past the failure threshold (and auto-restores expired automatic ones), and a resolver gate shared by the storefront list and payment-session start.",
       "mustDo": [
         "Keep soft-disable purely presentational: write only payment method metadata plus an audit entry, never cancel sessions, refund, change orders, stock or ledger rows",
         "Store breaker state per entry for optionized providers and provider-wide otherwise, so the manual action can soften exactly one entry",
@@ -5216,8 +5216,8 @@
     },
     {
       "id": "GS-198",
-      "name": "Make the provider layer honest - declare capability, record the merchant account, narrow the three sets, and explain every mismatch",
-      "description": "A store runs several payment providers. The admin only stores 'which storefront options are enabled', so the operator cannot tell the difference between 'the provider supports this method', 'our merchant account has it opened' and 'we restricted it to these markets'. The save path silently drops anything it does not recognise, so a mistyped option kind or an out-of-scope currency looks saved while the storefront quietly never offers it; there is no place to record what the PSP account actually has enabled, and provider state is split between a boolean and a circuit breaker with no single answer to 'can this provider take money right now, and why not'. The ask: add a provider layer that declares static capability, records the account side (manual or synced), narrows capability against account and market, and surfaces every mismatch as a readable diagnosis without changing the write path yet.",
+      "name": "[已下线 2026-09-21] Make the provider layer honest - declare capability, record the merchant account, narrow the three sets, and explain every mismatch",
+      "description": "**该能力的实现已于 2026-09-21 支付收敛（切片 1/2+3）整体删除，本场景不再作为验收依据。**原文保留以便追溯：A store runs several payment providers. The admin only stores 'which storefront options are enabled', so the operator cannot tell the difference between 'the provider supports this method', 'our merchant account has it opened' and 'we restricted it to these markets'. The save path silently drops anything it does not recognise, so a mistyped option kind or an out-of-scope currency looks saved while the storefront quietly never offers it; there is no place to record what the PSP account actually has enabled, and provider state is split between a boolean and a circuit breaker with no single answer to 'can this provider take money right now, and why not'. The ask: add a provider layer that declares static capability, records the account side (manual or synced), narrows capability against account and market, and surfaces every mismatch as a readable diagnosis without changing the write path yet.",
       "mustDo": [
         "Treat an existing configured provider record as the provider itself instead of inventing a parallel provider table, and keep the account side in the same metadata store the other payment features already use (no migration)",
         "Read static capability from a provider-declared class-level declaration when present, and only fall back to the method catalog plus session requirement, marking which source answered",
@@ -5252,8 +5252,8 @@
     },
     {
       "id": "GS-199",
-      "name": "Route a payment method to exactly one provider - hard gates first, then a deterministic priority, and never guess what you cannot know",
-      "description": "A store runs two providers that both offer cards. The storefront shows the shopper 'card' once, but nothing in the system decides which provider actually takes that payment: the first configured provider wins by accident, a provider that is switched off or has an open breaker can still be picked, a method the merchant account never opened looks available, and a provider that cannot serve this particular order (market scope, authentication requirement) is chosen anyway and fails at the money step. There is also no way to say 'for this market, prefer provider B', and no record explaining why a given payment went where it went. The ask: add a method-level routing decision that applies the same gates the storefront applies, ranks the survivors by an explicit priority, and returns an explainable, reproducible decision.",
+      "name": "[已下线 2026-09-21] Route a payment method to exactly one provider - hard gates first, then a deterministic priority, and never guess what you cannot know",
+      "description": "**该能力的实现已于 2026-09-21 支付收敛（切片 1/2+3）整体删除，本场景不再作为验收依据。**原文保留以便追溯：A store runs two providers that both offer cards. The storefront shows the shopper 'card' once, but nothing in the system decides which provider actually takes that payment: the first configured provider wins by accident, a provider that is switched off or has an open breaker can still be picked, a method the merchant account never opened looks available, and a provider that cannot serve this particular order (market scope, authentication requirement) is chosen anyway and fails at the money step. There is also no way to say 'for this market, prefer provider B', and no record explaining why a given payment went where it went. The ask: add a method-level routing decision that applies the same gates the storefront applies, ranks the survivors by an explicit priority, and returns an explainable, reproducible decision.",
       "mustDo": [
         "Decide routing per payment method (never per provider), so the shopper sees each method once and exactly one provider carries it",
         "Apply hard gates before any ranking: the method must be configured and enabled on that provider, the provider must be in the enabled state, the merchant account must have the method opened, and the shared availability resolver must agree the option can serve this order",
@@ -5467,6 +5467,32 @@
         "residualCheckCorrect": 15,
         "regressionRun": 15,
         "historyLeftIntact": 10
+      }
+    },
+    {
+      "id": "GS-207",
+      "name": "A convergence deletes the whole abstraction, not just its entry point",
+      "description": "When a payment capability is retired, deleting the service files is the easy part. The removal surface also spans specs, the verifier registration, the verification table, the admin views/actions/routes/i18n, the schedule entry, the resolver branch that consumed it, and the skill sections that documented it. Prove zero live consumers first, then sweep every surface in one pass so no half-removed feature is left bootable.",
+      "mustDo": [
+        "Prove zero live consumers layer by layer before deleting — search every gem layer, the host app, admin, API, storefront and platform, not just the directory being removed",
+        "Enumerate the full removal surface up front: implementation, specs, verifier registration, AGENTS.md verification table, admin controllers/routes/views/helpers, both locale files, the scheduler entry, and the resolver branch that called into it",
+        "Run the removal as a dry run that prints every computed boundary, and assert the expected content is at each boundary before cutting",
+        "Keep the application bootable at the end — a removed feature must never leave a dangling constant, route or i18n key",
+        "Record the retirement in the skill files and mark the corresponding eval scenarios as retired, rather than silently deleting the documentation"
+      ],
+      "mustNotDo": [
+        "Delete a service and leave its admin action, route, i18n keys or scheduler entry behind",
+        "Cut a multi-line range using an inline keyword as the end boundary — repeated phrases inside the range will swallow unrelated sections",
+        "Leave an eval scenario asserting behavior that has been deleted",
+        "Trust a regex boundary computed from an in-memory string; re-read the file after each cut and verify the line count",
+        "Retire the code but keep pointing documentation at a verifier that no longer exists"
+      ],
+      "scoring": {
+        "zeroConsumersProven": 25,
+        "fullSurfaceEnumerated": 25,
+        "boundariesVerified": 20,
+        "appStillBootable": 20,
+        "docsAndScenariosRetired": 10
       }
     }
   ]

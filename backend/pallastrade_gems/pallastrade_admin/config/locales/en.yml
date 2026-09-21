@@ -1126,60 +1126,6 @@ en:
         payment_option_three_d_secure_help: When the risk rules require authentication, only options that can force 3DS stay available; the rest are hidden automatically.
         payment_option_three_d_secure_unsupported: Unsupported
         # PALLAS-CUSTOM: PAY-CORE-P0A（PRD-20260920-checkout 支付核心统一 · 切片 P0-A）—— 厂商层诊断卡（只读）
-        provider_diagnostics:
-          title: Provider configuration
-          help: Read-only check of provider capability ∩ account configuration ∩ market scope. It never changes the configuration.
-          consistent: Configuration is consistent — no mismatch detected.
-          none: none
-          undeclared: not declared
-          capability_source: Provider capability
-          account_source: Account configuration
-          effective_methods: Effective methods
-          effective_currencies: Effective currencies
-          effective_countries: Effective countries
-          markets: Configured markets
-          account_form_title: Merchant account
-          account_form_help: Record which methods, currencies and countries this PSP account has opened. Leave a list empty to skip that dimension (no narrowing).
-          account_save: Save account configuration
-          account_saved: Account configuration saved.
-          account_unchanged: No change — the account configuration already matches.
-          account_rejected: "Ignored (not allowed): %{summary}"
-          # PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-013）—— `routing_*` 键已随 P3-C
-          # 后台展示面一并移除；**路由引擎保留**（Payments::Routing::*）。如日后要再暴露
-          # 后台入口，应挂在「路由策略」自己的页面上，而不是厂商详情页。
-          dimensions:
-            methods: Methods
-            currencies: Currencies
-            countries: Countries
-          states:
-            enabled: Enabled
-            disabled: Disabled
-            suspended: Suspended
-          sources:
-            declared: declared by provider
-            derived: derived from catalog
-          account_sources:
-            manual: manual
-            synced: synced from provider
-          basis:
-            capability: capability only
-            account: account only
-            capability_account: capability ∩ account
-            undeclared: not declared
-          severities:
-            error: Error
-            warning: Warning
-            info: Info
-          issues:
-            kind_not_declared: "Enabled options the provider does not declare: %{kinds}"
-            kind_not_in_account: "Enabled options not opened on this account: %{kinds}"
-            account_not_configured: Account configuration is missing — no account-level narrowing applied.
-            currency_not_available: "Currencies outside the available set (%{basis}): %{value}"
-            country_not_available: "Countries outside the available set (%{basis}): %{value}"
-            amount_range_out_of_capability: "The amount range on option %{kind} exceeds the provider limits"
-            disabled_with_active_options: "The provider is disabled while %{count} option(s) are still enabled — the storefront will not show them"
-            no_active_options: No option is enabled — this provider is hidden on the storefront.
-            partially_suspended: "Suspended options: %{kinds}"
         scope_country: Countries
         scope_currency: Currencies
         scope_help: Leave empty to keep the option available everywhere. Markets and zones are limited to this store.
@@ -1220,29 +1166,6 @@ en:
         test_connection_error: Could not run the connection test
         test_connection_failed: "Connection check failed (%{code}): %{message}"
         test_connection_ok: "Connection check passed (%{code}). %{message}"
-        breaker_health: Circuit breaker & health
-        breaker_help: Soft-disabling an entry only removes it from checkout — it never touches existing payment sessions, payments, orders or inventory (no financial side effects).
-        breaker_entry: Entry
-        breaker_status: Status
-        breaker_status_enabled: Live
-        breaker_status_disabled: Soft-disabled
-        breaker_attempts: Attempts (24h)
-        breaker_failed: Failed (24h)
-        breaker_failure_rate: Failure rate
-        breaker_avg_seconds: Avg duration
-        breaker_top_errors: Top errors
-        breaker_window: Window
-        breaker_manual_until: Until manually re-enabled
-        breaker_auto_until: Auto re-enable at %{time}
-        breaker_reason: Reason
-        breaker_reason_placeholder: Why is this entry being soft-disabled? (recorded in the audit log)
-        breaker_reason_required: A reason is required to soft-disable an entry
-        breaker_confirm: This only changes whether the entry is offered at checkout. It never touches existing payment sessions, payments or orders. Continue?
-        breaker_disable_action: Soft-disable
-        breaker_enable_action: Re-enable
-        breaker_soft_disabled: "%{name} is now soft-disabled at checkout."
-        breaker_soft_enabled: "%{name} is available at checkout again."
-        breaker_none: This provider declares no storefront entry.
       reconciliation_cases:
         title: Reconciliation queue
         case_title: "Reconciliation case #%{id}"

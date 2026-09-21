@@ -174,45 +174,19 @@ For an existing Order, start sessions through `PallasTrade::PaymentSessions::Sta
 - **Store API（P5）**：`POST /api/v3/store/payment_combinations`（创建：order_ids + payment_method_id → 组合 + session）与 `GET /api/v3/store/payment_combinations/:id`（收银台详情）；`payment_sessions#complete` 对挂组合的 session 走 `PaymentCombinations::Complete`。SDK `paymentCombinations.create/get` + Storefront 收银台（`(checkout)/combined-payment/[id]`）+ 账户订单多选（`OrderCombinedPay`）。
 - **配套数据/模型变更**：`payment_splits.payment_id` 改可空（支付前建 split）；`Payment#order` 改 optional（组合支付 `order_id=nil`，`update_order`/`invalidate_old_payments`/`currency` 已有 nil 守卫）；`PaymentCombination#payments` 关联；`OrderUpdater#update_payment_total` 有 `PaymentSplit` 时取 `captured - refunded`；checkout 状态机在订单有已捕获 split 时放行（无需本地 payment）。
 
-## 厂商层（PAY-CORE P0-A, 2026-09-20）
+## 厂商层（PAY-CORE P0-A，2026-09-20）—— ★ 已于 2026-09-21 收敛切片 2+3 整体下线
 
-> PRD-20260920-checkout 支付核心统一（切片 P0-A）。**厂商（provider）在本仓不是新表** —— 一条
-> `PallasTrade::PaymentMethod` 记录（STI `type` = 网关类）就是一个厂商；入口集合 = `metadata['options']`；
-> 配置沿用 `metadata`（与 D8/D9/D11/D16 同范式，**零迁移**）。
+> **已删除**：`PallasTrade::Payments::Providers::{Config, State, Validate, Account}`（`pallastrade_core/app/services/pallastrade/payments/providers/`）、
+> `PaymentMethod#provider_capability` / `#provider_account_config` / `#provider_effective_scope` / `#provider_state` / `#provider_diagnostics`、
+> 网关侧 `Gateway.provider_capability` 静态声明、后台 `_provider_diagnostics` 诊断卡与 `update_provider_account` 动作、验证器 `payment-providers-rspec`。
+>
+> **取而代之**：厂商 = 一条 `PallasTrade::PaymentMethod` 记录（STI `type` = 网关类）；启停 = `active` 原生布尔；
+> 入口集合 = `metadata['options']` ∪ `payment_option_catalog`；
+> 唯一保留的厂商侧稳定事实是 `payment_option_catalog`（前台入口清单）。
+> 历史实现见 `harness/requirements/REQ-20260920-payment-core-p0b.md` / `-p0a.md`。
 
-| 概念 | 唯一口径 | 说明 |
-|---|---|---|
-| 能力声明（静态） | `PaymentMethod#provider_capability` | provider 类定义类方法 `provider_capability`（Hash）时以声明为准（`source: declared`）；未声明 → 由 `payment_option_catalog` + `session_required?` 推导（`source: derived`） |
-| 账户配置（商家账户开通了什么） | `PaymentMethod#provider_account_config` | `metadata['account'] = { source: manual\|synced, synced_at, methods, currencies, countries }`；**缺失 → 各维度 nil = 未声明（不猜）**，绝不回落"全部已开通" |
-| 收窄（能力 ∩ 账户） | `PaymentMethod#provider_effective_scope` | 逐维度 `narrow`：任一侧未声明 → 不收窄该维度，并标注 `basis`（capability / account / capability+account / undeclared） |
-| 三态 | `PaymentMethod#provider_state` | `enabled`（人工启用且无熔断）/ `disabled`（人工停用，**粘性**）/ `suspended`（熔断）。优先级 **disabled > suspended > enabled**；部分入口熔断仍算 `enabled`（逐入口过滤交给 `Availability::Resolver`） |
-| 诊断 | `PaymentMethod#provider_diagnostics` | `{ ok, state, issues, counts }`；`Providers::Validate` 输出 `severity + code + params`（文案由视图 i18n 渲染） |
-
-服务层：`PallasTrade::Payments::Providers::{Config, State, Validate, Account}`（`pallastrade_core/app/services/pallastrade/payments/providers/`）。
-
-**账户配置可编辑（PAY-CORE P0-B, 2026-09-20）**
-
-| 项 | 口径 |
-|---|---|
-| 写入原语 | `PallasTrade::Payments::Providers::Account.write!(pm, methods:, currencies:, countries:, actor:)` → `metadata['account']` |
-| 白名单 | `methods ∈ 能力声明`（声明优先 / 目录推导）；`currencies ∈ 店铺支持币种`；`countries ∈ 店铺市场国家` —— 与 `Account.allowed_values` **同源**（表单选项也用它） |
-| 越界值 | 进 `rejected` 并**回显给运营**（不静默丢数据，也不抛错） |
-| 空选择 | = **未声明（nil，不收窄）** —— 避免「全不勾 = 前台全隐藏」的误操作 |
-| 幂等 | 同值重复提交 → `unchanged` = true，**不写库、不审计** |
-| 后台入口 | `POST /admin/payment_methods/:id/update_provider_account`（`authorize! :update` → 服务 → `Audit.record('payment_method_provider_account_updated'，只记计数)` → flash → 302 回编辑页） |
-| 表单 | 诊断卡内 `[data-testid="provider-account-form"]`（三个多选 + 保存） |
-| 声明透传 | provider 声明里框架未解释的键（`idempotency` / `refund` / `dispute` / `settlement`…）原样进 `provider_capability['traits']`（P3 路由/成本将消费） |
-| 已知修正 | 未选项化 provider 的隐式入口 kind = 网关 `api_type`，**不参与**能力比对（否则永远假阳性 `kind_not_declared`）；声明省略 `methods` → 回落能力目录 |
-
-**铁律**
-
-- **零资金副作用**：`Providers::*` 只读（零网络）+ 只写 `metadata` / `active`（`update_columns`，与 D9/D11 同范式），不触碰 `Payment` / `PaymentSession` / 账本。
-- **人工停用粘性**：`State.disable!` 之后 `State.resume!` **不会**恢复 —— 恢复只有 `State.enable!`（人工动作）。`resume!` 仅清熔断。
-- **不猜**：账户/能力未声明 → 对应维度不收窄，并产出 `account_not_configured`（info）而不是"全部可用"。
-- 本切片**不改写路径**：后台「支付方式」页签归一仍静默丢弃非法值（D1/D8 行为不变）；错配由只读诊断卡暴露。入口级**强制拒绝**仍属后续切片。
-- 诊断卡：`payment_methods` 编辑页 `[data-testid="provider-diagnostics"]`（三态徽标 + 6 行结论 + 诊断项）；**诊断本身只读**，唯一的写入口是卡内的账户配置表单（P0-B）。
-
-验证入口：`harness verify payment-providers-rspec`（config / state / validate / account 服务规格 + 后台诊断卡 + 账户配置请求规格）。
+> ⚠️ **不要把 `build_evidence_snapshot.rb` 的 `provider_capability?` 与已删的厂商层混淆** ——
+> 它是独立的**类级**契约检查（`class.instance_method(:fetch_dispute_details).owner != PaymentMethod`），零依赖，保留不动。
 
 ## Adding a payment gateway
 
@@ -1643,38 +1617,16 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
   CSV 导出保留原值（权限 + 审计保护），审计 payload **不落明文**。
 - **回归**：`harness verify d15-risk-lists-rspec`（43 例，含后台导航一致性）。
 
-## 熔断与健康 — 入口级软置灰（D11 切片1, 2026-09-16；PRD-20260916-payments-d11-circuit-breaker-health）
+## 熔断与健康 — 入口级软置灰（D11 切片1，2026-09-16）—— ★ 已于 2026-09-21 收敛切片 2 整体下线
 
-业务方案 §67.3：provider 抖动时**先把入口从前台摘掉**（软置灰），而不是让用户一路踩到支付失败。
-铁律：**零资金副作用** —— 只写 `metadata` + 审计；不取消会话、不改支付/订单/库存，零 provider 调用。
-
-- **状态机**（`PallasTrade::PaymentMethod`，状态存 metadata）：
-  - 已选项化 provider → `metadata['options'][i]['breaker']`（**入口级**）；未选项化 → `metadata['breaker']`（单入口）。
-  - 字段：`opened_at` / `until` / `reason` / `manual` / `failure_rate` / `sample_size`。
-  - `soft_disabled?(kind = nil, now:)` —— 手动置灰（`manual: true`）**粘性**（生效至人工解除）；
-    自动置灰**到期即失效**（状态行由 `Evaluate`/`SweepJob` 清理）。
-  - 写入口：`soft_disable!(kind:, reason:, manual:, until_at: nil, ...)` / `soft_enable!(kind = nil)`；
-    底层 `update_columns(private_metadata:)`（不触发 provider 校验/远端调用）。
-  - 阈值：`breaker_thresholds` = 默认 `{ min_samples: 10, failure_rate_threshold: 0.5, cooldown_seconds: 900 }`
-    + `metadata['breaker_thresholds']` 覆盖。
-- **指标口径**（`Payments::Health::Metrics.call(payment_method:, window: 24.hours, now:)`，卡面/判定**唯一口径**）：
-  `attempts`（窗口内 `PaymentSession` 行数）/ `failed`（status = failed；canceled/expired 不计）/ `failure_rate` /
-  `avg_seconds`（终态会话 `updated_at - created_at` 近似；无终态 = nil）/ `top_error_codes`
-  （入站事件 `action='failed'` 的 `last_error_class` Top5）。
-  ⚠️ **粒度是 provider 级**：会话不持久化入口（`PaymentSessions::Start#option_kind` 只做建会话前校验，D8），
-  入口级失败率无数据来源 → 自动判定按 provider 级聚合，对**全部生效入口**落状态；入口级粒度体现在状态与手工动作。
-- **判定/恢复**（`Payments::CircuitBreaker::Evaluate.call(payment_method:, now:)`，返回 `{ opened:, restored:, observed: }`）：
-  样本 ≥ `min_samples` 且失败率 ≥ 阈值 → 自动软置灰 `cooldown_seconds`（审计 `payment_option_auto_soft_disabled`）；
-  到期且非手动 → 自动恢复（`payment_option_breaker_restored`）；未达标/小样本/冷却中 → 不动（幂等）。
-- **巡检**：`Payments::CircuitBreaker::SweepJob`（`config/sidekiq_schedule.rb` 每小时 `15 * * * *`，
-  name `payment_circuit_breaker_sweep`）；单个 provider 异常只 warn 不中断；`perform(now:)` 传 **Time**（传字符串精度只到秒）。
-- **前台/Start 门禁**：`Availability::Resolver#option_allowed?` 先判 `soft_disabled?` → 软置灰入口从
-  「可用入口」消失（前台列表与 `PaymentSessions::Start` 同源）；`Resolver.evaluate` 额外给
-  `{ dimension: 'breaker', reason: 'breaker_open' }` 便于解释「为什么这个入口没出现」。
-- **后台**：provider 编辑页「熔断与健康」卡（24h 指标 + 逐入口状态/动作）；
-  `POST /admin/payment_methods/:id/soft_disable`（**必填 reason**，`manual: true` 粘性）/ `soft_enable`，
-  两者写审计（`payment_option_manually_soft_disabled` / `payment_option_manually_soft_enabled`），权限 = 资源 `update`。
-- **回归**：`harness verify d11-circuit-breaker-rspec`。
+> **已删除**：`Payments::CircuitBreaker` / `CircuitBreaker::Evaluate` / `Health::Metrics` / `CircuitBreaker::SweepJob`、
+> `PaymentMethod#breaker_state` / `#soft_disabled?` / `#soft_disable!` / `#soft_enable!` / `#breaker_thresholds`、
+> 后台 `soft_disable`/`soft_enable` 动作与「熔断与健康」卡、`Availability::Resolver` 的熔断门禁分支、
+> `sidekiq_schedule` 的 `payment_circuit_breaker_sweep` 巡检、验证器 `d11-circuit-breaker-rspec`。
+>
+> **取而代之**：入口可用性只由 **D8 适用范围 + D9 环境隔离 + D15c 认证闸门 + 能力收窄** 决定；
+> 运营需要「摘掉一个入口」时，直接用入口自身的 `active` 开关（条目级）或厂商记录停用。
+> 历史实现见 `harness/requirements/REQ-20260916-d11-circuit-breaker.md`。
 
 ## Payment availability scope —— 适用范围引擎（D8 首版, 2026-09-15；PRD-20260915-payments-d8）
 
@@ -1716,7 +1668,7 @@ business方案 §69：把「已具备但看不见」的入站事件变成可看/
 - **契约**：checkout 投影的支付方式项新增 `requires_authentication`（布尔，additive；隐藏 = 不出现）；Typelizer 生成的 `StoreCheckoutCheckout` 类型随契约更新（`harness generated:check` 零漂移；平台副本由 `scripts/ci/contracts.sh` 同步）。
 - **后台**：门店编辑页「3DS / SCA 策略」区块（模式 + 阈值 + 两个白名单，en↔zh-CN 键集相等）+ 支付方式入口表**只读**「可强制认证」列（来自 catalog）。
 - **铁律**：判定与闸门**零 provider I/O、零写库、零资金副作用**；不改 `Checkout::Preflight` 的启用条件与阻断行为；不改「支付成功 → 订单完成」链路；MIT 豁免、其它 provider 落地、挑战率看板属后续切片。
-- **回归**：`harness verify d15c-three-d-secure-rspec`（181 例；含 D8 / D11 / D16 / 契约 / 切片1·2 回归 + 导航）。
+- **回归**：`harness verify d15c-three-d-secure-rspec`（181 例；含 D8 / D16 / 契约 / 切片1·2 回归 + 导航）。
 
 ## 风控看板与阈值告警 —— 5 水位读模型 + 双档阈值（D3, 2026-09-17；PRD-20260917-payments-d3）
 

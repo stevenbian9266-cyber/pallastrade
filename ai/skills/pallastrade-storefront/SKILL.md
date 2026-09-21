@@ -636,7 +636,7 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 
 ### 设备钱包能力与降级（D7 补口 2/3, 2026-09-18；AC-011~AC-015）
 
-钱包入口的**服务端可用性**（D8/D11/D15c）与**设备能力**是两件事，后者只有客户端知道。
+钱包入口的**服务端可用性**（D8/D15c）与**设备能力**是两件事，后者只有客户端知道。
 读数模型集中在 `lib/checkout/wallet-availability.ts`（**改钱包行为先看它**）：
 
 - **点谁显示谁（AC-013）**：`expressPaymentMethodsFor(method_key)` 把选中钱包设 `always`、其余设 `never`。

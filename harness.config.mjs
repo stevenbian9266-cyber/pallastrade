@@ -254,10 +254,7 @@ export default {
       // PAY-CORE P0-A（PRD-20260920-checkout 支付核心统一 · 厂商层地基）：
       // 能力声明 / 账户配置 / 「能力 ∩ 账户 ∩ 市场」收窄校验 / 三态 + 后台只读诊断卡
       // PRD-20260920-checkout-支付核心统一-厂商层-支付方式层-方式级路由-组合支付-订单失效期 AC-001..AC-007
-      'payment-providers-rspec': {
-        description: 'Payment provider layer specs (capability + account config write + narrowing validation + three-state + admin diagnostics card)',
-        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/services/pallastrade/payments/providers/config_spec.rb spec/services/pallastrade/payments/providers/validate_spec.rb spec/services/pallastrade/payments/providers/state_spec.rb spec/services/pallastrade/payments/providers/account_spec.rb spec/requests/pallastrade/admin/payment_provider_diagnostics_spec.rb spec/requests/pallastrade/admin/payment_provider_account_spec.rb'],
-      },
+      // ★ 已于 2026-09-21 收敛切片 2+3 整体下线（厂商层抽象删除，验证器与 spec 一并移除）
       // D8 支付适用范围引擎（PRD-20260915-payments-d8）：入口/支付商按 market/country/zone/currency
       // PRD-20260915-payments-d8-支付适用范围引擎-支付商-支付方式-市场-国家-zone-币种-前台入口过滤 AC-009
       // 求值 + 前台/后台收集过滤 + Start 入口级校验 + 后台范围编辑与序列化投影
@@ -406,12 +403,7 @@ export default {
         description: 'Payment entry presentation specs (effective option read model, option_id/method_key/display_name serialization, optionized regression)',
         command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d16_payment_option_presentation_spec.rb spec/models/pallastrade/payment_method_options_spec.rb spec/serializers/pallastrade/api/v3/store/checkout/checkout_serializer_spec.rb spec/serializers/pallastrade/api/v3/cart_serializer_spec.rb'],
       },
-      // 支付熔断与健康（PRD-20260916-payments-d11-circuit-breaker-health 切片1）：软置灰状态机
-      // + 窗口健康指标 + 自动判定/到期恢复 + 巡检作业 + 前台可用性门禁 + 后台动作与卡面
-      'd11-circuit-breaker-rspec': {
-        description: 'Payment circuit breaker specs (soft-disable state machine + health metrics + evaluate/auto-recover + sweep job + resolver gating + admin actions/card)',
-        command: ['docker', 'exec', 'pallastrade-web-1', 'bash', '-c', 'cd /rails && DISABLE_SIMPLECOV_MINIMUM=1 bundle exec rspec spec/models/pallastrade/d11_soft_disable_spec.rb spec/services/pallastrade/payments/d11_health_metrics_spec.rb spec/services/pallastrade/payments/d11_circuit_breaker_spec.rb spec/jobs/pallastrade/payments/d11_circuit_breaker_sweep_job_spec.rb spec/services/pallastrade/payments/availability/d11_breaker_gating_spec.rb spec/services/pallastrade/payments/availability/resolver_spec.rb spec/requests/pallastrade/admin/d11_payment_method_soft_disable_spec.rb'],
-      },
+      // 支付熔断与健康（PRD-20260916-payments-d11）：已于 2026-09-21 收敛切片 2+3 整体下线
       // 对账差异队列（PRD-20260916-payments-d13-reconciliation-cases 切片1）：案例模型口径
       // + SyncCases 幂等/自动销案/签名取代/零资金副作用 + sweeper 接入 + 后台工作台（筛选/动作/CSV/权限）
       'd13-reconciliation-cases-rspec': {

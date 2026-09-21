@@ -762,7 +762,7 @@ store 侧支付方式 payload 的 **additive** 字段（不新增端点、不改
   - `group` / `position`（provider 级，取首个生效入口）。
 - store `PaymentMethodSerializer`（cart / order / shopping_cart 同族）：新增 `group` / `position` **与 `entries[]`**。
   ⚠️ 该通道**没有订单上下文**，所以入口列表是「已配置且启用」的集合（**不过滤**）——
-  前台因此能显示 Apple Pay / Google Pay；真正的可用性判定仍在 `PaymentSessions::Start`（带订单上下文，D8/D11/D15c 同源），
+  前台因此能显示 Apple Pay / Google Pay；真正的可用性判定仍在 `PaymentSessions::Start`（带订单上下文，D8/D15c 同源），
   被拒 → `422 payment_option_not_available` → 前台刷新列表 + 提示重选。
   （checkout 通道的 `entries[]` 才是带订单上下文的**过滤后**集合；两者字段形状一致。）
 

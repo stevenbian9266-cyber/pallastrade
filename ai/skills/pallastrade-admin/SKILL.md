@@ -423,14 +423,11 @@ end
 `PaymentMethod#payment_option_catalog`（provider 声明，Stripe = card/apple_pay/google_pay）∪ 已配置
 `metadata['options']`（目录外条目保留，避免保存丢数据）。
 
-> ⚠️ **S0（2026-09-20）—— 次级表单必须渲染在主表单之外**：编辑页的 `_provider_diagnostics`
-> （账户配置 `form_with` → `update_provider_account`）与 `_breaker`（软置灰 `form_with` → `soft_disable`）
-> 各自带独立 POST 表单，现由 `edit.html.erb` 分别在 `form_for` **之前/之后** render（诊断卡仍在内容列顶部；
-> 熔断卡在主表单之后）。**不要把它们挪回 `form_for` 内部**：嵌套 `<form>` 会被 HTML5 解析器丢弃起始标签，
-> 提交归属到外层主表单（实战：点「保存账户配置」把主表单保存一次、账户配置静默丢失）；且内层 `</form>`
-> 会把外层 form 移出开放元素栈，使**排在它后面的** `<form>` 反而能建出来（这正是 `_breaker` 长期侥幸可用
-> 的原因）—— 两者必须一起在表单之外。回归：`payment-providers-rspec` 内的 S0 结构断言
-> （`Nokogiri::HTML5` 解析 + “提交控件的最近祖先 form 必须是它自己”）。
+> ⚠️ **S0（2026-09-20）—— 次级表单必须渲染在主表单之外**：编辑页上任何自带独立 `form_with` 的区块
+> 都是独立 POST 表单（今日为 Stripe 专用版面 `provider_pages/_pallastrade_stripe.html.erb` 的连接 / 凭据区块）。
+> **不要把它们挪进 `form_for` 内部**：嵌套 `<form>` 会被 HTML5 解析器丢弃起始标签，提交归属到外层主表单
+> （实战：点「保存账户配置」把主表单保存一次、账户配置静默丢失）。该教训自 S0 起因次级表单而来 ——
+> 原 `_provider_diagnostics` / `_breaker` 两个次级表单已随收敛切片 2+3 删除，Stripe 版面的独立表单仍受此约束。
 
 - **写入口**：`Admin::PaymentMethodsController#permitted_resource_params` 归一表单参数
   `payment_method[payment_options][<kind>][active|display_name|position]` → `metadata['options']`。
@@ -461,11 +458,9 @@ end
 | 范式 | 与 `configuration_guide_partial_name` / `custom_form_fields_partial_name` / `description_partial_name` 同族；先例 `payments/new.html.erb` 的 `source_forms/#{method_type}`。**纯渲染侧**，不参与 availability / routing / start 任何求值 |
 | 共用块 | `_provider_settings.html.erb`（凭证 + 掩码 + custom form fields，**仅卡体**）与 `_display_settings.html.erb`（`show_environment:` 默认 true）从 `_form.html.erb` 抽出，两版面共用 |
 | Stripe 版面 | `provider_pages/_pallastrade_stripe.html.erb`：**首卡 =「连接」**（凭证 + 环境 + `[测试连接]` + 最近结果，同一卡）→ 显示设置（不含环境）→ 支付方式页签 → 凭据卡 |
-| 诊断卡位置 | 专用版面下由 `edit.html.erb` 移到**主表单之后**（让连接卡成为内容列第一张卡）；通用版面维持在主表单之前 |
 | 按钮归属 | 专用版面下 `_options` 卡**不再**渲染 `[测试连接]` 与结果（`show_test_connection = provider_page_partial_name.blank?`）—— 通用版面零回归 |
-| 已删除 | Stripe 的 `configuration_guide_partial_name` 与其实占 **0 字节**的 partial（FR-012）；P3-C 后台「支付路由」预览区块 + `PaymentsHelper#provider_routing_preview` + `routing_*` i18n 键（FR-013，**路由引擎保留**） |
-| 熔断卡 | 默认折叠（`stimulus-reveal-controller` + `card-header--collapsible` + `collapsible-content is-collapsed`，同 `dashboard/_setup_tasks` / `orders/_line_items`）；锚点 `#payment_method_breaker` 与动作不变 |
-| 回归 | `harness verify admin-payment-methods-rspec` / `payment-providers-rspec` / `d11-circuit-breaker-rspec` / `admin-theme-rspec` / `admin-i18n-rspec`；新增断言读 `data-testid="stripe-connection"` / `"stripe-test-connection"` / `"stripe-test-connection-result"` / `"payment-options"` / `"options-test-connection"` |
+| 已删除 | Stripe 的 `configuration_guide_partial_name` 与其实占 **0 字节**的 partial（FR-012）；P3-C 后台「支付路由」预览区块 + `PaymentsHelper#provider_routing_preview` + `routing_*` i18n 键（FR-013，**路由引擎亦已于收敛切片 1 删除**） |
+| 回归 | `harness verify admin-payment-methods-rspec` / `admin-theme-rspec` / `admin-i18n-rspec`；新增断言读 `data-testid="stripe-connection"` / `"stripe-test-connection"` / `"stripe-test-connection-result"` / `"payment-options"` / `"options-test-connection"` |
 
 > ⚠️ **不要**把专用版面的分派做成「按 `method_type` 猜 partial 名 + `lookup_context.exists?`」—— 隐式、
 > 重命名时会静默回落；用显式返回 `nil` 的声明式方法。新增 provider 专用版面只需在自家 gem 声明钩子 + 放 partial。
@@ -478,20 +473,11 @@ end
 - **reveal 动作**：`POST /admin/payment_methods/:id/reveal_credential`（member route）——`authorize! :update` + `can?(:manage, PallasTrade::Role.default_admin_role)` 双重门禁；响应 `turbo_stream`（就地替换 `#credential_value_<key>`）或 `json`；审计只记 key。
 - 回归：`harness verify d9-credentials-rspec`。
 
-## 支付熔断与健康：provider 详情页（D11 切片1, 2026-09-16，PRD-20260916-payments-d11-circuit-breaker-health）
+## 支付熔断与健康：provider 详情页（D11 切片1）—— ★ 已于 2026-09-21 收敛切片 2 整体下线
 
-- **「熔断与健康」卡**（`_breaker.html.erb`，**S0（2026-09-20）起由 `edit.html.erb` 在 `form_for` 之后 render（主表单之外）**；
-  **S1 起默认折叠**（可折叠外层：`reveal` + `collapsible-content is-collapsed`）；锚点 `#payment_method_breaker`）：
-  上表 = 24h provider 级指标（尝试/失败/失败率/平均时长/主要错误）；下表 = 逐入口状态（正常/已软置灰 + 恢复时间）+ 动作。
-  指标**只调** `Payments::Health::Metrics`（`PaymentsHelper#breaker_health_metrics`），页面不重算口径。
-- **手动动作**（member route）：`POST /admin/payment_methods/:id/soft_disable`（**必填 reason**，缺原因 → `flash[:error]` 且不改状态）
-  与 `POST /admin/payment_methods/:id/soft_enable`；权限 = `authorize! :update`；审计
-  `payment_option_manually_soft_disabled` / `payment_option_manually_soft_enabled`（metadata 记 kind + reason）。
-  手动置灰 = **粘性**（`manual: true`，巡检不会自动恢复）；自动置灰到期由 `Evaluate` 清理。
-- **页面自洽**：入口状态经 `PaymentMethod#breaker_state(kind)` / `soft_disabled?(kind)`；逐入口名用 `option_display_name(kind)`
-  （D16 读模型**扩参**，未传参行为不变）。
-- ⚠️ 历史坑：admin 编辑页路径参数是 **`prefixed_id`**（`pm_xxx`），spec 里写 `payment_method.id` 会 404。
-- **回归**：`harness verify d11-circuit-breaker-rspec`。
+> 该卡（`_breaker.html.erb`）、`soft_disable` / `soft_enable` 动作与路由、`PaymentsHelper#breaker_health_*`、
+> `breaker_*` i18n 键、`payment_option_manually_soft_disabled` 审计均已删除；验证器 `d11-circuit-breaker-rspec` 同步下线。
+> 入口级启停改由 `_options` 卡自身的 `active` 开关承担。
 
 ## 对账队列工作台（D13 切片1, 2026-09-16，PRD-20260916-payments-d13-reconciliation-cases）
 

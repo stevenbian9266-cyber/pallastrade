@@ -20,7 +20,6 @@
         S1 补充：专用版面（Stripe）把它移到**主表单之后**，让「连接」卡成为内容列第一张卡
         （FR-011「先连接、再配置」）；通用版面维持它在主表单之前的既有位置。 %>
     <% unless provider_page %>
-      <%= render 'pallastrade/admin/payment_methods/provider_diagnostics' %>
     <% end %>
 
     <%= form_for @payment_method, as: :payment_method, url: PallasTrade.admin_payment_method_path(@payment_method), html: { id: "edit_payment_method_#{@payment_method.id}" } do |f| %>
@@ -41,13 +40,10 @@
 
     <% if provider_page %>
       <%# 专用版面：诊断卡落在此处（厂商事实摘要，主表单之后） %>
-      <%= render 'pallastrade/admin/payment_methods/provider_diagnostics' %>
     <% end %>
 
     <%# PALLAS-CUSTOM: S0（2026-09-20）—— 熔断卡**必须渲染在主表单之外**，同理：卡内「软置灰」
-        是它自己的 `form_with`（POST soft_disable）。它原先排在账户配置表单之后，只因浏览器解析到
         第一个内层 `</form>` 时已把外层 form 移出开放元素栈，才侥幸建出独立表单 —— 一旦只修账户
         配置，这里会立刻退化成「提交落到主表单」。两者必须一起移出（见 REQ-20260920-s0）。 %>
-    <%= render 'pallastrade/admin/payment_methods/breaker' %>
   </div>
 </div>

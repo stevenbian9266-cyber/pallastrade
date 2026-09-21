@@ -314,7 +314,7 @@ end
 
 - **契约（additive）**：`payment.available_payment_methods[]` 新增 `entries[]`（`option_id` / `method_key` / `display_name` /
   `frontend_kind` / `group` / `position`）+ provider 级 `group` / `position`。**行基数由「一 provider 一行」变为「一入口一行」**，
-  顺序 = 后台 `position`；入口集合仍由服务端 `Availability::Resolver` 决定（D8 范围 / D11 熔断 / D15c 认证闸门同源）。
+  顺序 = 后台 `position`；入口集合仍由服务端 `Availability::Resolver` 决定（D8 范围 / D15c 认证闸门 认证闸门同源）。
 - **客户端零筛选（红线）**：前端只按 `frontend_kind` 选渲染槽 —— `inline` → 自绘卡字段、`express` → 钱包按钮、`manual` → 说明行；
   **不得**按 `kind` 隐藏/排序入口。旧响应（无 `entries`）→ 回落单行（`display_name ?? name`），零回归。
 - **`option_kind` 随会话下发**：三条通道（orders 会话 / durable transactions / cart legacy 会话）都能把所选入口传到
