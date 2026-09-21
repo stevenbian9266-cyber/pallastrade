@@ -901,6 +901,58 @@ flowchart LR
 
 ---
 
+### 9.1 实施记录（2026-09-21 收口）
+
+> 本收敛已于 2026-09-21 全部交付并推送至 `dev`。下表为**实际落地情况**，与 §9 计划逐条对应。
+
+| 切片 | 状态 | 提交 | 与计划**不同的地方** |
+|---|---|---|---|
+| 0 清算 | ✅ | — | 丢弃 S3 WIP、关 gate |
+| 1 删路由 | ✅ | `858f6260` | — |
+| 2 删熔断 | ✅ | `742bea34` | **与切片 3 合并提交** —— `Providers::State` 调用了 `soft_enable!`，拆开做会留下中间态 |
+| 3 删厂商层 | ✅ | `742bea34` | 同上；另发现 `build_evidence_snapshot#provider_capability?` 是**独立类级契约检查**（零依赖），**保留未删** |
+| 4 删范围 | ✅ | `99c54d99` | — ；契约变更（admin API 去 `rule_set`/`scope_summary`）已随本切片单独提交 |
+| 5 删第三方厂商 | ✅ | `b3ee8a9c` | **Bogus「出注册表」方案被修正为「职责拆分」**（详见 §9.2）；dev 库旧记录**改为停用而非删除**（详见 §9.3） |
+| 6 后台收敛 | ✅ | `f1cc29b4` | 完成了 §6.3「页面删除项」的**删除部分**；§6.3 的「② 支付方式四象限表」属**新增功能**，未纳入（详见 §9.4） |
+| 7 知识同步 | ✅ | 本次提交 | — |
+| 8 Place Order 正名 | ✅ | `fb97f267` | 先行完成（不依赖 1–6） |
+| 9 订单可见性补齐 | ✅ | `45324679` / `10f0525a` | FR-002（后台状态筛选）**降级为 P2** —— 订单表 DSL 未暴露 `state` 可筛选字段，未验证前不交付 |
+
+### 9.2 修正：Bogus 出后台下拉改为「职责拆分」
+
+§11 决策 #4 原方案「把 `Gateway::Bogus` 移出 `config.pallastrade.payment_methods`」**技术上不成立**：
+该注册表**同时**是 `PaymentMethod` 的 `type` 白名单（`Gateway#valid_providers_list`）。移出后
+全部 `create(:bogus_payment_method)` 立即 `Validation failed: Type is not included in the list`，
+7 个 spec 崩溃 —— 恰是该决策想避免的后果。
+
+**实际做法**（零破坏）：
+
+- `PaymentMethod.providers`（= 注册表）**保留 Bogus** → STI 校验与测试造数不受影响
+- 新增 `PaymentMethod.selectable_providers` = `providers - [Gateway::Bogus]` → **后台「新增支付方式」下拉专用**
+- 后台控制器 `allowed_payment_types` 改走 `selectable_providers`
+
+效果与决策 #4 一致（后台不再可建 Bogus 记录），且不牵动任何造数路径。
+
+### 9.3 偏差：dev 库旧记录改为「停用」而非「删除」
+
+§11 决策 #5 要求「清掉 `Credit Card`(Bogus) 与 `chk` 两条记录」。实际执行改为 **`active = false`**：
+这两条被 **4 payments + 3 payment_sessions** 引用 —— 删除会破坏财务记录完整性。
+停用后前台与后台均不再可选，效果等价而引用完整。
+
+### 9.4 未纳入：§6.3「② 支付方式四象限表」
+
+§6.3 描述的 Stripe 页最终形态中，②卡片是「**Stripe 账户事实 × 本地实现能力**」四象限表
+（需拉取 Stripe 账户已启用的支付方式，并据此渲染可开/置灰/折叠三态）。
+这是**新增功能**而非收敛 —— 按 R8 属 feature/PRD 范畴，需独立 PRD 与用户确认，**本收敛未包含**。
+
+### 9.5 已知遗留
+
+| 遗留 | 说明 | 建议 |
+|---|---|---|
+| `pallastrade_adyen_payment_sessions` 表 | Adyen gem 的历史产物；`schema.rb` 仍有该表，2 个 gem 自带迁移（`20260427130659` / `20260427130660`）按「不得修改历史迁移」保留 | 单开一刀 `drop_table` 迁移清理 |
+| `prepare` BFF 兼容别名 | 切片 8 保留的薄别名（`/api/checkout/prepare` → `place-order`） | 观察一个发布周期后再删（原 §12 Q-1） |
+| 后台支付方式状态筛选 | 切片 9 FR-002 降级项 | 需先扩展订单表 DSL 暴露 `state` 可筛选字段 |
+
 ## 10. 风险与代价
 
 | 风险 | 说明 | 缓解 |

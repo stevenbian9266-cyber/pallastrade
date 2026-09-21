@@ -132,7 +132,6 @@ prompts:
   - file://prompts/gs-127.txt
   - file://prompts/gs-128.txt
   - file://prompts/gs-129.txt
-  - file://prompts/gs-130.txt
   - file://prompts/gs-131.txt
   - file://prompts/gs-132.txt
   - file://prompts/gs-133.txt
@@ -143,7 +142,6 @@ prompts:
   - file://prompts/gs-138.txt
   - file://prompts/gs-139.txt
   - file://prompts/gs-140.txt
-  - file://prompts/gs-141.txt
   - file://prompts/gs-142.txt
   - file://prompts/gs-143.txt
   - file://prompts/gs-144.txt
@@ -200,8 +198,6 @@ prompts:
   - file://prompts/gs-195.txt
   - file://prompts/gs-196.txt
   - file://prompts/gs-197.txt
-  - file://prompts/gs-198.txt
-  - file://prompts/gs-199.txt
   - file://prompts/gs-200.txt
   - file://prompts/gs-201.txt
   - file://prompts/gs-202.txt
