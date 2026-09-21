@@ -377,7 +377,7 @@ New Cart entity (`pallastrade_carts`, independent table — see `pallastrade-dat
    **右栏费用读模型（PRD-20260919-checkout-order-summary-fee-read-model，2026-09-19）**：订单摘要的费用行采用**三级优先** —— ① `Prepare` 返回的 Order 权威报价（`display_delivery_total` / `display_discount_total` / `display_tax_total` / `display_amount_due`，经 `UnifiedOrderSummary` 的 `quote` prop 与主列确认区**同源同值**）→ ② legacy 计算值（用户本次操作抵扣后才有）→ ③ **短标签** `checkout.calculatedAtSubmit`（绝不再把整句说明当金额，也绝不显示 0）。费用行的**存在性**由服务端意图驱动（`cart.discount_code` / `cart.gift_card` / `cart.store_credit`）——旧实现只认 legacy `discountCart`（仅本次操作后赋值），导致刷新后折扣/税行整体消失；现已修复。总额标签随报价切换：`totalDue`（权威 `display_amount_due`）/ `estimatedTotal`（legacy 计算值 → 小计，**不用未折扣小计冒充含折扣总额**）；无报价时底部附 `checkout.feesCalculatedAtSubmit` 注记。BFF `readQuote` 已补齐 `tax_total` / `display_tax_total`（`CheckoutView` 既有字段，零后端改动）。
 3. **Order payment** `/{country}/{locale}/checkout/[id]`（`components/checkout/OrderPaymentContent.tsx`，`or_` 订单模式）：read-only shipping and direct card form. It creates/reuses the existing Order session and ends at the unified payment result. Non-session methods remain pending and also use the result page. B1（PRD-20260914-checkout B1）：抵扣行（gift card / store credit）、支付方式列表与「编辑/支付」门控全部取自服务端 CheckoutView（`credits` / `payment.available_payment_methods` / `capabilities`），order 快照仅作兼容回退；展示遵循 money 契约（raw 判逻辑、display 仅渲染、抵扣正值 + UI 负号）。
 4. **Buy Now** creates an isolated Cart tagged with `checkout_source=buy_now` + `previous_cart_id`; after submit the BFF restores the previous regular Cart cookie from `successor_cart`.
-5. **Cashier modal（个人中心场景 D）** `components/checkout/PaymentCheckoutModal.tsx`：only payment UI, never Cart submit/Order create. Single Order uses Order sessions; multi-order uses PaymentCombination. Every provider success/failure/cancel/pending outcome navigates to the same server-authoritative result page instead of closing and guessing via `router.refresh()`.
+5. **Cashier modal（个人中心场景 D）** `PaymentCheckoutModal`（已退役）：only payment UI, never Cart submit/Order create. Single Order uses Order sessions; multi-order uses PaymentCombination. Every provider success/failure/cancel/pending outcome navigates to the same server-authoritative result page instead of closing and guessing via `router.refresh()`.
 6. **库存错误与履约结果页（PRD-20260915-checkout B3，2026-09-15）**：结账页按服务端 code 分流三态库存错误——`INSUFFICIENT_STOCK` → 专属标题 + [返回购物车]；`INVENTORY_CHANGED` → 专属标题 + 「检查购物车」；`RESERVATION_EXPIRED` → **自动重试一次**（仅该码），失败回落为手动 [重新确认库存]。**约束**：`INSUFFICIENT_STOCK`/`INVENTORY_CHANGED` **不得自动重试**（§26/§27：不得继续创建新 PaymentSession），自动重试不得新建订单、且一次为限（`stockRetryRef` 守卫 + 等 `payProcessing` 复位后的 effect 触发）。支付结果页（`payment-result/[id]`）对已找到的订单**所有状态**渲染履约摘要（`order` 命名空间的 Ship to / Delivery / Items / Paid / Promotion savings + 「查看订单」；非成功态用 `orderContents` 副标题，**绝不出现 “Order confirmed”**）；多履约经 `components/order/ShippingGroups.tsx` 按 Shipment 分组（单履约不渲染分组标题；`fulfillment.items[].item_id` 找不到 line item 时静默降级）；`?session=` 只用于服务端状态判定，transaction / reservation / payment session 标识一律不进 DOM（§37）。
 
 Keys: cart items use `selected`; submitted Orders get short-lived HttpOnly checkout-token cookies because the current-cart cookie may switch to a successor. Totals always come from the API. **Money 契约（PRD-20260913-checkout-money-contract，2026-09-13）：raw 金额字段（`delivery_total` / `tax_total` / `discount_total` …）只用于条件判断；`display_*` 只用于渲染** —— 禁止 `parseFloat/Number(display_*)`（display 含货币符号 → `NaN`；`OrderPaymentContent` 运费/税行曾因此不渲染；邮件 `order-confirmation` 同理需传 raw 入参）。"TOTAL SAVINGS" 只统计促销折扣（`|discount_total|`），礼品卡 / 店铺余额是支付手段，单列不计入节省。Result text lives under `paymentResult.*` in all five locales.
@@ -391,7 +391,7 @@ Keys: cart items use `selected`; submitted Orders get short-lived HttpOnly check
 - **降级**：Prepare 未返回权威报价（服务端降级）→ 不比对、不渲染确认区，保持一次点击直付。
 - **支付区瞬时渲染（FR-011）**：`WalletButtonSkeleton`（固定高度 `h-12`，列数 = `maxColumns`，`data-testid="wallet-buttons-skeleton"` + `wallet-skeleton-slot[data-state]`）首帧即占住钱包按钮槽位（元素全程挂载，Stripe 初始化不受影响；就绪只切透明度 → 原位替换，CLS < 0.02）；`showDivider` 的「or」分隔线**位置恒定**（`unknown` 态即占位，不再等就绪才出现）；`next/dynamic` 的钱包片段带 `loading: () => <WalletButtonSkeleton />` 兜底。
 - **js.stripe.com 预热**：`StripeResourceHints`（`components/checkout/StripeResourceHints.tsx`）由 `UnifiedCheckout` / `OrderPaymentContent` 在「确有 Stripe 支付方式 + **首屏 payload** 下发 publishable 凭据」时渲染 `preconnect` / `dns-prefetch` / `preload as=script`（URL 必须 = `https://js.stripe.com/v3/`，与 `loadStripe` 注入一致；不传 `crossOrigin`）。凭据只认 `payment_methods[].client_config`（与 `PaymentMethods::ClientConfig` 同源，`payloadStripePublishableKey`，**无 env 回落**）——无凭据 = 本页不加载 Stripe.js，一个 link 都不发。
-- 覆盖测试：`__tests__/UnifiedCheckout.test.tsx`（一次点击 / 变化才确认 / 输入变化作废 / 409 后带新版本 / 预热）、`__tests__/ExpressCheckoutButton.test.tsx`（骨架原位替换 + 列数 + 分隔线恒定）、`__tests__/StripeResourceHints.test.tsx`、`lib/__tests__/checkout-quote.test.ts`；改动后跑 `storefront-test`。
+- 覆盖测试：`storefront/src/components/checkout/__tests__/UnifiedCheckout.test.tsx`（一次点击 / 变化才确认 / 输入变化作废 / 409 后带新版本 / 预热）、`storefront/src/components/checkout/__tests__/ExpressCheckoutButton.test.tsx`（骨架原位替换 + 列数 + 分隔线恒定）、`storefront/src/components/checkout/__tests__/StripeResourceHints.test.tsx`、`lib/__tests__/checkout-quote.test.ts`；改动后跑 `storefront-test`。
 
 **订单可见性：支付失败就地入口 + 游客「最近一笔」找回（切片 9，PRD-20260920-checkout-订单可见性补齐，2026-09-21）**：起因是顾客报「点了支付但看不到订单」—— 取证后确认**订单确实已创建**（`POST /api/checkout/prepare` 的 `carts.submit` 就是建单），真正的问题是**顾客与运营都找不到它**。三个口径已改：
 
@@ -399,7 +399,7 @@ Keys: cart items use `selected`; submitted Orders get short-lived HttpOnly check
 - **游客找回入口（FR-004）**：新增**无需登录**的 `/{country}/{locale}/orders/recent`（`app/[country]/[locale]/(checkout)/orders/recent/page.tsx`）。授权**只**来自服务端 HttpOnly checkout cookie（复用既有 `lib/pallastrade#getPendingCheckoutOrderId`）：值为 `or_` 前缀 → 302 到 `payment-result/{id}`；否则渲染空态（`orders.noRecentOrderTitle` + 「返回购物车」）。**绝不**读取任何请求参数来指定订单 id（否则就是一个订单号枚举接口），且空态与「订单不存在」**不可区分**（不泄露存在性）。已知限制：cookie 是**单值**，只能恢复**最近一笔**。
 - **后台那一半（FR-001，后端，见 `pallastrade-admin`）**：`/admin/orders` 读口径改为「**已提交 ∪ 已完成**」，运营终于能看到 `pending`（顾客点了支付未付成）与已支付未 finalize 的订单。前台侧无需改动，但**这是「付款失败后订单还在」能被运营跟进的另一半**。
 - **已知限制（是既有设计，不是缺陷）**：游客订单**不进** `/account/orders`（该页按 `user_id` 作用域且要求登录），注册/登录也**不回溯关联已建订单** —— 详见 `pallastrade-checkout` 的 guest checkout 一节。游客的订单凭证**始终是 order token**；本次补的是**发现入口**，**不是**改鉴权，也**没有**引入 email 回溯关联。
-- 覆盖测试：`__tests__/UnifiedCheckout.test.tsx`（失败入口 href / 只建一次单 / 零跳转）、`app/[country]/[locale]/(checkout)/orders/recent/__tests__/page.test.tsx`（302 / 空态 / 非法 cookie 值 / 外部 `?order_id=` 被忽略）；文案键 `checkout.orderCreatedTitle|orderCreatedHint|viewOrder|continuePayment` 与 `orders.noRecentOrderTitle|noRecentOrderDescription|backToCart`（**五语言同步**，storefront 无 zh-CN —— zh-CN 是**后台 admin** 的约定）。
+- 覆盖测试：`storefront/src/components/checkout/__tests__/UnifiedCheckout.test.tsx`（失败入口 href / 只建一次单 / 零跳转）、`app/[country]/[locale]/(checkout)/orders/recent/__tests__/page.test.tsx`（302 / 空态 / 非法 cookie 值 / 外部 `?order_id=` 被忽略）；文案键 `checkout.orderCreatedTitle|orderCreatedHint|viewOrder|continuePayment` 与 `orders.noRecentOrderTitle|noRecentOrderDescription|backToCart`（**五语言同步**，storefront 无 zh-CN —— zh-CN 是**后台 admin** 的约定）。
 
 **历史（PRD-20260915-checkout-单页两段语义，2026-09-15；2026-09-20 由上面的 P1-a 取代）**：旧行为 = 首次点击只 Prepare + 页内「最终金额」确认区（`data-testid="order-quote-confirm"`）→ 第二次点击才 Pay。`preparedOrder` 记忆订单的语义保留（重试 / 预留过期自动重试**不重复 submit 购物车**）；确认区现在**只在金额变化时**出现。
 **CI 提示（2026-09-15 实测踩坑）**：`pnpm check`（= `biome check .`）是**全量**检查——改完组件/测试后必须跑全量，而不是只跑改动文件；测试断言里禁止 `(call?.[1] as RequestInit).body` 这种「可选链 + 断言后立即取成员」写法（`lint/correctness/noUnsafeOptionalChaining`），先赋值再取 `.body`；`messages/*.json` 新增长文案后需 biome 格式化，否则 CI 红灯。
@@ -587,7 +587,7 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 
 - `display_name` / `method_key` / `option_id` 由 store API 下发（见 `pallastrade-api-v3` Skill 的 D16 小节）；前台**不要**自己
   从 `option_id` 拆字符串拼展示名，也不要按 provider 名做分支——入口语义一律以 `method_key` 为准。
-- 三处渲染点：`components/checkout/OrderPaymentContent.tsx`、`components/checkout/PaymentCheckoutModal.tsx`、
+- 三处渲染点：`components/checkout/OrderPaymentContent.tsx`、`PaymentCheckoutModal`（已退役）、
   `components/checkout/UnifiedCheckout.tsx`（注意同文件里还有运输方式行，改动要落在 `name="payment-method"` 块）。
 - 覆盖测试：`components/checkout/__tests__/OrderPaymentContent.test.tsx`（有 `display_name` 渲染展示名 + 无 `display_name` 回落
   provider 名）；改动后跑 `storefront-test`。
@@ -631,8 +631,8 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
   （`pay-now-button` / `mobile-pay-button`）避免同名查询歧义。
 - **`option_kind` 透传**：`lib/data/order-payment.ts`（第 5 个参数 `startOptions.optionKind`）与
   BFF `/api/checkout/start`（`body.option_kind`）两处；cart Pay 请求也会带 `option_kind`。
-- 覆盖测试：`__tests__/WalletPaymentButtons.test.tsx`（AC-007/008：option_kind 下发、client_secret 确认、拒绝后刷新）、
-  `__tests__/OrderPaymentContent.test.tsx`（AC-006/007/008/009/010）；改动后跑 `storefront-test`。
+- 覆盖测试：`storefront/src/components/checkout/__tests__/WalletPaymentButtons.test.tsx`（AC-007/008：option_kind 下发、client_secret 确认、拒绝后刷新）、
+  `storefront/src/components/checkout/__tests__/OrderPaymentContent.test.tsx`（AC-006/007/008/009/010）；改动后跑 `storefront-test`。
 
 ### 设备钱包能力与降级（D7 补口 2/3, 2026-09-18；AC-011~AC-015）
 
@@ -667,8 +667,8 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
 - **两页同口径**：cart 页（`UnifiedCheckout`）与 `or_` 页（`OrderPaymentContent` 页内槽位 + 移动吸底条）接线一致；
   cart 页选中钱包入口时**隐藏 Pay Now**、且不再渲染无意义的 `Processing...`；cart 页钱包槽位 **`showDivider={false}`**
   （只有抽屉下面真的有「去结账」按钮，分隔线才成立）。
-- 覆盖测试：`__tests__/ExpressCheckoutButton.test.tsx` / `WalletPaymentButtons.test.tsx`（三态 + 按入口过滤 + 看门狗 + 未配置）、
-  `__tests__/UnifiedCheckout.test.tsx` / `OrderPaymentContent.test.tsx`（回落 + 原因标注 + 重试 + 无 `Processing...`）；改动后跑 `storefront-test`。
+- 覆盖测试：`storefront/src/components/checkout/__tests__/ExpressCheckoutButton.test.tsx` / `WalletPaymentButtons.test.tsx`（三态 + 按入口过滤 + 看门狗 + 未配置）、
+  `storefront/src/components/checkout/__tests__/UnifiedCheckout.test.tsx` / `OrderPaymentContent.test.tsx`（回落 + 原因标注 + 重试 + 无 `Processing...`）；改动后跑 `storefront-test`。
 
 ### 顶部快捷支付区 + Stripe 语种跟随（2026-09-19；PRD-20260919-payments-checkout-top-express-pay-locale）
 
@@ -691,7 +691,7 @@ The rule: **anything customer-visible is the storefront. Anything that touches d
   此前未传 → Stripe 按**浏览器语言**渲染（中文浏览器上显示中文按钮，与站点语种不符）。
   ⚠️ **平台限制**：Apple Pay 按钮/弹层语言由 **Apple 设备系统**决定，站点 `locale` 不保证改变之
   （Google Pay 同理有 Google 侧规则）；实测口径见 PRD §NFR-007。
-- 覆盖测试：`__tests__/TopExpressPay.test.tsx`（渲染条件/入口集合/常显/凭据/不再订阅 availability）、
+- 覆盖测试：`storefront/src/components/checkout/__tests__/TopExpressPay.test.tsx`（渲染条件/入口集合/常显/凭据/不再订阅 availability）、
   `ExpressCheckoutButton.test.tsx` 的 `(top express area)` 段（多入口配置/2 列/locale/option_kind/降级）、
   `lib/__tests__/stripe-locale.test.ts`；改动后跑 `storefront-test`。
 

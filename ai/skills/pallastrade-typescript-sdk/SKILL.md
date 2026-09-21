@@ -83,7 +83,7 @@ New `Cart` entity (`pallastrade_carts`) plus order-domain payments:
 - Cart line items accept `selected?: boolean` (`UpdateLineItemParams` / `UpdateCartItemParams`) — only selected items are submitted to the order.
 - `client.carts.giftCards.apply(cartId, code, options?)` / `.remove(cartId, code, options?)` — `POST/DELETE /carts/:cart_id/gift_cards[/:id]` (PRD-20260914-checkout-cart-gift-cards-canonical). Both cart kinds resolve: a `cart_` canonical cart validates the code and stores cart-stage intent (`ShoppingCart.gift_card: { code, display_amount_remaining }`, no payment/balance touched — it is redeemed by `carts.submit`), while a legacy `or_` cart applies the card immediately. Error codes are identical for both (`gift_card_not_found` 404, `gift_card_expired` / `gift_card_already_redeemed` 422), and removal is idempotent.
 - `client.carts.storeCredits.apply(cartId, amount?, options?)` / `.remove(cartId, options?)` — `POST/DELETE /carts/:cart_id/store_credits` (PRD-20260914-checkout-cart-store-credits-canonical). Requires a Bearer JWT (store credit is account property). On a `cart_` cart it stores cart-stage intent (`ShoppingCart.store_credit: { amount, display_amount }`, redeemed on `carts.submit`); omitting `amount` uses the full available credit. Store credit and gift cards are mutually exclusive per cart, mirroring the order-level rule.
-- `ShoppingCart` 抵扣意图字段（PRD-20260914-checkout B2，2026-09-14）：`discount_code?: string | null`、`gift_card?: { code, display_amount_remaining } | null`、`store_credit?: { amount, display_amount } | null` —— 三者都是**车阶段意图**（零资金副作用，`carts.submit` 时兑现），类型来自 `ShoppingCartSerializer` 的 typelize 对象字面量 + `sdk/src/types/index.ts` 手写接口（两者需同步扩展）；错误码（`coupon_code_not_found` / `gift_card_expired` / `store_credit_requires_login` / `store_credit_gift_card_conflict`）由 `PallasTradeError.code` 透出，供 UI 映射文案；`carts.storeCredits.apply` 省略 amount = 用尽可用余额（未登录 → 401 `store_credit_requires_login`）。
+- `ShoppingCart` 抵扣意图字段（PRD-20260914-checkout B2，2026-09-14）：`discount_code?: string | null`、`gift_card?: { code, display_amount_remaining } | null`、`store_credit?: { amount, display_amount } | null` —— 三者都是**车阶段意图**（零资金副作用，`carts.submit` 时兑现），类型来自 `ShoppingCartSerializer` 的 typelize 对象字面量 + `platform/packages/sdk/src/types/index.ts` 手写接口（两者需同步扩展）；错误码（`coupon_code_not_found` / `gift_card_expired` / `store_credit_requires_login` / `store_credit_gift_card_conflict`）由 `PallasTradeError.code` 透出，供 UI 映射文案；`carts.storeCredits.apply` 省略 amount = 用尽可用余额（未登录 → 401 `store_credit_requires_login`）。
 
 ### Cart-domain legacy methods are @deprecated (PRD-20260915-checkout B5, 2026-09-15)
 
@@ -95,7 +95,7 @@ New `Cart` entity (`pallastrade_carts`) plus order-domain payments:
 
 ### 支付入口（`option_kind`）与入口级投影（D7, 2026-09-18；PRD-20260918-payments-d7-payment-section-express）
 
-- **手写请求类型**：`sdk/src/types/index.ts` 的 `CreateOrderTransactionParams` 与 `CreatePaymentSessionParams` 新增可选 `option_kind?: string`
+- **手写请求类型**：`platform/packages/sdk/src/types/index.ts` 的 `CreateOrderTransactionParams` 与 `CreatePaymentSessionParams` 新增可选 `option_kind?: string`
   （`card` / `apple_pay` / `google_pay` …）。三条通道都接受：`orders.transactions.create`、`orders.paymentSessions.create`、
   `carts.paymentSessions.create`（legacy）；缺省 = provider 默认入口（零回归）。
 - **响应类型（Typelizer 生成，勿手改）**：

@@ -1346,7 +1346,7 @@ Stripe 自述「仅开发环境显示、客户不会看到」，但 dev / stagin
 - **禁止 CSS/DOM 屏蔽**：该浮层属 Stripe 的 **Easel** UI 体系（`<hash>__Easel-contentWrapper`），类名 hash 随 Stripe.js 版本漂移，
   且同一体系承载**真实支付面**（卡表单 / 钱包 / 弹层）——盲屏蔽会把支付 UI 一并弄挂。
 - **全仓两处实例化点必须同修**：① `storefront/src/lib/utils/stripe.ts` 的 `STRIPE_DEVELOPER_TOOLS_DISABLED`（前台单例 `getStripePromise`）；
-  ② `platform/payments/pallastrade_stripe/app/javascript/.../stripe_button_controller.js`（Stimulus，`loadStripe` 与全局 `Stripe` 两条分支）。
+  ② `platform/payments/pallastrade_stripe/app/javascript/pallastrade_stripe/controllers/stripe_button_controller.js`（Stimulus，`loadStripe` 与全局 `Stripe` 两条分支）。
 - 回归：`storefront-test`（`stripe-client-config.test.ts` 断言必须传该选项 + 密钥双路径 + 缓存语义）。
 
 ## Webhook 治理 — 入站事件运营面（D12 首版, 2026-09-15；PRD-20260915-payments-d12-webhook-governance）
