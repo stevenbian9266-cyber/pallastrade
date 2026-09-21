@@ -19,11 +19,22 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { getCheckoutOptions, getClient } from "@/lib/pallastrade";
 
-/** Prepare 请求体（两段语义第一段：产出 Order 权威报价）。 */
-export interface CheckoutPrepareBody {
+/**
+ * Place Order 请求体（两段语义**第一段：建单**）。产出 Order 权威报价。
+ *
+ * PRD-20260921-checkout-place-order-正名与显式化 FR-004：由 `CheckoutPrepareBody`
+ * 正名而来（`prepare` 名字暗示「预检」，实际在**建单**）。
+ */
+export interface CheckoutPlaceOrderBody {
   cart_id: string;
   checkout: CheckoutParams;
 }
+
+/**
+ * @deprecated 旧名 alias（同 PRD FR-004）—— 仅为避免外部引用断裂而保留。
+ * 新代码请用 `CheckoutPlaceOrderBody`。
+ */
+export type CheckoutPrepareBody = CheckoutPlaceOrderBody;
 
 export interface CheckoutParams {
   email?: string;

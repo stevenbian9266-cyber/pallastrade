@@ -671,7 +671,7 @@ export function UnifiedCheckout({
    * PRD-20260915-checkout-单页两段语义：Prepare 之后的「最终金额确认区」。
    * 点 Pay Now 先 prepare（update + submit → Order 权威报价），金额展示后才发起 Pay。
    */
-  const [preparedOrder, setPreparedOrder] = useState<{
+  const [placedOrder, setPlacedOrder] = useState<{
     id: string;
     /** 面客订单编号（`R…`）—— 支付失败提示里展示给顾客（PRD-20260920-checkout-订单可见性补齐 FR-003） */
     number?: string;
@@ -826,7 +826,7 @@ export function UnifiedCheckout({
         cart={cart}
         discountCart={discountCart}
         couponHandlers={couponHandlersRef.current}
-        quote={preparedOrder?.quote ?? null}
+        quote={placedOrder?.quote ?? null}
         preview={preview}
         previewPending={previewPending}
       />,
@@ -842,7 +842,7 @@ export function UnifiedCheckout({
   }, [
     cart,
     discountCart,
-    preparedOrder,
+    placedOrder,
     setSummaryContent,
     setSummaryMeta,
     preview,
@@ -1030,7 +1030,7 @@ export function UnifiedCheckout({
    */
   // biome-ignore lint/correctness/useExhaustiveDependencies: 仅作「输入变化」触发器，不读这些值
   useEffect(() => {
-    setPreparedOrder(null);
+    setPlacedOrder(null);
     setQuoteDiff(null);
     stockRetryRef.current = false;
   }, [address, shippingMethodId, useShippingForBilling, billAddress]);
@@ -1039,7 +1039,7 @@ export function UnifiedCheckout({
     cardFormRef.current = handle;
   }, []);
 
-  /** Prepare / Pay 共用的结账载荷（邮箱 / 地址 / 物流 / 账单语义）。 */
+  /** Place Order / Pay 共用的结账载荷（邮箱 / 地址 / 物流 / 账单语义）。 */
   const buildCheckoutPayload = () => ({
     email: email || undefined,
     shipping_address: formDataToAddress(address),
@@ -1055,11 +1055,11 @@ export function UnifiedCheckout({
   });
 
   /**
-   * PRD-20260915-checkout-单页两段语义 **第一段 Prepare**：保存填写内容并提交订单，
+   * PRD-20260915-checkout-单页两段语义 **第一段 Place Order**：保存填写内容并提交订单，
    * 取回 Order 权威报价（含运费/税费）。返回值后页面据此展示确认区；
    * 失败（含未建单）返回 null（已提示用户）。
    */
-  const prepareOrder = async (): Promise<{
+  const placeOrder = async (): Promise<{
     id: string;
     number?: string;
     quote: CheckoutQuote | null;
@@ -1068,7 +1068,7 @@ export function UnifiedCheckout({
     setPayProcessing(true);
     setProcessingStage("submitting");
     try {
-      const response = await fetch("/api/checkout/prepare", {
+      const response = await fetch("/api/checkout/place-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1131,16 +1131,16 @@ export function UnifiedCheckout({
     // FR-012（P1-a）：**一次点击直达** —— 首次点击先 Prepare（建单 + Order 权威报价），
     // 若金额与顾客**已看到**的金额一致，就在同一次点击里继续发起支付（不再强制两步确认）；
     // 只有金额真的变了才停下来要确认（下方 quoteChangeRows 分支）。
-    let target = preparedOrder;
+    let target = placedOrder;
     if (!target) {
       // 比对基准必须在 Prepare **之前**取：Prepare 会写报价快照（写后就无从判断「变化」了）。
       // 口径：只读预览报价（右栏读模型同源）优先 → 上次报价快照；两者皆无 = 无可比对基准。
       const displayedQuote =
         comparableFromPreview(preview) ?? readQuoteSnapshot(cart.id);
-      const prepared = await prepareOrder();
+      const prepared = await placeOrder();
       if (!prepared) return;
       // 订单已建：必须记住它，否则重试（如预留过期自动重试）会重新提交购物车。
-      setPreparedOrder(prepared);
+      setPlacedOrder(prepared);
       // 仅当金额**确实发生变化**时才要求确认：展示变化块（旧 → 新）+ 确认块，
       // 顾客重新点击后携带新版本 —— 绝不偷偷换价、绝不自动扣款。
       const rows = quoteChangeRows(displayedQuote, prepared.quote);
@@ -1224,7 +1224,7 @@ export function UnifiedCheckout({
           // P1-a：同时把已建订单的报价换成最新版本 —— 否则「确认并支付」永远
           // 带着旧版本发请求（每次都 409），确认环节会变成死循环。
           if (latest) {
-            setPreparedOrder({ id: targetOrderId, quote: latest });
+            setPlacedOrder({ id: targetOrderId, quote: latest });
           }
           setPayError(null);
           return;
@@ -1463,20 +1463,20 @@ export function UnifiedCheckout({
               支付失败时订单**已经存在**（第 ① 段 Place Order 建的），但旧实现只显示
               错误文案、没有任何指向该订单的入口 —— 顾客因此误判「订单没创建」。
               这里就地给出订单编号与两个出口；**绝不跳转**（保持 PRD-20260919 AC-003 口径）。 */}
-          {payError.kind === "payment-failed" && preparedOrder?.id && (
+          {payError.kind === "payment-failed" && placedOrder?.id && (
             <>
               <p className="mt-3 text-sm font-semibold text-red-800">
                 {t("orderCreatedTitle")}
               </p>
               <p className="mt-1 text-sm text-red-700">
                 {t("orderCreatedHint", {
-                  number: preparedOrder.number ?? preparedOrder.id,
+                  number: placedOrder.number ?? placedOrder.id,
                 })}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button asChild variant="outline" size="sm">
                   <Link
-                    href={`${basePath}/payment-result/${preparedOrder.id}`}
+                    href={`${basePath}/payment-result/${placedOrder.id}`}
                     data-testid="payment-failed-view-order"
                   >
                     {t("viewOrder")}
@@ -1791,7 +1791,7 @@ export function UnifiedCheckout({
 
           {/* P1-a（FR-012）：确认块**只在金额发生变化时**出现（配合上面的
               `checkout-quote-diff` 变化块）—— 常规路径一次点击直达，不再强制两步。 */}
-          {preparedOrder?.quote && quoteDiff ? (
+          {placedOrder?.quote && quoteDiff ? (
             <div
               data-testid="order-quote-confirm"
               className="mt-6 rounded-sm border border-gray-200 bg-gray-50 px-4 py-3"
@@ -1816,19 +1816,19 @@ export function UnifiedCheckout({
                 <div className="flex justify-between">
                   <dt className="text-gray-500">{t("quoteDelivery")}</dt>
                   <dd className="text-gray-900" data-testid="quote-delivery">
-                    {preparedOrder.quote?.display_delivery_total ?? "—"}
+                    {placedOrder.quote?.display_delivery_total ?? "—"}
                   </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-gray-500">{t("quoteDiscount")}</dt>
                   <dd className="text-gray-900" data-testid="quote-discount">
-                    {preparedOrder.quote?.display_discount_total ?? "—"}
+                    {placedOrder.quote?.display_discount_total ?? "—"}
                   </dd>
                 </div>
                 <div className="flex justify-between font-medium">
                   <dt className="text-gray-900">{t("quoteAmountDue")}</dt>
                   <dd className="text-gray-900" data-testid="quote-amount-due">
-                    {preparedOrder.quote?.display_amount_due ?? "—"}
+                    {placedOrder.quote?.display_amount_due ?? "—"}
                   </dd>
                 </div>
               </dl>

@@ -1,88 +1,15 @@
 /**
- * PRD-20260915-checkout-单页两段语义 —— **第一段：Prepare**。
+ * **旧路径薄别名**（PRD-20260921-checkout-place-order-正名与显式化 FR-002）。
  *
- * 做两件事，且**只做**这两件：
- *   1. `carts.update`（保存 email / 地址 / 物流 / 账单语义）
- *   2. `carts.submit`（生成 `or_` 订单 + successor cart）
- * 随后返回 **Order 权威报价**（`quote`）供页面在支付前展示与确认。
+ * 本端点已于 2026-09-21 正名为 `/api/checkout/place-order` —— 它的实际行为一直是
+ * `carts.update` + `carts.submit`（**建正式订单**），`prepare` 这个名字只是历史命名
+ * （旧注释自认「做两件事」），与语义脱节，故正名。
  *
- * 明确**不做**：不创建 `PaymentSession`、不启动 `Transaction`
- * （§0.1-2：禁止在用户未见到 Order 权威金额的情况下扣款）。
+ * ⚠️ **实现只能存在一份**：本文件**仅转发**，不得包含任何业务逻辑
+ * （否则就是第二个真相源，必然漂移 —— PRD §4 NFR 可维护性 / 风险 R-3）。
  *
- * 采用同源 Route Handler（而不是 Server Action），理由与 `/api/checkout/start` 一致：
- * `cart_` → `or_` 的转换不得触发会把用户重定向走的 RSC 刷新。
+ * 保留原因：已缓存的旧客户端 bundle 仍可能打旧路径，给一个过渡期。
+ * 删除时点见 PRD §12 Q-1（建议切片 7 知识同步后观察一个发版周期）。
  */
-import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
-import {
-  type CartSubmitResult,
-  type CheckoutPrepareBody,
-  errorBody,
-  errorResponse,
-  readQuote,
-  sameOrigin,
-} from "@/lib/checkout/server";
-import {
-  clearCartCookies,
-  getCartOptions,
-  getClient,
-  setCartCookies,
-  setCheckoutCookies,
-} from "@/lib/pallastrade";
+export { POST } from "../place-order/route";
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
-  if (!sameOrigin(request)) {
-    return NextResponse.json(
-      errorBody("invalid_checkout_origin", "Invalid checkout origin"),
-      { status: 403 },
-    );
-  }
-
-  let submitted: CartSubmitResult | undefined;
-  try {
-    const body = (await request.json()) as CheckoutPrepareBody;
-    if (!body.cart_id || !body.checkout) {
-      return NextResponse.json(
-        errorBody("invalid_request", "Invalid checkout prepare request"),
-        { status: 400 },
-      );
-    }
-
-    const client = getClient();
-    const options = await getCartOptions();
-    const cart = await client.carts.update(
-      body.cart_id,
-      body.checkout,
-      options,
-    );
-
-    submitted = (await client.carts.submit(
-      body.cart_id,
-      options,
-    )) as CartSubmitResult;
-
-    // 订单已建立：立刻切换结账令牌/购物车 cookie，保证刷新后上下文是订单而不是旧 cart。
-    await setCheckoutCookies(submitted.id, cart.token);
-    if (submitted.successor_cart) {
-      await setCartCookies(
-        submitted.successor_cart.id,
-        submitted.successor_cart.token,
-      );
-    } else {
-      await clearCartCookies();
-    }
-
-    const { successor_cart: _successorCart, ...order } = submitted;
-
-    return NextResponse.json({
-      order_id: submitted.id,
-      order,
-      // 权威报价：页面据此渲染「最终金额」确认区，并把版本带入 Pay 请求。
-      quote: await readQuote(submitted.id),
-    });
-  } catch (error) {
-    // 报价冲突时同样附带当前报价，保证 Prepare 阶段的漂移也可页内确认。
-    const quote = submitted?.id ? await readQuote(submitted.id) : null;
-    return errorResponse(error, submitted?.id, quote);
-  }
-}

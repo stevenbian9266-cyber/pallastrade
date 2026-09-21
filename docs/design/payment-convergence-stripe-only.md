@@ -196,6 +196,11 @@ flowchart LR
 | `/api/checkout/place-order` | POST | **① 建单**：`carts.update`（保存）+ `carts.submit` → Order 权威金额 + `order_id` | **由 `prepare` 更名**（行为等价，语义正名） |
 | `/api/checkout/start` | POST | **② 起支付**：`orders.transactions.create` → `client_secret` | **不变**（已支持 `order_id` 形态） |
 | `/api/checkout/prepare` | POST | 旧名（兼容） | **保留为薄别名**（转发到 `place-order`），给未升级客户端一个过渡期，见 §11-6 |
+
+> ✅ **已实施（2026-09-21，切片 8）**：PRD `docs/prd/checkout/PRD-20260921-checkout-place-order-正名与显式化-bff-prepare-place-order-前台-prepareorder-p.md`。
+> 实现**只存在一份**：`prepare/route.ts` 为 `export { POST } from "../place-order/route"`（薄别名，无业务逻辑），
+> 测试以 `expect(preparePOST).toBe(placeOrderPOST)` 锁定同一函数引用。前台 `prepareOrder()` → `placeOrder()`。
+> **行为等价**（硬约束 C-5）：既有 52 例组件测试零回退 + 新增 5 例路由测试（`__tests__/route.test.ts`）。
 | `/api/checkout/start`（形态 2） | POST | 兼容：`cart_` 一次请求完成 update + submit + Pay | **不变**（钱包入口专用，见下方说明） |
 
 > **Store API 层零改动** —— `POST /api/v3/store/carts/:id/submit` 今天就在，语义、幂等、错误码都不用动。本次只动 **BFF 端点名 + 前台函数名 + 文档**。

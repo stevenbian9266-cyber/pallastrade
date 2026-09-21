@@ -288,7 +288,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
         // PRD-20260915-checkout-单页两段语义：首次 Pay 先走 Prepare（建单 + 权威报价）。
         // 默认 mock 不带 quote（服务端降级路径）→ 组件直接进入 Pay，保持既有断言；
         // 需要「确认区」的用例自行覆写该分支。
-        if (input === "/api/checkout/prepare") {
+        if (input === "/api/checkout/place-order") {
           return {
             ok: true,
             json: async () => ({
@@ -470,9 +470,9 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
       JSON.parse((newsletterCall[1] as RequestInit).body as string),
     ).toEqual({ email: "ada@example.com" });
     // PRD-20260915-checkout-单页两段语义：
-    // 第一段 Prepare 携带结账输入（cart_id + checkout），第二段 Pay 只携带订单与支付方式。
+    // 第一段 Place Order 携带结账输入（cart_id + checkout），第二段 Pay 只携带订单与支付方式。
     const prepareCall = fetchMock.mock.calls.find(
-      ([url]) => url === "/api/checkout/prepare",
+      ([url]) => url === "/api/checkout/place-order",
     );
     expect(prepareCall).toBeDefined();
     const prepareInit = prepareCall?.[1] as RequestInit;
@@ -577,9 +577,9 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
       ),
     ).toHaveLength(0);
 
-    // AC-007：两次点击**只建一次单**（第二次复用 preparedOrder，不重复提交购物车）
+    // AC-007：两次点击**只建一次单**（第二次复用 placedOrder，不重复提交购物车）
     const prepareCalls = fetchMock.mock.calls.filter(
-      ([url]) => url === "/api/checkout/prepare",
+      ([url]) => url === "/api/checkout/place-order",
     );
     expect(prepareCalls).toHaveLength(1);
   });
@@ -954,7 +954,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     const defaultImpl = fetchMock.getMockImplementation();
     fetchMock.mockImplementation(
       (input: RequestInfo | URL, init?: RequestInit) => {
-        if (input === "/api/checkout/prepare") {
+        if (input === "/api/checkout/place-order") {
           return defaultImpl?.(input, init);
         }
         return Promise.resolve({ ok: false, json: async () => body });
@@ -1398,7 +1398,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
           }),
         };
       }
-      if (String(input) === "/api/checkout/prepare") {
+      if (String(input) === "/api/checkout/place-order") {
         // 两段语义：Prepare 先建单（返回 or_ 订单），冲突发生在 Pay
         return {
           ok: true,
@@ -1428,7 +1428,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     expect(fetchMock).toHaveBeenCalledTimes(2);
 
     // P1-a（FR-012）AC-4：顾客确认后再次点击 → 携带**服务端最新**版本发 Pay
-    // （旧实现只更新快照、`preparedOrder.quote` 仍是旧版本 → 每次确认都再 409）。
+    // （旧实现只更新快照、`placedOrder.quote` 仍是旧版本 → 每次确认都再 409）。
     await user.click(screen.getByRole("button", { name: "confirmAndPay" }));
     await waitFor(() =>
       expect(replaceMock).toHaveBeenCalledWith(
@@ -1463,7 +1463,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
           }),
         };
       }
-      if (String(input) === "/api/checkout/prepare") {
+      if (String(input) === "/api/checkout/place-order") {
         return {
           ok: true,
           json: async () => ({ order_id: "or_123", order: { id: "or_123" } }),
@@ -1553,7 +1553,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     const defaultImpl = fetchMock.getMockImplementation();
     fetchMock.mockImplementation(
       (input: RequestInfo | URL, init?: RequestInit) => {
-        if (input === "/api/checkout/prepare") {
+        if (input === "/api/checkout/place-order") {
           return Promise.resolve({
             ok: true,
             json: async () => ({
@@ -1632,7 +1632,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     const defaultImpl = fetchMock.getMockImplementation();
     fetchMock.mockImplementation(
       (input: RequestInfo | URL, init?: RequestInit) => {
-        if (input === "/api/checkout/prepare") {
+        if (input === "/api/checkout/place-order") {
           return Promise.resolve({
             ok: true,
             json: async () => ({
@@ -1717,7 +1717,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
       expected_price_version: "pv_3",
     });
     expect(
-      fetchMock.mock.calls.filter(([url]) => url === "/api/checkout/prepare"),
+      fetchMock.mock.calls.filter(([url]) => url === "/api/checkout/place-order"),
     ).toHaveLength(1);
   });
 
@@ -1747,7 +1747,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     const defaultImpl = fetchMock.getMockImplementation();
     fetchMock.mockImplementation(
       (input: RequestInfo | URL, init?: RequestInit) => {
-        if (input === "/api/checkout/prepare") {
+        if (input === "/api/checkout/place-order") {
           return Promise.resolve({
             ok: true,
             json: async () => ({
@@ -1796,7 +1796,7 @@ describe("UnifiedCheckout (PRD-20260830-checkout AC-001/AC-002)", {
     await user.click(screen.getByRole("button", { name: "payNow" }));
     await waitFor(() =>
       expect(
-        fetchMock.mock.calls.filter(([url]) => url === "/api/checkout/prepare"),
+        fetchMock.mock.calls.filter(([url]) => url === "/api/checkout/place-order"),
       ).toHaveLength(2),
     );
   });
