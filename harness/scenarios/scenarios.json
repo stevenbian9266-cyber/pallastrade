@@ -5543,6 +5543,31 @@
         "i18nParityRechecked": 15,
         "skillRecorded": 15
       }
+    },
+    {
+      "id": "GS-210",
+      "name": "Deleting a spec file must sweep every verifier that references it",
+      "description": "Removing a capability deleted its dedicated verifier block and its spec file, but one line inside an unrelated verifier still listed that spec path. Every run of that verifier then failed with exit 1, in seconds, because rspec cannot find the file — the capability was gone, the reference was not. Removing a dedicated verifier is not evidence that its specs are unreferenced elsewhere.",
+      "mustDo": [
+        "After deleting any spec file, scan the whole verifier config for its path, not just the verifier block you are removing",
+        "Verify programmatically: parse every verifier command, extract the spec paths, and assert each referenced file exists",
+        "Resolve each path against that command own working directory — gem specs run under a different root are legitimate and must not be reported as missing",
+        "Re-run every affected verifier once after the sweep; a stale path fails the entire command, so a green neighbouring suite proves nothing",
+        "Record the sweep as counts (verifiers and spec paths inspected, how many missing) so the claim is auditable"
+      ],
+      "mustNotDo": [
+        "Assume that deleting a verifier means nothing else references its specs",
+        "Trust a plain filename search alone — paths hide inside long single-line command arrays",
+        "Treat a verifier failing in seconds as flakiness: an instant failure usually means a missing file, not a slow suite",
+        "Conclude a suite is broken by your change without first checking that the test container is actually running"
+      ],
+      "scoring": {
+        "fullConfigSweep": 25,
+        "pathResolutionCorrect": 25,
+        "affectedVerifiersRerun": 20,
+        "countRecorded": 15,
+        "failureModeDiagnosed": 15
+      }
     }
   ]
 }

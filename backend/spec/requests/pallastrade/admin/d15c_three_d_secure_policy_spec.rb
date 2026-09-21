@@ -65,8 +65,14 @@ RSpec.describe 'Admin 3DS policy (D15c)', type: :request do
     expect(store.reload.private_metadata).to eq('some_existing_key' => 'kept')
   end
 
-  # AC-014（门店表单渲染策略区块；入口表显示认证能力列）
-  it 'renders the policy block and the option capability column' do
+  # AC-014（门店表单渲染策略区块）
+  #
+  # ⚠️ 收敛切片 6（2026-09-21，payment-convergence-stripe-only §9.1）：后台支付方式页的
+  #    「可强制认证」列已随后台收敛**下线**，故本用例由「断言该列存在」改为
+  #    「断言该列不再渲染」——策略区块本身的回归保护保持不变；
+  #    认证闸门的**行为**由 `../services/.../d15c_policy_spec.rb` 与
+  #    `../../api/v3/store/checkout/d7_entries_spec.rb`（3DS 剔除钱包入口）继续覆盖。
+  it 'renders the policy block and no longer renders the option capability column' do
     sign_in_as_admin
     create(:stripe_gateway, store: store, active: true, display_on: 'front_end', name: 'D15c card provider')
 
@@ -79,7 +85,6 @@ RSpec.describe 'Admin 3DS policy (D15c)', type: :request do
 
     get "/admin/payment_methods/#{store.payment_methods.last.prefixed_id}/edit"
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include('data-payment-option-three-d-secure="true"')
-    expect(response.body).to include('data-payment-option-three-d-secure="false"')
+    expect(response.body).not_to include('data-payment-option-three-d-secure')
   end
 end

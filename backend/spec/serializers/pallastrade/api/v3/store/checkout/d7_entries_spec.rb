@@ -61,15 +61,29 @@ RSpec.describe 'D7 checkout entries projection' do
   end
 
   # PRD-20260918-payments-d7-payment-section-express AC-004
+  #
+  # ⚠️ 收敛切片 4（2026-09-21，payment-convergence-stripe-only §9.1）：入口「适用范围」
+  #    （`rule_set` 的 include/exclude 规则）已随该特性下线，故本用例不再用范围规则造场景，
+  #    改用**仍在生效**的收窄机制演示同一不变式（entries ⊆ Resolver）：
+  #    本单要求 3DS/SCA 认证时，`Resolver` 只放行**声明可强制认证**的入口 ——
+  #    Stripe 目录里 `card = supported`、`apple_pay = unsupported`，
+  #    因此钱包入口被服务端挡掉（前台不可能「看得到、付不了」）。
   it 'drops entries rejected by the availability resolver (same source as Start)' do
     provider = optionized_provider([
       { 'kind' => 'card', 'active' => true, 'position' => 1, 'frontend_kind' => 'inline' },
-      { 'kind' => 'apple_pay', 'active' => true, 'position' => 2, 'frontend_kind' => 'express',
-        # D8 范围规则：该入口仅 EUR 币种可用（默认店铺单为 USD → 必须被服务端挡掉）
-        'rule_set' => { 'include' => [{ 'dimension' => 'currency', 'operator' => 'in',
-                                        'values' => ['EUR'] }] } }
+      { 'kind' => 'apple_pay', 'active' => true, 'position' => 2, 'frontend_kind' => 'express' }
     ])
     order = pending_order
+    # 门店策略：本单一律要求认证（`three_d_secure: unsupported` 的钱包入口因此不可用）
+    store.update!(private_metadata: (store.private_metadata || {}).merge(
+      PallasTrade::Payments::ThreeDSecure::Policy::STORE_METADATA_KEY => { 'mode' => 'always' }
+    ))
+    # ⚠️ 认证需求来自「策略 + 最新留痕」，且 `Required` 在**订单对象上做请求内记忆化** ——
+    #    策略变更后必须显式刷新店铺关联与判定缓存（真实请求里每单是新对象，测试里需手动清）
+    #    范式与 spec/services/pallastrade/payments/availability/d15c_authentication_gate_spec.rb 一致
+    store.reload
+    order.reload
+    PallasTrade::Payments::ThreeDSecure::Required.reset_cache_for(order)
 
     entry = entry_for(order, provider)
     resolver_kinds = PallasTrade::Payments::Availability::Resolver.available_option_kinds(

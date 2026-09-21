@@ -952,6 +952,8 @@ flowchart LR
 | `pallastrade_adyen_payment_sessions` 表 | Adyen gem 的历史产物；`schema.rb` 仍有该表，2 个 gem 自带迁移（`20260427130659` / `20260427130660`）按「不得修改历史迁移」保留 | 单开一刀 `drop_table` 迁移清理 |
 | `prepare` BFF 兼容别名 | 切片 8 保留的薄别名（`/api/checkout/prepare` → `place-order`） | 观察一个发布周期后再删（原 §12 Q-1） |
 | 后台支付方式状态筛选 | 切片 9 FR-002 降级项 | 需先扩展订单表 DSL 暴露 `state` 可筛选字段 |
+| `storefront-test` 验证器的空过滤串 | `harness.config.mjs` 中该验证器含 `src/lib/data/__tests__/shopping-cart.test.ts`、`src/lib/data/__tests__/payment.test.ts` 两个**全库从未存在**的路径（引入自 `f99c4cda`，非本收敛）。vitest 位置参数为「过滤串」而非严格路径，不匹配不报错，故暂无实际影响 | 顺手删除两个过滤串；需先跑一次 `storefront-test` 确认无副作用 |
+| **验证器残留引用已修**（`d11_circuit_breaker_spec.rb`） | 切片 2+3 整体下线 D11 验证器时，只删了验证器块，**漏删** `d15c-three-d-secure-rspec` 命令数组里对已删 spec 的引用 → 该验证器恒 exit 1（rspec 找不到文件）。已删除该路径；扫描确认全配置 52 条命令 / 257 个 spec 引用中**仅此一处**为真残留 | 建议加一条守卫：`harness.config.mjs` 引用的 spec 路径必须存在（可并入 `repo-guards-test`），删除 spec 时由 CI 而非人工兜底 |
 
 ## 10. 风险与代价
 
