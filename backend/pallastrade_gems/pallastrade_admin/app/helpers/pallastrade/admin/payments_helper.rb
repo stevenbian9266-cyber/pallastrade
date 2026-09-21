@@ -127,7 +127,7 @@ module PallasTrade
 
       # PALLAS-CUSTOM: S1（PRD-20260915-admin §1.1 / FR-013）—— 已移除 P3-C「路由预览」helper。
       # 后台展示面撤下（理由：「多厂商之间谁承接」不属于「单厂商配置」页，且结论只在订单上下文成立）。
-      # **路由引擎保留**：`Payments::Routing::{Decide,Policy,Summary}` 与 `spec/services/.../routing/*`
+      # **路由引擎已删除（2026-09-21，收敛切片 1）**：`Payments::Routing::*` 与 `payment-routing-rspec` 均已移除
       # 全部未改动；如需再暴露后台入口，应挂在「路由策略」自己的页面上，而不是厂商详情页。
 
       def provider_diagnostic_row(testid, label, value)

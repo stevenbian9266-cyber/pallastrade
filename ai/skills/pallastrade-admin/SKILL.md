@@ -465,7 +465,7 @@ end
 | 按钮归属 | 专用版面下 `_options` 卡**不再**渲染 `[测试连接]` 与结果（`show_test_connection = provider_page_partial_name.blank?`）—— 通用版面零回归 |
 | 已删除 | Stripe 的 `configuration_guide_partial_name` 与其实占 **0 字节**的 partial（FR-012）；P3-C 后台「支付路由」预览区块 + `PaymentsHelper#provider_routing_preview` + `routing_*` i18n 键（FR-013，**路由引擎保留**） |
 | 熔断卡 | 默认折叠（`stimulus-reveal-controller` + `card-header--collapsible` + `collapsible-content is-collapsed`，同 `dashboard/_setup_tasks` / `orders/_line_items`）；锚点 `#payment_method_breaker` 与动作不变 |
-| 回归 | `harness verify admin-payment-methods-rspec` / `payment-providers-rspec` / `d11-circuit-breaker-rspec` / `payment-routing-rspec` / `admin-theme-rspec` / `admin-i18n-rspec`；新增断言读 `data-testid="stripe-connection"` / `"stripe-test-connection"` / `"stripe-test-connection-result"` / `"payment-options"` / `"options-test-connection"` |
+| 回归 | `harness verify admin-payment-methods-rspec` / `payment-providers-rspec` / `d11-circuit-breaker-rspec` / `admin-theme-rspec` / `admin-i18n-rspec`；新增断言读 `data-testid="stripe-connection"` / `"stripe-test-connection"` / `"stripe-test-connection-result"` / `"payment-options"` / `"options-test-connection"` |
 
 > ⚠️ **不要**把专用版面的分派做成「按 `method_type` 猜 partial 名 + `lookup_context.exists?`」—— 隐式、
 > 重命名时会静默回落；用显式返回 `nil` 的声明式方法。新增 provider 专用版面只需在自家 gem 声明钩子 + 放 partial。

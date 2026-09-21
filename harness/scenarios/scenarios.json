@@ -5443,6 +5443,31 @@
         "aliasIdentityPinned": 20,
         "noUserVisibleChange": 10
       }
+    },
+    {
+      "id": "GS-206",
+      "name": "Deleting dead code includes every surface that pointed at it",
+      "description": "A deletion is not finished when the .rb files are gone. The removal surface also spans the test files, the verifier registration in harness.config.mjs, the verification table in AGENTS.md, the skill sections that document it, and stale comments left in unrelated files. Prove zero live consumers first, then sweep every surface, while leaving historical REQ/PRD records untouched.",
+      "mustDo": [
+        "Prove zero live consumers BEFORE deleting — search every layer for the namespace, not just the directory being removed",
+        "Use `git grep -E` for alternation in residual checks; the default BRE treats `|` as a literal and yields a false \"no residue\"",
+        "Sweep every surface: implementation files, their spec files, the verifier registration (harness.config.mjs), the AGENTS.md §6 verification table row, the documenting skill sections, and stale comments in unrelated files",
+        "Run the neighbouring suites after deletion to show the remaining behaviour is unaffected",
+        "Record a manual-only recovery plan whose rollback is a plain git restore, so the deletion is reversible"
+      ],
+      "mustNotDo": [
+        "Trust a bare `git grep \"a\\|b\"` residual check — it silently reports zero hits",
+        "Rewrite historical REQ / PRD documents to erase what was once delivered; append a new record instead",
+        "Leave a doc or config file pointing at a verifier that no longer exists",
+        "Delete a component without first confirming, layer by layer, that nothing calls it"
+      ],
+      "scoring": {
+        "zeroConsumersProven": 30,
+        "allSurfacesSwept": 30,
+        "residualCheckCorrect": 15,
+        "regressionRun": 15,
+        "historyLeftIntact": 10
+      }
     }
   ]
 }

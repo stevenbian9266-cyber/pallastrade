@@ -214,35 +214,6 @@ For an existing Order, start sessions through `PallasTrade::PaymentSessions::Sta
 
 验证入口：`harness verify payment-providers-rspec`（config / state / validate / account 服务规格 + 后台诊断卡 + 账户配置请求规格）。
 
-**方式级路由（PAY-CORE P3-A, 2026-09-20）**
-
-> 一个「支付方式」在给定订单上下文里由**哪家厂商**承接 —— 前台只按方式展示，厂商名不出去。
-
-| 项 | 口径 |
-|---|---|
-| 入口 | `PallasTrade::Payments::Routing::Decide.call(order:, method_key:, policy: nil)` → 决策对象（transient Hash） |
-| 策略 | `store.private_metadata['payment_routing'] = { mode:, priority: {<kind> => [pm_…]}, markets: {<market_id> => {<kind> => [pm_…]}} }`；`Routing::Policy.for_store(store)` 归一 |
-| 模式 | 仅 `off` / `shadow` / `priority_only`；未实现模式（`priority_cost*`）→ 归一 `off` 并标 `unsupported_mode`（**不猜成本**）。`off`/`shadow` → `applied = false`（零行为变化） |
-| 硬门 | ①入口已配置且启用 ②厂商三态 enabled（P0）③账户收窄（P0-B）④**`Availability::Resolver`**（D8 范围 / D11 熔断 / D15c 认证 / 能力目录）—— ④与前台**同一求值点**，消除「选得上、付不了」 |
-| 排序 | 市场覆写 > 全局优先序 > 入口 `position` > `provider.prefixed_id`（确定性兜底）；`basis` = `priority_override` / `position` |
-| 输出 | `status`(decided / no_candidate) · `chosen` · `candidates[rank,basis]` · `rejected[reason]` · `applied` · `inputs` 快照 · `policy_version` |
-| 铁律 | **纯读**（零写入/零网络/零资金副作用）；候选为空 → `no_candidate`（**不回落默认厂商**）；同输入同策略 → 同结果 |
-| 未做（P3-B） | 策略写入后台页与 Preview、决策落库留痕（PaymentSession）、成本/健康维度、跨厂商 fallback 切换 |
-
-**策略写入与预览（PAY-CORE P3-B, 2026-09-20）**
-
-| 项 | 口径 |
-|---|---|
-| 写入 | `Routing::Policy.write!(store, mode:, priority:, markets:, actor:)` —— 白名单（`mode ∈ off|shadow|priority_only`、priority 目标 ∈ 本店 provider、markets 键 ∈ 本店市场）；越界值进 `rejected` 忽略；同值幂等（不写库不审计）；只写 `store.private_metadata['payment_routing']` |
-| 预览 | `Routing::Summary.for_store(store, market_id: nil)` → `{ mode, applied, order_gates: 'skipped', methods: { <kind> => { status: 'preview', chosen, candidates, rejected } } }` |
-| 预览与决策的差异（重要） | 预览复用 `Decide` 的候选装配与排序，但**跳过订单级闸门**（D8 范围规则 / D11 熔断 / D15c 认证）→ 必须读 `order_gates` 字段，**不得**把预览当作「可付」结论；订单级结论一律走 `Decide.call(order:, …)` |
-| 诚实性 | 预览不捏造方式（集合来自 provider 声明与实际配置）；无候选 → 该方式不出现在结果里；被停用/账户未开通的厂商以 `rejected` reason 出现 |
-| 后台预览（P3-C） | ~~支付方式编辑页卡片内 `[data-testid="provider-routing-preview"]`~~ —— **该后台展示面已在 S1（2026-09-20，PRD-20260915-admin §1.1 / FR-013）下架**：跨厂商路由不属于「单厂商配置」页，且其结论只在订单上下文成立（`order_gates: 'skipped'`）。**引擎全部保留**（`Routing::{Decide,Policy,Summary}` 与 `payment-routing-rspec` 未动）；如需再暴露后台入口，应挂在「路由策略」自己的页面上。 |
-
-验证入口：`harness verify payment-routing-rspec`（决策 11 例 + 策略写入/预览 9 例）。
-
-验证入口：`harness verify payment-routing-rspec`（硬门 / 优先序 / 确定性与不猜，11 例）。
-
 ## Adding a payment gateway
 
 Stripe, Adyen and PayPal ship preinstalled in pallastrade-starter projects (the backend `create-pallastrade-app` scaffolds) — nothing to install; enable and configure them in the admin under Settings → Payment methods. For any other gateway gem:
